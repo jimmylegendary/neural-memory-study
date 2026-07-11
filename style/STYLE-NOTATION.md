@@ -1,6 +1,6 @@
 # STYLE-NOTATION — 통일 표기·용어·템플릿 기준
 
-**버전**: v1.0 (2026-07-11, W1 foundation — 1차 초안 집필 기간 동안 동결)
+**버전**: v1.1 (2026-07-12, P2 보정 라운드 기준판 — 변경 이력은 §8. W1 판은 v1.0)
 **지위**: 17개 장의 모든 집필자는 이 문서를 따른다. 이 문서와 충돌하는 표기·용어·구조는 audit(P2)에서 결함으로 처리된다. 변경 요청은 장 안에 `<!-- STYLE-ISSUE: ... -->` 주석으로 남기고, 본문은 일단 이 문서대로 쓴다.
 **근거 문서**: `dossier/PRE-RESEARCH.md`(특히 §2 concept ledger), `notes/{2501.00663,2504.13173,2505.23735,2511.07343,2512.24695,2606.03979}.json`, `notes/prereq-curriculum.md`.
 
@@ -56,7 +56,8 @@ $$
 |---|---|---|
 | $x_t\in\mathbb{R}^{d}$ | 입력 token 표현 (열벡터) | 원문들의 $d_{in}$은 $d$로 통일 |
 | $X\in\mathbb{R}^{L\times d}$ | 시퀀스 행렬 (행 = token) | |
-| $L$ | sequence 길이 | Titans의 $N$, Sleep의 $T$ 혼용을 $L$로 통일 |
+| $L$ | sequence 길이 | Titans의 $N$, Sleep의 $T$ 혼용을 $L$로 통일. **layer 수·MLP 깊이 의미로 사용 금지** (v1.1) |
+| $L_{\mathrm{layer}}$ | 네트워크·MLP의 layer 수(깊이) | v1.1 신설 — $L$(sequence 길이)과의 충돌 해소. memory MLP 깊이는 별도로 $L_{\mathcal{M}}$(Titans 문맥) 유지 |
 | $d,\ d_k,\ d_v,\ d_h$ | model/key/value/memory-hidden 차원 | |
 | $t,\tau$ | token 인덱스, **1-based** | |
 | $n$ | chunk 인덱스, 0-based | chunk $n$은 token $nC{+}1 \ldots (n{+}1)C$ |
@@ -142,7 +143,7 @@ $$
 
 - **열벡터가 기본.** $k_t,v_t,q_t,x_t$는 열벡터. 투영은 $k_t=W_Kx_t$, $W_K\in\mathbb{R}^{d_k\times d}$. 원문들(특히 Titans)의 행벡터 관행 $x_tW_K$는 대응표에서만 언급.
 - matrix memory는 $W\in\mathbb{R}^{d_v\times d_k}$, 읽기 $y=Wq$, 쓰기의 기본 단위는 outer product $v_tk_t^\top$.
-- **$\otimes$ 사용 금지.** outer product는 $vk^\top$로, elementwise 곱은 $\odot$로, gating 결합은 명시적으로 ($y\odot g$ 또는 $\mathrm{gate}(y_1,y_2)$) 쓴다. 유일한 예외: $\phi^*$ 정의의 Kronecker 거듭제곱 $x^{\otimes i}$.
+- **$\otimes$ 사용 금지.** outer product는 $vk^\top$로, elementwise 곱은 $\odot$로, gating 결합은 명시적으로 ($y\odot g$ 또는 $\mathrm{gate}(y_1,y_2)$) 쓴다. 예외(v1.1 확장): **Kronecker 연산의 표준 선형대수 용법** — $\phi^*$ 정의의 거듭제곱 $x^{\otimes i}$, vec–Kronecker 항등식($(K^\top\otimes I)\,\mathrm{vec}(W)$ 류의 증명 스케치) — 은 허용한다. 금지 대상은 gating·outer-product 의미의 $\otimes$뿐이다.
 - transpose는 $^\top$, Frobenius norm은 $\|\cdot\|_F$, $\ell_p$ norm은 $\|\cdot\|_p$.
 - gradient는 $\nabla_W\ell$처럼 변수 명시. backprop 전개에서만 $\partial\mathcal{L}/\partial W_\ell$ 허용.
 - softmax·layernorm은 $\mathrm{softmax}(\cdot)$, $\mathrm{LN}(\cdot)$.
@@ -206,7 +207,8 @@ $\varepsilon(\cdot)$은 임의 optimizer의 error 항(GD이면 $\nabla_\theta\ma
 | 항목 | 규칙 |
 |---|---|
 | $\mathcal{M}^*$ | **read-only pass 의미로 금지.** 읽기는 $\mathcal{M}(q;W)$. $\mathcal{M}^\star$는 argmin 전용 |
-| $\otimes$ | 금지 (§1.3). 예외: $x^{\otimes i}$ |
+| $\otimes$ | 금지 (§1.3). 예외(v1.1): Kronecker 표준 용법 — $x^{\otimes i}$, vec–Kronecker 항등식 |
+| $L$ (무첨자) | sequence 길이 전용 (v1.1). layer 수·MLP 깊이는 $L_{\mathrm{layer}}$, memory MLP 깊이는 $L_{\mathcal{M}}$ |
 | $\theta_t$ (소문자, 시간 첨자) | inner lr 의미로 금지 (Titans 원문 관행). inner lr는 $\eta_t$ |
 | $V$ | value 행렬 전용. TNT global memory는 $W^{\mathrm{g}}$ |
 | $S$ | $S_t$=inner momentum 전용. shard 길이는 $L_{\mathrm{s}}$, Titans MAC의 segment는 "segment"라고 산문으로 |
@@ -370,6 +372,7 @@ ch06/ch07/ch08/ch13 집필자는 아래를 기준형으로 사용한다(각 항�
 - **동사·서술어는 자연스러운 한국어를 허용**한다: "memory에 쓴다/읽는다", "gradient를 계산한다", "state를 갱신한다". 단, 명사로 쓸 때는 영어("update rule", "write 연산").
 - **한글 음차 허용 목록(관용어)**: 모델, 데이터, 시스템, 하드웨어, 소프트웨어, 알고리즘, 클러스터, 레이어(단, 수식 문맥에서는 layer). 이 목록 밖은 애매하면 로마자.
 - 복수형 s는 쓰지 않는다("gradient들" 허용, "gradients" 지양). 고정 관용구는 예외: fast weights, slow weights, Titans.
+- **"weights" 단독 사용 허용(v1.1 명문화)**: 신경망 가중치의 총칭은 영어 관용상 복수형이 표준이므로, "weights", "memory weights", "그 weights 자체가" 같은 단독 복수형 사용을 허용 예외로 확정한다(W1 전 장의 사실상 표준 관행 추인). 단 특정 행렬 하나를 지칭할 때는 기호($W$, $W_K$) 또는 "weight 행렬"을 쓴다. "weight decay"는 종전대로 단수형 고정 관용구.
 - 대소문자: 문중 소문자 유지(momentum, chunk). 고유명사·모델명은 원문 표기(Titans, Miras, Moneta, Hope, Muon, DeltaNet, RWKV-7, Mamba-2, FlashAttention).
 
 ### 2.2 조사 결합 규칙
@@ -442,7 +445,7 @@ ch06/ch07/ch08/ch13 집필자는 아래를 기준형으로 사용한다(각 항�
 | wake/sleep lifecycle | Sleep | ch17 | |
 | online vs offline consolidation | NL/Sleep | ch11(개념), ch16/ch17(기법) | |
 | Knowledge Seeding (KS) / Self-Knowledge Seeding (SKS) | Sleep | ch17 | "upward distillation" 별칭 허용 |
-| Learning to Imitate (LTI) | Sleep | ch17 | |
+| Learning to Imitate (LTI) | Sleep | ch17 | ⚠ 약어 LTI가 ch07의 LTI(linear time-invariant)와 충돌(v1.1 판정): 책 전역의 기본 의미는 linear time-invariant(→ 7장)이고, Learning to Imitate 의미는 **ch17 내부 전용**. ch17 첫 등장 시 "7장의 LTI(linear time-invariant)와 무관한 약어"라는 구분 문장 의무 |
 | Dreaming | Sleep | ch17 | |
 | synaptic-pruning reset | Sleep | ch17 | |
 | parameter expansion (periodic (de)activation) | Sleep | ch17 | |
@@ -463,6 +466,7 @@ ch06/ch07/ch08/ch13 집필자는 아래를 기준형으로 사용한다(각 항�
 - Miras의 실제 제목은 *It's All Connected*지만 이 책은 framework 이름 **Miras**로 통칭한다(첫 등장 시 명시).
 - 원문 위치 인용: [Titans §3.1], [Atlas Eq. 32], [NL Def. 2], [Sleep App. B]. 원문 수식 번호는 항상 "Eq."로, 이 책 수식 번호는 (12-3) 형식으로 — 혼동 불가.
 - 외부 문헌: 저자-연도 + 첫 인용 시 arXiv ID. 예: "Sun et al. 2024 (arXiv:2407.04620)". 서지 목록은 후공정(P4, Veridraft 검증 풀)에서 일괄 구축하므로 본문에는 위 형식만.
+- **모델명 약어 GDN(v1.1 신설)**: Gated DeltaNet의 약어 GDN은 **장마다 첫 등장 시 "Gated DeltaNet(이하 GDN)" 병기 후에만** 사용할 수 있다. 병기 없는 GDN 사용 금지. 한 장 안에서 병기 이후에는 GDN으로 통일한다(풀네임/약어 혼용 금지; 표 안 포함). 변형 명칭(GDN-H2 등)도 이 병기 이후에만 쓴다. 다른 모델명 약어를 새로 도입할 때도 같은 패턴을 따른다.
 
 ---
 
@@ -567,15 +571,17 @@ ch06/ch07/ch08/ch13 집필자는 아래를 기준형으로 사용한다(각 항�
 
 | 장 | 목표 pp. | 장 | 목표 pp. |
 |---|---|---|---|
-| ch01 | 3 | ch10 | 5 |
+| ch01 | 4 | ch10 | 5 |
 | ch02 | 10 | ch11 | 4–7 |
 | ch03 | 6 | ch12 | 10 |
 | ch04 | 6 | ch13 | 8 |
 | ch05 | 8 | ch14 | 10 |
 | ch06 | 10 | ch15 | 7 |
-| ch07 | 6 | ch16 | 11 |
+| ch07 | 6 | ch16 | 13 |
 | ch08 | 7 | ch17 | 9 |
 | ch09 | 10 | | |
+
+(v1.1 재배정: ch01 3→4, ch16 11→13 — 근거·감축 지시는 `audit/w1-fixplan.md` §0. 그 외 장은 목표 유지, 허용 오차 ±15%.)
 
 ---
 
@@ -584,15 +590,15 @@ ch06/ch07/ch08/ch13 집필자는 아래를 기준형으로 사용한다(각 항�
 ### 5.1 파일명 슬러그 (고정 — 임의 변경 금지)
 
 ```
-study-kr/part1/ch01-orientation.md
+study-kr/part1/ch01-orientation-rosetta.md
 study-kr/part1/ch02-training-as-a-system.md
-study-kr/part1/ch03-online-learning.md
-study-kr/part1/ch04-meta-learning.md
+study-kr/part1/ch03-online-learning-regret.md
+study-kr/part1/ch04-meta-learning-bilevel.md
 study-kr/part1/ch05-associative-memory.md
 study-kr/part1/ch06-linear-attention-fwp.md
 study-kr/part1/ch07-ssm-lineage.md
 study-kr/part1/ch08-ttt-lineage.md
-study-kr/part1/ch09-chunkwise-parallel.md
+study-kr/part1/ch09-chunkwise-parallel-training.md
 study-kr/part1/ch10-systems-bridge.md
 study-kr/part1/ch11-continual-learning.md
 study-kr/part2/ch12-titans.md
@@ -603,7 +609,9 @@ study-kr/part2/ch16-nested-learning.md
 study-kr/part2/ch17-sleep.md
 ```
 
-그림 파일: `study-kr/figures/chNN/fig-NN-<slug>.svg` (예: `figures/ch09/fig-02-three-regimes.svg`).
+(v1.1: W1 실파일명을 기준으로 확정 — ch01/ch03/ch04/ch09의 슬러그를 지시서 경로 쪽으로 개정. 파일 rename 없음. 관련 `<!-- STYLE-ISSUE -->` 자기신고 주석 3건은 제거 대상.)
+
+그림 파일: `study-kr/figures/chNN/fig-NN-<slug>.svg` (예: `figures/ch09/fig-02-three-regimes.svg`). 그림 스펙의 단일 SoT는 `figures/SPEC.md`(v1.1 신설, P2 figure pass에서 생성).
 
 ### 5.2 장·절 참조
 
@@ -620,7 +628,7 @@ study-kr/part2/ch17-sleep.md
 ### 5.4 그림·표
 
 - 그림: "그림 12-1" + 캡션 필수. `![그림 12-1 — MAC의 데이터 흐름](../figures/ch12/fig-01-mac-dataflow.svg)` 후 다음 줄에 캡션 텍스트 반복(pandoc 빌드 안전용).
-- 표: "표 12-1" + 캡션을 표 **위**에. 표기 대응표도 표 번호를 받는다.
+- 표: "표 12-1" + 캡션을 표 **위**에. 표기 대응표도 표 번호를 받는다. 캡션 텍스트는 플레인으로 쓴다("표 12-1 — …") — **볼드 캡션 금지**(v1.1 통일 결정).
 - 원 논문 그림을 다시 그릴 때 캡션에 "([Atlas Fig. 3] 재구성)" 표기. 원본 이미지 복사 금지(재작도 원칙).
 - 넓은 표는 축약열보다 행 분할을 선호(빌드 폭 제한).
 
@@ -662,6 +670,14 @@ study-kr/part2/ch17-sleep.md
 - 위치: 해당 문장/절 바로 아래. 주장 + 확인 방법(어느 파일/절을 보면 판정되는지)을 반드시 포함.
 - 수치는 TODO-VERIFY 상태로 본문에 쓰지 않는다 — 수치는 노트/원문에서 확인된 것만.
 
+**해소 규약 (v1.1 신설)** — TODO-VERIFY를 해소할 때:
+
+1. 원문(papers/·arXiv·PDF)에서 판정을 확인한 뒤 **주석을 삭제**한다. "확인 완료" 류의 잔류 주석을 본문에 남기지 않는다 — 해소 이력은 `audit/w1-verify-answers.md`에 (TODO 위치, 판정, 출처) 형식으로 기록한다.
+2. 주장이 **확인**되면: 본문 해당 문장에 원문 위치 병기([X §n] / [X Eq. n] / [X Fig. n] / 저자-연도+arXiv ID)를 추가한다. 흐름을 깨면 각주로 대체해도 된다.
+3. 주장이 **틀렸으면**: 본문을 원문에 맞게 고치고 2를 적용한다. 고친 결과가 다른 장의 서술과 연동되면(fixplan에 연동 표기) 해당 장 fixer에게 `audit/w1-verify-answers.md`를 통해 전달한다 — 남의 장 파일을 직접 고치지 않는다.
+4. **판정 불가**(원문 미공개·부재)이면: 본문 단정을 삭제하거나 §6.2의 논문 귀속("논문은 명시하지 않는다")/[평가] 블록으로 전환한다. TODO-VERIFY를 무기한 잔류시키는 것은 결함이다.
+5. 수치 금지 규칙은 해소 전까지 유지된다(위 두 번째 불릿).
+
 ### 6.4 정직성 규칙
 
 논문에 불리한 사실의 완곡화·누락은 결함이다. 아래는 dossier가 확정한 **의무 서술 caveat**로, 해당 장은 반드시 본문에 담는다:
@@ -669,7 +685,7 @@ study-kr/part2/ch17-sleep.md
 | Caveat | 의무 장 |
 |---|---|
 | Atlas 자체 ablation에서 Muon 제거가 perplexity를 **개선** (optimizer 축의 가치는 760M에서 미결) | ch14 |
-| in-context retrieval gap 미해소: attention 53.6 vs 43.7 [Atlas], FDA 67.3 vs 41.9 [NL] | ch14, ch16 |
+| in-context retrieval gap 미해소: attention 53.55 vs 43.70 [Atlas Table 5], FDA 67.3 vs 41.9 [NL] | ch14, ch16 |
 | TNT는 momentum·gating·Muon을 "명료성을 위해" 제거한 단순화 Titans로 검증 (App. D) — 라인 전체와의 합성은 미검증 | ch15 |
 | chunk-size mismatch의 증거는 단일 설정(550M, gating/momentum 없음)의 한 그림 | ch15 |
 | Sleep의 기제는 pre-trained Llama/Qwen 위의 graft — 라인 최초로 end-to-end meta-learn되지 않음 | ch17 |
@@ -708,4 +724,28 @@ study-kr/part2/ch17-sleep.md
 
 ---
 
-*이 문서는 W1(1차 초안) 동안 동결된다. 표기 충돌 발견 시 본문에 `<!-- STYLE-ISSUE: ... -->` 주석을 남기고 이 문서대로 집필을 계속한다. P2 audit이 STYLE-ISSUE를 수집해 v1.1을 결정한다.*
+## 8. 버전 이력
+
+### v1.1 (2026-07-12) — P2 보정 라운드 기준판
+
+W1 3종 감사(`audit/w1-{notation,continuity,coverage}-report.md`)가 요구한 기준 문서 수정을 반영. 각 항목의 근거 리포트 ID를 병기한다.
+
+1. **§5.1 파일 슬러그 개정** — ch01/ch03/ch04/ch09 슬러그를 W1 실파일명(`ch01-orientation-rosetta`, `ch03-online-learning-regret`, `ch04-meta-learning-bilevel`, `ch09-chunkwise-parallel-training`)으로 확정. 파일 rename 없음, 장 내 STYLE-ISSUE 자기신고 주석 3건 제거 대상. [notation M-1, coverage minor-7]
+2. **§2.1 "weights" 단독 복수형 허용 예외 명문화** — 전 장의 사실상 표준 관행 추인. [notation m-9]
+3. **예약 기호 $L$ 충돌 해소** — §1.2에 $L_{\mathrm{layer}}$(네트워크·MLP 깊이) 신설, §1.5에 금지행 추가. $L$은 sequence 길이 전용, $L_{\mathcal{M}}$(memory MLP 깊이)은 유지. [notation M-2]
+4. **§6.3 TODO-VERIFY 해소 규약 신설** — 해소 시 주석 삭제 + 원문 위치 병기(또는 각주) 대체, 이력은 `audit/w1-verify-answers.md`, 판정 불가 시 §6.2 전환. [coverage §3, major-5]
+5. **§2.5 GDN 약어 도입 규칙 신설** — "Gated DeltaNet(이하 GDN)" 장별 첫 등장 병기 의무 + 장 내 혼용 금지. [notation m-5]
+6. **§1.3·§1.5 $\otimes$ 예외 확장** — Kronecker 표준 선형대수 용법(vec–Kronecker 항등식 포함) 허용. ch14:31은 소급 적합. [notation m-1]
+7. **§6.4 retrieval gap 수치 정정** — 53.6/43.7 → 원문 정밀도 53.55/43.70 [Atlas Table 5]. 기준 문서 자신이 §6.5 반올림 금지 규칙을 위반하고 있었음. [continuity F-06]
+8. **§2.4 LTI 약어 충돌 판정 병기** — 전역 기본 의미 = linear time-invariant(ch07), Learning to Imitate는 ch17 내부 전용 + 첫 등장 구분 문장 의무. [continuity F-07]
+9. **§4.3 분량 재배정** — ch01 3→4pp(worked-example 일부 존치 인정), ch16 11→13pp(NL의 최고 밀도 인정; 상세 근거는 `audit/w1-fixplan.md` §0 D7·D8). 그 외 목표 유지, 허용 오차 ±15% 명문화. [coverage §4]
+10. **§5.4 표 캡션 서식 확정** — 플레인 캡션으로 통일(볼드 금지). [notation m-6]
+11. **§5.1 그림 스펙 SoT 지정** — `figures/SPEC.md` 신설 참조. [coverage major-3]
+
+### v1.0 (2026-07-11) — W1 동결판
+
+17개 장 1차 초안 집필의 기준. W1 기간 동결.
+
+---
+
+*v1.1은 P2 보정 라운드(W2)의 기준판이다. 라운드 중 새 표기 충돌을 발견하면 종전처럼 본문에 `<!-- STYLE-ISSUE: ... -->` 주석을 남기고 이 문서대로 계속 쓴다. 다음 개정은 P2 종료 시 일괄 결정한다.*

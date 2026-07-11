@@ -38,13 +38,13 @@ $$
 W_t = W_{t-1} - \eta_t\,\nabla_W\,\ell(W_{t-1};k_t,v_t)
 $$
 
-여기서 $\eta_t$는 상수가 아니라 **학습된 data-dependent inner learning rate**, 즉 $\eta_t = \eta(x_t;\Theta)$ 형태로 slow weights가 token마다 산출하는 게이트다. 독자에게 이 게이트의 정확한 대응물은 Mamba의 input-dependent gate(→ 7장)다 — 같은 역할("이 token을 얼마나 강하게 state에 반영할 것인가")을 optimizer의 언어로 다시 말한 것뿐이다.
-<!-- TODO-VERIFY: Sun et al. 2024의 learned inner lr의 정확한 함수형(η_t = η_base·σ(θ_lr·x_t)로 기억됨)과 위치. 확인 방법: arXiv:2407.04620 §2.4 부근 "learnable W" / "inner-loop learning rate" 검색 -->
+여기서 $\eta_t$는 상수가 아니라 **학습된 data-dependent inner learning rate**, 즉 $\eta_t = \eta(x_t;\Theta)$ 형태로 slow weights가 token마다 산출하는 게이트다(원문 구현은 base learning rate에 sigmoid를 곱한 형태이며, 원문 스스로 이를 "$\nabla\ell$에 대한 gate"로도 해석한다) [Sun et al. 2024 §2.7]. 독자에게 이 게이트의 정확한 대응물은 Mamba의 input-dependent gate(→ 7장)다 — 같은 역할("이 token을 얼마나 강하게 state에 반영할 것인가")을 optimizer의 언어로 다시 말한 것뿐이다.
 
 셋째, **read**. 세 번째 view(test view) $q_t = W_Q x_t$로 갱신된 memory를 읽는다: $y_t = \mathcal{M}(q_t; W_t)$. 원문 표기 $\theta_K,\theta_V,\theta_Q$는 이 책의 $W_K,W_V,W_Q$에 대응한다.
 
-$\mathcal{M}$의 구조에 따라 두 instantiation이 있다. **TTT-Linear**는 $\mathcal{M}(k;W)=Wk$, 즉 state가 linear attention과 같은 $d_v\times d_k$ 행렬이다. **TTT-MLP**는 $\mathcal{M}$이 2-layer MLP다 — 이후 라인이 표준화하는 deep memory(→ 12장)의 원형이다. 6장 카탈로그(표 6-2)의 TTT-Linear 행이 말하듯, 두 모델 다 (M1)이 전부다: momentum도 retention gate도 없다. 이 "없음"이 Part II를 여는 열쇠 구멍이다.
-<!-- TODO-VERIFY: 원문 f의 정확한 구조(residual + LayerNorm 포함 여부, TTT-MLP의 hidden 배수·activation). 확인 방법: arXiv:2407.04620 §2.6 또는 App. 아키텍처 절 -->
+<!-- FIG: ch08/fig-01-ttt-layer -->
+
+$\mathcal{M}$의 구조에 따라 두 instantiation이 있다. **TTT-Linear**는 $\mathcal{M}(k;W)=Wk$, 즉 state가 linear attention과 같은 $d_v\times d_k$ 행렬이다. **TTT-MLP**는 $\mathcal{M}$이 2-layer MLP다 — 이후 라인이 표준화하는 deep memory(→ 12장)의 원형이다. 6장 카탈로그(표 6-2)의 TTT-Linear 행이 말하듯, 두 모델 다 (M1)이 전부다: momentum도 retention gate도 없다. 이 "없음"이 Part II를 여는 열쇠 구멍이다. 구현 세부 하나: 원문의 memory network는 TTT 중의 안정성을 위해 항상 residual과 LN을 두른다 — 원문 표기로 $f(x) = x + \mathrm{LN}(f_{\mathrm{res}}(x))$ — 그리고 TTT-MLP의 hidden 차원은 입력의 4×, activation은 GELU다 [Sun et al. 2024 §2.7]. 8.3절의 유도는 이 겉옷을 벗긴 $\mathcal{M}(k;W)=Wk$에 대한 것이다.
 
 Rosetta-Stone으로 옮기면 TTT layer의 fast weights는 **"compression codec이 달린 writable KV cache"**다. KV cache는 append-only 무손실 저장에 $O(L)$ lookup이고, $W_t$는 고정 크기 lossy 저장에 $O(1)$ lookup(GEMV 한 번)이다. 결정적 차이는 write 경로다: cache append는 memcpy지만, TTT의 write는 read-modify-write이며 그 "modify"가 gradient 계산이다. 1장에서 예고한 문장을 여기서 처음 실감하게 된다 — **backward pass가 decode 안으로 들어온다.**
 
@@ -61,8 +61,7 @@ $$
 
 의미론도 5장 그대로다. Hebbian write($W \mathrel{+}= v_tk_t^\top$)는 값을 무조건 더해 crosstalk를 쌓지만, delta write는 **residual** $v_t - W_{t-1}k_t$만 쓴다. 이미 알고 있는 내용이면 gradient가 작아 거의 쓰지 않고, 어긋난 만큼만 고쳐 쓴다 — 같은 key가 다시 오면 add가 아니라 overwrite다. 이 "오차 기반 write"가 Titans가 surprise라고 부르게 될 것의 원형이다(→ 12장).
 
-두 극한이 이 그림을 완성한다. 첫째, chunk 하나로 sequence 전체를 잡고 모든 gradient를 초기 상태 $W_0$에서 평가하면(다음 절의 언어로 $C=L$의 stale 극한), $W_0=0$일 때 TTT-Linear는 vanilla linear attention과 같은 함수가 된다 — [Sun et al. 2024]가 정리로 제시하는 동치다. 둘째, parametric model 대신 non-parametric learner(kernel regression)를 inner learner로 넣으면 softmax attention이 나온다 — 5장이 확립한 "softmax attention = $\ell_2$ regression의 non-parametric Nadaraya–Watson 해"의 TTT 판본이다(→ 5장). 즉 attention도 linear attention도 TTT framework의 특수 사례이며, 원문의 프레임은 "새 대안"이 아니라 "기존 layer들을 포함하는 일반화"다.
-<!-- TODO-VERIFY: 두 동치의 정확한 정리 번호와 전제(W_0=0, LN/residual 제거 등). 확인 방법: arXiv:2407.04620 Theorem 1/2 및 해당 증명 절 -->
+두 극한이 이 그림을 완성한다. 첫째, chunk 하나로 sequence 전체를 잡고 모든 gradient를 초기 상태 $W_0$에서 평가하면(다음 절의 언어로 $C=L$의 stale 극한), $W_0=0$일 때 TTT-Linear는 vanilla linear attention과 같은 함수가 된다 — [Sun et al. 2024 Theorem 1]이 정리로 제시하는 동치다(전제: $f(x)=Wx$ — LN/residual 제거 —, batch GD, 원문 표기로 $\eta=1/2$ — 이 책은 상수 2를 $\eta$에 흡수 —, $W_0=0$; 대상은 분모 누적 없는 무정규화 linear attention). 둘째, parametric model 대신 non-parametric learner(kernel regression)를 inner learner로 넣으면 softmax attention이 나온다 [Sun et al. 2024 Theorem 2 — Nadaraya–Watson estimator + exp kernel] — 5장이 확립한 "softmax attention = $\ell_2$ regression의 non-parametric Nadaraya–Watson 해"의 TTT 판본이다(→ 5장). 즉 attention도 linear attention도 TTT framework의 특수 사례이며, 원문의 프레임은 "새 대안"이 아니라 "기존 layer들을 포함하는 일반화"다.
 
 systems 접점: state의 shape과 write의 GEMM 구조가 DeltaNet과 동일하므로, kernel 수준에서 TTT-Linear는 새로운 비용을 만들지 않는다. 새로운 것은 관점이다 — update를 "explicit한 학습 문제의 1 step"으로 명명하는 순간, inner objective를 갈아 끼우고($\to$ Miras), objective의 범위를 넓히고($\to$ Atlas), optimizer를 갈아 끼우는($\to$ Atlas의 Muon) 설계 공간이 열린다.
 
@@ -89,8 +88,7 @@ $$
 
 그러나 FlashAttention과의 유사성은 여기서 끝나고, 결정적 차이가 시작된다. FlashAttention의 tiling은 같은 수식의 bit-exact한 재배열이라 tile 크기는 성능에만 영향을 준다. dual form의 $C$는 **계산되는 함수 자체를 바꾼다**: $C=1$이면 순수 online GD(primal과 동일), $C=L$이면 사실상 1-step batch GD(8.3절의 linear-attention 극한), 그 사이의 모든 $C$는 서로 다른 layer다. 그래서 이 책은 $C$를 **semantic hyperparameter**라고 부른다 — 이 명제의 일반화와 명명은 9장이 맡고, 이 staleness가 train/serve 사이에서 일으키는 사고는 TNT의 주제다(→ 15장). 미리 정직하게 적어 두면, 이 stale 근사의 오차에 대한 형식적 bound는 여섯 논문 어디에도 없다(→ 9장, 15장).
 
-원문은 quality(작은 $C$가 유리)와 throughput(큰 $C$가 유리) 사이의 실험적 절충으로 중간 크기의 chunk를 default로 채택했다.
-<!-- TODO-VERIFY: Sun et al. 2024의 default inner mini-batch 크기(b=16으로 기억됨)와 그 sweep 실험 위치. 확인 방법: arXiv:2407.04620 §2.5와 ablation 절에서 "batch size b" 검색 -->
+원문은 quality(작은 $C$가 유리)와 throughput(큰 $C$가 유리) 사이의 실험적 절충으로 중간 크기의 chunk $C=16$(원문 표기 $b=16$)을 전 실험 공통의 default로 채택했다 [Sun et al. 2024 §2.4, Fig. 7].
 
 ## 8.5 Outer loop: 이 layer 자체는 누가 훈련하는가
 
@@ -114,13 +112,11 @@ serving 관점에서 이 표는 안심 포인트이기도 하다. 폐기되는 �
 
 ## 8.6 스케일 증거와 파생
 
-[Sun et al. 2024]는 TTT-Linear/TTT-MLP를 같은 규모의 Transformer 및 Mamba와 비교해, 문맥이 길어질수록 뒤쪽 token의 perplexity가 계속 내려가는 반면 Mamba는 일정 길이 이후 개선이 정체한다고 보고한다 — 고정 크기 vector/matrix state의 capacity 한계(→ 5장)와 정합적인 결과다.
-<!-- TODO-VERIFY: 비교 스케일(125M–1.3B로 기억됨), 데이터셋(Pile/Books), 그리고 "Mamba는 16k 이후 정체" 주장의 정확한 그림 번호. 확인 방법: arXiv:2407.04620 §3 실험 절과 Figure 2 부근 -->
+[Sun et al. 2024]는 125M–1.3B 규모에서 TTT-Linear/TTT-MLP를 같은 규모의 Transformer 및 Mamba와 Pile·Books3로 비교해, 문맥이 길어질수록 뒤쪽 token의 perplexity가 계속 내려가는 반면 Mamba는 16K context 이후 개선이 정체한다고 보고한다 [Sun et al. 2024 Fig. 2] — 고정 크기 vector/matrix state의 capacity 한계(→ 5장)와 정합적인 결과다.
 
 다만 이 결과의 규모 감각은 정직하게 유지해야 한다. 이 라인 전체(TTT부터 Sleep까지)의 실증 상한은 1.3B parameters / 100B tokens 수준이며, 독자가 운영하는 frontier-scale serving의 증거는 아직 없다. 이 장이 확립하는 것은 "동작한다"이지 "그 규모에서 이긴다"가 아니다.
 
-파생 하나가 이 라인 바깥에서 TTT layer의 실용성을 보였다. Dalal et al. 2025 (arXiv:2504.05298)는 pre-trained Diffusion Transformer에 TTT-MLP layer를 삽입·finetune해 1분 길이의 video 생성을 시연했다 — TTT layer가 처음부터 함께 pretraining되지 않아도 기존 backbone에 graft될 수 있음을 보인 사례로, [Sleep]의 graft 전략(→ 17장)을 예고한다.
-<!-- TODO-VERIFY: Dalal et al. 2025의 backbone 종류·규모(CogVideo-X 5B로 기억됨)와 "storyboard 조건부 Tom and Jerry 1분 생성" 셋업. 확인 방법: arXiv:2504.05298 abstract·§1 -->
+파생 하나가 이 라인 바깥에서 TTT layer의 실용성을 보였다. Dalal et al. 2025 (arXiv:2504.05298)는 3초 clip까지만 생성하던 pre-trained Diffusion Transformer(CogVideo-X 5B)에 TTT-MLP layer를 삽입·finetune해, text storyboard를 조건으로 1분 길이의 Tom and Jerry video 생성을 시연했다 [Dalal et al. 2025 §1] — TTT layer가 처음부터 함께 pretraining되지 않아도 기존 backbone에 graft될 수 있음을 보인 사례로, [Sleep]의 graft 전략(→ 17장)을 예고한다.
 
 systems 접점: "pre-trained backbone에 나중에 끼워 넣을 수 있는가"는 독자에게 배포 경로의 문제다. video 결과는 TTT layer가 아키텍처 전면 재훈련 없이 retrofit 가능한 부품임을 시사한다.
 

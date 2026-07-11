@@ -39,9 +39,7 @@ W_t = W_{t-1} + v_t k_t^\top, \qquad y_t = W_t\, q_t
 \tag{6-1}
 $$
 
-(원문들은 행벡터 관행으로 $M_t = M_{t-1} + K_t^\top V_t$로 쓴다. 이 책은 열벡터·$W\in\mathbb{R}^{d_v\times d_k}$ 관행으로 통일한다 — §표기, 1장.) 분모의 누적 벡터 $z_t = z_{t-1} + \phi(k_t)$도 원리상 함께 유지해야 하지만, RetNet 이후의 모델들은 분모 누적을 아예 버리고 출력 쪽 normalization으로 대체한다.
-
-<!-- TODO-VERIFY: "RetNet 이후 분모 누적 제거 + 출력 normalization(GroupNorm 계열) 대체"가 RetNet·GLA 원문 서술과 일치하는지 확인. 확인 방법: arXiv:2307.08621 §2(Retention의 GroupNorm), arXiv:2312.06635의 output normalization 서술 확인 -->
+(원문들은 행벡터 관행으로 $M_t = M_{t-1} + K_t^\top V_t$로 쓴다. 이 책은 열벡터·$W\in\mathbb{R}^{d_v\times d_k}$ 관행으로 통일한다 — §표기, 1장.) 분모의 누적 벡터 $z_t = z_{t-1} + \phi(k_t)$도 원리상 함께 유지해야 하지만, RetNet 이후의 모델들은 분모 누적을 아예 버리고 출력 쪽 normalization으로 대체한다 — RetNet은 head 출력에 GroupNorm을 두고 그 scale-invariance를 수치 안정화에 사용하며 (Sun et al. 2023, arXiv:2307.08621, §2.2·§3.1), GLA는 "normalizer 없는" linear attention이 실전에서 잘 동작함을 명시하고 head별 LayerNorm을 출력에 둔다 (Yang et al. 2024, arXiv:2312.06635, §2).
 
 식 (6-1)을 Rosetta-Stone 사전(→ 1장)으로 읽자. 이것은 **KV cache의 손실 압축**이다. softmax attention은 모든 $(k_j, v_j)$ 쌍을 그대로 보관하는 non-parametric memory이고 — [Miras §4]는 이를 "$\ell_2$ regression의 Nadaraya–Watson 해, retention 없음"으로 정식화한다 — linear attention은 같은 스트림을 고정 크기 행렬 $W_t$에 겹쳐 쌓는다. write는 rank-1 outer product $v_tk_t^\top$의 accumulate(BLAS로 말하면 GER), read는 GEMV 한 번이다. cache가 자라지 않으므로 decode의 FLOPs/token과 bytes/token이 문맥 길이와 무관한 상수가 된다. 이득의 정체는 산술 강도가 아니라 **traffic 총량의 상한**이다 — 이 구분은 §6.9에서 숫자로 확인한다.
 
@@ -54,6 +52,8 @@ $$
 **fast weights**는 sequence가 흐르는 동안 token마다 갱신되는 weight — 식 (6-1)의 $W_t$ — 를 말한다. **slow weights**는 pretraining이 끝나면 얼어붙는 보통의 parameter — projection $W_K, W_V, W_Q$를 포함한 $\Theta$ 전부 — 를 말한다. 표기 규약도 이 구분을 따른다: fast는 $W$, slow는 $\Theta$. 독자의 세계에서 slow weights는 "모델"이고 fast weights는 "요청마다 존재하는 상태"다. KV cache가 그랬듯이, $W_t$는 session state이지 model parameter가 아니다.
 
 **fast weight programming (FWP)**은 Schmidhuber 1992 (*Learning to control fast-weight memories*, Neural Computation 4(1))가 제안한 구도다: 한 network(slow net)가 다른 network의 weight(fast weights)를 입력에 따라 **써 넣는다**. slow net의 출력이 데이터가 아니라 "다른 모델의 parameter"라는 점에서, slow net은 fast net을 *프로그래밍*한다. Schlag, Irie & Schmidhuber 2021 (arXiv:2102.11174)은 kernel trick으로 얻은 linear attention이 정확히 이 1992년 구도임을 보였다: projection들이 slow net이고, outer-product write가 프로그래밍 명령이며, read $W_tq_t$가 프로그램 실행이다. 같은 그룹의 후속작 Irie et al. 2021 (arXiv:2106.06295)은 fast net 쪽을 재귀적으로 확장했다. 그리고 같은 2021년 논문이 Hebbian write 대신 **delta rule(→ 5장)을 fast-weight update로 쓰는 모델** — 오늘날 DeltaNet이라 불리는 것의 원형 — 을 제안했다 [Miras §4]. 30년 묵은 아이디어가 attention의 어휘로 번역되는 순간이 이 라인의 역사적 기점이다.
+
+<!-- FIG: ch06/fig-01-fwp-timeline -->
 
 표 6-1 — FWP 계보 timeline. 이 장이 다루는 구간은 굵게.
 
@@ -112,11 +112,9 @@ $$
 2. **memory의 얼굴**: $\eta_t = 1$, $\|k_t\| = 1$이면 (6-3)은 "key $k_t$ 방향의 옛 내용을 정확히 지우고 $v_t$를 기록"하는 exact overwrite다. append-only cache가 진짜 read-modify-write 저장소로 바뀐다.
 3. **선형대수의 얼굴**: transition $I - \eta_t k_tk_t^\top$는 **generalized Householder 변환**이다 — $k_t$ 방향의 고유값이 $1-\eta_t\|k_t\|^2$, 나머지 방향은 1. $\eta_t\|k_t\|^2\in(0,1)$이면 수축, $=2$면 반사다. gate 계열의 transition(스칼라·대각)과 달리 **비대각**이라는 사실이 chunkwise 병렬화의 난이도를 결정적으로 바꾸는데(누적 곱이 elementwise로 접히지 않는다), Yang et al. 2024 (arXiv:2406.06484)의 WY representation이 이를 chunk당 GEMM 두어 번으로 해결했다. 유도는 9장의 몫이다.
 
-실무 구현은 key를 $\ell_2$ normalize하고 $\eta_t$를 sigmoid로 $(0,1)$ 범위의 data-dependent 값으로 만든다 — $\eta_t$가 "이 token을 얼마나 세게 쓸 것인가"의 학습된 per-token write intensity가 된다.
+실무 구현은 key를 SiLU 통과 후 $\ell_2$ normalize하고, $\eta_t$를 sigmoid head의 출력 $\eta_t = \sigma(\cdot)\in(0,1)$ — 원문의 표현으로 "writing strength" — 인 data-dependent 값으로 만든다 (Yang et al. 2024, arXiv:2406.06484, §3.1·§3.3). $\ell_2$ 정규화는 Yang et al. 2024의 선택이다: $\|k_t\|_2=1$이면 $\eta_t=1$일 때 $I - k_tk_t^\top$가 정확한 projection이 되어 위의 exact-overwrite 해석이 성립한다(원형인 Schlag et al. 2021, arXiv:2102.11174, §4.2는 $\ell_1$ 계열 sum normalization을 썼다). 결과적으로 $\eta_t$가 "이 token을 얼마나 세게 쓸 것인가"의 학습된 per-token write intensity가 된다.
 
-<!-- TODO-VERIFY: DeltaNet 구현 관행(key L2 normalization, eta_t = sigmoid 출력 (0,1))의 정확한 서술 확인. 확인 방법: arXiv:2406.06484 §4 model 구성, arXiv:2102.11174 §4 -->
-
-**Gated DeltaNet** (Yang, Kautz & Hatamizadeh 2025, arXiv:2412.06464)은 두 계보의 합류다: 식 (6-2)의 retention과 식 (6-3)의 targeted overwrite를 한 update에 싣는다 [Titans §2; Miras Eq. 9]:
+**Gated DeltaNet**(이하 GDN; Yang, Kautz & Hatamizadeh 2025, arXiv:2412.06464)은 두 계보의 합류다: 식 (6-2)의 retention과 식 (6-3)의 targeted overwrite를 한 update에 싣는다 [Titans §2; Miras Eq. 9]:
 
 $$
 W_t = \alpha_t\, W_{t-1}\big(I - \eta_t k_t k_t^\top\big) + \eta_t v_t k_t^\top .
@@ -135,8 +133,6 @@ $$
 W_t = \arg\min_{W}\; \|W - W_{t-1}\|_F^2 + \eta_t\, \|W k_t - v_t\|_2^2 .
 $$
 
-<!-- TODO-VERIFY: Longhorn 원문의 objective가 채널별(per-output-channel) eta_t를 쓰는 것으로 기억됨 — 위는 스칼라 단순화. 원문 표기와 계수 배치 확인. 확인 방법: arXiv:2407.14207 §3의 online learning objective 정의 -->
-
 이차식이므로 미분해서 0으로 놓으면 $W(I + \eta_t k_tk_t^\top) = W_{t-1} + \eta_t v_tk_t^\top$, Sherman–Morrison으로 역행렬을 풀면
 
 $$
@@ -145,6 +141,8 @@ W_t = W_{t-1}\big(I - \epsilon_t\, k_t k_t^\top\big) + \epsilon_t\, v_t k_t^\top
 \epsilon_t = \frac{\eta_t}{1 + \eta_t\, k_t^\top k_t}.
 \tag{6-5}
 $$
+
+표기 주의 두 가지. 첫째, 원문의 objective는 두 번째 항이 **출력 채널별 가중 노름**이다 — 스칼라 $\eta_t$ 자리에 채널별 벡터 $\eta_t\in\mathbb{R}^{d_v}$(sigmoid 출력; 원문 기호 $\beta_t$)가 앉고, $\eta_{t,i}=0$인 채널의 state 행은 그대로 보존된다. 닫힌 해도 그에 맞춰 출력 행별로 $\epsilon_{t,i} = \eta_{t,i}/(1+\eta_{t,i}\,k_t^\top k_t)$를 갖는다 [Longhorn Eq. 5, Thm 3.1]. 위 (6-5)는 이 행별 식에서 $\eta_t$를 스칼라로 둔 단순화이며, 유도의 본질(implicit GD, 아래 안정성 논증)은 그대로 보존된다. 둘째, 원문 구현은 parallel scan을 위해 transition $I - \epsilon_{t,i}\,k_tk_t^\top$를 대각 근사 $\mathbf{1} - \epsilon_{t,i}\,k_t^{\odot 2}$로 치환한다 [Longhorn §3.2] — 즉 출하된 Longhorn kernel은 delta 계열의 Householder형 transition이 아니라 그 **대각 근사판**이다. 근사의 대가로 얻는 것은 병렬화 형태다: full transition은 비대각이라 WY 계열 chunkwise 기법을 요구하지만, 대각 transition은 GLA류 scan으로 접힌다(→ 9장). 이하의 분석은 근사 전의 full transition에 대한 것이다.
 
 형태는 DeltaNet (6-3) 그대로이고, 바뀐 것은 learning rate의 재정의 하나다. 그러나 이 하나가 optimizer의 **종류**를 바꾼다. (6-3)은 gradient를 $W_{t-1}$에서 평가하는 explicit GD(forward Euler)이고, (6-5)는 gradient를 도착점 $W_t$에서 평가하는 방정식 $W_t = W_{t-1} - \eta_t\nabla_W\ell(W_t;k_t,v_t)$을 푼 **implicit gradient descent**(backward Euler, proximal step)다. Miras Table 1이 Longhorn에만 "Implicit GD"라는 별도의 행을 준 이유다 [Miras Table 1].
 
@@ -157,22 +155,24 @@ training 무경험 독자를 위해 옮기면: explicit GD의 step size는 발�
 
 ## 6.6 RWKV-7: generalized delta rule — gate를 채널별 벡터로
 
-**RWKV-7 "Goose"** (Peng et al. 2025, arXiv:2503.14456)는 이 장 family의 현재 시점 최종 일반화다. Gated DeltaNet (6-4)의 스칼라 손잡이들을 전부 벡터로 승격한다: 스칼라 retention $\alpha_t$는 채널별 decay 벡터 $w_t\in(0,1)^{d_k}$로, 스칼라 write intensity $\eta_t$는 채널별 **in-context learning rate** 벡터 $a_t\in[0,1]^{d_k}$로, 그리고 지우는 key와 쓰는 key가 서로 다른 projection으로 분리된다(제거용 $\hat k_t$, 기록용 $\tilde k_t$). 구조적으로 쓰면
+**RWKV-7 "Goose"** (Peng et al. 2025, arXiv:2503.14456)는 이 장 family의 현재 시점 최종 일반화다. GDN (6-4)의 스칼라 손잡이들을 전부 벡터로 승격한다: 스칼라 retention $\alpha_t$는 채널별 decay 벡터 $w_t\in(0,1)^{d_k}$로, 스칼라 write intensity $\eta_t$는 채널별 **in-context learning rate** 벡터 $a_t\in[0,1]^{d_k}$로 승격되고, 지우는 key와 쓰는 key가 **같은 key의 서로 다른 채널별 변조**로 분리된다: 제거용 $\hat k_t$는 $k_t$에 학습된 채널별 배율(원문의 removal-key multiplier)을 $\odot$로 곱한 뒤 head별 $\ell_2$ 정규화한 것이고, 기록용 $\tilde k_t$는 $k_t$의 각 채널을 $a_t$ 방향으로 보간한 것이다 — $\tilde k_t = k_t \odot \mathrm{lerp}(\mathbf{1}, a_t, \nu)$, $\nu$는 학습된 보간 계수(원문 표현 "replacement rate booster") [RWKV-7 Eq. 6–7, Eq. 15]. 별도의 projection 행렬을 더 두는 것이 아니라 같은 key precursor를 채널 단위로 두 갈래 성형하는 것이므로, projection 비용은 그대로다. 구조적으로 쓰면
 
 $$
 W_t = W_{t-1}\Big(\mathrm{Diag}(w_t) - \hat k_t\,\big(a_t \odot \hat k_t\big)^\top\Big) + v_t\, \tilde k_t^\top .
 \tag{6-6}
 $$
 
-<!-- TODO-VERIFY: (6-6)의 정확한 원문 대응 — 제거 key의 정규화 방식, a_t가 곱해지는 위치, 기록 key의 변조 형태. 확인 방법: arXiv:2503.14456 §2의 state evolution 식과 대조 -->
+(6-6)은 원문의 state evolution [RWKV-7 Eq. 17]을 행벡터 관행에서 이 책의 열벡터 관행으로 전치한 것으로, $a_t$가 제거 항 내부에 $\odot$로 곱해지는 위치까지 원문과 배치가 같다. 제거 key를 $\ell_2$ 정규화해 두는 이유도 원문이 명시한다: 제거량을 단위 norm으로 고정해 두면 in-context learning rate $a_t$가 "state에서 얼마나 지우고 얼마나 다시 써 넣는가"를 다른 항에 오염되지 않고 단독으로 조절하는 손잡이가 된다 [RWKV-7 Eq. 7 부근]. GDN에서는 지우기 강도와 쓰기 강도가 $\eta_t$ 하나에 묶여 있었다 — (6-6)은 그 묶음을 채널 단위로 풀어낸 것이다.
 
-$w_t = \alpha_t\mathbf{1}$, $a_t = \alpha_t\eta_t\mathbf{1}$, $\hat k_t = \tilde k_t = k_t$로 두면 (6-4)로 되돌아간다 — 즉 (6-6)은 Gated DeltaNet을 부분 경우로 포함한다. Miras의 분류로는 delta 계열에서 gate가 채널별 벡터($m=d$)인 경우가 정확히 RWKV-7이다 [Miras Eq. 9, §4]. transition이 "대각 - rank-1"이라는 사실에 주목하라. gate 계열(순수 대각)과 delta 계열(항등 - rank-1)의 합집합이며, 이 구조 덕에 chunkwise 병렬화는 DeltaNet과 같은 WY 계열 기법으로 처리된다(→ 9장).
+$w_t = \alpha_t\mathbf{1}$, $a_t = \alpha_t\eta_t\mathbf{1}$, $\hat k_t = \tilde k_t = k_t$로 두면 (6-4)로 되돌아간다 — 즉 (6-6)은 GDN을 부분 경우로 포함한다. Miras의 분류로는 delta 계열에서 gate가 채널별 벡터($m=d$)인 경우가 정확히 RWKV-7이다 [Miras Eq. 9, §4]. transition이 "대각 - rank-1"이라는 사실에 주목하라. gate 계열(순수 대각)과 delta 계열(항등 - rank-1)의 합집합이며, 이 구조 덕에 chunkwise 병렬화는 DeltaNet과 같은 WY 계열 기법으로 처리된다(→ 9장).
 
-표현력에 관한 원 논문의 주장도 이 transition 구조에서 나온다: [RWKV-7] 논문은 generalized delta rule이 (표준 복잡도 가정 하에) transformer의 $TC^0$ 한계를 넘는 state tracking을 가능하게 한다고 주장한다 — 다음 절에서 이 주장이 어느 이론 지형 위에 놓여 있는지 본다.
+"이 gate는 누가 학습하는가"라는 §6.2의 질문을 (6-6)에 적용하면 답은 전부 같다: $w_t$·$a_t$와 두 key 변조의 채널 배율·보간 계수는 모두 slow weights의 일부인 작은 head가 token마다 산출하는 값이고($a_t$도 sigmoid 계열 산출의 $[0,1]^{d_k}$ 벡터다 [RWKV-7 Eq. 4]), inner loop에서 움직이는 것은 여전히 $W_t$ 하나뿐이다. 손잡이 수가 늘었을 뿐 두 시간 척도의 구도는 (6-1)에서 한 치도 달라지지 않았다.
 
-<!-- TODO-VERIFY: RWKV-7 표현력 정리의 정확한 진술(레이어 수, 정밀도 가정, 대상 문제: 정규 언어 인식/S5 state tracking 여부). 확인 방법: arXiv:2503.14456의 expressivity 절/appendix 정리 원문 -->
+> **[해설]** (6-6)을 inference 어휘로 옮기면 이렇다. 채널별 decay $w_t$는 cache 항목의 TTL이 **채널마다 다르게** 설정되는 eviction이고, 제거용 $\hat k_t$와 기록용 $\tilde k_t$의 분리는 같은 cache line에 대한 invalidate mask와 write mask를 따로 가진다는 뜻이며, $a_t$는 채널별 write intensity다. GDN이 "line 단위 eviction + line 단위 overwrite"였다면 RWKV-7은 그 두 연산 모두에 **byte-enable 신호**를 단 것이다 — 제어 자유도는 벡터로 늘었지만, 저장소($d_v\times d_k$ 행렬 하나)와 지배 비용(state RMW)은 그대로다.
 
-systems 접점: state는 여전히 head당 $d_v\times d_k$ 하나이고 decode의 지배 비용도 그대로다. 추가되는 것은 gate·learning-rate·key 변조를 만들어내는 여러 개의 작은 head — RWKV-7 계보의 관행대로 low-rank projection — 이며, 이는 decode당 skinny GEMM 몇 개, 즉 지배 항 대비 소액이다. **비용은 Gated DeltaNet급 그대로 두고 update rule의 자유도만 올린 설계**라는 것이 systems 한 줄 요약이다.
+표현력에 관한 원 논문의 주장도 이 transition 구조에서 나온다: [RWKV-7] 논문은 generalized delta rule이 (표준 복잡도 가정 하에) transformer의 $TC^0$ 한계를 넘는 state tracking을 가능하게 한다고 주장한다 — 정확한 정리 진술과 그 단서는 다음 절에서, 이 주장이 어느 이론 지형 위에 놓여 있는지와 함께 본다.
+
+systems 접점: state는 여전히 head당 $d_v\times d_k$ 하나이고 decode의 지배 비용도 그대로다. 추가되는 것은 gate·learning-rate·key 변조를 만들어내는 여러 개의 작은 head — RWKV-7 계보의 관행대로 low-rank projection — 이며, 이는 decode당 skinny GEMM 몇 개, 즉 지배 항 대비 소액이다. **비용은 GDN급 그대로 두고 update rule의 자유도만 올린 설계**라는 것이 systems 한 줄 요약이다.
 
 이 장의 모델들을 한 표로 모은다. 각 행이 "무엇을 바꿨는가"에 답하는지 확인하라 — 전부 식 (M)의 성분 선택이다.
 
@@ -185,7 +185,7 @@ systems 접점: state는 여전히 head당 $d_v\times d_k$ 하나이고 decode�
 | GLA | $W_t = W_{t-1}\mathrm{Diag}(\alpha_t) + v_tk_t^\top$ | dot-product | 학습된 diagonal | 1-step GD |
 | Mamba-2 (→ 7장) | $W_t = \alpha_t W_{t-1} + v_tk_t^\top$ | dot-product | 학습된 scalar | 1-step GD |
 | DeltaNet | (6-3) | $\ell_2$ regression | 없음 | 1-step GD |
-| Gated DeltaNet | (6-4) | $\ell_2$ regression | 학습된 scalar | 1-step GD |
+| GDN | (6-4) | $\ell_2$ regression | 학습된 scalar | 1-step GD |
 | Longhorn | (6-5) | $\ell_2$ regression | 없음 ($\alpha\equiv 1$) | implicit GD |
 | RWKV-7 | (6-6) | $\ell_2$ regression | 채널별 vector | 1-step GD (generalized delta) |
 | TTT-Linear (→ 8장) | (M1) | $\ell_2$ regression | 없음 | 1-step GD |
@@ -196,6 +196,8 @@ systems 접점: state는 여전히 head당 $d_v\times d_k$ 하나이고 decode�
 이 절은 반 페이지짜리 지도다 — Titans·Atlas가 "deep memory"를 주장할 때 딛고 서는 이론 지형이 여기 있다.
 
 Merrill et al. 2024 (arXiv:2404.08819)는 대각 transition의 SSM이 (log-precision 가정 하에) transformer와 같은 회로 복잡도 계열 $TC^0$에 머문다고 주장한다 — 겉보기에 재귀적 state가 있어도 순차 계산 고유의 문제(예: $S_5$ 치환 합성 같은 $NC^1$-complete state tracking)를 풀 수 없다는, 논문 제목 그대로 "illusion of state"다. 반면 Grazzi et al. 2025 (arXiv:2411.12537)는 DeltaNet류의 비대각 transition에서 $\eta_t$의 허용 범위를 $(0,2)$로 넓혀 transition 고유값이 $[-1,1]$ 전체를 덮게 하면 — 즉 **음의 고유값**을 허용하면 — parity 같은 state-tracking 문제가 풀리게 됨을 보였다. DeltaProduct (Siems et al. 2025, arXiv:2502.10297)는 token당 GD를 여러 step 밟아(Householder 곱; [Miras Table 1]의 multi-step GD 행) transition의 rank 자체를 올린다.
+
+§6.6이 예고한 RWKV-7의 표현력 주장은 정확히 이 지형 위에 놓인다. 원 논문의 정리는 둘이다. 첫째, **단일 layer** RWKV-7이 $S_5$ 원소 5개의 swap tracking — $AC^0$ 환원 하에서 $NC^1$-complete인 문제 — 을 푼다 [RWKV-7 Thm 2, App. D.1]. 둘째, 임의의 정규 언어에 대해 그것을 인식하는 **4-layer** RWKV-7 모델이 존재한다 [RWKV-7 Thm 3, App. D.2]. 두 정리 모두 $TC^0 \ne NC^1$ conjecture를 전제로 "transformer가 못 하는 것을 한다"로 읽힌다. 그리고 단서 하나가 결정적이다: 증명은 (6-6)의 제거 항에 계수 $2$를 둔 변형 — $W_{t-1}\big(\mathrm{Diag}(w_t) - 2\,\hat k_t(a_t\odot\hat k_t)^\top\big)$ 꼴, 즉 transition 고유값 $-1$을 허용하는 판 — 에 대한 것이다 [RWKV-7 App. D.1]. 출하 아키텍처(계수 $1$)가 아니라 음의 고유값을 허용한 변형에 대한 결과이며, 이는 Grazzi et al.의 $\eta_t\in(0,2)$ 확장과 같은 기제다. "RWKV-7이 $TC^0$를 넘는다"를 옮길 때는 이 단서 — layer 수, complexity conjecture, 그리고 계수 $2$ 변형 — 를 함께 옮겨야 정직한 문장이 된다.
 
 > **[해설]** 이 지형이 6편에 주는 함의는 다음과 같다. transition의 구조(대각 < 대각+rank-1 < 그 곱)가 곧 모델이 표현할 수 있는 state 동역학의 계급이고, 이 장의 계보는 그 사다리를 한 칸씩 오르는 과정이기도 했다. Titans 라인은 여기서 한 축을 더 꺾는다 — transition을 더 꾸미는 대신 memory 자체를 nonlinear(deep MLP)로 만들고 read를 $\mathcal{M}(q;W)$로 비선형화하는 방향이다(→ 8장, 12장). matrix memory의 read가 $q$에 대해 선형이라는 제약은 어떤 gate로도 벗겨지지 않기 때문이다.
 
@@ -229,7 +231,7 @@ $$
 
 **(c) Longhorn (6-5).** $\eta_2 = 1$이면 $\epsilon_2 = 1/(1+1) = 0.5$: 읽기 $W_2k_2 = 0.5\,(1.2,0)^\top + 0.5\,(0,1)^\top = (0.6,\,0.5)^\top$ — 명목 $\eta$가 같아도 절반만 쓴다. step size를 키우면: $\eta_2 = 4$일 때 explicit (6-3)은 $k_2$ 방향 계수가 $1-4 = -3$이 되어 읽기가 $(-3.6,\,4)^\top$으로 폭주하지만, implicit은 $\epsilon_2 = 4/5 = 0.8$로 $(0.24,\,0.8)^\top$ — $v_2$에 안정적으로 접근한다. $\eta_2\to\infty$ 극한에서 $\epsilon_2 \to 1$, 즉 (b)의 exact overwrite로 수렴한다.
 
-**(d) gate의 시간 상수 감각.** RetNet처럼 $\alpha = 0.9$ 상수면 100 token 뒤 첫 write의 잔존 계수는 $0.9^{99} \approx 3\times 10^{-5}$ — eviction의 반감기가 $\log 2 / \log(1/0.9) \approx 6.6$ token이다. gate 값이 곧 cache 항목의 TTL이라는 대응을 숫자로 확인할 수 있다.
+**(d) gate의 시간 상수 감각.** RetNet처럼 $\alpha = 0.9$ 상수면 100 token 뒤 첫 write의 잔존 계수는 $0.9^{99} \approx 3\times 10^{-5}$ — eviction의 반감기가 $\log 2 / \log(1/0.9) \approx 6.6$ token이다. gate 값이 곧 cache 항목의 TTL이라는 대응을 숫자로 확인할 수 있다. 채널별 gate의 값어치도 같은 산수로 보인다: RWKV-7류 decay 벡터가 $w = (0.9,\; 0.999)$라면 첫째 채널의 반감기는 6.6 token, 둘째 채널은 $\log 2/\log(1/0.999) \approx 693$ token — 같은 state 행렬 안에 **두 자릿수 차이의 시간 척도**가 채널 단위로 공존한다. RetNet이 head 단위로만 만들 수 있던 다중 시간 척도를 (6-6)은 채널 단위로, 그것도 token마다 다시 정해서 만든다.
 
 표 6-3 — micro-example 결과 요약 (읽기 오차의 $\ell_2$ norm).
 
@@ -250,7 +252,7 @@ $$
 | softmax attention | $L(d_k{+}d_v)$ — 증가 | $\approx 4Ld_h$ | KV 전체 read $\approx 2L(d_k{+}d_v)$ B | attention GEMM (exact tiling) |
 | sliding-window attn | $w(d_k{+}d_v)$ | $\approx 4wd_h$ | $\approx 2w(d_k{+}d_v)$ B | 동일, window 마스크 |
 | linear attn / RetNet / GLA | $d_kd_v$ — 고정 | $\approx 4$–$6\,d_kd_v$ | state RMW $\approx 4\,d_kd_v$ B | chunkwise GEMM + (scan) (→ 9장) |
-| DeltaNet / GDN / Longhorn | $d_kd_v$ — 고정 | $\approx 6$–$8\,d_kd_v$ | 동일 | chunkwise GEMM + WY (→ 9장) |
+| DeltaNet / GDN / Longhorn | $d_kd_v$ — 고정 | $\approx 6$–$8\,d_kd_v$ | 동일 | chunkwise GEMM + WY (→ 9장; 출하 Longhorn kernel은 대각 근사 scan — §6.5) |
 | RWKV-7 | $d_kd_v$ + gate head들 | 상동 + low-rank head | 동일 | 동일 계열 |
 
 세 가지 계산을 직접 해보면 이 표가 몸에 붙는다.
@@ -266,9 +268,10 @@ $$
 - linear attention은 kernel trick으로 softmax attention의 KV cache를 head당 $d_v\times d_k$ 고정 행렬 $W_t$로 손실 압축한 것이다. write는 rank-1 outer product, read는 GEMV다 [Titans Eq. 3–5].
 - $W_t$는 fast weights — inner loop에서 token마다 움직이는 상태 — 이고, projection·gate head 등 $\Theta$는 slow weights다. linear attention = fast-weight programming이라는 동치(Schlag et al. 2021)가 이 라인의 역사적 기점이다.
 - Hebbian write는 dot-product bias의 1-step GD라서 자기 제한이 없고 crosstalk가 누적된다. 교정 축은 둘이다: retention(RetNet의 상수 → GLA·Mamba-2의 data-dependent gate)과 write 교정(delta rule) [Titans §2; Miras §4].
-- DeltaNet의 update (6-3)은 $\ell_2$ regression의 1-step GD이며 transition은 generalized Householder다. Gated DeltaNet (6-4)은 retention과 overwrite를 결합한 이 family의 완성형이다.
+- DeltaNet의 update (6-3)은 $\ell_2$ regression의 1-step GD이며 transition은 generalized Householder다. GDN (6-4)은 retention과 overwrite를 결합한 이 family의 완성형이다.
 - Longhorn (6-5)은 같은 문제의 closed-form proximal 해 = implicit GD로, 임의의 $\eta_t>0$에서 무조건 안정이다. update rule 설계가 "online 문제 선택 + optimizer 선택"으로 대체될 수 있음을 보인 사례다.
-- RWKV-7 (6-6)은 스칼라 gate들을 채널별 벡터로 일반화한 generalized delta rule이고, 표 6-2의 전 모델이 식 (M)의 성분 선택 하나씩으로 구분된다 [Miras Table 1].
+- RWKV-7 (6-6)은 스칼라 gate들을 채널별 벡터로 일반화한 generalized delta rule이다 [RWKV-7 Eq. 17]. 지우는 key와 쓰는 key는 별도 projection이 아니라 같은 key의 채널별 변조이며 [RWKV-7 Eq. 6–7, Eq. 15], 표 6-2의 전 모델이 식 (M)의 성분 선택 하나씩으로 구분된다 [Miras Table 1].
+- 원문 이론·구현의 단서 두 가지: 출하된 Longhorn kernel은 delta transition의 대각 근사판이고 [Longhorn §3.2], RWKV-7의 $TC^0$ 초과 정리(1-layer $S_5$ tracking, 4-layer 정규 언어)는 제거 항 계수 $2$ — 음의 고유값 허용 — 변형에 대한 것이다 [RWKV-7 Thm 2–3, App. D].
 - decode에서 이 family의 이득은 산술 강도가 아니라 traffic 상한이다. crossover($L^* = d_kd_v/(d_k{+}d_v)$)와 per-request state 상주는 자기 서빙 구성으로 계산해봐야 하는 산수다.
 
 ## 자가 점검 체크리스트

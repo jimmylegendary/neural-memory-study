@@ -6,7 +6,7 @@
 > (3) chunk 크기 $C$가 왜 어떤 family에서는 순수 성능 knob이고 어떤 family에서는 **계산되는 함수 자체를 바꾸는 semantic hyperparameter**인지 손계산으로 보일 수 있다.
 > (4) arithmetic intensity를 $C$의 함수로 유도하고, 품질 최적 $C$와 MFU 최적 $C$가 왜 갈라지는지 roofline 위에서 설명할 수 있다.
 >
-> **왜 필요한가** — 이 장이 없으면 이 라인의 어떤 것도 실물이 되지 않는다. [Titans] (*Titans: Learning to Memorize at Test Time*, arXiv:2501.00663)의 §3.2 "How to Parallelize the Long-term Memory Training"은 그 논문의 실용성 주장 전체를 담당하고, [Atlas] (arXiv:2505.23735)는 §3.4에서 Omega rule을, 부록(Eq. 36–41)에서 Muon 내장 momentum을 같은 기법으로 병렬화한다. [Miras] (arXiv:2504.13173)의 세 신모델(Moneta/Yaad/Memora)도 같은 chunkwise 기법으로 훈련된다. 그리고 [TNT] (arXiv:2511.07343)는 **이 장이 다루는 기법의 한계 자체가 논문 한 편의 주제다** — chunk 크기의 품질↔throughput 긴장, 비선형 inter-chunk recurrence라는 병렬화 blocker, reset을 통한 context parallelism. [NL] (arXiv:2512.24695)의 CMS는 이 장의 scheme을 level마다 반복 적용한 것이며(식 (M5), → 16장), [Sleep] (arXiv:2606.03979)은 NL을 경유해 간접적으로 이 장에 의존한다. 독자의 FlashAttention/tiling 감각이 가장 큰 지렛대가 되는 장이자, 그 감각이 가장 위험한 오도가 되는 장이다.
+> **왜 필요한가** — 이 장이 없으면 이 라인의 어떤 것도 실물이 되지 않는다. [Titans] (*Titans: Learning to Memorize at Test Time*, arXiv:2501.00663)의 §3.2 "How to Parallelize the Long-term Memory Training"은 그 논문의 실용성 주장 전체를 담당하고, [Atlas] (arXiv:2505.23735)는 §3.4에서 Omega rule을, 부록(Eq. 36–41)에서 Muon 내장 momentum을 같은 기법으로 병렬화한다. [Miras] (arXiv:2504.13173)의 세 신모델(Moneta/Yaad/Memora)도 같은 chunkwise 기법으로 훈련된다 [Miras §5.3]. 그리고 [TNT] (arXiv:2511.07343)는 **이 장이 다루는 기법의 한계 자체가 논문 한 편의 주제다** — chunk 크기의 품질↔throughput 긴장, 비선형 inter-chunk recurrence라는 병렬화 blocker, reset을 통한 context parallelism. [NL] (arXiv:2512.24695)의 CMS는 이 장의 scheme을 level마다 반복 적용한 것이며(식 (M5), → 16장), [Sleep] (arXiv:2606.03979)은 NL을 경유해 간접적으로 이 장에 의존한다. 독자의 FlashAttention/tiling 감각이 가장 큰 지렛대가 되는 장이자, 그 감각이 가장 위험한 오도가 되는 장이다.
 
 ## 9.1 문제 설정: training 안에 들어온 decode loop
 
@@ -15,6 +15,8 @@
 이 문제의 해법 계보가 **chunkwise-parallel training**이다(축약: chunkwise training). 정의: sequence를 크기 $C$의 chunk로 자르고, **chunk 내부의 계산은 chunk 시작 상태에 대해 병렬(GEMM-rich)로, chunk 사이의 상태 전달은 순차(또는 linear recurrence면 associative scan)로** 재조직하는 훈련 기법의 총칭이다. 기원은 linear-attention 계열의 mixed-chunk 기법(Hua et al. 2022, arXiv:2202.10447)이고, RetNet(arXiv:2307.08621)이 recurrent/parallel/chunkwise의 세 계산 모드를 명시적 정식화로 굳혔으며, GLA(Yang et al. 2024, arXiv:2312.06635)가 hardware-efficient kernel로, DeltaNet 병렬화(Yang et al. 2024, arXiv:2406.06484)와 TTT dual form(Sun et al. 2024, arXiv:2407.04620)이 각각 비대각 transition과 gradient-step recurrence로 확장했다. 이 계열의 kernel 구현은 `flash-linear-attention` 라이브러리(Yang & Zhang, GitHub, 2024)에 집대성되어 있다.
 
 세 모드의 전체 지형은 7장에서 exact한 세계(Mamba-2/GLA)에 대해 이미 그렸다(표 7-3). 이 장의 임무는 그 표를 **일반화**하는 것이다. 일반화의 대가로 표에 새 열이 하나 생긴다 — "exact인가?" — 그리고 이 열이 갈라지는 지점이 여섯 논문 전체의 pivot이다.
+
+<!-- FIG: ch09/fig-02-three-regimes -->
 
 표 9-1 — 세 계산 regime의 일반형 (표 7-3의 일반화)
 
@@ -39,6 +41,8 @@ $$
 W_t \;=\; W_{\xi(t,C)} \;-\; \sum_{\tau=\xi(t,C)+1}^{t} \eta_\tau\,\nabla_W\,\ell\big(W_{\xi(t,C)};\,k_\tau,v_\tau\big)
 \tag{M4}
 $$
+
+<!-- FIG: ch09/fig-01-chunkwise-dataflow -->
 
 핵심 문장을 반복한다: **chunk 안의 모든 gradient는 chunk 시작 상태 $W_{\xi(t,C)}$에서 평가된다. 따라서 $C$는 스케줄이 아니라 계산되는 함수 자체를 바꾸는 semantic hyperparameter다** — FlashAttention tiling(bit-exact)과의 결정적 차이. anchor가 공유되므로 chunk 내부의 $C$개 gradient는 상호 독립이고, "weight를 공유하는 batch $C$짜리 forward+backward" 한 번으로 계산된다. 2장에서 굵게 강조한 문장이 여기서 kernel 수준의 실체를 얻는다: **이 라인에서 훈련의 batch 축 역할을 하는 것은 sequence 축이다** — chunk가 곧 inner loop의 mini-batch다.
 
@@ -68,9 +72,7 @@ $$
 
 읽는 법: 출력의 첫 항은 이전 chunk까지의 압축 상태를 decay시켜 읽는 **inter-chunk 항**(GEMV, chunk당 GEMM $Q_nW_\xi^\top$로 묶임), 둘째 항은 decay 가중치가 곱해진 **causal-masked attention**(intra-chunk 항)이다. chunk의 $K_n, V_n, Q_n \in \mathbb{R}^{C\times d}$를 행으로 쌓으면 score $Q_nK_n^\top$, decay-mask 적용, value 곱 — 전부 7장의 식 (7-4)에서 이미 본 GEMM들이고, 실제로 Mamba-2의 SSD chunked algorithm이 정확히 이 인스턴스다(→ 7장). 경계 handoff도 linear이므로 chunk 사이마저 scan으로 처리할 수 있다.
 
-결정적 사실: (9-2)는 **항등 변형**이다. 어떤 근사도 없다. $C$를 1로 하든 64로 하든 4096으로 하든 같은 $W_t$, 같은 $y_t$가 나온다(부동소수점 오차 제외). 따라서 이 family에서 $C$는 FlashAttention의 tile 크기와 정확히 같은 지위 — SRAM 크기와 GEMM 살찌우기에 맞춰 고르는 순수 성능 knob — 를 가진다. 구현 디테일로는 decay 누적곱의 dynamic range 때문에 GLA가 log-공간 계산과 chunk 내부의 2차 tile 분할을 쓴다는 점만 언급해 둔다.
-
-<!-- TODO-VERIFY: GLA의 secondary-level chunking과 log-space decay 처리의 정확한 서술. 확인 방법: arXiv:2312.06635 §4 (hardware-efficient algorithm) 확인 -->
+결정적 사실: (9-2)는 **항등 변형**이다. 어떤 근사도 없다. $C$를 1로 하든 64로 하든 4096으로 하든 같은 $W_t$, 같은 $y_t$가 나온다(부동소수점 오차 제외). 따라서 이 family에서 $C$는 FlashAttention의 tile 크기와 정확히 같은 지위 — SRAM 크기와 GEMM 살찌우기에 맞춰 고르는 순수 성능 knob — 를 가진다. 구현 디테일로는 decay 누적곱의 dynamic range 때문에 GLA가 log-공간 계산과 chunk 내부의 2차 tile 분할(secondary-level chunking)을 쓴다는 점만 언급해 둔다 [GLA §4.3].
 
 ## 9.4 인스턴스 2 — DeltaNet: 비대각 transition과 WY representation
 
@@ -103,9 +105,7 @@ $$
 \tag{9-5}
 $$
 
-라는 **단위 하삼각 $C\times C$ 선형계**다. 좌변 행렬은 대각이 1인 하삼각이므로 항상 가역이고, forward substitution(TRSM — 독자가 쓰는 BLAS의 표준 연산)으로 $O(C^2)$ 스칼라곱 × $d_v$열에 풀린다. 이 삼각계를 만들어 푸는 절차가 Householder 곱의 compact 누적(수치선형대수 문헌의 UT transform)에 해당한다. 나머지는 전부 GEMM이다: score $K_nK_n^\top$ ($C\times d_k$ 대 $d_k\times C$), RHS의 $K_nW_\xi^\top$ ($C\times d_k$ 대 $d_k\times d_v$), 출력 $Y_n = Q_nW_\xi^\top + \mathrm{tril}(Q_nK_n^\top,0)\,\tilde V$, 경계 갱신 $W_{\xi+C} = W_\xi + \tilde V^\top K_n$ ($d_v\times C$ 대 $C\times d_k$).
-
-<!-- TODO-VERIFY: (9-5)의 삼각계 형태가 arXiv:2406.06484의 UT-transform 정식화(그들의 T 행렬)와 기호 배치까지 대응하는지, 그리고 "UT transform"의 원 출처(Joffrain et al. 2006, Householder 누적) 인용 표기. 확인 방법: arXiv:2406.06484 §3 및 그 참고문헌에서 "UT transform" 검색 -->
+라는 **단위 하삼각 $C\times C$ 선형계**다. 좌변 행렬은 대각이 1인 하삼각이므로 항상 가역이고, forward substitution(TRSM — 독자가 쓰는 BLAS의 표준 연산)으로 $O(C^2)$ 스칼라곱 × $d_v$열에 풀린다. 이 삼각계를 만들어 푸는 절차가 Householder 곱의 compact 누적(수치선형대수 문헌의 UT transform, Joffrain et al. 2006)에 해당한다 [Yang et al. 2024 Eq. 10–11]. 나머지는 전부 GEMM이다: score $K_nK_n^\top$ ($C\times d_k$ 대 $d_k\times C$), RHS의 $K_nW_\xi^\top$ ($C\times d_k$ 대 $d_k\times d_v$), 출력 $Y_n = Q_nW_\xi^\top + \mathrm{tril}(Q_nK_n^\top,0)\,\tilde V$, 경계 갱신 $W_{\xi+C} = W_\xi + \tilde V^\top K_n$ ($d_v\times C$ 대 $C\times d_k$).
 
 두 가지를 명시한다. 첫째, **이것도 항등 변형이다.** (9-3)→(9-5)의 어느 단계에도 근사가 없다 — $\tilde v_t$는 진짜 순차 delta rule이 만들었을 바로 그 값이고(triangular solve가 token 순서의 인과를 정확히 계산한다), 따라서 DeltaNet의 $C$ 역시 순수 성능 knob이다. Gated DeltaNet(식 (6-4))은 9.3절의 decay folding과 이 절의 WY를 한 kernel에 합성하면 된다. 둘째, 이 절이 **"optimizer-step recurrence를 병렬화하는 지적 템플릿"**인 이유다: delta rule은 곧 linear memory 위의 1-step GD(→ 5장, 6장)이므로, 방금 우리는 "gradient step의 열(列)을 exact하게 GEMM으로 재조직"하는 데 성공한 것이다. 그것이 가능했던 조건 — loss가 $\ell_2$이고 memory가 linear라서 **gradient가 state에 linear** — 를 기억해 두라. 다음 절에서 이 조건이 깨지는 순간 무엇을 지불하게 되는지 본다.
 
@@ -113,17 +113,15 @@ $$
 
 8장 §8.4가 TTT-Linear에 대해 완결한 dual form — anchored 전개 (8-3)과 닫힌 출력 (8-4) — 을 이 장의 언어로 재정위한다. dual form은 (M4) 그 자체다: chunk 내 gradient를 전부 $W_\xi$에서 평가하고, intra-chunk 출력은 residual value의 causal attention 꼴로, 경계 상태는 rank-$C$ GEMM으로 계산한다. TNT는 이 형태를 라인의 표준 정식화로 승계했고 [TNT Eq. 3], 이 책의 $\xi(t,C)$ 표기도 TNT의 것이다(→ §1.2).
 
-여기서 이 장의 관점이 주는 새 정보는 다음의 대조다. **TTT-Linear는 ungated DeltaNet과 같은 update rule이다**(→ 8장 §8.3). 그렇다면 9.4절의 WY가 그대로 적용되어 exact 병렬화가 가능하다. 그런데 Sun et al. 2024는 그 길 대신 anchored mini-batch GD를 택했다 [Sun et al. 2024 §2.5]. 왜인가. 두 이유가 이 라인 전체의 설계 논리를 드러낸다.
+여기서 이 장의 관점이 주는 새 정보는 다음의 대조다. **TTT-Linear는 ungated DeltaNet과 같은 update rule이다**(→ 8장 §8.3). 그렇다면 9.4절의 WY가 그대로 적용되어 exact 병렬화가 가능하다. 그런데 Sun et al. 2024는 그 길 대신 anchored mini-batch GD를 택했다 [Sun et al. 2024 §2.4–2.5]. 왜인가. 두 이유가 이 라인 전체의 설계 논리를 드러낸다.
 
-첫째, **deep memory 때문이다.** $\mathcal{M}$이 2-layer MLP가 되는 순간 $\nabla_W\ell$은 $W$에 nonlinear해지고(backward가 MLP를 통과한다), (9-4)류의 implicit recurrence는 스칼라 계수로 닫히지 않는다. WY의 전제 조건이 사라진 자리에서, 알려진 유일한 병렬화 수단이 anchor다. 즉 stale-snapshot 근사는 취향이 아니라 **비선형 recurrence의 병렬화라는 미해결 문제에 대한 현존 유일 응답**이다 [TNT §1]. MLP memory의 intra-chunk 계산도 같은 원리로 tensorize된다는 것을 Sun et al. 2024가 부록에서 보였다 — 형태는 linear 경우보다 복잡하지만 골격(anchored gradient의 batched 계산 + intra-chunk correction)은 동일하다.
-
-<!-- TODO-VERIFY: TTT-MLP dual form의 유도 위치(부록 절 번호). 확인 방법: arXiv:2407.04620에서 "dual form" 및 appendix 검색 -->
+첫째, **deep memory 때문이다.** $\mathcal{M}$이 2-layer MLP가 되는 순간 $\nabla_W\ell$은 $W$에 nonlinear해지고(backward가 MLP를 통과한다), (9-4)류의 implicit recurrence는 스칼라 계수로 닫히지 않는다. WY의 전제 조건이 사라진 자리에서, 알려진 유일한 병렬화 수단이 anchor다. 즉 stale-snapshot 근사는 취향이 아니라 **비선형 recurrence의 병렬화라는 미해결 문제에 대한 현존 유일 응답**이다 [TNT §1]. MLP memory의 intra-chunk 계산도 같은 원리로 tensorize된다는 것을 Sun et al. 2024가 App. A에서 보였다 — 형태는 linear 경우보다 복잡하지만 골격(anchored gradient의 batched 계산 + intra-chunk correction)은 동일하다.
 
 둘째, 더 미묘하고 더 중요하다: **근사가 kernel에서 model 정의로 이사했다.** TTT layer는 "inner mini-batch 크기 $C$의 mini-batch GD로 update하는 layer"로 **정의**된다. dual form은 그 정의를 exact하게 계산하는 알고리즘이다. 비교하라 — FlashAttention은 softmax attention이라는 고정된 함수의 exact한 재배열이고, DeltaNet의 WY는 순차 delta rule이라는 고정된 함수의 exact한 재배열이다. 반면 TTT에서 $C$를 바꾸는 것은 **다른 layer를 정의하는 것**이다: $C=1$이면 순차 delta rule(DeltaNet과 일치), $C=L$이면 1-step batch GD — 곧 linear attention의 additive write로 퇴화하고(8장 §8.8의 손계산: $C{=}1$은 4, $C{=}2$는 6), 그 사이의 모든 $C$는 서로 다른 함수다. 함수의 family가 $C$로 매개변수화된 것이다. 이것이 다음 명제의 정확한 의미다.
 
 **명제 (chunk 크기 = semantic hyperparameter).** anchored chunkwise family(TTT, Titans, Atlas의 deep memory)에서 chunk 크기 $C$는 계산 스케줄이 아니라 계산되는 함수의 매개변수다. 같은 slow weights $\Theta$라도 $C$가 다르면 다른 sequence-to-sequence 함수가 실행된다. 따라서 (i) 훈련은 특정 $C$의 함수에 대해 이루어지고, (ii) serving에서 다른 $C$를 쓰는 것은 훈련되지 않은 함수를 실행하는 것이다.
 
-(ii)의 결과가 실제로 관측된 것이 [TNT Fig. 2]의 chunk-size mismatch이고(→ 9.7절), 이 명제의 명명과 소유는 이 장에 있다(→ §2.4). 반면 exact family(GLA·DeltaNet·Mamba-2)에서는 train과 serve의 $C$가 달라도 함수가 같으므로 mismatch가 **정의상 존재하지 않는다** — "우리 모델은 chunk 병렬화된다"는 문장을 논문에서 만나면, 독자는 이제 이 두 지위 중 어느 쪽인지부터 물어야 한다.
+(ii)의 결과가 실제로 관측된 것이 [TNT Fig. 2]의 chunk-size mismatch이고(→ 15장; 수치는 9.7절), **'chunk 크기 = semantic hyperparameter' 명제**의 명명과 소유는 이 장에 있다(→ §2.4; mismatch 현상 자체의 소유는 15장). 반면 exact family(GLA·DeltaNet·Mamba-2)에서는 train과 serve의 $C$가 달라도 함수가 같으므로 mismatch가 **정의상 존재하지 않는다** — "우리 모델은 chunk 병렬화된다"는 문장을 논문에서 만나면, 독자는 이제 이 두 지위 중 어느 쪽인지부터 물어야 한다.
 
 ## 9.6 인스턴스 4 — Titans: retention folding + momentum scan
 
@@ -172,8 +170,6 @@ semantic이라는 말의 실증적 무게는 [TNT Fig. 2]가 보여 준다. $C=6
 인스턴스 3, 4까지 조립해도 deep memory 훈련의 MFU는 낮다. 원인은 이 장의 언어로 정확히 셋이다. (1) **순차 사슬**: inter-chunk handoff가 비선형이라(상태가 MLP weights 그 자체이고, 구현에 따라 chunk 끝 normalization까지 낀다 [Atlas App. E]) chunk 사이를 scan으로 묶을 수 없고, 사슬 길이 $L/C$가 그대로 critical path다. (2) **skinny GEMM**: 품질이 요구하는 작은 $C$(8–64)에서 batched fwd/bwd의 batch 축이 $C$이므로 GEMM이 말라서 tensor core가 차지 않는다 — decode에서 batch를 못 채울 때의 그 현상이다. (3) **parameter-shape traffic**: 9.6절의 [해설]대로 scan 원소가 $P_f$-shape라 memory-bound다. 세 원인의 합산 결과가 앞서 인용한 peak 대비 5–10% 미만의 FLOPs utilization이다 [TNT §1].
 
 [TNT]의 처방은 이 장의 scheme 안에서 정확히 두 수를 둔다(기법의 골격만 여기서 세우고, 평가와 전모는 15장). 첫 수는 **계층화**다: 큰 chunk $C_{\mathrm{g}}$(실험은 2048)로 도는 global memory $W^{\mathrm{g}}$가 장거리 문맥을 맡아 순차 사슬을 $L/C_{\mathrm{g}}$개의 크고 dense한 handoff로 줄이고, 작은 chunk의 local memory $W^{\mathrm{l}(i)}$들이 세밀한 해상도를 맡는다. 둘째 수가 결정타다: local memory의 상태를 **주기 $L_{\mathrm{s}}^{(i)}$마다 학습된 초기 상태 $W_{\mathrm{init}}$로 reset**한다. reset은 shard 경계를 가로지르는 상태 의존을 (gradient 경로까지 포함해) 완전히 절단하므로, $L/L_{\mathrm{s}}$개의 shard가 **서로 독립**이 된다 — 비선형 recurrence에는 scan이 없다는 벽을, recurrence를 병렬화하는 대신 **recurrence 자체를 주기적으로 끝내 버리는** 방식으로 우회한 것이다. 독립 shard는 device들에 분산하거나(context parallelism — 독자에게는 data parallelism과의 유비로: 자를 수 없던 sequence 축이 reset 덕분에 batch 축처럼 잘리게 됐다) 한 device의 batch 축에 쌓아 kernel을 살찌운다. reset이 버리는 장거리 문맥은 global memory가 줍고, $W_{\mathrm{init}}$이 outer loop에서 학습되므로(4장의 MAML 유비, 8장 표 8-1의 그 $W_{\mathrm{init}}$) 매 shard는 0이 아니라 meta-learn된 prior에서 출발한다. 여기에 훈련은 큰 $C_{\mathrm{l}}$로, 마지막 ~5%의 compute로 작은 $C_{\mathrm{l}}'$(이상적으로 1)에 fine-tune하는 **two-stage 전략**이 얹혀 9.7절의 mismatch를 치유한다 — 훈련의 $C$와 serving의 $C$를 분리해, semantic hyperparameter가 강요하던 단일 절충값을 두 개의 knob으로 쪼갠 것이다. 이 조합으로 TNT는 가장 정확한 Titans baseline 대비 최대 17.37× 빠르게 같은 loss에 도달했다고 보고한다 [TNT Table 1]. 나머지 — Q-K projection $\Pi_t$, 다중 해상도 $\{C_{\mathrm{l}}^{(i)}\}$, 수치와 한계 — 는 15장에서.
-
-<!-- TODO-VERIFY: [Miras]의 Moneta/Yaad/Memora가 chunkwise 기법으로 훈련된다는 서술의 원문 위치(절 번호). 확인 방법: papers/2504.13173.txt에서 "chunk" 및 "parallel" 검색 -->
 
 ## 9.9 Worked micro-example: 같은 두 token, 두 개의 병렬화
 

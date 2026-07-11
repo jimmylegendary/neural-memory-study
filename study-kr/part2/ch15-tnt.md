@@ -6,7 +6,7 @@
 
 없는 데는 이유가 있다. 이 라인의 모든 모델은 chunkwise-parallel training(→ 9장)이라는 하나의 트릭 위에 서 있다. chunk 안의 모든 inner gradient를 chunk 시작 상태 $W_{\xi(t,C)}$에서 평가하는 stale-snapshot 근사, 즉 식 (M4)다. 이 트릭은 두 가지를 미해결로 남겼다. 첫째, 근사의 품질. chunk 크기 $C$를 키우면 gradient가 낡아지고(staleness) 품질이 떨어지며, 줄이면 kernel이 잘게 쪼개져 hardware가 논다. 그래서 실무는 $C$를 16-64 같은 어중간한 값에 고정해 왔는데, 이 타협이 얼마나 비싼지 아무도 정량화하지 않았다. 둘째, $C$의 이중 신분. $C$는 병렬화 knob이면서 동시에 — 식 (M4)가 계산하는 함수 자체를 바꾸므로 — semantic hyperparameter다(→ 9장). 이 이중성은 9장에서 명제로 세운 것이지만, 그 명제의 실증적 발견자가 바로 이 장의 논문이다. Atlas까지는 훈련 때 쓴 $C$와 다른 $C$로 serving하면 어떻게 되는지 물은 적조차 없다.
 
-한 가지 수치가 사태의 심각성을 요약한다. deep memory(→ 12장) 계열의 훈련은 품질이 좋은 작은 chunk에서 peak FLOPs 대비 5-10% 미만의 utilization으로 돌아간다 — [TNT]가 LaCT(Zhang, Bi, et al. 2025, arXiv:2505.23884)를 인용해 보고하는 값이다 [TNT §3]. 독자의 어휘로 말하면, 이 라인의 모델들은 지금까지 MFU 한 자릿수의 workload였다. 표현력 논쟁 이전에, 이 훈련 경제학이 해결되지 않으면 어떤 Titans 후속도 大규모로 갈 수 없다.
+한 가지 수치가 사태의 심각성을 요약한다. deep memory(→ 12장) 계열의 훈련은 품질이 좋은 작은 chunk에서 peak FLOPs 대비 5-10% 미만의 utilization으로 돌아간다 — [TNT]가 LaCT(Zhang, Bi, et al. 2025, arXiv:2505.23884)를 인용해 보고하는 값이다 [TNT §3]. 독자의 어휘로 말하면, 이 라인의 모델들은 지금까지 MFU 한 자릿수의 workload였다. 표현력 논쟁 이전에, 이 훈련 경제학이 해결되지 않으면 어떤 Titans 후속도 대규모로 갈 수 없다.
 
 [TNT] (*TNT: Improving Chunkwise Training for Test-Time Memorization*, arXiv:2511.07343)는 이 지점을 정면으로 겨냥한 라인의 systems 편이다. 새 아키텍처가 아니라 **훈련 paradigm**이고, 주장하는 것도 표현력이 아니라 throughput과 chunk 경제학이다. 논문 제목의 TNT는 "Titans iNside Titans" 또는 "TTT iNside TTT"의 약자다 [TNT §1 각주 1] — 이름부터가 memory 안에 memory를 중첩하는 계층 구조를 가리킨다.
 
@@ -16,11 +16,13 @@
 
 **Challenge 1 — 효율적 훈련 구현의 부재.** deep memory는 fine-grained learning signal을 위해 작은 chunk(16-64 tokens)를 요구하는데 [TNT §3, Sun et al. 2024 (arXiv:2407.04620) 인용], 작은 chunk는 작은 연산을 대량 생산해 훈련을 compute-bound가 아니라 memory-bound로 만든다. linear memory 계열(GLA, DeltaNet, Mamba-2, → 6·7장)은 SRAM 상주 chunkwise kernel로 이를 회피하지만, 그 kernel들은 **linear state transition과 chunk 간 closed-form 분해**에 근본적으로 의존한다. deep memory의 recurrence는 MLP forward/backward와 chunk 사이 LayerNorm 같은 비선형을 통과하므로 그 kernel이 이식되지 않는다 [TNT §1, §3]. 비선형 recurrence를 sequence 길이 방향으로 병렬화하는 것은 parallel scan이 적용되지 않는, 오래된 미해결 문제다 [TNT §1].
 
-**Challenge 2 — compression과 retrieval의 domain 불일치.** inner loop은 $\mathcal{M}(\cdot;W)$를 key를 입력으로 value를 맞히도록 적합시킨다(write는 $k_t \mapsto v_t$). 그런데 읽기는 $q_t$로 한다. 학습된 함수의 입력 domain 밖에서 함수를 평가하는 셈이고, 이 train/use domain shift가 retrieval 품질을 깎는다는 것이 논문의 진단이다 [TNT §3 Challenge 2].
+**Challenge 2 — compression과 retrieval의 domain 불일치.** inner loop는 $\mathcal{M}(\cdot;W)$를 key를 입력으로 value를 맞히도록 적합시킨다(write는 $k_t \mapsto v_t$). 그런데 읽기는 $q_t$로 한다. 학습된 함수의 입력 domain 밖에서 함수를 평가하는 셈이고, 이 train/use domain shift가 retrieval 품질을 깎는다는 것이 논문의 진단이다 [TNT §3 Challenge 2].
 
 > **[해설]** 이것은 memory 내부에서 일어나는 미니어처 train/test mismatch다. attention에는 이 문제가 구조적으로 없다 — softmax attention의 read는 $q$와 모든 $k$의 내적을 명시적으로 계산하므로 "key domain에 적합된 파라미터 함수"라는 중간물이 아예 없다. 압축하는 memory로 넘어오는 순간에만 생기는 세금이다.
 
 **Challenge 3 — 고정 pre-training chunk 크기에 대한 성능 민감성.** 논문의 새 실증 발견이다. 550M Titans를 $C=64$로 pre-train한 뒤 inference chunk 크기를 바꿔 가며 validation perplexity를 재면: $C=8$에서 36.45, 16에서 34.15, 32에서 24.23, **64에서 13.78(최적)**, 128에서 15.5, 256에서 17.88, 512에서 22.4 [TNT Fig. 2]. 훈련 때 쓴 chunk 크기에서만 최적이고, 양쪽으로 벗어나면 급격히 나빠진다. 특히 왼쪽이 인상적이다 — 더 작은 chunk는 더 신선한 gradient를 뜻하므로 직관적으로는 inference에서 더 좋아야 하는데, 실제로는 ppl이 2.6× 이상 폭발한다. 모델이 훈련 해상도에 **over-specialize**된 것이다 [TNT §3 Challenge 3]. 이것이 이 책이 **chunk-size mismatch**라 부르는 현상이다: 같은 checkpoint가 serving 때 memory update를 얼마나 자주 적용하느냐에 따라 전혀 다른 품질을 낸다. 이 발견은 이상적 serving 구성 — decode에서 chunk 크기 1, 즉 매 token online update — 을 원천 봉쇄한다. 큰 chunk로 싸게 훈련한 모델을 chunk 1로 돌리면 무너지기 때문이다.
+
+<!-- FIG-REF: ch09/fig-02-three-regimes -->
 
 세 challenge를 관통하는 논문의 핵심 주장은 이렇다: **훈련 효율과 inference 성능을 한 개의 chunk 크기가 동시에 결정하도록 놔두지 말고, 두 단계로 분리(decouple)하라.** Stage 1은 hierarchical memory로 최대 throughput의 pre-training을 하고, Stage 2는 전체 비용의 약 5%로 작은 chunk에 fine-tune해서 chunk-1 decode를 품질 최적점으로 만든다. 결과 요약: 150M Titans 기준, 가장 정확한 Titans baseline($C=8$) 대비 목표 loss 도달까지 최대 17.37× 빠르면서 평균 perplexity는 오히려 개선(23.09 vs 25.07)되고 vanilla Transformer(23.58)도 이긴다 [TNT Table 1, Table 2].
 
@@ -62,7 +64,9 @@ $$
 
 TNT Stage 1의 구조를 한 문장으로 요약하면: **큰 chunk로 도는 순차적 global memory 하나가 long-range context를 담당하고, 주기적으로 초기화되는 N개의 병렬 local memory가 fine-grained 정보를 담당한다** [TNT §4.1.1]. 이것이 이 책이 **hierarchical memory**라 부르는 구조다.
 
-**Global memory.** 상태 $W^{\mathrm{g}}$ (원문 기호 $V$; value 행렬과의 충돌 때문에 개명 — 표 15-1)는 매우 큰 chunk 크기 $C_{\mathrm{g}}$ (실험에서 2048)로 표준 chunkwise recursion을 돈다:
+<!-- FIG: ch15/fig-01-tnt-hierarchy -->
+
+**Global memory.** 상태 $W^{\mathrm{g}}$ (원문 기호 $V$; value 행렬과의 충돌 때문에 개명 — 표 15-1)는 매우 큰 chunk 크기 $C_{\mathrm{g}}$ (실험에서 2048)로 식 (15-2)의 표준 chunkwise recursion을 돈다:
 
 $$
 W^{\mathrm{g}}_{(n+1)C_{\mathrm{g}}} \;=\; W^{\mathrm{g}}_{nC_{\mathrm{g}}}
@@ -84,11 +88,11 @@ W_{\mathrm{init}} & t \equiv 0 \pmod{L_{\mathrm{s}}} \\[4pt]
 \tag{15-4}
 $$
 
-[TNT Eq. 6]이다.[^slip] 첫 줄이 **periodic state reset**이다: $L_{\mathrm{s}}$ token마다(실험에서 2048-4096) local 상태를 통째로 버리고 outer loop이 학습한 $W_{\mathrm{init}}$으로 되돌린다. 즉 shard 경계 상태 $W^{\mathrm{l}}_{mL_{\mathrm{s}}}$가 직전 shard의 마지막 상태 대신 $W_{\mathrm{init}}$으로 대체되고, shard $m$의 계산은 위치 $mL_{\mathrm{s}}$ 이전의 그 무엇에도 의존하지 않게 된다.
+[TNT Eq. 6]이다.[^slip] 첫 줄이 **periodic state reset**이다: $L_{\mathrm{s}}$ token마다(실험에서 2048-4096) local 상태를 통째로 버리고 outer loop가 학습한 $W_{\mathrm{init}}$으로 되돌린다. 즉 shard 경계 상태 $W^{\mathrm{l}}_{mL_{\mathrm{s}}}$가 직전 shard의 마지막 상태 대신 $W_{\mathrm{init}}$으로 대체되고, shard $m$의 계산은 위치 $mL_{\mathrm{s}}$ 이전의 그 무엇에도 의존하지 않게 된다.
 
 이 reset이 왜 결정적인가. 비선형 recurrence는 parallel scan으로 병렬화할 수 없다 — scan은 결합법칙을 요구하는데 MLP를 통과하는 상태 전이에는 그것이 없다. reset은 병렬화가 안 되는 사슬을 **아예 끊어버린다**. 그 결과 $L/L_{\mathrm{s}}$개의 shard가 완전히 독립인 계산이 되고, 장치들에 분산하거나(**context parallelism**) 한 accelerator의 batch 축에 쌓아 kernel을 fatten할 수 있다 [TNT §4.1.1]. 비선형 deep-memory recurrence에 대해 현재 알려진 유일한 sequence-방향 병렬화 수단이다. 대가는 명확하다: local memory는 shard 경계에서 모든 것을 잊는다. 그 손실을 보전하는 것이 global memory의 존재 이유다 — reset 없는 global이 long range를 들고, reset 있는 local이 병렬성을 든다. ablation에서 global을 제거하면 ppl이 21.04에서 25.60으로 붕괴하는 것이 이 역할 분담의 실증이다 [TNT Table 3].
 
-$W_{\mathrm{init}}$이 **학습된다**는 점도 하중을 받는 설계다. 모든 shard가 0이 아니라 meta-learn된 prior에서 inner loop을 시작한다. Titans의 $W_{\mathrm{init}}$(원문 $M_0$)은 암묵적 존재였지만(→ 12장), TNT에서는 reset을 생존 가능하게 만드는 load-bearing 부품으로 승격된다 — 개념 자체는 4장의 MAML류 meta-learned initialization이다.
+$W_{\mathrm{init}}$이 **학습된다**는 점도 하중을 받는 설계다. 모든 shard가 0이 아니라 meta-learn된 prior에서 inner loop를 시작한다. Titans의 $W_{\mathrm{init}}$(원문 $M_0$)은 암묵적 존재였지만(→ 12장), TNT에서는 reset을 생존 가능하게 만드는 load-bearing 부품으로 승격된다 — 개념 자체는 4장의 MAML류 meta-learned initialization이다.
 
 local 시스템은 그 자체로 다중 해상도일 수 있다. $N$개의 local module $W^{\mathrm{l}(i)}$가 각자의 chunk 크기 $C_{\mathrm{l}}^{(i)}$, shard 길이 $L_{\mathrm{s}}^{(i)}$, 초기 상태 $W^{(i)}_{\mathrm{init}}$을 갖는 일반형은 [TNT App. E Eq. 14]에 있고, 구성은 chunk 크기 집합으로 표기한다: $C_{\mathrm{l}}=\{4,8,16,32\}$는 서로 다른 시간 스케일을 잡는 4개의 local module을 뜻한다 [TNT §5.1]. 실험에서 module을 하나 더할 때마다 ppl이 단조 개선된다(§15.6).
 
@@ -170,7 +174,7 @@ Stage 1이 훈련 효율을 해결했으니 Challenge 3이 남는다. 큰 chunk�
 
 이 절이 이 장의 심장이다. TNT는 "무엇이 학습되는가"라는 질문에 대해 라인에서 가장 계층이 많은 답을 갖고 있기 때문이다.
 
-표 15-2 — TNT의 구성 요소별 소속 loop과 갱신 규칙.
+표 15-2 — TNT의 구성 요소별 소속 loop와 갱신 규칙.
 
 | 구성 요소 | loop | 갱신 rule | 갱신 주기 | 근거 |
 |---|---|---|---|---|
@@ -186,7 +190,7 @@ inner 열에 **없는 것**도 정보다: momentum buffer $S_t$도, retention ga
 
 **Outer loop에서 일어나는 일.** slow weights $\Theta$는 next-token cross-entropy $\mathcal{L}$에 대해 AdamW로 훈련된다. training 무경험 독자를 위한 결정적 사실 하나: fast weights $W^{\mathrm{g}}_t, W^{\mathrm{l}(i)}_t$는 파라미터가 **아니다**. 이들은 식 (15-3)·(15-4)라는 기호적 gradient-descent 식이 만들어내는 outer 계산 그래프의 **activation**이다. 따라서 backprop은 그 inner GD step들을 **관통해** 미분한다 — $\mathcal{L}$의 $\Theta$에 대한 gradient에는 $\partial(\nabla_W\ell)/\partial\Theta$ 꼴의 2차 항이 매 inner update마다 실려 들어온다. "$\eta_t$가 학습된다", "$W_{\mathrm{init}}$이 학습된다"는 말의 정확한 의미가 이것이다: 그 값들을 바꾸면 inner 궤적 전체가 바뀌고, 그 파급이 LM loss에 미치는 효과가 backprop으로 계량되어 AdamW가 그 방향으로 움직인다(형식화는 → 4장).
 
-이 그래프를 감당 가능하게 만드는 것이 chunkwise anchoring이고, TNT가 바꾸는 것은 그래프의 **모양**이다. (a) local 경로: reset이 $L_{\mathrm{s}}$ token마다 그래프를 절단한다. shard 경계를 local 상태를 통해 넘어가는 gradient 경로는 존재하지 않으므로, shard당 직렬 사슬은 $L_{\mathrm{s}}/C_{\mathrm{l}}$번의 chunk handoff뿐이고 $L/L_{\mathrm{s}}$개 shard는 훈련 그래프에서도 완전히 독립이다 — forward만이 아니라 backward도 context-병렬이다. 한편 $W_{\mathrm{init}}$은 **모든** shard의 시작점이므로 모든 shard로부터 gradient를 받는다: 조밀하고 잘 평균된 학습 신호다. (b) global 경로: 직렬 사슬은 sequence당 $L/C_{\mathrm{g}}$ handoff다(16K에서 8번). 비선형 recurrence이지만 이 정도 깊이는 싸다. (c) $\Pi_t$: chunk 내부 prefix scan + chunk 간 $d\times d$ carry + shard 경계 reset이므로 직렬 병목을 추가하지 않는다.
+이 그래프를 감당 가능하게 만드는 것이 chunkwise anchoring이고, TNT가 바꾸는 것은 그래프의 **모양**이다. (a) local 경로: reset이 $L_{\mathrm{s}}$ token마다 그래프를 절단한다. shard 경계를 local 상태를 통해 넘어가는 gradient 경로는 존재하지 않으므로, shard당 직렬 사슬은 $L_{\mathrm{s}}/C_{\mathrm{l}}$번의 chunk handoff뿐이고 $L/L_{\mathrm{s}}$개 shard는 훈련 그래프에서도 완전히 독립이다 — forward만이 아니라 backward도 context-병렬이다. 한편 $W_{\mathrm{init}}$은 **모든** shard의 시작점이므로 모든 shard로부터 gradient를 받는다: 조밀하고 잘 평균된 학습 신호다. (b) global 경로: 직렬 사슬은 sequence당 $L/C_{\mathrm{g}}$ handoff다(16K에서 8번). 비선형 recurrence이지만 이 정도 깊이는 싸다. (c) $\Pi_t$: 식 (15-5)의 chunk 내부 prefix scan + chunk 간 $d\times d$ carry + shard 경계 reset이므로 직렬 병목을 추가하지 않는다.
 
 > **[해설]** 독자의 감각으로 옮기면: Titans의 훈련 그래프는 "sequence 길이만큼 긴 단일 파이프라인"이었다. TNT는 그것을 (i) 깊이 8짜리 굵은 파이프(global), (ii) 서로 독립인 $L/L_{\mathrm{s}}$개의 짧은 파이프 묶음(local, batch 축에 stack 가능), (iii) scan kernel 하나($\Pi$)로 재배관했다. 훈련의 batch 축 역할을 sequence 축이 대신한다는 9장의 경고를 상기하면, reset은 sequence 축을 잘라 **진짜 batch 축으로 되돌리는** 연산이다.
 
@@ -253,11 +257,9 @@ inner 열에 **없는 것**도 정보다: momentum buffer $S_t$도, retention ga
 
 Stage 1만으로 모든 RNN baseline과 vanilla Transformer의 ppl을 이기고, Stage 2가 각 구성에서 ppl을 추가로 내린다(23.13→23.09 등). reasoning acc에서는 Gated Transformer까지 이긴다(41.0 vs 39.7 [TNT §5.3]; 표의 40.9는 {2,4,8,16} 행, 41.0은 Stage 1 {8,16} 행이다). 단 ppl에서는 Gated Transformer(22.39)에 진다는 것을 논문 스스로 명시한다 [TNT §5.3]. 훈련 비용 전액은 Table 4가 준다: Titans $C=8$은 8.44h, TNT Stage 1은 {8} 3.06h에서 {4,8,16,32} 5.55h, Stage 2는 0.15-0.46h — 논문이 "약 5%"라 부르는 근거다 [TNT Table 4, §5.3].
 
-**Ablation** [TNT Table 3]: base Titans ppl 23.53/acc 38.8에서 local memory를 1→4개 추가하면 ppl 21.04→20.74→20.47→20.15로 단조 개선. global memory 제거는 25.60으로 붕괴(base보다도 나쁨 — reset만 있고 global 맥락이 없으면 치명적). Q-K projection 제거는 21.04→22.01(projection의 가치 ≈ 1 ppl, acc는 40.6→36.4). $N=1$에 Stage 2를 얹으면 20.86/40.9.
+**Ablation** [TNT Table 3]: base Titans ppl 23.53/acc 38.8에서 local memory를 1→4개 추가하면 ppl 21.04→20.74→20.47→20.15로 단조 개선. global memory 제거는 25.60으로 붕괴(base보다도 나쁨 — reset만 있고 global 맥락이 없으면 치명적). Q-K projection 제거는 21.04→22.01(projection의 가치 ≈ 1 ppl, acc는 40.6→36.4). $N=1$에 Stage 2를 얹으면 20.86/40.9. Table 3의 ppl 열은 열 머리에 corpus 표기가 없으나, 여섯 값 전부가 Table 2의 C4 열과 일치한다(23.53/21.04/20.74/20.47/20.15/20.86; 다른 corpus 열과는 불일치) — C4 기준으로 읽는다 [TNT Table 2–3].
 
-<!-- TODO-VERIFY: Table 3의 "Language Modeling ppl" 열이 어느 corpus(단일 C4인지 3-corpus 평균인지) 기준인지 원문 표 캡션/열 머리로는 미상 — 값들(23.53, 21.04, 20.74, 20.47, 20.15, 20.86)이 Table 2의 C4 열과 일치하므로 C4로 추정되나 단정 불가. 확인 방법: papers/2511.07343.pdf p.9 Table 3 열 머리 확인 -->
-
-**스케일 정직성.** 이 논문의 실증은 150M/10B tokens가 전부이고, chunk-size mismatch 현상 자체도 550M 한 설정의 그림 하나가 근거다. 라인 전체의 실증 상한이 1.3B params / 100B tokens([NL], → 16장)임을 감안해도 TNT는 그 안에서 가장 작은 축이다. "17× 가속이 1B+/100B+에서도 성립하는가"는 열린 질문이며(§15.8), 무엇보다 이 모든 검증이 **momentum·gating·Muon을 '명료성을 위해' 제거한 단순화 Titans** 위에서 이뤄졌다는 것 [TNT App. D] — 즉 라인의 본류 모델과의 합성은 측정된 적이 없다는 것 — 이 이 장의 의무 caveat다.
+**스케일 정직성.** 이 논문의 실증은 150M/10B tokens가 전부이고, chunk-size mismatch 현상 자체도 550M 한 설정의 그림 하나가 근거다. 라인 전체의 실증 상한이 1.3B params / 100B tokens([NL] (*Nested Learning*, arXiv:2512.24695), → 16장)임을 감안해도 TNT는 그 안에서 가장 작은 축이다. "17× 가속이 1B+/100B+에서도 성립하는가"는 열린 질문이며(§15.8), 무엇보다 이 모든 검증이 **momentum·gating·Muon을 '명료성을 위해' 제거한 단순화 Titans** 위에서 이뤄졌다는 것 [TNT App. D] — 즉 라인의 본류 모델과의 합성은 측정된 적이 없다는 것 — 이 이 장의 의무 caveat다.
 
 ## 15.7 Systems/serving 함의
 
@@ -293,4 +295,4 @@ Stage 1만으로 모든 RNN baseline과 vanilla Transformer의 ppl을 이기고,
 
 **Bridge-out: TNT → [NL].** TNT의 global/local 계층은 throughput으로 정당화된 트릭이다. 그러나 이 트릭이 심어 놓은 관념을 다시 보라: **서로 다른 주기로 갱신되는 부품들이 있고, 느린 시간 스케일에 주차된 지식은 빠른 스케일의 reset에서 살아남는다.** global은 2048 token마다, local은 매 token마다, $W_{\mathrm{init}}$과 slow weights는 훈련에서만 — TNT는 이미 3개 층위의 update frequency로 돌아가는 시스템이다. 다만 TNT에게 그것은 공학적 방편이었지, 왜 그것이 모델 전체의 조직 원리여야 하는지는 말하지 않는다.
 
-[NL] (*Nested Learning*, arXiv:2512.24695, → 16장)이 바로 그 선언을 한다: 모델과 훈련 절차 전체가 각자의 update frequency로 자기 context flow를 압축하는 중첩된 optimization 문제들의 시스템이라는 존재론이다. TNT의 global/local 이분은 geometrically spaced 주파수의 연속체(Continuum Memory System)로 일반화되고, TNT의 reset은 Nested-CMS의 re-initialization으로, load-bearing해진 $W_{\mathrm{init}}$은 다섯 가지 knowledge-transfer 기제 중 하나(MAML류 initialization)로 분류된다. TNT가 유보했던 것들 — momentum, gating, 더 강한 inner optimizer — 도 NL에서 "optimizer 역시 memory다"라는 프레임 아래 재입장한다. 한편 Q-K projection은 후속 논문들이 재채택하지 않은, 이 논문 고유의 열린 실마리로 남는다. 훈련 경제학의 바닥을 깐 것이 TNT라면, 그 위에 세워질 층위의 존재론이 다음 장이다.
+[NL](→ 16장)이 바로 그 선언을 한다: 모델과 훈련 절차 전체가 각자의 update frequency로 자기 context flow를 압축하는 중첩된 optimization 문제들의 시스템이라는 존재론이다. TNT의 global/local 이분은 geometrically spaced 주파수의 연속체(Continuum Memory System)로 일반화되고, TNT의 reset은 Nested-CMS의 re-initialization으로, load-bearing해진 $W_{\mathrm{init}}$은 다섯 가지 knowledge-transfer 기제 중 하나(MAML류 initialization)로 분류된다. TNT가 유보했던 것들 — momentum, gating, 더 강한 inner optimizer — 도 NL에서 "optimizer 역시 memory다"라는 프레임 아래 재입장한다. 한편 Q-K projection은 후속 논문들이 재채택하지 않은, 이 논문 고유의 열린 실마리로 남는다. 훈련 경제학의 바닥을 깐 것이 TNT라면, 그 위에 세워질 층위의 존재론이 다음 장이다.

@@ -4,10 +4,9 @@
 
 Part II의 마지막 논문은 [Sleep] (*Language Models Need Sleep: Learning to Self-Modify and Consolidate Memories*, arXiv:2606.03979; Ali Behrouz, Farnoosh Hashemi, Vahab Mirrokni; arXiv v1 2026-06-02)이다. 논문 1면의 각주는 이 작업의 한 버전이 2025년 9월부터 OpenReview에 공개되어 있었다고 명시하는데 [Sleep p.1 각주], 이 시점 주장은 §17.8에서 다룰 2026년 on-policy self-distillation 물결과의 우선권 문제에서 다시 등장한다.
 
-이 장의 출발점은 16장이 멈춘 자리다. [NL] (*Nested Learning*, arXiv:2512.24695)은 아키텍처와 optimizer를 update frequency(→ 16장)의 단일 스펙트럼 위에 재배열했다. attention은 frequency $\infty$의 memory이고 frozen MLP는 frequency $0$의 memory이며, Continuum Memory System(CMS, → 16장)은 그 사이의 빈 구간을 chunk 주기 $C^{(\ell)}$마다 갱신되는 MLP 사슬로 채웠다. Hope(→ 16장)는 self-modifying Titans와 CMS를 결합해 이 구도를 실증했다. 그러나 [NL]의 자체 결산으로도 네 가지가 남았다. 첫째, **catastrophic forgetting(→ 11장)은 해결이 아니라 지연되었다.** 다중 frequency는 덮어쓰기를 미룰 뿐이고, 모든 level의 update 주기가 정렬되는 순간 CF는 일어난다 — [Sleep §2.2]가 [NL]을 인용해 이 진단을 그대로 재확인한다. 둘째, **offline consolidation — replay·sleep 계열의 기제 — 는 명시적으로 범위 밖이었다.** [NL]이 만든 것은 wake 중의 online consolidation까지다. 셋째, **capacity가 고정이다.** 유한 크기 파라미터로의 압축인 이상, 새 지식은 언젠가 옛 지식을 덮어쓴다. 넷째, **모든 적응이 입력이 흐르는 동안 일어난다.** 모델이 입력을 끊고 자기 내부를 정리하는 시간이 설계에 존재하지 않는다.
+이 장의 출발점은 16장이 멈춘 자리다. [NL] (*Nested Learning*, arXiv:2512.24695)은 아키텍처와 optimizer를 update frequency(→ 16장)의 단일 스펙트럼 위에 재배열했다. attention은 frequency $\infty$의 memory이고 frozen MLP는 frequency $0$의 memory이며, Continuum Memory System(CMS, → 16장)은 그 사이의 빈 구간을 chunk 주기 $C^{(\ell)}$마다 갱신되는 MLP 사슬로 채웠다. Hope(→ 16장)는 self-modifying Titans와 CMS를 결합해 이 구도를 실증했다. 그러나 [NL]이 남긴 것이 네 가지다. 첫째, **catastrophic forgetting(→ 11장)은 해결이 아니라 지연되었다.** 다중 frequency는 덮어쓰기를 미룰 뿐이고, 모든 level의 update 주기가 정렬되는 순간 CF는 일어난다 — [Sleep §2.2]가 [NL]을 인용해 이 진단을 그대로 재확인한다. 둘째, **offline consolidation — replay·sleep 계열의 기제 — 는 [NL] 스스로 명시적으로 범위 밖에 두었다**: "두 번째 단계가 동등하게, 또는 그 이상으로 중요함에도, 이 작업은 첫 단계 — online 과정으로서의 memory consolidation — 에 집중한다" [NL §2]. 셋째, **capacity가 고정이다** — 유한 크기 파라미터로의 압축인 이상 새 지식은 언젠가 옛 지식을 덮어쓴다는 이 진단은 [Sleep §1]이 online-only consolidation에 들이대는 비판이다. 넷째, **모든 적응이 입력이 흐르는 동안 일어난다** — 둘째 항목의 직접적 따름정리로, 모델이 입력을 끊고 자기 내부를 정리하는 시간이 [NL]의 설계에는 존재하지 않는다.
 
-<!-- TODO-VERIFY: 위 네 항목 중 (2)(3)(4)를 "[NL]의 자체 결산"으로 귀속시킨 것은 NL 원문의 limitation/future-work 서술에 대한 요약이다. (1)은 [Sleep §2.2]의 재인용으로 확인됨. (2)-(4)의 정확한 원문 위치 확인 방법: papers/2512.24695.txt에서 "offline", "replay", "capacity", "future" 검색 후 위치 병기. -->
-
+<!-- FIG-REF: ch16/fig-01-cms-spectrum -->
 
 [Sleep §1]은 [NL]의 anterograde amnesia 비유를 이어받아 이 결핍을 다시 조준한다. 배포된 LLM의 지식은 두 곳에만 있다: 세션이 끝나면 소멸하는 context window, 그리고 pre-training 종료 시점에 동결된 MLP·projection weights. 단기 기억과 장기 기억 사이를 잇는 경로가 없으므로, 모델은 새 장기 기억을 형성하지 못하는 환자처럼 "영원한 현재"를 산다. [NL]의 CMS는 이 경로의 절반 — 깨어 있는 동안 fast block에서 slow block으로 지식이 end-to-end로 흘러가는 **online consolidation**(개념은 → 11장, [NL]의 기법은 → 16장) — 을 놓았다. [Sleep §1]은 online-only consolidation의 구조적 결함을 셋으로 정리한다. (1) **추상화 수준이 그대로다**: 추가적인 lossy 압축 없이 같은 표현 수준의 지식을 옮기므로 capacity를 그만큼 다시 소모한다. (2) **선택적이고 retrieval 의존적이다**: 활발히 recall되는 기억만 강화된다. (3) **context에 갇혀 있다**: update가 현재 context에서만 유도되므로, 새 지식과 기존 지식의 상위 수준 통합이 일어나지 않는다.
 
@@ -16,6 +15,8 @@ Part II의 마지막 논문은 [Sleep] (*Language Models Need Sleep: Learning to
 ## 17.2 문제의식과 논문의 핵심 주장
 
 논문이 스스로 정의한 문제는 배포 후 정적인(static-after-deployment) LLM이다 [Sleep §1]. 지식 갱신의 기존 처방은 딜레마의 두 뿔에 각각 걸린다: re-pretraining은 효과적이지만 잦은 갱신에는 비용이 불가능한 수준이고, continual fine-tuning이나 LoRA류 경량 갱신은 반복 적용 시 catastrophic forgetting을 부른다 [Sleep §1]. in-context learning은 효율적인 continual learning이지만 context가 끝나면 지식이 소멸한다. 그래서 질문은 "fragile한 short-term memory를 어떻게 stable한 long-term 지식으로 옮기는가"가 된다 [Sleep §1].
+
+<!-- FIG: ch17/fig-01-wake-sleep-lifecycle -->
 
 핵심 주장은 셋이다. 첫째, **continual learner에게는 training time도 test time도 없다.** 모델의 lifecycle은 새 입력을 받아 처리하는 **wake(active) phase**와, 입력을 최소화하거나 끊고 내부 계산으로 기억을 정리하고 자기를 개선하는 **sleep phase**의 주기적 교대로 재정의되어야 한다 [Sleep §3.1]. 이 책은 이것을 **wake/sleep lifecycle**이라고 부른다 — 이 라인이 Titans 이후 유지해 온 "test time"이라는 단어의 마지막 잔재를 지우는 주장이다. 둘째, **CF는 근본적으로 capacity 문제다.** 파라미터 수가 유한하므로 새 지식을 넣으려면 덮어써야 하고, 그래서 잊는다. 생물학의 해법은 regularization(EWC류, → 11장)도 rehearsal도 아니라 neuroplasticity, 즉 새 연결의 형성이다 — 따라서 처방은 점진적 **parameter expansion**이다 [Sleep §3.2]. 셋째, sleep은 두 단계다: NREM(slow-wave sleep)의 hippocampus→neocortex 기억 이전과 synaptic homeostasis에 대응하는 **Memory Consolidation**, 그리고 REM의 시냅스 강화·통합·미래 시뮬레이션에 대응하는 **Dreaming** [Sleep §1, §3].
 
@@ -51,7 +52,7 @@ sleep의 발화 시점은 학습되지 않고 chunk 스케줄에 고정된다. c
 
 ### 17.3.3 Stage 1a — parameter expansion: 덮어쓰지 말고 키워라
 
-**parameter expansion(periodic parameter (de)activation)** 은 consolidation을 받는 쪽 블록에 새 파라미터를 열어 주는 기제다. 일반성을 잃지 않고 각 $\mathrm{MLP}^{(f_\ell)}$은 router $\mathcal{R}^{(\ell)}$을 가진 sparse mixture-of-experts(MoE)라고 가정한다: 블록 $\ell$은 현재 $s_\ell\ge 1$개의 expert $\{W^{(f_\ell),1},\dots,W^{(f_\ell),s_\ell}\}$을 가진다 [Sleep §3.2]. 블록 $\ell^*{-}1$의 지식을 바로 다음 느린 블록 $\ell^*$로 consolidate할 때, 전이되는 지식과 $\mathrm{MLP}^{(f_{\ell^*})}$에 이미 저장된 지식의 간섭을 피하기 위해 **새 low-rank expert 하나를 추가**한다: $A^{(\ell^*),\,s_{\ell^*}+1}\in\mathbb{R}^{d\times d_{\mathrm{low}}}$, $B^{(\ell^*),\,s_{\ell^*}+1}\in\mathbb{R}^{d_{\mathrm{low}}\times d}$, $d_{\mathrm{low}}\ll d$로 파라미터화된 low-rank MLP다 [Sleep §3.2]. 전이되는 지식은 오직 이 새 파라미터($2\,d\,d_{\mathrm{low}}$개)에만 저장되고, 그 결과 sleep이 지날 때마다 일부 layer의 파라미터가 자란다.
+**parameter expansion(periodic parameter (de)activation)** 은 consolidation을 받는 쪽 블록에 새 파라미터를 열어 주는 기제다. 일반성을 잃지 않고 각 $\mathrm{MLP}^{(f_\ell)}$은 router $\mathcal{R}^{(\ell)}$을 가진 sparse mixture-of-experts(MoE)라고 가정한다(MoE/router → 10장 용어집): 블록 $\ell$은 현재 $s_\ell\ge 1$개의 expert $\{W^{(f_\ell),1},\dots,W^{(f_\ell),s_\ell}\}$을 가진다 [Sleep §3.2]. 블록 $\ell^*{-}1$의 지식을 바로 다음 느린 블록 $\ell^*$로 consolidate할 때, 전이되는 지식과 $\mathrm{MLP}^{(f_{\ell^*})}$에 이미 저장된 지식의 간섭을 피하기 위해 **새 low-rank expert 하나를 추가**한다: $A^{(\ell^*),\,s_{\ell^*}+1}\in\mathbb{R}^{d\times d_{\mathrm{low}}}$, $B^{(\ell^*),\,s_{\ell^*}+1}\in\mathbb{R}^{d_{\mathrm{low}}\times d}$, $d_{\mathrm{low}}\ll d$로 파라미터화된 low-rank MLP다 [Sleep §3.2]. 전이되는 지식은 오직 이 새 파라미터($2\,d\,d_{\mathrm{low}}$개)에만 저장되고, 그 결과 sleep이 지날 때마다 일부 layer의 파라미터가 자란다.
 
 구현 노트가 infra 독자에게 중요하다 [Sleep §3.3 "Note on the Implementation"]. tensor 차원을 동적으로 바꾸는 대신, **미래에 열릴 expert 전부를 초기화 시점에 미리 할당해 두고 forward·backward에서 mask**한다. sleep에서 "expert를 추가한다"는 것은 mask를 여는 것이다. shape가 정적이므로 컴파일된 그래프·kernel autotuning·checkpoint 포맷이 흔들리지 않는다. 논문은 이것을 뇌의 고정 capacity와 "새 연결 형성에 의한 뉴런 활성화"에 대응시킨다.
 
@@ -75,7 +76,7 @@ $\mathcal{F}$는 teacher와 student의 token 출력 분포 사이 divergence이�
 
 ### 17.3.5 Stage 1c — Learning to Imitate: 아는 것과 쓰는 것은 다르다
 
-distillation만으로는 부족하다는 것이 논문의 경험적 관찰이다: student가 지식에 접근할 수 있게 되었음에도 그것을 **쓰는** 법은 배우지 못해서, teacher의 sampling 행동과 성능을 약하게만 모방한다 [Sleep §3.3]. **Learning to Imitate(LTI)** 는 이를 교정하는 RL 단계다. teacher가 생성한 데이터 $\mathcal{D}_T=\{d^{(1)},\dots,d^{(n)}\}$에서 각 $d^{(i)}$의 random prefix를 뽑아 student에게 이어 쓰게 하고, student의 완성 $\hat d^{(i)}$에 보상을 준다 [Sleep Eq. 3]:
+distillation만으로는 부족하다는 것이 논문의 경험적 관찰이다: student가 지식에 접근할 수 있게 되었음에도 그것을 **쓰는** 법은 배우지 못해서, teacher의 sampling 행동과 성능을 약하게만 모방한다 [Sleep §3.3]. **Learning to Imitate(LTI)** 는 이를 교정하는 RL 단계다. 7장의 LTI(linear time-invariant)와 무관한 약어다. teacher가 생성한 데이터 $\mathcal{D}_T=\{d^{(1)},\dots,d^{(n)}\}$에서 각 $d^{(i)}$의 random prefix를 뽑아 student에게 이어 쓰게 하고, student의 완성 $\hat d^{(i)}$에 보상을 준다 [Sleep Eq. 3]:
 
 $$
 r\big(\hat d^{(i)};\,d^{(i)}\big) = \rho\; r_{\mathrm{sem}}\big(\hat d^{(i)};\,d^{(i)}\big) + (1-\rho)\; r_{\mathrm{abs}}\big(\hat d^{(i)};\,d^{(i)}\big)
@@ -176,7 +177,7 @@ $\lambda_{\mathrm{KD}}\in[0,1]$(원문 $\alpha$; retention gate와의 충돌을 
 | 데이터 | pre-training corpus | 들어오는 context 그 자체 | 전부 자기 생성 (teacher sampling, rollout, dream) |
 | cadence | 배포 전 1회 | token마다 누적, $C^{(\ell)}$마다 write | chunk 경계 $\{C^{(\ell)}\times b\}$마다 |
 
-**regime 1 — 무엇이 meta-learn되는가.** [Sleep] 자체는 backbone 훈련을 새로 유도하지 않고 상속한다. Hope 계열 변형이라면 [NL]의 훈련을 그대로 쓴다: gradient가 식 (17-1)의 다중 frequency 갱신을 **관통**해 흐르고, 따라서 outer 최적화는 "각 level의 chunk 단위 자기 갱신이 context를 유용하게 압축하도록" 블록들을 조형한다 — TTT·Titans의 meta-learning-through-inner-loop 구조(→ 4장, 12장)를 frequency 사슬 전체로 일반화한 것이다. 병렬화의 고리도 같다: chunk 안에서 $\theta^{(\ell)}$이 상수이므로 chunk 전체가 한 번의 지연 update로 배치 처리되고(→ 9장의 stale-snapshot 근사), 이 chunkwise 훈련을 경제적으로 만드는 것이 바로 [TNT]의 주제였다(→ 15장). 반면 Llama·Qwen 위의 graft 실험이라면 regime 1은 그냥 기성 checkpoint다 — 아래 caveat 참조.
+**regime 1 — 무엇이 meta-learn되는가.** [Sleep] 자체는 backbone 훈련을 새로 유도하지 않고 상속한다. Hope를 [NL] 레시피로 pre-train하는 구성이라면 [NL]의 훈련을 그대로 쓰게 된다: gradient가 식 (17-1)의 다중 frequency 갱신을 **관통**해 흐르고, 따라서 outer 최적화는 "각 level의 chunk 단위 자기 갱신이 context를 유용하게 압축하도록" 블록들을 조형한다 — TTT·Titans의 meta-learning-through-inner-loop 구조(→ 4장, 12장)를 frequency 사슬 전체로 일반화한 것이다. 병렬화의 고리도 같다: chunk 안에서 $\theta^{(\ell)}$이 상수이므로 chunk 전체가 한 번의 지연 update로 배치 처리되고(→ 9장의 stale-snapshot 근사), 이 chunkwise 훈련을 경제적으로 만드는 것이 바로 [TNT]의 주제였다(→ 15장). 반면 Llama·Qwen 위의 graft 실험이라면 regime 1은 그냥 기성 checkpoint다 — 아래 caveat 참조.
 
 **regime 2 — wake에서 무엇이 어떤 규칙으로 움직이는가.** 배포된 모델의 상태는 두 겹이다. sequence layer는 자기 관행대로 state를 유지한다(attention이면 KV cache, Titans류 module이면 고정 크기 $W_t$). 그 위에서 모든 CMS 블록 $\ell$이 token마다 error 기여 $\eta^{(\ell)}_t\,\varepsilon(\theta^{(\ell)}_t;x_t)$를 누적하고, $C^{(\ell)}$ token마다 한 번 자기 weights에 적용한다. per-token 비용은 블록마다 (파라미터 크기의 누적 1회/token) + (파라미터 write 1회/$C^{(\ell)}$ token)이고, error 항 계산을 위한 backward류 연산이 필요하다. state 크기는 "각 블록의 파라미터 + 같은 크기의 accumulator"다. frequency 사다리가 1k→5k→10k이므로 [Sleep Fig. 7] 느린 블록일수록 weights를 건드리는 빈도는 급감한다.
 

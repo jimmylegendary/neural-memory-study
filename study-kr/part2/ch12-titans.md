@@ -6,7 +6,7 @@ Part II의 첫 논문은 [Titans] (*Titans: Learning to Memorize at Test Time*, 
 
 첫째, **지우는 방법이 없다.** TTT의 inner optimizer는 순수 SGD다. state는 고정 크기인데 write는 무한히 쌓이므로, 문맥이 길어지면 언젠가 포화한다. 5장의 어휘로 말하면 crosstalk이 누적되는데 eviction이 없다. 둘째, **optimizer가 기억을 갖지 않는다.** 매 token의 update는 그 token 하나의 gradient만 반영한다. token 사이의 흐름 — 어떤 사건이 중요했다면 그 직후 token도 함께 저장해야 한다는 시간적 구조 — 이 update rule에 존재하지 않는다. 셋째, **deep memory의 가치가 미검증이다.** TTT는 MLP state를 허용했지만 깊이가 실제로 무엇을 사주는지 실험으로 답하지 않았다.
 
-한편 6장의 DeltaNet 계열은 정반대의 트레이드를 택했다. DeltaNet과 Gated DeltaNet은 memory를 matrix로 묶어 두는 대가로 정확한 closed-form chunkwise recurrence를 얻었고, Gated DeltaNet은 여기에 forget gate까지 더했다. 즉 pre-Titans 지형에서는 "표현력 있는 inner optimizer + 깊은 nonlinear memory"와 "병렬화 가능한 훈련"이 양립 불가능한 것처럼 보였다. 한쪽 끝에 forget gate를 가진 linear memory(Gated DeltaNet), 다른 쪽 끝에 forget도 momentum도 없는 gradient 기반 deep memory(TTT)가 있었고, 가운데가 비어 있었다.
+한편 6장의 DeltaNet 계열은 정반대의 트레이드를 택했다. DeltaNet과 Gated DeltaNet은 memory를 matrix로 묶어 두는 대가로 정확한 closed-form chunkwise recurrence를 얻었고, Gated DeltaNet은 여기에 retention gate(원문 표현 forget gate)까지 더했다. 즉 pre-Titans 지형에서는 "표현력 있는 inner optimizer + 깊은 nonlinear memory"와 "병렬화 가능한 훈련"이 양립 불가능한 것처럼 보였다. 한쪽 끝에 retention gate를 가진 linear memory(Gated DeltaNet), 다른 쪽 끝에 forgetting도 momentum도 없는 gradient 기반 deep memory(TTT)가 있었고, 가운데가 비어 있었다.
 
 [Titans]는 그 가운데를 채우겠다는 논문이다: momentum과 weight decay를 모두 갖춘 inner optimizer로 깊은 MLP memory를 test time에 훈련하되, chunkwise 병렬화와 associative scan으로 훈련 throughput을 지킨다. 그리고 Appendix C에서 Gated DeltaNet, Longhorn, RWKV-7, TTT 전부를 자신의 특수 사례로 회수한다 — 이 회수가 다음 장 [Miras] (*It's All Connected*, arXiv:2504.13173; 이 책은 framework 이름 Miras로 통칭한다)의 출발점이 된다.
 
@@ -116,6 +116,8 @@ $$
 
 Q4의 답으로 [Titans]는 attention을 정밀한 short-term memory, LMM을 서서히 잊는 long-term memory로 두고 세 가지 합성을 제시한다 [Titans §4]. 세 변형 모두 persistent token을 포함한다. 풀네임은 **Memory as Context (MAC)**, **Memory as Gate (MAG)**, **Memory as Layer (MAL)** 이며 이하 약어로 쓴다.
 
+<!-- FIG: ch12/fig-01-mac-dataflow -->
+
 **MAC** [Titans §4.1, Eqs. 21–25]. sequence를 크기 $C$의 segment로 자른다(원문의 segment 크기 $C$ — 이 책은 chunk 크기와 동일시한다, 표 12-1). $n$번째 segment의 token 행렬을 $X^{(n)}\in\mathbb{R}^{C\times d}$(token $nC{+}1\ldots(n{+}1)C$)라 하자. segment가 들어오면, 직전 segment까지 갱신된 memory 상태 $W_{nC}$에서 **읽고**, attention을 돌린 뒤, 그 출력을 memory에 **쓴다**:
 
 $$
@@ -134,11 +136,7 @@ W_{(n+1)C} \leftarrow \text{식 (12-4)를 } a \text{의 token들에 대해 실�
 y_\tau = \mathrm{gate}\big(a_\tau,\ \mathcal{M}(a_\tau;\,W_{(n+1)C})\big).
 $$
 
-즉 attention window 안에는 persistent token, memory에서 검색해 온 역사 $r$(원문 표기 $h_t$ — outer 2차 moment와의 충돌을 피해 개명, 표 12-1; 원문 mask 표기로는 $N_l$개의 long-term memory token), 현재 segment가 나란히 놓이고, 그 안에서 full causal attention이 돈다(전체 sequence 관점의 attention mask는 segment별 block-diagonal이다 [Titans Fig. 3a]). 설계 이유가 중요하다: (i) attention이 검색된 역사와 현재 데이터를 동시에 보므로 지금 long-term 정보가 필요한지를 token 단위로 판단할 수 있고, (ii) memory에는 attention이 처리한 표현만 쓰이므로 attention이 **write filter** 역할을 해 쓸모없는 token으로 인한 memory overflow를 줄인다 [Titans §4.1]. 원문의 write 식 $\mathcal{M}_t = \mathcal{M}_{t-1}(y_t)$ [Titans Eq. 24]는 "forward pass를 통해 weight를 갱신한다"는 관행 표기로, segment 내부의 write 세분(granularity)은 명시되어 있지 않다. 또한 retrieval이 갱신 **전** 상태 $W_{nC}$를 읽으므로 read는 항상 한 segment만큼 stale하다.
-
-<!-- TODO-VERIFY: MAC에서 retrieved history token 수 N_l이 segment 크기 C와 같은지 원문 미명시. Eq. 21의 query가 segment 전체(C개 token)이므로 N_l = C가 자연스러운 독해이나, Fig. 3a는 별도 상수 N_l로 표기한다. 확인 방법: papers/2501.00663.txt의 Fig. 3a 캡션(line ~530)과 공개 코드 대조. -->
-
-<!-- TODO-VERIFY: [Titans Eq. 25]의 최종 read가 y_t를 그대로 query로 쓰는지(W_Q 재적용 없이)를 원문 표기 그대로 옮겼다. v1 텍스트는 M*_t(y_t)로만 쓴다. 확인 방법: papers/2501.00663.pdf p.9 부근 Eq. 25와 구현 공개 시 코드 대조. -->
+즉 attention window 안에는 persistent token, memory에서 검색해 온 역사 $r$(원문 표기 $h_t$ — outer 2차 moment와의 충돌을 피해 개명, 표 12-1; 원문 mask 표기로는 $N_l$개의 long-term memory token인데, [Titans Eq. 21]의 query가 segment 전체 — $C$개 token — 이므로 차원상 $N_l = C$가 따라 나온다; 단 [Titans Fig. 3a] 캡션은 별도 상수 $N_l$ 표기를 유지한다), 현재 segment가 나란히 놓이고, 그 안에서 full causal attention이 돈다(전체 sequence 관점의 attention mask는 segment별 block-diagonal이다 [Titans Fig. 3a]). 설계 이유가 중요하다: (i) attention이 검색된 역사와 현재 데이터를 동시에 보므로 지금 long-term 정보가 필요한지를 token 단위로 판단할 수 있고, (ii) memory에는 attention이 처리한 표현만 쓰이므로 attention이 **write filter** 역할을 해 쓸모없는 token으로 인한 memory overflow를 줄인다 [Titans §4.1]. 원문의 write 식 $\mathcal{M}_t = \mathcal{M}_{t-1}(y_t)$ [Titans Eq. 24]는 "forward pass를 통해 weight를 갱신한다"는 관행 표기로, segment 내부의 write 세분(granularity)은 명시되어 있지 않다. 최종 read도 attention 출력 $a_\tau$를 $W_Q$ 재적용 없이 그대로 query로 쓴다 [Titans Eq. 25]. 또한 retrieval이 갱신 **전** 상태 $W_{nC}$를 읽으므로 read는 항상 한 segment만큼 stale하다.
 
 **MAG** [Titans §4.2, Eqs. 26–28]. segmentation 없이 두 branch를 병렬로 돌린다. branch 1은 persistent prefix가 항상 보이는 sliding window attention(SWA), branch 2는 prefix가 붙은 전체 sequence 위를 식 (12-4)로 도는 LMM이다. 두 branch의 출력을 학습된 elementwise gate로 결합한다 — 실험에서는 각 branch 출력을 학습 가능한 벡터 weight로 normalize한 뒤 비선형 $\sigma(\cdot)$를 거쳐 곱한다 [Titans §4.2]. 원문은 이 결합을 $\otimes$로 쓰지만 이 책은 $\mathrm{gate}(\cdot,\cdot)$로 쓴다($\otimes$ 금지, §1.3). SWA가 선명한 short-term, LMM이 fading long-term이며, 구조가 다른 head들을 가진 multi-head layer로도 읽을 수 있다(Hymba 인용).
 
@@ -161,7 +159,7 @@ S_t = \mathrm{diag}(\beta_t)\, S_{t-1} - \mathrm{diag}(\eta_t)\big(W_{t-1}k_t k_
 \tag{12-6}
 $$
 
-여기서 $\beta_t = 0$(momentum 차단)으로 두면 Gated DeltaNet의 rule $W_t = W_{t-1}(I-\eta_t k_t k_t^\top) + \eta_t v_t k_t^\top$ (+ decay) [Titans Eq. 34]와 일치한다. Longhorn은 같은 loss를 implicit online learning으로 풀어 step size가 $\eta_t/(1+\eta_t k_t^\top k_t)$로 바뀐 delta 형태이되 forget gate가 없고 [Titans Eq. 35], RWKV-7은 같은 loss·형식을 쓰므로 마찬가지로 포함되며, TTT는 forgetting도 momentum도 없는 gradient 기반 특수 사례다 [Titans App. C]. 결국 LMM은 이 계보 전체를 네 축에서 일반화한다: (1) momentum 기반(token 흐름 인지) update — 논문은 자신이 linear-recurrent 계열 최초의 momentum rule이라고 주장한다, (2) deep memory, (3) inter-chunk nonlinear recurrence, (4) forget gate. 6장의 카탈로그(§1.6) 한 줄 요약으로: Titans-LMM = (M2) + 표준 deep memory.
+식 (12-6)에서 $\beta_t = 0$(momentum 차단)으로 두면 Gated DeltaNet의 rule $W_t = W_{t-1}(I-\eta_t k_t k_t^\top) + \eta_t v_t k_t^\top$ (+ decay) [Titans Eq. 34]와 일치한다. Longhorn은 같은 loss를 implicit online learning으로 풀어 step size가 $\eta_t/(1+\eta_t k_t^\top k_t)$로 바뀐 delta 형태이되 retention gate가 없고 [Titans Eq. 35], RWKV-7은 같은 loss·형식을 쓴다는 이유로 명시적으로 포함되며("similar approaches such as RWKV-7 … LMM is generalizing all such models" [Titans App. C]), TTT는 forgetting도 momentum도 없는 gradient 기반 특수 사례다 [Titans App. C]. 결국 LMM은 이 계보 전체를 네 축에서 일반화한다: (1) momentum 기반(token 흐름 인지) update — 논문은 자신이 linear-recurrent 계열 최초의 momentum rule이라고 주장한다, (2) deep memory, (3) inter-chunk nonlinear recurrence, (4) retention gate. 6장의 카탈로그(§1.6) 한 줄 요약으로: Titans-LMM = (M2) + 표준 deep memory.
 
 > **[해설]** 이 부록의 함의는 양방향이다. 앞으로는 "기존 모델 전부가 (M2)의 성분을 끈 것"이라는 통일이고, 뒤로는 "그럼 왜 하필 $\ell_2$ loss, 왜 하필 momentum+decay인가"라는 질문이다. [Titans]는 전자만 답하고 후자를 열어 둔다 — 그 열린 질문이 13장의 [Miras]다.
 
@@ -233,7 +231,7 @@ $$
 \tag{12-8}
 $$
 
-여기서 $K\in\mathbb{R}^{C\times d_k}$, $V\in\mathbb{R}^{C\times d_v}$는 chunk의 key/value 행-쌓기다. 원문 표기 $\Theta_b\mathbf{B}_b(W_0X-X)X^\top$는 행벡터 관행에 더해 $(k,v)$ 자리에 $x$를 쓰는 축약이라 재구현 시 되돌려야 한다. chunk마다 diagonal 계수만 materialize하면 되고 $L/C$개를 모두 들고 있을 필요가 없다 [Titans §3.2]. GEMM shape로 읽으면(→ 1장 Rosetta) 이것은 $(d_v\times C)\cdot(C\times d_k)$의 rank-$C$ write다: **chunk 크기 $C$가 곧 write GEMM의 내적 차원이고, 따라서 arithmetic intensity의 손잡이다.** MLP memory($L_{\mathcal{M}}\ge 2$)의 경우도 층별 gradient를 chunk-start weights에서 batch로 평가하는 같은 구조라고만 서술된다 [Titans §3.2].
+여기서 $K\in\mathbb{R}^{C\times d_k}$, $V\in\mathbb{R}^{C\times d_v}$는 chunk의 key/value 행-쌓기다. 원문 표기 $\Theta_b\mathbf{B}_b(W_0X-X)X^\top$는 행벡터 관행에 더해 $(k,v)$ 자리에 $x$를 쓰는 축약이라 재구현 시 되돌려야 한다. chunk마다 diagonal 계수만 materialize하면 되고 $L/C$개를 모두 들고 있을 필요가 없다 [Titans §3.2]. 식 (12-8)을 GEMM shape로 읽으면(→ 1장 Rosetta) 이것은 $(d_v\times C)\cdot(C\times d_k)$의 rank-$C$ write다: **chunk 크기 $C$가 곧 write GEMM의 내적 차원이고, 따라서 arithmetic intensity의 손잡이다.** MLP memory($L_{\mathcal{M}}\ge 2$)의 경우도 층별 gradient를 chunk-start weights에서 batch로 평가하는 같은 구조라고만 서술된다 [Titans §3.2].
 
 momentum은 어떻게 되는가? chunk 안에서 $\hat g_\tau = \nabla_W\ell(W_{\xi(\tau,C)};k_\tau,v_\tau)$를 전부 미리 계산해 두면 [Titans Eq. 18]
 
@@ -244,7 +242,7 @@ $$
 
 는 input-dependent 전이 계수 $\beta_\tau$, 입력 $\hat g_\tau$, hidden state $S_\tau$의 1차 **선형** recurrence다 — 정확히 S5/Mamba의 selective scan과 같은 모양이므로 parallel associative scan(→ 7장, 9장)으로 chunk 내 모든 $S_\tau$를 log-depth에 얻는다. 독자가 이미 아는 scan/prefix-sum kernel이 그대로 훈련 그래프의 한가운데에 등장하는 것이다.
 
-결과 구조가 [Titans]의 표현력-병렬성 협상이다: **intra-chunk는 linear**(matmul + scan으로 병렬), **inter-chunk는 nonlinear**(chunk 경계에서 갱신된 MLP weights가 다음 chunk의 loss에 비선형으로 재진입). 순차 임계 경로가 $L$이 아니라 $L/C$번의 MLP-weight 적용으로 줄고, 동시에 이 비선형 경계가 Thm 4.1의 표현력 주장의 근거로 지목된다 — DeltaNet 계열이 정확한 closed form을 위해 전부 linear로 남은 것과 의도적으로 다른 트레이드다. 추가 가속 옵션으로 $\alpha,\eta,\beta$를 token이 아니라 chunk의 함수로 두면 (12-9)가 LTI 시스템이 되어 S4식 global convolution으로 계산 가능하지만 [Titans §3.2], 실험은 표현력을 위해 per-token 게이트를 유지했고 이 fast path는 끝내 평가되지 않았다.
+결과 구조가 [Titans]의 표현력-병렬성 협상이다: **intra-chunk는 linear**(matmul + scan으로 병렬), **inter-chunk는 nonlinear**(chunk 경계에서 갱신된 MLP weights가 다음 chunk의 loss에 비선형으로 재진입). 순차 임계 경로가 $L$이 아니라 $L/C$번의 MLP-weight 적용으로 줄고, 동시에 이 비선형 경계가 Thm 4.1의 표현력 주장의 근거로 지목된다 — DeltaNet 계열이 정확한 closed form을 위해 전부 linear로 남은 것과 의도적으로 다른 트레이드다. 추가 가속 옵션으로 $\alpha,\eta,\beta$를 token이 아니라 chunk의 함수로 두면 식 (12-9)가 LTI(linear time-invariant → 7장) 시스템이 되어 S4식 global convolution으로 계산 가능하지만 [Titans §3.2], 실험은 표현력을 위해 per-token 게이트를 유지했고 이 fast path는 끝내 평가되지 않았다.
 
 **outer 레시피** [Titans §5.1]: 훈련 길이 4K, Llama-2 tokenizer(32K vocab), AdamW lr 4e-4 cosine annealing, batch 0.5M tokens, weight decay 0.1 — Gated DeltaNet의 프로토콜을 따른다. 여기서 두 층위가 한 문장에 겹친다: outer optimizer(AdamW, weight decay $\lambda=0.1$)는 $\Theta$를 학습하는 통상의 훈련이고, inner optimizer(식 (12-4))는 모델 그 자체다. 기호로도 구분된다 — outer는 무첨자 상수($\eta$, $\lambda$), inner는 시간 첨자 게이트($\eta_t,\beta_t,\alpha_t$).
 
@@ -252,7 +250,7 @@ $$
 
 > **[해설]** $P_{\mathcal{M}}$을 memory parameter 수라 하면(폭 $d$ MLP에서 $P_{\mathcal{M}}\approx L_{\mathcal{M}}d^2$), write 한 번 = k/v projection $2d^2$ MAC + $\mathcal{M}$ forward $\approx P_{\mathcal{M}}$ + weight gradient를 위한 backward $\approx 2P_{\mathcal{M}}$(backprop의 표준 2× forward 비용; linear memory에서는 rank-1 outer product $(Wk_t-v_t)k_t^\top$로 퇴화) + $S,W$의 elementwise 갱신 $\approx 2P_{\mathcal{M}}$ + 게이트 head 3개(미미). read 한 번 = projection + forward $\approx d^2 + P_{\mathcal{M}}$. 합계 token당 $\approx 5$–$6\times P_{\mathcal{M}}$ FLOP 상당 — **context 길이와 무관한 상수**이며, 같은 state 크기의 linear-attention/DeltaNet layer 대비 작은 상수배, 그 상수는 $L_{\mathcal{M}}$에 선형이다. 이 산정은 이 책의 계산이고, 논문의 실측은 "LMM이 Mamba-2/Gated DeltaNet보다 약간 느리다" [Titans Fig. 9]까지다.
 
-여기서 독자의 세계가 실제로 뒤집히는 지점을 명시한다: **backward pass가 decode 안으로 들어온다.** decode = "read-only forward + KV append"라는 불변식은 이 라인에서 폐기되고, decode 한 step은 forward + backward + optimizer step + read가 된다. 다만 update rule 자체에는 train/inference 불일치가 없다 — prefill은 훈련 때의 chunkwise 공식 그대로 긴 prompt를 chunk 병렬로 흡수하고, decode는 $C=1$의 token-by-token online write로 진행하면 되며, 차이는 outer gradient를 함께 계산하느냐뿐이다. 훈련의 batch 축 역할을 sequence 축이 대신한다는 것(inner loop의 mini-batch = chunk)도 여기서 처음 실물로 확인된다 — 2장과 9장이 예고한 최대 혼동 지점이다.
+여기서 독자의 세계가 실제로 뒤집히는 지점을 명시한다: **backward pass가 decode 안으로 들어온다.** decode = "read-only forward + KV append"라는 불변식은 이 라인에서 폐기되고, decode 한 step은 forward + backward + optimizer step + read(식 (12-5))가 된다. 다만 update rule 자체에는 train/inference 불일치가 없다 — prefill은 훈련 때의 chunkwise 공식 그대로 긴 prompt를 chunk 병렬로 흡수하고, decode는 $C=1$의 token-by-token online write로 진행하면 되며, 차이는 outer gradient를 함께 계산하느냐뿐이다. 훈련의 batch 축 역할을 sequence 축이 대신한다는 것(inner loop의 mini-batch = chunk)도 여기서 처음 실물로 확인된다 — 2장과 9장이 예고한 최대 혼동 지점이다.
 
 변형별 흐름: LMM/MAG/MAL은 (prefix가 붙은) 스트림의 모든 token에서 memory를 갱신하고, MAC은 segment 단위로 "읽기 → attention → attention 출력만 쓰기"를 반복한다. test time에 persistent parameter는 동결(task 지식), attention weights는 window 안의 in-context learner, LMM만이 "여전히 학습 중"이다 [Titans §4.1].
 
@@ -262,10 +260,10 @@ $$
 
 표 12-3 — [Titans]가 ledger에 추가한 개념
 
-| 개념 (이 장이 정의) | 내용 | 이후의 운명 |
+| 개념 (이 논문이 도입) | 내용 | 이후의 운명 |
 |---|---|---|
 | surprise (momentary / past) | momentary = $g_t^{\mathrm{in}}$, past = $S_t$ | Miras: 임의 attentional bias의 gradient로 일반화(→ 13장); Atlas: 문맥의 surprise(window)로(→ 14장); NL: Local Surprise Signal(→ 16장) |
-| momentum-as-memory | optimizer state $S_t$의 recurrent state 승격; linear-recurrent 계열 최초의 momentum rule 주장 [Titans App. C] | Miras의 출시 모델들은 제거; Atlas가 Muon으로 부활(→ 14장); NL이 정리로 격상(→ 16장) |
+| momentum-as-memory (정의 소유: 2장·16장) | optimizer state $S_t$의 recurrent state 승격; linear-recurrent 계열 최초의 momentum rule 주장 [Titans App. C] | Miras의 출시 모델들은 제거; Atlas가 Muon으로 부활(→ 14장); NL이 정리로 격상(→ 16장) |
 | weight decay = per-token retention | $\alpha_t W_{t-1}$; Mamba-2/GLA/Gated DeltaNet gate의 deep-memory 일반화 | Miras가 retention gate로 공식 재이론화(→ 13장) |
 | deep memory | $L_{\mathcal{M}}\ge 2$ MLP; linear memory = 선형 압축 가정의 거부 | 2-layer residual MLP가 라인 표준으로(→ 13장); capacity 이론은 Atlas(→ 14장) |
 | persistent memory | $N_p$개 학습 prefix token; task 지식의 input-independent 저장 | NL/CMS에서 frequency-0 극점으로 재해석(→ 16장) |
@@ -283,7 +281,7 @@ $$
 
 **Language modeling + commonsense reasoning** [Titans Table 1]. 모든 스케일에서 LMM 단독이 비-hybrid baseline 전부를 이긴다. 340M: LMM 평균 46.17 vs Gated DeltaNet 45.42, TTT 44.51 — TTT와의 격차가 곧 momentum+forgetting의 값이고, Gated DeltaNet과의 격차가 deep nonlinear memory의 값이라는 것이 논문의 독법이다 [Titans §5.2]. 760M: LMM Wiki ppl 20.04 / 평균 51.56 vs Gated DeltaNet 21.18 / 49.69. hybrid에서는 MAC/MAG/MAL 셋 모두 Samba와 Gated DeltaNet-H2를 이긴다 — 760M에서 MAG Wiki ppl 18.61, MAC 평균 52.51 vs Gated DeltaNet-H2 19.88 / 51.49. 일관된 순서는 MAC ≈ MAG > MAL이며, 모듈이 같고 배치만 다르므로 이 격차는 순수하게 합성 설계의 몫이다 [Titans §5.2].
 
-**S-NIAH (RULER, 2K–16K)** [Titans Table 2]. 기제별 귀속이 가장 선명한 실험이다. Titans 계열은 전 구간 80–99%를 유지한다(MAC PK-16K 98.4, MAG N-16K 98.6). 대조: Mamba-2는 PK-16K 5.4, W-8K/16K 0.0으로 붕괴 — erase는 있으나 얕은 state로는 부족하다; DeltaNet은 PK-16K 71.4까지 버티지만 N/W에서 무너진다 — replace는 해도 진짜 erase(forgetting)가 없다; TTT는 16K에서 처진다(PK-16K 88.4) — forget gate 부재 [Titans §5.3]. 즉 momentum+forgetting이 TTT를, deep nonlinear memory + erasure가 Mamba-2를, forgetting이 DeltaNet을 각각 이기게 만든 성분이라는 주장과 표의 패턴이 맞물린다.
+**S-NIAH (RULER, 2K–16K)** [Titans Table 2]. 기제별 귀속이 가장 선명한 실험이다. Titans 계열은 전 구간 80–99%를 유지한다(MAC PK-16K 98.4, MAG N-16K 98.6). 대조: Mamba-2는 PK-16K 5.4, W-8K/16K 0.0으로 붕괴 — erase는 있으나 얕은 state로는 부족하다; DeltaNet은 PK-16K 71.4까지 버티지만 N/W에서 무너진다 — replace는 해도 진짜 erase(forgetting)가 없다; TTT는 16K에서 처진다(PK-16K 88.4) — retention gate 부재 [Titans §5.3]. 즉 momentum+forgetting이 TTT를, deep nonlinear memory + erasure가 Mamba-2를, forgetting이 DeltaNet을 각각 이기게 만든 성분이라는 주장과 표의 패턴이 맞물린다.
 
 **BABILong** [Titans Fig. 6]. few-shot 설정에서 Titans (MAC)는 Mamba-2.8B, RWKV-6-7B, RecurrentGemma-9B, Gemma-9B, Llama3.1-8B, GPT-4, GPT-4o-mini를 모두 이긴다 — 훨씬 적은 parameter로. fine-tuning 설정에서는 작은 MAC가 fine-tune된 RMT·Mamba, RAG를 단 Llama3.1-8B(약 70× 더 많은 parameter [Titans §5.4]), 그리고 GPT-4, Qwen2.5-72B, Llama3.1-70B를 넘어서며 2M tokens 너머까지 정확도를 유지한다. 이 라인의 ">2M context" 헤드라인은 전부 이 실험(MAC, fine-tuned, baseline 수치는 벤치마크 저자 보고)에 얹혀 있다.
 
@@ -293,8 +291,7 @@ $$
 
 **ablation** [Titans Table 5]. base LMM: ppl 27.01 / reasoning 47.83 / long-context 92.68. 성분 제거 시 ppl: weight decay 제거 29.04(최악), momentum 제거 28.98, convolution 제거 28.73, deep→linear memory 28.49(long-context는 85.34로 급락), persistent memory 제거 27.63. attention을 붙이면 전부 개선: MAC 26.67/48.65/97.95, MAG 25.70/48.60/96.70, MAL 25.91/47.87/96.91. 기여 순위: weight decay > momentum > convolution > persistent memory [Titans §5.9].
 
-> **[해설]** Table 5의 ppl 열은 Table 1의 Wiki·LMB perplexity 평균과 자릿수까지 일치한다(예: LMM 400M — $(25.03+28.99)/2=27.01$; MAC $(25.61+27.73)/2=26.67$). 즉 ablation은 400M 스케일 수치로 읽는 것이 정합적이다.
-<!-- TODO-VERIFY: Table 5가 400M 설정이라는 명시가 원문에 없다(수치 일치는 4행 모두 확인됨). 확인 방법: papers/2501.00663.pdf §5.9 및 Table 5 캡션 재확인, 공개 코드/후속판 대조. -->
+> **[해설]** 원문은 §5.9에도 Table 5 캡션에도 이 ablation의 모델 규모를 명시하지 않는다. 다만 Table 5의 ppl 열은 Table 1의 Wiki·LMB perplexity 평균과 자릿수까지 일치하므로(예: LMM 400M — $(25.03+28.99)/2=27.01$; MAC $(25.61+27.73)/2=26.67$; 4행 모두 확인), ablation은 400M 스케일 수치로 읽는 것이 정합적이다.
 
 **보조 도메인**: time series forecasting에서는 Simba 프레임워크의 Mamba 자리에 LMM을 넣어 ETT/ECL/Traffic/Weather에서 최고 MSE/MAE를 보고하고(예: ETTm1 0.358/0.387 vs PatchTST 0.387/0.400) [Titans Table 3], DNA modeling(GenomicsBenchmarks)에서는 HyenaDNA·Based·Mamba와 경쟁 수준이다(Enhancer Cohn 75.2 최고) [Titans Table 4].
 

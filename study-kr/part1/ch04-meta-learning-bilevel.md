@@ -1,7 +1,5 @@
 # ch04. Meta-learning과 bilevel optimization: inner loop vs outer loop
 
-<!-- STYLE-ISSUE: 이 장의 파일명이 STYLE-NOTATION §5.1의 고정 슬러그(ch04-meta-learning.md)와 달리 ch04-meta-learning-bilevel.md로 지정되어 작성되었다. P2 병합 시 슬러그 통일 필요. -->
-
 > **이 장의 목표** — 이 장을 마치면 다음을 할 수 있어야 한다.
 > 1. sequence model을 bilevel optimization 문제로 형식화하고, 임의의 파라미터가 inner loop 소속인지 outer loop 소속인지를 기호($W$ vs $\Theta$)와 역할만으로 판별할 수 있다.
 > 2. "outer loop가 inner loop를 **통과해** 학습한다"는 문장을 computational graph 수준에서 설명하고, 1-step 예제의 hypergradient를 손으로 계산할 수 있다.
@@ -88,9 +86,9 @@ meta-learning의 역사는 "outer loop에 무엇을 넘길 것인가"의 역사�
 
 둘째, **learned optimizer**. Andrychowicz et al. 2016 (arXiv:1606.04474)은 update rule 자체를 학습했다: 작은 recurrent network가 gradient를 입력받아 $\Delta w$를 출력하고, 그 network의 파라미터를 outer loop가 학습한다. "optimizer는 import하는 고정 부품이 아니라 학습 가능한 모듈이다"라는 관점의 원조이며, 2장에서 optimizer를 (state, update, cost) 객체로 세운 것은 정확히 이 관점을 미리 깔아 둔 것이다. [Miras]가 네 번째 설계 축으로 "memory learning algorithm(= optimizer)"을 놓을 때 [Miras §1], 이 축의 사상적 기원이 여기다.
 
-셋째, **MAML**. Finn, Abbeel & Levine 2017 (arXiv:1703.03400)의 **MAML**(Model-Agnostic Meta-Learning)은 meta-변수를 단 하나, **초기값**으로 고른다: 새 task가 오면 초기값 $W_{\mathrm{init}}$에서 GD 몇 step으로 적응하고, "적응 후 성능"을 outer loss로 삼아 $W_{\mathrm{init}}$ 자체를 학습한다. hypergradient는 §4.2에서 유도한 그대로이며 — 식 (4-5)의 Hessian 항을 버린 변형이 FOMAML이다 — 학습이 끝난 $W_{\mathrm{init}}$은 "어느 task로든 몇 step 만에 갈 수 있는 출발점"이 된다. 이 아이디어의 이 라인 버전이 **meta-learned initial state $W_{\mathrm{init}}$**이다: memory의 초기 상태를 난수가 아니라 outer loop가 학습한 값으로 두는 것. [Titans]에서는 암묵적 세부였던 이것이 [TNT]에서는 구조의 기둥이 된다 — local memory가 shard 경계마다 "shared, learnable initial state $W_{\mathrm{init}}$"으로 reset되고 [TNT §4.1.1, Eq. 6], reset이 정보 폐기가 아니라 **좋은 출발점으로의 복귀**가 되는 것은 $W_{\mathrm{init}}$이 meta-learn되어 있기 때문이다. 독자의 세계로 옮기면 $W_{\mathrm{init}}$은 세션 시작마다 복원되는 golden snapshot — 모든 요청이 공유하는 초기 상태 이미지 — 이고, MAML은 그 이미지를 굽는 절차다.
+셋째, **MAML**. Finn, Abbeel & Levine 2017 (arXiv:1703.03400)의 **MAML**(Model-Agnostic Meta-Learning)은 meta-변수를 단 하나, **초기값**으로 고른다: 새 task가 오면 초기값 $W_{\mathrm{init}}$에서 GD 몇 step으로 적응하고, "적응 후 성능"을 outer loss로 삼아 $W_{\mathrm{init}}$ 자체를 학습한다. hypergradient는 §4.2에서 유도한 그대로이며 — 식 (4-5)의 Hessian 항을 버린 변형이 FOMAML이다 — 학습이 끝난 $W_{\mathrm{init}}$은 "어느 task로든 몇 step 만에 갈 수 있는 출발점"이 된다. 같은 계보의 후속으로 Hessian 없이 초기값만 학습하는 first-order 변형(Reptile), 적응 대상을 소수의 context parameter로 국한하는 context-parameter 변형(CAVIA)이 있다 — [Titans §3.1]이 자기 계보로 인용하는 명칭들이다(→ 12장). 이 아이디어의 이 라인 버전이 **meta-learned initial state $W_{\mathrm{init}}$**이다: memory의 초기 상태를 난수가 아니라 outer loop가 학습한 값으로 두는 것. [Titans]에서는 암묵적 세부였던 이것이 [TNT]에서는 구조의 기둥이 된다 — local memory가 shard 경계마다 "shared, learnable initial state $W_{\mathrm{init}}$"으로 reset되고 [TNT §4.1.1, Eq. 6], reset이 정보 폐기가 아니라 **좋은 출발점으로의 복귀**가 되는 것은 $W_{\mathrm{init}}$이 meta-learn되어 있기 때문이다. 독자의 세계로 옮기면 $W_{\mathrm{init}}$은 세션 시작마다 복원되는 golden snapshot — 모든 요청이 공유하는 초기 상태 이미지 — 이고, MAML은 그 이미지를 굽는 절차다.
 
-**표 4-1 — learning-to-learn 계보: meta-변수의 선택**
+표 4-1 — learning-to-learn 계보: meta-변수의 선택
 
 | 계보 | outer loop가 학습하는 것($\Theta$ 쪽) | inner loop | 이 라인에서의 대응 |
 |---|---|---|---|
@@ -107,7 +105,7 @@ meta-learning의 역사는 "outer loop에 무엇을 넘길 것인가"의 역사�
 
 training 무경험 독자의 1번 질문 — "test-time learner의 learning rate는 누가 학습하는가?" — 에 이제 답한다. 핵심은 **함수와 값의 분리**다. 함수 $\eta(\cdot\,;\Theta)$의 파라미터는 $\Theta$의 일부로서 **outer loop가 pretraining 중에** 학습한다. 값 $\eta_t=\eta(x_t;\Theta)$는 **inner loop가 serving 중에** token마다 평가한다. serving에서 함수는 동결되어 있지만 값은 매 token 다르다 — "학습된 learning rate"라는 말은 언제나 함수에 대한 말이다. gate 생산 함수는 실제로는 작은 head(예: low-rank projection + activation)이므로, decode 경로에 GEMV 몇 개가 추가되는 비용으로 읽으면 된다.
 
-**표 4-2 — 누가 무엇을 학습하는가 (이 라인의 표준 배치)**
+표 4-2 — 누가 무엇을 학습하는가 (이 라인의 표준 배치)
 
 | 구성 요소 | 기호 | 소속 | 움직이는 시점 |
 |---|---|---|---|
@@ -125,8 +123,7 @@ training 무경험 독자의 1번 질문 — "test-time learner의 learning rate
 
 ## 4.5 Attention은 이미 GD를 하고 있었다: ICL과 mesa-optimization
 
-bilevel 구조가 이 라인의 발명품이 아니라는 정황 증거가 있다: **평범하게 훈련된 transformer 안에서 inner loop가 저절로 생긴다**는 연구들이다. Akyürek et al. 2023 (arXiv:2211.15661)은 in-context로 linear regression을 푸는 transformer가 GD나 ridge regression 같은 표준 학습 알고리즘을 내부적으로 구현할 수 있음을 구성적으로 보였고, von Oswald et al. 2023 (arXiv:2212.07677)은 linear self-attention layer의 weight를 적절히 두면 그 layer의 forward pass가 in-context 예제들에 대한 regression loss의 GD 한 step과 일치함을 보이고, 학습된 transformer가 실제로 그런 해에 도달한다고 보고한다.
-<!-- TODO-VERIFY: von Oswald 2212.07677의 경험적 주장 범위(어떤 과제·어떤 아키텍처에서 GD와의 일치를 보였는지)를 원문 §4-5에서 확인 후 문장 조정. 확인 방법: arXiv:2212.07677 본문 실험 절. -->
+bilevel 구조가 이 라인의 발명품이 아니라는 정황 증거가 있다: **평범하게 훈련된 transformer 안에서 inner loop가 저절로 생긴다**는 연구들이다. Akyürek et al. 2023 (arXiv:2211.15661)은 in-context로 linear regression을 푸는 transformer가 GD나 ridge regression 같은 표준 학습 알고리즘을 내부적으로 구현할 수 있음을 구성적으로 보였고, von Oswald et al. 2023 (arXiv:2212.07677)은 linear self-attention layer의 weight를 적절히 두면 그 layer의 forward pass가 in-context 예제들에 대한 regression loss의 GD 한 step과 일치함을 보이고, **합성 linear regression 과제에 훈련된 self-attention-only(linear attention) transformer**가 실제로 그 construction과 유사하거나(다층: GD++류 curvature 보정) 단층에서는 weight 수준까지 일치하는 해에 도달한다고 보고한다 [von Oswald et al. 2023 abstract, §3–4].
 후속작 von Oswald et al. 2023 (arXiv:2309.05858)은 이를 **mesa-optimization** — forward pass 안에서 내부 목적함수를 세우고 최적화하는, 훈련이 만들어낸 절차 — 로 명명하고, in-context regression 문제를 매 step 정확히 최적해까지 푸는 **Mesa-layer**를 제안했다. Atlas는 Mesa-layer를 "모든 과거 token에 대해 memory를 최적화하지만 훈련이 느린" 극한으로 규정하고 자신의 대조군으로 세운다 [Atlas §3, 각주 1].
 
 이 결과들이 이 장의 문법에서 하는 말은 정확히 이것이다: softmax attention은 이미 일종의 inner 문제의 **non-parametric 해**다(KV cache가 곧 그 "풀이의 상태"라는 대응은 1장 Rosetta 사전의 첫 행이다). 그렇다면 6편의 라인은 무에서 유를 만드는 것이 아니라, attention이 **암묵적·비모수적·얕게** 하던 일을 **명시적·모수적($W_t$로 압축)·깊게**(deep memory, momentum, 학습된 gate) 만드는 프로젝트다. inner loop를 명시적으로 쓰는 순간 무엇을 얻는가 — objective를 갈아끼우고(13장), 범위를 넓히고(14장), optimizer를 바꾸고(14장), 훈련 경제학을 설계할(15장) 자유 — 가 Part II의 줄거리다.
@@ -164,7 +161,7 @@ $$
 
 **셋째, serving은 두 loop 중 하나만 가져간다.** 배포 후에는 outer loop가 존재하지 않는다 — $\nabla_\Theta$도, $m_t,h_t$도, 궤적 저장도 없다. 대신 inner loop가 decode 안으로 들어온다: 매 token, 작은 memory net의 forward + backward + update(1장 Rosetta 사전의 "decode = $C{=}1$의 per-token online write + read" 행). 이때의 backward는 autograd가 아니라 손으로 유도된 gradient의 고정 kernel이라는 점, 그 구체적 GEMM 수와 비용 모델은 8장과 10장이 담당한다.
 
-**표 4-3 — 두 loop를 (state, update, cost) 객체로**
+표 4-3 — 두 loop를 (state, update, cost) 객체로
 
 | | inner loop | outer loop |
 |---|---|---|

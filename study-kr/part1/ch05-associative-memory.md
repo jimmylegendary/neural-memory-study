@@ -2,11 +2,11 @@
 
 > **이 장의 목표** — 이 장을 마친 독자는 다음을 할 수 있다.
 > 1. KV cache와 matrix memory를 하나의 associative memory 추상화의 양 극단(무손실 non-parametric vs 고정 크기 parametric)으로 배치하고, 그 trade-off를 byte와 FLOP 수치로 말할 수 있다.
-> 2. outer-product write의 crosstalk을 $d=2$ 예제에서 손으로 계산하고, 이것이 [Titans §2]가 말하는 "memory overflow"의 미시적 실체임을 설명할 수 있다.
+> 2. outer-product write의 crosstalk을 $d=2$ 예제에서 손으로 계산하고, 이것이 [Titans §2] (*Titans: Learning to Memorize at Test Time*, arXiv:2501.00663)가 말하는 "memory overflow"의 미시적 실체임을 설명할 수 있다.
 > 3. delta rule을 $\ell_2$ associative loss의 1-step gradient descent로 유도하고, 그것이 식 (M1)의 linear memory 전개형임을 보일 수 있다.
-> 4. Hopfield → dense Hopfield → softmax attention으로 이어지는 capacity 개선의 사슬을 서술하고, 그 사슬 위에서 [Atlas §3.1]의 capacity 정리와 feature map이 왜 그런 모양인지 예측할 수 있다.
+> 4. Hopfield → dense Hopfield → softmax attention으로 이어지는 capacity 개선의 사슬을 서술하고, 그 사슬 위에서 [Atlas §3.1] (*Atlas: Learning to Optimally Memorize the Context at Test Time*, arXiv:2505.23735)의 capacity 정리와 feature map이 왜 그런 모양인지 예측할 수 있다.
 >
-> **왜 필요한가** — associative memory는 이 라인이 스스로 선언한 기초 추상화다. [Miras Def. 3.1]과 [NL Def. 1]은 sequence model 전체를 "objective 아래에서 학습되는 mapping $\mathcal{M}: K \to V$"로 정의하고, [Titans §2]는 linear attention의 additive write가 "memory overflow"를 일으킨다는 비판 — 곧 이 장의 crosstalk 논의 — 위에 momentum과 gate를 쌓는다. [Atlas §3.1]의 capacity 정리(Prop 1, Thm 1, Prop 2)와 polynomial/exponential feature map은 고전 Hopfield capacity와 dense Hopfield의 energy 사슬을 그대로 재사용하며, Atlas와 TNT는 related work에서 자신들의 정식화가 Hopfield 1982의 associative memory 개념에 "architecturally founded"되어 있다고 같은 문장으로 명시한다 [Atlas App. A; TNT App. A]. [NL §1]은 "backprop과 momentum까지 전부 associative memory"라는 확장으로 이 추상화를 라인의 끝까지 밀어붙인다. 이 장이 없으면 Part II의 어떤 정의도 출발점을 갖지 못한다.
+> **왜 필요한가** — associative memory는 이 라인이 스스로 선언한 기초 추상화다. [Miras Def. 3.1] (*It's All Connected: A Journey Through Test-Time Memorization, Attentional Bias, Retention, and Online Optimization*, arXiv:2504.13173 — 이 책은 framework 이름 Miras로 통칭한다)과 [NL Def. 1] (*Nested Learning: The Illusion of Deep Learning Architecture*, arXiv:2512.24695)은 sequence model 전체를 "objective 아래에서 학습되는 mapping $\mathcal{M}: K \to V$"로 정의하고, [Titans §2]는 linear attention의 additive write가 "memory overflow"를 일으킨다는 비판 — 곧 이 장의 crosstalk 논의 — 위에 momentum과 gate를 쌓는다. [Atlas §3.1]의 capacity 정리(Prop 1, Thm 1, Prop 2)와 polynomial/exponential feature map은 고전 Hopfield capacity와 dense Hopfield의 energy 사슬을 그대로 재사용하며, Atlas와 TNT는 related work에서 자신들의 정식화가 Hopfield 1982의 associative memory 개념에 "architecturally founded"되어 있다고 같은 문장으로 명시한다 [Atlas App. A; TNT App. A] ([TNT] = *TNT: Improving Chunkwise Training for Test-Time Memorization*, arXiv:2511.07343). [NL §1]은 "backprop과 momentum까지 전부 associative memory"라는 확장으로 이 추상화를 라인의 끝까지 밀어붙인다. 이 장이 없으면 Part II의 어떤 정의도 출발점을 갖지 못한다.
 
 ## 5.1 key→value 연상: 독자가 이미 매일 서빙하는 연산
 
@@ -69,31 +69,27 @@ $$
 
 systems 독자를 위한 재서술: Hopfield의 read는 lookup 한 번이 아니라 **GEMV + sign을 수렴할 때까지 반복하는 fixed-point iteration**이다. 읽기가 반복 계산이라는 것, 그리고 "복원 품질"이 energy 지형의 기하에 달려 있다는 것이 이후 이야기의 씨앗이다.
 
-capacity는 어떤가. Hopfield 1982는 pattern 수가 약 $0.15\,d$를 넘으면 회복 오류가 심각해진다고 실험적으로 보고했고, 이후 statistical mechanics 분석은 임계값을 약 $0.138\,d$로 확정했다(Amit, Gutfreund & Sompolinsky). 흔히 "capacity ≈ $0.14\,d$"로 요약된다. 더 넣으면 우아하게 저하되는 것이 아니라 임계점을 지나며 회복 자체가 붕괴한다.
+capacity는 어떤가. Hopfield 1982는 pattern 수가 약 $0.15\,d$를 넘으면 회복 오류가 심각해진다고 실험적으로 보고했고, 이후 statistical mechanics 분석은 임계값을 약 $0.138\,d$로 확정했다(Amit, Gutfreund & Sompolinsky; Phys. Rev. Lett. 1985가 임계비 약 0.14를 보고, 0.138은 Ann. Phys. 1987의 정밀화). 흔히 "capacity ≈ $0.14\,d$"로 요약된다. 더 넣으면 우아하게 저하되는 것이 아니라 임계점을 지나며 회복 자체가 붕괴한다.
 
-<!-- TODO-VERIFY: 0.138d 임계값의 출처가 Amit, Gutfreund & Sompolinsky 1985 (Phys. Rev. Lett.)인지 연도·게재지 확인 필요, 아울러 아래 문단의 spurious attractor(저장 pattern들의 홀수 개 혼합 상태)와 임계 초과 시 retrieval 상 소멸 서술이 같은 분석 계열의 표준 결과인지 확인. 확인 방법: "Storing infinite numbers of patterns in a spin-glass model of neural networks" 서지 및 해당 분석의 mixture state 논의 확인 -->
-
-임계 아래라고 깨끗한 것도 아니다. energy 지형에는 저장한 적 없는 가짜 minimum — 저장 pattern들의 홀수 개 혼합 같은 **spurious attractor** — 가 함께 생기고, 초기 상태가 나쁘면 read는 거기로 수렴한다. 그리고 임계를 넘으면 저장 pattern들이 attractor 자격 자체를 잃는다. §5.2의 crosstalk이 모든 read의 점진적 오염이었다면 Hopfield의 과적재는 절벽이다 — 같은 $O(d)$ 병목이라도, 망가지는 모양은 write rule과 read dynamics에 따라 다르다.
+임계 아래라고 깨끗한 것도 아니다. energy 지형에는 저장한 적 없는 가짜 minimum — 저장 pattern들의 홀수 개 혼합 같은 **spurious attractor** — 가 함께 생기고, 초기 상태가 나쁘면 read는 거기로 수렴한다. 그리고 임계를 넘으면 저장 pattern들이 attractor 자격 자체를 잃는다(혼합 상태 분석과 포화 붕괴 모두 같은 AGS 분석 계열의 표준 결과다; Amit, Gutfreund & Sompolinsky, Phys. Rev. A, 1985). §5.2의 crosstalk이 모든 read의 점진적 오염이었다면 Hopfield의 과적재는 절벽이다 — 같은 $O(d)$ 병목이라도, 망가지는 모양은 write rule과 read dynamics에 따라 다르다.
 
 여기서 교훈은 상수 0.14가 아니라 스케일이다. **parameter는 $d^2$개인데 저장 능력은 $O(d)$다.** 저장 능력이 parameter 수가 아니라 key 공간의 차원(rank)에 묶여 있다는 것 — 이 병목의 정체는 §5.5 말미에서 [Atlas §3.1 Prop 1]로 정확해지고, Atlas 원문 스스로 자신의 결과를 "Willshaw model과 Hopfield network의 고전적 capacity 결과와 일치하며, capacity가 입력 embedding의 rank에 묶인다"고 자리매김한다 [Atlas App. C, Prop 1 증명].
 
 ## 5.4 dense/modern Hopfield: energy를 바꾸면 capacity가 바뀐다 — Atlas의 이론적 골격
 
-고전 Hopfield energy는 더 일반적인 형태 $E(s) = -\sum_{i=1}^{m} F(x_i^\top s)$에서 $F(z) = z^2/2$인 특수 경우로 볼 수 있다(전개하면 식 (5-1)의 이차형식이 나온다). Krotov & Hopfield 2016 (arXiv:1606.01164)의 **dense associative memory**는 이 $F$를 고차 다항식 $F(z) = z^n$으로 바꾸는 한 수로 capacity를 폭증시킨다: 차수 $n$의 energy에서 capacity는 $d^{n-1}$ 스케일로 커진다.
-
-<!-- TODO-VERIFY: Krotov & Hopfield 2016의 capacity 스케일 d^{n-1}의 정확한 statement(로그 인자와 상수를 포함한 형태) 확인 필요. 확인 방법: arXiv:1606.01164의 capacity 절 확인 -->
+고전 Hopfield energy는 더 일반적인 형태 $E(s) = -\sum_{i=1}^{m} F(x_i^\top s)$에서 $F(z) = z^2/2$인 특수 경우로 볼 수 있다(전개하면 식 (5-1)의 이차형식이 나온다). Krotov & Hopfield 2016 (arXiv:1606.01164)의 **dense associative memory**는 이 $F$를 고차 다항식 $F(z) = z^n$으로 바꾸는 한 수로 capacity를 폭증시킨다: 차수 $n$의 energy에서 capacity는 $d^{n-1}$ 스케일로 커진다 — 고정 오류율 기준으로 저장 가능 pattern 수가 상수 × $d^{\,n-1}$(상수는 허용 오류율에 따른다)이고, 무오류 기준에서는 로그 인자가 붙는다 [Krotov & Hopfield 2016 Eq. 5–6]. $n = 2$에서 고전 Hopfield의 $0.14\,d$가 복원된다.
 
 왜 그런지의 직관은 kernel이다. $(x^\top s)^n = \phi_n(x)^\top \phi_n(s)$ — 차수 $n$ monomial feature map의 내적이다. 즉 energy의 차수를 올리는 것은 key들을 더 높은 차원의 공간으로 lift해서 "서로 orthogonal할 자리"를 늘리는 것과 같다. §5.2에서 capacity를 제한한 것이 "orthogonal한 방향의 개수 = $d_k$"였으므로, 공간을 $d^n$ 차원으로 키우면 한계도 따라 올라간다.
 
-이 사슬의 극한이 현대적 결말이다. $F$를 exponential로 보내면(연속 state + log-sum-exp energy), Ramsauer et al. 2021 (arXiv:2008.02217)이 보였듯 1-step retrieval update가 **정확히 softmax attention의 형태**가 되고, capacity는 $d$에 exponential로 커진다. 즉 Transformer의 attention은 exponential energy를 갖는 modern Hopfield network의 retrieval로 읽을 수 있다.
+이 사슬의 극한이 현대적 결말이다. $F$를 exponential로 보내면(연속 state + log-sum-exp energy), Ramsauer et al. 2021 (arXiv:2008.02217)이 보였듯 1-step retrieval update가 **정확히 softmax attention의 형태**가 되고(pattern을 선형 사상으로 key/value화하고 softmax의 역온도를 $1/\sqrt{d_k}$로 두는 조건 [Ramsauer et al. 2021 Eq. 10, App. A.4]), capacity는 $d$에 exponential로 커진다(저장 가능 pattern 수의 하한이 1보다 큰 상수의 $(d-1)/4$ 거듭제곱 꼴 [Ramsauer et al. 2021 Thm 3]). 즉 Transformer의 attention은 exponential energy를 갖는 modern Hopfield network의 retrieval로 읽을 수 있다.
 
-<!-- TODO-VERIFY: Ramsauer et al. 2021의 exponential capacity 정리의 정확한 형태(지수의 밑, 차수)와 "update rule = attention" 대응의 정확한 조건, 그리고 아래 문단의 1-step retrieval(one update로 지수적으로 작은 오차) 주장의 정확한 조건 확인 필요. 확인 방법: arXiv:2008.02217의 main theorem 절 확인 -->
+이 대응은 read의 비용 구조까지 설명한다. 고전 Hopfield의 read는 수렴까지 도는 fixed-point iteration이었다(§5.3). Ramsauer et al. 2021은 exponential energy 아래에서는 한 번의 update만으로 저장 pattern 근방으로 retrieval이 사실상 완료된다고 보고한다(잘 분리된 pattern에 대해 one update 후 오차가 separation에 지수적으로 작다 [Ramsauer et al. 2021 Thm 4]) — attention이 반복 없이 softmax 한 번으로 read를 끝내는 관행은 이 성질의 번역이다. energy를 날카롭게 만들수록 attractor의 basin이 가팔라져서, 반복 read가 1-step read로 접힌다.
 
-이 대응은 read의 비용 구조까지 설명한다. 고전 Hopfield의 read는 수렴까지 도는 fixed-point iteration이었다(§5.3). Ramsauer et al. 2021은 exponential energy 아래에서는 한 번의 update만으로 저장 pattern 근방으로 retrieval이 사실상 완료된다고 보고한다 — attention이 반복 없이 softmax 한 번으로 read를 끝내는 관행은 이 성질의 번역이다. energy를 날카롭게 만들수록 attractor의 basin이 가팔라져서, 반복 read가 1-step read로 접힌다.
+<!-- FIG: ch05/fig-01-capacity-chain -->
 
 사슬을 한 줄로 요약한다: **energy의 차수를 올린다 = key를 feature space로 lift한다 = capacity가 올라간다; exponential 극한에서 softmax attention에 도달한다.** 이 사슬이 [Atlas §3.1]의 이론적 골격 그 자체다. Atlas는 (a) matrix memory + $\ell_2$ loss의 capacity가 $O(d_k)$임을 증명하고(Prop 1), (b) 차수 $p$ polynomial feature map $\phi_p$로 key를 lift하면 $O(d_k^p)$로 올라감을 보이고(Prop 2), (c) exponential feature map $\phi^*$의 극한에서 softmax attention이 unbounded memory를 갖는 associative memory로 나타남을 이용한다 [Atlas §4.2]. Atlas 원문은 이 kernel 장치가 Krotov & Hopfield 2016의 방법을 계승한 것임을 명시한다 [Atlas §3.1]. 이 사슬을 지금 손에 쥐고 있으면 14장은 corollary처럼 읽힌다. (capacity의 formal 정의와 정리의 상세는 14장 소유다; 이 장은 고전 쪽만 정식으로 다룬다.)
 
-systems 접점 하나: "capacity를 올린다 = key를 lift한다 = key 차원과 그에 붙는 연산이 커진다"이므로 이것은 공짜가 아니라 **state 크기·FLOP과의 거래**다. $\phi_p$의 lifted 차원은 $D = \Theta(d_k^p)$이고, memory state는 $W \in \mathbb{R}^{d_v \times D}$로 함께 커진다. 감각을 위한 숫자 하나: $d_k = 128$, 차수 $p = 2$의 전체 monomial map이면 $D = \binom{128+2}{2} = 8385$, state는 32 KiB에서 약 2 MiB로 65× 커진다(bf16, $d_v = 128$ 기준). capacity를 사는 통화가 state byte라는 것 — 이 거래의 정밀한 비용 계산은 14장에서 한다.
+systems 접점 하나: "capacity를 올린다 = key를 lift한다 = key 차원과 그에 붙는 연산이 커진다"이므로 이것은 공짜가 아니라 **state 크기·FLOP과의 거래**다. $\phi_p$의 lifted 차원은 $D = \Theta(d_k^p)$이고, memory state는 $W \in \mathbb{R}^{d_v \times D}$로 함께 커진다. 감각을 위한 숫자 하나: $d_k = 128$, 차수 $p = 2$의 전체 monomial map이면 $D = \binom{128+2}{2} = 8385$, state는 32 KiB에서 약 2 MiB로 65× 커진다(bf16, $d_v = 128$ 기준). capacity를 사는 통화가 state byte라는 것 — 이 거래의 비용 **구조**(지불 통화가 state byte·matmul 폭이라는 것)는 14장 §14.7에서 확정한다. 단, Atlas가 구현 차수 $p$와 sketch 차원을 공개하지 않아 절대값 계산은 그곳에서도 불가능하다는 것까지가 14장의 결론이다.
 
 ## 5.5 delta rule: append에서 error-correcting overwrite로
 
@@ -140,7 +136,7 @@ $$
 
 이로써 이 장의 위계가 완성된다:
 
-**표 5-1** — 이 장의 세 write 방식과 그 대가.
+표 5-1 — 이 장의 세 write 방식과 그 대가.
 
 | write 방식 | 저장 | read 오염 | exact capacity | read 비용 |
 |---|---|---|---|---|
@@ -195,7 +191,7 @@ $$
 
 이고, 이것이 가능한 이유는 $m = 2 \le d_k = 2$에 key가 선형독립이기 때문이다 — [Atlas §3.1 Prop 1]의 조건 그대로다. read 오차의 전 과정을 표로 정리하면:
 
-**표 5-2** — 각 시점에서의 read 오차 norm ($\|\mathcal{M}(k_i; W) - v_i\|_2$).
+표 5-2 — 각 시점에서의 read 오차 norm ($\|\mathcal{M}(k_i; W) - v_i\|_2$).
 
 | 시점 | $k_1$ 오차 | $k_2$ 오차 |
 |---|---|---|
@@ -213,7 +209,7 @@ $$
 
 이 장의 결과를 독자의 단위계 — byte, FLOP, bandwidth — 로 번역한다. head 하나, $d_k = d_v = 128$, bf16(2 bytes) 기준이다.
 
-**표 5-3** — non-parametric vs parametric associative memory, head 하나 기준 ($d_k = d_v = 128$, bf16).
+표 5-3 — non-parametric vs parametric associative memory, head 하나 기준 ($d_k = d_v = 128$, bf16).
 
 | 항목 | KV cache (softmax attention) | matrix memory $W \in \mathbb{R}^{128\times128}$ |
 |---|---|---|
@@ -221,7 +217,7 @@ $$
 | write | append: 512 B 복사, 간섭 없음 | rank-1 read-modify-write: $O(d^2)$ FLOPs + state 전체 왕복 |
 | read | 전체 스캔: $O(L \cdot d)$ FLOPs·bytes | GEMV: $2d^2 \approx 33$ KFLOPs, 32 KiB read |
 | exact 저장 한계 | cache가 자라는 한 무제한 | $\le d_k = 128$쌍 [Atlas §3.1 Prop 1] |
-| 망각 | 명시적 eviction policy (paged cache 등) | crosstalk에 의한 암묵적 저하, 또는 학습된 gate (→ 13장) |
+| forgetting | 명시적 eviction policy (paged cache 등) | crosstalk에 의한 암묵적 저하, 또는 학습된 gate (→ 13장) |
 
 이 표에서 세 가지 계산을 뽑아 두면 Part II 내내 쓴다.
 

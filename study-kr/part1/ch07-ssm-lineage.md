@@ -51,9 +51,9 @@ $$
 
 LTI의 대가는 표현력이다. 계수가 token에 무관하므로 S4는 모든 token을 **같은 비율로** 감쇠시키고 같은 강도로 쓴다. "이 token은 기억하고 저 token은 무시한다"는 content 기반 선택이 원리적으로 불가능하다. Gu & Dao 2023 (arXiv:2312.00752)은 selective copying과 induction head 류의 합성 과제로 이 한계를 시연하고, 해법으로 **selectivity**를 제안했다: $\Delta_t, B_t, C_t$를 입력 $x_t$의 함수로 만든다($A$ 자체는 고정하되 $\Delta_t$를 통해 시변이 된다). 이것이 Mamba다.
 
-selectivity의 의미는 §7.1의 $\Delta$ 해석에서 바로 나온다. $\bar a_t = \exp(\Delta_t a)$가 token마다 달라지므로, 모델은 token을 보고 "state를 유지할까, 밀어낼까"를 결정한다. Gu & Dao 2023은 특정 파라미터화에서 selective SSM이 고전 RNN의 gate 식 $h_t = (1-g_t)h_{t-1} + g_t x_t$, $g_t = \sigma(\mathrm{Linear}(x_t))$로 환원됨을 보여, 이것이 LSTM 이래의 gating과 같은 계보임을 명시한다.
+selectivity의 의미는 §7.1의 $\Delta$ 해석에서 바로 나온다. $\bar a_t = \exp(\Delta_t a)$가 token마다 달라지므로, 모델은 token을 보고 "state를 유지할까, 밀어낼까"를 결정한다. Gu & Dao 2023은 특정 파라미터화($N=1$, $A=-1$, $B=1$, $s_\Delta=\mathrm{Linear}$, $\tau_\Delta=\mathrm{softplus}$)에서 selective SSM이 고전 RNN의 gate 식 $h_t = (1-g_t)h_{t-1} + g_t x_t$, $g_t = \sigma(\mathrm{Linear}(x_t))$로 환원됨을 정리로 보여 [Gu & Dao 2023 Theorem 1, §3.5.1; 증명 App. C], 이것이 LSTM 이래의 gating과 같은 계보임을 명시한다.
 
-<!-- TODO-VERIFY: 위 gate 환원이 Mamba 원문의 Theorem 1(§3.5.1)인지 정확한 위치 확인 필요. 확인 방법: arXiv:2312.00752 원문에서 "Theorem 1" 및 "connection to gating" 절 검색. -->
+<!-- FIG: ch07/fig-02-selectivity-gate -->
 
 계산 구조의 귀결이 독자에게 더 중요하다. 계수가 시변이 되는 순간 convolution kernel $\bar K$가 존재하지 않는다. **LTI를 깨면 FFT 모드가 소멸하고, recurrence(또는 scan)만 남는다.** Mamba가 "hardware-aware selective scan"이라는 커널 엔지니어링 — scan을 SRAM 안에서 수행하는 kernel fusion, backward를 위한 state recomputation — 에 논문 한 절을 쓰는 이유가 이것이다. 독자의 세계로 옮기면 Mamba의 커널은 FlashAttention과 같은 부류의 IO-aware 최적화다: DRAM 왕복을 없애서 bandwidth 문제를 푼다. 그러나 뒤에서 보듯, **op mix 문제**(tensor core를 쓰지 못하는 elementwise 연산 위주)는 fusion으로 풀리지 않는다. 이것이 Mamba-2의 출발점이다.
 
@@ -109,13 +109,11 @@ y_t = \Big(\prod_{s=\xi(t,C)+1}^{t}\alpha_s\Big)\, W_{\xi(t,C)}\,q_t \;+\; \sum_
 \tag{7-4}
 $$
 
-첫 항은 chunk 경계 state의 기여(cross-chunk: GEMV를 chunk 단위로 모으면 $C\times d_k$ 대 $d_k\times d_v$ GEMM), 둘째 항은 chunk 내부의 masked attention($C\times C$ GEMM)이다. 경계 state의 갱신 역시 $d_v\times C$ 대 $C\times d_k$ GEMM 하나다. 결과: **모든 무거운 연산이 GEMM이 된다.** 이것이 Mamba-2가 tensor core를 되찾은 방법이고, [Dao & Gu 2024]는 이 SSD 알고리즘이 Mamba-1의 fused selective scan 대비 2–8× 빠르다고 보고한다. 스칼라 gate 덕에 커널이 단순해져 state 차원도 Mamba-1보다 크게 키울 수 있게 되었다.
-
-<!-- TODO-VERIFY: Mamba-2 실험의 기본 state 차원(N=64인지 128인지)과 "8× larger state" 표현의 정확한 출처(초록인지 본문인지) 확인 후 수치를 본문에 추가할 것. 확인 방법: arXiv:2405.21060 원문 §9 실험 설정과 abstract 검색. -->
+첫 항은 chunk 경계 state의 기여(cross-chunk: GEMV를 chunk 단위로 모으면 $C\times d_k$ 대 $d_k\times d_v$ GEMM), 둘째 항은 chunk 내부의 masked attention($C\times C$ GEMM)이다. 경계 state의 갱신 역시 $d_v\times C$ 대 $C\times d_k$ GEMM 하나다. 결과: **모든 무거운 연산이 GEMM이 된다.** 이것이 Mamba-2가 tensor core를 되찾은 방법이고, [Dao & Gu 2024]는 이 SSD 알고리즘이 Mamba-1의 fused selective scan 대비 2–8× 빠르다고 보고한다. 스칼라 gate 덕에 커널이 단순해져 state 차원도 Mamba-1보다 크게 키울 수 있게 되었다. 원문은 이를 Mamba-1의 8× 이상이라고 표현하며 [Dao & Gu 2024 §1], 실험은 과제별로 $N \in \{16, 64, 256\}$을 쓴다 — 단일 default $N$은 논문에 명시가 없다 [Dao & Gu 2024 Fig. 8, Table 5].
 
 한 가지를 지금 박아 두어야 한다. 식 (7-4)의 chunk 분해는 **항등 변형**이다. transition이 linear이기 때문에 결합법칙으로 항을 재배열했을 뿐, 계산되는 함수는 $C$와 무관하게 식 (7-3)과 bit-exact(부동소수점 재배열 오차 제외)로 같다. FlashAttention tiling과 정확히 같은 지위다. 9장에서 만나는 chunkwise training은 다르다 — state 갱신이 gradient(state에 비선형)가 되는 순간 이 재배열이 불가능해지고, chunk 시작 상태에 gradient를 고정하는 **근사**(식 (M4)의 stale-snapshot)가 들어오며, 그때부터 $C$는 함수 자체를 바꾸는 semantic hyperparameter(→ 9장)가 된다. "Mamba-2의 chunk는 tiling이고, TTT의 chunk는 근사다" — 이 한 문장이 이 장과 9장을 가르는 경계선이다.
 
-decode 쪽 접점도 정리해 두자. SSD는 훈련·prefill의 이야기다. decode에서는 세 모드 중 recurrent form만 의미가 있고, 그 비용은 Mamba-1이든 Mamba-2든 per-token state RMW로 같은 차수다. "Mamba-2가 빠르다"는 주장을 서빙 엔지니어가 들을 때는 **어느 phase의 throughput인지**를 물어야 한다 — 이 질문 습관은 Part II에서 각 논문의 효율 주장을 감사할 때 그대로 재사용된다.
+decode 쪽 접점 하나. SSD는 훈련·prefill의 이야기고, decode 비용은 Mamba-1이든 Mamba-2든 per-token state RMW로 같은 차수다(상세는 §7.6). "Mamba-2가 빠르다"는 주장을 서빙 엔지니어가 들을 때는 **어느 phase의 throughput인지**를 물어야 한다 — 이 질문 습관은 Part II에서 각 논문의 효율 주장을 감사할 때 그대로 재사용된다.
 
 ## 7.4 계보 정리: 세 세대의 gate, 그리고 이 라인의 접속점
 
@@ -134,7 +132,7 @@ decode 쪽 접점도 정리해 두자. SSD는 훈련·prefill의 이야기다. d
 
 master update와의 접속은 이렇게 읽으면 된다. 식 (M2)는 $W_t = \alpha_t W_{t-1} + S_t$였다. Mamba-2는 여기서 momentum을 끄고($\beta_t = 0$) surprise 항을 Hebbian write $v_t k_t^\top$로 바꾼 특수 사례다. 그리고 이 Hebbian write조차 gradient의 언어로 다시 읽힌다. [Miras]는 dot-product attentional bias $\tilde\ell_t = -2\langle W k_t,\, v_t\rangle$에 GD 한 걸음을 적용하면(step size는 흡수) 정확히 $+\,v_t k_t^\top$의 write가 나옴을 보이고, 이에 따라 Mamba-2를 "dot-product bias + $\ell_2$ retention + GD" 조합으로 분류한다 [Miras Eq. 8, Table 1]. 이 bias는 $W$에 대해 선형이라 gradient가 현재 state를 전혀 참조하지 않는다 — 옛 값을 읽고 고쳐 쓰는 correction이 원리적으로 없고, 그래서 crosstalk(→ 5장)가 남는다. 이 자리 배치가 이 라인 전체의 설계 공간(어떤 bias를 최소화할까 × 무엇을 남길까 × 어떤 optimizer로)을 여는 첫 수가 된다.
 
-gate의 다음 진화도 여기서 예고된다. [Titans]는 자신의 forgetting mechanism — update 앞에 곱해지는 data-dependent retention — 가 Mamba-2류 gating mechanism의 일반화라고 명시한다 [Titans §1, §3.1]. 무엇이 일반화인가? Mamba-2의 gate는 행렬 state 하나를 스칼라로 감쇠시키지만, Titans의 retention은 memory가 "작은 모델의 weights"로 승격된 뒤에도 같은 자리에서 작동하는 weight decay다. 2장에서 optimizer 객체의 성분으로 배운 weight decay — $(1-\lambda)w$의 그 감쇠 — 가, 여기서는 sequence 축 위에서 token마다 값이 달라지는 학습된 eviction으로 재해석된다. 같은 수식, 다른 축이다. 이 재해석의 정식 전개는 12장의 몫이고, 이 장은 그 재료인 gate 계보를 공급했다.
+gate의 다음 진화도 여기서 예고된다. [Titans]는 자신의 forgetting mechanism — update 앞에 곱해지는 data-dependent retention — 가 Mamba-2류 gating mechanism의 일반화라고 명시한다 [Titans §1, §3.1]. 무엇이 일반화인가? Mamba-2의 gate는 행렬 state 하나를 스칼라로 감쇠시키지만, Titans의 retention은 memory가 "작은 모델의 weights"로 승격된 뒤에도 같은 자리에서 작동하는 weight decay다. 2장에서 optimizer 객체의 성분으로 배운 weight decay — $(1-\eta\lambda)w$의 그 감쇠 — 가, 여기서는 sequence 축 위에서 token마다 값이 달라지는 학습된 eviction으로 재해석된다. 같은 수식, 다른 축이다. 이 재해석의 정식 전개는 12장의 몫이고, 이 장은 그 재료인 gate 계보를 공급했다.
 
 의미론적 차이 하나는 기록해 둘 가치가 있다. [Miras footnote 2]는 Mamba-2류의 gating과 [Titans]의 retention이 **완전 소거의 의미**에서 다르다고 지적한다: Mamba-2의 gate가 0이 되면 memory 전체가 지워지고 다음 token은 "처음 보는 데이터"가 되는 반면, Titans는 meta-learn된 초기 상태로 되돌아가는 cold start를 갖는다. gate 값이 같아도 "0으로 리셋"과 "$W_{\mathrm{init}}$으로 리셋"은 다른 연산이다 — 이 구분은 15장([TNT]의 periodic state reset)에서 시스템 설계 축으로 커진다.
 
@@ -149,6 +147,8 @@ $d_k = d_v = 2$, $L = 3$으로 식 (7-2)–(7-4)를 전부 손으로 확인한�
 | 1 | $(1,\,0)$ | $(2,\,0)$ | — | — |
 | 2 | $(0,\,1)$ | $(0,\,4)$ | $1/2$ | — |
 | 3 | $(1,\,0)$ | $(1,\,1)$ | $1/2$ | $(1,\,0)$ |
+
+<!-- FIG: ch07/fig-01-ssd-three-paths -->
 
 **경로 1 — recurrent form (식 7-2).** decode가 하는 계산이다.
 

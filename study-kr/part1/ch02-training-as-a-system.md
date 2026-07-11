@@ -3,7 +3,7 @@
 > **이 장의 목표** — 이 장을 마치면 독자는 다음을 할 수 있어야 한다.
 > 1. backward pass가 계산하는 두 GEMM의 shape를 쓰고, forward 대비 FLOPs 비율(약 2×)을 유도할 수 있다.
 > 2. SGD / momentum / AdamW / AdaGrad / Shampoo / Muon 각각을 `update(state, gradient) → (state′, ΔΘ)` 서명을 갖는 **stateful 객체**로 기술하고, param당 state 크기와 step당 비용을 산정할 수 있다.
-> 3. "momentum은 linear recurrence다", "weight decay의 감쇠 인자는 forget gate다"라는 두 identity를 수식으로 진술할 수 있다 — 이 둘을 합치면 그대로 [Titans]의 memory update가 된다.
+> 3. "momentum은 linear recurrence다", "weight decay의 감쇠 인자는 retention gate(역사적 별칭 forget gate → 13장)의 원형이다"라는 두 identity를 수식으로 진술할 수 있다 — 이 둘을 합치면 그대로 [Titans]의 memory update가 된다.
 > 4. 훈련의 batch 축과 이 라인의 sequence 축이 어떻게 역할을 교대하는지 설명할 수 있다.
 >
 > **왜 필요한가** — 6편 전부가 이 장을 전제하며, 특히 다음 지점들이 이 장 없이는 읽히지 않는다.
@@ -56,11 +56,11 @@ $$
 
 ## 2.3 backward pass: 반복되는 VJP, 그리고 $dW = \delta\, x^\top$라는 shape
 
-가장 순진한 방법부터 기각하자. 편미분을 수치적으로 구하려면 parameter 하나를 $\epsilon$만큼 흔들고 forward를 다시 돌려야 한다 — parameter가 $N$개면 forward $N+1$번, $N \sim 10^9$이므로 논외다. **backpropagation**(reverse-mode automatic differentiation)은 forward 한 번 + backward 한 번으로 $N$개 편미분 전부를 얻는다(Rumelhart, Hinton & Williams 1986). 원리는 chain rule을 출력에서 입력 방향으로, 즉 스칼라 loss에서 시작해 거꾸로 적용하는 것이다.
+가장 순진한 방법부터 기각하자. 편미분을 수치적으로 구하려면 parameter 하나를 $\epsilon$만큼 흔들고 forward를 다시 돌려야 한다 — parameter가 $N$개면 forward $N+1$번, $N \sim 10^9$이므로 논외다. **backpropagation**(reverse-mode automatic differentiation)은 forward 한 번 + backward 한 번으로 $N$개 편미분 전부를 얻는다(Rumelhart, Hinton & Williams 1986; 교과서 서술은 Goodfellow, Bengio & Courville 2016, *Deep Learning*, ch. 6–8). 원리는 chain rule을 출력에서 입력 방향으로, 즉 스칼라 loss에서 시작해 거꾸로 적용하는 것이다.
 
 backward의 원자 연산은 **VJP(vector-Jacobian product)**다. 어떤 layer가 $y = f(x)$를 계산했다면, backward는 상류에서 내려온 $\partial\mathcal{L}/\partial y$를 받아 $\partial\mathcal{L}/\partial x = (\partial y/\partial x)^\top\, \partial\mathcal{L}/\partial y$를 하류로 넘긴다. Jacobian $\partial y/\partial x$를 실체화하지 않고 "Jacobian을 벡터에 곱한 결과"만 계산한다는 점이 요체다 — 독자에게 익숙한 어휘로는, 큰 중간 행렬을 materialize하지 않고 fused kernel 한 번으로 통과시키는 것과 같은 감각이다.
 
-구체적으로 $L$층 MLP를 보자. layer $\ell$은 pre-activation $z_\ell = W_\ell\, x_{\ell-1}$과 출력 $x_\ell = \sigma(z_\ell)$을 계산한다(이 장에서 $W_\ell$의 첨자는 layer 인덱스다; 시간 첨자를 단 fast weights $W_t$와 혼동하지 말 것 — 여기의 $W_\ell$들은 전부 $\Theta$의 성분이다). **backprop 오차** $\delta_\ell := \partial\mathcal{L}/\partial z_\ell$을 정의하면, chain rule은 두 줄짜리 recursion이 된다:
+구체적으로 $L_{\mathrm{layer}}$층 MLP를 보자($\ell = 1,\dots,L_{\mathrm{layer}}$). layer $\ell$은 pre-activation $z_\ell = W_\ell\, x_{\ell-1}$과 출력 $x_\ell = \sigma(z_\ell)$을 계산한다(이 장에서 $W_\ell$의 첨자는 layer 인덱스다; 시간 첨자를 단 fast weights $W_t$와 혼동하지 말 것 — 여기의 $W_\ell$들은 전부 $\Theta$의 성분이다). **backprop 오차** $\delta_\ell := \partial\mathcal{L}/\partial z_\ell$을 정의하면, chain rule은 두 줄짜리 recursion이 된다:
 
 $$
 \delta_\ell = \big(W_{\ell+1}^\top\, \delta_{\ell+1}\big) \odot \sigma'(z_\ell),
@@ -86,6 +86,8 @@ backward에는 FLOPs 외의 비용이 하나 더 있다. 식 (2-1)을 계산하�
 ## 2.4 loss surface: 왜 $\eta$ 하나로는 부족한가
 
 $\mathcal{L}(\Theta)$를 $N$차원 지형으로 상상하자. gradient descent는 이 지형을 국소 경사만 보고 내려간다. 지형은 non-convex지만, optimizer 설계를 지배하는 것은 전역 구조가 아니라 국소 **curvature** — gradient가 방향에 따라 얼마나 빨리 변하는가 — 다. 좁고 가파른 골짜기를 생각하면 된다: 골짜기를 가로지르는 방향은 curvature가 커서 조금만 움직여도 gradient가 뒤집히고, 골짜기를 따라가는 방향은 curvature가 작아 한참을 가도 경사가 그대로다. 최적 보폭이 방향마다 다른데 $\eta$는 하나뿐이므로, $\eta$를 가파른 방향에 맞추면 완만한 방향에서 기어가고, 완만한 방향에 맞추면 가파른 방향에서 진동하거나 발산한다. 이것이 ill-conditioning이며, 이 장 후반의 optimizer 동물원은 전부 이 문제에 대한 서로 다른 응답이다: 방향별 진동을 평균으로 상쇄하고(momentum), 좌표별로 보폭을 다시 재고(AdaGrad, Adam), 아예 좌표계를 바꾸고(Shampoo), update의 방향 성분만 남긴다(Muon).
+
+<!-- FIG: ch02/fig-01-loss-landscape -->
 
 minima의 모양도 한 단락만큼은 알아야 한다. 훈련이 도달하는 minimum 주변의 지형은 뾰족할 수도(sharp) 평평할 수도(flat) 있는데, sharp minimum은 parameter의 작은 요동에도 loss가 크게 변하므로 훈련 데이터와 테스트 데이터의 미세한 분포 차이에 취약하다는 실증 보고가 있다(Li et al. 2018, arXiv:1712.09913의 loss landscape 시각화가 표준 참조다). 이 책에서 loss surface 이론은 여기까지만 필요하다 — 수렴 증명은 다루지 않는다. 시스템 독자에게 필요한 요약은 하나다: **step의 품질은 gradient만으로 결정되지 않고, gradient를 어떤 상태(state)와 어떤 기하(metric)로 가공하느냐에 달려 있다.** 그 가공기가 optimizer다.
 
@@ -133,9 +135,9 @@ $$
 
 $\beta \in [0,1)$은 momentum decay 상수다(보통 0.9). 식 (2-2)를 풀면 $m_t = \sum_{i\le t} \beta^{\,t-i} g_i$ — **momentum buffer는 과거 gradient들의 지수가중합**이다. 고전적 해석은 두 가지다: 물리적으로는 공이 관성을 갖고 골짜기를 구르는 것이고(Polyak 1964; 심층학습 문맥의 재조명은 Sutskever et al. 2013), 통계적으로는 잡음 낀 gradient의 저역 통과 필터다 — §2.4의 가파른 방향 진동은 부호가 번갈아 나타나므로 합산에서 상쇄되고, 완만한 방향의 일관된 성분은 최대 $1/(1-\beta)$배까지 증폭된다.
 
-이 책이 강조하는 세 번째 해석이 있다. **식 (2-2)는 linear recurrence다 — 독자가 아는 linear-RNN state 갱신, RetNet의 상수 decay, scan kernel이 처리하는 점화식과 정확히 같은 대수다.** 이 identity는 장식이 아니라 이 라인의 두 기둥을 떠받친다. 첫째, [Titans]는 momentum buffer를 그대로 inner loop에 이식해 "past surprise" $S_t$로 삼는데(원문 Eq. 10; → 12장), recurrence가 linear이기 때문에 chunk 안에서 associative scan으로 병렬 계산된다(→ 9장) — 독자의 prefix-sum kernel이 여기서 재취업한다. 둘째, [NL §4.2]는 식 (2-2)를 "gradient stream을 key 없이 압축하는 associative memory"로 읽고, GD + momentum 전체를 2-level 구조(안쪽 level이 gradient를 momentum memory로 압축하고, 바깥 level이 그 state를 weights에 적용)로 재구성한다 — 이것이 **momentum-as-memory**이며, 이 장은 객체로서의 사실만 확정하고 정리로서의 지위는 16장이 다룬다. memory로 읽는 순간 capacity 질문이 성립하는데, [NL §4.3]은 $\beta=0.9$일 때 누적 기여의 50% 이상이 최근 gradient 6개에, 99% 이상이 최근 43개에 집중됨을 지적한다 — momentum은 반감기가 짧은 memory이고, 그 짧음이 continual learning에서의 망각과 연결된다(→ 11장, 16장).
+이 책이 강조하는 세 번째 해석이 있다. **식 (2-2)는 linear recurrence다 — 독자가 아는 linear-RNN state 갱신, RetNet의 상수 decay, scan kernel이 처리하는 점화식과 정확히 같은 대수다.** 이 identity는 장식이 아니라 이 라인의 두 기둥을 떠받친다. 첫째, [Titans]는 momentum buffer를 그대로 inner loop에 이식해 "past surprise" $S_t$로 삼는데(원문 Eq. 10; → 12장), recurrence가 linear이기 때문에 chunk 안에서 associative scan으로 병렬 계산된다(→ 9장) — 독자의 prefix-sum kernel이 여기서 재취업한다. 둘째, [NL §4.2]는 식 (2-2)를 "gradient stream을 key 없이 압축하는 associative memory"로 읽고, GD + momentum 전체를 2-level 구조(안쪽 level이 gradient를 momentum memory로 압축하고, 바깥 level이 그 state를 weights에 적용)로 재구성한다 — 이것이 **momentum-as-memory**이며, 이 장은 객체로서의 사실만 확정하고 정리로서의 지위는 16장이 다룬다. memory로 읽는 순간 capacity 질문이 성립하는데, [NL §4.3]은 $\beta=0.9$일 때 누적 기여의 50% 이상이 최근 gradient 6개에, 99% 이상이 최근 43개에 집중됨을 지적한다 — momentum은 반감기가 짧은 memory이고, 그 짧음이 continual learning에서의 forgetting과 연결된다(→ 11장, 16장).
 
-### 2.5.3 weight decay: $(1-\eta\lambda)$라는 forget gate
+### 2.5.3 weight decay: $(1-\eta\lambda)$라는 retention의 원형
 
 - **state**: 없다 (기존 객체에 붙는 modifier다).
 - **update**: 두 형태를 구분해야 한다. (i) **L2 regularization**: loss에 $\frac{\lambda}{2}\|\Theta\|_2^2$를 더한다 — gradient에 $\lambda\Theta$가 섞여 들어가므로, Adam처럼 gradient를 재척도하는 optimizer에서는 decay 강도까지 함께 왜곡된다. (ii) **decoupled weight decay**: gradient 경로와 무관하게 $\Theta \leftarrow (1-\eta\lambda)\,\Theta - \eta\,(\text{optimizer의 update})$로 직접 곱해 감쇠시킨다. AdamW의 W가 이것이며, 두 형태가 다르다는 지적 자체가 논문 하나다(Loshchilov & Hutter 2019, arXiv:1711.05101).
@@ -148,7 +150,7 @@ $$
 \tag{2-3}
 $$
 
-— **weights 자체가 과거 update들의 지수가중 memory이고, $(1-\eta\lambda)$는 그 memory의 유지 비율**이다. 식 (2-2)와 식 (2-3)을 나란히 놓으면 buffer와 weights가 같은 대수의 두 인스턴스임이 보인다. 독자의 어휘로 번역하면 $(1-\eta\lambda)$는 forget gate — 정확히는, cache에서 오래된 항목을 지수적으로 밀어내는 학습된 eviction의 가장 원시적 형태다. 이 인자를 상수에서 token의 함수 $\alpha_t$로 승격시킨 것이 식 (M2)의 retention 항 $\alpha_t W_{t-1}$이고, [Titans]는 이를 memory의 forgetting mechanism으로(→ 12장), [Miras]는 retention gate로 정식화한다(→ 13장; 정의 소유권은 그 장들에 있다). 이 장에서 확정할 사실은 하나다: **weight decay는 이미 언제나 memory 관리 연산이었다.**
+— **weights 자체가 과거 update들의 지수가중 memory이고, $(1-\eta\lambda)$는 그 memory의 유지 비율**이다. 식 (2-2)와 식 (2-3)을 나란히 놓으면 buffer와 weights가 같은 대수의 두 인스턴스임이 보인다. 독자의 어휘로 번역하면 $(1-\eta\lambda)$는 retention gate의 원형 — 정확히는, cache에서 오래된 항목을 지수적으로 밀어내는 학습된 eviction의 가장 원시적 형태다. 이 인자를 상수에서 token의 함수 $\alpha_t$로 승격시킨 것이 식 (M2)의 retention 항 $\alpha_t W_{t-1}$이고, [Titans]는 이를 memory의 forgetting mechanism으로(→ 12장), [Miras]는 retention gate로 정식화한다(→ 13장; 정의 소유권은 그 장들에 있다). 이 장에서 확정할 사실은 하나다: **weight decay는 이미 언제나 memory 관리 연산이었다.**
 
 ### 2.5.4 Adam과 AdamW: 좌표별 보폭의 표준
 
@@ -270,7 +272,7 @@ Muon의 $\mathrm{NS}_\kappa$가 하는 일을 보기 위해, 특이값이 $(1.2,
 - backward pass는 VJP의 연쇄이고, weight gradient는 항상 "층 입력 × 층 오차"의 outer product $dW = \delta\, x^\top$다 — 이 shape는 memory write $v k^\top$와 동일한 GEMM이다.
 - optimizer는 `update(state, g) → (state′, ΔΘ)` 서명의 객체다: SGD는 stateless, momentum은 buffer 1개, AdamW는 2개, Shampoo는 행렬 통계, Muon은 buffer 1개 + GEMM 연산.
 - momentum 식 $m_t = \beta m_{t-1} + g_t$는 linear recurrence — linear-RNN state와 같은 대수이고, [Titans]의 $S_t$와 [NL]의 momentum-as-memory가 이 identity 위에 선다.
-- decoupled weight decay의 $(1-\eta\lambda)$는 상수 forget gate이며, 이를 token의 함수로 승격한 것이 식 (M2)의 retention 항 $\alpha_t W_{t-1}$이다.
+- decoupled weight decay의 $(1-\eta\lambda)$는 상수 retention 인자이며, 이를 token의 함수로 승격한 것이 식 (M2)의 retention 항 $\alpha_t W_{t-1}$이다.
 - Adam은 좌표별 gradient 스케일로 보폭을 정규화하는 sign-ish descent이고, [NL App. B]는 이를 element-wise $\ell_2$ objective의 최적 associative memory로 재구성한다.
 - Muon = momentum + Newton–Schulz 직교화($\mathrm{NS}_\kappa$, $\kappa=5$): update의 특이값을 평준화하며, 비용은 행렬당 GEMM 10–15개다. [Atlas]가 이를 inner optimizer로 이식한다.
 - 이 라인에서 sequence 축이 batch 축의 역할을 맡는다: chunk = inner loop의 mini-batch. 단 token은 독립이 아니므로 $C$는 semantic hyperparameter가 된다(→ 9장).

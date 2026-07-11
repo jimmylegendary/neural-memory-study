@@ -16,7 +16,7 @@
 
 논문이 스스로 정의한 문제는 현대 recurrent model의 세 가지 설계 결함이다 [Atlas §1]. (1) **online 갱신**: memory가 현재 token만 보고 최적화되고 이전 state는 retention으로만 유지된다 — 개별 token의 greedy memorization이며, 문맥 전체가 잘 저장되었는지는 아무도 묻지 않는다. (2) **제한된 memory capacity**: 구조와 key-value feature mapping이 "완벽하게 매핑 가능한 쌍의 수"를 제한한다. (3) **표현력 없는 memory 관리**: inner optimizer가 거의 전부 1차 gradient descent라서, token 동역학의 1차 정보에만 의존해 나쁜 local minima에 수렴하고 질 낮은 key→value 매핑을 배울 수 있다. 이 셋이 각각 Omega rule, feature map, Muon으로 대응된다는 것이 논문의 구도다.
 
-이 논문에는 라인 전체의 어휘를 바꾸는 용어 주장이 하나 있다. [Atlas §1]은 "**test-time memorization**"이라는 표현을 "test-time training" 대신 쓰겠다고 명시한다. 근거는: inner loop이 하는 일은 현재 global context 안에서의 저장과 인출뿐이고, pre-training으로 학습된 core parameter(outer loop)와 초기 state는 전혀 갱신되지 않으며, memory를 비우고 나면 새로운 독립 context로 이월되는 persistent learning이나 skill 습득이 없다는 것이다. 이 책도 Atlas 이후 문맥에서 이 구분을 존중한다 — inference 시점에 weights가 변한다고 해서 checkpoint가 학습되는 것이 아니다. 이 구분 자체가 이 장의 논점 중 하나이며, §14.4에서 두 loop의 경계로 다시 정확히 그린다.
+이 논문에는 라인 전체의 어휘를 바꾸는 용어 주장이 하나 있다. [Atlas §1]은 "**test-time memorization**"이라는 표현을 "test-time training" 대신 쓰겠다고 명시한다. 근거는: inner loop가 하는 일은 현재 global context 안에서의 저장과 인출뿐이고, pre-training으로 학습된 core parameter(outer loop)와 초기 state는 전혀 갱신되지 않으며, memory를 비우고 나면 새로운 독립 context로 이월되는 persistent learning이나 skill 습득이 없다는 것이다. 이 책도 Atlas 이후 문맥에서 이 구분을 존중한다 — inference 시점에 weights가 변한다고 해서 checkpoint가 학습되는 것이 아니다. 이 구분 자체가 이 장의 논점 중 하나이며, §14.4에서 두 loop의 경계로 다시 정확히 그린다.
 
 핵심 주장을 논문 자신의 분류표로 요약하면 이렇다. [Atlas Table 1]은 현대 recurrent model들을 다섯 성질로 비교한다: (1) dynamic decay(data-dependent retention), (2) deep neural memory, (3) non-linear capacity(feature map에 의한 초선형 capacity), (4) **locally optimal**(token에 대한 근사 2차 정보로 memory를 관리), (5) **flexible context**(문맥의 어느 부분을 기억할지 유연하게 선택). attention과 SWA는 (4)(5)를 non-parametric하게 갖지만 state가 자라고, 기존 recurrent 계열은 (1)–(3)의 부분집합만 갖는다. Atlas는 다섯을 전부 체크하는 유일한 parallelizable recurrent model이라는 것이 논문의 자기 위치 규정이다.
 
@@ -36,7 +36,7 @@
 
 남은 손잡이가 key의 차원이다. key·value 차원을 직접 키우면 projection 파라미터가 차원당 $O(d)$씩 늘고 긴 문맥에서 메모리 사용량이 커진다. 대신 [Atlas §3.1]은 separable kernel $\sigma(x,y)=\phi(x)^\top\phi(y)$를 key와 query에 적용한다. **polynomial feature map** $\phi_p(x)=[x^\beta]_{|\beta|\le p}$ — 차수 $p$ 이하의 모든 monomial을 쌓은 벡터 — 를 쓰면 lifted 차원은 $D=\binom{d_k+p}{p}=\Theta(d_k^p)$가 된다.
 
-**Proposition 2** [Atlas Prop. 2]: lifted key 위의 matrix memory가 $\ell(W;\phi_p(k_t),v_t)=\|W\phi_p(k_t)-v_t\|_2^2$를 최적화하면 capacity는 최대 $O(d_k^p)$. 그리고 증명 [Atlas App. C]은 더 강한 사실을 준다: $\mathrm{rank}(W\Phi)\le\mathrm{rank}(\Phi)\le D$이므로, **어떤 최적화 방법을 쓰든** $D$쌍을 넘길 수 없다. 즉 feature map은 optimizer와 독립인 capacity 상한 그 자체를 옮기는 손잡이고, optimizer(다음의 Muon)는 그 상한 안에서 실제 도달 품질을 올리는 손잡이다 — 두 축이 직교한다는 것이 이 논문 설계의 논리적 골격이다.
+**Proposition 2** [Atlas Prop. 2]: lifted key 위의 matrix memory가 $\ell(W;\phi_p(k_t),v_t)=\|W\phi_p(k_t)-v_t\|_2^2$를 최적화하면 capacity는 최대 $O(d_k^p)$. 그리고 증명 [Atlas App. C]은 더 강한 사실을 준다: $\mathrm{rank}(W\Phi)\le\mathrm{rank}(\Phi)\le D$이므로, **어떤 최적화 방법을 쓰든** $D$쌍을 넘길 수 없다. 즉 feature map은 optimizer와 독립인 capacity 상한 그 자체를 옮기는 손잡이고, optimizer(다음의 Muon)는 그 상한 안에서 실제 도달 품질을 올리는 손잡이다 — 두 축이 직교한다는 것이 이 논문 설계의 논리적 골격이다. 그리고 이 정리 사슬은 5장 §5.4의 dense-Hopfield 사슬(Krotov→Ramsauer: energy 차수 = feature lift = capacity)의 정식화다 — 그 사슬을 통과한 독자에게 Prop 2는 corollary처럼 읽히며, 이미 가진 $\phi_p$·$\phi^*$ 직관을 그대로 재사용하면 된다.
 
 polynomial map에는 두 가지 추가 해석이 붙는다 [Atlas §3.1]. 첫째, **Taylor 근사로서의 softmax**: $\exp(q^\top k)\approx a_0+a_1\,q^\top k+a_2\,(q^\top k)^2+\cdots+a_p\,(q^\top k)^p$ [Atlas Eq. 5]. 계수 $a_i$를 $1/i!$로 초기화하되 **학습 가능**하게 두면, polynomial kernel은 "절단된, 학습 가능한 softmax kernel"이 된다. 둘째, **input feature gating**: $a_i\to 0$은 차수 $i$의 feature block 전체를 잘라내고, $a_1\to 1$에 나머지 0이면 $\phi(x)=x$로 돌아간다 — RNN의 gate를 memory가 아니라 **입력 표현**에 적용한 것이다.
 
@@ -46,7 +46,7 @@ $$
 \phi^*(x)=\Big(1,\;x,\;\tfrac{x^{\otimes 2}}{\sqrt{2!}},\;\tfrac{x^{\otimes 3}}{\sqrt{3!}},\;\dots\Big)^{\!\top}
 $$
 
-를 정의하면 $\exp(q^\top k)=\phi^*(q)^\top\phi^*(k)$가 **정확히** 성립한다 [Atlas Eq. 22–23]. 따라서 softmax attention은 무한 차원 feature 공간 위의 associative memory이고, **capacity가 unbounded다** [Atlas §4.2]. 1장의 Rosetta 사전에서 "KV cache = 압축하지 않는 memory"라고 썼던 대응이 여기서 정리의 형태를 얻는다: attention이 긴 문맥 recall에서 고정 state 모델을 이기는 이유는 신비가 아니라 capacity 상한의 차이다.
+를 정의하면 $\exp(q^\top k)=\phi^*(q)^\top\phi^*(k)$가 **정확히** 성립한다 [Atlas Eq. 22–23]. 따라서 softmax attention은 무한 차원 feature 공간 위의 associative memory이고, **capacity가 unbounded다** [Atlas §4.2] (→ 5장 §5.4: exponential 극한 = softmax attention). 1장의 Rosetta 사전에서 "KV cache = 압축하지 않는 memory"라고 썼던 대응이 여기서 정리의 형태를 얻는다: attention이 긴 문맥 recall에서 고정 state 모델을 이기는 이유는 신비가 아니라 capacity 상한의 차이다.
 
 한 가지 표기 주의: 원문은 $\phi_p$를 §3.1에서는 "차수 $\le p$의 모든 monomial"로, [Atlas Eq. 22]에서는 self-tensoring $x^{\otimes p}$로 두 번 다르게 정의한다. 두 정의는 lifted 차원의 스케일($\Theta(d_k^p)$)에서는 같은 급이며, 이 책은 §3.1의 정의를 기본으로 쓴다.
 
@@ -66,6 +66,8 @@ $$
 \min_W\;\sum_{i=t-c+1}^{t}\gamma_{t,i}\,\big\|\mathcal{M}(k_i;W)-v_i\big\|_2^2
 \tag{14-1}
 $$
+
+<!-- FIG: ch14/fig-01-omega-window -->
 
 여기서 $\gamma_{t,i}\in[0,1]$이 **window gate**다: step $t$의 window 안에서 $i$번째 token이 최적화에 참여하는 정도를 정하는 input-dependent gate로, $\gamma_{t,i}\to 0$이면 그 token을 최적화에서 **직접(hard) 잘라내고**, $\gamma_{t,i}\to 1$이면 온전히 포함한다 — 논문의 표현으로 **in-context pruning**이다 [Atlas §3.2]. 이 gate가 감당 가능한 이유가 바로 sliding window 구조다: step당 필요한 gate 수가 $c$개로 **상수**다. global 최적화(Eq. 7)에 input-dependent gate를 달려면 prefix 길이만큼의 gate가 필요해 파라미터·메모리가 함께 자라고, recurrent model의 장점이 사라진다.
 
@@ -87,7 +89,7 @@ W_t \;=\; \alpha_t W_{t-1} \;-\; \nabla_W\sum_{i=t-c+1}^{t}\gamma_{t,i}\,\big\|\
 \tag{14-2}
 $$
 
-이것이 정확히 표준형 (M3)다. 기호를 전부 확정하면: $W_t$는 fast weights(기본형은 2-layer residual MLP의 weights, §14.3.6), $\alpha_t\in[0,1]$은 retention gate(남기는 비율; Atlas 원문도 같은 방향), gradient는 $W_{t-1}$에서 평가되며, per-token step size는 $\gamma_{t,i}$에 흡수된다(관행은 (M3) 아래 §1.4 참조). linear memory($\mathcal{M}(z;W)=Wz$, $W\in\mathbb{R}^{d_v\times D}$)로 특수화하면 closed form이 나온다 [Atlas Eq. 11] — 이 책의 열벡터 관행으로:
+식 (14-2)는 정확히 표준형 (M3)다. 기호를 전부 확정하면: $W_t$는 fast weights(기본형은 2-layer residual MLP의 weights, §14.3.6), $\alpha_t\in[0,1]$은 retention gate(남기는 비율; Atlas 원문도 같은 방향), gradient는 $W_{t-1}$에서 평가되며, per-token step size는 $\gamma_{t,i}$에 흡수된다(관행은 (M3) 아래 §1.4 참조). linear memory($\mathcal{M}(z;W)=Wz$, $W\in\mathbb{R}^{d_v\times D}$)로 특수화하면 closed form이 나온다 [Atlas Eq. 11] — 이 책의 열벡터 관행으로:
 
 $$
 W_t=W_{t-1}\Big(\alpha_t I-\sum_{i=t-c+1}^{t}\gamma_{t,i}\,\phi(k_i)\phi(k_i)^\top\Big)+\sum_{i=t-c+1}^{t}\gamma_{t,i}\,v_i\,\phi(k_i)^\top .
@@ -196,7 +198,7 @@ $W_1,W_2,W_3$ 전부가 inner loop에서 갱신되는 fast weights다. 합성은
 
 ## 14.4 Outer-loop training vs inner-loop test-time learning
 
-Atlas에서 "이 gate는 누가 학습하는가?"라는 질문의 답은 예외 없이 하나다: **전부 outer loop이 학습한다**. inner loop이 학습하는 것은 memory의 내용물뿐이다. 논문 자신이 [Miras]의 Definition 1을 그대로 이어받아 두 loop를 정의한다 [Atlas Def. 1]: inner loop은 $\theta_{\mathcal{M}}=\{W_1,W_2,\dots\}$ — memory module의 파라미터 — 만을 최적화하고, 그 동안 모델의 다른 모든 파라미터는 고정된 hyperparameter다; outer loop은 그 나머지 전부를 최적화한다.
+Atlas에서 "이 gate는 누가 학습하는가?"라는 질문의 답은 예외 없이 하나다: **전부 outer loop가 학습한다**. inner loop가 학습하는 것은 memory의 내용물뿐이다. 논문 자신이 [Miras]의 Definition 1을 그대로 이어받아 두 loop를 정의한다 [Atlas Def. 1]: inner loop는 $\theta_{\mathcal{M}}=\{W_1,W_2,\dots\}$ — memory module의 파라미터 — 만을 최적화하고, 그 동안 모델의 다른 모든 파라미터는 고정된 hyperparameter다; outer loop는 그 나머지 전부를 최적화한다.
 
 표 14-2 — Atlas의 두 loop: 무엇이 어디서 움직이는가
 
@@ -210,9 +212,9 @@ Atlas에서 "이 gate는 누가 학습하는가?"라는 질문의 답은 예외 
 | momentum buffer $S_t$ | **inner** | 식 (14-4), 매 token/chunk | weight 행렬당 하나, 같은 shape |
 | window buffer: 최근 $c-1$개의 $\phi(k),v$와 gate | **inner** (rolling) | ring-buffer append | 크기 $O(c(d_k+d_v))$, 길이 무관 |
 
-training 무경험 독자가 가장 헷갈리는 지점을 짚는다. "memory가 test time에 훈련된다"는 문장은 **pre-trained checkpoint가 변한다는 뜻이 아니다**. outer loop은 pre-training에서 단 한 번, "inner loop이 어떻게 갱신해야 하는가"를 — gate-producer, projection, feature 계수, 초기 상태의 형태로 — 학습한다. inference에서는 그 배운 update 절차가 매 context마다 $W_{\mathrm{init}}$에서 다시 실행될 뿐이다. 이것이 [Atlas §1]의 test-time memorization 명명이 가리키는 정확한 사실이고, 12장의 bilevel 구조(→ 4장)가 Atlas에서도 그대로 유지된다는 뜻이다.
+training 무경험 독자가 가장 헷갈리는 지점을 짚는다. "memory가 test time에 훈련된다"는 문장은 **pre-trained checkpoint가 변한다는 뜻이 아니다**. outer loop는 pre-training에서 단 한 번, "inner loop가 어떻게 갱신해야 하는가"를 — gate-producer, projection, feature 계수, 초기 상태의 형태로 — 학습한다. inference에서는 그 배운 update 절차가 매 context마다 $W_{\mathrm{init}}$에서 다시 실행될 뿐이다. 이것이 [Atlas §1]의 test-time memorization 명명이 가리키는 정확한 사실이고, 12장의 bilevel 구조(→ 4장)가 Atlas에서도 그대로 유지된다는 뜻이다.
 
-**outer gradient는 inner loop을 관통한다.** update 식 (14-4)는 그 자체로 미분 가능한 계산 그래프다 — gradient 평가($\nabla_W\ell$), gate 곱, momentum 누적, 그리고 Newton–Schulz 행렬 다항식까지 전부. outer loss $\mathcal{L}$(next-token prediction)의 backward는 이 unrolled recurrence 전체를 거꾸로 타고 내려가므로, 예컨대 $W_K$의 outer gradient에는 $\nabla_W\|\mathcal{M}(\phi(k_i);W)-v_i\|^2$를 다시 $k_i$로 미분하는 2차 미분 성격의 항이 들어간다(TTT·Titans와 같은 기제; → 8장, 12장). Atlas 특유의 추가분은 backward가 $\mathrm{NS}_\kappa$의 행렬 다항식까지 통과해야 한다는 점이다. 따라서 아래의 chunkwise 형태는 단순한 추론 최적화가 아니라 **실제로 미분되는 그래프의 정의**다.
+**outer gradient는 inner loop를 관통한다.** update 식 (14-4)는 그 자체로 미분 가능한 계산 그래프다 — gradient 평가($\nabla_W\ell$), gate 곱, momentum 누적, 그리고 Newton–Schulz 행렬 다항식까지 전부. outer loss $\mathcal{L}$(next-token prediction)의 backward는 이 unrolled recurrence 전체를 거꾸로 타고 내려가므로, 예컨대 $W_K$의 outer gradient에는 $\nabla_W\|\mathcal{M}(\phi(k_i);W)-v_i\|^2$를 다시 $k_i$로 미분하는 2차 미분 성격의 항이 들어간다(TTT·Titans와 같은 기제; → 8장, 12장). Atlas 특유의 추가분은 backward가 $\mathrm{NS}_\kappa$의 행렬 다항식까지 통과해야 한다는 점이다. 따라서 아래의 chunkwise 형태는 단순한 추론 최적화가 아니라 **실제로 미분되는 그래프의 정의**다.
 
 **chunkwise 병렬화 1 — window는 banded mask 하나 값이다** [Atlas §3.3]. 소박한 구현은 위치마다 $c$개의 gradient 행렬 $\nabla_W\ell\in\mathbb{R}^{d\times d}$를 실체화해야 해서 메모리·IO가 폭발한다. 대신 시퀀스를 크기 $C$(원문 $b$)의 chunk로 나누고, chunk 안 모든 gradient를 chunk 시작 상태 $W_{\xi(t,C)}$에서 평가한다 — 9장의 stale-snapshot 근사 그대로다. 설명 편의상 $\gamma_{t,i}=\eta_t$로 두면, chunk 내부의 $t$ ($\xi(t,C)<t\le\xi(t,C)+C$)에 대해
 
@@ -255,7 +257,7 @@ $$
 | 확장 | momentum-as-memory (→ 12장, 2장) | raw momentum → $\mathrm{NS}_\kappa$-orthogonalized momentum; optimizer-as-architecture 축의 두 번째 사례 |
 | 확장 | attentional bias (→ 13장) | per-token family에 window 축이 추가됨; Miras Table의 두 열 확장판이 [Atlas Table 1] |
 | 확장 | retention (→ 13장) | $\alpha_t$(저장분의 eviction)와 별개로 $\gamma_{t,i}$(저장 전 admission)라는 직교 gate가 생김 |
-| 개명 | test-time training → **test-time memorization** (이 장 소유) | inner loop은 저장·인출일 뿐 학습이 아니라는 용어 교정; "진짜 continual learning은 따로 필요하다"는 후속작(NL·Sleep)의 복선 |
+| 개명 | test-time training → **test-time memorization** (이 장 소유) | inner loop는 저장·인출일 뿐 학습이 아니라는 용어 교정; "진짜 continual learning은 따로 필요하다"는 후속작 — [NL] (*Nested Learning: The Illusion of Deep Learning Architecture*, arXiv:2512.24695)과 [Sleep] (*Language Models Need Sleep: Learning to Self-Modify and Consolidate Memories*, arXiv:2606.03979) — 의 복선 |
 
 ## 14.6 실험과 스케일
 
@@ -296,13 +298,11 @@ $$
 
 **state 크기의 회계.** Atlas의 per-layer state는 세 덩어리다: (1) memory weights $W$ — 표준형이면 $W_1\in\mathbb{R}^{d_m\times 4d_m}$, $W_2\in\mathbb{R}^{4d_m\times d_m}$로 $8d_m^2$ 원소($d_m$ = memory 폭), (2) momentum $S$ — 같은 shape로 또 $8d_m^2$, (3) window buffer — $O(c(d_k+d_v))$로 무시 가능. 합계 $\approx 16d_m^2$ 원소이며 문맥 길이와 무관하다. Transformer KV cache는 layer당 $2L_{\mathrm{ctx}}d$ 원소로 문맥에 비례한다.
 
-> **[해설]** 같은 정밀도를 가정하고 등호를 놓으면 crossover 문맥 길이는 $L^*=16d_m^2/(2d)$다. memory 폭을 model 폭과 같게 잡으면($d_m=d$) $L^*=8d$ — 1.3B 구성($d=2048$)에서 약 16K tokens다. 즉 16K보다 짧은 문맥에서는 KV cache가 더 작은 상태이고, BABILong의 10M-token 구간에서는 Atlas의 state가 KV cache의 수백분의 일이다. 단 이 계산에는 두 개의 미지수가 있다. 첫째, 실제 구현의 memory가 head별로 쪼개지는지, $d_m$이 얼마인지 논문에 없다. 둘째, $\phi_p$는 memory 첫 층의 입력 폭을 $\Theta(d_k^p)$로 불리므로(차수 2만 해도 sketch 전 $\sim d_k^2$), **구현된 차수 $p$와 sketch 차원이 공개되지 않은 한 state 크기는 계산할 수 없다**. capacity의 이득은 cache 성장이 아니라 state 크기와 matmul 폭으로 지불된다 — 그 청구서의 액수가 논문에 없다.
-
-<!-- TODO-VERIFY: 구현된 polynomial 차수 p, PolySketchFormer식 sketch 사용 여부·차원, memory의 head 분할이 원문 어디에도 없는지 최종 확인. 확인 방법: papers/2505.23735.txt에서 "degree", "sketch", "head" 검색 — 본문·App. E에 수치 부재 확인됨, PDF Fig. 3 라벨만 재확인 필요 -->
+> **[해설]** 같은 정밀도를 가정하고 등호를 놓으면 crossover 문맥 길이는 $L^*=16d_m^2/(2d)$다. memory 폭을 model 폭과 같게 잡으면($d_m=d$) $L^*=8d$ — 1.3B 구성($d=2048$)에서 약 16K tokens다. 즉 16K보다 짧은 문맥에서는 KV cache가 더 작은 상태이고, BABILong의 10M-token 구간에서는 Atlas의 state가 KV cache의 수백분의 일이다. 단 이 계산에는 두 개의 미지수가 있다. 첫째, 실제 구현의 memory가 head별로 쪼개지는지, $d_m$이 얼마인지 논문에 없다. 둘째, $\phi_p$는 memory 첫 층의 입력 폭을 $\Theta(d_k^p)$로 불리므로(차수 2만 해도 sketch 전 $\sim d_k^2$), **구현된 차수 $p$와 sketch 차원이 공개되지 않은 한 state 크기는 계산할 수 없다** — 구현 $p$·sketch 차원·memory head 분할은 원문 본문에도 [Atlas App. C], [Atlas App. E], [Atlas Fig. 3]의 라벨에도 없다. capacity의 이득은 cache 성장이 아니라 state 크기와 matmul 폭으로 지불된다 — 그 청구서의 액수가 논문에 없다. 5장 §5.4가 예고한 "비용 계산"은 그래서 여기서 **구조** — capacity의 지불 통화가 state byte와 matmul 폭이라는 것 — 로 확정된다; 절대값 계산은 구현 차수 미공개로 여기서도 불가하다는 것까지가 이 장의 결론이다.
 
 **decode의 state 트래픽.** 매 token, 각 layer의 memory는 read-modify-write다: $W$와 $S$를 읽고, gradient·momentum·NS를 계산하고, 둘 다 다시 쓴다. 트래픽은 token당 $\approx 2\times 16d_m^2$ 원소의 읽기+쓰기로, DeltaNet류의 $d\times d$ matrix state 대비 (expansion 4의 2층 + momentum 때문에) 원소 수로 16배 급이다. 이 RMW 스트림이 decode의 실질 대역폭 예산을 정하며, KV cache처럼 append-only가 아니므로 캐시 계층에 상주시키는 전략이 달라진다 — 상세한 배치 논의는 10장과 Part III의 몫이다.
 
-**연산의 성격은 전부 dense matmul이다.** windowed gradient는 banded einsum($M_{\mathrm{s}}$), momentum은 broadcast scan(14-6), $\mathrm{NS}_5$는 행렬 다항식 — 논문이 명시적으로 "tensorize computations and maximize matmuls"를 설계 목표로 선언한다 [Atlas §3.3]. Titans 대비 추가 상수는 $\mathrm{NS}_5$다: update당·weight 행렬당 반복 5회 × 서너 개의 정방 matmul ≈ 15–20개의 추가 matmul. chunk 안에서 전 위치에 batch되므로 GEMM shape는 좋다. window 자체는 mask 하나라서 훈련 시 거의 공짜다 — **$c$는 훈련 비용을 거의 바꾸지 않는 품질 knob**이라는 것이 Atlas의 병렬화가 만든 특이한 경제학이다.
+**연산의 성격은 전부 dense matmul이다.** windowed gradient는 banded einsum($M_{\mathrm{s}}$; 식 (14-5)), momentum은 broadcast scan(14-6), $\mathrm{NS}_5$는 행렬 다항식 — 논문이 명시적으로 "tensorize computations and maximize matmuls"를 설계 목표로 선언한다 [Atlas §3.3]. Titans 대비 추가 상수는 $\mathrm{NS}_5$다: update당·weight 행렬당 반복 5회 × 서너 개의 정방 matmul ≈ 15–20개의 추가 matmul. chunk 안에서 전 위치에 batch되므로 GEMM shape는 좋다. window 자체는 mask 하나라서 훈련 시 거의 공짜다 — **$c$는 훈련 비용을 거의 바꾸지 않는 품질 knob**이라는 것이 Atlas의 병렬화가 만든 특이한 경제학이다.
 
 **병렬화 구조.** intra-chunk는 (gradient, momentum, NS) 3단 전부 병렬이고 inter-chunk만 gated scan이다. momentum recurrence가 memory state에서 분리된다는 §14.4의 관찰이 구조적 핵심으로, sequence-parallel 훈련이 자연스럽게 얹힌다. 단 chunk 사슬 자체는 여전히 순차다 — 이 사슬을 끊는 것은 [TNT] (*TNT: Improving Chunkwise Training for Test-Time Memorization*, arXiv:2511.07343)의 reset이 처음이다(→ 15장).
 
