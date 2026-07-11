@@ -60,7 +60,7 @@ $$
 | 연도 | 사건 | 의미 |
 |---|---|---|
 | 1960 | delta rule (Widrow–Hoff) | error-driven write의 원형 (→ 5장) |
-| 1972 | correlation matrix memory (Kohonen) | outer-product 연상 기억 (→ 5장) |
+| 1972 | correlation matrix memory (Kohonen) | outer-product associative memory (→ 5장) |
 | 1992 | fast-weight controller (Schmidhuber) | slow net이 fast weights를 프로그램 |
 | **2020** | **linear attention (arXiv:2006.16236)** | **kernel trick, 재귀형 (6-1)** |
 | **2021** | **FWP 동치 + delta-rule 변형 (arXiv:2102.11174)** | **linear attention = FWP; DeltaNet 원형** |

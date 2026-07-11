@@ -38,6 +38,8 @@
 
 마지막으로 2장의 경고를 반복한다: **이 라인에서 훈련의 batch 축 역할은 sequence 축이 대신한다.** 위 protocol의 $t$는 mini-batch 인덱스가 아니라 token 인덱스다. inner loop의 "학습 데이터"는 지금 처리 중인 그 문맥의 token들이며, 같은 문맥을 두 번 지나가지 않는다. online learning이 이 라인의 자연 언어인 이유가 바로 이것이다 — inner loop는 정의상 single-pass 학습이다.
 
+한 가지 예고를 덧붙인다. online protocol은 정의상 decode 모양 — 한 번에 한 항목, 순차적으로 — 이지만, 실제 서빙에서 같은 stream의 앞부분은 prefill로, 즉 병렬로 처리된다. state 갱신이 gradient step이 되는 순간 이 병렬화는 공짜가 아니게 된다: $W_t$가 $W_{t-1}$에 의존하는 sequential chain이 생기기 때문이다. 이 장은 순차 semantics만 다루며, 그 chain을 GEMM으로 펴는 문제는 9장이 통째로 담당한다. 지금 기억할 것은 하나다 — 이 장의 모든 식은 "한 token에 한 step"이라는 순차 이상형이고, 실전 구현은 전부 그 이상형의 chunk 단위 근사다(→ 9장).
+
 ## 3.2 OGD와 regret: stream 압축의 품질 언어
 
 online protocol의 4단계를 채우는 가장 단순한 방법은 2장의 SGD를 그대로 이식하는 것이다. **online gradient descent(OGD)**는 매 step 현재 항목의 loss에 대한 gradient로 한 걸음 내려간다(Zinkevich 2003, ICML):
@@ -60,6 +62,8 @@ $$
 
 핵심 정리는 다음과 같다: $\ell_t$가 convex이고, gradient norm이 $G$로, 탐색 영역의 지름이 $D$로 유계이면, step size $\eta_t \propto 1/\sqrt{t}$의 OGD는 $\mathrm{Reg}_L = O(GD\sqrt{L})$를 달성한다(Zinkevich 2003; 교과서적 정리는 Shalev-Shwartz 2011, *Online Learning and Online Convex Optimization*, Foundations and Trends in ML; Hazan 2019, arXiv:1909.05207). $\sqrt{L}$은 sublinear이므로 평균 regret는 $O(1/\sqrt{L})$로 사라진다. 증명은 이 장의 범위 밖이고, 직관만 취한다: step size가 $1/\sqrt{t}$로 줄어드는 것이 "초반에는 크게 적응하고 후반에는 안정화한다"는 스케줄이며, 적응(plasticity)과 안정(stability)의 교환이 $\sqrt{L}$이라는 값에서 균형을 이룬다.
 
+step size 스케줄에서 고전 이론과 이 라인의 결정적 온도차가 보인다. 고전 online learning의 $\eta_t \propto 1/\sqrt{t}$는 worst-case regret를 겨냥해 사람이 정한 감쇠 스케줄이고, stream이 길어질수록 write가 단조로 약해진다. 그대로 memory layer에 이식하면 "문맥이 길수록 새 정보를 덜 쓰는" 층이 된다 — long context에서 원하는 행동의 정반대다. 이 라인의 선택은 스케줄의 폐기다: $\eta_t = \eta(x_t; \Theta)$, 즉 step size를 token의 함수로 만들고 그 함수 자체를 slow weights가 outer loop에서 학습한다(→ 4장). 결과적으로 $\eta_t$는 수렴을 위한 감쇠 계수가 아니라 per-token write 강도 신호 — "중요한 token은 세게 쓰고 뻔한 token은 흘려보내라" — 가 된다. regret 이론은 이 설계에 보장을 주지 않는다. 대신 무엇이 knob인지를 가르쳐 준다: step size가 곧 write 강도라는 인식이 없으면, 13장에서 $\eta_t$를 "meta in-context learning rate"라 부르는 이유를 읽을 수 없다.
+
 > **[해설]** inference 어휘로 번역하면 이렇다. $d_v \times d_k$ matrix memory는 KV cache의 고정 크기 손실 압축이다(→ 1장 Rosetta). regret bound는 이 압축의 품질 보증서다: "이 $O(d^2)$ state는, stream을 다 보고 고른 최선의 $O(d^2)$ 압축 상태보다 평균적으로 뒤지지 않게 된다." 보장의 단위가 개별 조회가 아니라 stream 전체 평균이라는 점이 중요하다 — 특정 needle 하나의 회수는 보장하지 않는다(§3.7에서 다시).
 
 정직하게 한계도 적는다. 첫째, comparator가 고정이므로 분포가 도중에 바뀌는 stream — 문서 경계, 주제 전환 — 에서는 "최선의 고정 state" 자체가 약한 기준이다. comparator가 시간에 따라 움직이는 것을 허용하는 dynamic regret 계열의 확장이 있으나 이 책은 개념의 존재만 언급한다. 둘째, 위 보장은 convexity를 요구한다. 이 라인의 실제 memory는 2-layer MLP(표준 deep memory)이고 그 inner loss는 비볼록이므로, $O(\sqrt{L})$ 보장은 성립하지 않는다. 실제로 [Miras]는 FTRL과 mirror descent라는 online convex optimization의 기계를 설계 언어로 수입하지만, 자신이 제안한 새 변형(Moneta/Yaad/Memora)에 대한 regret bound는 제시하지 않는다 — 정당화는 전적으로 실험이다. 이 장이 가르치는 것은 보장이 아니라 **설계 어휘**다: 이 라인의 모든 update rule은 "어떤 online 문제를 어떤 online 알고리즘으로 푸는가"의 답으로 읽을 수 있고, 그 독법이 Part II를 관통한다.
@@ -74,6 +78,8 @@ W_t \;=\; \arg\min_{W} \sum_{i=1}^{t-1} \ell_i(W)
 $$
 
 겉보기에 FTL은 이상적이다 — 매 순간 이력 전체에 대해 최선이다. 문제는 두 겹이다. 첫째는 비용이다: 매 token마다 과거 전체에 대한 최적화를 다시 푸는 것은, decode마다 KV cache 전체를 재스캔하는 것과 같은 종류의 낭비다. 둘째가 치명적이다: FTL은 **불안정**하다. loss가 평평한(linear) 모양이면 마지막 항목 하나가 argmin을 탐색 영역의 반대편 끝으로 던져 버릴 수 있고, 적대적 stream은 이를 이용해 learner를 매 step 진동시켜 regret를 $\Theta(L)$ — 선형, 즉 학습 실패 — 로 만든다. §3.8의 worked example에서 이 진동을 여섯 step 손계산으로 재현한다. 원인을 한 문장으로 요약하면: FTL의 state는 stream의 마지막 token에 과민하다. cache 어휘로는, 최신 항목 하나가 cache 전체의 배치를 뒤집는 정책이다.
+
+비용 쪽도 GEMM shape로 구체화해 둘 가치가 있다. linear memory와 $\ell_2$ loss에서 식 (3-3)의 argmin은 이력 전체에 대한 least-squares 해, 즉 $W_t = \big(\sum_{i<t} v_i k_i^\top\big)\big(\sum_{i<t} k_i k_i^\top\big)^{-1}$ 꼴이다 (Gram 행렬이 정칙일 때; 정칙이 아닐 수 있다는 사실 자체가 다음 절 regularizer의 복선이다). 이것을 매 step 유지하려면 outer-product 누적기 두 개 — $d_v \times d_k$ 하나와 $d_k \times d_k$ Gram 행렬 하나 — 가 state로 상주해야 하고, step마다 역행렬 적용이 든다: naive하게 $O(d_k^3)$, rank-1 갱신(Sherman–Morrison류)을 쓰면 $O(d_k^2)$. OGD의 rank-1 write 대비 자릿수가 다른 per-token 비용이며, 이 비용 구조의 실제 입주자가 6장에서 만날 Mesa-layer다.
 
 > **[해설]** 그런데 이 라인의 족보에는 FTL의 "전체 이력 최적해"를 실제로 유지하는 극한들이 있다. softmax attention은 매 $t$마다 전체 이력에 대한 $\ell_2$ regression을 non-parametric하게 정확히 푸는 해이고(상태 = KV cache 그 자체, §1.6 카탈로그), Mesa-layer(→ 6장)는 전체 이력 objective를 Newton법으로 정확히 푼다. 이들이 FTL의 불안정을 피하는 방식은 두 가지다: 압축하지 않거나(attention — 상태가 자라므로 점프랄 것이 없다), regularizer를 함께 풀거나(Mesa-layer — 다음 절의 FTRL을 정확히 푸는 셈이다). 그 대가는 독자가 이미 아는 것들이다: 자라는 cache, 그리고 step당 최적화 비용. 이 라인의 recurrent model들은 반대편 끝 — gradient 한 걸음의 OGD — 에서 출발해, 두 극단 사이 어딘가를 설계한다. [Miras]가 "memory learning algorithm"을 독립된 설계 축으로 선언한 것은 정확히 이 스펙트럼을 두고 하는 말이다.
 
@@ -141,6 +147,8 @@ $$
 
 — exponentiated gradient, 또는 multiplicative weights라 불리는 update다(FTRL과 mirror descent의 정확한 관계는 McMahan 2011). 성질을 눈여겨보라: state 성분은 정의상 항상 양수이고, 매 step 재정규화되므로 총합이 보존된다. forgetting이 곱셈 감쇠(decay)로 일어나는 것이 아니라 **성분들 사이의 질량 경쟁**으로 일어난다 — 어떤 성분이 커지려면 다른 성분이 줄어야 한다. 따라서 state는 문맥이 아무리 길어져도 원리적으로 발산할 수 없다.
 
+이 기하가 memory 설계에서 장식이 아니라 실전 선택지인 이유는 제약에 있다. [Miras §5.2]는 수치 불안정 — state 값의 폭주 — 을 막기 위해 state를 스케일된 probability simplex(성분 전부 비음수, 성분 합 고정) 안에 가두는 retention 변형을 제안한다. Euclidean 세계에서 이런 제약은 매 step 별도의 projection 연산을 요구하지만, entropy 기하에서는 simplex가 update의 자연 서식지다: 곱셈형 update와 재정규화가 제약을 부수 비용 없이 유지한다. 어느 기하에서 update를 쓸 것인가가 어느 제약을 공짜로 얻을 것인가를 정한다 — regularizer의 선택이 기능(안정성 보장)의 선택이라는, FTRL 슬롯 관점의 한 사례다.
+
 이 기계의 행선지는 13장이다. Memora의 KL-retention update $W_t = \mathrm{Softmax}(\alpha_t \log W_{t-1} - \eta_t \nabla_W \ell)$는 위 exponentiated-gradient 식에 retention gate를 결합한 것이고, [Miras §5.2]의 f-divergence retention 일반화도 같은 틀 — $D_F$ 자리에 다른 divergence — 이다. mirror descent를 여기서 만나 두면, 13장에서 "memory update에 웬 softmax?"라는 당혹 대신 "아, entropy regularizer구나"라는 인식이 온다. systems 접점 한 줄: 유계·정규화된 state는 발산 걱정이 없는 memory 설계의 원리적 근거이며, 수치 표현 관점의 함의(양수 유계 상태의 저장)는 13장의 systems 절이 다룬다.
 
 ## 3.6 Loss geometry: $\ell_2$, $\ell_1$, $\ell_p$, Huber
@@ -158,6 +166,8 @@ FTRL의 두 슬롯 중 regularizer 쪽은 §3.4–3.5가 다뤘다. 남은 슬�
 
 읽는 법: $\ell_2$는 오차에 비례해 쓴다 — 예측을 크게 벗어난 token 하나(오타, 노이즈, 적대적 스팬)가 state를 그 크기만큼 크게 흔든다. $\ell_1$은 방향만 쓰고 크기를 버린다 — "이 key가 있었다"는 사실만 기록하는 극단으로, [Miras]는 $p=1$을 value-less associative memory라 부른다(→ 13장). $p>2$는 반대로 큰 오차를 증폭한다 — surprising token일수록 더 세게 기록하는 설계다. Huber는 threshold $\delta$ 안에서 $\ell_2$, 밖에서 $\ell_1$로 행동한다: gradient 크기가 $\delta$에서 포화하므로, 이것은 정확히 **per-token gradient clipping**이다. 독자가 rate limiter나 saturating counter에 대해 가진 직관이 그대로 적용된다 — 어떤 단일 이벤트도 정해진 한도 이상으로 상태를 밀 수 없다.
 
+matrix memory에서의 일반형도 한 줄로 적어 둔다. residual을 $r_t = W_{t-1}k_t - v_t$로 두면 $\ell_p$ bias의 gradient step은 $W_t = W_{t-1} - p\,\eta_t \big(\mathrm{sign}(r_t) \odot |r_t|^{p-1}\big)\, k_t^\top$ 꼴이다 [Miras Eq. 11] — residual에 elementwise 비선형(sign, 성분별 거듭제곱)을 먹인 뒤, 여전히 rank-1 outer product로 쓴다. loss의 모양을 바꿔도 GEMM 골격이 보존된다는 §3.7의 논점이 식 자체에 드러나 있다. 실전 주의 하나: sign과 절댓값은 미분 불가능점을 가지므로 이 update를 **통과해** 이루어지는 outer loop의 backprop(→ 4장)이 불안정해질 수 있고, [Miras Remark 5]는 $\tanh$와 $\sqrt{x^2+\epsilon}$ 근사로 이를 매끄럽게 만든다고 보고한다. inner update의 모양이 outer 훈련의 안정성 제약을 받는다는 — 두 loop가 서로를 구속하는 — 첫 사례다.
+
 이 축의 제품이 13장의 Moneta($\ell_p$ bias, 매끄럽게 근사된 sign·절댓값)와 Yaad(Huber bias, token마다 학습된 threshold $\delta_t$)다. 이 장은 모양의 어휘만 공급한다 — 어떤 모양이 언어 모델링에서 실제로 이기는가는 이론이 아니라 [Miras]의 실험 절이 답하는 질문이고, 그 수치와 ablation은 13장에서 다룬다.
 
 ## 3.7 Systems bridge: 학습된 eviction policy로서의 retention
@@ -167,6 +177,8 @@ FTRL의 두 슬롯 중 regularizer 쪽은 §3.4–3.5가 다뤘다. 남은 슬�
 **state는 cache이고, retention은 eviction이다.** 독자가 아는 KV cache eviction은 명시적 정책이다: sliding window로 오래된 항목을 자르고, quota로 총량을 막고, score 기반으로 항목을 골라 버린다. fast-weight memory에는 그런 정책 코드가 없다. 대신 §3.4의 regularizer $R$(또는 retention 항)이 그 역할을 한다 — 무엇이 얼마나 오래 살아남는가가 discrete한 규칙이 아니라 **최적화 문제의 벌점 항 선택으로 결정된다.** Rosetta 사전의 해당 행이 정확히 이 뜻이다: retention gate = 학습된 eviction. 벌점의 모양이 eviction의 성격을 정한다: $\ell_2$ 벌점은 모든 성분을 조금씩 깎는 곱셈 감쇠(soft)로, $\ell_1$ 성분은 작은 항목을 정확히 0으로 자르는 절삭(hard)으로, KL은 질량 경쟁(§3.5)으로 나타난다 — 세 형태 모두 13장에서 실제 모델로 만난다. eviction 정책을 사람이 튜닝하는 대신, 이 라인에서는 gate를 만드는 slow weights가 outer loop에서 그것을 학습한다(→ 4장).
 
 **regret와 recall@position은 같은 것의 두 투영이다.** 독자가 long-context 평가에서 보는 needle-in-a-haystack recall 곡선은 pointwise 측정이다: 특정 (key, value) 쌍이 $N$ token 뒤에도 회수되는가. regret는 aggregate 보장이다: stream 전체에 대한 누적 loss가 comparator 대비 유계인가. 압축 state가 needle을 못 꺼낸다는 것은 그 쌍의 $\ell_t$가 comparator 대비 크다는 것이므로, recall 실패는 regret의 국소 성분이다. 방향에 주의: sublinear regret는 평균의 보장이지 개별 needle의 보장이 아니다 — state는 평균적으로 잘하면서 특정 needle을 얼마든지 버릴 수 있다. "regret가 낮은데 recall이 나쁜" 모델은 모순이 아니라, aggregate 최적화가 pointwise 회수를 함의하지 않는다는 사실의 전시다. retention의 품질이 long-context 성능을 지배한다는 [Miras]의 실험적 주장(→ 13장)을 읽을 때 이 구분을 갖고 있어야 한다.
+
+**고정 comparator의 사각지대는 non-stationarity다.** 실서비스의 문맥은 "서로 다른 문서들의 연결"이다 — system prompt, 검색 결과, 대화 이력이 한 stream에 이어 붙는다. 이런 stream에서 최선의 단일 압축 상태란 모든 구간의 평균이라는 애매한 대상이고, 고정 comparator 기준의 낮은 regret조차 큰 위안이 못 된다. 이 라인의 실전 응답은 두 갈래다: 경계에서 state를 통째로 비우는 것까지 표현할 수 있는 data-dependent retention gate $\alpha_t$(→ 12–13장), 그리고 주기적으로 state를 리셋해 sequential chain 자체를 끊는 설계(→ 15장). 전자는 학습된 eviction의 극단 사용이고, 후자는 eviction을 스케줄로 끌어올린 것이다.
 
 **비용의 GEMM shape.** matrix memory $W \in \mathbb{R}^{d_v \times d_k}$와 $\ell_2$ loss에서 OGD 한 step의 계산은 정확히 두 조각이다: 읽기 $Wk_t$ (GEMV), 쓰기 $\nabla_W \ell = (Wk_t - v_t)\,k_t^\top$ (rank-1 outer product). 2장에서 본 $dW = (\text{오차})\,k^\top$ 그 shape다. per-token decode에서는 state 전체를 읽고 다시 쓰는 read-modify-write이므로 이 연산은 bandwidth-bound다; token $C$개를 chunk로 묶으면 rank-$C$ GEMM이 되어 tensor core 쪽으로 이동한다 — 그 변환이 9장의 전부다. 이 장에서 배운 변형들의 추가 비용도 shape로 읽힌다: FTRL형 dual accumulator는 상주 state를 두 배로 만들고(serving에서 state residency와 checkpoint 비용 2×), loss와 retention의 교체는 GEMM 골격을 건드리지 않는 elementwise epilogue 교체다 — sign, 절댓값, threshold 마스크, softmax 재정규화 전부가 그렇다. "알고리즘 축의 설계 변경이 kernel 골격을 보존한다"는 이 관찰이, 13–14장의 변형들이 전부 같은 chunkwise 기계 위에서 훈련될 수 있는 이유다.
 
@@ -224,8 +236,7 @@ Hebbian 독법으로 마무리한다: $z_t = -2v_t$로 두면 위 OGD는 $w_t = 
 - [ ] online protocol의 4단계를 쓰고, 각 단계를 decode loop의 단계와 대응시켜 설명할 수 있다.
 - [ ] regret의 정의(식 (3-2))를 쓰고, comparator의 역할과 "sublinear regret"의 의미·한계(평균 보장, convexity 전제)를 설명할 수 있다.
 - [ ] 표 3-3의 FTL 진동을 스스로 재현하고, 왜 linear loss에서 FTL이 실패하는지 한 문장으로 말할 수 있다.
-- [ ] linearized FTRL + $\ell_2$ regularizer에서 OGD를 유도하고(식 (3-5)), FTRL state가 gradient 누적기임을 지적할 수 있다.
-- [ ] FTRL의 loss 항과 regularizer 항이 [Miras]의 attentional bias / retention gate 자리에 각각 대응함을 설명할 수 있다.
+- [ ] linearized FTRL + $\ell_2$ regularizer에서 OGD를 유도하고(식 (3-5)), FTRL의 loss 항과 regularizer 항이 [Miras]의 attentional bias / retention gate 자리에 각각 대응함을 설명할 수 있다.
 - [ ] mirror descent에서 entropy regularizer가 곱셈형 update를 주는 이유와, 그것이 왜 발산 불가능한 state를 만드는지 설명할 수 있다.
 - [ ] "retention gate = 학습된 eviction policy", "regret = aggregate 보장 vs recall@position = pointwise 측정"을 inference 어휘로 옮길 수 있다.
 

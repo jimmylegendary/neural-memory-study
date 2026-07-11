@@ -2,7 +2,7 @@
 
 > **이 장의 목표** — 이 장을 마치면 다음을 할 수 있어야 한다. (1) continuous SSM의 ZOH discretization을 두 줄로 재현하고, step size $\Delta_t$가 왜 이 라인 전체의 gate의 기원인지 설명한다. (2) Mamba의 selectivity가 왜 convolution 훈련 모드를 제거하고 scan kernel을 강제하는지 설명한다. (3) SSD(state-space duality)에 따라 같은 recurrence를 recurrent form, masked-attention form, chunkwise form 세 경로로 손계산하고 결과가 일치함을 보인다. (4) Mamba-1의 scan과 Mamba-2의 chunkwise GEMM을 roofline 어휘로 비교한다.
 >
-> **왜 필요한가** — [Titans] (*Titans: Learning to Memorize at Test Time*, arXiv:2501.00663)는 이 장의 gate 계보를 자기 update의 weight decay로 일반화하는 것으로 스스로를 자리매김하고 [Titans App. A.1], momentum recurrence의 병렬화에 S5의 parallel associative scan을 그대로 재사용한다 [Titans §3.2, Eq. 18]. [Miras] (*It's All Connected*, arXiv:2504.13173)의 general form $W_t = A_t * W_{t-1} + v_t k_t^\top$ [Miras Eq. 3]과 분류표 [Miras Table 1]가 Mamba-2를 linear attention(→ 6장)과 한 표에 넣을 수 있는 형식적 근거가 바로 이 장의 SSD다. [Atlas](arXiv:2505.23735)와 [TNT](arXiv:2511.07343)를 포함해 Part II의 실험 절에는 이 계열이 baseline으로 반복 등장한다. 마지막으로 Mamba-2의 chunked block decomposition은 9장에서 배울 chunkwise-parallel training의 첫 리허설이다 — 단, 여기서는 chunk가 아직 "정확한(exact)" 성능 knob이라는 점이 결정적 차이다.
+> **왜 필요한가** — [Titans] (*Titans: Learning to Memorize at Test Time*, arXiv:2501.00663)는 이 장의 gate 계보를 자기 update의 weight decay로 일반화하는 것으로 스스로를 자리매김하고 [Titans §3.1, App. A.1], momentum recurrence의 병렬화에 S5의 parallel associative scan을 그대로 재사용한다 [Titans §3.2, Eq. 18]. [Miras] (*It's All Connected*, arXiv:2504.13173)의 general form $W_t = A_t * W_{t-1} + v_t k_t^\top$ [Miras Eq. 3]과 분류표 [Miras Table 1]가 Mamba-2를 linear attention(→ 6장)과 한 표에 넣을 수 있는 형식적 근거가 바로 이 장의 SSD다. [Atlas](arXiv:2505.23735)와 [TNT](arXiv:2511.07343)를 포함해 Part II의 실험 절에는 이 계열이 baseline으로 반복 등장한다. 마지막으로 Mamba-2의 chunked block decomposition은 9장에서 배울 chunkwise-parallel training의 첫 리허설이다 — 단, 여기서는 chunk가 아직 "정확한(exact)" 성능 knob이라는 점이 결정적 차이다.
 
 독자는 이 계열을 이미 서빙해 봤을 가능성이 높다. Mamba block의 decode가 왜 빠른지, state가 왜 고정 크기인지는 운영 감각으로 알고 있을 것이다. 이 장의 목적은 그 운영 감각 밑에 깔린 유도를 채우고, 6장에서 만든 linear attention 어휘와 이 계열을 **하나의 update 식**으로 접합하는 것이다. 접합이 끝나면 "SSM이냐 linear attention이냐"는 질문 자체가 소멸하고, Part II의 논문들이 그러듯 "retention gate가 무엇이고 write rule이 무엇인가"만 남는다.
 
@@ -63,6 +63,8 @@ recomputation 항목은 2장에서 배운 개념이 실물로 등장하는 첫 �
 
 serving 관점의 접점 하나. Mamba layer의 decode state는 채널당 $N$개 float, 모델 폭 $d$ 전체로는 $d\times N$ 행렬이다(Mamba-1의 기본 설정은 $N=16$, Gu & Dao 2023). 문맥이 1M token이어도 state 크기는 불변 — KV cache처럼 자라지 않는다. 독자가 아는 "Mamba는 decode가 싸다"의 실체가 이 고정 크기 RMW(read-modify-write)다.
 
+운영 측면 각주 하나를 더. Mamba block의 decode 상태는 SSM state만이 아니다. block 앞단의 짧은 causal depthwise convolution이 최근 입력 몇 token의 window를 상태로 요구하므로, 서빙 엔진이 실제로 관리하는 per-sequence 상태는 "SSM state + conv state"의 묶음이다. 그래도 총량이 문맥 길이와 무관한 상수라는 성질은 변하지 않는다 — paged KV cache처럼 블록을 할당·해제·조각모음하는 관리 문제가 사라지는 대신, 고정 크기 상태를 요청마다 하나씩 들고 다니는 문제로 바뀐다. 이 상태 묶음이 곧 1장의 Rosetta 사전이 "per-session weight state — 새로운 cache class"라고 예고한 대상의 가장 온건한 형태다.
+
 ## 7.3 Mamba-2와 SSD: 한 recurrence, 두 얼굴, 세 계산 경로
 
 Mamba-2(Dao & Gu 2024, arXiv:2405.21060)의 첫 수는 **제약**이다: transition을 per-head 스칼라 곱으로 줄인다 — $\bar A_t = \alpha_t I$, $\alpha_t\in(0,1)$은 $x_t$의 함수. 표현력을 일부 포기하는 대신, 이 제약이 두 가지를 산다. 첫째, head의 state들이 하나의 행렬로 묶인다. 둘째, 그 행렬 갱신이 6장에서 이미 본 식이 된다:
@@ -72,7 +74,7 @@ W_t = \alpha_t W_{t-1} + v_t k_t^\top, \qquad y_t = \mathcal{M}(q_t; W_t) = W_t\
 \tag{7-2}
 $$
 
-여기서 SSM 원 표기와의 대응은 $B_t \leftrightarrow k_t$, $C_t \leftrightarrow q_t$, $x_t \leftrightarrow v_t$이며, $W_t\in\mathbb{R}^{d_v\times d_k}$다. 6장 카탈로그의 GLA/Mamba-2 행 그대로다: $\alpha_t$가 상수면 RetNet, $\alpha_t\equiv 1$이면 vanilla linear attention, diagonal이면 GLA, data-dependent 스칼라면 Mamba-2. Mamba-1의 채널별 elementwise 감쇠도 [Miras Eq. 3]의 general form $W_t = A_t * W_{t-1} + v_t k_t^\top$($A_t$: diagonal 또는 스칼라)에 diagonal 사례로 포섭된다. [Miras Eq. 8]의 논의는 이 세 특수화(상수/학습 상수/data-dependent 스칼라)를 명시적으로 열거하며 Mamba-2를 마지막 사례로 지목한다.
+여기서 SSM 원 표기와의 대응은 $B_t \leftrightarrow k_t$, $C_t \leftrightarrow q_t$, $x_t \leftrightarrow v_t$이며, $W_t\in\mathbb{R}^{d_v\times d_k}$다. 6장 카탈로그의 GLA/Mamba-2 행 그대로다: $\alpha_t$가 상수면 RetNet, $\alpha_t\equiv 1$이면 vanilla linear attention, diagonal이면 GLA, data-dependent 스칼라면 Mamba-2. Mamba-1의 채널별 elementwise 감쇠도 [Miras Eq. 3]의 general form $W_t = A_t * W_{t-1} + v_t k_t^\top$($A_t$: diagonal 또는 스칼라)에 diagonal 사례로 포섭된다. [Miras Eq. 8]의 논의는 이 세 특수화($\alpha=1$ / 학습되는 상수 / data-dependent 스칼라)를 명시적으로 열거하며 Mamba-2를 마지막 사례로 지목한다.
 
 표 7-1 — SSM 원 표기 ↔ 통일 표기 ↔ inference 어휘 (장-국소 대응표)
 
@@ -90,13 +92,15 @@ $$
 $$
 y_t = \sum_{j=1}^{t}\Big(\prod_{s=j+1}^{t}\alpha_s\Big)\,(q_t^\top k_j)\,v_j
 \quad\Longleftrightarrow\quad
-Y = \big(L \odot (QK^\top)\big)V, \qquad L_{tj} = \prod_{s=j+1}^{t}\alpha_s \;\;(t\ge j)
+Y = \big(\Gamma \odot (QK^\top)\big)V, \qquad \Gamma_{tj} = \prod_{s=j+1}^{t}\alpha_s \;\;(t\ge j)
 \tag{7-3}
 $$
 
+(decay mask의 원문 기호는 $L$이지만 sequence 길이 $L$과 충돌하므로 이 장에서는 장-국소 기호 $\Gamma$로 쓴다. 하삼각 바깥, 즉 $t<j$인 성분은 0 — causal mask다.)
+
 이 식이 말하는 것: **decay 누적곱을 mask로 갖는 attention**과, 고정 크기 state의 recurrence는 같은 함수의 두 표현이다. 왼쪽(recurrent form)은 token당 $O(d_k d_v)$에 순차 계산하고, 오른쪽(attention form)은 $O(L^2)$에 완전 병렬 계산한다. 어느 쪽으로 계산할지는 **정확도가 아니라 하드웨어 사정으로 고르는 알고리즘 선택**이다.
 
-Dao & Gu 2024는 이것을 행렬 구조론으로 일반화한다. sequence mixing 전체를 하삼각 행렬 $M = L\odot(QK^\top)$의 곱 $Y = MX$로 보면, decay 누적곱 mask $L$은 **semiseparable** 구조 — 임의의 부분 블록이 낮은 rank를 갖는 구조화 행렬 — 를 가지며, $M$을 dense로 실체화해 곱하면 attention 모드, 구조를 이용해 인수분해된 형태로 곱하면 recurrent 모드가 된다. "duality"라는 이름은 이 두 곱셈 알고리즘의 쌍대성을 가리킨다.
+Dao & Gu 2024는 이것을 행렬 구조론으로 일반화한다. sequence mixing 전체를 하삼각 행렬 $\Gamma\odot(QK^\top)$의 곱으로 보면 이 행렬은 **semiseparable** 구조 — 임의의 부분 블록이 낮은 rank를 갖는 구조화 행렬 — 를 가지며, 이를 dense로 실체화해 곱하면 attention 모드, 인수분해된 구조를 이용해 곱하면 recurrent 모드가 된다 [Dao & Gu 2024]. "duality"라는 이름은 같은 구조화 행렬에 대한 이 두 곱셈 알고리즘의 쌍대성을 가리킨다.
 
 실전 답은 둘의 절충이다. sequence를 크기 $C$의 chunk로 자르고(§1.2의 chunk 시작 offset $\xi(t,C) = C\lfloor(t-1)/C\rfloor$ 사용), chunk 경계에서만 state를 전달하면:
 
@@ -128,9 +132,11 @@ decode 쪽 접점도 정리해 두자. SSD는 훈련·prefill의 이야기다. d
 
 이 표의 세로축이 곧 이 책의 서사다. 1→2세대는 "무엇을 지울까"를 학습 가능하게 만들었고(이 장), 2→3세대는 "어떻게 쓸까"를 Hebbian 덧셈에서 optimization step으로 승격시켰으며(6장, 8장), [Titans]는 거기에 momentum — 논문의 표현으로는 token flow — 을 더해 자신을 다음 세대로 규정한다 [Titans App. A.1].
 
-master update와의 접속은 이렇게 읽으면 된다. 식 (M2)는 $W_t = \alpha_t W_{t-1} + S_t$였다. Mamba-2는 여기서 surprise 항 $S_t$를 통째로 raw Hebbian write $v_t k_t^\top$로 바꾼 특수 사례다 — gradient도, momentum도 없고 retention만 남은 (M2). 그래서 [Miras]는 Mamba-2를 "attentional bias 없이 retention만 학습하는 모델"의 자리에 놓을 수 있었고 [Miras Table 1], 그 자리 배치가 이 라인 전체의 설계 공간(무엇을 잃고 무엇을 지킬까 × 어떻게 쓸까 × 어떤 optimizer로)을 여는 첫 수가 된다.
+master update와의 접속은 이렇게 읽으면 된다. 식 (M2)는 $W_t = \alpha_t W_{t-1} + S_t$였다. Mamba-2는 여기서 momentum을 끄고($\beta_t = 0$) surprise 항을 Hebbian write $v_t k_t^\top$로 바꾼 특수 사례다. 그리고 이 Hebbian write조차 gradient의 언어로 다시 읽힌다. [Miras]는 dot-product attentional bias $\tilde\ell_t = -2\langle W k_t,\, v_t\rangle$에 GD 한 걸음을 적용하면(step size는 흡수) 정확히 $+\,v_t k_t^\top$의 write가 나옴을 보이고, 이에 따라 Mamba-2를 "dot-product bias + $\ell_2$ retention + GD" 조합으로 분류한다 [Miras Eq. 8, Table 1]. 이 bias는 $W$에 대해 선형이라 gradient가 현재 state를 전혀 참조하지 않는다 — 옛 값을 읽고 고쳐 쓰는 correction이 원리적으로 없고, 그래서 crosstalk(→ 5장)가 남는다. 이 자리 배치가 이 라인 전체의 설계 공간(어떤 bias를 최소화할까 × 무엇을 남길까 × 어떤 optimizer로)을 여는 첫 수가 된다.
 
-의미론적 차이 하나는 기록해 둘 가치가 있다. [Miras 각주 2]는 Mamba-2류의 gating과 [Titans]의 retention이 **완전 소거의 의미**에서 다르다고 지적한다: Mamba-2의 gate가 0이 되면 memory 전체가 지워지고 다음 token은 "처음 보는 데이터"가 되는 반면, Titans는 meta-learn된 초기 상태로 되돌아가는 cold start를 갖는다. gate 값이 같아도 "0으로 리셋"과 "$W_{\mathrm{init}}$으로 리셋"은 다른 연산이다 — 이 구분은 15장([TNT]의 periodic state reset)에서 시스템 설계 축으로 커진다.
+gate의 다음 진화도 여기서 예고된다. [Titans]는 자신의 forgetting mechanism — update 앞에 곱해지는 data-dependent retention — 가 Mamba-2류 gating mechanism의 일반화라고 명시한다 [Titans §1, §3.1]. 무엇이 일반화인가? Mamba-2의 gate는 행렬 state 하나를 스칼라로 감쇠시키지만, Titans의 retention은 memory가 "작은 모델의 weights"로 승격된 뒤에도 같은 자리에서 작동하는 weight decay다. 2장에서 optimizer 객체의 성분으로 배운 weight decay — $(1-\lambda)w$의 그 감쇠 — 가, 여기서는 sequence 축 위에서 token마다 값이 달라지는 학습된 eviction으로 재해석된다. 같은 수식, 다른 축이다. 이 재해석의 정식 전개는 12장의 몫이고, 이 장은 그 재료인 gate 계보를 공급했다.
+
+의미론적 차이 하나는 기록해 둘 가치가 있다. [Miras footnote 2]는 Mamba-2류의 gating과 [Titans]의 retention이 **완전 소거의 의미**에서 다르다고 지적한다: Mamba-2의 gate가 0이 되면 memory 전체가 지워지고 다음 token은 "처음 보는 데이터"가 되는 반면, Titans는 meta-learn된 초기 상태로 되돌아가는 cold start를 갖는다. gate 값이 같아도 "0으로 리셋"과 "$W_{\mathrm{init}}$으로 리셋"은 다른 연산이다 — 이 구분은 15장([TNT]의 periodic state reset)에서 시스템 설계 축으로 커진다.
 
 마지막으로 두 개의 예고. 첫째, [NL](arXiv:2512.24695)은 이 장의 전 계보를 update frequency의 스펙트럼 위에 재배열한다 — SSM state는 token마다 갱신되는 가장 빠른 level일 뿐이다(→ 16장). 둘째, 독자의 어휘로 이 절 전체를 한 줄로 압축하면: **gate는 학습된 cache eviction policy이고, 이 장의 역사는 eviction policy가 고정 상수에서 content-aware 함수로 진화해 온 역사다.** write policy의 진화는 다음 장의 몫이다.
 
@@ -154,7 +160,7 @@ $$
 
 읽기: $y_3 = W_3 q_3 = (1.5,\;1)^\top$.
 
-**경로 2 — attention form (식 7-3).** mask는 $L_{tj} = \prod_{s=j+1}^{t}\alpha_s$이므로 3행은 $(\alpha_2\alpha_3,\;\alpha_3,\;1) = (\tfrac14,\;\tfrac12,\;1)$이다. score는 $q_3^\top k_j = (1,\;0,\;1)$. 곱하면 가중치 $(\tfrac14,\;0,\;1)$:
+**경로 2 — attention form (식 7-3).** mask는 $\Gamma_{tj} = \prod_{s=j+1}^{t}\alpha_s$이므로 3행은 $(\alpha_2\alpha_3,\;\alpha_3,\;1) = (\tfrac14,\;\tfrac12,\;1)$이다. score는 $q_3^\top k_j = (1,\;0,\;1)$. 곱하면 가중치 $(\tfrac14,\;0,\;1)$:
 
 $$
 y_3 = \tfrac14\,v_1 + 0\cdot v_2 + 1\cdot v_3 = (0.5,\,0)^\top + (1,\,1)^\top = (1.5,\;1)^\top
@@ -173,6 +179,8 @@ $$
 이 장의 계산 이야기를 독자의 roofline 위에 정리한다.
 
 **decode.** 세 모드 중 recurrent form만 남는다. head당 비용은 state $W\in\mathbb{R}^{d_v\times d_k}$의 read-modify-write: FLOPs는 갱신(outer product 누적)과 읽기(GEMV)로 $O(d_k d_v)$, 메모리 트래픽도 state 왕복 $O(d_k d_v)$ bytes다. FLOP/byte 비가 $O(1)$이므로 **decode는 여전히 bandwidth-bound다** — KV cache 스캔이 state RMW로 바뀌었을 뿐, "decode는 메모리가 지배한다"는 독자의 세계관은 그대로 유효하다. 달라진 것은 그 트래픽이 문맥 길이와 무관하게 상수라는 점이다.
+
+batching과의 접점도 짚어 둔다. decode에서 state는 요청마다 다르지만 모양은 전부 같으므로($d_v\times d_k$ 행렬들), batch 전체의 읽기·갱신이 균일한 batched GEMV와 rank-1 update로 묶인다 — 길이가 제각각인 KV cache 스캔을 paged layout으로 달래던 세계와 비교하면, 스케줄러가 다뤄야 할 자유도가 하나 줄어든 셈이다. 단, 여기서 batching이 평화로운 이유는 memory가 행렬 하나라서 per-request 연산이 batched GEMM 한 번으로 정규화되기 때문임을 기억해 두라. 8장에서 memory가 per-request로 훈련되는 MLP가 되는 순간, 같은 질문이 grouped GEMM의 문제로 재등장한다(→ 10장).
 
 **prefill/훈련 — Mamba-1의 병목.** selective scan의 op mix는 elementwise 곱-합이다. kernel fusion으로 DRAM 왕복을 없애도(IO 문제 해결) 연산이 GEMM이 아니므로 tensor core가 놀고, 상한이 기기의 vector-ALU throughput — 최신 GPU에서 tensor core FLOPS의 작은 분수 — 에 걸린다. 즉 Mamba-1의 한계는 bandwidth가 아니라 **op mix**다. roofline 그림으로 말하면: 지붕의 낮은 쪽 처마 밑에 앉아 있는 것이다.
 
@@ -193,7 +201,7 @@ $$
 - SSM은 continuous 선형 시스템의 ZOH discretization이고, step size $\Delta$는 유지 비율($\bar a = \exp(\Delta a)$)과 write 강도를 한 knob으로 묶은 gate다 — 이 라인의 모든 gate의 기원이다.
 - S4/HiPPO는 LTI라서 훈련·prefill을 convolution으로 병렬화하지만, 같은 이유로 content 기반 선택이 불가능하다.
 - Mamba의 selectivity는 $\Delta_t, B_t, C_t$를 입력의 함수로 만들어 표현력을 얻는 대신 convolution 모드를 잃고, IO-aware scan kernel에 의존한다 — bandwidth 문제는 fusion으로 풀리지만 op mix 문제는 남는다.
-- Mamba-2는 transition을 per-head 스칼라 $\alpha_t$로 제약해 update를 $W_t = \alpha_t W_{t-1} + v_t k_t^\top$ (식 7-2)로 만들고, SSD에 의해 이 recurrence는 decay-mask attention $Y = (L\odot QK^\top)V$ (식 7-3)와 동일한 함수다.
+- Mamba-2는 transition을 per-head 스칼라 $\alpha_t$로 제약해 update를 $W_t = \alpha_t W_{t-1} + v_t k_t^\top$ (식 7-2)로 만들고, SSD에 의해 이 recurrence는 decay-mask attention $Y = \big(\Gamma\odot(QK^\top)\big)V$ (식 7-3)와 동일한 함수다.
 - 같은 함수를 recurrent($C=1$, decode) / quadratic($C=L$, 짧은 prefill) / chunkwise($1<C<L$, 훈련) 세 모드로 계산할 수 있고, 셋 모두 exact다 — 이 장의 chunk는 tiling이지 근사가 아니다.
 - Mamba-2의 chunkwise 재구성은 무거운 연산을 전부 GEMM으로 바꿔 tensor core를 되찾았고, [Dao & Gu 2024]는 fused scan 대비 2–8×의 속도 향상을 보고한다. decode 비용은 두 세대가 같은 차수다.
 - 계보는 gate의 3세대(상수 decay → data-dependent gate → delta/online learning)로 정리되며 [Titans App. A.1], Mamba-2는 (M2)에서 surprise 항을 Hebbian write로 바꾼 특수 사례다 — write rule의 승격이 다음 두 장의 주제다.

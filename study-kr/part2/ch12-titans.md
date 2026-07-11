@@ -116,31 +116,33 @@ $$
 
 Q4의 답으로 [Titans]는 attention을 정밀한 short-term memory, LMM을 서서히 잊는 long-term memory로 두고 세 가지 합성을 제시한다 [Titans §4]. 세 변형 모두 persistent token을 포함한다. 풀네임은 **Memory as Context (MAC)**, **Memory as Gate (MAG)**, **Memory as Layer (MAL)** 이며 이하 약어로 쓴다.
 
-**MAC** [Titans §4.1, Eqs. 21–25]. sequence를 크기 $C$의 segment로 자른다(원문의 segment 크기 $C$ — 이 책은 chunk 크기와 동일시한다, 표 12-1). $n$번째 segment(token $nC{+}1\ldots(n{+}1)C$)가 들어오면, 직전 segment까지 갱신된 memory 상태 $W_{nC}$에서 **읽고**, attention을 돌린 뒤, 그 출력을 memory에 **쓴다**:
+**MAC** [Titans §4.1, Eqs. 21–25]. sequence를 크기 $C$의 segment로 자른다(원문의 segment 크기 $C$ — 이 책은 chunk 크기와 동일시한다, 표 12-1). $n$번째 segment의 token 행렬을 $X^{(n)}\in\mathbb{R}^{C\times d}$(token $nC{+}1\ldots(n{+}1)C$)라 하자. segment가 들어오면, 직전 segment까지 갱신된 memory 상태 $W_{nC}$에서 **읽고**, attention을 돌린 뒤, 그 출력을 memory에 **쓴다**:
 
 $$
-h_\tau = \mathcal{M}(q_\tau;\,W_{nC}) \quad (\text{segment의 각 token } \tau,\ q_\tau = W_Q x_\tau),
+r_\tau = \mathcal{M}(q_\tau;\,W_{nC}) \quad (\text{segment의 각 token } \tau,\ q_\tau = W_Q x_\tau),
 $$
 
 $$
-\tilde{S}^{(n)} = P \,\Vert\, h \,\Vert\, S^{(n)},
+\tilde{X}^{(n)} = P \,\Vert\, r \,\Vert\, X^{(n)},
 \qquad
-y = \mathrm{Attn}\big(\tilde{S}^{(n)}\big),
+a = \mathrm{Attn}\big(\tilde{X}^{(n)}\big),
 $$
 
 $$
-W_{(n+1)C} \leftarrow \text{식 (12-4)를 } y \text{의 token들에 대해 실행},
+W_{(n+1)C} \leftarrow \text{식 (12-4)를 } a \text{의 token들에 대해 실행},
 \qquad
-o_\tau = \mathrm{gate}\big(y_\tau,\ \mathcal{M}(y_\tau;\,W_{(n+1)C})\big).
+y_\tau = \mathrm{gate}\big(a_\tau,\ \mathcal{M}(a_\tau;\,W_{(n+1)C})\big).
 $$
 
-즉 attention window 안에는 persistent token, memory에서 검색해 온 역사 $h$, 현재 segment가 나란히 놓이고, 그 안에서 full causal attention이 돈다(전체 sequence 관점의 attention mask는 segment별 block-diagonal이다 [Titans Fig. 3a]). 설계 이유가 중요하다: (i) attention이 검색된 역사와 현재 데이터를 동시에 보므로 지금 long-term 정보가 필요한지를 token 단위로 판단할 수 있고, (ii) memory에는 attention이 처리한 표현만 쓰이므로 attention이 **write filter** 역할을 해 쓸모없는 token으로 인한 memory overflow를 줄인다 [Titans §4.1]. 원문의 write 식 $\mathcal{M}_t = \mathcal{M}_{t-1}(y_t)$ [Titans Eq. 24]는 "forward pass를 통해 weight를 갱신한다"는 관행 표기로, segment 내부의 write 세분(granularity)은 명시되어 있지 않다. 또한 retrieval이 갱신 **전** 상태 $W_{nC}$를 읽으므로 read는 항상 한 segment만큼 stale하다.
+즉 attention window 안에는 persistent token, memory에서 검색해 온 역사 $r$(원문 표기 $h_t$ — outer 2차 moment와의 충돌을 피해 개명, 표 12-1; 원문 mask 표기로는 $N_l$개의 long-term memory token), 현재 segment가 나란히 놓이고, 그 안에서 full causal attention이 돈다(전체 sequence 관점의 attention mask는 segment별 block-diagonal이다 [Titans Fig. 3a]). 설계 이유가 중요하다: (i) attention이 검색된 역사와 현재 데이터를 동시에 보므로 지금 long-term 정보가 필요한지를 token 단위로 판단할 수 있고, (ii) memory에는 attention이 처리한 표현만 쓰이므로 attention이 **write filter** 역할을 해 쓸모없는 token으로 인한 memory overflow를 줄인다 [Titans §4.1]. 원문의 write 식 $\mathcal{M}_t = \mathcal{M}_{t-1}(y_t)$ [Titans Eq. 24]는 "forward pass를 통해 weight를 갱신한다"는 관행 표기로, segment 내부의 write 세분(granularity)은 명시되어 있지 않다. 또한 retrieval이 갱신 **전** 상태 $W_{nC}$를 읽으므로 read는 항상 한 segment만큼 stale하다.
+
+<!-- TODO-VERIFY: MAC에서 retrieved history token 수 N_l이 segment 크기 C와 같은지 원문 미명시. Eq. 21의 query가 segment 전체(C개 token)이므로 N_l = C가 자연스러운 독해이나, Fig. 3a는 별도 상수 N_l로 표기한다. 확인 방법: papers/2501.00663.txt의 Fig. 3a 캡션(line ~530)과 공개 코드 대조. -->
 
 <!-- TODO-VERIFY: [Titans Eq. 25]의 최종 read가 y_t를 그대로 query로 쓰는지(W_Q 재적용 없이)를 원문 표기 그대로 옮겼다. v1 텍스트는 M*_t(y_t)로만 쓴다. 확인 방법: papers/2501.00663.pdf p.9 부근 Eq. 25와 구현 공개 시 코드 대조. -->
 
 **MAG** [Titans §4.2, Eqs. 26–28]. segmentation 없이 두 branch를 병렬로 돌린다. branch 1은 persistent prefix가 항상 보이는 sliding window attention(SWA), branch 2는 prefix가 붙은 전체 sequence 위를 식 (12-4)로 도는 LMM이다. 두 branch의 출력을 학습된 elementwise gate로 결합한다 — 실험에서는 각 branch 출력을 학습 가능한 벡터 weight로 normalize한 뒤 비선형 $\sigma(\cdot)$를 거쳐 곱한다 [Titans §4.2]. 원문은 이 결합을 $\otimes$로 쓰지만 이 책은 $\mathrm{gate}(\cdot,\cdot)$로 쓴다($\otimes$ 금지, §1.3). SWA가 선명한 short-term, LMM이 fading long-term이며, 구조가 다른 head들을 가진 multi-head layer로도 읽을 수 있다(Hymba 인용).
 
-**MAL** [Titans §4.3, Eqs. 29–31]. LMM을 하나의 layer로 SWA 앞에 직렬로 쌓는다: $\tilde{x}=P\,\Vert\,x$, $y=\mathrm{LMM}(\tilde{x})$, $o=\text{SW-Attn}(y)$. 이는 H3 이래 사실상 모든 hybrid(Samba, Griffin 등)가 쓰는 관행 패턴인데, 논문은 이 설계가 **가장 약하다**고 명시한다 — 파이프라인의 힘이 각 단의 힘으로 상한되어 attention과 memory의 상보성을 살리지 못한다는 것이다 [Titans §4.3]. 기존 hybrid 전부가 MAL 모양이라는 점에서, MAC/MAG > MAL이라는 §12.6의 결과는 개별 모델 비교를 넘어 hybrid 설계 관행 자체에 대한 기소장이다.
+**MAL** [Titans §4.3, Eqs. 29–31]. LMM을 하나의 layer로 SWA 앞에 직렬로 쌓는다: $\tilde{x}=P\,\Vert\,x$, $z=\mathrm{LMM}(\tilde{x})$, $y=\text{SW-Attn}(z)$ ($z$는 LMM branch의 per-token read를 쌓은 중간 출력, 장-국소 기호). 이는 H3 이래 사실상 모든 hybrid(Samba, Griffin 등)가 쓰는 관행 패턴인데, 논문은 이 설계가 **가장 약하다**고 명시한다 — 파이프라인의 힘이 각 단의 힘으로 상한되어 attention과 memory의 상보성을 살리지 못한다는 것이다 [Titans §4.3]. 기존 hybrid 전부가 MAL 모양이라는 점에서, MAC/MAG > MAL이라는 §12.6의 결과는 개별 모델 비교를 넘어 hybrid 설계 관행 자체에 대한 기소장이다.
 
 **LMM 단독**: attention 없이 memory module만 sequence model로 쓰는 변형. memory 시스템의 각 부분은 독립적으로도 작동해야 한다는 §12.2의 Q4 철학에 따른 대조군이자, long-term memory가 홀로도 강하다는 주장의 시험대다 [Titans §4.3].
 
@@ -188,7 +190,12 @@ $$
 | $\otimes$ — MAG의 gating 결합 | $y\odot g$ 또는 $\mathrm{gate}(\cdot,\cdot)$ | $\otimes$ 금지 |
 | $\beta_i=\prod_{j\le i}(1-\alpha_j)$ — 누적 decay (Eq. 16) | $\bar\alpha_i=\prod_{j\le i}\alpha_j$ (장-국소) | ⚠ 통일 $\beta_t$(momentum decay)와 충돌 방지 |
 | $u_t=\nabla\ell(M_{t'};x_t)$ — chunk-anchored gradient (Eq. 18) | $\hat g_\tau$ (장-국소) | ⚠ NL의 $u_t$(LSS)와 충돌 방지 |
-| $\Theta_b,\ \mathbf{B}_b$ — chunk별 diagonal (Eq. 17) | $\mathrm{diag}(c)$, $c_i=\eta_i\,\bar\alpha_C/\bar\alpha_i$ (장-국소) | 두 diagonal을 하나로 합쳐 표기 |
+| $\Theta_b,\ \mathbf{B}_b$ — chunk별 diagonal (Eq. 17) | $\mathrm{diag}(\tilde\eta_1,\ldots,\tilde\eta_C)$, $\tilde\eta_i=\eta_i\,\bar\alpha_C/\bar\alpha_i$ (장-국소) | 두 diagonal을 하나로 합쳐 표기; ⚠ 예약 기호 $c$(Omega window 길이)를 피해 개명 |
+| $t'=t-\mathrm{mod}(t,b)$ — chunk 시작 (Eq. 16) | $\xi(t,C)=C\lfloor(t-1)/C\rfloor$ | 원문 정의는 chunk 마지막 token($t=b$)에서 $t'=b$가 되는 경계 슬립 — §1.2 정의로 교정 |
+| $h_t$ — MAC의 retrieved history (Eq. 21) | $r_\tau$ (장-국소) | ⚠ outer 2차 moment $h_t$와 충돌 방지 |
+| $S^{(t)},\ \tilde{S}^{(t)}$ — segment, 증강 segment (Eq. 22) | $X^{(n)},\ \tilde{X}^{(n)}$ (장-국소) | ⚠ momentum $S_t$와 충돌 방지 |
+| $y_t$ — MAC의 attention 출력 (Eq. 23) | $a_\tau$ (장-국소) | layer 최종 출력 $y$와 구분 |
+| $o_t$ — 최종 출력 (Eq. 25) | $y_\tau$ | 통일 규약: layer 출력은 $y$ |
 
 ## 12.4 Outer-loop training vs inner-loop test-time learning
 
@@ -221,8 +228,8 @@ retention은 누적 곱 $\bar\alpha$로 접히고, 모든 gradient가 같은 동
 
 $$
 \sum_{i=1}^{C} \eta_i\, \frac{\bar\alpha_C}{\bar\alpha_i}\, \nabla_W\,\ell(W_0;k_i,v_i)
-\;=\; \big(W_0 K^\top - V^\top\big)\,\mathrm{diag}(c)\, K,
-\qquad c_i = \eta_i\, \bar\alpha_C/\bar\alpha_i,
+\;=\; \big(W_0 K^\top - V^\top\big)\,\mathrm{diag}\big(\tilde\eta_1,\ldots,\tilde\eta_C\big)\, K,
+\qquad \tilde\eta_i = \eta_i\, \bar\alpha_C/\bar\alpha_i,
 \tag{12-8}
 $$
 

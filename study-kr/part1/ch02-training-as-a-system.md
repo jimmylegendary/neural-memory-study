@@ -194,9 +194,7 @@ $$
 
 SVD는 비싸므로 실제 구현은 **Newton–Schulz iteration** $\mathrm{NS}_\kappa$를 쓴다: 홀수 행렬 다항식 $X \leftarrow aX + bX(X^\top X) + cX(X^\top X)^2$을 $\kappa$회 반복하면 $X$의 특이벡터는 보존되고 특이값만 1로 수렴한다. Muon은 $\kappa=5$와 튜닝된 계수 $(a,b,c)=(3.4445,\,-4.7750,\,2.0315)$를 쓴다(Jordan et al. 2024). 시스템 독자에게 이 구현 선택이 핵심이다: **"직교화 = parameter shape의 GEMM 몇 개"**이므로, Muon은 optimizer step을 bandwidth-bound elementwise pass에서 tensor core가 도는 연산으로 바꾸면서도 state는 buffer 하나로 유지한다. 대규모 LLM pretraining에서의 실증은 Liu et al. 2025 (arXiv:2502.16982)가 보고한다.
 
-이 객체가 이 책에 등장하는 진짜 이유는 outer loop가 아니다. [Atlas]는 Muon을 **inner loop의 optimizer로** 이식한다: memory를 GD 대신 식 (2-5)로 갱신한다(원문 Eq. 32–33; 통일 표기로는 $S_t$에 $\mathrm{NS}_\kappa$를 적용해 $W_t = \alpha_t W_{t-1} + \eta_t\,\mathrm{NS}_\kappa(S_t)$ 꼴 — → 14장). 그 순간 $\kappa$는 decode 중 매 chunk마다 지불하는 추가 GEMM 개수, 즉 품질을 사는 test-time compute의 다이얼이 된다.
-
-<!-- TODO-VERIFY: Atlas 원문이 NS 반복 횟수를 명시적으로 "test-time compute knob"으로 규정하는 절 위치(§3.3으로 추정) 확인 필요. 확인 방법: papers/2505.23735.txt에서 "test-time" 또는 "Newton" 주변 서술 검색. -->
+이 객체가 이 책에 등장하는 진짜 이유는 outer loop가 아니다. [Atlas]는 Muon을 **inner loop의 optimizer로** 이식한다: memory를 GD 대신 식 (2-5)로 갱신한다(원문 Eq. 32–33; 통일 표기로는 $S_t$에 $\mathrm{NS}_\kappa$를 적용해 $W_t = \alpha_t W_{t-1} + \eta_t\,\mathrm{NS}_\kappa(S_t)$ 꼴 — → 14장). 그 순간 $\kappa$는 decode 중 매 chunk마다 지불하는 추가 GEMM 개수가 되고, [Atlas §5]는 이 반복 횟수를 명시적으로 "internal test-time compute parameter"라고 부른다 — 반복을 늘리면 더 나은 memorization을 살 수 있다는 것이다.
 
 [NL]은 한 걸음 더 나가 $\mathrm{NS}_\kappa$ 반복 자체를 "momentum update 안의 내부 최적화 level"로 읽고(→ 16장), Adam + Muon + 다중 주기 momentum을 결합한 M3 optimizer를 제안한다 [NL Alg. 1]. 이 장의 어휘로 요약하면: Muon은 (state 1개, GEMM 위주 update, 낮은 state cost / 높은 compute cost)의 객체이고, 이 라인은 그 객체를 layer 안으로 옮겨 심는다.
 
@@ -283,8 +281,7 @@ Muon의 $\mathrm{NS}_\kappa$가 하는 일을 보기 위해, 특이값이 $(1.2,
 - [ ] SGD / momentum / AdamW / Muon의 state 구성과 update 식을 암기가 아니라 재구성으로 쓸 수 있고, param당 state byte를 말할 수 있다.
 - [ ] momentum recurrence가 linear-RNN state 갱신과 같은 대수임을 보이고, 그것이 [Titans]의 $S_t$와 어떻게 연결되는지 말할 수 있다.
 - [ ] L2 regularization과 decoupled weight decay의 차이를 설명하고, $(1-\eta\lambda)$ 인자가 어떤 gate의 원형인지 말할 수 있다.
-- [ ] §2.7의 (d)를 재현해, gradient 크기가 2배 다른 두 좌표가 Adam 첫 step에서 왜 같은 보폭을 받는지 계산으로 보일 수 있다.
-- [ ] $\mathrm{NS}_\kappa$ 반복이 update 행렬의 무엇을 보존하고 무엇을 바꾸는지, 손계산 표로 보일 수 있다.
+- [ ] §2.7의 (d)와 (e)를 재현해, Adam이 좌표별로·$\mathrm{NS}_\kappa$가 특이값별로 각각 무엇을 평준화하는지(그리고 무엇을 보존하는지) 손계산으로 보일 수 있다.
 - [ ] optimizer state를 inference 어휘로 옮길 수 있다: 어떤 의미에서 "훈련의 register file"이고, optimizer step이 roofline의 어디에 앉으며, $dW = \delta x^\top$가 어떤 serving 커널과 같은 shape인지 말할 수 있다.
 
 ## 다음 장으로
