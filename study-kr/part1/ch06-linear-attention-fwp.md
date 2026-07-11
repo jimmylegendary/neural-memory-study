@@ -77,7 +77,7 @@ FWP 관점이 주는 실질적 이득은 두 가지다. 첫째, **두 시간 척
 
 ## 6.3 Gate의 도입: RetNet과 GLA — 학습된 eviction
 
-Hebbian write의 첫 번째 문제는 지우는 수단이 없다는 것이다. 식 (6-1)은 무한히 더하기만 하므로 state의 norm이 단조 증가하고, 오래된 쌍이 영원히 남아 crosstalk를 누적시킨다. cache 어휘로 말하면 **eviction policy가 없는 cache**다. 첫 번째 교정은 자명한 방향이다: 매 step 이전 state를 조금 깎는다.
+Hebbian write의 첫 번째 문제는 지우는 수단이 없다는 것이다. 식 (6-1)은 명시적 감쇠 기제 없이 더하기만 하므로(부호가 맞는 항끼리 상쇄되지 않는 한 state의 norm이 자라고), 오래된 쌍이 영원히 남아 crosstalk를 누적시킨다. cache 어휘로 말하면 **eviction policy가 없는 cache**다. 첫 번째 교정은 자명한 방향이다: 매 step 이전 state를 조금 깎는다.
 
 $$
 W_t = \alpha_t\, W_{t-1} + v_t k_t^\top
@@ -86,7 +86,7 @@ $$
 
 여기서 $\alpha_t\in[0,1]$은 retention gate(→ 13장; 역사적 별칭 "forget gate")이고, 이 책의 방향 규약대로 **남기는 비율**이다($\alpha_t = 1$이면 전부 유지). 식 (6-2)의 스펙트럼 위에 세 모델이 놓인다 [Miras Eq. 8, §4]:
 
-- **RetNet** (Sun et al. 2023, arXiv:2307.08621): $\alpha$가 데이터와 무관한 학습된 상수. head마다 다른 감쇠율을 두어 다중 시간 척도를 만든다.
+- **RetNet** (Sun et al. 2023, arXiv:2307.08621): $\alpha$가 데이터와 무관한 고정 상수 — head 인덱스로 미리 정한 감쇠율($\gamma = 1 - 2^{-5-\mathrm{arange}(h)}$ 꼴)이고 학습되지 않는다. head마다 다른 이 고정 감쇠로 다중 시간 척도를 만든다 [RetNet §2.2 Eq. 8].
 - **GLA** (Yang et al. 2024, arXiv:2312.06635): $\alpha_t$가 입력의 함수인 **data-dependent diagonal gate**. key 채널별로 남기는 비율이 달라진다 — 통일 표기로 $W_t = W_{t-1}\,\mathrm{Diag}(\alpha_t) + v_tk_t^\top$.
 - **Mamba-2**: $\alpha_t$가 data-dependent **스칼라**. SSM 계보에서 도달한 같은 지점이며, 유도와 duality는 7장이 담당한다.
 
@@ -151,7 +151,7 @@ implicit의 값어치는 무조건 안정성이다. $k_t$ 방향의 transition �
 - explicit (6-3): $1 - \eta_t\|k_t\|^2$. $\eta_t\|k_t\|^2 > 2$면 절댓값이 1을 넘어 state가 폭주한다. 안정성이 step size 제약이라는 형태로 사용자에게 전가된다.
 - implicit (6-5): $1 - \epsilon_t\|k_t\|^2 = \dfrac{1}{1+\eta_t\|k_t\|^2} \in (0,1)$ — **임의의 $\eta_t > 0$에서** 안정하다. $\eta_t \to \infty$ 극한에서도 발산하지 않고 "이 key에 대해 $v_t$를 정확히 저장하라"는 hard write로 수렴할 뿐이다.
 
-training 무경험 독자를 위해 옮기면: explicit GD의 step size는 발산이라는 절벽이 있는 tuning 대상이고, implicit GD는 그 절벽을 수식 안에서 제거한 것이다. gate head가 만들어내는 $\eta_t$는 임의로 클 수 있는 학습된 값이므로, "gate가 무슨 값을 내놓아도 state가 안 터진다"는 성질은 outer-loop 학습의 안정성으로 직결된다. retention gate는 없다($\alpha \equiv 1$): proximal 항 $\|W - W_{t-1}\|_F^2$ 자체가 유일한 (local) retention이며, 전역 감쇠 없이도 위의 수축 계수가 오래된 내용을 서서히 밀어낸다. systems 관점의 비용은 정직하게 0에 가깝다 — $\epsilon_t$ 계산은 내적 하나와 나눗셈 하나이고, kernel 구조는 DeltaNet과 동일하다. "공짜 안정성"이라는 점이 이 모델의 systems 요약이다.
+training 무경험 독자를 위해 옮기면: explicit GD의 step size는 발산이라는 절벽이 있는 tuning 대상이고, implicit GD는 그 절벽을 수식 안에서 제거한 것이다. "임의의 $\eta_t>0$에서 안 터진다"는 것은 closed-form의 수학적 성질이라, gate head가 어떤 값을 내놓아도 안정성이 보장되어 step-size 안정성이 outer-loop 학습에서 분리된다 — 실제 Longhorn은 여기에 더해 $\eta_t$(원문 $\beta_t$)를 sigmoid로 $(0,1)$에 가두지만, 안정성 자체는 그 제한과 무관한 closed-form의 성질이다 [Longhorn §3.2]. retention gate는 없다($\alpha \equiv 1$): proximal 항 $\|W - W_{t-1}\|_F^2$ 자체가 유일한 (local) retention이며, 전역 감쇠 없이도 위의 수축 계수가 오래된 내용을 서서히 밀어낸다. systems 관점의 비용은 정직하게 0에 가깝다 — $\epsilon_t$ 계산은 내적 하나와 나눗셈 하나이고, kernel 구조는 DeltaNet과 동일하다. "공짜 안정성"이라는 점이 이 모델의 systems 요약이다.
 
 ## 6.6 RWKV-7: generalized delta rule — gate를 채널별 벡터로
 
@@ -164,9 +164,11 @@ $$
 
 (6-6)은 원문의 state evolution [RWKV-7 Eq. 17]을 행벡터 관행에서 이 책의 열벡터 관행으로 전치한 것으로, $a_t$가 제거 항 내부에 $\odot$로 곱해지는 위치까지 원문과 배치가 같다. 제거 key를 $\ell_2$ 정규화해 두는 이유도 원문이 명시한다: 제거량을 단위 norm으로 고정해 두면 in-context learning rate $a_t$가 "state에서 얼마나 지우고 얼마나 다시 써 넣는가"를 다른 항에 오염되지 않고 단독으로 조절하는 손잡이가 된다 [RWKV-7 Eq. 7 부근]. GDN에서는 지우기 강도와 쓰기 강도가 $\eta_t$ 하나에 묶여 있었다 — (6-6)은 그 묶음을 채널 단위로 풀어낸 것이다.
 
-$w_t = \alpha_t\mathbf{1}$, $a_t = \alpha_t\eta_t\mathbf{1}$, $\hat k_t = \tilde k_t = k_t$로 두면 (6-4)로 되돌아간다 — 즉 (6-6)은 GDN을 부분 경우로 포함한다. Miras의 분류로는 delta 계열에서 gate가 채널별 벡터($m=d$)인 경우가 정확히 RWKV-7이다 [Miras Eq. 9, §4]. transition이 "대각 - rank-1"이라는 사실에 주목하라. gate 계열(순수 대각)과 delta 계열(항등 - rank-1)의 합집합이며, 이 구조 덕에 chunkwise 병렬화는 DeltaNet과 같은 WY 계열 기법으로 처리된다(→ 9장).
+$w_t = \alpha_t\mathbf{1}$, $a_t = \alpha_t\eta_t\mathbf{1}$, $\hat k_t = k_t$로 두면 transition이 $\alpha_t(I-\eta_t k_tk_t^\top)$로 (6-4)의 첫 항과 정확히 일치한다. 단 write 항까지 맞추려면 $\tilde k_t = \eta_t k_t$여야 하는데($v_t\tilde k_t^\top = \eta_t v_tk_t^\top$가 되도록), RWKV-7의 $\tilde k_t = k_t\odot\mathrm{lerp}(\mathbf 1,a_t,\nu)$가 임의의 GDN을 정확히 재현한다는 보장은 원문에 없다. 따라서 (6-6)은 GDN의 transition 구조를 **일반화**하는 것으로 읽되, 모든 GDN을 부분 경우로 정확히 포함한다는 단정은 유보한다. Miras의 분류로는 delta 계열에서 gate가 채널별 벡터($m=d$)인 경우가 정확히 RWKV-7이다 [Miras Eq. 9, §4]. transition이 "대각 - rank-1"이라는 사실에 주목하라. gate 계열(순수 대각)과 delta 계열(항등 - rank-1)의 합집합이며, 이 구조 덕에 chunkwise 병렬화는 DeltaNet과 같은 WY 계열 기법으로 처리된다(→ 9장).
 
-"이 gate는 누가 학습하는가"라는 §6.2의 질문을 (6-6)에 적용하면 답은 전부 같다: $w_t$·$a_t$와 두 key 변조의 채널 배율·보간 계수는 모두 slow weights의 일부인 작은 head가 token마다 산출하는 값이고($a_t$도 sigmoid 계열 산출의 $[0,1]^{d_k}$ 벡터다 [RWKV-7 Eq. 4]), inner loop에서 움직이는 것은 여전히 $W_t$ 하나뿐이다. 손잡이 수가 늘었을 뿐 두 시간 척도의 구도는 (6-1)에서 한 치도 달라지지 않았다.
+"이 gate는 누가 학습하는가"라는 §6.2의 질문을 (6-6)에 적용하면 답은 모두 slow weights로 귀결되나, 두 부류를 구분해야 한다: $w_t$·$a_t$는 작은 head가 token마다 산출하는 data-dependent 값이고($a_t$도 sigmoid 계열 산출의 $[0,1]^{d_k}$ 벡터다 [RWKV-7 Eq. 4]), 두 key 변조의 채널 배율 $\xi$·보간 계수 $\nu$는 outer loop가 학습하는 token-independent 고정 파라미터다. 어느 쪽이든 slow weights이고, inner loop에서 움직이는 것은 여전히 $W_t$ 하나뿐이다. 손잡이 수가 늘었을 뿐 두 시간 척도의 구도는 (6-1)에서 한 치도 달라지지 않았다.
+
+정리하면 RWKV-7은 이 장의 gate·delta 계열을 두 축의 격자로 읽게 한다. 한 축은 retention의 해상도(상수 → data-dependent 스칼라 → 채널별 벡터)이고, 다른 축은 write의 정밀도(Hebbian additive → delta overwrite → 지우기·쓰기를 분리한 채널별 overwrite)다. RetNet은 retention 축으로만 한 칸, DeltaNet은 write 축으로만 한 칸 움직였고, GDN은 두 축에서 스칼라 한 칸씩 오른 지점이며, RWKV-7은 두 축을 모두 벡터 해상도까지 민 오른쪽 위 모서리다. Longhorn만은 이 격자 밖에 선다 — 좌표를 옮긴 것이 아니라 explicit GD를 implicit GD로 갈아 끼워 step size의 안정성 자체를 다시 정의했기 때문이다(§6.5). Miras가 이 장의 모델을 한 판에 담을 수 있는 것도 격자 위 좌표와 격자 밖 한 점이라는 이 구조 덕이다 [Miras Table 1, §4]. 이 평면은 여기서 닫힌다 — Titans 이후의 확장(→ 12장)은 격자를 더 촘촘히 하는 대신 optimizer 축(momentum)과 memory 구조 축(deep MLP)이라는 두 개의 새 차원을 여는 일이다.
 
 > **[해설]** (6-6)을 inference 어휘로 옮기면 이렇다. 채널별 decay $w_t$는 cache 항목의 TTL이 **채널마다 다르게** 설정되는 eviction이고, 제거용 $\hat k_t$와 기록용 $\tilde k_t$의 분리는 같은 cache line에 대한 invalidate mask와 write mask를 따로 가진다는 뜻이며, $a_t$는 채널별 write intensity다. GDN이 "line 단위 eviction + line 단위 overwrite"였다면 RWKV-7은 그 두 연산 모두에 **byte-enable 신호**를 단 것이다 — 제어 자유도는 벡터로 늘었지만, 저장소($d_v\times d_k$ 행렬 하나)와 지배 비용(state RMW)은 그대로다.
 
@@ -201,7 +203,7 @@ Merrill et al. 2024 (arXiv:2404.08819)는 대각 transition의 SSM이 (log-preci
 
 > **[해설]** 이 지형이 6편에 주는 함의는 다음과 같다. transition의 구조(대각 < 대각+rank-1 < 그 곱)가 곧 모델이 표현할 수 있는 state 동역학의 계급이고, 이 장의 계보는 그 사다리를 한 칸씩 오르는 과정이기도 했다. Titans 라인은 여기서 한 축을 더 꺾는다 — transition을 더 꾸미는 대신 memory 자체를 nonlinear(deep MLP)로 만들고 read를 $\mathcal{M}(q;W)$로 비선형화하는 방향이다(→ 8장, 12장). matrix memory의 read가 $q$에 대해 선형이라는 제약은 어떤 gate로도 벗겨지지 않기 때문이다.
 
-systems 접점 하나: 표현력 사다리는 공짜가 아니라 **병렬화 예산**과 교환된다. 대각 transition은 scan으로, rank-1은 WY로 병렬화되지만, rank가 오르고 비선형이 끼어들수록 chunk 경계의 순차 의존이 두꺼워진다. 이 긴장의 정식 무대가 9장이고, 극한이 TNT다(→ 15장).
+systems 접점 하나: 표현력 사다리는 공짜가 아니라 **병렬화 예산**과 교환된다. 대각 transition은 scan으로, rank-1은 WY로 병렬화되지만, rank가 오르고 비선형이 끼어들수록 chunk 경계의 순차 의존이 두꺼워진다. 사다리의 두 칸이 이 교환의 양극단을 보여준다. Grazzi et al.의 $\eta_t\in(0,2)$ 확장은 transition 고유값 범위만 $[-1,1]$로 넓힐 뿐 여전히 rank-1이므로 WY 기법이 그대로 통해 표현력을 거의 공짜로 산다. 반대로 DeltaProduct는 token당 GD를 여러 step 밟아 transition rank를 올리는 대신, chunk 안에서 Householder 곱이 그만큼 순차로 쌓여 병렬화 GEMM 폭이 두꺼워지는 비용을 치른다 [Siems et al. 2025]. state 동역학의 계급을 한 칸 올릴 때마다 tensor core를 채우는 형태가 조금씩 나빠진다는 이 교환이 이 라인의 kernel 설계 전체를 관통하며, 그 정식 무대가 9장이고 극한이 TNT다(→ 15장).
 
 ## 6.8 Worked micro-example: $d=2$에서 세 가지 write를 손으로 돌린다
 
@@ -227,7 +229,7 @@ W_2 = W_1 - e\,k_2^\top
 = \begin{pmatrix}1.28&-0.96\\0.6&0.8\end{pmatrix}.
 $$
 
-읽기: $W_2k_2 = (1.28\cdot 0.6 - 0.96\cdot 0.8,\; 0.36+0.64)^\top = (0,\,1)^\top = v_2$ — **exact**. 최신 key는 완벽히 저장된다. 대신 $W_2k_1 = (1.28,\,0.6)^\top$: 옛 쌍은 새 key와 겹치는 성분만큼 수정됐고, 오차 크기는 $\approx 0.94$로 Hebbian의 $0.6$보다 오히려 크다. 이것은 버그가 아니라 semantics다 — delta rule이 보장하는 것은 **최신 binding의 정확성**(마지막으로 쓴 값이 이긴다)이지 과거의 보존이 아니다. 과거 보존은 retention 축의 몫이고($\alpha_t$, 13장), 같은 쌍들이 반복 제시되면 LMS로서 최소제곱 해에 수렴한다(→ 5장). 두 key가 직교했다면 (a)와 (b) 모두 오차가 0이었음을 직접 확인해 보라 — 간섭의 원천은 오직 $k_1^\top k_2 \ne 0$이다.
+읽기: $W_2k_2 = (1.28\cdot 0.6 - 0.96\cdot 0.8,\; 0.36+0.64)^\top = (0,\,1)^\top = v_2$ — **exact**. 최신 key는 완벽히 저장된다. 대신 $W_2k_1 = (1.28,\,0.6)^\top$: 옛 쌍은 새 key와 겹치는 성분만큼 수정됐고, 오차 크기는 $\approx 0.94$로 Hebbian의 $0.6$보다 오히려 크다. 이것은 버그가 아니라 semantics다 — delta rule이 보장하는 것은 **최신 binding의 정확성**(마지막으로 쓴 값이 이긴다)이지 과거의 보존이 아니다. 과거 보존은 retention 축의 몫이고($\alpha_t$, 13장), 같은 쌍들이 반복 제시되면(여기처럼 선형독립·consistent한 경우) LMS로서 그 해에 수렴한다(→ 5장; inconsistent 계에서는 감소 step size가 필요하다). 두 key가 직교했다면 (a)와 (b) 모두 오차가 0이었음을 직접 확인해 보라 — 간섭의 원천은 오직 $k_1^\top k_2 \ne 0$이다.
 
 **(c) Longhorn (6-5).** $\eta_2 = 1$이면 $\epsilon_2 = 1/(1+1) = 0.5$: 읽기 $W_2k_2 = 0.5\,(1.2,0)^\top + 0.5\,(0,1)^\top = (0.6,\,0.5)^\top$ — 명목 $\eta$가 같아도 절반만 쓴다. step size를 키우면: $\eta_2 = 4$일 때 explicit (6-3)은 $k_2$ 방향 계수가 $1-4 = -3$이 되어 읽기가 $(-3.6,\,4)^\top$으로 폭주하지만, implicit은 $\epsilon_2 = 4/5 = 0.8$로 $(0.24,\,0.8)^\top$ — $v_2$에 안정적으로 접근한다. $\eta_2\to\infty$ 극한에서 $\epsilon_2 \to 1$, 즉 (b)의 exact overwrite로 수렴한다.
 
@@ -237,7 +239,7 @@ $$
 
 | write 방식 | $q=k_1$ 오차 | $q=k_2$ 오차 | 성질 |
 |---|---|---|---|
-| Hebbian (6-1) | 0.60 | 1.20 | 둘 다 부정확, norm 단조 증가 |
+| Hebbian (6-1) | 0.60 | 1.20 | 둘 다 부정확, 감쇠 기제 없이 norm 누적 |
 | DeltaNet (6-3), $\eta=1$ | 0.94 | **0 (exact)** | 최신 binding 우선, self-limiting |
 | Longhorn (6-5), $\eta=1$ | — | 0.78 | 절반 write, 무조건 안정 |
 

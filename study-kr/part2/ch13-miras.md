@@ -18,9 +18,9 @@ Miras가 정리한 지형은 이렇다. Transformer는 in-context learning과 �
 
 **관찰 2 — forgetting은 존재하지 않는다. retention이 있을 뿐이다.** 기존 forget gate들은 전부 $\ell_2$류 regularization의 특수형이며, gate가 하는 일은 "지우기"가 아니라 "새 association을 배우는 것과 이전 state에 머무르는 것 사이의 trade-off"다. 모델은 memory를 소거하는 것이 아니라 유지하지 않기로 결정할 뿐이며, 이는 뇌가 기억을 지우는 것이 아니라 retrieval failure로 접근 불가능해진다는 신경과학의 관점과 일치한다 [Miras Remark 3]. 그래서 논문은 forget gate를 **retention gate**로 개명한다 — 이 책이 이 용어를 공식 명칭으로 채택한 근거가 이 절이다(역사적 별칭 "forget gate"는 이 문장 한 번으로 병기를 마친다).
 
-**프레임 — Miras framework.** 위 관찰은 sequence model 설계를 네 개의 독립적인 축으로 분해한다: (i) memory architecture, (ii) attentional bias, (iii) retention gate, (iv) memory learning algorithm. 기존 모델 전부가 이 4-tuple의 한 점이고, 지금까지의 발전은 사실상 축 (i) 하나와 축 (iii)의 한 구석만 움직인 것이다. 논문은 축 (ii)와 (iii)에 새 선택지를 채워 넣은 세 모델 — **Moneta**, **Yaad**, **Memora** — 를 출하해 프레임의 생산성을 실증하고, 1.3B/100B tokens 스케일에서 attention-free 순수 recurrent 모델이 attention hybrid까지 이기는 결과를 headline으로 내세운다 [Miras §6.1].
+**프레임 — Miras framework.** 위 관찰은 sequence model 설계를 네 개의 독립적인 축으로 분해한다: (i) memory architecture, (ii) attentional bias, (iii) retention gate, (iv) memory learning algorithm. 기존 모델 전부가 이 4-tuple의 한 점이고, 지금까지의 발전은 이 네 축을 설계 축으로 인식하지 못한 채 주로 축 (i)(architecture)와 축 (iii)(retention)를 움직였다 — 축 (ii)는 dot-product/$\ell_2$ 두 선택지 사이에서만, 축 (iv)는 Longhorn·DeltaProduct 정도로만 제한적으로 탐사했다. 논문은 축 (ii)와 (iii)에 새 선택지를 채워 넣은 세 모델 — **Moneta**, **Yaad**, **Memora** — 를 출하해 프레임의 생산성을 실증하고, 1.3B/100B tokens 스케일에서 attention-free 순수 recurrent 모델이 attention hybrid까지 이기는 결과를 headline으로 내세운다 [Miras §6.1].
 
-이 장의 재구성 관점에서 말하면: Titans가 "optimizer를 sequence layer로 만들 수 있다"는 존재 증명이었다면, Miras는 그 move가 열어놓은 공간의 좌표계다. 이후 장들의 논문이 전부 이 좌표계 위에서 자신의 위치를 서술한다.
+이 장의 재구성 관점에서 말하면: Titans가 "optimizer를 sequence layer로 만들 수 있다"는 존재 증명이었다면, Miras는 그 move가 열어놓은 공간의 좌표계이며, 이후 장들의 논문이 전부 이 좌표계 위에서 자신의 위치를 서술한다.
 
 ## 13.3 Core mechanism (통일 표기)
 
@@ -58,7 +58,7 @@ W_t \;=\; \arg\min_{W\in\mathcal{W}} \underbrace{\sum_{i=1}^{t}\hat\ell_i(W;k_i,
 \tag{13-2}
 $$
 
-고전형에서는 $\hat\ell_i(W)=\langle W-W_{i-1},\,\nabla_W\ell(W_{i-1};k_i,v_i)\rangle$ (각 시점 loss의 국소 선형화)이고 $R_t(W)=\tfrac12\|W\|_2^2$다. 첫 항은 **모든 과거 token을** 잘 기억하는가를 재고, 둘째 항은 memory의 크기를 벌한다. $\hat\ell_i$와 $R_t$를 일반화하면 mirror descent류 알고리즘이 나온다 — 이 자리가 뒤에서 dual-accumulator형 update(Moneta)가 태어나는 자리다.
+고전형에서는 $\hat\ell_i(W)=\langle W-W_{i-1},\,\nabla_W\ell(W_{i-1};k_i,v_i)\rangle$ (각 시점 loss의 국소 선형화)이고 $R_t(W)=\tfrac12\|W\|_2^2$다. 첫 항은 **모든 과거 token을** 잘 기억하는가를 재고, 둘째 항은 memory의 크기를 벌한다. 주의: (M1)과 FTRL의 **정확한** 동치는 $\eta_t=\eta$ 상수일 때다([Miras Eq. 7]도 상수 $\eta$와 $\tfrac{1}{2\eta}\|W\|^2$를 쓴다). data-dependent $\eta_t$에서는 $\frac{1}{\eta_t}R_t$를 단일 계수로 앞에 둔 (13-2)는 variable-step OGD($W_t=-\sum_i\eta_i g_i$)를 정확히 재현하지 못하고($-\eta_t\sum_i g_i$가 된다) 일반화된 FTRL 관점으로만 성립한다 — 정확히 맞추려면 $\eta_i$ 가중을 선형화 loss 항 안에 넣어야 한다. $\hat\ell_i$와 $R_t$를 일반화하면 mirror descent류 알고리즘이 나온다 — 이 자리가 뒤에서 dual-accumulator형 update(Moneta)가 태어나는 자리다.
 
 **관점 2 — Learning–Retaining viewpoint.** 같은 (M1)을 "최신 쌍을 배우되 이전 state 근처에 머무르기"로 읽을 수도 있다:
 
@@ -119,7 +119,7 @@ $$
 
 이 된다 [Miras Eq. 9; 행렬 곱 순서와 write 항 계수는 표기 관행 차이, 알고리즘 동일]. $\alpha=1$이면 DeltaNet, data-dependent scalar $\alpha_t$면 GDN, channel-wise vector면 RWKV-7이다. Longhorn은 같은 objective를 **implicit GD**(closed-form proximal step)로 푼 것 — algorithm 축만 다른 점이고, DeltaProduct는 token당 여러 GD step을 딛는 multi-step 변형이다. Hebbian → delta의 개선이 "덧쓰기 → 고쳐쓰기"였다는 6장의 서사가, 여기서는 "objective의 교체"라는 한 문장으로 압축된다.
 
-**delta 너머.** Titans-LMM은 nonlinear $\ell_2$ bias(deep MLP memory) + local $D_t=\|W-W_{t-1}\|_F^2$와 global $G_t=\|W\|_2^2$ 둘 다 + **GD with momentum**, 즉 표준형 (M2) 그대로다. Miras는 각주에서 Titans gate와 Mamba-2/GDN gate의 차이를 짚는다: 완전 소거($\alpha_t\to 0$)의 극한에서 Mamba-2류는 다음 token을 "생애 첫 데이터"로 취급하지만, Titans는 소거 직전의 memory로 새 token의 surprise를 먼저 측정하는 cold-start 전략을 쓴다 [Miras Table 1 각주 2]. Mesa-layer는 전체 이력 objective $\sum_{i\le t}\|\mathcal{M}(k_i;W)-v_i\|_2^2+\|W\|_2^2$를 Newton법으로 정확히 푼 극한이다. 그리고 **softmax attention**: $\ell_2$ regression loss의 non-parametric Nadaraya–Watson 해(→ 8장)로, retention이 없고 state가 곧 커지는 집합 $\{(k_t,v_t)\}$ — 즉 KV cache 그 자체다. attention이 완벽한 recall과 선형 state 증가를 갖는 이유는 **압축을 전혀 하지 않는 associative memory**이기 때문이라는 것이 이 행의 내용이다.
+**delta 너머.** Titans-LMM은 nonlinear $\ell_2$ bias(deep MLP memory) + local $D_t=\|W-W_{t-1}\|_F^2$와 global $G_t=\|W\|_2^2$ 둘 다 + **GD with momentum**, 즉 표준형 (M2) 그대로다. Miras는 각주에서 Titans gate와 Mamba-2/GDN gate의 차이를 짚는다: 완전 소거($\alpha_t\to 0$)의 극한에서 Mamba-2류는 다음 token을 "생애 첫 데이터"로 취급하지만, Titans는 소거 직전의 memory로 새 token의 surprise를 먼저 측정하는 cold-start 전략을 쓴다 [Miras Table 1 각주 2]. Mesa-layer는 전체 이력 objective $\sum_{i\le t}\|\mathcal{M}(k_i;W)-v_i\|_2^2+\|W\|_2^2$를 Newton법으로 정확히 푼 극한이다. 그리고 **softmax attention**: $\ell_2$ regression loss의 non-parametric Nadaraya–Watson 해(→ 8장)로, retention이 없고 state가 곧 커지는 집합 $\{(k_t,v_t)\}$ — 즉 KV cache 그 자체다. attention이 선형 state 증가를 갖는 이유는 과거 KV를 **압축 없이 보존하는 associative memory**이기 때문이다 — 단 retrieval 정확도는 softmax kernel weighting에 달려 있어(key 충돌·가중 평균) '완벽한 recall'이 보장되는 것은 아니다.
 
 표 13-1 — 기존 모델의 Miras 좌표 ([Miras Table 1] 재구성; update 식은 식 (13-5)·(13-6) 계열의 §1.6 카탈로그 기준형)
 
@@ -155,7 +155,7 @@ $$
 \tag{13-7}
 $$
 
-이다 [Miras Eq. 11]. 여기서 $\mathrm{Sign}(\cdot)$과 $|\cdot|$는 element-wise 부호·절댓값 연산자다(장-국소 정의). $p$는 오차 민감도의 다이얼이다: $p<2$는 큰 residual의 영향을 눌러 노이즈에 강건해지고, $p>2$는 큰 오차 — 즉 심하게 놀란 token — 를 증폭해 기억한다. 극한 $p=1$에서는 update가 $W_t=W_{t-1}-\eta_t\,\mathrm{Sign}(W_{t-1}k_t-v_t)\,k_t^\top$로 단순화되어 [Miras Eq. 12], memory가 $\pm1$ 두 값만 쓰게 된다. 논문은 이를 **value-less associative memory**라 부른다: 어떤 key가 왔었다는 사실은 저장하되 value의 크기는 저장하지 않는, 인간이 극단적 사건의 세부를 기억에서 눌러버리는 coping mechanism의 유비다.
+이다 [Miras Eq. 11]. 여기서 $\mathrm{Sign}(\cdot)$과 $|\cdot|$는 element-wise 부호·절댓값 연산자다(장-국소 정의). $p$는 오차 민감도의 다이얼이다: $p<2$는 큰 residual의 영향을 눌러 노이즈에 강건해지고, $p>2$는 큰 오차 — 즉 심하게 놀란 token — 를 증폭해 기억한다. 극한 $p=1$에서는 update가 $W_t=W_{t-1}-\eta_t\,\mathrm{Sign}(W_{t-1}k_t-v_t)\,k_t^\top$로 단순화되어 [Miras Eq. 12], residual의 크기를 버리고 부호만 write 신호로 쓴다(residual이 $\pm1$로 양자화될 뿐, $\eta_t$와 $k_t$가 곱해져 누적되므로 $W$의 entry와 memory 출력 자체는 일반 실수다). 논문은 이를 **value-less associative memory**라 부른다: 어떤 key가 왔었다는 사실은 저장하되 value의 크기는 저장하지 않는, 인간이 극단적 사건의 세부를 기억에서 눌러버리는 coping mechanism의 유비다.
 
 여기에 시스템적으로 중요한 조건 하나가 붙는다 [Miras Remark 5]: $\mathrm{Sign}$과 $|\cdot|$는 미분 불가능하므로 그대로 두면 outer-loop backprop이 죽는다. 그래서 $\mathrm{Sign}(x)\approx\tanh(\nu x)$, $|x|\approx\sqrt{x^2+\epsilon}$ ($\epsilon=10^{-6}$)로 매끈하게 바꾼다(smoothing 계수는 원문의 $\alpha$를 retention gate와의 충돌 때문에 $\nu$로 개명, 표 13-2). 왜 이것이 사활적인지는 §13.4에서 명확해진다.
 
@@ -218,7 +218,7 @@ W_t \;=\; \frac{A_t}{\|A_t\|_q^{\,q-2}},
 \tag{13-10}
 $$
 
-gradient는 식 (13-7) [Miras Eq. 24–25]. 출하 값은 $(p,q)=(3,4)$다. 설계 논리: $p=3$은 잘 회상되지 않는(놀라운) token에 대한 기억 압력을 $\ell_2$보다 날카롭게 하고, $\ell_q$ 정규화는 노출 memory를 norm-통제 껍질에 유지해 곱셈 감쇠보다 강한 안정화를 제공한다.
+gradient는 식 (13-7) [Miras Eq. 24–25]. 출하 값은 $(p,q)=(3,4)$다. 단 $q=4$는 §13.3.6 변형 4의 FTRL 유도 범위($1<q\le2$)를 벗어난 경험적 확장이며, $q=4$ update에 대한 별도 유도나 보증은 원문에 없다. 설계 논리: $p=3$은 잘 회상되지 않는(놀라운) token에 대한 기억 압력을 $\ell_2$보다 날카롭게 하고, $\ell_q$ 정규화는 노출 memory를 norm-통제 껍질에 유지해 곱셈 감쇠보다 강한 안정화를 제공한다.
 
 **Yaad** — Huber mixture bias + Titans식 local+global $\ell_2$ retention:
 
@@ -242,7 +242,7 @@ $$
 
 [Miras Eq. 27; (13-8)의 $1-\lambda_t$ 역할을 $\alpha_t$가 맡는다.] 논리: simplex-제약(softmax-재정규화) state는 증명 가능하게 유계이며, context가 아무리 길어도 state가 폭발할 수 없다. $W$가 MLP weights일 때는 같은 rule이 slice별로 적용된다.
 
-**블록 구조와 hybrid** [Miras §5.4]. Miras layer는 Llama macro 구조에서 attention 자리에 들어간다: SwiGLU 채널 MLP, RoPE, RMSNorm. token-mixing 블록 내부는 q/k/v projection 각각 뒤에 depthwise-separable 1D conv(kernel 4), 훈련 안정성을 위한 q·k의 $\ell_2$ normalization, 그리고 memory 읽기 출력의 normalization + linear output gate. hybrid 변형(Moneta-H/Yaad-H/Memora-H)은 Samba를 따라 Miras layer와 Sliding Window Attention layer를 순차 교차한다.
+**블록 구조와 hybrid** [Miras §5.3]. Miras layer는 Llama macro 구조에서 attention 자리에 들어간다: SwiGLU 채널 MLP, RoPE, RMSNorm. token-mixing 블록 내부는 q/k/v projection 각각 뒤에 depthwise-separable 1D conv(kernel 4), 훈련 안정성을 위한 q·k의 $\ell_2$ normalization, 그리고 memory 읽기 출력의 normalization + linear output gate. hybrid 변형(Moneta-H/Yaad-H/Memora-H)은 Samba를 따라 Miras layer와 Sliding Window Attention layer를 순차 교차한다.
 
 ### 13.3.8 표기 대응표
 
@@ -288,9 +288,9 @@ $$
 
 **outer loop에서 meta-learn되는 것.** key/value/query를 제조하는 projection, conv, output gate, 채널 MLP — 여기까지는 Transformer 훈련과 다르지 않다. Miras 고유의 것은 두 가지다. 첫째, **inner-loop hyperparameter를 emit하는 hypernetwork가 학습된다**: $\eta_t,\alpha_t,\delta_t$는 사람이 정하는 상수가 아니라 현재 token의 함수 $\eta_t=\eta(x_t;\Theta)$로서, rank 32–64 low-rank projection이 채널별로 뽑는다. 즉 "이 gate는 누가 학습하는가?"의 답은: **gate의 값은 inner loop에서 소비되지만, gate를 만드는 정책은 outer loop가 학습한다.** outer loop는 "inner loop가 얼마나 공격적으로 쓰고 얼마나 유지할지"의 per-token·per-channel 정책을 배우는 것이다. 둘째, memory의 초기 상태 $W_{\mathrm{init}}$($W_0=W_{\mathrm{init}}$)도 $\Theta$의 일부로 학습된다.
 
-**gradient는 어떻게 inner loop를 관통하는가.** inference 어휘로 말하면, inner update의 궤적 전체가 forward graph의 일부다. 매 inner step $W_t=\alpha_tW_{t-1}-\eta_t\nabla_W\ell(\cdots)$은 (a) 그 token의 $k_t,v_t$, (b) emit된 gate들, (c) 직전 state의 미분 가능한 함수이므로, $\partial\mathcal{L}/\partial\Theta$는 penultimate token의 memory 읽기에서 출발해 unrolled recurrence를 거슬러 첫 token까지 흐른다. 이것이 4장에서 본 MAML류 "backprop through an optimizer"이며, 훈련 비용과 메모리에 unrolled inner step이 포함되는 이유다. 그리고 이제 §13.3.5의 smooth surrogate가 왜 사활적인지 명확해진다: $\mathrm{Sign}$의 도함수는 거의 모든 곳에서 0이고 $|\cdot|$와 $\mathcal{S}_\gamma$는 꺾인 점을 가지므로, 날 것 그대로면 outer gradient가 죽거나 폭주한다. $\tanh(\nu x)$, $\sqrt{x^2+\epsilon}$, $\arctan$-thresholding은 **inner의 수학을 outer가 미분할 수 있게 만드는 접착제**다. inference-only 세계에는 대응물이 없는, 이 라인 고유의 설계 제약이다.
+**gradient는 어떻게 inner loop를 관통하는가.** inference 어휘로 말하면, inner update의 궤적 전체가 forward graph의 일부다. 매 inner step $W_t=\alpha_tW_{t-1}-\eta_t\nabla_W\ell(\cdots)$은 (a) 그 token의 $k_t,v_t$, (b) emit된 gate들, (c) 직전 state의 미분 가능한 함수이므로, $\partial\mathcal{L}/\partial\Theta$는 penultimate token의 memory 읽기에서 출발해 unrolled recurrence를 거슬러 첫 token까지 흐른다. 이것이 4장에서 본 MAML류 "backprop through an optimizer"이며, 훈련 비용과 메모리에 unrolled inner step이 포함되는 이유다. 그리고 이제 §13.3.5의 smooth surrogate가 왜 사활적인지 명확해진다: $\mathrm{Sign}$은 거의 모든 곳에서 도함수가 0이라 outer gradient가 죽고, $|\cdot|$와 $\mathcal{S}_\gamma$는 원점(꺾인 점)에서 미분 불가능하다 — 폭주가 아니라 이 비미분 가능성이 문제다($|\cdot|$의 도함수는 $\pm1$로 유계여서 소실·폭주를 일으키지 않는다). $\tanh(\nu x)$, $\sqrt{x^2+\epsilon}$, $\arctan$-thresholding은 **inner의 수학을 outer가 미분할 수 있게 만드는 접착제**다. inference-only 세계에는 대응물이 없는, 이 라인 고유의 설계 제약이다.
 
-**chunkwise-parallel training.** 이 unrolled 훈련을 가속기에서 실행 가능하게 만드는 것이 9장의 chunkwise 기법이고, Miras는 Titans/TTT의 레시피를 계승한다 [Miras §5.4]. sequence를 크기 $C$(논문 설정 16 또는 64)의 chunk로 나누고, chunk 안 모든 token의 gradient를 직전 chunk의 마지막 state에서 평가한다 — 즉 $\nabla_W\ell(W_{t-1};k_t,v_t)$ 대신 $\nabla_W\ell(W_{\xi(t,C)};k_t,v_t)$, 표준형 (M4)의 stale-snapshot 근사 그대로다. retention까지 포함해 recurrence를 전개하면 ($\bar\alpha_i:=\prod_{j\le i}\alpha_j$)
+**chunkwise-parallel training.** 이 unrolled 훈련을 가속기에서 실행 가능하게 만드는 것이 9장의 chunkwise 기법이고, Miras는 Titans/TTT의 레시피를 계승한다 [Miras §5.3]. sequence를 크기 $C$(논문 설정 16 또는 64)의 chunk로 나누고, chunk 안 모든 token의 gradient를 직전 chunk의 마지막 state에서 평가한다 — 즉 $\nabla_W\ell(W_{t-1};k_t,v_t)$ 대신 $\nabla_W\ell(W_{\xi(t,C)};k_t,v_t)$, 표준형 (M4)의 stale-snapshot 근사 그대로다. retention까지 포함해 recurrence를 전개하면 ($\bar\alpha_i:=\prod_{j\le i}\alpha_j$)
 
 $$
 W_t \;=\; \bar\alpha_t\,W_0 \;-\; \sum_{i=1}^{t}\frac{\bar\alpha_t}{\bar\alpha_i}\,\eta_i\,\nabla_W\,\ell\big(W_{\xi(i,C)};\,k_i,v_i\big)
@@ -347,9 +347,9 @@ $$
 
 > **[해설] state 크기.** Miras layer의 recurrent state는 head당 2-layer MLP 전체다: $W_1\in\mathbb{R}^{d\times 4d}$, $W_2\in\mathbb{R}^{4d\times d}$ ($d$ = head 차원), 합계 $8d^2$ 개의 fp 스칼라. matrix-state 모델(DeltaNet/GDN)의 $d^2$의 **8×**이고, Moneta는 accumulator $A_t$가 같은 모양이므로 **16×**($16d^2$)다. $d=64$면 head당 32K entry(Moneta 64K) vs matrix state 4K. KV cache와의 손익분기: cache는 head당 $2Nd$ entry이므로 $8d^2=2Nd$에서 $N=4d$ — $d=64$ 기준 **약 256 token**(Moneta 512)만 넘으면 state가 cache보다 작고, 이후는 context가 아무리 길어도 상수다. linear-RNN 계열의 표준 serving 이점(O(1) decode 메모리·FLOPs, cache paging 불필요)은 그대로 성립하되, state가 선배들보다 8–16× 뚱뚱하다는 것이 Miras의 세금이다. per-sequence state 상주 비용, prefix caching용 state checkpoint, speculative branch당 state 복제가 전부 그 배율로 커진다.
 
-**decode: RMW 트래픽이 지배한다.** per-token 갱신은 memory MLP의 forward($\approx2\times8d^2=16d^2$ MAC) + backward($\approx$ forward의 2배, $32d^2$) + query 읽기 forward($16d^2$)에 element-wise retention/정규화가 더해져, head-layer당 대략 $50$–$60\,d^2$ MAC — GDN류 update의 3–4× 수준이다(이 책의 추산). 그러나 결정 변수는 FLOPs가 아니다. **매 token마다 $8d^2$($16d^2$) state 전체를 read-modify-write** 해야 하므로 decode는 memory-bandwidth-bound이고, 이 라인의 decode state RMW 트래픽 논증(→ 10장)이 Miras에서 8–16× 배율로 적용된다. attention decode가 KV cache를 read-only로 스트리밍하는 것과 달리, 여기는 write가 절반이다.
+**decode: RMW 트래픽이 지배한다.** per-token 갱신은 memory MLP의 forward($W_2z$와 $W_1h$ 두 층 합쳐 $8d^2$ MAC) + backward($\approx$ forward의 2배, $16d^2$ MAC) + query 읽기 forward($8d^2$ MAC)에 element-wise retention/정규화가 더해져, head-layer당 대략 $28$–$32\,d^2$ MAC(FLOP로는 약 $56$–$64d^2$) — 같은 범위로 센 GDN류 update(약 $3$–$4d^2$ MAC)의 대략 8–10× 수준이다(이 책의 추산; 1 MAC = 2 FLOP 단위를 섞지 않도록 주의). 그러나 결정 변수는 FLOPs가 아니다. **매 token마다 $8d^2$($16d^2$) state 전체를 read-modify-write** 해야 하므로 decode는 memory-bandwidth-bound이고, 이 라인의 decode state RMW 트래픽 논증(→ 10장)이 Miras에서 8–16× 배율로 적용된다. attention decode가 KV cache를 read-only로 스트리밍하는 것과 달리, 여기는 write가 절반이다.
 
-**prefill/훈련: chunkwise = GEMM 골격.** (13-13)의 chunkwise 형태 덕에 prefill과 훈련은 GLA/Titans/TTT식 chunkwise kernel과 같은 골격이다: chunk당 $|W_0K_{(n)}-V_{(n)}|^{p-1}K_{(n)}^\top$류 batched GEMM + element-wise epilogue, 순차 의존은 chunk 경계에만 남는다($L/C$ step). Miras 고유의 kernel 고려사항 네 가지: (1) Moneta의 $\|A_t\|_q$는 경계마다 $8d^2$ entry 전체에 대한 global norm reduction — GEMM phase 사이에 끼는 reduction kernel이다. (2) Memora의 softmax는 token 축이 아니라 **state 전체**에 대한 것이므로 $8d^2$ entry의 수치 안정 log-sum-exp가 필요하다; 대신 state가 유계·정규화되어 저정밀 저장에 원리적으로 우호적이다(단 log가 소값의 양자화 오차를 증폭한다). (3) Yaad는 $\ell_1$·$\ell_2$ 두 branch gradient + mask로 element-wise 작업이 약 2×, token당 residual-norm reduction 하나가 추가된다. (4) smooth surrogate들($\tanh$, $\sqrt{x^2+\epsilon}$, $\arctan$)은 값싼 element-wise epilogue다. gate hypernetwork(rank 32–64)의 비용은 무시 가능하다.
+**prefill/훈련: chunkwise = GEMM 골격.** (13-13)의 chunkwise 형태 덕에 prefill과 훈련은 GLA/Titans/TTT식 chunkwise kernel과 같은 골격이다: chunk당 $|W_0K_{(n)}-V_{(n)}|^{p-1}K_{(n)}^\top$류 batched GEMM + element-wise epilogue, 순차 의존은 chunk 경계에만 남는다($L/C$ step). Miras 고유의 kernel 고려사항 네 가지: (1) Moneta의 $\|A_t\|_q$는 경계마다 $8d^2$ entry 전체에 대한 global norm reduction — GEMM phase 사이에 끼는 reduction kernel이다. (2) Memora의 softmax/log-sum-exp는 token 축이 아니라 지정된 parameter slice마다 수행된다([Miras Eq. 21]과 §13.3.7: $W$가 MLP weights일 때 slice별 적용) — reduction 범위와 비용은 구현 선택에 달렸지 단일 $8d^2$ 전역 reduction이 강제되는 것은 아니다; 대신 state가 유계·정규화되어 저정밀 저장에 원리적으로 우호적이다(단 log가 소값의 양자화 오차를 증폭한다). (3) Yaad는 $\ell_1$·$\ell_2$ 두 branch gradient + mask로 element-wise 작업이 약 2×, token당 residual-norm reduction 하나가 추가된다. (4) smooth surrogate들($\tanh$, $\sqrt{x^2+\epsilon}$, $\arctan$)은 값싼 element-wise epilogue다. gate hypernetwork(rank 32–64)의 비용은 무시 가능하다.
 
 **batching과 hybrid.** per-request fast-weight state는 shared-weight batching을 깨뜨린다는 1장의 Rosetta 항목이 그대로 적용되고, state가 8–16× 커진 만큼 grouped-GEMM decode의 per-request working set도 그 배율로 커진다. hybrid 변형(-H)은 SWA를 교차하므로 window 크기의 KV cache($O(w\,d)$)가 recurrent state 위에 다시 얹힌다 — "cache 없는 serving"은 순수 변형에만 해당한다.
 

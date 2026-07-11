@@ -63,7 +63,7 @@ $$
 E(s) \;=\; -\tfrac{1}{2}\, s^\top W s
 $$
 
-를 정의하면, 뉴런을 하나씩 $s_j \leftarrow \mathrm{sign}\big((W s)_j\big)$로 갱신하는 dynamics가 $E$를 단조 감소시킨다. 저장된 pattern들은 (memory가 제대로 작동하는 한) $E$의 local minimum, 즉 **attractor**가 된다. 손상된 입력에서 시작해 energy의 내리막을 따라가면 가장 가까운 저장 pattern으로 수렴한다 — content-addressable memory의 원형이다.
+를 정의하면, 뉴런을 하나씩 $s_j \leftarrow \mathrm{sign}\big((W s)_j\big)$로 갱신하는 dynamics가 $E$를 단조 감소시킨다. 저장된 pattern들은 (memory가 제대로 작동하는 한) $E$의 local minimum, 즉 **attractor**가 된다. 손상된 입력에서 시작해 energy의 내리막을 따라가면 그 초기 상태가 속한 attraction basin의 저장 pattern으로 수렴한다 — 대개 가장 가까운 pattern이지만, 보장되는 것은 energy 감소와 어떤 attractor로의 수렴이지 최근접 선택이 아니다(spurious attractor로 갈 수도 있다 → 아래). content-addressable memory의 원형이다.
 
 주소로 찾는 memory(load/store)와 내용으로 찾는 memory의 구분은 독자에게 이미 익숙하다 — TLB나 cache의 tag match가 후자, 즉 content-addressable이다. Hopfield network는 content-addressable memory를 학습 가능한 신경망으로 구현한 최초의 사례군에 속하고, 이 라인이 "memory"라는 단어를 쓸 때의 의미는 언제나 이쪽이다: 주소가 아니라 query의 내용이 무엇을 꺼낼지 정한다.
 
@@ -89,7 +89,7 @@ capacity는 어떤가. Hopfield 1982는 pattern 수가 약 $0.15\,d$를 넘으�
 
 사슬을 한 줄로 요약한다: **energy의 차수를 올린다 = key를 feature space로 lift한다 = capacity가 올라간다; exponential 극한에서 softmax attention에 도달한다.** 이 사슬이 [Atlas §3.1]의 이론적 골격 그 자체다. Atlas는 (a) matrix memory + $\ell_2$ loss의 capacity가 $O(d_k)$임을 증명하고(Prop 1), (b) 차수 $p$ polynomial feature map $\phi_p$로 key를 lift하면 $O(d_k^p)$로 올라감을 보이고(Prop 2), (c) exponential feature map $\phi^*$의 극한에서 softmax attention이 unbounded memory를 갖는 associative memory로 나타남을 이용한다 [Atlas §4.2]. Atlas 원문은 이 kernel 장치가 Krotov & Hopfield 2016의 방법을 계승한 것임을 명시한다 [Atlas §3.1]. 이 사슬을 지금 손에 쥐고 있으면 14장은 corollary처럼 읽힌다. (capacity의 formal 정의와 정리의 상세는 14장 소유다; 이 장은 고전 쪽만 정식으로 다룬다.)
 
-systems 접점 하나: "capacity를 올린다 = key를 lift한다 = key 차원과 그에 붙는 연산이 커진다"이므로 이것은 공짜가 아니라 **state 크기·FLOP과의 거래**다. $\phi_p$의 lifted 차원은 $D = \Theta(d_k^p)$이고, memory state는 $W \in \mathbb{R}^{d_v \times D}$로 함께 커진다. 감각을 위한 숫자 하나: $d_k = 128$, 차수 $p = 2$의 전체 monomial map이면 $D = \binom{128+2}{2} = 8385$, state는 32 KiB에서 약 2 MiB로 65× 커진다(bf16, $d_v = 128$ 기준). capacity를 사는 통화가 state byte라는 것 — 이 거래의 비용 **구조**(지불 통화가 state byte·matmul 폭이라는 것)는 14장 §14.7에서 확정한다. 단, Atlas가 구현 차수 $p$와 sketch 차원을 공개하지 않아 절대값 계산은 그곳에서도 불가능하다는 것까지가 14장의 결론이다.
+systems 접점 하나: "capacity를 올린다 = key를 lift한다 = key 차원과 그에 붙는 연산이 커진다"이므로 이것은 공짜가 아니라 **state 크기·FLOP과의 거래**다. $\phi_p$의 lifted 차원은 $D = \Theta(d_k^p)$이고, memory state는 $W \in \mathbb{R}^{d_v \times D}$로 함께 커진다. 감각을 위한 숫자 하나: $d_k = 128$, 차수 $p = 2$의 전체 monomial map이면 $D = \binom{128+2}{2} = 8385$, state는 32 KiB에서 약 2 MiB로 65× 커진다(bf16, $d_v = 128$ 기준). capacity를 사는 통화가 state byte라는 것 — 이 거래의 비용 **구조**(capacity의 지불 통화가 state byte·matmul 폭이라는 것)는 14장 §14.7에서 확정한다 — 단, Atlas가 구현 차수 $p$와 sketch 차원을 공개하지 않아 절대값 계산은 그곳에서도 불가능하다는 것까지가 14장의 결론이다.
 
 ## 5.5 delta rule: append에서 error-correcting overwrite로
 
@@ -118,7 +118,7 @@ $$
 
 비용의 대조도 명확히 해 두자. Hebbian write는 outer product 하나 — $d_k d_v$ MAC — 면 끝난다. delta rule은 쓰기 전에 읽어야 하므로 prediction read $W_{t-1} k_t$(GEMV)가 write 경로에 추가된다: FLOP은 대략 2배, 그리고 state 전체를 읽는 traffic이 매 write마다 발생한다. 더 나은 write rule은 공짜가 아니라 read를 지불하고 산다 — 이 패턴은 라인 내내 반복된다. momentum은 buffer $S_t$의 저장과 갱신을(12장), Omega rule은 window 안 $c$개 token의 재최적화를(14장) 같은 방식으로 지불한다.
 
-delta rule의 보증은 이렇다. $\eta_t = 1$이고 key가 unit norm이면 update 직후 $W_t k_t = v_t$가 정확히 성립한다 — 방금 쓴 쌍은 crosstalk 없이 복원된다. 같은 쌍들을 반복 제시하며 돌리면(cycling) LMS는 least-squares 해로 수렴하고, key들이 선형독립이고 $m \le d_k$이면 exact interpolation 해 $W^\star = V K^{+}$ (pseudoinverse)에 도달한다. [Atlas §3.1 Prop 1]의 증명이 정확히 이 논리다: exact 저장 조건 $WK = V$는 $m d_v$개의 방정식과 $d_k d_v$개의 미지수를 갖는 선형계이므로, 선형독립 key에 대한 가해 조건은 $m \le d_k$이고, 이때 full-batch gradient descent는 minimum-norm 해로 수렴한다 [Atlas App. C, Prop 1 증명].
+delta rule의 보증은 이렇다. $\eta_t = 1$이고 key가 unit norm이면 update 직후 $W_t k_t = v_t$가 정확히 성립한다 — 방금 쓴 쌍은 crosstalk 없이 복원된다. key들이 선형독립이고 $m \le d_k$이면 선형계 $WK=V$가 consistent하므로, 같은 쌍들을 반복 제시하며 돌리면(cycling) delta write의 잔차가 0으로 접혀 exact interpolation 해 $W^\star = V K^{+}$ (pseudoinverse)에 도달한다(고정 step으로도 수렴한다). 반대로 $m>d_k$라 계가 inconsistent하면 고정 step의 cyclic LMS는 least-squares 해로 정확히 수렴하지 않고 잔차 주위를 진동하므로, 일반적 least-squares 수렴에는 감소하는 step size가 필요하다. [Atlas §3.1 Prop 1]의 증명은 (cyclic online LMS가 아니라) full-batch gradient descent가 이 consistent 경우의 해로 수렴함을 보인다: exact 저장 조건 $WK = V$는 $m d_v$개의 방정식과 $d_k d_v$개의 미지수를 갖는 선형계이므로, 선형독립 key에 대한 가해 조건은 $m \le d_k$이고, 이때 full-batch gradient descent는 minimum-norm 해로 수렴한다 [Atlas App. C, Prop 1 증명].
 
 unit norm이 아닌 일반 key에서는 exact write의 조건이 하나 붙는다. update 직후 $W_t k_t = v_t$를 원하면, 식 (5-5)에 대입해 보면 $\eta_t = 1/\|k_t\|_2^2$이어야 한다 — norm이 큰 key일수록 살살 써야 한다(adaptive filtering 문헌이 normalized LMS라는 이름으로 표준화한 선택이다). 한 걸음 더 가서 step size를 $\eta_t/(1+\eta_t k_t^\top k_t)$로 바꾸면 어떤 $\eta_t > 0$에서도 안정한 implicit GD가 되는데, 이것이 6장 카탈로그의 Longhorn이 채택한 update다. write 강도의 스칼라 하나를 바꾸는 것만으로 모델 하나가 갈라져 나온다 — inner optimizer의 선택이 아키텍처의 축이라는 이 라인의 문법을 미리 보여 주는 사례다.
 
@@ -132,7 +132,7 @@ $$
 y_t \;=\; \sum_{i \le t} \mathrm{softmax}_i\!\big(q_t^\top k_i / \sqrt{d_k}\big)\, v_i
 $$
 
-는 저장된 모든 쌍을 그대로 보관한 채(KV cache), read 시점에 kernel 가중 평균으로 연상하는 연산이다. parameter에 겹쳐 쓰지 않으므로 crosstalk이 없고, cache가 자라는 한 capacity 제한도 없다. 통계학의 언어로는 $\ell_2$ regression의 non-parametric Nadaraya–Watson 해이며(→ 6장, 10장), 이 책의 아키텍처 카탈로그에서 attention이 "압축하지 않는 극한"으로 분류되는 근거다. attention을 associative memory로 읽는 이 관점의 대표 인용은 Bietti et al. 2023 (arXiv:2306.00802)이고, Titans·Miras·Atlas 세 편 모두 이 관점을 명시적으로 채택한다 [Titans §1; Miras §2; Atlas §2].
+는 저장된 모든 쌍을 그대로 보관한 채(KV cache), read 시점에 kernel 가중 평균으로 연상하는 연산이다. parameter에 겹쳐 쓰지 않으므로 §5.2의 compression crosstalk은 없고, cache가 자라는 한 저장 용량 제한도 없다. 단 finite-temperature softmax read는 non-target key에도 양의 가중치를 주므로 retrieval은 정확한 lookup이 아니라 kernel 가중 평균이다 — exact 복원 여부는 pattern separation·온도에 달려 있고(§5.4), "무제한"인 것은 exact retrieval capacity가 아니라 원시 KV 저장량이다. 통계학의 언어로는 $\ell_2$ regression의 non-parametric Nadaraya–Watson 해이며(→ 6장, 10장), 이 책의 아키텍처 카탈로그에서 attention이 "압축하지 않는 극한"으로 분류되는 근거다. attention을 associative memory로 읽는 이 관점의 대표 인용은 Bietti et al. 2023 (arXiv:2306.00802)이고, Titans·Miras·Atlas 세 편 모두 이 관점을 명시적으로 채택한다 [Titans §1; Miras §2; Atlas §2].
 
 이로써 이 장의 위계가 완성된다:
 
@@ -142,7 +142,7 @@ $$
 |---|---|---|---|---|
 | Hebbian (5-3) | parametric, blind append | crosstalk $\propto k_i^\top k_j$ | $\le d_k$ (orthogonal일 때만) | $O(d_k d_v)$ GEMV |
 | delta rule (5-5) | parametric, read-modify-write | 교정됨 (단일 pass에서는 recency 편향) | $\le d_k$ (선형독립이면 도달 가능) | $O(d_k d_v)$ GEMV |
-| softmax attention | non-parametric append | 없음 | 무제한 (cache가 자라는 한) | $O(L\,d)$ 전체 스캔 |
+| softmax attention | non-parametric append | compression crosstalk 없음 (단 softmax 혼합은 남음) | 저장 무제한 (cache가 자라는 한); exact retrieval은 separation 의존 | $O(L\,d)$ 전체 스캔 |
 
 이 라인의 존재 이유는 이 표의 가운데 행을 위로 밀어 올리는 것이다: attention의 연상 품질에 다가가되, state는 고정 크기로 유지하기. 그 수단들이 Part II의 목차 그 자체다 — write에 momentum과 retention을 더하고(12장), inner objective와 gate를 다시 고르고(13장), memory를 deep하게 만들고 key를 lift하며 window 단위로 함께 최적화한다(14장).
 

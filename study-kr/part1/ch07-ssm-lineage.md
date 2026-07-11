@@ -31,7 +31,7 @@ ODE 이론은 여기까지만 필요하다. 식 (7-1)이 말하는 것: discreti
 $\Delta$의 역할을 뜯어보는 것이 이 장에서 가장 중요하다. $A$가 음의 실수부를 갖는 diagonal이라고 하자(실전 SSM의 표준 설정). 채널 성분 $a<0$에 대해 $\bar a = \exp(\Delta a)\in(0,1)$이다. 그러면:
 
 - $\Delta \to 0$: $\bar a \to 1$, $\bar B \to 0$. state를 **전부 유지**하고 현재 입력을 거의 쓰지 않는다.
-- $\Delta$ 큼: $\bar a \to 0$, $\bar B \approx \Delta B$ 큼. state를 **밀어내고** 현재 입력을 강하게 쓴다.
+- $\Delta$ 큼: $\bar a \to 0$이고, 안정한 $a<0$에서 $\bar B = \big((\exp(\Delta a)-1)/a\big)B \to -B/a$로 **포화**한다($\bar B\approx\Delta B$는 $\Delta$가 작을 때의 1차 근사일 뿐, 큰 $\Delta$에서는 무한히 커지지 않는다). 옛 state는 사라지므로 현재 입력이 상대적으로 지배한다.
 
 즉 $\Delta$는 "시간 해상도"라는 물리적 해석을 갖지만, 계산적으로는 **유지 비율과 write 강도를 한 knob으로 묶은 gate**다. 이 라인의 모든 gate — Mamba의 selective $\Delta_t$, Mamba-2·GLA의 decay, [Titans]의 weight decay, [Miras]의 retention gate(→ 13장) — 는 전부 이 한 줄의 후손이다.
 
@@ -55,7 +55,7 @@ selectivity의 의미는 §7.1의 $\Delta$ 해석에서 바로 나온다. $\bar 
 
 <!-- FIG: ch07/fig-02-selectivity-gate -->
 
-계산 구조의 귀결이 독자에게 더 중요하다. 계수가 시변이 되는 순간 convolution kernel $\bar K$가 존재하지 않는다. **LTI를 깨면 FFT 모드가 소멸하고, recurrence(또는 scan)만 남는다.** Mamba가 "hardware-aware selective scan"이라는 커널 엔지니어링 — scan을 SRAM 안에서 수행하는 kernel fusion, backward를 위한 state recomputation — 에 논문 한 절을 쓰는 이유가 이것이다. 독자의 세계로 옮기면 Mamba의 커널은 FlashAttention과 같은 부류의 IO-aware 최적화다: DRAM 왕복을 없애서 bandwidth 문제를 푼다. 그러나 뒤에서 보듯, **op mix 문제**(tensor core를 쓰지 못하는 elementwise 연산 위주)는 fusion으로 풀리지 않는다. 이것이 Mamba-2의 출발점이다.
+계산 구조의 귀결이 독자에게 더 중요하다. 계수가 시변이 되는 순간 convolution kernel $\bar K$가 존재하지 않는다. **LTI를 깨면 FFT 모드가 소멸하고, recurrence(또는 scan)만 남는다.** Mamba가 "hardware-aware selective scan"이라는 커널 엔지니어링 — scan을 SRAM 안에서 수행하는 kernel fusion, backward를 위한 state recomputation — 에 논문 한 절을 쓰는 이유가 이것이다. 독자의 세계로 옮기면 Mamba의 커널은 FlashAttention과 같은 부류의 IO-aware 최적화다: 중간 텐서의 DRAM 왕복을 크게 줄인다. 그러나 fusion은 scan의 낮은 arithmetic intensity 자체를 없애지 못해 연산은 여전히 memory-bandwidth-bound이고([Mamba §3.3.2]는 selective scan을 memory-bandwidth-bound로 규정한다), 게다가 **op mix 문제**(tensor core를 쓰지 못하는 elementwise 연산 위주)까지 겹친다. 두 제약이 공존한다는 것이 Mamba-2의 출발점이다.
 
 recomputation 항목은 2장에서 배운 개념이 실물로 등장하는 첫 장면이므로 짚고 간다. 훈련의 backward pass는 forward의 중간값 — 여기서는 매 token의 state $h_t$ — 을 다시 필요로 한다. 길이 $L$의 sequence에서 $d\times N$ state를 전부 저장하면 activation memory가 $L$에 비례해 커지므로, Mamba의 커널은 forward에서 state를 버리고 backward에서 입력으로부터 다시 계산한다. 2장의 "activation memory vs recomputation" trade-off가 커널 설계 결정으로 나타난 정확한 사례이며, FlashAttention이 attention 행렬을 저장하지 않고 backward에서 재계산하는 것과 같은 수다.
 
@@ -100,7 +100,7 @@ $$
 
 이 식이 말하는 것: **decay 누적곱을 mask로 갖는 attention**과, 고정 크기 state의 recurrence는 같은 함수의 두 표현이다. 왼쪽(recurrent form)은 token당 $O(d_k d_v)$에 순차 계산하고, 오른쪽(attention form)은 $O(L^2)$에 완전 병렬 계산한다. 어느 쪽으로 계산할지는 **정확도가 아니라 하드웨어 사정으로 고르는 알고리즘 선택**이다.
 
-Dao & Gu 2024는 이것을 행렬 구조론으로 일반화한다. sequence mixing 전체를 하삼각 행렬 $\Gamma\odot(QK^\top)$의 곱으로 보면 이 행렬은 **semiseparable** 구조 — 임의의 부분 블록이 낮은 rank를 갖는 구조화 행렬 — 를 가지며, 이를 dense로 실체화해 곱하면 attention 모드, 인수분해된 구조를 이용해 곱하면 recurrent 모드가 된다 [Dao & Gu 2024]. "duality"라는 이름은 같은 구조화 행렬에 대한 이 두 곱셈 알고리즘의 쌍대성을 가리킨다.
+Dao & Gu 2024는 이것을 행렬 구조론으로 일반화한다. sequence mixing 전체를 하삼각 행렬 $\Gamma\odot(QK^\top)$의 곱으로 보면 이 행렬은 **semiseparable** 구조 — 하삼각 영역에 완전히 포함된 부분행렬(특히 대각선 아래 off-diagonal block)이 낮은 rank를 갖는 구조화 행렬; 대각을 가로지르는 block은 full rank일 수 있다 — 를 가지며, 이를 dense로 실체화해 곱하면 attention 모드, 인수분해된 구조를 이용해 곱하면 recurrent 모드가 된다 [Dao & Gu 2024, Def. 3.1]. "duality"라는 이름은 같은 구조화 행렬에 대한 이 두 곱셈 알고리즘의 쌍대성을 가리킨다.
 
 실전 답은 둘의 절충이다. sequence를 크기 $C$의 chunk로 자르고(§1.2의 chunk 시작 offset $\xi(t,C) = C\lfloor(t-1)/C\rfloor$ 사용), chunk 경계에서만 state를 전달하면:
 
@@ -134,7 +134,7 @@ master update와의 접속은 이렇게 읽으면 된다. 식 (M2)는 $W_t = \al
 
 gate의 다음 진화도 여기서 예고된다. [Titans]는 자신의 forgetting mechanism — update 앞에 곱해지는 data-dependent retention — 가 Mamba-2류 gating mechanism의 일반화라고 명시한다 [Titans §1, §3.1]. 무엇이 일반화인가? Mamba-2의 gate는 행렬 state 하나를 스칼라로 감쇠시키지만, Titans의 retention은 memory가 "작은 모델의 weights"로 승격된 뒤에도 같은 자리에서 작동하는 weight decay다. 2장에서 optimizer 객체의 성분으로 배운 weight decay — $(1-\eta\lambda)w$의 그 감쇠 — 가, 여기서는 sequence 축 위에서 token마다 값이 달라지는 학습된 eviction으로 재해석된다. 같은 수식, 다른 축이다. 이 재해석의 정식 전개는 12장의 몫이고, 이 장은 그 재료인 gate 계보를 공급했다.
 
-의미론적 차이 하나는 기록해 둘 가치가 있다. [Miras footnote 2]는 Mamba-2류의 gating과 [Titans]의 retention이 **완전 소거의 의미**에서 다르다고 지적한다: Mamba-2의 gate가 0이 되면 memory 전체가 지워지고 다음 token은 "처음 보는 데이터"가 되는 반면, Titans는 meta-learn된 초기 상태로 되돌아가는 cold start를 갖는다. gate 값이 같아도 "0으로 리셋"과 "$W_{\mathrm{init}}$으로 리셋"은 다른 연산이다 — 이 구분은 15장([TNT]의 periodic state reset)에서 시스템 설계 축으로 커진다.
+의미론적 차이 하나는 기록해 둘 가치가 있다. [Miras footnote 2]는 Mamba-2류의 gating과 [Titans]의 retention이 **완전 소거의 의미**에서 다르다고 지적한다: Mamba-2의 gate가 0이 되면 memory 전체가 지워지고 다음 token은 "처음 보는 데이터"가 되는 반면, Titans는 소거하기 **전의** 상태 $M_{t-1}$에서 surprise를 측정한 뒤 그 update를 남긴다(원문 표현 "cold start"). 즉 $\alpha_t\to 1$이어도 새 상태는 $W_{\mathrm{init}}$이 아니라 surprise 항 $S_t$이며($M_t=(1-\alpha_t)M_{t-1}+S_t$이고 $S_t$의 gradient는 소거 전 $M_{t-1}$에서 평가된다 [Titans Eq. 13–14]), 직전 memory에서 얻은 정보가 살아남는다. (학습된 초기 상태 $W_{\mathrm{init}}$로 실제로 되돌리는 reset은 Titans가 아니라 [TNT]의 local memory에서 나타나며, 15장에서 시스템 설계 축으로 커진다.)
 
 마지막으로 두 개의 예고. 첫째, [NL](arXiv:2512.24695)은 이 장의 전 계보를 update frequency의 스펙트럼 위에 재배열한다 — SSM state는 token마다 갱신되는 가장 빠른 level일 뿐이다(→ 16장). 둘째, 독자의 어휘로 이 절 전체를 한 줄로 압축하면: **gate는 학습된 cache eviction policy이고, 이 장의 역사는 eviction policy가 고정 상수에서 content-aware 함수로 진화해 온 역사다.** write policy의 진화는 다음 장의 몫이다.
 
@@ -182,7 +182,7 @@ $$
 
 batching과의 접점도 짚어 둔다. decode에서 state는 요청마다 다르지만 모양은 전부 같으므로($d_v\times d_k$ 행렬들), batch 전체의 읽기·갱신이 균일한 batched GEMV와 rank-1 update로 묶인다 — 길이가 제각각인 KV cache 스캔을 paged layout으로 달래던 세계와 비교하면, 스케줄러가 다뤄야 할 자유도가 하나 줄어든 셈이다. 단, 여기서 batching이 평화로운 이유는 memory가 행렬 하나라서 per-request 연산이 batched GEMM 한 번으로 정규화되기 때문임을 기억해 두라. 8장에서 memory가 per-request로 훈련되는 MLP가 되는 순간, 같은 질문이 grouped GEMM의 문제로 재등장한다(→ 10장).
 
-**prefill/훈련 — Mamba-1의 병목.** selective scan의 op mix는 elementwise 곱-합이다. kernel fusion으로 DRAM 왕복을 없애도(IO 문제 해결) 연산이 GEMM이 아니므로 tensor core가 놀고, 상한이 기기의 vector-ALU throughput — 최신 GPU에서 tensor core FLOPS의 작은 분수 — 에 걸린다. 즉 Mamba-1의 한계는 bandwidth가 아니라 **op mix**다. roofline 그림으로 말하면: 지붕의 낮은 쪽 처마 밑에 앉아 있는 것이다.
+**prefill/훈련 — Mamba-1의 병목.** selective scan의 op mix는 elementwise 곱-합이다. kernel fusion으로 중간값의 DRAM 왕복을 크게 줄여도 scan의 arithmetic intensity는 낮아 연산이 여전히 memory-bandwidth-bound이고([Mamba §3.3.2]), 동시에 연산이 GEMM이 아니므로 tensor core가 놀아 상한이 기기의 vector-ALU throughput — 최신 GPU에서 tensor core FLOPS의 작은 분수 — 에도 걸린다([Mamba-2 §2.1]). 즉 Mamba-1은 **bandwidth 제약과 op mix 제약을 동시에** 안는다 — fusion은 전자를 완화할 뿐 제거하지 못하고 후자는 건드리지 못한다. roofline 그림으로 말하면: 지붕의 낮은 쪽 처마 밑에 앉아 있는 것이다.
 
 **prefill/훈련 — Mamba-2의 답.** 식 (7-4)는 chunk당 세 종류의 GEMM을 만든다: intra-chunk score $QK^\top$($C\times d_k$ 대 $d_k\times C$), mask 적용 후 value 곱($C\times C$ 대 $C\times d_v$), 그리고 state 항($C\times d_k$ 대 $d_k\times d_v$와 경계 갱신). token당 비용은 $O(C\,d + d_k d_v)$, sequence 전체로는 $O(LCd + L\,d_kd_v)$ — $C=1$이면 순수 recurrence, $C=L$이면 순수 attention으로 퇴화하는 보간식이다. $C$를 키울수록 GEMM이 두꺼워져 arithmetic intensity가 올라가고 tensor core 활용이 회복된다. 이것이 "같은 수학을 GEMM으로 다시 쓰기"의 전부이며, FlashAttention에서 tile 크기를 SRAM에 맞추던 감각과 같은 종류의 튜닝이다.
 

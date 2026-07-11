@@ -72,7 +72,7 @@ $$
 
 식 (4-4)는 "inner gradient의 방향이 outer loss를 줄이는 방향과 얼마나 정렬되어 있는가"를 재고, 식 (4-5)에는 inner loss의 **Hessian** $\nabla^2_W\ell$이 나타난다. inner update가 이미 gradient를 포함하므로 그것을 다시 미분하면 gradient의 gradient, 즉 2차 미분이 튀어나오는 것이다. $L$ step을 펼치면 식 (4-5)의 Jacobian $(I-\eta_{\mathrm{in}}\nabla^2_W\ell_\tau)$들이 곱으로 연쇄된다 — RNN의 BPTT에서 transition Jacobian이 연쇄되는 것과 정확히 같은 구조이고, 같은 병(긴 연쇄의 소실·폭발, 그리고 궤적 전체를 저장해야 하는 activation memory)을 앓는다. 행렬 $W$의 경우 Jacobian이 고차 tensor가 되지만 구조는 동일하다.
 
-이 병의 표준 처방이 **truncated unrolling**이다: graph를 $T$ step마다 잘라, 자른 지점 이전으로는 gradient를 흘리지 않는다. 계산과 메모리를 아끼는 대신 hypergradient가 편향된다 — 잘린 구간 너머로 전파됐어야 할 신호가 0으로 처리되기 때문이다. 이 트레이드오프를 기억해 두면 9장이 쉬워진다: chunkwise training의 stale-snapshot 근사(식 (M4))는 chunk 시작 상태에 gradient anchor를 동결하는, 정확히 이 truncation의 사촌이며, 거기서 truncation 길이의 역할을 chunk 크기 $C$가 맡는다.
+이 병의 표준 처방이 **truncated unrolling**이다: graph를 $T$ step마다 잘라, 자른 지점 이전으로는 gradient를 흘리지 않는다. 계산과 메모리를 아끼는 대신 hypergradient가 편향된다 — 잘린 구간 너머로 전파됐어야 할 신호가 0으로 처리되기 때문이다. 이 트레이드오프를 기억해 두면 9장이 쉬워진다: chunkwise training의 stale-snapshot 근사(식 (M4))는 chunk 시작 상태에 gradient의 평가점을 동결하는 별개의 근사이지만, "계산을 아끼는 대신 근사 오차를 낸다"는 저울질을 truncation과 공유한다. 단 기제도 knob 방향도 다르다: truncation은 gradient의 backflow를 자르고 길이가 **길수록** 편향이 줄지만, chunk는 gradient의 평가점을 동결하고 $C$가 **클수록** staleness가 커져 품질이 떨어진다(정밀한 구분은 → 9장).
 
 unrolling의 대안으로 **implicit differentiation**이 있다: inner 문제가 argmin까지 풀린다고 가정하면(식 (4-1)의 형태), 최적점의 1차 조건 $\nabla_W\ell(W^\star;\Theta)=0$에 implicit function theorem을 적용해 궤적을 저장하지 않고도 hypergradient를 얻는다. 대가는 inner Hessian이 낀 선형계를 푸는 비용이며, hyperparameter optimization과 meta-learning의 형식적 통합은 Franceschi et al. 2018 (arXiv:1806.04910)이 정리했다. 이 라인이 implicit 노선을 쓰지 않는 이유는 이제 자명하다: inner 문제가 애초에 argmin까지 풀리지 않고, 중간 궤적 $W_1,\dots,W_L$ 하나하나가 $y_t$를 만들기 때문이다. 예외가 궤적 대신 매 step 정확한 해를 쓰는 Mesa-layer이고(§4.5), 그래서 Atlas가 이를 대조군으로 세운다.
 
@@ -86,7 +86,7 @@ meta-learning의 역사는 "outer loop에 무엇을 넘길 것인가"의 역사�
 
 둘째, **learned optimizer**. Andrychowicz et al. 2016 (arXiv:1606.04474)은 update rule 자체를 학습했다: 작은 recurrent network가 gradient를 입력받아 $\Delta w$를 출력하고, 그 network의 파라미터를 outer loop가 학습한다. "optimizer는 import하는 고정 부품이 아니라 학습 가능한 모듈이다"라는 관점의 원조이며, 2장에서 optimizer를 (state, update, cost) 객체로 세운 것은 정확히 이 관점을 미리 깔아 둔 것이다. [Miras]가 네 번째 설계 축으로 "memory learning algorithm(= optimizer)"을 놓을 때 [Miras §1], 이 축의 사상적 기원이 여기다.
 
-셋째, **MAML**. Finn, Abbeel & Levine 2017 (arXiv:1703.03400)의 **MAML**(Model-Agnostic Meta-Learning)은 meta-변수를 단 하나, **초기값**으로 고른다: 새 task가 오면 초기값 $W_{\mathrm{init}}$에서 GD 몇 step으로 적응하고, "적응 후 성능"을 outer loss로 삼아 $W_{\mathrm{init}}$ 자체를 학습한다. hypergradient는 §4.2에서 유도한 그대로이며 — 식 (4-5)의 Hessian 항을 버린 변형이 FOMAML이다 — 학습이 끝난 $W_{\mathrm{init}}$은 "어느 task로든 몇 step 만에 갈 수 있는 출발점"이 된다. 같은 계보의 후속으로 Hessian 없이 초기값만 학습하는 first-order 변형(Reptile), 적응 대상을 소수의 context parameter로 국한하는 context-parameter 변형(CAVIA)이 있다 — [Titans §3.1]이 자기 계보로 인용하는 명칭들이다(→ 12장). 이 아이디어의 이 라인 버전이 **meta-learned initial state $W_{\mathrm{init}}$**이다: memory의 초기 상태를 난수가 아니라 outer loop가 학습한 값으로 두는 것. [Titans]에서는 암묵적 세부였던 이것이 [TNT]에서는 구조의 기둥이 된다 — local memory가 shard 경계마다 "shared, learnable initial state $W_{\mathrm{init}}$"으로 reset되고 [TNT §4.1.1, Eq. 6], reset이 정보 폐기가 아니라 **좋은 출발점으로의 복귀**가 되는 것은 $W_{\mathrm{init}}$이 meta-learn되어 있기 때문이다. 독자의 세계로 옮기면 $W_{\mathrm{init}}$은 세션 시작마다 복원되는 golden snapshot — 모든 요청이 공유하는 초기 상태 이미지 — 이고, MAML은 그 이미지를 굽는 절차다.
+셋째, **MAML**. Finn, Abbeel & Levine 2017 (arXiv:1703.03400)의 **MAML**(Model-Agnostic Meta-Learning)은 meta-변수를 단 하나, **초기값**으로 고른다: 새 task가 오면 초기값 $W_{\mathrm{init}}$에서 GD 몇 step으로 적응하고, "적응 후 성능"을 outer loss로 삼아 $W_{\mathrm{init}}$ 자체를 학습한다. hypergradient는 §4.2에서 유도한 그대로이며 — 식 (4-5)의 Hessian 항을 버린 변형이 FOMAML이다 — 학습이 끝난 $W_{\mathrm{init}}$은 "어느 task로든 몇 step 만에 갈 수 있는 출발점"이 된다. 같은 계보의 후속으로 Hessian 없이 초기값만 학습하는 first-order 변형(Reptile), 적응 대상을 소수의 context parameter로 국한하는 context-parameter 변형(CAVIA)이 있다 — [Titans §3.1]이 자기 계보로 인용하는 명칭들이다(→ 12장). 이 아이디어의 이 라인 버전이 **meta-learned initial state $W_{\mathrm{init}}$**이다: memory의 초기 상태를 난수가 아니라 outer loop가 학습한 값으로 두는 것. [Titans]에서는 암묵적 세부였던 이것이 [TNT]에서는 구조의 기둥이 된다 — local memory가 shard 경계마다 "shared, learnable initial state $W_{\mathrm{init}}$"으로 reset되고 [TNT §4.1.1, Eq. 6], reset이 이전 shard의 local memory 정보를 실제로 폐기하면서도(그렇게 sequential chain을 끊어 shard 병렬성을 얻는다) 치명적 손실이 되지 않는 것은, 복귀 지점 $W_{\mathrm{init}}$이 meta-learn된 좋은 공통 출발점이고 잃어버린 장거리 문맥은 별도의 global memory가 보완하기 때문이다(→ 15장). 독자의 세계로 옮기면 $W_{\mathrm{init}}$은 세션 시작마다 복원되는 golden snapshot — 모든 요청이 공유하는 초기 상태 이미지 — 이고, MAML은 그 이미지를 굽는 절차다.
 
 표 4-1 — learning-to-learn 계보: meta-변수의 선택
 
@@ -101,7 +101,7 @@ meta-learning의 역사는 "outer loop에 무엇을 넘길 것인가"의 역사�
 
 ## 4.4 이 라인의 bilevel 구조: outer loop는 정확히 무엇을 배우는가
 
-이제 6편 전체를 여는 열쇠 문장을 말할 수 있다: **inner optimizer의 hyperparameter들이, outer loop가 학습하는 data-dependent 함수가 된다.** 고전 훈련에서 learning rate·momentum 계수·weight decay·초기값은 사람이 고르는 hyperparameter였다. 이 라인에서는 그 각각이 $\eta_t=\eta(x_t;\Theta)$, $\beta_t=\beta(x_t;\Theta)$, $\alpha_t=\alpha(x_t;\Theta)$, $W_{\mathrm{init}}\in\Theta$로 바뀐다 — 사람이 아니라 outer loop가 고르고, 상수가 아니라 token마다 값이 바뀐다. [Titans]는 gate들이 $x_t$의 함수로 계산되는 data-dependent 계수임을 명시하고 [Titans §3.1], inner loss $\ell(W_{t-1};k_t,v_t)=\|\mathcal{M}(k_t;W_{t-1})-v_t\|_2^2$의 projection에 대해 "parameters $W_K$ and $W_V$ are hyperparameters"라고 못 박는다 [Titans §3.1]. [Atlas]는 같은 구조를 정의로 승격시킨다: inner loop에서는 memory module의 파라미터만 최적화되며 그때 나머지 전부는 고정된 hyperparameter이고, outer loop에서 그 나머지 — projection, MLP 등 — 가 최적화된다 [Atlas §2].
+이제 6편 전체를 여는 열쇠 문장을 말할 수 있다: **inner optimizer의 hyperparameter들이, outer loop가 학습하는 data-dependent 함수가 된다.** 고전 훈련에서 learning rate·momentum 계수·weight decay·초기값은 사람이 고르는 hyperparameter였다. 이 라인에서는 그 각각이 outer loop가 학습하는 대상으로 바뀐다: learning rate·momentum·weight decay는 token의 함수 $\eta_t=\eta(x_t;\Theta)$, $\beta_t=\beta(x_t;\Theta)$, $\alpha_t=\alpha(x_t;\Theta)$가 되어 값이 token마다 바뀌고, 초기값은 고정된 학습 파라미터 $W_{\mathrm{init}}\in\Theta$가 된다(값은 상수이되 난수가 아니라 학습된 것). 어느 쪽이든 사람이 아니라 outer loop가 고른다. [Titans]는 gate들이 $x_t$의 함수로 계산되는 data-dependent 계수임을 명시하고 [Titans §3.1], inner loss $\ell(W_{t-1};k_t,v_t)=\|\mathcal{M}(k_t;W_{t-1})-v_t\|_2^2$의 projection에 대해 "parameters $W_K$ and $W_V$ are hyperparameters"라고 못 박는다 [Titans §3.1]. [Atlas]는 같은 구조를 정의로 승격시킨다: inner loop에서는 memory module의 파라미터만 최적화되며 그때 나머지 전부는 고정된 hyperparameter이고, outer loop에서 그 나머지 — projection, MLP 등 — 가 최적화된다 [Atlas §2].
 
 training 무경험 독자의 1번 질문 — "test-time learner의 learning rate는 누가 학습하는가?" — 에 이제 답한다. 핵심은 **함수와 값의 분리**다. 함수 $\eta(\cdot\,;\Theta)$의 파라미터는 $\Theta$의 일부로서 **outer loop가 pretraining 중에** 학습한다. 값 $\eta_t=\eta(x_t;\Theta)$는 **inner loop가 serving 중에** token마다 평가한다. serving에서 함수는 동결되어 있지만 값은 매 token 다르다 — "학습된 learning rate"라는 말은 언제나 함수에 대한 말이다. gate 생산 함수는 실제로는 작은 head(예: low-rank projection + activation)이므로, decode 경로에 GEMV 몇 개가 추가되는 비용으로 읽으면 된다.
 
@@ -110,11 +110,11 @@ training 무경험 독자의 1번 질문 — "test-time learner의 learning rate
 | 구성 요소 | 기호 | 소속 | 움직이는 시점 |
 |---|---|---|---|
 | projection 행렬 | $W_K,W_V,W_Q$ | $\Theta$ (outer) | pretraining만; serving에선 동결 |
-| gate 생산 함수 (inner lr / momentum / retention) | $\eta(\cdot;\Theta),\beta(\cdot;\Theta),\alpha(\cdot;\Theta)$ | $\Theta$ (outer) | 함수는 pretraining만; 값 $\eta_t,\beta_t,\alpha_t$는 serving 중 매 token 평가 |
+| gate 생산 함수 (inner lr / momentum / retention) | $\eta(\cdot;\Theta),\beta(\cdot;\Theta),\alpha(\cdot;\Theta)$ | $\Theta$ (outer) | 함수는 pretraining만; 값 $\eta_t,\beta_t,\alpha_t$는 매 token 평가(pretraining forward·serving 모두) |
 | memory 초기 상태 | $W_{\mathrm{init}}$ | $\Theta$ (outer) | pretraining만; serving에선 reset 목적지 |
 | backbone (attention, MLP, LN, embedding) | $\Theta$ | $\Theta$ (outer) | pretraining만 |
-| memory 상태 | $W_t$ | fast (inner) | serving 중 매 token, 식 (M1)/(M2) |
-| inner momentum buffer | $S_t$ | fast (inner) | serving 중 매 token (M2) |
+| memory 상태 | $W_t$ | fast (inner) | 매 token (pretraining forward·serving 모두), 식 (M1)/(M2) |
+| inner momentum buffer | $S_t$ | fast (inner) | 매 token (pretraining forward·serving 모두) (M2) |
 | outer optimizer state | $m_t,h_t$ | outer의 부속 (→ 2장) | pretraining만; 배포물에 포함되지 않음 |
 
 이 표를 기준으로 6편의 변주를 미리 읽어 두자. [Miras]는 표의 "inner objective $\ell$"과 retention 항을 설계 축으로 열고(attentional bias → 13장), [Atlas]는 inner 문제의 범위를 token 하나에서 sliding window로 넓히고 inner optimizer를 Muon으로 바꾼다(Omega rule → 14장). [TNT]는 outer 훈련의 경제학 — 어떤 chunk 크기로 unrolling을 자를 것인가 — 을 다루고(→ 15장), [NL]은 표의 행들을 아예 재해석한다: momentum과 AdaGrad조차 two-level nested optimization으로 분해되고 [NL §1], 모델과 훈련 절차 전체가 각자의 context flow를 가진 nested, multi-level optimization 문제들의 집합이 되며 [NL Abstract], pre-training 자체가 "context가 전체 pre-training data인 in-context learning"으로 재서술된다 [NL §1]. 두 loop는 K개 level의 스펙트럼으로 일반화되고 level마다 update frequency(→ 16장)가 붙는다. [Sleep]은 ICL을 meta-learning process로 보는 정식화 [Sleep §1]를 전제로, serving 중 동결이라는 $\Theta$의 지위 자체를 wake/sleep lifecycle(→ 17장)로 허문다 — "$\Theta$는 serving 중 불변"이라는 이 절의 규칙이 성립하는 마지막 논문이 TNT이고, 그 규칙의 해체가 라인의 종착점이라는 것까지 보이면 Part II의 지도는 완성이다.
@@ -155,7 +155,7 @@ $$
 
 이 장의 내용이 독자의 roofline 감각과 만나는 지점을 정리한다.
 
-**첫째, unrolled inner loop는 컴파일 가능한 정적 graph다.** 식 (4-3)을 $L$번 펼친 graph는 같은 연산 블록의 반복이고 data-dependent 제어 흐름이 없다. 따라서 kernel fusion·재배치·tiling의 대상이 된다 — FlashAttention이 attention의 정적 graph를 tile 단위로 재조직했듯, 이 graph를 chunk 단위로 재조직한 것이 9장의 chunkwise-parallel training이다. 단 결정적 차이가 있다: FlashAttention tiling은 bit-exact지만, chunk는 gradient anchor를 chunk 시작 상태에 동결하는 **semantic 근사**로서 계산되는 함수 자체를 바꾼다(식 (M4), → 9장). §4.2의 truncated unrolling에서 본 "비용 대 편향" 트레이드오프가, truncation 길이 $\to$ chunk 크기 $C$로 이름만 바꿔 재등장하는 것이다.
+**첫째, unrolled inner loop는 컴파일 가능한 정적 graph다.** 식 (4-3)을 $L$번 펼친 graph는 같은 연산 블록의 반복이고 data-dependent 제어 흐름이 없다. 따라서 kernel fusion·재배치·tiling의 대상이 된다 — FlashAttention이 attention의 정적 graph를 tile 단위로 재조직했듯, 이 graph를 chunk 단위로 재조직한 것이 9장의 chunkwise-parallel training이다. 단 결정적 차이가 있다: FlashAttention tiling은 bit-exact지만, chunk는 gradient anchor를 chunk 시작 상태에 동결하는 **semantic 근사**로서 계산되는 함수 자체를 바꾼다(식 (M4), → 9장). §4.2의 truncated unrolling에서 본 "비용 대 편향" 트레이드오프가, truncation 길이가 맡던 "비용 대 정확도" 저울질을 chunk 크기 $C$가 다시 맡는 것이다 — 단 gradient backflow를 자르는 truncation과 달리 chunk는 평가점을 동결하는 별개 기제이고, $C$가 클수록(길수록이 아니라) 근사가 나빠진다.
 
 **둘째, outer 훈련의 비용은 궤적의 저장이다.** inner loop를 관통하는 backward pass는 원칙적으로 $W_1,\dots,W_L$ 전 궤적을 activation memory에 요구한다(2장의 activation·recomputation 논의의 직계). naive하게는 상태 크기 $|W|$의 $L$배 — matrix memory $d\times d$에 $L{=}32\mathrm{K}$면 이미 감당 불가 — 이고, 그래서 실전은 chunk 경계 상태만 저장하고 chunk 내부를 재계산하는 쪽으로 간다(→ 9장). "훈련이 비싼 이유"의 절반은 FLOP이 아니라 이 궤적 저장이라는 감각을 여기서 얻어 두면 TNT의 훈련 경제학(→ 15장)이 바로 읽힌다.
 
@@ -174,9 +174,9 @@ $$
 
 - bilevel optimization은 outer 문제의 제약 안에 inner 최적화가 들어 있는 구조이며, 이 라인의 sequence model은 inner 문제를 argmin까지 풀지 않고 GD 궤적 자체를 출력으로 쓰는 trajectory 형태의 bilevel 문제다 (식 (4-2)–(4-3)).
 - inner loop는 fast weights $W$를 inner loss $\ell$로, outer loop는 slow weights $\Theta$를 outer loss $\mathcal{L}$로 최적화한다. 두 loop는 시간축이 다르다: token마다 vs mini-batch마다, serving 중 vs pretraining 중.
-- outer loop는 inner update의 computational graph를 unrolling해 backprop함으로써 hypergradient $\nabla_\Theta\mathcal{L}$을 얻고, 그 과정에서 inner loss의 Hessian이 나타난다 (식 (4-5)). truncation은 비용을 깎는 대신 hypergradient를 편향시키며, 9장의 chunk 크기 $C$가 같은 역할을 한다.
+- outer loop는 inner update의 computational graph를 unrolling해 backprop함으로써 hypergradient $\nabla_\Theta\mathcal{L}$을 얻고, 그 과정에서 inner loss의 Hessian이 나타난다 (식 (4-5)). truncation은 비용을 깎는 대신 hypergradient를 편향시킨다. 9장의 chunk 크기 $C$는 계산과 정확도를 저울질한다는 점에서 유사하나, gradient backflow를 자르는 truncation과 달리 gradient 평가점을 동결하는 별개 기제이고 $C$가 클수록 근사가 나빠진다(방향이 반대다).
 - meta-learning 계보의 세 갈래 — Schmidhuber의 자기 수정, learned optimizer, MAML의 학습된 초기값 — 가 이 라인에서 각각 self-modifying 구조(16장), 학습된 gate 생산 함수, $W_{\mathrm{init}}$(TNT의 reset 목적지)으로 합류한다.
-- 열쇠 문장: inner optimizer의 hyperparameter들($\eta_t,\beta_t,\alpha_t$, projection, $W_{\mathrm{init}}$)은 outer loop가 학습하는 data-dependent 함수가 된다. "누가 학습하는가"는 항상 함수(outer, pretraining)와 값(inner, serving)을 나눠 답한다.
+- 열쇠 문장: inner optimizer의 hyperparameter들은 outer loop가 학습한다 — gate($\eta_t,\beta_t,\alpha_t$)는 token의 data-dependent 함수로(값이 매 token 바뀐다), projection과 $W_{\mathrm{init}}$은 고정된 학습 파라미터로. "누가 학습하는가"는 항상 함수(outer, pretraining)와 값(inner, serving)을 나눠 답한다.
 - 평범한 transformer의 ICL이 이미 암묵적 GD라는 결과들(Akyürek; von Oswald; mesa-optimization)이 이 라인의 정당화 근거이며, 6편은 그 암묵적 inner loop를 명시적·모수적·깊게 만드는 프로젝트다.
 
 ## 자가 점검 체크리스트

@@ -18,7 +18,7 @@ Part II의 마지막 논문은 [Sleep] (*Language Models Need Sleep: Learning to
 
 <!-- FIG: ch17/fig-01-wake-sleep-lifecycle -->
 
-핵심 주장은 셋이다. 첫째, **continual learner에게는 training time도 test time도 없다.** 모델의 lifecycle은 새 입력을 받아 처리하는 **wake(active) phase**와, 입력을 최소화하거나 끊고 내부 계산으로 기억을 정리하고 자기를 개선하는 **sleep phase**의 주기적 교대로 재정의되어야 한다 [Sleep §3.1]. 이 책은 이것을 **wake/sleep lifecycle**이라고 부른다 — 이 라인이 Titans 이후 유지해 온 "test time"이라는 단어의 마지막 잔재를 지우는 주장이다. 둘째, **CF는 근본적으로 capacity 문제다.** 파라미터 수가 유한하므로 새 지식을 넣으려면 덮어써야 하고, 그래서 잊는다. 생물학의 해법은 regularization(EWC류, → 11장)도 rehearsal도 아니라 neuroplasticity, 즉 새 연결의 형성이다 — 따라서 처방은 점진적 **parameter expansion**이다 [Sleep §3.2]. 셋째, sleep은 두 단계다: NREM(slow-wave sleep)의 hippocampus→neocortex 기억 이전과 synaptic homeostasis에 대응하는 **Memory Consolidation**, 그리고 REM의 시냅스 강화·통합·미래 시뮬레이션에 대응하는 **Dreaming** [Sleep §1, §3].
+핵심 주장은 셋이다. 첫째, **continual learner에게는 training time도 test time도 없다.** 모델의 lifecycle은 새 입력을 받아 처리하는 **wake(active) phase**와, 입력을 최소화하거나 끊고 내부 계산으로 기억을 정리하고 자기를 개선하는 **sleep phase**의 주기적 교대로 재정의되어야 한다 [Sleep §3.1]. 이 책은 이것을 **wake/sleep lifecycle**이라고 부른다 — 이 라인이 Titans 이후 유지해 온 "test time"이라는 단어의 마지막 잔재를 지우는 주장이다. 둘째, **CF는 근본적으로 capacity 문제다.** 파라미터 수가 유한하므로 새 지식을 넣으려면 덮어써야 하고, 그래서 잊는다. 논문은 생물학의 offline consolidation을 replay(수면 중 최근 pattern의 재생)와 neuroplasticity(새 연결의 형성)의 **결합**으로 읽고, 그 처방으로 replay 기반 Knowledge Seeding에 점진적 **parameter expansion**을 함께 쓴다 [Sleep §3.2, §3.3](regularization(EWC류, → 11장)만 이 해법군에서 뺀다). 셋째, sleep은 두 단계다: NREM(slow-wave sleep)의 hippocampus→neocortex 기억 이전과 synaptic homeostasis에 대응하는 **Memory Consolidation**, 그리고 REM의 시냅스 강화·통합·미래 시뮬레이션에 대응하는 **Dreaming** [Sleep §1, §3].
 
 > **[해설]** 이 책의 좌표로 옮기면 이렇게 된다. 12–16장의 논문들은 전부 master update (M)의 성분을 바꿨다 — [Miras] (*It's All Connected*, arXiv:2504.13173; 이 책은 framework 이름 Miras로 통칭한다)는 objective를, [Atlas] (*Atlas: Learning to Optimally Memorize the Context at Test Time*, arXiv:2505.23735)는 window와 optimizer를, [TNT]는 훈련 경제학을, [NL]은 층위를 바꿨다. [Sleep]은 (M)을 건드리지 않는다. 바꾸는 것은 그 update들이 살아가는 **lifecycle**이다. inference 어휘로는 1장 Rosetta의 마지막 행이 이 장의 전부다: sleep phase는 서빙 fleet에 붙는 주기적 백그라운드 job, "weights의 background compaction"이다. 낮에는 요청을 처리하며 fast memory에 쓰고, 밤에는 트래픽을 끊고 compaction·GC를 돌린다 — 단지 그 대상이 로그나 cache가 아니라 모델의 파라미터일 뿐이다.
 
@@ -48,7 +48,7 @@ $$
 
 ### 17.3.2 sleep은 언제 오는가: chunk 경계 스케줄
 
-sleep의 발화 시점은 학습되지 않고 chunk 스케줄에 고정된다. chunk 길이 목록 $\{C^{(1)},\dots,C^{(k)}\}$가 주어지면, sleep(그리고 memory consolidation)은 모든 $b\in\mathbb{N}$에 대해 step $\{C^{(1)}\times b,\dots,C^{(k)}\times b\}$에서만 일어난다 [Sleep §3.2]. 즉 어떤 블록이든 자기 갱신 경계에 도달하면, 갱신 직전에 그 블록의 지식이 다음 느린 블록으로 먼저 옮겨진다. frequency가 중첩되어 있으므로 consolidation은 다대일이다: update frequency 1K token의 블록 뒤에 10K token의 블록이 있으면, 느린 블록이 한 번 갱신되는 동안 빠른 블록은 10번 갱신되고, 따라서 빠른→느린 consolidation이 10번 일어난다 [Sleep §3.2]. 실험 구성의 frequency 사다리는 1k→5k→10k다 [Sleep Fig. 7]. 같은 고정 크기의 느린 memory에 10번을 반복해서 써 넣는 것 — 바로 그 지점이 CF가 일어날 자리이고, 그래서 다음 소절의 expansion이 필요해진다.
+sleep의 발화 시점은 학습되지 않고 chunk 스케줄에 고정된다. chunk 길이 목록 $\{C^{(1)},\dots,C^{(k)}\}$가 주어지면, sleep(그리고 memory consolidation)은 모든 $b\in\mathbb{N}$에 대해 step $\{C^{(1)}\times b,\dots,C^{(k)}\times b\}$에서만 일어난다 [Sleep §3.2]. 즉 어떤 블록이든 자기 갱신 경계에 도달하면, 갱신 직전에 그 블록의 지식이 다음 느린 블록으로 먼저 옮겨진다. frequency가 중첩되어 있으므로 consolidation은 다대일이다: update frequency 1K token의 블록 뒤에 10K token의 블록이 있으면, 느린 블록이 한 번 갱신되는 동안 빠른 블록은 10번 갱신되고, 따라서 빠른→느린 consolidation이 10번 일어난다 [Sleep §3.2]. 실험 구성의 chunk/update-period 사다리는 $C=$1k→5k→10k token이다 [Sleep Fig. 7] — frequency(단위 시간당 갱신 횟수)는 그 역수라 반대 방향으로 감소한다(1k 블록이 10k 블록보다 자주 갱신된다). 같은 고정 크기의 느린 memory에 10번을 반복해서 써 넣는 것 — 바로 그 지점이 CF가 일어날 자리이고, 그래서 다음 소절의 expansion이 필요해진다.
 
 ### 17.3.3 Stage 1a — parameter expansion: 덮어쓰지 말고 키워라
 
@@ -120,7 +120,7 @@ $\lambda_{\mathrm{KD}}\in[0,1]$(원문 $\alpha$; retention gate와의 충돌을 
 4. **보상**: dream의 **생성**에 보상을 준다 — fine-tune된 $\mathrm{LM}_{\theta'^{(i)}}$가 $\tau$에서 $\mathrm{LM}_{\theta^{(i)}}$보다 개선되면 1, 아니면 0 [Sleep Eq. 5].
 5. **강화**: 이 보상으로 dream 생성 policy를 ReST^EM(Singh et al. 2024)으로 최적화한다 — 생성→이진 보상으로 필터→생존 샘플에 SFT→반복하는, value network가 필요 없는 EM 계열 RL이다(SEAL과 동일한 선택; → 11장).
 
-두 stage의 **순서**가 설계의 논점이다. consolidation이 먼저 와서, 갓 습득된 fragile한 지식을 새로 확장된 — 그 외에는 동결된 — 저주파 파라미터에 안전하게 격리해 둔다. 그래야 dreaming의 반복적 self-training이 가하는 파괴적 weight update(SEAL 문제 (2), 그리고 §17.8에서 볼 OPSD 계열의 collapse·forgetting 실패 모드)가 그 지식을 침식하지 못한다 [Sleep §3.4, App. A.4].
+두 stage의 **순서**가 설계의 논점이다. consolidation이 먼저 와서, 갓 습득된 fragile한 지식을 새로 확장된 저주파 파라미터에 격리해 둔다(전체 파라미터 동결은 KS 최적화에만 적용된다). 그러면 dreaming의 반복적 self-training이 가하는 weight update(dreaming은 별도 LoRA SFT로 모델을 바꾼다; SEAL 문제 (2), §17.8의 OPSD 계열 collapse·forgetting)에 의한 그 지식의 forgetting **위험이 줄어든다** — 논문은 침식이 구조적으로 불가능하다고 보장하지 않고, 두 단계 순서가 더 robust하다는 가설·실험 결과를 제시한다 [Sleep §3.4, App. A.4].
 
 ### 17.3.7 한 번의 sleep step: 전체 절차
 
@@ -159,7 +159,7 @@ $\lambda_{\mathrm{KD}}\in[0,1]$(원문 $\alpha$; retention gate와의 충돌을 
 | $C$ — Dreaming의 task context ($(C,\tau)$의 $C$) | $x_{\mathrm{ctx}}$ | ⚠ chunk 크기 $C$와 충돌 방지 (장-국소 개명) |
 | $\mathcal{D}(\cdot\Vert\cdot)$ — $\mathcal{L}_{KS}$ 안의 divergence | $\mathcal{F}(\cdot\Vert\cdot)$ | ⚠ dataset $\mathcal{D}$와 충돌 방지 (장-국소 개명) |
 | $b$ — Top-$k$ 외 추가 random dream 수 | $n_{\mathrm{rand}}$ | ⚠ sleep 스케줄 배수 $b\in\mathbb{N}$ [Sleep §3.2]와 구분 |
-| Eq. 2 합의 하한 $t=i-C^{(\ell)}$ | $t = i-C^{(\ell)}+1$ | 인덱스 관행 차이(off-by-one; 알고리즘 동일) — 이 책은 (M5) 기준 |
+| Eq. 2 합의 하한 $t=i-C^{(\ell)}$ | $t = i-C^{(\ell)}+1$ | 원전 Eq. 2의 off-by-one **교정**(같은 상한 $i$·1-based에서 두 합은 한 항 차이라 수학적으로 동일하지 않다; 원전은 $C^{(\ell)}{+}1$개 항을 더해 첫 경계 $i{=}C^{(\ell)}$에서 없는 $x_0$를 포함). 이 책은 (M5) 기준 |
 | $\theta'^{(i)}$ — dream $i$로 fine-tune된 instance | 동일 | 장-국소 |
 | $m$ — dream 생성 수; Top-$k$의 $k$ | 동일 | 장-국소($k$는 보조 인덱스 용법) |
 
@@ -174,14 +174,14 @@ $\lambda_{\mathrm{KD}}\in[0,1]$(원문 $\alpha$; retention gate와의 충돌을 
 | 이 책의 좌표 | outer loop | inner loop | 어느 쪽도 아님 — 배포 중의 offline 훈련 job |
 | 움직이는 것 | $\Theta$ 전체 (projection, backbone, CMS 초기 상태) | $\theta^{(\ell)}$ (각 level의 파라미터), sequence layer의 state | consolidation: 새 expert $\{A,B\}$만. dreaming: LoRA adapter + dream 생성 policy |
 | 갱신 규칙 | AdamW류 표준 훈련 (→ 2장) | 식 (17-1): error 누적 + chunk 경계 적용 | 식 (17-5) 최적화; LoRA SFT; ReST^EM |
-| 데이터 | pre-training corpus | 들어오는 context 그 자체 | 전부 자기 생성 (teacher sampling, rollout, dream) |
+| 데이터 | pre-training corpus | 들어오는 context 그 자체 | consolidation corpus는 자기 생성(teacher sampling, rollout); dream은 외부/wake 보존 task context $x_{\mathrm{ctx}}$와 평가 함수 $\tau$에 조건화 |
 | cadence | 배포 전 1회 | token마다 누적, $C^{(\ell)}$마다 write | chunk 경계 $\{C^{(\ell)}\times b\}$마다 |
 
 **regime 1 — 무엇이 meta-learn되는가.** [Sleep] 자체는 backbone 훈련을 새로 유도하지 않고 상속한다. Hope를 [NL] 레시피로 pre-train하는 구성이라면 [NL]의 훈련을 그대로 쓰게 된다: gradient가 식 (17-1)의 다중 frequency 갱신을 **관통**해 흐르고, 따라서 outer 최적화는 "각 level의 chunk 단위 자기 갱신이 context를 유용하게 압축하도록" 블록들을 조형한다 — TTT·Titans의 meta-learning-through-inner-loop 구조(→ 4장, 12장)를 frequency 사슬 전체로 일반화한 것이다. 병렬화의 고리도 같다: chunk 안에서 $\theta^{(\ell)}$이 상수이므로 chunk 전체가 한 번의 지연 update로 배치 처리되고(→ 9장의 stale-snapshot 근사), 이 chunkwise 훈련을 경제적으로 만드는 것이 바로 [TNT]의 주제였다(→ 15장). 반면 Llama·Qwen 위의 graft 실험이라면 regime 1은 그냥 기성 checkpoint다 — 아래 caveat 참조.
 
-**regime 2 — wake에서 무엇이 어떤 규칙으로 움직이는가.** 배포된 모델의 상태는 두 겹이다. sequence layer는 자기 관행대로 state를 유지한다(attention이면 KV cache, Titans류 module이면 고정 크기 $W_t$). 그 위에서 모든 CMS 블록 $\ell$이 token마다 error 기여 $\eta^{(\ell)}_t\,\varepsilon(\theta^{(\ell)}_t;x_t)$를 누적하고, $C^{(\ell)}$ token마다 한 번 자기 weights에 적용한다. per-token 비용은 블록마다 (파라미터 크기의 누적 1회/token) + (파라미터 write 1회/$C^{(\ell)}$ token)이고, error 항 계산을 위한 backward류 연산이 필요하다. state 크기는 "각 블록의 파라미터 + 같은 크기의 accumulator"다. frequency 사다리가 1k→5k→10k이므로 [Sleep Fig. 7] 느린 블록일수록 weights를 건드리는 빈도는 급감한다.
+**regime 2 — wake에서 무엇이 어떤 규칙으로 움직이는가.** 배포된 모델의 상태는 두 겹이다. sequence layer는 자기 관행대로 state를 유지한다(attention이면 KV cache, Titans류 module이면 고정 크기 $W_t$). 그 위에서 모든 CMS 블록 $\ell$이 token마다 error 기여 $\eta^{(\ell)}_t\,\varepsilon(\theta^{(\ell)}_t;x_t)$를 누적하고, $C^{(\ell)}$ token마다 한 번 자기 weights에 적용한다. per-token 비용은 블록마다 (파라미터 크기의 누적 1회/token) + (파라미터 write 1회/$C^{(\ell)}$ token)이고, error 항 계산을 위한 backward류 연산이 필요하다. state 크기는 "각 블록의 파라미터 + 같은 크기의 accumulator"다. chunk/update-period 사다리가 $C=$1k→5k→10k token이므로 [Sleep Fig. 7] 느린(주기 큰) 블록일수록 weights를 건드리는 빈도(frequency)는 급감한다.
 
-**regime 3 — sleep에서 무엇이 학습되는가.** 여기가 신세계다. consolidation은 진짜 gradient 기반 훈련이지만, 배포 **전에 한 번**이 아니라 배포된 삶의 **주기적 일부**로 돈다. 학습 대상은 새로 활성화된 low-rank expert 하나뿐이고, 나머지 전부는 동결이며, 데이터는 전부 자기 생성이다. dreaming은 per-dream LoRA SFT(안쪽)와 ReST^EM policy 최적화(바깥쪽)의 이중 구조이고, 선별 단계는 후보 dream마다 backward pass 한 번($g_{\mathrm{DR}}^{(i)}$ 계산)을 요구한다. 보고된 공통 설정은 LR $5\times10^{-6}$, effective batch 32, Sleep 100 step(GRPO baseline은 500), LoRA rank 64/alpha 128이다 [Sleep Table 5].
+**regime 3 — sleep에서 무엇이 학습되는가.** 여기가 신세계다. consolidation은 진짜 gradient 기반 훈련이지만, 배포 **전에 한 번**이 아니라 배포된 삶의 **주기적 일부**로 돈다. 학습 대상은 새로 활성화된 low-rank expert 하나뿐이고, 나머지 전부는 동결이며, 데이터는 전부 자기 생성이다. dreaming은 per-dream LoRA SFT(안쪽)와 ReST^EM policy 최적화(바깥쪽)의 이중 구조이고, 선별 단계는 후보 dream마다 backward pass 한 번($g_{\mathrm{DR}}^{(i)}$ 계산)을 요구한다. 보고된 공통 설정은 LR $5\times10^{-6}$, effective batch 32, Sleep 100 step(GRPO baseline은 500; GRPO = group-relative policy optimization — 그룹 내 상대 보상으로 baseline을 대신하는 RLVR 계열 방법), LoRA rank 64/alpha 128이다 [Sleep Table 5].
 
 그렇다면 "이 gate는 누가 학습하는가?"라는 이 책의 표준 질문에 대한 답은 이 논문에서 이례적이다:
 
@@ -200,7 +200,9 @@ $\lambda_{\mathrm{KD}}\in[0,1]$(원문 $\alpha$; retention gate와의 충돌을 
 
 이 표가 드러내는 사실이 이 장의 의무 caveat다. **[Sleep]의 sleep 기제 — $\lambda_{\mathrm{on}},\lambda_{\mathrm{KD}},\rho,z_0$, reward model, ReST^EM loop — 는 어느 것도 pre-training에서 end-to-end로 meta-learn되지 않는다.** 실험의 대부분은 pre-trained Llama/Qwen checkpoint 위에 sleep 기계를 **graft**한 것이다 [Sleep §4, App. B]. 이 라인의 정체성은 지금까지 "update rule 자체를 outer loop가 미분해 학습한다"였다 — [Titans] (*Titans: Learning to Memorize at Test Time*, arXiv:2501.00663)의 $\eta_t,\beta_t,\alpha_t$는 $\Theta$가 산출하는 token의 함수였고, [Atlas]의 window gate도, [NL]의 self-modifying 목표 생성도 그랬다. [Sleep]은 라인 최초로 core mechanism이 **미분되어 통과되는 inner loop가 아니라 알고리즘적 wrapper**인 논문이다.
 
-<!-- TODO-VERIFY: Sleep의 Hope 계열 실험(§4.1)에서 쓰인 Hope가 NL 레시피로 pre-train된 checkpoint인지(즉 regime 1이 실제로 식 (17-1)을 관통해 수행되었는지) 원문에 명시가 없다. 확인 방법: papers/2606.03979.txt에서 "Hope" 실험 설정 재검색 + papers/2512.24695.txt의 Hope 훈련 절차와 대조. -->
+확인된 사실 하나를 못박아 둔다: [Sleep]의 Hope 계열 실험은 NL 레시피로 pre-train한 Hope checkpoint가 아니라 pre-trained Llama-3B/8B에 5개의 dim-64 MLP memory 블록을 얹은 graft 구성이다 [Sleep §4.1, App. B]. 따라서 regime 1 — 식 (17-1)을 관통하는 sleep-aware pre-training — 은 이 논문의 실험 어디에서도 실행되지 않았다; §17.4의 regime 1은 논문이 정의한 가능성이지 실증된 경로가 아니다.
+
+<!-- VERIFIED(2026-07-12): Sleep §4.1·App.B — Hope 실험 = Llama-3B/8B graft(+5×dim-64 MLP, active param 불변). NL-레시피 checkpoint 아님 → regime 1 미실증으로 본문 확정. -->
 
 
 > **[평가]** 이것은 결함이라기보다 방법론적 이탈이며, 정직하게 표시되어야 할 라인의 이음새(seam)다. 이 이탈에는 대칭적인 두 독법이 있다. 하나: lifecycle 수준의 결정(언제 자고, 얼마나 키우고, 무엇을 꿈꿀지)은 token 수준 gate와 달리 미분 가능한 형태로 만들기 어려우므로, wrapper는 불가피한 첫걸음이다. 둘: [NL]의 논리를 그대로 밀면 sleep의 knob들 역시 "더 느린 level의 학습 대상"이어야 하는데(frequency 스펙트럼에서 sleep 스케줄보다 느린 것은 없다), 논문은 그 일반화를 시도하지 않았다. 어느 쪽이든, "wake/sleep까지 포함해 전부를 nested optimization으로 훈련한다"는 자리는 비어 있고, 이는 §17.8의 open problem으로 넘어간다.
@@ -230,9 +232,9 @@ training 무경험 독자를 위한 마지막 정지 지점: 식 (17-5)의 기�
 
 ## 17.6 실험과 스케일
 
-backbone은 전부 1B–8B의 기성 모델이다: class-incremental에 Llama-3B·Llama3-8B, ARC에 Llama-3.2-1B, 수학 추론에 Qwen3-1.7B·Qwen3-8B, 그리고 Hope 계열 변형 [Sleep §4]. 추가 파라미터는 dimension 64의 MLP block 5개이고 active 파라미터 수는 base(3B/8B)와 동일하게 유지된다 [Sleep App. B]. 훈련 설정은 LR $5\times10^{-6}$, effective batch 32, Sleep·SFT 100 step vs GRPO 500 step, LoRA $r{=}64$, alpha 128 [Sleep Table 5].
+backbone은 전부 1B–8B의 기성 모델이다: class-incremental에 Llama-3B·Llama3-8B, ARC에 Llama-3.2-1B, 수학 추론에 Qwen3-1.7B·Qwen3-8B, 그리고 Hope 계열 변형 [Sleep §4]. 추가 파라미터는 dimension 64의 MLP block 5개이고 active 파라미터 수는 base와 같게 유지되며, 공통 훈련 설정은 §17.4에 적은 대로다(LR $5\times10^{-6}$·batch 32·Sleep 100 step·LoRA $r{=}64$/alpha 128) [Sleep App. B, Table 5].
 
-**(1) class-incremental learning.** CLINC150(150 intent/10 domain/23.7K query), Banking77(77 intent, 13,083 example), DBpedia level-2(70 class, 10K train/1K test)에서, memory consolidation을 얹은 Hope가 ICL·EWC·InCA·순정 Hope 전부를 상회한다 [Sleep §4.1, Fig. 3; 수치는 그림으로만 제시]. 논문의 해석: ICL 대비 이득은 prompt 수준 적응을 지속적 parametric memory로 전환한 데서, 순정 Hope 대비 이득은 반복적 in-context 갱신보다 나은 추상을 명시적 self-distillation이 만든 데서 온다.
+**(1) class-incremental learning.** CLINC150(150 intent/10 domain/23.7K query), Banking77(77 intent, 13,083 example), DBpedia level-2(70 class, 10K train/1K test)에서 memory consolidation을 얹은 Hope가 ICL·EWC·InCA·순정 Hope를 모두 상회한다 [Sleep §4.1, Fig. 3; 수치는 그림으로만]. 논문의 해석: ICL 대비 이득은 prompt 적응을 지속적 parametric memory로 바꾼 데서, 순정 Hope 대비 이득은 명시적 self-distillation이 반복 in-context 갱신보다 나은 추상을 만든 데서 온다.
 
 **(2) sleep level 수의 효과.** MK-NIAH(RULER), LongHealth(환자 기록 20건, 각 약 5.1K–6.8K 단어, 200문항), QASPER(논문 약 1.6K건 위 약 5K 문항)에서 Hope 변형이 ICL·DuoAttention·Cartridges를 상회하고, 두 경향이 일관된다 [Sleep §4.1, Fig. 4]: consolidation 단계 수가 늘수록 성능이 단조 개선되고, 가장 저주파인 memory의 frequency를 **올리면**(즉 가장 persistent한 기억을 더 adaptive하게 만들면) retention이 약해져 성능이 떨어진다.
 
@@ -282,15 +284,15 @@ n=200 설정은 passage 200개를 한 번의 continued pretraining으로 흡수�
 
 **(8) 효율.** step당 비용은 Sleep이 SFT의 4×다. 그러나 같은 목표 성능에 도달하는 wall-clock으로 재면 SFT가 AIME-24/AIME-25/HMMT-25에서 각각 4.3×/3.6×/4.8× 더 걸린다 [Sleep App. B.5]. 즉 이 패러다임이 사는 것은 싼 step이 아니라 step·sample 효율이다.
 
-**스케일의 정직한 결산.** 이 라인의 from-scratch 사전학습 실증 상한은 여전히 1.3B/100B tokens이다([TNT]는 150M; → 15장). [Sleep]의 8B는 그 상한을 깨는 것이 아니다 — 기성 pre-trained checkpoint 위에 100 step짜리 LoRA 규모 최적화를 얹은 graft이고, sleep 기계를 처음부터 co-train한 실험은 없다. 여러 헤드라인 결과(Fig. 3–6)가 수치 표 없이 그림으로만 제시되고, 수백 번의 wake/sleep 사이클을 도는 장기 배포 시뮬레이션도 없다. 그리고 라인 공통의 공백: **decode wall-clock 수치는 이 논문에도, 6편 전체 어디에도 없다.**
+**스케일의 정직한 결산.** [Sleep]의 8B는 이 라인의 from-scratch 사전학습 실증 상한(여전히 1.3B/100B tokens, [TNT]는 150M; → 15장)을 깨는 것이 아니다 — 기성 checkpoint에 100 step짜리 LoRA 규모 최적화를 얹은 graft이다(§17.4). 또한 여러 헤드라인 결과(Fig. 3–6)가 수치 표 없이 그림으로만 제시되고, 수백 번의 wake/sleep 사이클을 도는 장기 배포 시뮬레이션도 없다(decode wall-clock 부재는 라인 공통 — §17.7·§17.8).
 
 ## 17.7 Systems/serving 함의
 
 이 논문의 systems 함의는 라인의 어느 논문보다 크다. 앞 논문들은 layer를 바꿨지만, 이것은 **배포 형태**를 바꾼다.
 
-**첫째, inference는 더 이상 forward-only가 아니다.** wake phase의 CMS는 활성 블록마다 token당 optimizer error 항을 계산하고(backward류 kernel 필요), 파라미터 크기의 accumulator를 유지하며, $C^{(\ell)}$ token마다 weights에 write한다. memory 관점의 비용은 두 지점에서 정량화된다. (a) **decode state의 read-modify-write 트래픽**: 블록 $\ell$마다 token당 accumulator RMW 1회(파라미터 크기), 그리고 $C^{(\ell)}$ token에 1회로 상각되는 weight write. KV cache의 append-only 트래픽과 달리 이것은 read-modify-write이고, 그 대역폭 계산이 10장의 cost model에 새 항으로 들어간다. (b) **update frequency와 memory 계층 배치의 대응**: 1k→5k→10k 사다리 [Sleep Fig. 7]에서 고주파 블록의 accumulator는 연산 가까이 상주해야 하지만, 저주파 블록은 weights를 수천 token에 한 번 건드리므로 더 느린 계층에 두고도 write 비용을 상각할 수 있다 — frequency 사다리가 곧 storage-tier 사다리의 설계 힌트다. chunk 안에서 파라미터가 상수라는 성질 덕에 chunk 단위 batching·병렬화는 보존된다(→ 9장, 15장).
+**첫째, inference는 더 이상 forward-only가 아니다.** wake phase의 CMS는 활성 블록마다 token당 optimizer error 항을 계산하고(backward류 kernel 필요), 파라미터 크기의 accumulator를 유지하며, $C^{(\ell)}$ token마다 weights에 write한다. memory 관점의 비용은 두 지점에서 정량화된다. (a) **decode state의 read-modify-write 트래픽**: 블록 $\ell$마다 token당 accumulator RMW 1회(파라미터 크기), 그리고 $C^{(\ell)}$ token에 1회로 상각되는 weight write. KV cache의 append-only 트래픽과 달리 이것은 read-modify-write이고, 그 대역폭 계산이 10장의 cost model에 새 항으로 들어간다. (b) **update frequency와 memory 계층 배치의 대응**: $C=$1k→5k→10k token 사다리 [Sleep Fig. 7]에서 고주파(주기 작은) 블록의 accumulator는 연산 가까이 상주해야 하지만, 저주파 블록은 weights를 수천 token에 한 번 건드리므로 더 느린 계층에 두고도 write 비용을 상각할 수 있다 — frequency 사다리가 곧 storage-tier 사다리의 설계 힌트다. chunk 안에서 파라미터가 상수라는 성질 덕에 chunk 단위 batching·병렬화는 보존된다(→ 9장, 15장).
 
-**둘째, session state의 범주가 바뀐다.** 순수 Transformer의 세션 상태는 KV cache, $O(L)$이다 — BABILong의 10M token에서 이는 지탱 불가능한 크기이고, 실제로 GPT-4급 모델이 128K–256K 너머에서 무너지는 것이 그 증상이다 [Sleep §B.2]. [Sleep]의 구도에서 sequence layer는 고정 state로 두고, 지속되는 세션 상태는 **파라미터**가 된다: consolidation 1회당 low-rank expert 하나, $2\,d\,d_{\mathrm{low}}$개 값($d_{\mathrm{low}}\ll d$; 실험 전체가 dim-64 블록 5개 추가로 수행됨 [Sleep App. B]). 이것은 KV cache 문제가 아니라 **per-user/per-agent weight-delta 서빙 문제**다 — multi-tenant LoRA adapter 서빙과 같은 부류로, adapter의 버전 관리·routing·eviction이 세션 관리의 어휘가 된다. 1장 Rosetta의 "paged KV cache ↔ per-session weight state" 대응이 여기서 문자 그대로 실현된다.
+**둘째, session state의 범주가 바뀔 수 있다.** 순수 Transformer의 세션 상태는 KV cache, $O(L)$이다 — BABILong의 10M token에서 이는 매우 큰 크기이고, GPT-4급 모델의 정확도가 128K–256K 너머에서 하락한다 [Sleep §B.2](단 논문은 이 하락을 KV-cache 용량 고갈로 귀인하지는 않는다 — 인과 주장은 유보한다). [Sleep]은 장기 지식을 parametric memory(CMS)로 옮기지만 sequence-layer state를 **일반적으로 제거하지는 않는다** — CMS의 sequence model이 attention이면 KV cache의 $O(L)$ 상태가 그대로 남는다 [Sleep §2.2]. fixed-state sequence module(Titans류 $W_t$)을 택한 변형에서만 지속 세션 상태가 **파라미터**로 대체된다: consolidation 1회당 low-rank expert 하나, $2\,d\,d_{\mathrm{low}}$개 값($d_{\mathrm{low}}\ll d$; 실험 전체가 dim-64 블록 5개 추가로 수행됨 [Sleep App. B]). 이것은 KV cache 문제가 아니라 **per-user/per-agent weight-delta 서빙 문제**다 — multi-tenant LoRA adapter 서빙과 같은 부류로, adapter의 버전 관리·routing·eviction이 세션 관리의 어휘가 된다. 1장 Rosetta의 "paged KV cache ↔ per-session weight state" 대응이 여기서 문자 그대로 실현된다.
 
 **셋째, 정적 shape는 설계로 보장된다.** masked pre-allocation(§17.3.3) 덕에 tensor 크기 변경·재컴파일이 없다. 대가는 비활성 expert의 죽은 자리인데, sparse MoE dispatch가 masked expert를 건너뛰면 FLOP 낭비는 자연히 사라진다 — router 수준에서 처리 가능한 비용이다.
 
@@ -312,7 +314,7 @@ n=200 설정은 passage 200개를 한 번의 continued pretraining으로 흡수�
 
 > **[평가]** 여섯 논문이 스스로 세운 것만 합성하면 하나의 완성형이 실제로 그려진다. (1) **state는 모든 시간 규모에서 weights다** — per-token fast memory([Titans]·[Atlas]), chunk 주기의 CMS level([NL]), sleep 주기의 grown expert([Sleep]), frequency 0의 persistent weights까지; Titans→Sleep은 $\{\infty,0\}$ 두 점뿐이던 frequency 스펙트럼을 연속체로 넓혀 온 하나의 긴 운동이다. (2) **모든 블록은 같은 객체다** — (architecture, attentional bias, retention, inner optimizer, frequency)로 정의되는 associative memory이고, attention 자체가 그 안의 non-parametric·무한 capacity·frequency-$\infty$ 꼭짓점이다(→ 13장, 14장, 16장). (3) **inner optimizer는 architecture와 대등한 설계 표면이다** — GD(TTT, → 8장)→momentum([Titans])→objective 동물원([Miras])→window+Muon([Atlas])→자기 생성 target([NL]). (4) **훈련은 어디서나 chunk-anchored이고, 필요한 곳에서 계층적이다** — stale-snapshot 근사가 여섯 편 전부의 병렬화 기반이고(→ 9장), 그 경제학과 reset은 [TNT]가 정리했다. (5) **lifecycle은 wake/sleep이다** — 모델은 결코 "훈련이 끝나지" 않으며, 서빙 fleet은 설계상 주기적 fine-tuning job을 돌린다. 제품으로 읽으면: **세션 상태가 mutable weights인 continually-learning LLM에, sleep 서비스가 배포에 붙어 있는 시스템**이다. 이 완성형이 "보이는" 이유는 여섯 논문의 open-questions 절들이 전부 같은 다섯 공백을 가리키기 때문이다 — 남은 일이 텍스트에 의해 과잉 결정되어 있다.
 >
-> 단, 두 가지 유보 없이 이 결산은 정직하지 않다. 첫째, 완성은 **개념적** 완성이다. from-scratch 실증은 1.3B/100B tokens에서 멈춰 있고, in-context retrieval의 격차는 측정된 채 닫히지 않았다 — attention 53.6 vs 43.7 [Atlas], FDA 67.3 vs 41.9 [NL] (→ 14장, 16장). capacity 이론이 그 이유까지 말해 주므로($\phi^*$의 무한 capacity), 완성형은 attention과의 hybrid일 가능성이 열려 있고, 라인 자신의 MAC/MAG 결과들이 이를 조용히 인정한다. 둘째, "여섯 편이 한 이야기"라는 독법은 부분적으로 소급적이다. 이음새가 실재한다: [TNT]는 이야기가 본질이라 말하는 momentum·gating을 "명료성을 위해" 제거한 훈련 논문이고(→ 15장), [Sleep]은 end-to-end meta-learning을 떠났다(§17.4). 이 책은 그 이음새를 지우지 않고 보여 주는 쪽을 택한다.
+> 단, 두 가지 유보 없이 이 결산은 정직하지 않다. 첫째, 완성은 **개념적** 완성이다. from-scratch 실증은 1.3B/100B tokens에서 멈춰 있고, in-context retrieval의 격차는 측정된 채 닫히지 않았다 — attention 53.55 vs 43.70 [Atlas], FDA 67.3 vs 41.9 [NL] (→ 14장, 16장). capacity 이론이 그 이유까지 말해 주므로($\phi^*$의 무한 capacity), 완성형은 attention과의 hybrid일 가능성이 열려 있고, 라인 자신의 MAC/MAG 결과들이 이를 조용히 인정한다. 둘째, "여섯 편이 한 이야기"라는 독법은 부분적으로 소급적이다. 이음새가 실재한다: [TNT]는 이야기가 본질이라 말하는 momentum·gating을 "명료성을 위해" 제거한 훈련 논문이고(→ 15장), [Sleep]은 end-to-end meta-learning을 떠났다(§17.4). 이 책은 그 이음새를 지우지 않고 보여 주는 쪽을 택한다.
 
 **남은 open problems.** 여섯 편의 자체 목록을 중복 제거하면 다섯으로 수렴한다. (1) **스케일**: 모든 품질 주장이 1.3B/100B에서 멈춘다 — momentum·deep memory·self-modification의 우위가 7B+·SFT/RLHF·production 데이터에서 살아남는지가 최대 미지수다. (2) **retrieval 격차**: parametric하게 닫을 수 있는가, 아니면 완성형은 필연적으로 hybrid인가. (3) **serving 경제학과 kernel**: decode throughput/latency 수치 전무, fused deep-memory kernel 부재, per-request mutable weights가 깨뜨리는 shared-weight batching(→ 10장) — grouped-GEMM decode, state snapshot/rollback, optimizer-trajectory state의 수치 drift, multi-tenant 격리, weight로 흡수된 context의 privacy까지. (4) **학습되는 스케줄**: chunk 크기, window $c$, CMS frequency, level 수, sleep 시점 전부가 hand-set이다 — "무엇을 언제 갱신할지"를 배우는 기제가 없다. (5) **task-free이며 안전한 self-modification**: $\tau$ 없는 dreaming, reward model 의존의 해소, 재귀적 weight 자기 편집의 안전성 분석, 그리고 미뤄진 이론 전부 — linear 특수 사례 밖의 regret·capacity·expressivity, chunkwise staleness의 오차 한계는 여섯 편 어디에도 없다(→ 9장).
 

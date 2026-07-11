@@ -1,0 +1,58 @@
+[
+  {
+    "severity": "major",
+    "location": "§13.3.2, 식 (13-2)",
+    "issue": "가변 학습률 η_t를 허용하면서 (M1)의 OGD update와 FTRL 목적식이 동치라고 서술했다. R_t(W)=1/2‖W‖²이면 FTRL 해는 -η_t∑_{i≤t}g_i지만 가변-step OGD 해는 -∑_{i≤t}η_i g_i이므로 일반적으로 다르다.",
+    "evidence": "papers/2504.13173.txt: Eq. 7 부근은 정확한 동치식에 고정 η와 (1/2η)‖W‖²를 사용하고, 그 뒤 η_t·R_t를 쓰는 식은 별도의 일반화된 FTRL viewpoint로 제시한다.",
+    "suggested_fix": "동치 주장을 η_t=η인 경우로 제한하거나, 가변 학습률을 보존하려면 선형화 loss에 η_i 가중치를 포함한 올바른 FTRL 식을 제시한다."
+  },
+  {
+    "severity": "minor",
+    "location": "§13.2 ‘프레임 — Miras framework’",
+    "issue": "기존 발전이 사실상 memory architecture 축과 retention 축만 움직였다고 했지만, 바로 뒤의 재유도에 따르면 Hebbian→delta 변화는 attentional-bias 축의 dot-product→ℓ2 교체이고 Longhorn·DeltaProduct·Titans 등은 algorithm 축도 바꿨다.",
+    "evidence": "papers/2504.13173.txt: Table 1 및 §4 부근은 dot-product/L1/L2의 서로 다른 attentional bias와 GD·implicit GD·multi-step GD·GD+momentum·nonparametric algorithm을 열거한다.",
+    "suggested_fix": "기존 선택이 ‘두 bias와 주로 ℓ2류 retention에 집중되었고 algorithm 탐색도 제한적이었다’고 완화한다."
+  },
+  {
+    "severity": "major",
+    "location": "§13.3.5, 식 (13-7) 뒤 p=1 설명",
+    "issue": "p=1이면 memory가 ±1 두 값만 쓴다는 결론은 update 식에서 성립하지 않는다. 부호값인 것은 residual gradient뿐이며, 여기에 임의의 k_t와 η_t를 곱해 W에 누적하므로 W의 entry와 memory output은 일반 실수다.",
+    "evidence": "papers/2504.13173.txt: Eq. 12 부근의 update는 W_t=W_{t-1}-η_t Sign(…)k_t^T이다. 예를 들어 스칼라 W_0=0, η=0.1, k=2이면 첫 update의 크기는 0.2로 ±1이 아니다.",
+    "suggested_fix": "‘residual의 크기를 버리고 부호만 write 신호로 사용한다’고 설명하고, memory 자체가 이진값이라는 주장은 삭제한다."
+  },
+  {
+    "severity": "major",
+    "location": "§13.3.6 ‘변형 4’ 및 §13.3.7 식 (13-10)",
+    "issue": "일반 ℓ_q stability 유도를 1<q≤2에서만 제시한 뒤 Moneta가 같은 retention을 q=4로 사용한다고 단정한다. q=4는 앞서 인용한 FTRL 유도의 적용 범위를 벗어나므로 해당 이론에서 식 (13-10)이 따라온다고 할 수 없다.",
+    "evidence": "papers/2504.13173.txt: §5.2 Variant 4는 명시적으로 ‘for 1<q≤2’라고 제한하지만, §5.3 Eq. 24 직후에는 ‘We use (p,q)=(3,4)’라고 적는다.",
+    "suggested_fix": "q=4 Moneta가 앞선 보장 범위 밖의 경험적 확장임을 명시하고, q=4 update의 별도 유도나 보장 부재를 설명한다."
+  },
+  {
+    "severity": "minor",
+    "location": "§13.4 ‘gradient는 어떻게 inner loop를 관통하는가’",
+    "issue": "원래의 |x| 때문에 outer gradient가 ‘죽거나 폭주한다’는 설명은 틀리다. |x|의 도함수는 0을 제외하면 ±1로 유계여서 gradient 소실·폭주를 유발하지 않는다. Sign은 거의 모든 곳에서 도함수가 0이라는 별도 문제가 있다.",
+    "evidence": "papers/2504.13173.txt: Remark 5는 Sign과 절댓값이 비미분 가능해 training instability를 일으킬 수 있다고만 하며, tanh와 sqrt(x²+ε)를 smooth approximation으로 사용한다.",
+    "suggested_fix": "Sign의 zero-gradient 문제와 |x|의 원점 비미분 가능성을 구분하고, smoothing 목적을 안정적인 미분 가능성 확보로 한정한다."
+  },
+  {
+    "severity": "minor",
+    "location": "§13.3.4 ‘delta 너머’",
+    "issue": "KV 쌍을 압축하지 않는다는 사실에서 attention이 ‘완벽한 recall’을 갖는다고 결론냈다. KV를 보존해도 softmax/Nadaraya–Watson read는 key 충돌과 가중 평균 때문에 정확한 value를 반환하지 않을 수 있다.",
+    "evidence": "papers/2504.13173.txt: §4 Attention 부근은 softmax attention을 ℓ2 loss의 non-parametric Nadaraya–Watson estimator라고만 규정하며 perfect recall을 주장하지 않는다.",
+    "suggested_fix": "‘과거 KV를 무손실로 보존하지만 retrieval 정확도는 kernel weighting에 달린다’로 수정한다."
+  },
+  {
+    "severity": "major",
+    "location": "§13.7 ‘decode: RMW 트래픽이 지배한다’",
+    "issue": "2-layer expansion-4 MLP의 연산량에서 MAC과 FLOP를 혼동했다. 두 선형층의 forward는 합계 8d² MAC인데 16d² MAC으로 계산했고, backward와 query read도 같은 방식으로 약 2배 부풀렸다. 반면 최종 ‘GDN의 3–4×’ 비교는 이 부푼 수치와도 일관되지 않는다.",
+    "evidence": "papers/2504.13173.txt: §5.3은 M(x)=x+LN(W1σ(W2x)), expansion factor 4를 명시한다. 따라서 W2z와 W1h는 각각 4d² MAC, forward 합계 8d² MAC이다.",
+    "suggested_fix": "전체를 MAC 기준 약 28–32d² 또는 FLOP 기준 약 56–64d²로 일관되게 표기하고, 동일 범위의 GDN write+read와 다시 비교해 배율을 재계산한다."
+  },
+  {
+    "severity": "minor",
+    "location": "§13.7 ‘prefill/훈련: chunkwise = GEMM 골격’ Memora 항목",
+    "issue": "Memora softmax가 항상 8d² state 전체를 한 번에 정규화한다고 단정했다. 앞 절과 원전은 MLP parameter에 rule을 적용할 때 slice별 정규화가 가능하다고 명시하므로 reduction 범위와 비용은 구현 선택에 따라 달라진다.",
+    "evidence": "papers/2504.13173.txt: Eq. 21 직후 ‘when W is a neural network (or when the parameter W is normalized per slice)’라고 명시한다. 장의 §13.3.7도 ‘MLP weights일 때는 같은 rule이 slice별로 적용된다’고 서술한다.",
+    "suggested_fix": "softmax/log-sum-exp가 지정된 parameter slice마다 수행된다고 쓰고, 단일 8d² 전역 reduction이라는 비용 주장은 삭제하거나 구현 가정으로 명시한다."
+  }
+]

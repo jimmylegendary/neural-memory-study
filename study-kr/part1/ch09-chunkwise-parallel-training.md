@@ -35,7 +35,7 @@
 **분해.** sequence를 chunk $n = 0, 1, \ldots$ (token $nC{+}1 \ldots (n{+}1)C$)로 자른다. 임의의 fast-weight update를 다음 두 부분으로 분해한다:
 
 1. **state에 linear한 부분** — retention gate의 곱($\alpha_t W_{t-1}$), momentum의 EMA($\beta_t S_{t-1}$), Hebbian/delta write의 state 의존항. 이들은 $S_t = a_tS_{t-1} + b_t$ 꼴의 **linear recurrence**이고, linear recurrence는 정확하게 병렬화된다: 계수의 누적곱과 입력의 가중합으로 닫힌 형태를 쓰거나(→ 아래), Blelloch(1990)의 associative scan으로 log-깊이에 계산한다. 독자가 이미 아는 prefix-sum kernel이 바로 이것이다(Rosetta: scan/prefix-sum kernel ↔ momentum의 associative scan — **동일**).
-2. **state에 nonlinear한 부분** — deep memory의 gradient $\nabla_W\ell(W_{t-1};k_t,v_t)$처럼 state가 MLP의 forward/backward를 **통과하는** 항. 이 recurrence에는 닫힌 형태도 scan도 없다 — 비선형 recurrence의 sequence 방향 병렬화는 미해결 문제로 남아 있고, parallel scan은 적용되지 않는다 [TNT §1]. 유일하게 알려진 수는 **얼리는 것**이다: chunk 안의 모든 gradient를 chunk 시작 상태 $W_{\xi(t,C)}$에서 평가한다 ($\xi(t,C)=C\lfloor(t-1)/C\rfloor$, → §1.2). 이것이 이 책이 **stale-snapshot 근사**(chunk-start anchor)라고 부르는 조작이며, 표준형 (M4)가 그 일반형이다:
+2. **state에 nonlinear한 부분** — deep memory의 gradient $\nabla_W\ell(W_{t-1};k_t,v_t)$처럼 state가 MLP의 forward/backward를 **통과하는** 항. 이 recurrence에는 (대각·비대각 linear에서 쓴) 닫힌 형태도 associative scan도 곧바로 적용되지 않는다 — 일반적인 비선형 recurrence의 sequence 방향 exact 병렬화는 largely-unsolved 연구 문제이고(근사·반복 기반 병렬화 시도는 있다: Gonzalez et al. 2024, Lim et al. 2024) [TNT §1], 이 라인이 실제로 쓰는 현실적 수는 **얼리는 것**이다: chunk 안의 모든 gradient를 chunk 시작 상태 $W_{\xi(t,C)}$에서 평가한다 ($\xi(t,C)=C\lfloor(t-1)/C\rfloor$, → §1.2). 이것이 이 책이 **stale-snapshot 근사**(chunk-start anchor)라고 부르는 조작이며, 표준형 (M4)가 그 일반형이다:
 
 $$
 W_t \;=\; W_{\xi(t,C)} \;-\; \sum_{\tau=\xi(t,C)+1}^{t} \eta_\tau\,\nabla_W\,\ell\big(W_{\xi(t,C)};\,k_\tau,v_\tau\big)
@@ -44,7 +44,7 @@ $$
 
 <!-- FIG: ch09/fig-01-chunkwise-dataflow -->
 
-핵심 문장을 반복한다: **chunk 안의 모든 gradient는 chunk 시작 상태 $W_{\xi(t,C)}$에서 평가된다. 따라서 $C$는 스케줄이 아니라 계산되는 함수 자체를 바꾸는 semantic hyperparameter다** — FlashAttention tiling(bit-exact)과의 결정적 차이. anchor가 공유되므로 chunk 내부의 $C$개 gradient는 상호 독립이고, "weight를 공유하는 batch $C$짜리 forward+backward" 한 번으로 계산된다. 2장에서 굵게 강조한 문장이 여기서 kernel 수준의 실체를 얻는다: **이 라인에서 훈련의 batch 축 역할을 하는 것은 sequence 축이다** — chunk가 곧 inner loop의 mini-batch다.
+핵심 문장을 반복한다: **chunk 안의 모든 gradient는 chunk 시작 상태 $W_{\xi(t,C)}$에서 평가된다. 따라서 $C$는 스케줄이 아니라 계산되는 함수 자체를 바꾸는 semantic hyperparameter다** — FlashAttention tiling(bit-exact)과의 결정적 차이. anchor가 공유되므로 chunk 내부의 $C$개 gradient는 상호 독립이고, anchor $W_\xi$에 대해 batch $C$로 병렬 계산된다. 단 필요한 것은 합산 gradient가 아니라 **token별**(per-example) gradient $g_t$이므로(momentum scan(§9.6)이 개별 $g_t$를 요구한다), 합만 반환하는 표준 batched backward가 아니라 dual-form tensorization이나 per-example(vmap/Jacobian) 미분으로 얻는다 [Sun et al. 2024 App. A.2–A.3]. 2장에서 굵게 강조한 문장이 여기서 kernel 수준의 실체를 얻는다: **이 라인에서 훈련의 batch 축 역할을 하는 것은 sequence 축이다** — chunk가 곧 inner loop의 mini-batch다.
 
 **intra-chunk 계산의 정체.** 얼리고 나면 chunk 내부의 linear recurrence는 전부 $C\times C$의 **삼각 구조**로 물화(materialize)된다. 두 가지 꼴이 있다. (i) 계수가 미리 알려진 explicit recurrence(decay 누적곱, momentum 가중합)는 삼각 가중 행렬과의 GEMM 한 번이 된다 — Atlas가 momentum을 $\bar\beta$-가중 행렬 곱으로 물화하는 것이 이 꼴이다 [Atlas Eq. 39]. (ii) 입력이 과거 출력에 의존하는 implicit recurrence(delta rule의 pseudo-value, → 9.4절)는 단위 삼각 행렬의 **triangular solve**가 된다. 두 경우 모두 독자가 FlashAttention tile 안에서 매일 보는 $C\times C$ score 행렬과 같은 shape의 구조화된 연산이다. "chunk 내부는 attention처럼, chunk 경계는 RNN처럼"(→ 8장)이라는 슬로건의 일반형이 이것이다.
 
@@ -82,7 +82,7 @@ $$
 W_t = W_{t-1}\big(I - \eta_t k_tk_t^\top\big) + \eta_t v_tk_t^\top
 $$
 
-로, transition이 generalized Householder $I-\eta_tk_tk_t^\top$ — **비대각 행렬**이다. state에 여전히 linear하므로 원리상 exact 병렬화가 가능하지만, 9.3절의 folding은 실패한다: 대각 계수의 누적곱은 elementwise로 접히지만, Householder의 누적곱 $\prod_\tau(I-\eta_\tau k_\tau k_\tau^\top)$은 일반 $d_k\times d_k$ 행렬이고, 이를 순진하게 물화하면 token당 $O(d^3)$ 행렬곱 — 병렬화로 얻은 것을 도로 태운다. Yang et al. 2024 (arXiv:2406.06484)가 DeltaNet을 실용화한 열쇠가 수치선형대수의 고전인 **WY representation**이다: Householder 곱을 물화하는 대신 **compact한 합의 형태로 유지**한다.
+로, transition이 generalized Householder $I-\eta_tk_tk_t^\top$ — **비대각 행렬**이다. state에 여전히 linear하므로 원리상 exact 병렬화가 가능하지만, 9.3절의 folding은 실패한다: 대각 계수의 누적곱은 elementwise로 접히지만, Householder의 누적곱 $\prod_\tau(I-\eta_\tau k_\tau k_\tau^\top)$은 일반 $d_k\times d_k$ 행렬이라 elementwise로 접히지 않는다. rank-1 구조를 쓰면 factor 하나의 적용·누적은 $A(I-\eta kk^\top)=A-\eta(Ak)k^\top$로 token당 $O(d^2)$지만(순진하게 dense 행렬곱으로 물화하면 $O(d^3)$까지 낭비된다), 그렇게 하면 $d\times d$ 상태를 token마다 **순차**로 갱신·물화해야 해 sequence 병렬성과 IO 효율이 무너진다 — 병렬화로 얻은 것을 도로 태우지 않으려면 이 순차 사슬을 chunk GEMM으로 바꿔야 한다. Yang et al. 2024 (arXiv:2406.06484)가 DeltaNet을 실용화한 열쇠가 수치선형대수의 고전인 **WY representation**이다: Householder 곱을 물화하는 대신 **compact한 합의 형태로 유지**한다.
 
 유도는 세 줄이다. 첫째, delta update를 다시 쓴다. **pseudo-value** $\tilde v_t := \eta_t\,(v_t - W_{t-1}k_t)$ (장-국소 기호: 교정된 value)를 정의하면
 
@@ -115,7 +115,7 @@ $$
 
 여기서 이 장의 관점이 주는 새 정보는 다음의 대조다. **TTT-Linear는 ungated DeltaNet과 같은 update rule이다**(→ 8장 §8.3). 그렇다면 9.4절의 WY가 그대로 적용되어 exact 병렬화가 가능하다. 그런데 Sun et al. 2024는 그 길 대신 anchored mini-batch GD를 택했다 [Sun et al. 2024 §2.4–2.5]. 왜인가. 두 이유가 이 라인 전체의 설계 논리를 드러낸다.
 
-첫째, **deep memory 때문이다.** $\mathcal{M}$이 2-layer MLP가 되는 순간 $\nabla_W\ell$은 $W$에 nonlinear해지고(backward가 MLP를 통과한다), (9-4)류의 implicit recurrence는 스칼라 계수로 닫히지 않는다. WY의 전제 조건이 사라진 자리에서, 알려진 유일한 병렬화 수단이 anchor다. 즉 stale-snapshot 근사는 취향이 아니라 **비선형 recurrence의 병렬화라는 미해결 문제에 대한 현존 유일 응답**이다 [TNT §1]. MLP memory의 intra-chunk 계산도 같은 원리로 tensorize된다는 것을 Sun et al. 2024가 App. A에서 보였다 — 형태는 linear 경우보다 복잡하지만 골격(anchored gradient의 batched 계산 + intra-chunk correction)은 동일하다.
+첫째, **deep memory 때문이다.** $\mathcal{M}$이 2-layer MLP가 되는 순간 $\nabla_W\ell$은 $W$에 nonlinear해지고(backward가 MLP를 통과한다), (9-4)류의 implicit recurrence는 스칼라 계수로 닫히지 않는다. WY의 전제 조건이 사라진 자리에서 이 라인이 실제로 채택한 병렬화 수단이 anchor다. 즉 stale-snapshot 근사는 취향이 아니라 **비선형 recurrence의 exact 병렬화라는 largely-unsolved 문제에 대한 이 라인의 현실적 응답**이다(일반적 exact 재조직은 알려져 있지 않다) [TNT §1]. MLP memory의 intra-chunk 계산도 같은 원리로 tensorize된다는 것을 Sun et al. 2024가 App. A에서 보였다 — 형태는 linear 경우보다 복잡하지만 골격(anchored gradient의 batched 계산 + intra-chunk correction)은 동일하다.
 
 둘째, 더 미묘하고 더 중요하다: **근사가 kernel에서 model 정의로 이사했다.** TTT layer는 "inner mini-batch 크기 $C$의 mini-batch GD로 update하는 layer"로 **정의**된다. dual form은 그 정의를 exact하게 계산하는 알고리즘이다. 비교하라 — FlashAttention은 softmax attention이라는 고정된 함수의 exact한 재배열이고, DeltaNet의 WY는 순차 delta rule이라는 고정된 함수의 exact한 재배열이다. 반면 TTT에서 $C$를 바꾸는 것은 **다른 layer를 정의하는 것**이다: $C=1$이면 순차 delta rule(DeltaNet과 일치), $C=L$이면 1-step batch GD — 곧 linear attention의 additive write로 퇴화하고(8장 §8.8의 손계산: $C{=}1$은 4, $C{=}2$는 6), 그 사이의 모든 $C$는 서로 다른 함수다. 함수의 family가 $C$로 매개변수화된 것이다. 이것이 다음 명제의 정확한 의미다.
 
@@ -134,7 +134,7 @@ W_t \;=\; \bar\alpha_{\xi\to t}\,W_{\xi} \;-\; \sum_{\tau=\xi+1}^{t} \bar\alpha_
 \tag{9-6}
 $$
 
-(원문 Eq. 16의 $\beta_i = \prod_j(1-\alpha_j)$는 통일 표기의 $\bar\alpha_{0\to i}$에 해당한다 — Titans의 gate 기호는 이 책과 방향·배치가 다르므로 주의: 원문 $\theta_t$→통일 $\eta_t$, 원문 $\eta_t$→통일 $\beta_t$, 원문 $\alpha_t$→통일 $1-\alpha_t$. 전체 대응표는 12장 §1.7.1.) linear memory라면 gradient가 $(W_\xi k_\tau - v_\tau)k_\tau^\top$이므로 (9-6)의 합 전체가 $\big(W_\xi K_n^\top - V_n^\top\big)\,\mathrm{Diag}(\bar\alpha\eta)\,K_n$ — rank-$C$ GEMM 하나로 물화된다 [Titans Eq. 17]. deep memory라면 같은 합이 "anchor $W_\xi$에 대한 batch $C$짜리 forward+backward 한 번"으로 계산된다. 어느 쪽이든 2장의 $dW = \delta\,x^\top$ shape 그대로다.
+(원문 Eq. 16의 $\beta_i = \prod_j(1-\alpha_j)$는 통일 표기의 $\bar\alpha_{0\to i}$에 해당한다 — Titans의 gate 기호는 이 책과 방향·배치가 다르므로 주의: 원문 $\theta_t$→통일 $\eta_t$, 원문 $\eta_t$→통일 $\beta_t$, 원문 $\alpha_t$→통일 $1-\alpha_t$. 전체 대응표는 12장 §1.7.1.) linear memory라면 gradient가 $(W_\xi k_\tau - v_\tau)k_\tau^\top$이므로 (9-6)의 합 전체가 $\big(W_\xi K_n^\top - V_n^\top\big)\,\mathrm{Diag}(\bar\alpha\eta)\,K_n$ — rank-$C$ GEMM 하나로 물화된다 [Titans Eq. 17]. deep memory라면 같은 합이 "anchor $W_\xi$에 대한 batch $C$짜리 per-example 미분"으로 계산된다(합산 backward가 아니라 token별 $g_t$를 내는 dual-form tensorization; §9.2). 어느 쪽이든 2장의 $dW = \delta\,x^\top$ shape 그대로다.
 
 **2단계 — momentum scan** [Titans Eq. 18]. momentum을 켜면 $S_t = \beta_t S_{t-1} - \eta_t g_t$, $g_t := \nabla_W\ell(W_\xi;k_t,v_t)$ (anchored gradient). 관건은 anchor 덕분에 **$g_t$ 전부를 미리 계산할 수 있다**는 것 — momentum recurrence가 memory 상태와 분리된, 입력이 알려진 순수 linear recurrence가 된다. 그러면 이것은 S5(arXiv:2208.04933)식 associative scan의 교과서 사례다: 쌍 $(\beta_t,\, -\eta_t g_t)$에 결합 법칙을 만족하는 연산 $(a,b)\bullet(a',b') := (a'a,\ a'b + b')$을 주면 prefix 곱의 둘째 성분이 곧 $S_t$다. 독자의 prefix-sum kernel이 그대로 돌아간다. Atlas는 같은 recurrence를 scan 대신 삼각 가중 행렬로 물화해 푼다 [Atlas Eq. 36–39] — 9.2절에서 말한 explicit recurrence의 두 등가 구현이다.
 
@@ -159,7 +159,7 @@ $$
 
 위 두 행과 아래 두 행을 가르는 판정 기준은 단 하나다: **update가 state에 linear한가.** linear면 삼각 구조로 exact하게 물화되고, nonlinear면 얼려야 하며, 얼린 결과는 함수의 정의에 들어간다.
 
-semantic이라는 말의 실증적 무게는 [TNT Fig. 2]가 보여 준다. $C=64$로 pretraining한 550M Titans를 서로 다른 inference chunk로 돌리면 validation perplexity가 $C{=}8$에서 36.45, $16$에서 34.15, $32$에서 24.23, **훈련값인 $64$에서 13.78로 최적**, 이후 $128$에서 15.5, $256$에서 17.88, $512$에서 22.4로 다시 나빠진다 [TNT Fig. 2]. 두 가지가 주목할 만하다. 첫째, "작은 chunk = 신선한 gradient = 항상 더 좋음"이라는 직관이 틀렸다 — 모델은 훈련된 $C$라는 **해상도에 과적응**하고, 더 신선한 update조차 훈련 분포 밖이면 해가 된다. 둘째, 이것은 serving의 이상적 동작점인 $C=1$ decode(per-token online write, → 1장 Rosetta)를 정면으로 막는다: 큰 $C$로 훈련된 모델을 $C=1$로 돌리면 무너진다. 이 관측과 그 처방(두 단계 훈련)의 본격 분석은 15장의 몫이며, 그 증거가 단일 설정(550M, gating/momentum 없는 단순화 Titans)의 그림 하나라는 정직성 caveat도 15장이 진다.
+semantic이라는 말의 실증적 무게는 [TNT Fig. 2]가 보여 준다. $C=64$로 pretraining한 550M Titans를 서로 다른 inference chunk로 돌리면 validation perplexity가 $C{=}8$에서 36.45, $16$에서 34.15, $32$에서 24.23, **훈련값인 $64$에서 13.78로 최적**, 이후 $128$에서 15.5, $256$에서 17.88, $512$에서 22.4로 다시 나빠진다 [TNT Fig. 2]. 두 가지가 주목할 만하다. 첫째, "작은 chunk = 신선한 gradient = 항상 더 좋음"이라는 직관이 틀렸다 — 모델은 훈련된 $C$라는 **해상도에 과적응**하고, 더 신선한 update조차 훈련 분포 밖이면 해가 된다. 둘째, 이것은 serving의 이상적 동작점인 $C=1$ decode(per-token online write, → 1장 Rosetta)를 정면으로 위협한다: 큰 $C$로 훈련된 모델은 이미 $C=8$에서 36.45로 크게 악화되므로 $C=1$ 직행은 심각한 위험이다(단 $C=1$ 자체는 Fig. 2에서 측정되지 않았다 — x축은 8–512다). 이 관측과 그 처방(두 단계 훈련)의 본격 분석은 15장의 몫이며, 그 증거가 단일 설정(550M, gating/momentum 없는 단순화 Titans)의 그림 하나라는 정직성 caveat도 15장이 진다.
 
 이 장이 짊어질 정직성 caveat는 따로 있다: **stale-snapshot 근사의 오차에 대한 형식적 bound는 여섯 논문 어디에도 없다.** anchored update가 순차 update에서 얼마나 벗어나는지($C$, gate 값, curvature의 함수로서)는 정리도 lemma도 없이 전적으로 실험(위의 Fig. 2가 사실상 전부)에 맡겨져 있다. staleness를 다루는 이론 어휘 자체는 3장의 online learning(지연된 feedback 하의 regret)이 제공할 후보지만, 이 라인의 누구도 그 연결을 수행하지 않았다. 독자가 이 라인을 production에 들일 때 감수해야 할 미정량 리스크의 목록 첫 줄에 이것을 적어 두라.
 
@@ -198,7 +198,7 @@ $$
 
 ## 9.10 Systems bridge: roofline 위의 $C$
 
-이 장 전체를 독자의 cost model로 접는다. 식 (9-1)의 chunk당 비용을 linear-memory chunkwise kernel(인스턴스 1–2, head당, $d_k=d_v=d$)에 대해 구체화하자. FLOPs(MAC당 2 FLOP): score $Q_nK_n^\top$에 $2C^2d$, masked score와 value/pseudo-value의 곱에 $2C^2d$, 상태 읽기 $Q_nW_\xi^\top$에 $2Cd^2$, 상태 갱신($U^\top K_n$ 또는 $K_n^\top V_n$류)에 $2Cd^2$ — 합계 $F(C) \approx 4C^2d + 4Cd^2$. bytes(bf16, 2 B/원소): $K,Q,V$ 읽기와 $Y$ 쓰기 $4Cd$ 원소, 상태 read-modify-write $2d^2$ 원소 — 합계 $B(C) \approx 8Cd + 4d^2$ bytes. 나누면 놀랄 만큼 깨끗한 식이 나온다:
+이 장 전체를 독자의 cost model로 접는다. 식 (9-1)의 chunk당 비용을 GLA/RetNet형 decay kernel(인스턴스 1, head당, $d_k=d_v=d$)에 대해 구체화하자(DeltaNet은 여기에 Gram $K_nK_n^\top$·triangular solve·$K_nW_\xi^\top$ 항이 더 붙는다 — 차수는 같은 $C^2d+Cd^2$지만 상수가 커진다). FLOPs(MAC당 2 FLOP): score $Q_nK_n^\top$에 $2C^2d$, masked score와 value/pseudo-value의 곱에 $2C^2d$, 상태 읽기 $Q_nW_\xi^\top$에 $2Cd^2$, 상태 갱신($U^\top K_n$ 또는 $K_n^\top V_n$류)에 $2Cd^2$ — 합계 $F(C) \approx 4C^2d + 4Cd^2$. bytes(bf16, 2 B/원소): $K,Q,V$ 읽기와 $Y$ 쓰기 $4Cd$ 원소, 상태 read-modify-write $2d^2$ 원소 — 합계 $B(C) \approx 8Cd + 4d^2$ bytes. 나누면 놀랄 만큼 깨끗한 식이 나온다:
 
 $$
 \mathrm{AI}(C) \;=\; \frac{F(C)}{B(C)} \;=\; \frac{4Cd\,(C+d)}{4d\,(2C+d)} \;=\; \frac{C\,(C+d)}{2C+d}
@@ -208,7 +208,7 @@ $$
 
 **작은 chunk regime에서 arithmetic intensity는 곧 chunk 크기다.** roofline의 x축 좌표를 $C$라는 단일 knob이 직접 쥐고 있는 셈이다. 숫자를 넣어 보자($d=1024$).
 
-표 9-3 — $\mathrm{AI}(C)$와 GEMM shape ($d=1024$, bf16, head당)
+표 9-3 — $\mathrm{AI}(C)$와 GEMM shape (GLA/RetNet형 decay kernel 기준; $d=1024$, bf16, head당)
 
 | $C$ | 주 GEMM shape ($C\times d \cdot d\times d$ 등) | $\mathrm{AI}(C)$ [FLOP/B] | ridge 대비 |
 |---|---|---|---|
@@ -226,9 +226,9 @@ deep memory(인스턴스 3–4)는 여기에 두 겹을 얹는다. batched fwd/b
 
 - chunkwise-parallel training의 일반 scheme은 하나다: update를 state-linear 성분과 state-nonlinear 성분으로 분해해, linear 성분(retention 누적곱, momentum EMA)은 folding·scan·삼각 GEMM으로 **정확히**, nonlinear 성분(deep memory의 gradient)은 chunk-start anchor로 **얼려서** 계산한다. chunk 내부는 $C\times C$ 삼각 구조의 GEMM, chunk 사이는 handoff다.
 - 판정 기준은 transition의 구조다: 스칼라·대각 linear(GLA/RetNet/Mamba-2)는 decay folding으로, 비대각 linear(DeltaNet)는 WY representation의 pseudo-value 삼각계 (9-5)로 — 둘 다 **exact**이고 $C$는 순수 성능 knob이다.
-- nonlinear transition에는 exact 재조직이 없다; stale-snapshot 근사 (M4)가 현존 유일 응답이고, 그 결과 근사가 model 정의로 들어가 **chunk 크기 $C$는 semantic hyperparameter가 된다** — 같은 $\Theta$라도 $C$가 다르면 다른 함수다(손계산: 순차 4 vs anchored 6). FlashAttention tiling(bit-exact)과 범주가 다르다.
+- nonlinear transition에는 알려진 효율적 exact 재조직이 없다; stale-snapshot 근사 (M4)가 이 라인의 현실적 응답이고, 그 결과 근사가 model 정의로 들어가 **chunk 크기 $C$는 semantic hyperparameter가 된다** — 같은 $\Theta$라도 $C$가 다르면 다른 함수다(손계산: 순차 4 vs anchored 6). FlashAttention tiling(bit-exact)과 범주가 다르다.
 - Titans의 병렬화는 세 수법의 조립이다: anchored gradient의 batched fwd/bwd [Titans Eq. 16–17] + momentum의 associative scan [Titans Eq. 18] + retention folding; Atlas는 같은 골격에 window masking과 $\mathrm{NS}_\kappa$를 얹는다 [Atlas §3.4, Eq. 36–41].
-- semantic의 실증: $C{=}64$로 훈련된 550M Titans는 inference chunk 64에서 ppl 13.78로 최적이고 8에서 36.45, 512에서 22.4로 무너진다 [TNT Fig. 2] — 모델은 훈련 해상도에 과적응하며, $C{=}1$ decode라는 이상적 serving 모드를 막는다.
+- semantic의 실증: $C{=}64$로 훈련된 550M Titans는 inference chunk 64에서 ppl 13.78로 최적이고 8에서 36.45, 512에서 22.4로 무너진다 [TNT Fig. 2] — 모델은 훈련 해상도에 과적응하며, $C{=}1$ decode라는 이상적 serving 모드를 위협한다($C{=}8$에서 이미 36.45; $C{=}1$은 Fig. 2에서 미측정).
 - stale-snapshot 근사의 오차에 대한 형식적 bound는 여섯 논문 어디에도 없다 — 이 라인의 최대 미정량 리스크다.
 - arithmetic intensity는 $\mathrm{AI}(C) = C(C+d)/(2C+d) \approx C$ (작은 $C$): 품질 최적 $C$(8–64)는 ridge의 3–20%, MFU 최적 $C$는 300+ — 이 이율배반이 TNT의 존재 이유이고, TNT는 계층화(global $C_{\mathrm{g}}$) + 주기적 reset(context parallelism) + two-stage 훈련으로 두 knob을 분리한다.
 

@@ -28,11 +28,13 @@
 
 [Atlas §3.1]은 이 라인 최초로 **memory capacity**를 형식적으로 정의한다: memory가 **정확히**(inner loss 0으로) 매핑할 수 있는, 선형독립 key를 가진 $(k_i,v_i)$ 쌍의 최대 개수 $m$. 5장의 고전 capacity(Hopfield의 확률적 저장 한계)와 달리, 이것은 정확 보간(exact interpolation) 기준의 결정론적 정의다.
 
-**Proposition 1** [Atlas Prop. 1]: matrix memory $W\in\mathbb{R}^{d_v\times d_k}$가 $\ell(W;k_t,v_t)=\|Wk_t-v_t\|_2^2$를 gradient descent로 최적화하면, 저장 가능한 쌍은 최대 $O(d_k)$개다. 증명의 뼈대는 순수한 rank 논증이다 [Atlas App. C]: 정확 저장은 $WK=V$ ($K=[k_1\cdots k_m]$)를 요구하고, vectorize하면 $(K^\top\otimes I_{d_v})\,\mathrm{vec}(W)=\mathrm{vec}(V)$ — 미지수 $d_kd_v$개에 방정식 $md_v$개 — 이므로 $m\le d_k$. 이 한계는 tight하다: $m\le d_k$이고 $K$가 full column rank이면 Moore–Penrose pseudoinverse로 정확 보간해를 지을 수 있고, full-batch GD는 step size $0<\eta<2/\lambda_{\max}(KK^\top)$에서 minimum-norm 보간해로 수렴한다(GD의 implicit bias). 같은 rank 제약이 multi-head attention의 "low-rank bottleneck"이기도 하다는 지적이 붙는다.
+**Proposition 1** [Atlas Prop. 1]: matrix memory $W\in\mathbb{R}^{d_v\times d_k}$가 $\ell(W;k_t,v_t)=\|Wk_t-v_t\|_2^2$를 gradient descent로 최적화하면, 저장 가능한 쌍은 최대 $O(d_k)$개다. 증명의 뼈대는 순수한 rank 논증이다 [Atlas App. C]: 정확 저장은 $WK=V$ ($K=[k_1\cdots k_m]$)를 요구하고, vectorize하면 $(K^\top\otimes I_{d_v})\,\mathrm{vec}(W)=\mathrm{vec}(V)$ — 미지수 $d_kd_v$개에 방정식 $md_v$개 — 이므로 $m\le d_k$. 이 한계는 tight하다: $m\le d_k$이고 $K$가 full column rank이면 Moore–Penrose pseudoinverse로 정확 보간해를 지을 수 있고, full-batch GD는 (loss $\|Wk-v\|_2^2$의 계수 2를 반영한) step size $0<\eta<1/\lambda_{\max}(KK^\top)$에서, 그리고 $W_0=0$ 초기화 아래에서 minimum-norm 보간해로 수렴한다(GD의 implicit bias; $\eta<2/\lambda_{\max}$는 $\tfrac12$-loss 관행의 값이다). 같은 rank 제약이 multi-head attention의 "low-rank bottleneck"이기도 하다는 지적이 붙는다.
 
-이 명제의 함의를 독자의 언어로 옮기면: $d_k\times d_v$개의 파라미터를 가진 memory가 $d_k$개의 연상밖에 저장하지 못한다 — capacity가 파라미터 수에 대해 **sub-linear**다. state 크기를 늘리는 것(파라미터를 더 쓰는 것)과 capacity를 늘리는 것은 같은 일이 아니다.
+이 명제의 함의를 독자의 언어로 옮기면: $d_k\times d_v$개의 파라미터를 가진 memory가 $d_k$개의 연상밖에 저장하지 못한다 — $d_k,d_v$가 함께 커진다고 가정할 때 capacity는 파라미터 수 $P=d_kd_v$에 대해 **sub-linear**다(예: $d_v=\Theta(d_k)$이면 $O(\sqrt{P})$). $d_v$를 고정하면 $O(d_k)=O(P/d_v)$로 $P$에 선형임에 주의. state 크기를 늘리는 것(파라미터를 더 쓰는 것)과 capacity를 늘리는 것은 같은 일이 아니다.
 
-**Theorem 1** [Atlas Thm. 1]: $L_{\mathcal{M}}\ge 2$층 MLP memory(입력 차원 $d_k$, hidden 차원 $d_h^{(j)}$)는 최소 $O(d_kd_v)$, 최대 $O\big(d_kd_v\sum_{i=1}^{L_{\mathcal{M}}}\min_{j\ge i}d_h^{(j)}\,d_h^{(i+1)}\big)$쌍을 저장한다. 증명은 ReLU MLP의 piecewise-affine 구조를 쓴다: 고정된 activation pattern 위에서 MLP는 하나의 affine 사상 $A(\cdot)+B$이고, $m\le\mathrm{rank}(A)$는 합성 경로의 최소 폭들로 위에서 눌린다 [Atlas App. C]. 결론은 두 방향이다. depth는 표현력만이 아니라 **capacity 자체**를 올린다(Titans의 deep memory ablation이 경험적으로 보였던 것의 이론적 대응) — 그러나 상한은 여전히 $(d_k,d_v)$에 대해 subquadratic이다. deep memory만으로는 초선형 capacity에 도달할 수 없다.
+**Theorem 1** [Atlas Thm. 1]: $L_{\mathcal{M}}\ge 2$층 MLP memory(입력 차원 $d_k$, hidden 차원 $d_h^{(j)}$)는 최소 $O(d_kd_v)$, 최대 $O\big(d_kd_v\sum_{i=1}^{L_{\mathcal{M}}}\min_{j\ge i}d_h^{(j)}\,d_h^{(i+1)}\big)$쌍을 저장한다. 증명은 ReLU MLP의 piecewise-affine 구조를 쓴다: 고정된 activation pattern 위에서 MLP는 하나의 affine 사상 $A(\cdot)+B$이고, $m\le\mathrm{rank}(A)$는 합성 경로의 최소 폭들로 위에서 눌린다 [Atlas App. C]. 논문은 두 방향으로 결론짓는다: depth는 표현력만이 아니라 **capacity 자체**를 올리며(Titans의 deep memory ablation이 경험적으로 보였던 것의 이론적 대응), 그러나 상한은 여전히 $(d_k,d_v)$에 대해 subquadratic이라 deep memory만으로는 초선형 capacity에 도달할 수 없다고.
+
+> **[평가]** Theorem 1을 검증된 정리로 읽어서는 안 된다. Prop 1의 capacity 정의는 "$\mathbb{R}^{d_k}$의 선형독립 key"를 요구하므로 입력 key에 대해서는 어떤 memory든 $m\le d_k$인데, Theorem 1의 하한 $O(d_kd_v)$는 $d_v>1$이면 이를 초과한다 — 즉 Theorem 1은 입력 key가 아니라 MLP가 내부에서 lift한 표현의 선형독립성을 세는, 원문이 명시하지 않은 다른 capacity 개념을 암묵적으로 쓴다. 또한 App. C 증명의 $m\le\mathrm{rank}(A)$는 value의 선형독립을 가정하지 않아 하한을 깔끔히 세우지 못한다(AK=V에서 $\mathrm{rank}(V)\le\mathrm{rank}(A)$는 나와도 $m\le\mathrm{rank}(A)$는 따라오지 않는다). 따라서 "depth가 capacity 자체를 올린다"는 검증된 정리가 아니라 원문의 주장이며, 이 책은 그 방향성만(Titans의 deep-memory ablation과 정합하는 선에서) 인용한다.
 
 남은 손잡이가 key의 차원이다. key·value 차원을 직접 키우면 projection 파라미터가 차원당 $O(d)$씩 늘고 긴 문맥에서 메모리 사용량이 커진다. 대신 [Atlas §3.1]은 separable kernel $\sigma(x,y)=\phi(x)^\top\phi(y)$를 key와 query에 적용한다. **polynomial feature map** $\phi_p(x)=[x^\beta]_{|\beta|\le p}$ — 차수 $p$ 이하의 모든 monomial을 쌓은 벡터 — 를 쓰면 lifted 차원은 $D=\binom{d_k+p}{p}=\Theta(d_k^p)$가 된다.
 
@@ -58,7 +60,7 @@ $$
 \min_W\;\ell(W;k_t,v_t)+\mathrm{Ret}_t(W,W_{t-1}).
 $$
 
-반대쪽 극단은 전체 문맥에 대한 global 최적화 $\min_W\sum_{i=1}^{t}\ell(W;k_i,v_i)$다 [Atlas Eq. 7]. global 형태의 문제는 두 가지다 [Atlas §3.2]: (1) **효율** — 매 step 최적화 제약이 늘고, test time에 모든 과거 key·value를 cache해야 하며(고정 state의 존재 이유 소멸), 정확해를 원하면 병렬화 불가능한 solver가 필요하다. (2) **context pruning 불가** — 문맥이 중간에 바뀌거나 무관한 구간이 끼면 "전부에 대한 최적"이 오히려 해가 되는데, global objective에는 특정 token을 잘라낼 직접적 gate가 없다.
+반대쪽 극단은 전체 문맥에 대한 global 최적화 $\min_W\sum_{i=1}^{t}\ell(W;k_i,v_i)$다 [Atlas Eq. 7]. global 형태의 문제는 두 가지다 [Atlas §3.2]: (1) **효율** — 매 step 최적화 제약이 늘고, 일반적인 비선형 memory나 충분통계가 없는 objective에서는 test time에 모든 과거 key·value를 cache해야 하며(고정 state의 존재 이유 소멸; 단 linear least-squares는 Sherman–Morrison RLS로 충분통계+inverse state만 유지하면 되는 예외 — 그 실제 결격 사유는 순차 inverse update·추가 $O(d_k^2)$ state·linear memory 한정이다, 아래 Mesa-layer), 정확해를 원하면 병렬화 불가능한 solver가 필요하다. (2) **context pruning 불가** — 문맥이 중간에 바뀌거나 무관한 구간이 끼면 "전부에 대한 최적"이 오히려 해가 되는데, global objective에는 특정 token을 잘라낼 직접적 gate가 없다.
 
 Atlas의 중간해가 **Omega rule**이다. window 길이 $c\ge 1$에 대해 inner objective를 마지막 $c$개 token의 gated 합으로 세운다 [Atlas Eq. 8–9]:
 
@@ -69,7 +71,7 @@ $$
 
 <!-- FIG: ch14/fig-01-omega-window -->
 
-여기서 $\gamma_{t,i}\in[0,1]$이 **window gate**다: step $t$의 window 안에서 $i$번째 token이 최적화에 참여하는 정도를 정하는 input-dependent gate로, $\gamma_{t,i}\to 0$이면 그 token을 최적화에서 **직접(hard) 잘라내고**, $\gamma_{t,i}\to 1$이면 온전히 포함한다 — 논문의 표현으로 **in-context pruning**이다 [Atlas §3.2]. 이 gate가 감당 가능한 이유가 바로 sliding window 구조다: step당 필요한 gate 수가 $c$개로 **상수**다. global 최적화(Eq. 7)에 input-dependent gate를 달려면 prefix 길이만큼의 gate가 필요해 파라미터·메모리가 함께 자라고, recurrent model의 장점이 사라진다.
+여기서 $\gamma_{t,i}\in[0,1]$이 **window gate**다: step $t$의 window 안에서 $i$번째 token이 최적화에 참여하는 정도를 정하는 input-dependent gate로, $\gamma_{t,i}\to 0$이면 그 token을 최적화에서 **직접(hard) 잘라내고**, $\gamma_{t,i}\to 1$이면 온전히 포함한다 — 논문의 표현으로 **in-context pruning**이다 [Atlas §3.2]. 이 gate가 감당 가능한 이유가 바로 sliding window 구조다: step당 필요한 gate 수가 $c$개로 **상수**다. global 최적화(Eq. 7)에 input-dependent gate를 달려면 prefix 길이만큼의 gate 값이 필요해 — 공유 gate-producer의 파라미터는 고정이지만 gate 값의 수와 이를 계산·저장하는 비용이 문맥 길이에 따라 자라 — recurrent model의 장점이 사라진다.
 
 Omega rule은 계보 전체를 극한으로 회수한다 [Atlas §3.2].
 
@@ -119,7 +121,7 @@ $$
 
 $\kappa$는 이 라인에서 처음 등장하는 종류의 손잡이다. [Atlas §5]는 $\kappa$를 명시적으로 "internal **test-time compute** parameter"로 규정한다: 반복을 더 돌리면 semi-orthogonalization이 정확해지고 잠재적으로 memorization이 좋아지되, inference FLOPs가 선형으로 는다. state 크기를 전혀 바꾸지 않고 decode 연산량과 품질을 교환하는 dial이다(§14.7에서 serving 관점으로 재론). 실전값은 $\kappa=5$("NS-5")다.
 
-재구현자를 위한 정직한 경고를 여기 두어야 한다. Atlas의 recurrence는 원문 안에서 세 곳의 표기가 서로 다르다. [Atlas Table 1]의 행은 $S_t=\theta_tS_{t-1}-\nabla\ell$, $M_t=\alpha_tM_{t-1}-\eta_t\,\mathrm{NS}\text{-}5(S_t)$로 쓰고(심지어 Table 1의 Titans 행은 $\eta$와 $\theta$의 역할을 [Atlas Eq. 12–13]과 맞바꿔 인쇄한다), [Atlas Eq. 33]은 momentum에 gradient를 **더하며**($+\nabla$), [Atlas App. D.4 Eq. 57–58]은 per-token 계수 $\eta_i^{(t)}$를 합 안에 넣고 $M_t=\alpha_tM_{t-1}+\mathrm{NS}\text{-}5(S_t)$로 $\eta_t$를 밖에서 제거한다. 알고리즘의 의미는 세 곳 모두 동일하다 — windowed gradient의 decayed momentum을 쌓고, orthogonalize하고, retention을 곱한 뒤 step한다. 부호와 step-size의 배치는 표기 관행 차이(알고리즘 동일)이며, 이 책은 (M2)/(M3)의 부호, 즉 식 (14-4)로 고정한다.
+재구현자를 위한 정직한 경고를 여기 두어야 한다. Atlas의 recurrence는 원문 안에서 세 곳의 표기가 서로 다르다. [Atlas Table 1]의 행은 $S_t=\theta_tS_{t-1}-\nabla\ell$, $M_t=\alpha_tM_{t-1}-\eta_t\,\mathrm{NS}\text{-}5(S_t)$로 쓰고(심지어 Table 1의 Titans 행은 $\eta$와 $\theta$의 역할을 [Atlas Eq. 12–13]과 맞바꿔 인쇄한다), [Atlas Eq. 33]은 momentum에 gradient를 **더하며**($+\nabla$), [Atlas App. D.4 Eq. 57–58]은 per-token 계수 $\eta_i^{(t)}$를 합 안에 넣고 $M_t=\alpha_tM_{t-1}+\mathrm{NS}\text{-}5(S_t)$로 $\eta_t$를 밖에서 제거한다. 이 중 **Table 1의 행은 단순 표기 관행이 아니라 부호 오탈자**다: $S_t$에 $-\nabla\ell$(descent 방향)를 쌓아 놓고 $M_t$에서 그 $\mathrm{NS}(S_t)$를 다시 **빼면** 두 음부호가 겹쳐 loss ascent가 된다. 서로 동등한 descent 관행은 [Atlas Eq. 33]($+\nabla/-\mathrm{NS}$)과 [Atlas App. D.4]($-\nabla/+\mathrm{NS}$) 둘뿐이며, 알고리즘의 의미(windowed gradient의 decayed momentum을 쌓고 orthogonalize하고 retention을 곱한 뒤 step)는 이 둘에서만 동일하다. 이 책은 App. D.4 관행, 즉 (M2)/(M3)의 부호로 식 (14-4)를 고정한다.
 
 ### 14.3.5 Transformer 일반화 가족: DLA/SWLA → DeepTransformers → Dot
 
@@ -133,7 +135,7 @@ $$
 
 이 대응 위에 논문은 controlled baseline 두 개와 본 모델 두 개를 세운다.
 
-**DLA(Deep Linear Attention)** [Atlas Eq. 19]: dot-product attentional bias $\ell=\langle\mathcal{M}(\phi(k_t);W),v_t\rangle$ + deep MLP memory + GD/decay. linear memory로 특수화하면 gated linear attention $W_t=\alpha_tW_{t-1}+v_tk_t^\top$로 붕괴하므로(→ 6장), DLA는 Hebbian/linear-attention 설정에서 **deep memory의 기여만** 분리해 재는 baseline이다. **SWLA** [Atlas Eq. 20]는 같은 bias를 window 합으로 바꾼 windowed gated Hebbian rule — linear memory closed form은 $W_t=\alpha_tW_{t-1}+\sum_{i=t-c+1}^{t}\gamma_{t,i}v_i\phi(k_i)^\top$ — 로, **windowed objective의 기여만** 분리한다.
+**DLA(Deep Linear Attention)** [Atlas Eq. 19]: dot-product attentional bias $\ell=-\langle\mathcal{M}(\phi(k_t);W),v_t\rangle$(최소화) + deep MLP memory + GD/decay. 부호 주의 — 원문 Eq. 19는 양의 내적 $\langle\cdot\rangle$을 쓰고도 양의 Hebbian write를 적어 부호 모순을 보인다: $+vk^\top$ write가 나오려면 loss가 음의 내적이거나 gradient ascent여야 한다. $\phi=$ identity로 특수화하면 gated linear attention $W_t=\alpha_tW_{t-1}+v_tk_t^\top$로 붕괴하므로(→ 6장), DLA는 Hebbian/linear-attention 설정에서 **deep memory의 기여만** 분리해 재는 baseline이다. **SWLA** [Atlas Eq. 20]는 같은 bias를 window 합으로 바꾼 windowed gated Hebbian rule — linear memory closed form은 $W_t=\alpha_tW_{t-1}+\sum_{i=t-c+1}^{t}\gamma_{t,i}v_i\phi(k_i)^\top$ — 로, **windowed objective의 기여만** 분리한다.
 
 **DeepTransformers**: DLA의 $\phi$를 정확한 exponential map $\phi^*$로 바꾼 것이다 [Atlas Eq. 25]. linear memory이면 $W_t=\sum_{i\le t}v_i\phi^*(k_i)^\top$이고 읽기가
 
@@ -141,7 +143,7 @@ $$
 y_t=W_t\,\phi^*(q_t)=\sum_{i\le t}v_i\,\exp(q_t^\top k_i)
 $$
 
-— 정확히 **unnormalized softmax attention**이다 [Atlas Eq. 26]. 따라서 DeepTransformers(deep memory + $\phi^*$)는 Transformer의 strict generalization이고, Transformer는 그 특수 사례(linear memory + Hebbian rule + exp kernel)다. sliding-window 판이 SWDT다.
+— 정확히 **unnormalized softmax attention**이다 [Atlas Eq. 26]. 따라서 DeepTransformers(deep memory + $\phi^*$)는 **unnormalized** exponential attention의 strict generalization이고, unnormalized Transformer는 그 특수 사례(linear memory + Hebbian rule + exp kernel)다 — 정규화된 표준 Transformer까지 포함하려면 softmax 분모를 계산하는 별도 state·정규화 연산이 필요하다(아래 한계). sliding-window 판이 SWDT다.
 
 **Dot(Deep Omega Transformer)**: Hebbian rule 자리에 Omega rule을 넣는다 [Atlas Eq. 27]:
 
@@ -205,12 +207,12 @@ Atlas에서 "이 gate는 누가 학습하는가?"라는 질문의 답은 예외 
 | 대상 | loop | 갱신 rule / 시점 | 비고 |
 |---|---|---|---|
 | $W_Q,W_K,W_V$ (projection), 크기-4 conv, backbone MLP·norm | outer ($\Theta$) | AdamW, pre-training 중 | inner loss의 "hyperparameter" |
-| gate-producer head들: $\alpha_t,\eta_t,\beta_t$ 및 $c$개의 $\gamma_{t,i}$를 $x_t$에서 뽑는 작은 함수 | outer ($\Theta$) | AdamW | gate **값**은 매 token 바뀌지만 gate를 **만드는 함수**는 frozen |
+| gate-producer: $\alpha_t,\eta_t,\beta_t$와 $c$개의 $\gamma_{t,i}$를 산출하는 outer-학습 메커니즘 (입력·구조 — 특히 $\gamma_{t,i}$가 $x_t$만의 함수인지 window token·pairwise feature에도 의존하는지 — 는 원문 미공개) | outer ($\Theta$) | AdamW | gate **값**은 매 token 바뀌지만 gate를 **만드는 함수**는 frozen |
 | Taylor 계수 $a_i$ (feature map gating) | outer ($\Theta$) | AdamW, init $1/i!$ | [Atlas Eq. 5] |
 | memory 초기 상태 $W_{\mathrm{init}}$ (memory MLP의 초기화) | outer 상태 | pre-training이 결정 | 매 context 시작 시 $W_0=W_{\mathrm{init}}$로 재시작 |
 | memory weights $W_t$ ($W_1,W_2$; Atlas++는 $W_3$까지) | **inner** | 식 (14-4), 매 token/chunk | context가 끝나면 폐기 |
 | momentum buffer $S_t$ | **inner** | 식 (14-4), 매 token/chunk | weight 행렬당 하나, 같은 shape |
-| window buffer: 최근 $c-1$개의 $\phi(k),v$와 gate | **inner** (rolling) | ring-buffer append | 크기 $O(c(d_k+d_v))$, 길이 무관 |
+| window buffer: 최근 $c-1$개의 $\phi(k),v$와 gate | **inner** (rolling) | ring-buffer append | 크기 $O(c(D+d_v))$, $D=\binom{d_k+p}{p}$ (lifted $\phi(k)$ 차원), 길이 무관 |
 
 training 무경험 독자가 가장 헷갈리는 지점을 짚는다. "memory가 test time에 훈련된다"는 문장은 **pre-trained checkpoint가 변한다는 뜻이 아니다**. outer loop는 pre-training에서 단 한 번, "inner loop가 어떻게 갱신해야 하는가"를 — gate-producer, projection, feature 계수, 초기 상태의 형태로 — 학습한다. inference에서는 그 배운 update 절차가 매 context마다 $W_{\mathrm{init}}$에서 다시 실행될 뿐이다. 이것이 [Atlas §1]의 test-time memorization 명명이 가리키는 정확한 사실이고, 12장의 bilevel 구조(→ 4장)가 Atlas에서도 그대로 유지된다는 뜻이다.
 
@@ -276,7 +278,7 @@ $$
 
 **Language modeling + commonsense reasoning** [Atlas Table 2]. 1.3B / 100B tokens에서: Atlas는 Wikitext ppl 14.97 / LAMBADA ppl 10.98 / 평균 acc 57.62, Atlas++는 14.40 / 10.72 / 58.03, OmegaNet은 14.91 / 11.26 / 57.23. 비교군은 Titans (LMM) 15.60 / 11.41 / 56.82, Gated DeltaNet 16.42 / 12.17 / 55.32, Samba(hybrid) 16.13 / 13.29 / 54.00, Transformer++ 18.53 / 18.32 / 52.25. Transformer 일반화 가족도 자기 비교군을 이긴다: DeepTransformers 평균 56.19, Dot 57.35 vs Transformer++ 52.25. 같은 순서가 760M에서도 유지된다: OmegaNet 52.56 / Atlas 52.77 / Atlas++ 53.09 vs Titans 51.56, Transformer++ 48.69; hybrid는 Atlas(MAG)가 Wikitext ppl 18.62, 평균 53.08로 MAL(19.07, 52.63)보다 낫다 [Atlas Table 2].
 
-**S-NIAH (RULER)** [Atlas Table 3]. 4K로 훈련된 모델을 2K–16K needle-in-haystack에서 평가한다. 순수 recurrent 비교에서 Atlas는 S-NIAH-N 16K에서 84.0으로 Titans 80.2를 앞서고, DeltaNet(5.4)·TTT(4.4)와는 자릿수가 다르다. hybrid와 Transformer-like 가족은 더 강하다: Dot은 전 설정에서 96.8–100, Atlas(MAG)는 S-NIAH-PK 16K에서 98.6 — 훈련 문맥의 4× 외삽이다.
+**S-NIAH (RULER)** [Atlas Table 3]. 4K로 훈련된 모델을 2K–16K needle-in-haystack에서 평가한다. 순수 recurrent 비교에서 Atlas는 S-NIAH-N 16K에서 84.0으로 Titans 80.2를 앞서고, DeltaNet(5.4)·TTT(4.4)와는 자릿수가 다르다. hybrid와 Transformer-like 가족은 더 강하다: Dot은 전 설정에서 93.2–100(S-NIAH-W 16K의 93.2가 최솟값), Atlas(MAG)는 S-NIAH-PK 16K에서 98.6 — 훈련 문맥의 4× 외삽이다.
 
 **BABILong** [Atlas §6.3, Fig. 4]. MAC backbone(persistent memory tokens 없이)으로 benchmark protocol에 따라 fine-tune한 설정이다. Atlas는 1M token까지 Titans와 동급이다가, 10M에서 Titans가 무너지는 지점에서 **+80% accuracy를 유지한다** — 이 논문의 헤드라인 long-context 주장이다. 논문은 이를 Muon(관리), polynomial kernel(capacity), context memorization(objective)의 합작으로 귀속시킨다 [Atlas §6.3].
 
@@ -300,7 +302,7 @@ $$
 
 > **[해설]** 같은 정밀도를 가정하고 등호를 놓으면 crossover 문맥 길이는 $L^*=16d_m^2/(2d)$다. memory 폭을 model 폭과 같게 잡으면($d_m=d$) $L^*=8d$ — 1.3B 구성($d=2048$)에서 약 16K tokens다. 즉 16K보다 짧은 문맥에서는 KV cache가 더 작은 상태이고, BABILong의 10M-token 구간에서는 Atlas의 state가 KV cache의 수백분의 일이다. 단 이 계산에는 두 개의 미지수가 있다. 첫째, 실제 구현의 memory가 head별로 쪼개지는지, $d_m$이 얼마인지 논문에 없다. 둘째, $\phi_p$는 memory 첫 층의 입력 폭을 $\Theta(d_k^p)$로 불리므로(차수 2만 해도 sketch 전 $\sim d_k^2$), **구현된 차수 $p$와 sketch 차원이 공개되지 않은 한 state 크기는 계산할 수 없다** — 구현 $p$·sketch 차원·memory head 분할은 원문 본문에도 [Atlas App. C], [Atlas App. E], [Atlas Fig. 3]의 라벨에도 없다. capacity의 이득은 cache 성장이 아니라 state 크기와 matmul 폭으로 지불된다 — 그 청구서의 액수가 논문에 없다. 5장 §5.4가 예고한 "비용 계산"은 그래서 여기서 **구조** — capacity의 지불 통화가 state byte와 matmul 폭이라는 것 — 로 확정된다; 절대값 계산은 구현 차수 미공개로 여기서도 불가하다는 것까지가 이 장의 결론이다.
 
-**decode의 state 트래픽.** 매 token, 각 layer의 memory는 read-modify-write다: $W$와 $S$를 읽고, gradient·momentum·NS를 계산하고, 둘 다 다시 쓴다. 트래픽은 token당 $\approx 2\times 16d_m^2$ 원소의 읽기+쓰기로, DeltaNet류의 $d\times d$ matrix state 대비 (expansion 4의 2층 + momentum 때문에) 원소 수로 16배 급이다. 이 RMW 스트림이 decode의 실질 대역폭 예산을 정하며, KV cache처럼 append-only가 아니므로 캐시 계층에 상주시키는 전략이 달라진다 — 상세한 배치 논의는 10장과 Part III의 몫이다.
+**decode의 state 트래픽.** 매 token, 각 layer의 memory는 read-modify-write다: $W$와 $S$를 읽고, gradient·momentum·NS를 계산하고, 둘 다 다시 쓴다. 트래픽은 token당 $\approx 2\times 16d_m^2$ 원소의 읽기+쓰기로, DeltaNet류의 $d\times d$ matrix state 대비 (expansion 4의 2층 + momentum 때문에) 원소 수로 16배 급이다 — 단 이는 표준 memory·명시적 $\phi_p$ lift 없을 때의 값이고, lift가 있으면 첫 층 입력이 $D=\binom{d_k+p}{p}$로 커져 더 크다(§14.7 [해설]의 미공개 차원 caveat). 이 RMW 스트림이 decode의 실질 대역폭 예산을 정하며, KV cache처럼 append-only가 아니므로 캐시 계층에 상주시키는 전략이 달라진다 — 상세한 배치 논의는 10장과 Part III의 몫이다.
 
 **연산의 성격은 전부 dense matmul이다.** windowed gradient는 banded einsum($M_{\mathrm{s}}$; 식 (14-5)), momentum은 broadcast scan(14-6), $\mathrm{NS}_5$는 행렬 다항식 — 논문이 명시적으로 "tensorize computations and maximize matmuls"를 설계 목표로 선언한다 [Atlas §3.3]. Titans 대비 추가 상수는 $\mathrm{NS}_5$다: update당·weight 행렬당 반복 5회 × 서너 개의 정방 matmul ≈ 15–20개의 추가 matmul. chunk 안에서 전 위치에 batch되므로 GEMM shape는 좋다. window 자체는 mask 하나라서 훈련 시 거의 공짜다 — **$c$는 훈련 비용을 거의 바꾸지 않는 품질 knob**이라는 것이 Atlas의 병렬화가 만든 특이한 경제학이다.
 
