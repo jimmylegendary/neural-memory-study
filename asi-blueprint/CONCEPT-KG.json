@@ -1,0 +1,1033 @@
+{
+  "nodes": [
+    {
+      "id": "comp-worker",
+      "label": "Worker (System-2 executor)",
+      "type": "architecture-component"
+    },
+    {
+      "id": "comp-harness",
+      "label": "Harness (orchestration / cadence)",
+      "type": "architecture-component"
+    },
+    {
+      "id": "comp-supervisor",
+      "label": "Supervisor (continual-learning controller)",
+      "type": "architecture-component"
+    },
+    {
+      "id": "comp-right-brain",
+      "label": "Right-Brain (System-1 intuition proposer)",
+      "type": "architecture-component"
+    },
+    {
+      "id": "comp-text-library",
+      "label": "Text-Library (hierarchical durable memory)",
+      "type": "architecture-component"
+    },
+    {
+      "id": "comp-graph-memory",
+      "label": "Graph-Memory (associative knowledge graph)",
+      "type": "architecture-component"
+    },
+    {
+      "id": "axis-architecture",
+      "label": "Axis: Memory Architecture (matrix\u2192MLP\u2192attention)",
+      "type": "design-axis"
+    },
+    {
+      "id": "axis-attentional-bias",
+      "label": "Axis: Attentional Bias (inner objective)",
+      "type": "design-axis"
+    },
+    {
+      "id": "axis-retention",
+      "label": "Axis: Retention / Forget Gate",
+      "type": "design-axis"
+    },
+    {
+      "id": "axis-optimizer",
+      "label": "Axis: Optimizer-State-as-Memory (write rule)",
+      "type": "design-axis"
+    },
+    {
+      "id": "axis-frequency",
+      "label": "Axis: Update Frequency (timescale)",
+      "type": "design-axis"
+    },
+    {
+      "id": "life-wake",
+      "label": "Wake (fast fragile ingest)",
+      "type": "lifecycle-phase"
+    },
+    {
+      "id": "life-sleep",
+      "label": "Sleep (offline consolidation)",
+      "type": "lifecycle-phase"
+    },
+    {
+      "id": "paper-titans",
+      "label": "Titans",
+      "type": "paper"
+    },
+    {
+      "id": "paper-atlas",
+      "label": "Atlas",
+      "type": "paper"
+    },
+    {
+      "id": "paper-miras",
+      "label": "Miras",
+      "type": "paper"
+    },
+    {
+      "id": "paper-hopfield",
+      "label": "Modern Hopfield Networks",
+      "type": "paper"
+    },
+    {
+      "id": "paper-fwp",
+      "label": "Fast Weight Programmers",
+      "type": "paper"
+    },
+    {
+      "id": "paper-nested",
+      "label": "Nested Learning (CMS / Hope)",
+      "type": "paper"
+    },
+    {
+      "id": "paper-sleep",
+      "label": "Sleep-time Consolidation",
+      "type": "paper"
+    },
+    {
+      "id": "paper-icl-gd",
+      "label": "ICL as Gradient Descent (von Oswald)",
+      "type": "paper"
+    },
+    {
+      "id": "fit-diffuse-thinking",
+      "label": "Diffuse Thinking (dLM thought proposer)",
+      "type": "paper"
+    },
+    {
+      "id": "fit-llada",
+      "label": "LLaDA (8B diffusion LM)",
+      "type": "paper"
+    },
+    {
+      "id": "fit-ebt",
+      "label": "Energy-Based Transformers (EBT)",
+      "type": "paper"
+    },
+    {
+      "id": "fit-ired",
+      "label": "IRED (energy-diffusion reasoning)",
+      "type": "paper"
+    },
+    {
+      "id": "fit-dot",
+      "label": "Diffusion of Thoughts (DoT)",
+      "type": "paper"
+    },
+    {
+      "id": "mech-surprise-gradient",
+      "label": "Surprise = gradient of inner associative loss (write signal)",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-assoc-operator",
+      "label": "Associative memory as key\u2192value operator w/ inner objective",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-energy-completion",
+      "label": "Energy-based one-step pattern completion",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-beta-temperature",
+      "label": "\u03b2 temperature dial (gist\u2194prototype\u2194exact recall)",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-icl-optimizer",
+      "label": "In-context learning as implicit optimization (mesa-optimizer)",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-self-modifying",
+      "label": "Self-modifying memory (projections generate own targets)",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-dreaming",
+      "label": "Dreaming: self-generated curriculum + reward-gated rehearsal (REM)",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-momentum-surprise",
+      "label": "Momentum as memory of surprise across time",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-muon",
+      "label": "Muon (Newton\u2013Schulz) second-order inner update",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-m3",
+      "label": "Multi-timescale momentum (M3)",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-sleep-scheduling",
+      "label": "Consolidate-then-dream + relative-fragility cascade",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-separation-delta",
+      "label": "Separation \u0394 as retrieval-confidence signal",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-deep-mlp",
+      "label": "Deep MLP memory (\u22652 layers) for abstraction",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-omega-rule",
+      "label": "Omega rule: memorize a window with \u03b3-gates",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-capacity-continuum",
+      "label": "Capacity continuum: matrix O(d)\u2192poly\u2192exponential=attention",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-retention-gate",
+      "label": "Retention gate: never erase, decline to retain",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-ftrl-decomp",
+      "label": "Learning\u2013Retaining (FTRL) write decomposition",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-data-gen-gate",
+      "label": "Data-generated learning-rate & forget gate",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-fast-weight",
+      "label": "Fast-weight association (slow net programs fast KV)",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-delta-rule",
+      "label": "Delta-rule editable write (self-set write-strength)",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-crosstalk-governor",
+      "label": "Capacity/crosstalk governor (split node on saturation)",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-lowrank-growth",
+      "label": "Capacity growth via low-rank experts (grow, don't regularize)",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-synaptic-pruning",
+      "label": "Synaptic pruning after promotion",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-learned-prototypes",
+      "label": "Learned prototypes as Hopfield stored patterns",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-frequency-axis",
+      "label": "Update-frequency as single organizing axis",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-cms",
+      "label": "Continuum Memory System (geometric tier chain)",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-persistent-memory",
+      "label": "Persistent memory: input-independent task knowledge (two-tier)",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-two-op",
+      "label": "Two-op memory: write=compress, read=forward pass",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-knowledge-seeding",
+      "label": "Knowledge Seeding (upward distillation on promotion)",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-seed-tier",
+      "label": "Seed a new tier from an existing corpus (level stacking)",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-chunkwise",
+      "label": "Chunkwise parallel / deferred test-time update",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-optimizer-memory",
+      "label": "Optimizer-state-as-memory: forbidden-subspace CF guard",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-freeze-train-new",
+      "label": "Freeze-old / train-new-only write invariant",
+      "type": "mechanism"
+    },
+    {
+      "id": "mech-two-timescale-meta",
+      "label": "Two-timescale meta-learning (GD++ curvature)",
+      "type": "mechanism"
+    }
+  ],
+  "edges": [
+    {
+      "from": "mech-surprise-gradient",
+      "to": "comp-right-brain",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-assoc-operator",
+      "to": "comp-right-brain",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-energy-completion",
+      "to": "comp-right-brain",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-beta-temperature",
+      "to": "comp-right-brain",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-icl-optimizer",
+      "to": "comp-right-brain",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-self-modifying",
+      "to": "comp-right-brain",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-dreaming",
+      "to": "comp-right-brain",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-momentum-surprise",
+      "to": "comp-supervisor",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-muon",
+      "to": "comp-supervisor",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-m3",
+      "to": "comp-supervisor",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-sleep-scheduling",
+      "to": "comp-supervisor",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-separation-delta",
+      "to": "comp-supervisor",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-deep-mlp",
+      "to": "comp-supervisor",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-omega-rule",
+      "to": "comp-supervisor",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-capacity-continuum",
+      "to": "comp-graph-memory",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-retention-gate",
+      "to": "comp-graph-memory",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-ftrl-decomp",
+      "to": "comp-graph-memory",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-data-gen-gate",
+      "to": "comp-graph-memory",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-fast-weight",
+      "to": "comp-graph-memory",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-delta-rule",
+      "to": "comp-graph-memory",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-crosstalk-governor",
+      "to": "comp-graph-memory",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-lowrank-growth",
+      "to": "comp-graph-memory",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-synaptic-pruning",
+      "to": "comp-graph-memory",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-learned-prototypes",
+      "to": "comp-graph-memory",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-frequency-axis",
+      "to": "comp-text-library",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-cms",
+      "to": "comp-text-library",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-persistent-memory",
+      "to": "comp-text-library",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-two-op",
+      "to": "comp-text-library",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-knowledge-seeding",
+      "to": "comp-text-library",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-seed-tier",
+      "to": "comp-text-library",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-chunkwise",
+      "to": "comp-harness",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-optimizer-memory",
+      "to": "comp-harness",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-freeze-train-new",
+      "to": "comp-harness",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-two-timescale-meta",
+      "to": "comp-harness",
+      "relation": "maps-to-component"
+    },
+    {
+      "from": "mech-surprise-gradient",
+      "to": "paper-titans",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-momentum-surprise",
+      "to": "paper-titans",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-deep-mlp",
+      "to": "paper-titans",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-two-op",
+      "to": "paper-titans",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-persistent-memory",
+      "to": "paper-titans",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-chunkwise",
+      "to": "paper-titans",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-muon",
+      "to": "paper-atlas",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-capacity-continuum",
+      "to": "paper-atlas",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-omega-rule",
+      "to": "paper-atlas",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-assoc-operator",
+      "to": "paper-miras",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-retention-gate",
+      "to": "paper-miras",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-ftrl-decomp",
+      "to": "paper-miras",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-energy-completion",
+      "to": "paper-hopfield",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-beta-temperature",
+      "to": "paper-hopfield",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-separation-delta",
+      "to": "paper-hopfield",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-learned-prototypes",
+      "to": "paper-hopfield",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-fast-weight",
+      "to": "paper-fwp",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-delta-rule",
+      "to": "paper-fwp",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-crosstalk-governor",
+      "to": "paper-fwp",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-frequency-axis",
+      "to": "paper-nested",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-cms",
+      "to": "paper-nested",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-self-modifying",
+      "to": "paper-nested",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-data-gen-gate",
+      "to": "paper-nested",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-m3",
+      "to": "paper-nested",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-seed-tier",
+      "to": "paper-nested",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-optimizer-memory",
+      "to": "paper-nested",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-lowrank-growth",
+      "to": "paper-sleep",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-synaptic-pruning",
+      "to": "paper-sleep",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-knowledge-seeding",
+      "to": "paper-sleep",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-dreaming",
+      "to": "paper-sleep",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-sleep-scheduling",
+      "to": "paper-sleep",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-freeze-train-new",
+      "to": "paper-sleep",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-icl-optimizer",
+      "to": "paper-icl-gd",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-two-timescale-meta",
+      "to": "paper-icl-gd",
+      "relation": "introduced-by"
+    },
+    {
+      "from": "mech-surprise-gradient",
+      "to": "axis-attentional-bias",
+      "relation": "instantiates-axis"
+    },
+    {
+      "from": "mech-assoc-operator",
+      "to": "axis-attentional-bias",
+      "relation": "instantiates-axis"
+    },
+    {
+      "from": "mech-deep-mlp",
+      "to": "axis-architecture",
+      "relation": "instantiates-axis"
+    },
+    {
+      "from": "mech-capacity-continuum",
+      "to": "axis-architecture",
+      "relation": "instantiates-axis"
+    },
+    {
+      "from": "mech-retention-gate",
+      "to": "axis-retention",
+      "relation": "instantiates-axis"
+    },
+    {
+      "from": "mech-data-gen-gate",
+      "to": "axis-retention",
+      "relation": "instantiates-axis"
+    },
+    {
+      "from": "mech-ftrl-decomp",
+      "to": "axis-optimizer",
+      "relation": "instantiates-axis"
+    },
+    {
+      "from": "mech-optimizer-memory",
+      "to": "axis-optimizer",
+      "relation": "instantiates-axis"
+    },
+    {
+      "from": "mech-momentum-surprise",
+      "to": "axis-optimizer",
+      "relation": "instantiates-axis"
+    },
+    {
+      "from": "mech-muon",
+      "to": "axis-optimizer",
+      "relation": "instantiates-axis"
+    },
+    {
+      "from": "mech-two-timescale-meta",
+      "to": "axis-optimizer",
+      "relation": "instantiates-axis"
+    },
+    {
+      "from": "mech-frequency-axis",
+      "to": "axis-frequency",
+      "relation": "instantiates-axis"
+    },
+    {
+      "from": "mech-cms",
+      "to": "axis-frequency",
+      "relation": "instantiates-axis"
+    },
+    {
+      "from": "mech-m3",
+      "to": "axis-frequency",
+      "relation": "instantiates-axis"
+    },
+    {
+      "from": "mech-omega-rule",
+      "to": "mech-surprise-gradient",
+      "relation": "generalizes"
+    },
+    {
+      "from": "mech-momentum-surprise",
+      "to": "mech-surprise-gradient",
+      "relation": "extends"
+    },
+    {
+      "from": "mech-muon",
+      "to": "mech-momentum-surprise",
+      "relation": "orthogonalizes"
+    },
+    {
+      "from": "mech-m3",
+      "to": "mech-momentum-surprise",
+      "relation": "generalizes"
+    },
+    {
+      "from": "mech-assoc-operator",
+      "to": "mech-ftrl-decomp",
+      "relation": "generalizes"
+    },
+    {
+      "from": "mech-ftrl-decomp",
+      "to": "mech-delta-rule",
+      "relation": "subsumes"
+    },
+    {
+      "from": "mech-ftrl-decomp",
+      "to": "mech-surprise-gradient",
+      "relation": "subsumes"
+    },
+    {
+      "from": "mech-delta-rule",
+      "to": "mech-fast-weight",
+      "relation": "corrects"
+    },
+    {
+      "from": "mech-crosstalk-governor",
+      "to": "mech-fast-weight",
+      "relation": "guards"
+    },
+    {
+      "from": "mech-capacity-continuum",
+      "to": "mech-energy-completion",
+      "relation": "equals-at-limit"
+    },
+    {
+      "from": "mech-chunkwise",
+      "to": "mech-muon",
+      "relation": "parallelizes"
+    },
+    {
+      "from": "mech-freeze-train-new",
+      "to": "mech-lowrank-growth",
+      "relation": "underlies"
+    },
+    {
+      "from": "mech-lowrank-growth",
+      "to": "mech-knowledge-seeding",
+      "relation": "enables"
+    },
+    {
+      "from": "mech-knowledge-seeding",
+      "to": "mech-synaptic-pruning",
+      "relation": "followed-by"
+    },
+    {
+      "from": "mech-sleep-scheduling",
+      "to": "mech-dreaming",
+      "relation": "orders-after"
+    },
+    {
+      "from": "mech-cms",
+      "to": "mech-frequency-axis",
+      "relation": "operationalizes"
+    },
+    {
+      "from": "mech-two-timescale-meta",
+      "to": "mech-icl-optimizer",
+      "relation": "meta-learns"
+    },
+    {
+      "from": "mech-two-op",
+      "to": "mech-surprise-gradient",
+      "relation": "hosts-write-gate"
+    },
+    {
+      "from": "mech-separation-delta",
+      "to": "comp-right-brain",
+      "relation": "gates"
+    },
+    {
+      "from": "comp-harness",
+      "to": "comp-worker",
+      "relation": "observes"
+    },
+    {
+      "from": "comp-harness",
+      "to": "comp-supervisor",
+      "relation": "schedules"
+    },
+    {
+      "from": "comp-supervisor",
+      "to": "comp-text-library",
+      "relation": "writes-to"
+    },
+    {
+      "from": "comp-supervisor",
+      "to": "comp-graph-memory",
+      "relation": "writes-to"
+    },
+    {
+      "from": "comp-right-brain",
+      "to": "comp-worker",
+      "relation": "proposes-to"
+    },
+    {
+      "from": "comp-right-brain",
+      "to": "comp-supervisor",
+      "relation": "surfaces-surprise-to"
+    },
+    {
+      "from": "mech-persistent-memory",
+      "to": "comp-graph-memory",
+      "relation": "provides-substrate-for"
+    },
+    {
+      "from": "life-wake",
+      "to": "life-sleep",
+      "relation": "alternates-with"
+    },
+    {
+      "from": "life-wake",
+      "to": "comp-supervisor",
+      "relation": "phase-of"
+    },
+    {
+      "from": "life-sleep",
+      "to": "comp-supervisor",
+      "relation": "phase-of"
+    },
+    {
+      "from": "life-wake",
+      "to": "comp-graph-memory",
+      "relation": "ingests-into"
+    },
+    {
+      "from": "life-sleep",
+      "to": "mech-knowledge-seeding",
+      "relation": "runs"
+    },
+    {
+      "from": "life-sleep",
+      "to": "mech-dreaming",
+      "relation": "runs"
+    },
+    {
+      "from": "life-sleep",
+      "to": "mech-lowrank-growth",
+      "relation": "runs"
+    },
+    {
+      "from": "life-sleep",
+      "to": "mech-synaptic-pruning",
+      "relation": "runs"
+    },
+    {
+      "from": "life-sleep",
+      "to": "mech-sleep-scheduling",
+      "relation": "governed-by"
+    },
+    {
+      "from": "fit-diffuse-thinking",
+      "to": "comp-right-brain",
+      "relation": "instantiates"
+    },
+    {
+      "from": "fit-llada",
+      "to": "comp-right-brain",
+      "relation": "instantiates"
+    },
+    {
+      "from": "fit-ebt",
+      "to": "comp-right-brain",
+      "relation": "provides-mechanics-for"
+    },
+    {
+      "from": "fit-ired",
+      "to": "comp-right-brain",
+      "relation": "provides-mechanics-for"
+    },
+    {
+      "from": "fit-dot",
+      "to": "comp-right-brain",
+      "relation": "evidences"
+    },
+    {
+      "from": "fit-ebt",
+      "to": "mech-energy-completion",
+      "relation": "extends"
+    },
+    {
+      "from": "fit-ired",
+      "to": "mech-energy-completion",
+      "relation": "extends"
+    },
+    {
+      "from": "fit-diffuse-thinking",
+      "to": "comp-worker",
+      "relation": "feeds-proposals-to"
+    }
+  ],
+  "clusters": [
+    {
+      "name": "Right-Brain (System-1 intuition proposer)",
+      "nodeIds": [
+        "comp-right-brain",
+        "mech-surprise-gradient",
+        "mech-assoc-operator",
+        "mech-energy-completion",
+        "mech-beta-temperature",
+        "mech-icl-optimizer",
+        "mech-self-modifying",
+        "mech-dreaming",
+        "fit-diffuse-thinking",
+        "fit-llada",
+        "fit-ebt",
+        "fit-ired",
+        "fit-dot"
+      ]
+    },
+    {
+      "name": "Supervisor (continual-learning controller)",
+      "nodeIds": [
+        "comp-supervisor",
+        "mech-momentum-surprise",
+        "mech-muon",
+        "mech-m3",
+        "mech-sleep-scheduling",
+        "mech-separation-delta",
+        "mech-deep-mlp",
+        "mech-omega-rule"
+      ]
+    },
+    {
+      "name": "Graph-Memory (associative store)",
+      "nodeIds": [
+        "comp-graph-memory",
+        "mech-capacity-continuum",
+        "mech-retention-gate",
+        "mech-ftrl-decomp",
+        "mech-data-gen-gate",
+        "mech-fast-weight",
+        "mech-delta-rule",
+        "mech-crosstalk-governor",
+        "mech-lowrank-growth",
+        "mech-synaptic-pruning",
+        "mech-learned-prototypes"
+      ]
+    },
+    {
+      "name": "Text-Library (hierarchical durable memory)",
+      "nodeIds": [
+        "comp-text-library",
+        "mech-frequency-axis",
+        "mech-cms",
+        "mech-persistent-memory",
+        "mech-two-op",
+        "mech-knowledge-seeding",
+        "mech-seed-tier"
+      ]
+    },
+    {
+      "name": "Harness & Worker (orchestration)",
+      "nodeIds": [
+        "comp-harness",
+        "comp-worker",
+        "mech-chunkwise",
+        "mech-optimizer-memory",
+        "mech-freeze-train-new",
+        "mech-two-timescale-meta"
+      ]
+    },
+    {
+      "name": "5-Axis Memory Frame",
+      "nodeIds": [
+        "axis-architecture",
+        "axis-attentional-bias",
+        "axis-retention",
+        "axis-optimizer",
+        "axis-frequency"
+      ]
+    },
+    {
+      "name": "Source Theory Papers",
+      "nodeIds": [
+        "paper-titans",
+        "paper-atlas",
+        "paper-miras",
+        "paper-hopfield",
+        "paper-fwp",
+        "paper-nested",
+        "paper-sleep",
+        "paper-icl-gd"
+      ]
+    },
+    {
+      "name": "Wake/Sleep Lifecycle",
+      "nodeIds": [
+        "life-wake",
+        "life-sleep"
+      ]
+    }
+  ]
+}
