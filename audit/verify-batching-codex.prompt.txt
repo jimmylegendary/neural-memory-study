@@ -1,0 +1,13 @@
+너는 AI-systems 하드웨어 모델링 전문가다. 아래는 "Self-Modifying Titans / Hope (Nested Learning, arXiv:2512.24695)를 serving-time에 attention처럼 batch 처리할 수 있는가"에 대한 기술 분석이다. 원문 papers/2512.24695.txt, papers/2501.00663.txt 와 대조하고 하드웨어 지식으로 각 주장의 기술적 정확성을 검증하라. 특히: (1) per-request fast-weight state에 batch 차원을 더해 BMM/grouped GEMM으로 처리한다는 주장이 옳은가, (2) 그럼에도 "shared-weight batching의 상각 이득"은 못 얻는다(per-request state는 batch가 커져도 HBM에서 재사용 0, arithmetic intensity가 batch size에 비례하지 않아 memory-bound 유지)는 구분이 정확한가, (3) M_t=M_{t-1}A_t−η v̂ kᵀ, residual 2-layer MLP, chunk 경계 recurrence, never-batch-average(C7) 서술이 맞는가, (4) 과장·오류가 있는가. 아래 전문:
+사용자가 제시한 분석의 검증 대상 주장(Self-Modifying/Self-Referential Titans & Hope의 serving-time batchability):
+C1. request마다 다른 fast-weight/memory state에 batch 차원을 추가하면 BMM/grouped GEMM/batched rank-update로 처리 가능 — attention의 per-request K/V batching과 구조적으로 유사.
+C2. matrix memory update의 단순화형이 M_t = M_{t-1} A_t − η_t v̂_t k_tᵀ (A_t = data-dependent transition/forget, batch 차원 추가 시 M:[B,Dout,Din], k:[B,Din], v̂:[B,Dout], A:[B,Din,Din]).
+C3. Self-Referential Titans는 memory 본체뿐 아니라 key/value/query/learning-rate/weight-decay를 생성하는 memory module도 context에 따라 갱신(sequence별 별도 상태로 tensorize 가능).
+C4. Self-Referential Titans의 각 memory module은 residual 2-layer MLP: M(x) = x + W1 σ(W2 x). batch마다 weight 다르면 W2:[B,H,D], W1:[B,D,H]로 batched forward.
+C5. sequence 전체는 완전 병렬화 불가 — batch 방향과 chunk 내부 token 방향은 병렬, chunk 경계에는 recurrence(M0→M1→M2). 논문의 dual/chunk-wise form이 이것.
+C6. 원래 Titans도 inner-loop mini-batch GD를 matmul+sum+parallel associative scan으로 재구성, momentum recurrence는 associative scan. NL은 이를 "Fast and Parallelizable Training"으로 명시.
+C7. inner-loop update는 request별로 개별(memory[b] -= lr[b]*grad[b]) — batch 평균 내면 안 됨(정보 오염/leakage). outer-loop meta-parameter는 batch 평균 OK.
+C8. 각 batched operation(memory forward BMM, kvq generation, batched outer-product update, batched momentum scan, weight decay)은 1회 launch 가능하나, self-modifying block 전체가 단일 fused kernel이라는 뜻은 아니며, 공개 결과로 Google이 vLLM급 continuous-batching kernel 보유를 단정할 수 없음.
+C9. serving state가 attention보다 복잡 — request별 여러 mutable matrix(M_mem, M_k, M_v, M_q, M_eta, M_alpha + optimizer/momentum) → "Paged Fast-Weight State Manager" 필요 가능성.
+C10. 결론: hw 모델링 관점에서 Self-Modifying Titans = "batch마다 weight가 다른 recurrent MLP + batched optimizer/update kernel"; attention보다 MoE grouped-GEMM + TTT layer + batched optimizer + recurrent scan 결합 workload에 가까움.
+출력은 JSON 배열만: [{"claim":"C1|...|overall","verdict":"correct|imprecise|wrong","reason":"...","evidence":"원문/hw 근거"}].
