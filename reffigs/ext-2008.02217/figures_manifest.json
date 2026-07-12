@@ -1,0 +1,143 @@
+{
+  "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/2008.02217.pdf",
+  "engine": "pymupdf",
+  "figure_count": 5,
+  "figures": [
+    {
+      "figure_id": "fig1",
+      "figure_number": "1",
+      "caption": "Figure 1: We generalize the energy of binary modern Hopﬁeld networks to continuous states while keeping fast convergence and storage capacity properties. We also propose a new update rule that minimizes the energy. The new update rule is the attention mechanism of the transformer. Formulae are modiﬁed to express softmax as row vector. “=”-sign means “keeps the properties”.",
+      "image": "figures/fig1.png",
+      "references": [
+        {
+          "page": 2,
+          "context": "The retrieval of patterns with one update is important to integrate Hopﬁeld networks in deep learning architectures, where layers are activated only once. Surprisingly, our new update rule is also the key-value attention as used in transformer and BERT models (see Fig. 1). Our modern Hopﬁeld networks can be integrated as a new layer in deep learning architectures for pooling, memory, prototype learning, and attention."
+        },
+        {
+          "page": 3,
+          "context": "However, still this modern Hopﬁeld network has binary states. We generalize this energy function to continuous-valued patterns while keeping the properties of the modern Hopﬁeld networks like the exponential storage capacity and the extremely fast convergence (see Fig. 1). For the new energy we take the logarithm of the negative energy of modern Hopﬁeld networks and add a quadratic term of the current state."
+        },
+        {
+          "page": 3,
+          "context": "(2) We have 0 ⩽E ⩽2M 2 (see appendix Lemma A1). Using p = softmax(βXT ξ), we deﬁne a novel update rule (see Fig. 1): ξnew = f(ξ) = Xp = Xsoftmax(βXT ξ) . (3) The next theorem states that the update rule Eq."
+        },
+        {
+          "page": 5,
+          "context": "Hopﬁeld update rule is attention of the transformer. The Hopﬁeld network update rule is the attention mechanism used in transformer and BERT models (see Fig. 1). To see this, we assume N stored (key) patterns yi and S state (query) patterns ri that are mapped to the Hopﬁeld space of dimension dk."
+        }
+      ],
+      "reference_count": 4,
+      "description": null,
+      "source": {
+        "pdf": "2008.02217.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2008.02217.pdf",
+        "page": 2,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig2",
+      "figure_number": "2",
+      "caption": "Figure 2: Left: A standard deep network with layers (■) propagates either a vector or a set of vectors from the input to the output. Right: A deep network, where layers (■) are equipped with associative mem- ories via Hopﬁeld layers (■).",
+      "image": "figures/fig2.png",
+      "references": [
+        {
+          "page": 6,
+          "context": "Modern Hopﬁeld networks can be integrated into both types of neural network architectures and enable to equip each of their layers with associative memories. See Fig. 2. Types of new Hopﬁeld layers."
+        },
+        {
+          "page": 75,
+          "context": "At the end of training we visualized the count distribution, grouped into four classes (see Figure A.4). The thresholds for the classes were chosen according to the thresholds of Figure 2 in the main paper. However, they are divided by a factor of 4 to adapt to the shorter sequence length of 128 compared to 512."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2008.02217.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2008.02217.pdf",
+        "page": 6,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig3",
+      "figure_number": "3",
+      "caption": "Figure 3: The layer Hopfield allows the association of two sets R (■) and Y (■). It can be integrated into deep networks that propagate sets of vectors. The Hopﬁeld memory is ﬁlled with a set from either the input or previous layers. The output is a set of vectors Z (■).",
+      "image": "figures/fig3.png",
+      "references": [
+        {
+          "page": 6,
+          "context": "The layer Hopfield is the realization of formula (10). The memory of the Hopfield layer can be ﬁlled with sets from the input or previous layers, see Fig. 3. The memory may be ﬁlled with a reference set, which is covered by providing the reference set as additional input."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2008.02217.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2008.02217.pdf",
+        "page": 6,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig4",
+      "figure_number": "4",
+      "caption": "Figure 4: The layer HopfieldPooling enables pooling or summarization of sets, which are obtained from the input or from previous layers. The input Y (■) can be either a set or a sequence. The query patterns of each layer are static and can be learned. The output is a set of vectors Z (■), where the number of vectors equals the number of query patterns. The layer HopfieldPooling can realize multiple instance learning.",
+      "image": "figures/fig4.png",
+      "references": [
+        {
+          "page": 7,
+          "context": "The HopfieldPooling layer can substitute pooling, averaging, LSTM, and permutation equivariant layers. See Fig. 4. The layer HopfieldPooling is used for experiments with multiple instance learning tasks, e.g. for immune repertoire classiﬁcation in the experiments. = softmax ( ) = softmax ( ) Figure 4: The layer HopfieldPooling enables pooling or summarization of sets, which are obtained from the input or from previous layers."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2008.02217.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2008.02217.pdf",
+        "page": 7,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig5",
+      "figure_number": "5",
+      "caption": "Figure 5: The layer HopfieldLayer enables multiple queries of the training set, a reference set, prototype set, or a learned set (a learned matrix). The queries for each layer are computed from the results of previous layers. The input is a set of vectors R (■). The output is also a set of vectors Z (■), where the number of output vectors equals the number of input vectors. The layer HopfieldLayer can realize SVM models, k-nearest neighbor, and LVQ.",
+      "image": "figures/fig5.png",
+      "references": [
+        {
+          "page": 7,
+          "context": "The stored patterns can be interpreted as weights from the state (query) to hidden neurons that have a softmax activation function (Krotov & Hopﬁeld, 2020). The layer HopfieldLayer can substitute a fully connected layer, see Fig. 5. A single HopfieldLayer layer also allows for approaches similar to support vector machines (SVMs), approaches similar to k-nearest neighbor, approaches similar to learning vector quantization, and pattern search."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2008.02217.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2008.02217.pdf",
+        "page": 7,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    }
+  ]
+}

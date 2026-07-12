@@ -1,0 +1,131 @@
+{
+  "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/2102.11174.pdf",
+  "engine": "pymupdf",
+  "figure_count": 5,
+  "figures": [
+    {
+      "figure_id": "fig1",
+      "figure_number": "1",
+      "caption": "Figure 1. A visualisation of a DPFP from a 2d space (the xy-plane)",
+      "image": "figures/fig1.png",
+      "references": [
+        {
+          "page": 6,
+          "context": "Linear Transformers Are Secretly Fast Weight Programmers With the element-wise rectiﬁer function r(a) = max(0, a) the partial functions are deﬁned as: φ1(k) = r(k1)r(k2) (33) φ2(k) = r(−k1)r(k2) (34) φ3(k) = r(k1)r(−k2) (35) φ4(k) = r(−k1)r(−k2) (36) Figure 1 illustrates this function. The elements of the 4- dimensional space are displayed as the z component of the four coloured surfaces."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2102.11174.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2102.11174.pdf",
+        "page": 6,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig2",
+      "figure_number": "2",
+      "caption": "Figure 2. Final evaluation loss of the softmax memory and various",
+      "image": "figures/fig2.png",
+      "references": [
+        {
+          "page": 6,
+          "context": "All models are trained with a mini-batch size of 32 until the evaluation loss falls below 0.001 or until lack of progress for 1000 steps. In Figure 2, the best validation set performance for each model and each S is displayed (for the learning curves see Appendix D.1). The number of unique keys is initially S = 20 and is incremented by 20 until S = 600."
+        },
+        {
+          "page": 14,
+          "context": "D.2. Synthetic Task Setting 2 Figure 5 is a capacity plot for setting 2 with an increasing number of unique keys and queries (analogous to Figure 2 of setting 1 apart from the log-scale of the y-axis). We did not include FAVOR+ in this plot, because its combination with our update rule resulted in not-a-number in this setting."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2102.11174.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2102.11174.pdf",
+        "page": 7,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig3",
+      "figure_number": "3",
+      "caption": "Figure 3. Learning curves for different update rules. Sequence",
+      "image": "figures/fig3.png",
+      "references": [
+        {
+          "page": 7,
+          "context": "As an ablation we replace it with our DPFP-1 but we don’t use the normalisation term of Sec. 4.2, which we refer to as Schlag (2021) with DPFP. Figure 3 presents the learning curves. They demonstrate that our new update rule outperforms all other variants."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2102.11174.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2102.11174.pdf",
+        "page": 7,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig4",
+      "figure_number": "4",
+      "caption": "Figure 4. Training curves for setting 1 with 600 unique keys/values (sampled without replacement) as described in Sec. 6.1.1.",
+      "image": "figures/fig4.png",
+      "references": [
+        {
+          "page": 14,
+          "context": "D.1. Synthetic Task Setting 1 Figure 4 shows learning curves for the synthetic setting 1 (without replacement) with 600 unique keys and values. The scripts used to generate such ﬁgures can be found in our GitHub repository."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2102.11174.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2102.11174.pdf",
+        "page": 14,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig5",
+      "figure_number": "5",
+      "caption": "Figure 5. Final evaluation loss on synthetic setting 2 (with replace-",
+      "image": "figures/fig5.png",
+      "references": [
+        {
+          "page": 14,
+          "context": "D.2. Synthetic Task Setting 2 Figure 5 is a capacity plot for setting 2 with an increasing number of unique keys and queries (analogous to Figure 2 of setting 1 apart from the log-scale of the y-axis). We did not include FAVOR+ in this plot, because its combination with our update rule resulted in not-a-number in this setting."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2102.11174.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2102.11174.pdf",
+        "page": 15,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    }
+  ]
+}

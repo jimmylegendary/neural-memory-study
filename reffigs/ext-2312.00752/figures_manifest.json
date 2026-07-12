@@ -1,0 +1,311 @@
+{
+  "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/2312.00752.pdf",
+  "engine": "pymupdf",
+  "figure_count": 10,
+  "figures": [
+    {
+      "figure_id": "fig1",
+      "figure_number": "1",
+      "caption": "Figure 1: (Overview.) Structured SSMs independently map each channel (e.g. 𝐷= 5) of an input 𝑥to output 𝑦through a higher dimensional latent state ℎ(e.g. 𝑁= 4). Prior SSMs avoid materializing this large effective state (𝐷𝑁, times batch size 𝐵and sequence length 𝐿) through clever alternate computation paths requiring time-invariance: the (Δ, 𝑨, 𝑩, 𝑪) parameters are constant across time. Our selection mechanism adds back input-dependent dynamics, which also requires a careful hardware-aware algorithm to only materialize the expanded states in more efficient levels of the GPU memory hierarchy.",
+      "image": "figures/fig1.png",
+      "references": [
+        {
+          "page": 7,
+          "context": "Details of the fused kernel and recomputation are in Appendix D. The full Selective SSM layer and algorithm is illustrated in Figure 1. 3.4 A Simplified SSM Architecture As with structured SSMs, selective SSMs are standalone sequence transformations that can be flexibly incorporated into neural networks. The H3 architecture is the basis for the most well-known SSM architectures (Section 2), which are generally comprised of a block inspired by linear attention interleaved with an"
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2312.00752.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2312.00752.pdf",
+        "page": 3,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig2",
+      "figure_number": "2",
+      "caption": "Figure 2: (Left) The standard version of the Copying task involves constant spacing between input and output elements and is easily solved by time-invariant models such as linear recurrences and global convolutions. (Right Top) The Selective Copying task has random spacing in between inputs and requires time-varying models that can selectively remember or ignore inputs depending on their content. (Right Bottom) The Induction Heads task is an example of associative recall that requires retrieving an answer based on context, a key ability for LLMs.",
+      "image": "figures/fig2.png",
+      "references": [
+        {
+          "page": 5,
+          "context": "However, their effectiveness is limited by how well this state has compressed the context. To understand this principle, we focus on two running examples of synthetic tasks (Figure 2). • The Selective Copying task modifies the popular Copying task (Arjovsky, Shah, and Bengio 2016) by varying the position of the tokens to memorize. It requires content-aware reasoning to be able to memorize the relevant tokens (colored) and filter out the irrelevant ones (white). • The Induction Heads task is a well-known mechanism hypothesized"
+        },
+        {
+          "page": 5,
+          "context": "ntext, or affect the hidden state passed along the sequence in an input-dependent way. From the convolutional view, it is known that global convolutions can solve the vanilla Copying task (Romero et al. 2021) because it only requires time-awareness, but that they have difficulty with the Selective Copying task because of lack of content-awareness (Figure 2). More concretely, the spacing between inputs-to-outputs is varying and cannot be modeled by static convolution kernels."
+        },
+        {
+          "page": 10,
+          "context": "equence modeling, originally designed to test the memorization abilities of recurrent models. As discussed in Section 3.1, LTI SSMs (linear recurrences and global convolutions) can easily solve this task by only keeping track of time instead of reasoning about the data; for example, by constructing a convolution kernel of exactly the right length (Figure 2). This was explicitly validated in earlier work on global convolutions (Romero et al. 2021)."
+        },
+        {
+          "page": 29,
+          "context": "E Experimental Details and Additional Results E.1 Synthetic Tasks Selective Copying. Our setting is on sequences of length 4096, with a vocab size of 16 possible tokens (including the white “noise” token from Figure 2) and requiring models to memorize 16 “data” tokens. We use 2 layer models with a model dimension of 𝐷= 64."
+        }
+      ],
+      "reference_count": 4,
+      "description": null,
+      "source": {
+        "pdf": "2312.00752.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2312.00752.pdf",
+        "page": 6,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig3",
+      "figure_number": "3",
+      "caption": "Figure 3: (Architecture.) Our simplified block design combines the H3 block, which is the basis of most SSM architectures, with the ubiquitous MLP block of modern neural networks. Instead of interleaving these two blocks, we simply repeat the Mamba block homogenously. Compared to the H3 block, Mamba replaces the first multiplicative gate with an activation function. Compared to the MLP block, Mamba adds an SSM to the main branch. For 𝜎we use the SiLU / Swish activation (Hendrycks and Gimpel 2016; Ramachandran, Zoph, and Quoc V Le 2017).",
+      "image": null,
+      "references": [
+        {
+          "page": 4,
+          "context": "lso serve as our primary baselines. • Linear attention (Katharopoulos et al. 2020) is an approximation of self-attention involving a recurrence which can be viewed as a degenerate linear SSM. • H3 (Dao, Fu, Saab, et al. 2023) generalized this recurrence to use S4; it can be viewed as an architecture with an SSM sandwiched by two gated connections (Figure 3). H3 also inserts a standard local convolution, which they frame as a shift-SSM, before the main SSM layer. • Hyena (Poli et al. 2023) uses the same architecture as H3 but replaces the S4 layer with an MLP-parameterized global convolution (Romero et al. 2021). • RetNet (Y."
+        },
+        {
+          "page": 7,
+          "context": "The H3 architecture is the basis for the most well-known SSM architectures (Section 2), which are generally comprised of a block inspired by linear attention interleaved with an MLP (multi-layer perceptron) block. We simplify this architecture by combining these two components into one, which is stacked homogenously (Figure 3). This is inspired by the gated attention unit (GAU) (Hua et al. 2022), which did something similar for attention."
+        },
+        {
+          "page": 15,
+          "context": "r throughput than Transformers. 4.6 Model Ablations We perform a series of detailed ablations on components of our model, focusing on the setting of language modeling with size ≈350M models at Chinchilla token counts (same setting as Figure 4). 4.6.1 Architecture Table 6 investigates the effects of the architecture (block) and its inner SSM layer (Figure 3). We find that • Among previous non-selective (LTI) SSMs, which are equivalent to global convolutions, performance is very similar. • Replacing the complex-valued S4 variant from previous work with a real-valued one does not affect performance much, suggesting that (at least for LM) real-valued SSMs may be a better choice when accounting for hardw"
+        }
+      ],
+      "reference_count": 3,
+      "description": null,
+      "source": {
+        "pdf": "2312.00752.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2312.00752.pdf",
+        "page": 8,
+        "extractor": "pymupdf-textonly",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig4",
+      "figure_number": "4",
+      "caption": "Figure 4: (Scaling Laws.) Models of size ≈125𝑀to ≈1.3𝐵parameters, trained on the Pile. Mamba scales better than all other attention-free models and is the first to match the performance of a very strong “Transformer++” recipe that has now become standard, particularly as the sequence length grows.",
+      "image": "figures/fig4.png",
+      "references": [
+        {
+          "page": 11,
+          "context": "former architecture (GPT3 architecture), as well as the strongest Transformer recipe we know of (here referred to as Transformer++), based on the PaLM and LLaMa architectures (e.g. rotary embedding, SwiGLU MLP, RMSNorm instead of LayerNorm, no linear bias, and higher learning rates). We also compare against other recent subquadratic architectures (Figure 4). All model details are in Appendix E.2."
+        },
+        {
+          "page": 11,
+          "context": "All model details are in Appendix E.2. Figure 4 shows scaling laws under the standard Chinchilla (Hoffmann et al. 2022) protocol, on models from ≈125𝑀to ≈1.3𝐵 parameters. Mamba is the first attention-free model to match the performance of a very strong Transformer recipe (Transformer++) that has now become standard, particularly as the sequence length grows."
+        },
+        {
+          "page": 15,
+          "context": "an is 40× faster than a standard implementation. (Right) Inference: as a recurrent model, Mamba can achieve 5× higher throughput than Transformers. 4.6 Model Ablations We perform a series of detailed ablations on components of our model, focusing on the setting of language modeling with size ≈350M models at Chinchilla token counts (same setting as Figure 4). 4.6.1 Architecture Table 6 investigates the effects of the architecture (block) and its inner SSM layer (Figure 3). We find that • Among previous non-selective (LTI) SSMs, which are equivalent to global convolutions, performance is very similar. • Replacing the complex-valued S4 variant from previous work with a real-valued one does not affect p"
+        },
+        {
+          "page": 30,
+          "context": "We also gave it the improved training recipe above. • Mamba: The standard Mamba architecture, with the improved training recipe. E.2.2 Additional Scaling Law Ablations We perform additional ablations on the architecture using the same protocol as the 2k context length scaling laws in Figure 4 (Left). Mamba Architecture: Interleaving Blocks."
+        },
+        {
+          "page": 31,
+          "context": "H3 Architecture: Training Recipes. Next we ablate differences between the Hyena and H3++ models, our weakest and strongest models outside of Transformer++ and Mamba, particularly to isolate the effect of training recipes. • Hyena: The Hyena block with its original architecture and GPT3 training recipe (same as Figure 4). • Hyena+: The same architecture but with the improved training recipe described above. • H3+: The same architecture as Hyena+ but with the Hyena convolution kernel swapped out for S4D convolution kernel. • H3++: The same as H3+, but with a linear attention head dimension of 8. This increases computation inside the SSM recurrence but does not inc"
+        },
+        {
+          "page": 31,
+          "context": "Our general convention is that “Model+” represents the base model with the improved training recipe, and “Model++” also allows for architectural changes. Figure 9 (Right) shows that • A large improvement is achieved by the improved training recipe, which was used for many of the models in the main Figure 4 (RetNet, H3++, Transformer++, Mamba). • The choice of the inner LTI SSM does not matter (e.g. Hyena vs."
+        }
+      ],
+      "reference_count": 6,
+      "description": null,
+      "source": {
+        "pdf": "2312.00752.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2312.00752.pdf",
+        "page": 11,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig5",
+      "figure_number": "5",
+      "caption": "Figure 5: (DNA Scaling Laws.) Pretraining on the HG38 (human genome) dataset. (Left) Fixing short context length 210 = 1024 and increasing size from ≈200𝐾to ≈40𝑀parameters, Mamba scales better than baselines. (Right) Fixing model size and increasing sequence lengths while keeping tokens/batch and total training tokens fixed. Unlike baselines, the selection mechanism of Mamba facilitates better performance with increasing context length.",
+      "image": "figures/fig5.png",
+      "references": [
+        {
+          "page": 12,
+          "context": "We investigate Mamba as a FM backbone for pretraining and fine-tuning in the same setting as recent works on long-sequence models for DNA (Nguyen, Poli, et al. 2023). In particular, we focus on two explorations of scaling laws across model size and sequence length (Figure 5), and a difficult downstream synthetic classification task requiring long context (Figure 6). For pretraining, we largely follow a standard causal language modeling (next token prediction) setup for the training and model details (see also Appendix E.2)."
+        },
+        {
+          "page": 13,
+          "context": "and increasing sequence lengths while keeping tokens/batch and total training tokens fixed. Unlike baselines, the selection mechanism of Mamba facilitates better performance with increasing context length. 4.3.1 Scaling: Model Size In this experiment, we investigate the scaling properties of genomics foundation models with various model backbones (Figure 5 Left). Training."
+        },
+        {
+          "page": 13,
+          "context": "Results. Figure 5 (Left) shows that Mamba’s pretraining perplexity improves smoothly with model size, and that Mamba scales better than both HyenaDNA and Transformer++. For example, at the largest model size of ≈40𝑀parameters, the curve shows that Mamba can match the Transformer++ and HyenaDNA models with roughly 3× to 4× fewer parameters. 4.3.2 Scaling: Context Le"
+        },
+        {
+          "page": 13,
+          "context": "Results. Figure 5 (Right) shows that Mamba is able to make use of longer context even up to extremely long sequences of length 1M, and its pretraining perplexity improves as the context increases. On the other hand, the HyenaDNA model gets worse with sequence length."
+        }
+      ],
+      "reference_count": 4,
+      "description": null,
+      "source": {
+        "pdf": "2312.00752.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2312.00752.pdf",
+        "page": 13,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig6",
+      "figure_number": "6",
+      "caption": "Figure 6: (Great Apes DNA Classification.) Accuracy after fine- tuning on sequences of length 210 = 1024 up to 220 = 1048576 using pretrained models of the same context length. Numerical results in Table 13.",
+      "image": "figures/fig6.png",
+      "references": [
+        {
+          "page": 12,
+          "context": "tigate Mamba as a FM backbone for pretraining and fine-tuning in the same setting as recent works on long-sequence models for DNA (Nguyen, Poli, et al. 2023). In particular, we focus on two explorations of scaling laws across model size and sequence length (Figure 5), and a difficult downstream synthetic classification task requiring long context (Figure 6). For pretraining, we largely follow a standard causal language modeling (next token prediction) setup for the training and model details (see also Appendix E.2)."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2312.00752.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2312.00752.pdf",
+        "page": 14,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig7",
+      "figure_number": "7",
+      "caption": "Figure 7: (Audio Pretraining.) Mamba improves performance over prior state-of-the-art (Sashimi) in autoregressive audio model- ing, while improving up to minute-long context or million-length sequences (controlling for computation).",
+      "image": "figures/fig7.png",
+      "references": [
+        {
+          "page": 14,
+          "context": "Pretraining details largely follow the standard language modeling setup (Section 4.2). Figure 7 evaluates the effect of increasing training sequence lengths from 213 = 8192 to 220 ≈106, while keeping computation fixed. (There are some slight edge cases to the way the data is curated, which may lead to kinks in the scaling curves."
+        },
+        {
+          "page": 34,
+          "context": "The rest of our sequence lengths are defined by successively halving this and rounding up to the nearest multiple of 2048. Table 14 lists the specifications used in Figure 7. Beyond the varying batch sizes, the number of valid segments in the training set varied between different sequence lengths (e.g. the number of training steps per epoch was not constant for different points in the graph), which may have contributed to kinks in the scaling curves."
+        },
+        {
+          "page": 34,
+          "context": "Additional Ablations: SSM Parameterizations. We investigate SSM parameterizations on long-form audio waveform pretraining in the setting of Figure 7. The setting is modified slightly to use larger models (8 layers and 𝐷= 64 for 6M params, the SaShiMi default), shorter sequences (211 = 2048 to 218 = 262144 instead of 213 to 220), lower LR (0.001 from 0.002), and shorter training cycles (100K instead of 200K steps)."
+        }
+      ],
+      "reference_count": 3,
+      "description": null,
+      "source": {
+        "pdf": "2312.00752.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2312.00752.pdf",
+        "page": 14,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig8",
+      "figure_number": "8",
+      "caption": "Figure 8: (Efficiency Benchmarks.) (Left) Training: our efficient scan is 40× faster than a standard implementation. (Right) Inference: as a recurrent model, Mamba can achieve 5× higher throughput than Transformers.",
+      "image": "figures/fig8.png",
+      "references": [
+        {
+          "page": 15,
+          "context": "67 1.43 5.42 53.54 0.65 S4+MLP Mamba 1.859 1.42 5.71 56.51 0.64 Mamba MHA+MLP 1.850 1.37 5.63 58.23 0.62 Mamba S4+MLP 1.853 1.07 6.05 73.34 0.55 Mamba Mamba 1.852 0.94 6.26 88.54 0.52 4.5 Speed and Memory Benchmarks We benchmark the speed of the SSM scan operation (state expansion 𝑁= 16), as well as the end-to-end inference throughput of Mamba, in Figure 8. Our efficient SSM scan is faster than the best attention implementation that we know of (FlashAttention-2 (Dao 2024)) beyond sequence length 2K, and up to 20-40× faster than a standard scan implementation in PyTorch."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2312.00752.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2312.00752.pdf",
+        "page": 15,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig9",
+      "figure_number": "9",
+      "caption": "Figure 9: (Scaling laws: extra ablations.) (Left) Instead of (Right) Instead of",
+      "image": "figures/fig9.png",
+      "references": [
+        {
+          "page": 31,
+          "context": "This can also be interpreted as taking a Transformer with SwiGLU MLPs (i.e. what we call Transformer++) and simply adding SSMs to the MLP blocks. Figure 9 (Right) shows these variants compared to the original (homogenous) Mamba architecture. Interestingly, neither change matters too much."
+        },
+        {
+          "page": 31,
+          "context": "Our general convention is that “Model+” represents the base model with the improved training recipe, and “Model++” also allows for architectural changes. Figure 9 (Right) shows that • A large improvement is achieved by the improved training recipe, which was used for many of the models in the main Figure 4 (RetNet, H3++, Transformer++, Mamba). • The choice of the inner LTI SSM does not matter (e.g. Hyena vs."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2312.00752.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2312.00752.pdf",
+        "page": 31,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig10",
+      "figure_number": "10",
+      "caption": "Figure 10: (Audio Pretraining (YouTubeMix) Ablations.) As a uniformly-sampled “continuous” signal modality, audio waveforms actu- ally benefit from LTI models which have matching inductive bias. (Left) Homogenous models (all blocks have the same parameterization) (Right) Only the center U-Net blocks are ablated; the outer blocks are Mamba-S4. Purple line is same as figure on left.",
+      "image": "figures/fig10.png",
+      "references": [
+        {
+          "page": 34,
+          "context": "The setting is modified slightly to use larger models (8 layers and 𝐷= 64 for 6M params, the SaShiMi default), shorter sequences (211 = 2048 to 218 = 262144 instead of 213 to 220), lower LR (0.001 from 0.002), and shorter training cycles (100K instead of 200K steps). Figure 10 shows that the change from S4 →S6 (i.e. the selection mechanism) is not always beneficial. On long-form audio waveforms, it in fact significantly hampers performance, which may be intuitive from the point of view that audio 34"
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2312.00752.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2312.00752.pdf",
+        "page": 35,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    }
+  ]
+}

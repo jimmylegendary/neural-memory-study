@@ -1,0 +1,163 @@
+{
+  "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/2312.06635.pdf",
+  "engine": "pymupdf",
+  "figure_count": 6,
+  "figures": [
+    {
+      "figure_id": "fig1",
+      "figure_number": "1",
+      "caption": "Figure 1: (a) FLASHLINEARATTENTION without materialization. This version is more memory-efficient. (b-c) FLASHLINEARAT- TENTION with materialization. This version enables sequence-level chunkwise parallelism.",
+      "image": "figures/fig1.png",
+      "references": [
+        {
+          "page": 4,
+          "context": "We give two versions, whose forward and backward passes differ depending on whether the chunk-level hidden states S[n] are materialized in HBM. See Alg. 1 and Fig. 1 for the forward pass. (Alg. 2 in the appendix describes the backward pass.) At a high level, we use tiling to load tensors block-by-block and re-use tensor blocks on chip to avoid multiple HBM I/O as much as possible."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2312.06635.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2312.06635.pdf",
+        "page": 4,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig2",
+      "figure_number": "2",
+      "caption": "Figure 2: Speed comparison on a single H100 GPU with batch size 32, number of heads 16, head dimension 64, and chunk size 64. Both x- and y-axes are on log scale. w/ m. and w/o m. denotes using FLASHLINEARATTENTION with or without materialization of hidden states in HBM.",
+      "image": "figures/fig2.png",
+      "references": [
+        {
+          "page": 4,
+          "context": "We find this introduces a small runtime overhead but significantly reduces the memory footprint, and we adopt this strategy by default. Figure 2 shows the speed and memory footprint of our imple- mentation. Both versions of FLASHLINEARATTENTION are substantially faster than FLASHATTENTION-2 (Dao, 2023) 29 210 211 212 213 214 215 100 101 102 103 Sentence length Time (ms) Running speed 210 211 212 2−1 20 21 Sentence length GPU memory (GB) Memory footprint FlashAttention-2 (CUDA) FlashLinearA"
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2312.06635.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2312.06635.pdf",
+        "page": 4,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig3",
+      "figure_number": "3",
+      "caption": "Figure 3: Attention-style map to illustrate the chunkwise compu- tations in GLA. The inter-chunk dependencies (in gray) are not directly computed in the chunkwise form (only computed in the parallel form). The intra-chunk dependencies are modeled via sec- ondary chunking/tiling where the inter-sub-chunk part (in orange) is computed by half-precision matmuls while the intra-sub-chunk part (in pink) is computed in full precision in log space.",
+      "image": "figures/fig3.png",
+      "references": [
+        {
+          "page": 5,
+          "context": "However, unlike vanilla linear attention, as Eq. 4 cannot be represented via a standard matmul, and it cannot make use of half-precision matmuls on tensor cores. We will show in §4.3 how a secondary-level chunking mechanism can enable the use of half-precision matmuls for most computations while maintaining numerical stability, as illustrated in Figure 3. 4.2 Chunkwise Parallel Form of GLA We derive a chunkwise form of GLA similar to the chunkwise form of basic linear attention (§2.2). Here the intra-chunk operation implements the above parallel form 6This form resembles extrapolatable position encoding (Sun et al., 2023b) in that the term inside the exponential can be viewed as a data-dependent r"
+        },
+        {
+          "page": 6,
+          "context": "To make better use of tensor cores, we use secondary-level chunking scheme, where a chunk is further divided into sub-chunks (i.e., another level of tiling) in the spirit of classic tiling techniques (Dao et al., 2022b). The attention-like matrix P ∈RL×L is then computed in a chunkwise manner, as illustrated in Figure 3. Concretely, the interactions between sub-chunks are computed via half-precision matmuls,7 P[i][j] = \u0010 Q[i]⊙Λ[i] \u0011\u0010 K[j]⊙Γ[j]⊙ biC b(j+1)C \u0011T ∈RC×C."
+        },
+        {
+          "page": 6,
+          "context": "Concretely, the interactions between sub-chunks are computed via half-precision matmuls,7 P[i][j] = \u0010 Q[i]⊙Λ[i] \u0011\u0010 K[j]⊙Γ[j]⊙ biC b(j+1)C \u0011T ∈RC×C. This corresponds to the orange tiles in Figure 3. For the intra-sub-chunk part (pink tiles in Figure 3) we have to resort to Eq. 4 and perform the matmul in full precision for stability."
+        },
+        {
+          "page": 6,
+          "context": "This corresponds to the orange tiles in Figure 3. For the intra-sub-chunk part (pink tiles in Figure 3) we have to resort to Eq. 4 and perform the matmul in full precision for stability. With this two-level tiling strategy, the total amount 7To reduce notational clutter, here we use the notations from the first-level chunking to express the key idea."
+        }
+      ],
+      "reference_count": 4,
+      "description": null,
+      "source": {
+        "pdf": "2312.06635.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2312.06635.pdf",
+        "page": 6,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig4",
+      "figure_number": "4",
+      "caption": "Figure 4: Accuracy (%) on the synthetic MQAR task.",
+      "image": "figures/fig4.png",
+      "references": [
+        {
+          "page": 8,
+          "context": "(2024). Higher is better for all tasks. in Figure 4. Standard quadratic attention achieves perfect scores in all settings and is thus omitted."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2312.06635.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2312.06635.pdf",
+        "page": 7,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig5",
+      "figure_number": "5",
+      "caption": "Figure 5: Length extrapolation on the test set of SlimPajama and PG19. We pretrain 1.3B models from scratch on SlimPajama for 100B tokens with different training length. ∗indicates models using truncated BPTT with over 12 segments that are each of 2K-length.",
+      "image": "figures/fig5.png",
+      "references": [
+        {
+          "page": 8,
+          "context": "RetNet, and GLA models on SlimPajama for 100B tokens on these settings and test them on both SlimPajama test set and PG19 (Rae et al., 2019) test set. Figure 5 shows the perplexities of the tokens calculated in dif- ferent position groups. For models trained on 2K-length con- texts, GLA extrapolates better than Mamba/RetNet in most position buckets on the PG19 test set; Mamba struggles to extrapolate beyond 4K, while GLA/RetNet can generalize to 18K on the Slimpajama test set."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2312.06635.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2312.06635.pdf",
+        "page": 8,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig6",
+      "figure_number": "6",
+      "caption": "Figure 6: Training throughput and memory footprint on an H100.",
+      "image": "figures/fig6.png",
+      "references": [
+        {
+          "page": 8,
+          "context": "Increasing it to 8 (i.e., smaller head dimension) leads to relatively large perplexity degradation; reducing it to 1 (i.e., larger head dimension) actually performs best, but results in only marginal improvement while requiring much higher GPU memory. We thus choose 4 heads for our experiments. 5.3 Training Efficiency Fig. 6 shows the throughput and memory usage as a function of the sequence length and batch size for the different 1.3B models on a single H100 GPU.10 Here GLA adopts the 9Although there are positional encoding schemes that enable bet- ter length extrapolation, these methods still have difficulty generaliz- ing significantly beyond context lengths seen d"
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2312.06635.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2312.06635.pdf",
+        "page": 9,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    }
+  ]
+}

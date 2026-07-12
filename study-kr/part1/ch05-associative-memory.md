@@ -81,9 +81,21 @@ capacity는 어떤가. Hopfield 1982는 pattern 수가 약 $0.15\,d$를 넘으�
 
 왜 그런지의 직관은 kernel이다. $(x^\top s)^n = \phi_n(x)^\top \phi_n(s)$ — 차수 $n$ monomial feature map의 내적이다. 즉 energy의 차수를 올리는 것은 key들을 더 높은 차원의 공간으로 lift해서 "서로 orthogonal할 자리"를 늘리는 것과 같다. §5.2에서 capacity를 제한한 것이 "orthogonal한 방향의 개수 = $d_k$"였으므로, 공간을 $d^n$ 차원으로 키우면 한계도 따라 올라간다.
 
+이 차수 효과는 저장되는 memory의 성격 변화로도 눈에 보인다(그림 5-1). 차수 $n$이 작으면($n=2,3$) 각 memory는 여러 패턴에 걸친 분산된 feature에 가깝고, $n$을 크게 키우면($n=20,30$) 개별 패턴에 날카롭게 정렬된 prototype이 된다. Krotov & Hopfield 2016은 이것을 "feature-to-prototype transition"이라 부르는데, energy 봉우리가 뾰족해질수록 서로 다른 패턴의 attractor가 더 잘 분리되어 더 많은 패턴을 담을 수 있다는 것 — 즉 이 sharpening이 $d^{n-1}$ 스케일링의 기하학적 실체다.
+
+![그림 5-1 — dense associative memory에서 energy 차수 $n$을 올리면 저장된 memory의 성격이 바뀐다: 작은 $n$(2, 3)에서는 여러 digit에 걸친 분산된 feature, 큰 $n$(20, 30)에서는 하나의 패턴에 정렬된 prototype이 된다(아래 히스토그램은 각 memory가 투표하는 class 수의 분포). energy가 날카로워질수록 attractor가 분리되어 capacity가 커지는 메커니즘의 시각화다. 출처: Krotov & Hopfield, *Dense Associative Memory for Pattern Recognition* (arXiv:1606.01164), 원문 Fig.2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-1606.01164-fig2.png)
+
+그림 5-1 — dense associative memory에서 energy 차수 $n$을 올리면 저장된 memory의 성격이 바뀐다: 작은 $n$(2, 3)에서는 여러 digit에 걸친 분산된 feature, 큰 $n$(20, 30)에서는 하나의 패턴에 정렬된 prototype이 된다(아래 히스토그램은 각 memory가 투표하는 class 수의 분포). energy가 날카로워질수록 attractor가 분리되어 capacity가 커지는 메커니즘의 시각화다. 출처: Krotov & Hopfield, *Dense Associative Memory for Pattern Recognition* (arXiv:1606.01164), 원문 Fig.2 — **원저자의 그림(third-party), 본서의 결과가 아님**.
+
 이 사슬의 극한이 현대적 결말이다. $F$를 exponential로 보내면(연속 state + log-sum-exp energy), Ramsauer et al. 2021 (arXiv:2008.02217)이 보였듯 1-step retrieval update가 **정확히 softmax attention의 형태**가 되고(pattern을 선형 사상으로 key/value화하고 softmax의 역온도를 $1/\sqrt{d_k}$로 두는 조건 [Ramsauer et al. 2021 Eq. 10, App. A.4]), capacity는 $d$에 exponential로 커진다(저장 가능 pattern 수의 하한이 1보다 큰 상수의 $(d-1)/4$ 거듭제곱 꼴 [Ramsauer et al. 2021 Thm 3]). 즉 Transformer의 attention은 exponential energy를 갖는 modern Hopfield network의 retrieval로 읽을 수 있다.
 
 이 대응은 read의 비용 구조까지 설명한다. 고전 Hopfield의 read는 수렴까지 도는 fixed-point iteration이었다(§5.3). Ramsauer et al. 2021은 exponential energy 아래에서는 한 번의 update만으로 저장 pattern 근방으로 retrieval이 사실상 완료된다고 보고한다(잘 분리된 pattern에 대해 one update 후 오차가 separation에 지수적으로 작다 [Ramsauer et al. 2021 Thm 4]) — attention이 반복 없이 softmax 한 번으로 read를 끝내는 관행은 이 성질의 번역이다. energy를 날카롭게 만들수록 attractor의 basin이 가팔라져서, 반복 read가 1-step read로 접힌다.
+
+이 대응 사슬 전체는 한 다이어그램으로 요약된다(그림 5-2): 고전 Hopfield energy → 연속 상태의 log-sum-exp energy → softmax update rule → transformer attention의 네 상자가, 왼쪽에서 오른쪽으로 같은 대상을 점점 독자에게 익숙한 형태로 재서술한다. Ramsauer et al. 2021은 오른쪽 두 상자의 등식 — continuous modern Hopfield의 1-step update가 곧 $\mathrm{softmax}(\beta\,\xi^\top X)\,X^\top$이고, 역온도 $\beta=1/\sqrt{d_k}$·선형 사상을 두면 정확히 $\mathrm{softmax}(QK^\top/\sqrt{d_k})V$ — 을 이 그림의 핵심 주장으로 제시한다.
+
+![그림 5-2 — modern Hopfield network의 energy를 이진에서 연속 상태로 일반화하면(가운데 두 상자: log-sum-exp energy) 그 1-step update rule이 정확히 transformer의 softmax attention이 된다(오른쪽 두 상자). §5.4의 "exponential energy 극한 = softmax attention" 사슬을 한 줄로 보여 준다. 출처: Ramsauer et al., *Hopfield Networks is All You Need* (arXiv:2008.02217), 원문 Fig.1 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-2008.02217-fig1.png)
+
+그림 5-2 — modern Hopfield network의 energy를 이진에서 연속 상태로 일반화하면(가운데 두 상자: log-sum-exp energy) 그 1-step update rule이 정확히 transformer의 softmax attention이 된다(오른쪽 두 상자). §5.4의 "exponential energy 극한 = softmax attention" 사슬을 한 줄로 보여 준다. 출처: Ramsauer et al., *Hopfield Networks is All You Need* (arXiv:2008.02217), 원문 Fig.1 — **원저자의 그림(third-party), 본서의 결과가 아님**.
 
 <!-- FIG: ch05/fig-01-capacity-chain -->
 

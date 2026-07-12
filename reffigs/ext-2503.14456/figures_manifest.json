@@ -1,0 +1,592 @@
+{
+  "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+  "engine": "pymupdf",
+  "figure_count": 23,
+  "figures": [
+    {
+      "figure_id": "fig1",
+      "figure_number": "1",
+      "caption": "Figure 1: RWKV-7’s overall architecture.",
+      "image": "figures/fig1.png",
+      "references": [
+        {
+          "page": 6,
+          "context": "Figure 1 presents the overall architecture of RWKV-7. Please refer to Appendix F for more details."
+        },
+        {
+          "page": 30,
+          "context": "A Author Contributions Bo Peng Original RWKV-7 ideas, original code, performance optimizations, original experiments, dataset composition, and trained models from 0.1B to 2.9B. Ruichong Zhang Personnel organization, wrote Sections 3, 4, 7.1, 7.3, 10 and Appendices C, E, H, J, K, M, Figures 1, 2, 11, 12, 15, 16 and Tables 1, 3, 4, 6, 14, 15, 16, 17, 18, 20. Additional contributions on implementing RWKV-7 for Flash-linear-attention and converting RWKV-7 models on HuggingFace."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 6,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig2",
+      "figure_number": "2",
+      "caption": "Figure 2: A simple illustration of the update mechanism of a single head of RWKV-7’s state. Note that the actual state size is 64×64 per head, not 4×4.",
+      "image": "figures/fig2.png",
+      "references": [
+        {
+          "page": 30,
+          "context": "A Author Contributions Bo Peng Original RWKV-7 ideas, original code, performance optimizations, original experiments, dataset composition, and trained models from 0.1B to 2.9B. Ruichong Zhang Personnel organization, wrote Sections 3, 4, 7.1, 7.3, 10 and Appendices C, E, H, J, K, M, Figures 1, 2, 11, 12, 15, 16 and Tables 1, 3, 4, 6, 14, 15, 16, 17, 18, 20. Additional contributions on implementing RWKV-7 for Flash-linear-attention and converting RWKV-7 models on HuggingFace."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 6,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig3",
+      "figure_number": "3",
+      "caption": "Figure 3: Model Comparisons across Multilingual Benchmarks",
+      "image": "figures/fig3.png",
+      "references": [
+        {
+          "page": 10,
+          "context": "We also find that RWKV-7-World models expand upon RWKV-6-World models already strong capabilities on multi- lingual benchmarks, outperforming SmolLM2 (Allal et al., 2025), Llama-3.2 (Grattafiori et al., 2024), and Qwen-2.5 (Qwen et al., 2025) by a significant margin. In Figures 3a and 4a we plot FLOPs used to train several open models versus average accuracy across the same sets of common english and multi-lingual benchmarks. The multilingual evals show a very dramatic Pareto improvement versus the transformer models."
+        },
+        {
+          "page": 30,
+          "context": "Additional contributions on implementing RWKV-7 for Flash-linear-attention and converting RWKV-7 models on HuggingFace. Daniel Goldstein Manuscript organization, initial draft sections 1, 2, 3, 4, 5, FLOPS portion of 7.1, figures 3a and 4a, and appendices B, F, G. Proofreading and revisions of full manuscript."
+        },
+        {
+          "page": 30,
+          "context": "Jiaxing Liu Experiments and writing audio modeling in section 9. Janna Lu Needle-in-haystack evaluations for Section 7.5, experiments for figure 3a and 3b, figure 4a and 4b, figure 7, table 3, and table 18. Edits to Section 1, G, and abstract."
+        }
+      ],
+      "reference_count": 3,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 10,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig4",
+      "figure_number": "4",
+      "caption": "Figure 4: Model Comparisons across English-Language Benchmarks",
+      "image": "figures/fig4.png",
+      "references": [
+        {
+          "page": 10,
+          "context": "We also find that RWKV-7-World models expand upon RWKV-6-World models already strong capabilities on multi- lingual benchmarks, outperforming SmolLM2 (Allal et al., 2025), Llama-3.2 (Grattafiori et al., 2024), and Qwen-2.5 (Qwen et al., 2025) by a significant margin. In Figures 3a and 4a we plot FLOPs used to train several open models versus average accuracy across the same sets of common english and multi-lingual benchmarks. The multilingual evals show a very dramatic Pareto improvement versus the transformer models."
+        },
+        {
+          "page": 30,
+          "context": "Additional contributions on implementing RWKV-7 for Flash-linear-attention and converting RWKV-7 models on HuggingFace. Daniel Goldstein Manuscript organization, initial draft sections 1, 2, 3, 4, 5, FLOPS portion of 7.1, figures 3a and 4a, and appendices B, F, G. Proofreading and revisions of full manuscript."
+        },
+        {
+          "page": 30,
+          "context": "Jiaxing Liu Experiments and writing audio modeling in section 9. Janna Lu Needle-in-haystack evaluations for Section 7.5, experiments for figure 3a and 3b, figure 4a and 4b, figure 7, table 3, and table 18. Edits to Section 1, G, and abstract."
+        }
+      ],
+      "reference_count": 3,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 11,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig5",
+      "figure_number": "5",
+      "caption": "Figure 5: PG19 loss versus sequence position for RWKV and Mamba models trained on The Pile datasets.",
+      "image": "figures/fig5.png",
+      "references": [
+        {
+          "page": 12,
+          "context": "Despite sharing the same architecture and being pretrained on 4k context windows, models trained on different datasets exhibited different behaviors. The Pile-trained RWKV7 showed more significant loss reduction on long contexts compared to its predecessors, demonstrating effective long-context extrapolation (see Figure 5). Surprisingly, for RWKV7 trained on the World dataset, when processing contexts longer than 10k, the loss began to show an increasing trend (see Figure 6)."
+        },
+        {
+          "page": 30,
+          "context": "Experiments for 7.4. Kaifeng Tan Section 7.2, Figures 5, 6. Appendix I on board game modeling with Othello/Reversi, including training data design, model implementation, experiments, and result analysis."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 14,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig6",
+      "figure_number": "6",
+      "caption": "Figure 6: PG19 loss versus sequence position for RWKV7 models and predecessors trained on the World dataset.",
+      "image": "figures/fig6.png",
+      "references": [
+        {
+          "page": 12,
+          "context": "The Pile-trained RWKV7 showed more significant loss reduction on long contexts compared to its predecessors, demonstrating effective long-context extrapolation (see Figure 5). Surprisingly, for RWKV7 trained on the World dataset, when processing contexts longer than 10k, the loss began to show an increasing trend (see Figure 6). We speculate this is because the larger dataset and model size created inductive biases that caused overfitting to specific context lengths."
+        },
+        {
+          "page": 30,
+          "context": "Experiments for 7.4. Kaifeng Tan Section 7.2, Figures 5, 6. Appendix I on board game modeling with Othello/Reversi, including training data design, model implementation, experiments, and result analysis."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 15,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig7",
+      "figure_number": "7",
+      "caption": "Figure 7: RWKV7-World3 pass-key retrieval evaluation",
+      "image": "figures/fig7.png",
+      "references": [
+        {
+          "page": 12,
+          "context": "Further experiments showed that fine-tuning on long contexts can restore its long context capabilities. To further test RWKV-7 long-context retrieval abilities, we conduct a pass-key retrieval evaluation following the approach of (Chen et al., 2024b) and plot the results in Figure 7. In this evaluation, 12"
+        },
+        {
+          "page": 30,
+          "context": "Jiaxing Liu Experiments and writing audio modeling in section 9. Janna Lu Needle-in-haystack evaluations for Section 7.5, experiments for figure 3a and 3b, figure 4a and 4b, figure 7, table 3, and table 18. Edits to Section 1, G, and abstract."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 16,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig8",
+      "figure_number": "8",
+      "caption": "Figure 8: Minimum number of layers (lower is better) required to attain > 95% validation accuracy on group multiplication problems by sequence length and group.",
+      "image": "figures/fig8.png",
+      "references": [
+        {
+          "page": 15,
+          "context": "We plot the minimum number of layers required to achieve over 95% validation accuracy on group multiplication tasks, as a function of sequence length and group structure. The results are shown in Figure 8. Our findings indicate that RWKV-7 exhibits stronger state-tracking capabilities than Transformers, Mamba, and S4, though slightly weaker than classical RNNs."
+        },
+        {
+          "page": 15,
+          "context": "Our findings indicate that RWKV-7 exhibits stronger state-tracking capabilities than Transformers, Mamba, and S4, though slightly weaker than classical RNNs. Figure 8 also aligns with our theory from Appendix D.2, which predicts that RWKV-7 can perform state tracking and recognize any regular language with a constant number of layers. RWKV-7 has no expressivity advantage for state tracking compared to classical RNNs, which can recognize any regular language in a single layer."
+        },
+        {
+          "page": 30,
+          "context": "Appendix I on board game modeling with Othello/Reversi, including training data design, model implementation, experiments, and result analysis. Saiteja Utpala Section 7.6 and state tracking experiments for Figure 8. Nathan Wilce Extended context-length dataset development and extended-length model train- ing."
+        }
+      ],
+      "reference_count": 3,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 17,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig9",
+      "figure_number": "9",
+      "caption": "Figure 9: Time vs. Sequence Length (H100)",
+      "image": "figures/fig9.png",
+      "references": [
+        {
+          "page": 15,
+          "context": "A key example is the Flash Linear Attention library (Yang & Zhang, 2024), which offers a Triton-based implementation designed for these larger configurations. Speed In Figure 9, we time the forward + backward pass of each kernel for batch size 8, head dimension 64 and model dimension 4096 (64 wkv heads) on an H100 SXM GPU, for varying 15"
+        },
+        {
+          "page": 16,
+          "context": "Memory The peak training memory usages of the tested models are well described by the formulas derived below. For example, the runs in Figure 9 required peak memory within 2% of the estimates. In the tested kernels, the memory required per stored variable (e.g. q, k, or v in attention) is batch size×model dimension×sequence length×2 bytes for bfloat16. 16"
+        },
+        {
+          "page": 30,
+          "context": "Wind Main author of RWKV-7 CUDA kernel implementations. Experiments for Figure 9. Section 8 and Appendix D."
+        }
+      ],
+      "reference_count": 3,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 17,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig10",
+      "figure_number": "10",
+      "caption": "Figure 10: The architecture of VisualRWKV-7. The input image is processed by three vision encoders, and the obtained features are concatenated. Afterward, they are projected through an MLP with context gating to align with the dimensions of the RWKV-7 block. Finally, the image features are concatenated with the text embeddings and fed into the RWKV-7 LLM.",
+      "image": "figures/fig10.png",
+      "references": [
+        {
+          "page": 18,
+          "context": "Finally, the image features are concatenated with the text embeddings and fed into the RWKV-7 LLM. RWKV for Image Understanding To demonstrate the modeling capabilities of RWKV-7, we constructed VisualRWKV-7 (Figure10), a visual language model based on the RWKV-7 block, to evaluate the image understanding capabilities of RWKV-7. VisualRWKV-6 (Hou et al., 2024) used the CLIP encoder, which focused on processing low-resolution images and achieved good results."
+        },
+        {
+          "page": 30,
+          "context": "Xingjian Du Experiments and writing of audio modeling in section 9. Haowen Hou Wrote Section 9, covering architectural design, coding, model training, experimen- tal evaluation, as well as figure (Figure 10), table (Table 9), and text writing. Jiaju Lin Experiments and writing audio modeling in section 9."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 18,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig11",
+      "figure_number": "11",
+      "caption": "Figure 11: The architecture of RWKV-7, drawn in detail.",
+      "image": "figures/fig11.png",
+      "references": [
+        {
+          "page": 30,
+          "context": "A Author Contributions Bo Peng Original RWKV-7 ideas, original code, performance optimizations, original experiments, dataset composition, and trained models from 0.1B to 2.9B. Ruichong Zhang Personnel organization, wrote Sections 3, 4, 7.1, 7.3, 10 and Appendices C, E, H, J, K, M, Figures 1, 2, 11, 12, 15, 16 and Tables 1, 3, 4, 6, 14, 15, 16, 17, 18, 20. Additional contributions on implementing RWKV-7 for Flash-linear-attention and converting RWKV-7 models on HuggingFace."
+        },
+        {
+          "page": 38,
+          "context": "The shrinking state could in principle be mismatched with the scales of vt and ˜kt, but our constructions always satisfy vt = ˜kt = 0 whenever c̸ = 1 is required. E Additional Architectural and Training Details Architecture Diagram We provide a comprehensive architecture diagram (Figure 11) in order to help readers thoroughly understand our architecture design. Parameters and Dimensions Throughout this section, we denote by D the model dimension, L the number of layers, h = D/Dh the number of heads, and V the vocabulary size."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 39,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig12",
+      "figure_number": "12",
+      "caption": "Figure 12: Training loss curve for RWKV-7 World models. Blue line: loss; Red line: smoothed loss; Green line: actual learning rate; Dotted red line: learning rate schedule.",
+      "image": "figures/fig12.png",
+      "references": [
+        {
+          "page": 30,
+          "context": "A Author Contributions Bo Peng Original RWKV-7 ideas, original code, performance optimizations, original experiments, dataset composition, and trained models from 0.1B to 2.9B. Ruichong Zhang Personnel organization, wrote Sections 3, 4, 7.1, 7.3, 10 and Appendices C, E, H, J, K, M, Figures 1, 2, 11, 12, 15, 16 and Tables 1, 3, 4, 6, 14, 15, 16, 17, 18, 20. Additional contributions on implementing RWKV-7 for Flash-linear-attention and converting RWKV-7 models on HuggingFace."
+        },
+        {
+          "page": 41,
+          "context": "We observe extremely stable training without any loss spikes in all four runs, indicating that the likelihood of encountering such spikes during the training of a very large RWKV-7 model is minimal. See Figure 12 for the resulting learning rates and observed loss curves. Despite the general stability of our loss curves, we did sometimes observe NaN loss across a single training step, which we theorize may be due to our use of such an extremely low AdamW ϵ."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 42,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig13",
+      "figure_number": "13",
+      "caption": "Figure 13: Reversi Training loss for different token types",
+      "image": "figures/fig13.png",
+      "references": [
+        {
+          "page": 49,
+          "context": "Training We trained RWKV-7 models with 9M and 26M parameters respectively on 6 million samples. By tracking the loss across different token types during training (figure 13), we noticed that the model first mastered output formatting, then developed board state tracking capability, and continuously improved its evaluation accuracy throughout training. Figure 13: Reversi Training loss for different token types Evaluation We control the model’s thinking budget by setting the width and depth of Alpha-beta pruning, and t"
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 49,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig14",
+      "figure_number": "14",
+      "caption": "Figure 14: Reversi Token consumption and win rates under different search configurations",
+      "image": "figures/fig14.png",
+      "references": [
+        {
+          "page": 49,
+          "context": "Figure 13: Reversi Training loss for different token types Evaluation We control the model’s thinking budget by setting the width and depth of Alpha-beta pruning, and test the win rate against baseline a model (depth=1, width=1) under different budgets. As shown in figure 14, by increasing the testing budget, RWKV-7 can effectively search for better strategies, demonstrating a positive test-time scaling law on this task. Figure 14: Reversi Token consumption and win rates under different search configurations 49"
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 49,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig15",
+      "figure_number": "15",
+      "caption": "Figure 15: Visualization example of RWKV’s WKV matrices.",
+      "image": "figures/fig15.png",
+      "references": [
+        {
+          "page": 30,
+          "context": "A Author Contributions Bo Peng Original RWKV-7 ideas, original code, performance optimizations, original experiments, dataset composition, and trained models from 0.1B to 2.9B. Ruichong Zhang Personnel organization, wrote Sections 3, 4, 7.1, 7.3, 10 and Appendices C, E, H, J, K, M, Figures 1, 2, 11, 12, 15, 16 and Tables 1, 3, 4, 6, 14, 15, 16, 17, 18, 20. Additional contributions on implementing RWKV-7 for Flash-linear-attention and converting RWKV-7 models on HuggingFace."
+        },
+        {
+          "page": 51,
+          "context": "(i.e., no outliers, and does not grow over context length), whereas RWKV-5 and RWKV-6 constantly produced outliers on the order of thousands (see Figures 15 and 16). This indicates that RWKV-7 has better numerical stability during training and inference. 1 2 4 8 16 32 64 128 256 512 1024204840968192 Context Length 10 1 100 101 RMS RMS of RWKV State Entries RWKV5-1.5B RWKV6-1.6B RWKV7-1.5B 1 2 4 8 16 32 64 128 256 512 1024204840968192 Context Length 1.0 1.1 1.2 1.3 1.4 1.5 1.6 Average Stable Rank Average Stab"
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 50,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig16",
+      "figure_number": "16",
+      "caption": "Figure 16: The global RMS and average stable rank of WKV matrices, plotted over sequence length.",
+      "image": "figures/fig16.png",
+      "references": [
+        {
+          "page": 30,
+          "context": "A Author Contributions Bo Peng Original RWKV-7 ideas, original code, performance optimizations, original experiments, dataset composition, and trained models from 0.1B to 2.9B. Ruichong Zhang Personnel organization, wrote Sections 3, 4, 7.1, 7.3, 10 and Appendices C, E, H, J, K, M, Figures 1, 2, 11, 12, 15, 16 and Tables 1, 3, 4, 6, 14, 15, 16, 17, 18, 20. Additional contributions on implementing RWKV-7 for Flash-linear-attention and converting RWKV-7 models on HuggingFace."
+        },
+        {
+          "page": 51,
+          "context": "(i.e., no outliers, and does not grow over context length), whereas RWKV-5 and RWKV-6 constantly produced outliers on the order of thousands (see Figures 15 and 16). This indicates that RWKV-7 has better numerical stability during training and inference. 1 2 4 8 16 32 64 128 256 512 1024204840968192 Context Length 10 1 100 101 RMS RMS of RWKV State Entries RWKV5-1.5B RWKV6-1.6B RWKV7-1.5B 1 2 4 8 16 32 64 128 256 512 1024204840968192 Context Length 1.0 1.1 1.2 1.3 1.4 1.5 1.6 Average Stable Rank Average Stab"
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 51,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig17",
+      "figure_number": "17",
+      "caption": "Figure 17: Box Plots of ξ and α Across Models",
+      "image": "figures/fig17.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 52,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig18",
+      "figure_number": "18",
+      "caption": "Figure 18: Mean ξ and α Across Layers for Different Models",
+      "image": "figures/fig18.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 53,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig19",
+      "figure_number": "19",
+      "caption": "Figure 19: Maximum and Minimum of ξ Across Layers in Different Models",
+      "image": "figures/fig19.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 53,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig20",
+      "figure_number": "20",
+      "caption": "Figure 20: Maximum and Minimum of α Across Layers in Different Models",
+      "image": "figures/fig20.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 54,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig21",
+      "figure_number": "21",
+      "caption": "Figure 21: Box Plots of biases of dt Across Models",
+      "image": "figures/fig21.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 54,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig22",
+      "figure_number": "22",
+      "caption": "Figure 22: Mean biases of dt Across Layers for Different Models",
+      "image": "figures/fig22.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 55,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig23",
+      "figure_number": "23",
+      "caption": "Figure 23: Maximum and Minimum of biases of dt Across Layers in Different Models",
+      "image": "figures/fig23.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2503.14456.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2503.14456.pdf",
+        "page": 55,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    }
+  ]
+}

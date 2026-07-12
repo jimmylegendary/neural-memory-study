@@ -22,6 +22,10 @@
 
 **Challenge 3 — 고정 pre-training chunk 크기에 대한 성능 민감성.** 논문의 새 실증 발견이다. 550M Titans를 $C=64$로 pre-train한 뒤 inference chunk 크기를 바꿔 가며 validation perplexity를 재면: $C=8$에서 36.45, 16에서 34.15, 32에서 24.23, **64에서 13.78(최적)**, 128에서 15.5, 256에서 17.88, 512에서 22.4 [TNT Fig. 2]. 훈련 때 쓴 chunk 크기에서만 최적이고, 양쪽으로 벗어나면 급격히 나빠진다. 특히 왼쪽이 인상적이다 — 더 작은 chunk는 더 신선한 gradient를 뜻하므로 직관적으로는 inference에서 더 좋아야 하는데, 실제로는 ppl이 2.6× 이상 폭발한다. 모델이 훈련 해상도에 **over-specialize**된 것이다 [TNT §3 Challenge 3]. 이것이 이 책이 **chunk-size mismatch**라 부르는 현상이다: 같은 checkpoint가 serving 때 memory update를 얼마나 자주 적용하느냐에 따라 전혀 다른 품질을 낸다. 이 발견은 이상적 serving 구성 — decode에서 chunk 크기 1, 즉 매 token online update — 을 위협한다. 큰 chunk로 싸게 훈련한 baseline은 이미 $C=8$에서 ppl이 36.45로 폭발하므로(Fig. 2의 최소 inference chunk가 8이다 — $C=1$ 자체는 측정되지 않았다), chunk 1로 직행하기 어렵기 때문이다.
 
+![그림 15-1 — 550M Titans를 $C=64$로 pre-train한 뒤 inference chunk 크기만 바꿔 가며 잰 validation perplexity. 훈련 chunk 크기(별표, $C=64$)에서 13.78로 최적이고, 양쪽으로 벗어나면 급격히 나빠진다 — 특히 더 작은 chunk(왼쪽)가 직관과 반대로 36.45까지 폭발한다. 출처: [TNT] (arXiv:2511.07343), 원문 Fig.2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2511.07343-fig2.png)
+
+위 문단이 나열한 perplexity 값들이 그리는 곡선이 그림 15-1이며, V자 바닥이 정확히 훈련 chunk 크기 $C=64$에 걸려 있다 — 이 비대칭 절벽, 특히 더 신선한 gradient를 뜻하는 작은 chunk 쪽이 오히려 더 나쁜 것이 chunk-size mismatch의 시각적 정의다.
+
 <!-- FIG-REF: ch09/fig-02-three-regimes -->
 
 세 challenge를 관통하는 논문의 핵심 주장은 이렇다: **훈련 효율과 inference 성능을 한 개의 chunk 크기가 동시에 결정하도록 놔두지 말고, 두 단계로 분리(decouple)하라.** Stage 1은 hierarchical memory로 최대 throughput의 pre-training을 하고, Stage 2는 전체 비용의 약 5–8%(구성에 따라; 최고 품질 4-local 구성은 약 8.3%)로 작은 chunk에 fine-tune해서 chunk-1 decode를 품질과 정렬한다. 결과 요약: 150M Titans 기준, 가장 정확한 Titans baseline($C=8$) 대비 목표 loss 도달까지 최대 17.37× 빠르면서 평균 perplexity는 오히려 개선(23.09 vs 25.07)되고 vanilla Transformer(23.58)도 이긴다 [TNT Table 1, Table 2].
@@ -66,6 +70,10 @@ TNT Stage 1의 구조를 한 문장으로 요약하면: **큰 chunk로 도는 �
 
 <!-- FIG: ch15/fig-01-tnt-hierarchy -->
 
+![그림 15-2 — TNT Stage 1의 아키텍처 개관. 위 블록: 큰 chunk 크기로 순차적으로 도는 하나의 global memory(long-range 담당). 아래 블록: 학습된 초기 상태 $W_L$(본서 표기 $W_{\mathrm{init}}$)에서 주기적으로 재초기화되어 대량 병렬화(Massive Parallelization)되는 $N$개의 local memory. 두 memory 모두 Compression(write)·Retrieval(read) 두 연산을 갖고, 두 경로의 출력이 합산되어 $y_t$가 된다 — 단 Q-K Projection은 local 경로에만 붙는다. 출처: [TNT] (arXiv:2511.07343), 원문 Fig.3 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2511.07343-fig3.png)
+
+이 구조 전체를 한 눈에 담은 것이 그림 15-2다: global 경로는 raw query를 Retrieval에 곧장 넣는 반면 local 경로만 Q-K Projection(§15.3.4)을 거치며, 아래 블록의 tile들이 병렬로 쌓인 모습이 뒤에서 설명할 periodic reset의 context parallelism을 그대로 시각화한다.
+
 **Global memory.** 상태 $W^{\mathrm{g}}$ (원문 기호 $V$; value 행렬과의 충돌 때문에 개명 — 표 15-1)는 매우 큰 chunk 크기 $C_{\mathrm{g}}$ (실험에서 2048)로 식 (15-2)의 표준 chunkwise recursion을 돈다:
 
 $$
@@ -94,6 +102,10 @@ $$
 [TNT Eq. 6]이다($C_{\mathrm{l}}\mid L_{\mathrm{s}}$ 가정).[^slip] 이것이 **periodic state reset**이다: TNT는 각 segment의 **시작**에서 local 상태를 outer loop가 학습한 $W_{\mathrm{init}}$으로 되돌린다 [TNT §4.1.1 "reset ... at the beginning of each segment"]. 즉 shard 첫 chunk의 anchor $A_t$가 직전 shard의 마지막 상태 대신 $W_{\mathrm{init}}$이 되어, shard $m$의 계산은 그 이전의 무엇에도 의존하지 않는다. (원문 Eq. 6을 1-based에서 "$t\equiv 0$일 때 $W_t=W_{\mathrm{init}}$"으로 옮기면 shard의 **마지막** token이 그 shard의 memory 대신 $W_{\mathrm{init}}$을 읽게 되므로 — reset을 shard 시작의 anchor로 둔 위 형태가 정합적 독해다.)
 
 이 reset이 왜 결정적인가. 비선형 recurrence는 parallel scan으로 병렬화할 수 없다 — scan은 결합법칙을 요구하는데 MLP를 통과하는 상태 전이에는 그것이 없다. reset은 그 병렬화 불가능한 사슬을 **아예 끊어**, $L/L_{\mathrm{s}}$개의 shard를 완전히 독립인 계산으로 만든다 — 장치에 분산(**context parallelism**)하거나 한 accelerator의 batch 축에 쌓아 kernel을 fatten할 수 있다 [TNT §4.1.1]. 비선형 deep-memory recurrence를 sequence 방향으로 병렬화하는, TNT가 제안하는 직접적·실용적 수단이다(일반적 비선형 recurrence의 exact 병렬화는 largely-unsolved 연구 문제로, 근사·반복 기반 시도가 별도로 있다). 대가는 명확하다: local memory는 shard 경계에서 모든 것을 잊는다. 그 손실의 보전이 global memory의 존재 이유다 — reset 없는 global이 long range를, reset 있는 local이 병렬성을 든다. ablation에서 global을 제거하면 ppl이 21.04에서 25.60으로 붕괴하는 것이 이 역할 분담의 실증이다 [TNT Table 3].
+
+![그림 15-3 — TNT memory 계층의 시간축 도해. 같은 행에서 같은 $t$ 값의 갱신은 동시에(병렬로) 실행되고 $t=0$은 memory 초기화를 뜻한다. 맨 위 global memory는 큰 chunk 하나가 sequence 전체를 순차적으로 관통하는 반면, 아래 $N$개의 local memory는 각자의 window(shard) 길이마다 $t=0$으로 reset되어 shard들이 서로 독립·병렬이 된다 — index가 커질수록 window가 짧아 더 자주 reset된다. 출처: [TNT] (arXiv:2511.07343), 원문 Fig.1 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2511.07343-fig1.png)
+
+각 local memory가 shard 경계에서 $t=0$으로 되돌아가 이후 계산이 그 이전의 무엇에도 무관해지는 이 병렬화 구조를 시간축으로 펼친 것이 그림 15-3이며, 위쪽 global의 드문 순차 handoff와 아래쪽 local의 잦은 reset이 한 그림에서 대비된다.
 
 $W_{\mathrm{init}}$이 **학습된다**는 점도 하중을 받는 설계다. 모든 shard가 0이 아니라 meta-learn된 prior에서 inner loop를 시작한다. Titans의 $W_{\mathrm{init}}$(원문 $M_0$)은 암묵적 존재였지만(→ 12장), TNT에서는 reset을 생존 가능하게 만드는 load-bearing 부품으로 승격된다 — 개념 자체는 4장의 MAML류 meta-learned initialization이다.
 

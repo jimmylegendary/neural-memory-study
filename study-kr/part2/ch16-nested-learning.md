@@ -88,7 +88,11 @@ $$
 
 여러 최적화 문제로 분해된 모델에 질서를 주는 것이 **update frequency**다. [NL Def. 2]: 구성요소 $A$(parametric이든 attention 같은 non-parametric이든)의 frequency $f_A$는 단위 시간(데이터 포인트 하나당 갱신 한 번)당 갱신 횟수다. attention은 $f=\infty$, 동결 MLP는 $f=0$ — §16.2 "두 극단"의 형식화다. 순서는 $A\succ B$: $f_A>f_B$이거나, $f_A=f_B$이되 $B$의 시점 $t$ 계산이 $A$의 시점 $t$ 상태를 요구하면 $A$가 빠르다. 어느 쪽도 아니면 같은 **level**(같은 주기, 상호 독립)이다 — Adam의 1차/2차 moment가 대표적 동률 사례로 한 level에 병렬로 놓인다 [NL Def. 2, App B]. 정렬에서 **높은 level일수록 낮은 frequency**다.
 
-이제 시스템 전체가 정의된다. **Nested System** [NL Def. 3]: $K$개의 정렬된 level, level $k$는 (objective, context flow, feasible parameter)의 삼중항 집합 $\{(L^{(k)}_i,\ \mathcal{C}^{(k)}_i,\ \Theta^{(k)}_i)\}_{i=1}^{N_k}$이고 각 문제는 식 (16-1) 꼴 proximal GD로 최적화되되 일부 "box"는 non-parametric 해(예: attention)가 허용된다 [NL Eq. 19, §3.2]. **NSAM (Nested System of Associative Memories)** [NL Def. 4]는 모든 context가 key-value 집합인 특수형이고 [NL Eq. 20], Appendix A 일반형 [NL Def. 6, 7]은 선형화를 full loss로 되돌린다. **Neural Learning Module**은 아키텍처와 그 훈련 과정을 하나의 NSAM으로 함께 표현한 설계 단위이며, 같은 Transformer라도 SGD판과 Adam판은 **다른 module**이다 [NL §3.2].
+이제 시스템 전체가 정의된다. **Nested System** [NL Def. 3]: $K$개의 정렬된 level, level $k$는 (objective, context flow, feasible parameter)의 삼중항 집합 $\{(L^{(k)}_i,\ \mathcal{C}^{(k)}_i,\ \Theta^{(k)}_i)\}_{i=1}^{N_k}$이고 각 문제는 식 (16-1) 꼴 proximal GD로 최적화되되 일부 "box"는 non-parametric 해(예: attention)가 허용된다 [NL Eq. 19, §3.2]. **NSAM (Nested System of Associative Memories)** [NL Def. 4]는 모든 context가 key-value 집합인 특수형이고 [NL Eq. 20], Appendix A 일반형 [NL Def. 6, 7]은 선형화를 full loss로 되돌린다. **Neural Learning Module**은 아키텍처와 그 훈련 과정을 하나의 NSAM으로 함께 표현한 설계 단위이며, 같은 Transformer라도 SGD판과 Adam판은 **다른 module**이다 [NL §3.2]. 원논문은 이 관점을 한 장의 그림으로 요약한다(그림 16-1): hybrid 아키텍처(RNN+attention)를 deep learning식으로 "평탄화"하면 각 block 내부의 gradient flow가 가려져 아키텍처와 훈련이 분리돼 보이지만, NL은 같은 모델을 서로 다른 level의 gradient flow가 겹쳐 흐르는 white-box로 펼쳐 각 level이 자기 objective로 자기 context를 압축하는 associative memory임을 드러낸다 [NL §3.2, Fig. 2].
+
+![그림 16-1 — Nested Learning 패러다임. (좌) hybrid 아키텍처를 deep learning 관점으로 평탄화하면 내부 gradient flow가 가려지지만, NL은 이를 서로 다른 level의 gradient flow가 겹친 투명한 표현으로 펼친다. (우) Neural Learning Module — 각 level이 자기 context flow를 자기 주기로 압축하는 중첩 최적화(associative memory) 문제들. 출처: Behrouz et al., [NL] (arXiv:2512.24695), 원문 Fig. 2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2512.24695-fig2.png)
+
+그림 16-1 — Nested Learning 패러다임. (좌) hybrid 아키텍처를 deep learning 관점으로 평탄화하면 내부 gradient flow가 가려지지만, NL은 이를 서로 다른 level의 gradient flow가 겹친 투명한 표현으로 펼친다. (우) Neural Learning Module — 각 level이 자기 context flow를 자기 주기로 압축하는 중첩 최적화(associative memory) 문제들. 출처: Behrouz et al., [NL] (arXiv:2512.24695), 원문 Fig. 2 — 원저자의 그림(third-party), 본서의 결과가 아님.
 
 정의가 실제로 어떻게 작동하는지, 논문의 계단식 예제 네 개가 보여 준다 [NL §3.1–§3.2].
 
@@ -105,7 +109,11 @@ y_{\mathrm{block}} = y_{\mathrm{attn}}\,W_{\mathrm{MLP}}
 y_{\mathrm{block}} = y_{\mathrm{attn}}\,W_{\mathrm{LinAttn}}.
 $$
 
-유일한 차이는 **두 weight가 사는 level**이다: $W_{\mathrm{MLP}}$은 level 1(f=0)이라 context 불변, $W_{\mathrm{LinAttn}}$은 level 2에서 $W_t=W_{t-1}+v_tk_t^\top$로 in-context 갱신(초기값 $W_{\mathrm{init}}$은 level 1 NTP로 meta-learn)된다. 즉 **recurrent memory module=level 하나 추가된 MLP block, hybrid 아키텍처=일부 MLP block에 in-context 적응이 생긴 Transformer** [NL §3.2, §6] — "attention + SSM 이종 결합" 통념이 해소된다.
+유일한 차이는 **두 weight가 사는 level**이다: $W_{\mathrm{MLP}}$은 level 1(f=0)이라 context 불변, $W_{\mathrm{LinAttn}}$은 level 2에서 $W_t=W_{t-1}+v_tk_t^\top$로 in-context 갱신(초기값 $W_{\mathrm{init}}$은 level 1 NTP로 meta-learn)된다. 즉 **recurrent memory module=level 하나 추가된 MLP block, hybrid 아키텍처=일부 MLP block에 in-context 적응이 생긴 Transformer** [NL §3.2, §6] — "attention + SSM 이종 결합" 통념이 해소된다. 원논문 그림은 이 등가를 색으로 못박는다(그림 16-2): 빨강은 level 1(frequency 1, context 불변)의 계산·weight, 파랑은 level 2(frequency $L$, sequence에 대해 in-context 갱신)의 계산·weight로, FFN판과 Linear Attention++판은 같은 앞단 attention 위에서 대수적으로 동일하되 오직 두 번째 weight가 사는 level만 다르다 [NL §3.2, Fig. 3, Eq. 69].
+
+![그림 16-2 — AdaTransformer(Linear Attention++). Transformer block의 FFN을 초기 상태가 meta-learn된 linear attention으로 치환해도 출력이 대수적으로 동일하며, 유일한 차이는 두 weight가 사는 level이다: 빨강=level 1(frequency 1, context 불변 초기 MLP parameter), 파랑=level 2(sequence에 대한 in-context 갱신). 좌우는 같은 계산의 Nested Learning 관점과 Deep Learning 관점. 출처: Behrouz et al., [NL] (arXiv:2512.24695), 원문 Fig. 3 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2512.24695-fig3.png)
+
+그림 16-2 — AdaTransformer(Linear Attention++). Transformer block의 FFN을 초기 상태가 meta-learn된 linear attention으로 치환해도 출력이 대수적으로 동일하며, 유일한 차이는 두 weight가 사는 level이다: 빨강=level 1(frequency 1, context 불변 초기 MLP parameter), 파랑=level 2(sequence에 대한 in-context 갱신). 좌우는 같은 계산의 Nested Learning 관점과 Deep Learning 관점. 출처: Behrouz et al., [NL] (arXiv:2512.24695), 원문 Fig. 3 — 원저자의 그림(third-party), 본서의 결과가 아님.
 
 따름정리(12장 개념 회수): 초기 상태가 meta-learn되지 **않으면**($W_0=0$ 초기 linear Transformer) 그 block엔 persistent memory(→ 12장)가 없고, 출력 gating의 linear layer가 이를 대신한다는 것이 [NL §5]의 gating 해석 — "gating이 왜 도움이 되는가"의 구조적 답이다.
 
@@ -314,7 +322,11 @@ $$
 
 이다. 실무 세부 [NL §8.3]: $q,k$는 $\ell_2$ normalize(식 (16-3) DGD의 $\|x\|=\lambda$ 전제와 정합), window 4 local convolution. 변형 **Hope-Attention**은 self-modifying Titans를 softmax global attention으로 치환한 통제 변형으로 CMS 기여를 분리 측정한다 [NL §8.3].
 
-12장 어휘로: Hope는 Titans-MAC/MAG처럼 attention과 memory를 병렬 합성한 것이 아니라, Titans block의 **모든 구성요소를 한 level씩 위로 올리고**(projection·gate의 memory화) 뒤따르는 MLP를 CMS 주파수 스펙트럼으로 펼친 것이다. Titans의 persistent/long-term/short-term 삼분류(→ 12장)는 연속체의 세 점으로 흡수된다.
+12장 어휘로: Hope는 Titans-MAC/MAG처럼 attention과 memory를 병렬 합성한 것이 아니라, Titans block의 **모든 구성요소를 한 level씩 위로 올리고**(projection·gate의 memory화) 뒤따르는 MLP를 CMS 주파수 스펙트럼으로 펼친 것이다. Titans의 persistent/long-term/short-term 삼분류(→ 12장)는 연속체의 세 점으로 흡수된다. 원논문의 backbone 비교 그림(그림 16-3)이 이 직렬 구조를 Transformer와 나란히 놓는다: self-modifying Titans 뒤에 high/mid/low frequency FFN 사슬이 이어지고, 각 block에 붙은 chunk length·frequency 표기가 Transformer의 두 극단(attention $f=\infty$, FFN $f=0$)을 하나의 주파수 스펙트럼으로 대체함을 보여 준다 [NL §8.3, Fig. 5].
+
+![그림 16-3 — Hope의 아키텍처 backbone과 Transformer 비교(normalization·data-dependent 성분 생략). Hope는 self-modifying Titans(작은 state, 표현력 있는 rule) 뒤에 서로 다른 update frequency의 FFN 사슬(CMS: high/mid/low frequency)을 직렬로 잇는다. 각 block의 chunk length·frequency 표기가 long/short-term 이분법이 주파수 연속체로 펼쳐짐을 보여 준다. 출처: Behrouz et al., [NL] (arXiv:2512.24695), 원문 Fig. 5 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2512.24695-fig5.png)
+
+그림 16-3 — Hope의 아키텍처 backbone과 Transformer 비교(normalization·data-dependent 성분 생략). Hope는 self-modifying Titans(작은 state, 표현력 있는 rule) 뒤에 서로 다른 update frequency의 FFN 사슬(CMS: high/mid/low frequency)을 직렬로 잇는다. 각 block의 chunk length·frequency 표기가 long/short-term 이분법이 주파수 연속체로 펼쳐짐을 보여 준다. 출처: Behrouz et al., [NL] (arXiv:2512.24695), 원문 Fig. 5 — 원저자의 그림(third-party), 본서의 결과가 아님.
 
 ### 16.3.12 표기 대응표
 
@@ -434,7 +446,11 @@ state는 KV cache처럼 $O(L)$로 자라지 않고 시퀀스 길이에 상수다
 
 **BABILong** [NL Fig. 9]. 원 설정대로 fine-tune한 소형 모델 비교에서 Titans·ARMT·Hope가 1M token까지 경합하다 Titans·ARMT는 급락하고 **Hope는 10M token까지 유지된다**(논문은 CMS 설계를 원인으로 지목) [NL §9.2]. 정직성 항목: 이 10M은 **fine-tuning 전제**다 — zero-shot에서는 Hope 포함 모든 소형 모델이 크게 떨어지며, 저주파 level이 과제에 맞게 조정돼야 고주파 memory 관리가 작동한다 [NL §9.2].
 
-**continual learning** [NL Fig. 6, Fig. 8]. class-incremental 분류(CF 측정 프로토콜의 배경은 → 11장) 세 벤치마크 — CLINC(150 intent), Banking(77 intent), DBpedia(70 클래스) — 에서, Llama3-8B/Llama-3B를 ad-hoc level stacking(§16.3.8)으로 개조하고 15B tokens continual pre-training한 Hope 변형이 ICL, EWC(→ 11장), 외부 학습기 SOTA인 InCA를 전부 상회한다 [NL §9.1]. 신설 benchmark **CTNL**(MTOB Kalamang+Manchu; ChRF)에서는: 언어 하나씩은 Hope 변형이 ICL과 동급 이상, **두 언어를 순차로** 배우면 ICL은 붕괴(pre-training으로 회귀)하는 반면 Hope-1/2/3(추가 level 1/2/3개)은 level 수에 단조 개선되어 Hope-3는 단일 언어 성능을 거의 회복한다 [NL §9.1]. level ablation [NL Fig. 7]: level이 많을수록 좋고, 최저 주파수는 512가 최고이되 2K가 근접 성능에 훨씬 저렴해 효율 sweet spot이다 [NL §9.1].
+**continual learning** [NL Fig. 6, Fig. 8]. class-incremental 분류(CF 측정 프로토콜의 배경은 → 11장) 세 벤치마크 — CLINC(150 intent), Banking(77 intent), DBpedia(70 클래스) — 에서, Llama3-8B/Llama-3B를 ad-hoc level stacking(§16.3.8)으로 개조하고 15B tokens continual pre-training한 Hope 변형이 ICL, EWC(→ 11장), 외부 학습기 SOTA인 InCA를 전부 상회한다 [NL §9.1]. 신설 benchmark **CTNL**(MTOB Kalamang+Manchu; ChRF)에서는: 언어 하나씩은 Hope 변형이 ICL과 동급 이상, **두 언어를 순차로** 배우면 ICL은 붕괴(pre-training으로 회귀)하는 반면 Hope-1/2/3(추가 level 1/2/3개)은 level 수에 단조 개선되어 Hope-3는 단일 언어 성능을 거의 회복한다 [NL §9.1]. level ablation [NL Fig. 7]: level이 많을수록 좋고, 최저 주파수는 512가 최고이되 2K가 근접 성능에 훨씬 저렴해 효율 sweet spot이다 [NL §9.1]. 이 그래프(그림 16-4)는 세 long-context 벤치마크(MK-NIAH·LongHealth·QASPER)에서 memory level 수를 1→4로 늘리면 성능이 단조 개선되고, 어떤 level 수·최저 주파수에서도 ICL·DuoAttention baseline을 상회함을 보여 논문의 핵심 주장 — "더 많은 layer가 아니라 더 많은 level" — 을 실증한다 [NL §9.2, Fig. 7].
+
+![그림 16-4 — memory level 수가 in-context learning 성능에 미치는 효과 (좌: RULER MK-NIAH, 중: LongHealth, 우: QASPER — 우측은 perplexity라 낮을수록 좋음). level이 많을수록, 그리고 최저 주파수(lowest freq)가 낮을수록(persistent memory가 강할수록) 성능이 오르며, ICL·DuoAttention baseline(점선)을 상회한다. 출처: Behrouz et al., [NL] (arXiv:2512.24695), 원문 Fig. 7 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2512.24695-fig7.png)
+
+그림 16-4 — memory level 수가 in-context learning 성능에 미치는 효과 (좌: RULER MK-NIAH, 중: LongHealth, 우: QASPER — 우측은 perplexity라 낮을수록 좋음). level이 많을수록, 그리고 최저 주파수(lowest freq)가 낮을수록(persistent memory가 강할수록) 성능이 오르며, ICL·DuoAttention baseline(점선)을 상회한다. 출처: Behrouz et al., [NL] (arXiv:2512.24695), 원문 Fig. 7 — 원저자의 그림(third-party), 본서의 결과가 아님.
 
 **in-context recall과 MAD** [NL Table 3, 4]. 의무 서술 caveat이 여기 있다: 짧은 in-context recall에서는 **여전히 Transformer가 최고이고 격차가 크다** — FDA에서 Transformer 67.3 vs Hope 41.9, SWDE 71.4 vs 65.9. Hope는 attention-free 중 최고(Titans·RWKV-7·Comba 전부 상회)로 격차를 좁혔을 뿐이다 [NL §9.4]. [Atlas]의 53.55 vs 43.70([Atlas Table 5], → 14장)에서 확인된 in-context retrieval gap이 이 라인의 종합판에서도 **미해소**라는 뜻이다. 반면 합성 벤치마크 MAD에서는 Hope가 Transformer를 포함한 전부를 이긴다(compression 51.2, fuzzy ICR 52.1, memory 85.2) [NL Table 4].
 

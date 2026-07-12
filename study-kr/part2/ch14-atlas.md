@@ -54,6 +54,10 @@ $$
 
 ### 14.3.2 Omega rule: token이 아니라 context를 memorize한다
 
+이 절 전체의 대비를 한 장으로 요약한 것이 원논문의 첫 그림이다(그림 14-1). 왼쪽은 현재 token 하나의 surprise로 memory를 갱신하는 계열(Titans·RWKV·DeltaNet·Longhorn·Moneta)이고, 오른쪽은 feature map $\phi(\cdot)$을 통과시킨 마지막 $c$개 token의 windowed loss로 갱신하는 Atlas·OmegaNet·Dot 계열이다 — 그리고 오른쪽 맨끝에 그 windowed regression의 **비모수** 대응으로 Transformer와 SWA가 놓인다(§14.3.5의 논지를 미리 그린 배치다).
+
+![그림 14-1 — 개별 token을 기억하는 것(왼쪽)과 context를 기억하는 것(오른쪽)의 대비. 왼쪽은 per-token surprise $\ell(\mathcal{M};k_t,v_t)$로 memory를 갱신하고, 오른쪽은 $\phi(\cdot)$로 lift한 뒤 마지막 $c$개 token의 합 $\sum_{i=t-c+1}^{t}\gamma_i^{(t)}\ell(\mathcal{M};k_i,v_i)$을 최소화한다(Omega rule). 하단은 각 방식에 속하는 모델 목록이며, 오른쪽의 "Nonparametric Examples"가 Transformer·SWA다. 출처: Behrouz et al., Atlas 축약 (arXiv:2505.23735), 원문 Fig.1 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2505.23735-fig1.png)
+
 기존 online 모델들의 inner 문제는 retention gate(→ 13장)를 붙인 per-token 최적화다 [Atlas Eq. 6]:
 
 $$
@@ -69,9 +73,9 @@ $$
 \tag{14-1}
 $$
 
-<!-- FIG: ch14/fig-01-omega-window -->
+![그림 14-2 — SWA와 Atlas/OmegaNet의 token 의존 구조 비교(하삼각 causal mask). SWA(맨왼쪽)는 폭이 고정된 banded mask라 각 query가 인접 $c$개만 본다. Atlas는 window $c$를 키울수록($c=1,4,7$) 의존이 하삼각 전체로 번지는데, 이는 windowed loss의 gradient가 chunk를 거쳐 이전 상태로 전파되기 때문이다 — 같은 banded 구조를 parametric memory가 어떻게 "누적"으로 바꾸는지 보여준다. 출처: Behrouz et al., Atlas 축약 (arXiv:2505.23735), 원문 Fig.2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2505.23735-fig2.png)
 
-여기서 $\gamma_{t,i}\in[0,1]$이 **window gate**다: step $t$의 window 안에서 $i$번째 token이 최적화에 참여하는 정도를 정하는 input-dependent gate로, $\gamma_{t,i}\to 0$이면 그 token을 최적화에서 **직접(hard) 잘라내고**, $\gamma_{t,i}\to 1$이면 온전히 포함한다 — 논문의 표현으로 **in-context pruning**이다 [Atlas §3.2]. 이 gate가 감당 가능한 이유가 바로 sliding window 구조다: step당 필요한 gate 수가 $c$개로 **상수**다. global 최적화(Eq. 7)에 input-dependent gate를 달려면 prefix 길이만큼의 gate 값이 필요해 — 공유 gate-producer의 파라미터는 고정이지만 gate 값의 수와 이를 계산·저장하는 비용이 문맥 길이에 따라 자라 — recurrent model의 장점이 사라진다.
+여기서 $\gamma_{t,i}\in[0,1]$이 **window gate**다: step $t$의 window 안에서 $i$번째 token이 최적화에 참여하는 정도를 정하는 input-dependent gate로, $\gamma_{t,i}\to 0$이면 그 token을 최적화에서 **직접(hard) 잘라내고**, $\gamma_{t,i}\to 1$이면 온전히 포함한다 — 논문의 표현으로 **in-context pruning**이다 [Atlas §3.2]. 이 gate가 감당 가능한 이유가 바로 sliding window 구조다: step당 필요한 gate 수가 $c$개로 **상수**다. window $c$를 키우면 SWA의 얇은 banded 의존이 하삼각 전체로 번지는데(그림 14-2), SWA는 그 폭 안을 비모수로 훑는 반면 Omega rule은 같은 폭을 parametric memory에 **누적**한다는 것이 두 방식의 갈림이다. global 최적화(Eq. 7)에 input-dependent gate를 달려면 prefix 길이만큼의 gate 값이 필요해 — 공유 gate-producer의 파라미터는 고정이지만 gate 값의 수와 이를 계산·저장하는 비용이 문맥 길이에 따라 자라 — recurrent model의 장점이 사라진다.
 
 Omega rule은 계보 전체를 극한으로 회수한다 [Atlas §3.2].
 
@@ -169,7 +173,9 @@ $$
 \mathcal{M}(z;W)=z+W_1\big(\sigma(W_2z)\odot W_3z\big),
 $$
 
-$W_1,W_2,W_3$ 전부가 inner loop에서 갱신되는 fast weights다. 합성은 Titans의 문법을 그대로 쓴다(→ 12장): MAG(SWA 브랜치와 gate 결합), MAL(memory block 다음 SWA block), 그리고 BABILong 실험에서는 MAC을 persistent memory tokens 없이 쓴다 [Atlas §6.3].
+$W_1,W_2,W_3$ 전부가 inner loop에서 갱신되는 fast weights다. 합성은 Titans의 문법을 그대로 쓴다(→ 12장): MAG(SWA 브랜치와 gate 결합), MAL(memory block 다음 SWA block), 그리고 BABILong 실험에서는 MAC을 persistent memory tokens 없이 쓴다 [Atlas §6.3]. 세 구성과 layer 내부 배선을 원논문이 한 장에 그려 둔다(그림 14-3).
+
+![그림 14-3 — Atlas 아키텍처(맨왼쪽)와 두 hybrid 구성(MAG·MAL), 그리고 Atlas layer의 block 설계(맨오른쪽). block 도해는 입력에서 Q/K/V projection(linear + 크기-4 short conv)과 세 gate $\gamma,\eta,\alpha$의 producer가 갈라져 나와 "ATLAS Layer"로 들어가는 배선을 보여준다. §14.7의 회계가 지적하듯 이 도해에는 feature map 차수 $p$·sketch 차원·memory head 분할이 표기되지 않는다. 출처: Behrouz et al., Atlas 축약 (arXiv:2505.23735), 원문 Fig.3 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2505.23735-fig3.png)
 
 설계 선택과 담당 결함의 대응을 한 줄씩 정리하면 — window loss(14-1)는 online 결함(1)을, $\phi_p/\phi^*$와 deep/gated memory는 capacity 결함(2)을, $\mathrm{NS}_\kappa(S_t)$는 관리 결함(3)을 맡고, $\alpha_t$(retention)와 $\beta_t$(momentum)는 Titans에서 상속된 상태 유지 장치다.
 
@@ -280,7 +286,9 @@ $$
 
 **S-NIAH (RULER)** [Atlas Table 3]. 4K로 훈련된 모델을 2K–16K needle-in-haystack에서 평가한다. 순수 recurrent 비교에서 Atlas는 S-NIAH-N 16K에서 84.0으로 Titans 80.2를 앞서고, DeltaNet(5.4)·TTT(4.4)와는 자릿수가 다르다. hybrid와 Transformer-like 가족은 더 강하다: Dot은 전 설정에서 93.2–100(S-NIAH-W 16K의 93.2가 최솟값), Atlas(MAG)는 S-NIAH-PK 16K에서 98.6 — 훈련 문맥의 4× 외삽이다.
 
-**BABILong** [Atlas §6.3, Fig. 4]. MAC backbone(persistent memory tokens 없이)으로 benchmark protocol에 따라 fine-tune한 설정이다. Atlas는 1M token까지 Titans와 동급이다가, 10M에서 Titans가 무너지는 지점에서 **+80% accuracy를 유지한다** — 이 논문의 헤드라인 long-context 주장이다. 논문은 이를 Muon(관리), polynomial kernel(capacity), context memorization(objective)의 합작으로 귀속시킨다 [Atlas §6.3].
+**BABILong** [Atlas §6.3, Fig. 4]. MAC backbone(persistent memory tokens 없이)으로 benchmark protocol에 따라 fine-tune한 설정이다. Atlas는 1M token까지 Titans와 동급이다가, 10M에서 Titans가 무너지는 지점에서 **+80% accuracy를 유지한다** — 이 논문의 헤드라인 long-context 주장이다(그림 14-4). 논문은 이를 Muon(관리), polynomial kernel(capacity), context memorization(objective)의 합작으로 귀속시킨다 [Atlas §6.3].
+
+![그림 14-4 — BABILong benchmark에서 context length(가로축, 로그 스케일)에 대한 정확도. Atlas(MAC)-FT가 10M token까지 높은 정확도를 유지하며, 1M 부근에서 무너지는 recurrent baseline(RWKV·RecurrentGemma·Gemma·Llama+RAG 등)과 갈린다. 4K 훈련 문맥의 수천 배를 외삽하는 구간이라는 점이 요지다. 출처: Behrouz et al., Atlas 축약 (arXiv:2505.23735), 원문 Fig.4 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2505.23735-fig4.png)
 
 **MAD synthetic suite** [Atlas Table 4]. 평균 Atlas 79.50 / OmegaNet 78.98 vs Titans 76.44, Transformers 75.46, Gated DeltaNet 71.04. 최대 격차는 memorization(91.4)과 fuzzy recall 축이다.
 

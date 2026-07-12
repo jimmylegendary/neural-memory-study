@@ -1,0 +1,196 @@
+{
+  "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/2606.03979.pdf",
+  "engine": "pymupdf",
+  "figure_count": 8,
+  "figures": [
+    {
+      "figure_id": "fig1",
+      "figure_number": "1",
+      "caption": "Figure 1: (Conventional Machine Learning vs. Continual Learning) While in conventional machine learning often the lifespan of the model is divided to test and training time, continual learning setup does not have these phases. We suggest that a continual learner need to have different stages of activeness in learning, which we refer to as: (i) Active or Wake Time, and (ii) Sleep Time. Sleep time is not a passive state, rather it internally process the data to consolidate the memories from fast unstable modules to more stable low frequency (slow) components.",
+      "image": "figures/fig1.png",
+      "references": [
+        {
+          "page": 3,
+          "context": "(2025), recently, presented the Nested Learning (NL) paradigm and aimed at the first form of memory consolidation (i.e., online consolidation). In particular, NL-based Hope architecture (see Figure 1) with the reactivation of the memory in a continuum memory system, where each component is updated with a different frequency but in an end-to-end manner, transfers the knowledge from fast unstable components to more stable low frequency modules in an online manner. Although this end-to-end process can directly transfer the knowledge to more stabl"
+        },
+        {
+          "page": 6,
+          "context": "e discussion in Nested Learning (NL) (Behrouz et al. 2025), there are two forms of memory consolidations: (1) Online consolidation; and (2) Offline consolidation: Online Consolidation in Neural Networks in Active (Wake) Stage Online consolidation happens through the end-to-end learning process of neural learning modules (e.g., Hope architecture in Figure 1) in the wake or active phase, where earlier layers (faster blocks with higher frequency) transfer their knowledge to later layers (i.e., slower blocks with lower frequency). Offline Consolidation in Neural Networks in Sleep Stage In offline consolidation phase, the model enters the sleep phase, where it stops processing new data, but uses self-gen"
+        },
+        {
+          "page": 12,
+          "context": "In this setting (see Table 4), Sleep achieves a 80% success rate, higher then the other methods. 4.2 Ablations on the Design Choices We ablate the design choices for the memory consolidation process on the mathematical reasoning. The results are reported in Figure 1. All the components contribute positively to the performance of our method."
+        }
+      ],
+      "reference_count": 3,
+      "description": null,
+      "source": {
+        "pdf": "2606.03979.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2606.03979.pdf",
+        "page": 2,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig2",
+      "figure_number": "2",
+      "caption": "Figure 2: An overview of Memory Consolidation. The model increases its own number of parameters to enhance its capacity (Section 3.2), and then using the knowledge seeding, it transfers the knowledge abstractions from the higher to a lower-frequency memory (Section 3.3).",
+      "image": "figures/fig2.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2606.03979.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2606.03979.pdf",
+        "page": 7,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig3",
+      "figure_number": "3",
+      "caption": "Figure 3: Class-incremental learning for text classification is evaluated on the (Left) CLINC dataset (Larson et al. 2019), (Middle) Banking dataset (Casanueva et al. 2020), and (Right) DBpedia dataset (Auer et al. 2007). The Hope architecture consistently outperforms other continual learning approaches, achieving the highest accuracy.",
+      "image": "figures/fig3.png",
+      "references": [
+        {
+          "page": 10,
+          "context": "We also include Hope (Behrouz et al. 2025) as a multi-level in-context updating baseline without explicit distillation process. Results in Figure 3 show that Hope performs best across datasets, including over external-learner (InCA) and regularization (EWC) approaches. Relative to ICL, gains come from converting prompt-level adaptation into durable parametric memory through consolidation."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2606.03979.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2606.03979.pdf",
+        "page": 10,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig4",
+      "figure_number": "4",
+      "caption": "Figure 4: Effect of memory levels on in-context learning performance for (Left) MK-NIAH from RULER (Hsieh et al. 2024), (Middle) LongHealth (Adams et al. 2025), and (Right) QASPER (Dasigi et al. 2021). Lower values indicate better performance for QASPER.",
+      "image": "figures/fig4.png",
+      "references": [
+        {
+          "page": 11,
+          "context": "Intuitively, a lower frequency yields more persistent but less adaptive long-term memory. Results are reported in Figure 4. Across all tasks, Hope consistently outperforms ICL and the efficient DuoAttention baseline, showing that sleep-time consolidation improves long-context behavior beyond prompt-only adaptation."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2606.03979.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2606.03979.pdf",
+        "page": 10,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig5",
+      "figure_number": "5",
+      "caption": "Figure 5: Continual Translation of a Novel Language (CTNL) task. Red points show performance when train- ing on a single language, whereas blue points show performance under continual learning.",
+      "image": "figures/fig5.png",
+      "references": [
+        {
+          "page": 11,
+          "context": "We compare standard ICL with variants of Hope that differ in the number of sleep-time consolidation stages, denoted as Hope-1, Hope-2, and Hope-3. Results are shown in Figure 5, where each point reports ChRF scores for Manchu→English (x-axis) and Kalamang→English (y-axis). In the single-language setting, all Hope variants match or exceed ICL, indicating that consolidation does not hinder in-context adaptation."
+        },
+        {
+          "page": 11,
+          "context": "As another baseline, we also evaluated Cartridges (Eyuboglu et al. 2025) and Supervised Fine-Tuning (SFT) over the languages. Surprisingly, both methods faced catastrophic forgetting in at least on of the languages, performing even weaker than ICL in at least one of the tasks (placing them outside of the plot in Figure 5). BABILong."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2606.03979.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2606.03979.pdf",
+        "page": 11,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig6",
+      "figure_number": "6",
+      "caption": "Figure 6: Results on the BABILong benchmark. Red points correspond to fine-tuned models, whereas blue points correspond to zero-shot eval- uations of large-scale models.",
+      "image": "figures/fig6.png",
+      "references": [
+        {
+          "page": 26,
+          "context": "All small models are fine-tuned using the official BABILong training protocol (Kuratov et al. 2024). As shown in Figure 6, large models exhibit rapid degradation as context length increases, failing beyond 128K–256K tokens. RAG improves robustness at longer contexts but still degrades as sequence length grows."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2606.03979.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2606.03979.pdf",
+        "page": 11,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig7",
+      "figure_number": "7",
+      "caption": "Figure 7: Multi-frequency memory hierarchy. Updates enter the High-Frequency FFN via repeated Parameter Expansion; when the window 𝑓𝑊expires, knowledge is Consolidated to the Mid- and then Low-Frequency FFNs (1k→5k→10k).",
+      "image": "figures/fig7.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2606.03979.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2606.03979.pdf",
+        "page": 22,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig8",
+      "figure_number": "8",
+      "caption": "Figure 8: Memory consolidation by routed expert updates. Across Sleep cycles (left→right), a router selects and updates a small set of experts (solid), leaving others inactive (hatched), expanding capacity while limiting interference.",
+      "image": "figures/fig8.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2606.03979.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2606.03979.pdf",
+        "page": 22,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    }
+  ]
+}

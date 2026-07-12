@@ -1,0 +1,147 @@
+{
+  "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/1606.01164.pdf",
+  "engine": "pymupdf",
+  "figure_count": 5,
+  "figures": [
+    {
+      "figure_id": "fig1",
+      "figure_number": "1",
+      "caption": "Figure 1: (A) The network has N = 28 × 28 = 784 visible neurons and Nc = 10 classiﬁcation neurons. The visible units are clamped to intensities of pixels (which is mapped on the segment [−1, 1]), while the classiﬁcation neurons are initialized in the state xα and then updated once to the state cα. (B) Behavior of the error on the test set as training progresses. Each curve corresponds to a different combination of hyperparameters from the optimal window, which was determined on the validation set. The arrows show the ﬁrst time when the error falls below a 2% threshold. All models have K = 2000 memories (hidden units).",
+      "image": null,
+      "references": [
+        {
+          "page": 5,
+          "context": "capacity, allowing it to perform only one update of the classiﬁcation neurons. The network is initialized in the state when the visible units vi are clamped to the intensities of a given image and the classiﬁcation neurons are in the off state xα = −1 (see Fig.1A). The network is allowed to make one update of the classiﬁcation neurons, while keeping the visible units clamped, to produce the output cα."
+        },
+        {
+          "page": 5,
+          "context": "Then many networks were trained for various choices of the hyperparameters from this window to evaluate the performance on the test set. The test errors as training progresses are shown in Fig.1B. While there is substantial variability among these samples, on average the cluster of trajectories for n = 3 achieves better results on the test set than that for n = 2."
+        },
+        {
+          "page": 5,
+          "context": "This agrees with our results for n = 2. The n = 3 case does slightly better than that as is clear from Fig.1B, with all the samples performing better than 1.6%. 2Although there are better results on pixel permutation invariant task, see for example [19, 20, 21, 22]. 5"
+        }
+      ],
+      "reference_count": 3,
+      "description": null,
+      "source": {
+        "pdf": "1606.01164.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/1606.01164.pdf",
+        "page": 5,
+        "extractor": "pymupdf-textonly",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig2",
+      "figure_number": "2",
+      "caption": "Figure 2: We show 25 randomly selected memories (feature detectors) for four networks, which use recti- ﬁed polynomials of degrees n = 2, 3, 20, 30 as the energy function. The magnitude of a memory element corresponding to each pixel is plotted in the location of that pixel, the color bar explains the color code. The histograms at the bottom are explained in the text. The error rates refer to the particular four samples used in this ﬁgure. RU stands for recognition unit. representations which include all the features that an object has. We argue that the computational models proposed here describe feature-matching mode of pattern recognition for small n and the prototype regime for large n. This can be anticipated from the sharpness of contributions that each memory makes to the total energy (2). For large n the function F(x) peaks much more sharply around each memory compared to the case of small n. Thus, at large n all the information about a digit must be written in only one memory, while at small n this information can be distributed among several memories. In the case of intermediate n some learned memories behave like features while others behave like prototypes. These two cl",
+      "image": "figures/fig2.png",
+      "references": [
+        {
+          "page": 6,
+          "context": "These two classes of memories work together to model the data in an efﬁcient way. The feature to prototype transition is clearly seen in memories shown in Fig.2. For n = 2 or 3 each memory does not look like a digit, but resembles a pattern of activity that might be useful for recognizing several different digits."
+        },
+        {
+          "page": 7,
+          "context": "One can choose an arbitrary cutoff, and count the number of recognition connections that are in the “on” state (ξµ α = +1) for each memory. The distribution function of this number is shown on the left histogram in Fig.2. Intuitively, this quantity corresponds to the number of different digit classes that a particular memory votes for."
+        },
+        {
+          "page": 7,
+          "context": "In the case n = 30, for example, more than 40% of memories vote for only one class, a behavior characteristic of prototypes. A second way to see the feature to prototype transition is to look at the number of memories which make large contributions to the classiﬁcation decision (right histogram in Fig.2). For each test image one can ﬁnd the memory that makes the largest contribution to the energy gap, which is the sum over µ in (9)."
+        },
+        {
+          "page": 7,
+          "context": "This result is not sensitive to the arbitrary choice (0.9) of the cutoff. Interestingly, the performance remains competitive even for very large n ≈20 (see Fig.2) in spite of the fact that these networks are doing a very different kind of computation compared with that at small n. 5 Relationship to a neural network with one hidden layer In this section we derive a simple duality between the dense associative memory and a feedforward neural network with one layer of hidden neurons. In other words, we show t"
+        }
+      ],
+      "reference_count": 4,
+      "description": null,
+      "source": {
+        "pdf": "1606.01164.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/1606.01164.pdf",
+        "page": 6,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig3",
+      "figure_number": "3",
+      "caption": "Figure 3: On the left a feedforward neural network with one layer of hidden neurons. The states of the visible units are transformed to the hidden neurons using a non-linear function f, the states of the hidden units are transformed to the output layer using a non-linear function g. On the right the model of dense associative memory with one step update (9). The two models are equivalent.",
+      "image": null,
+      "references": [
+        {
+          "page": 7,
+          "context": "The resulting neural networks are guaranteed to inherit computational properties of the dense memories such as the feature to prototype transition. The construction is very similar to (9), except that the classiﬁcation neurons are initialized in the state when all of them are equal to −ε, see Fig.3. In the limit ε →0 one can expand the function F in (9) so that the dominant contribution comes from the term linear in ε."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "1606.01164.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/1606.01164.pdf",
+        "page": 7,
+        "extractor": "pymupdf-textonly",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig4",
+      "figure_number": "4",
+      "caption": "Figure 4: The histograms of overlaps for models with n = 2, 3, 4 with power energy functions (left) and rectiﬁed polynomial energy functions (right). Each histogram has 10000 samples in it.",
+      "image": "figures/fig4.png",
+      "references": [
+        {
+          "page": 11,
+          "context": "If the recovery is perfect, this quantity is equal to N; if some of the spins failed to match a memory vector, this quantity is smaller than N. In Fig. 4 the histograms of the overlaps are shown for n = 2, 3, 4 in case of power and rectiﬁed polynomial energy functions. For n = 2, 3 the number of memories (K = 2000) places the model above the capacity (according to (6), Kmax no errors ≈11 for n = 2 and Kmax no errors ≈360 for n = 3)."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "1606.01164.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/1606.01164.pdf",
+        "page": 11,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig5",
+      "figure_number": "5",
+      "caption": "Figure 5: Scaling behavior of the capacity vs. the number of neurons for n = 3 with power and rectiﬁed polynomial energy functions. Solid curve is the theoretical result (6).",
+      "image": "figures/fig5.png",
+      "references": [
+        {
+          "page": 11,
+          "context": "K1/2 is the number of memories when half (500) of these samples perfectly converge to one of the memories. In Fig. 5 the K1/2 dependence of N is shown for the power and the rectiﬁed models with n = 3. The solid curve is given by Eq.(6)."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "1606.01164.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/1606.01164.pdf",
+        "page": 11,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    }
+  ]
+}

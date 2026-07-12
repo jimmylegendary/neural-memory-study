@@ -1,0 +1,154 @@
+{
+  "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/2407.14207.pdf",
+  "engine": "pymupdf",
+  "figure_count": 5,
+  "figures": [
+    {
+      "figure_id": "fig1",
+      "figure_number": "1",
+      "caption": "Figure 1: (left) The average perplexity on eight downstream datasets for GLA, Mamba, and Longhorn (1.3B model) over seen tokens on SlimPajama. Longhorn leads to a 1.8x speed up in sampling efficiency. (right) Longhorn, pretrained with 2048 context length, extrapolates up to 16x longer context at inference.",
+      "image": "figures/fig1.png",
+      "references": [
+        {
+          "page": 3,
+          "context": "kt, εt “ βt{p1 ` βtkJ t ktq P p0, 1qd. 7: 4) Compute the output ot “ Stqt P Rd. 8: end for 9: Note: d elementwise product and b is outer product. xt in practice is preprocessed through a linear projection followed by a Conv1d operation as in Mamba (Gu & Dao, 2023). Moreover, it achieves 1.8x improvement in sample efficiency compared to Mamba (See Figure 1 (left)). Longhorn’s training speed is as fast as Mamba, as we only replace the SSM module in the Mamba architecture with Longhorn’s recurrence."
+        },
+        {
+          "page": 3,
+          "context": "So it serves as a drop-in replacement for Mamba. Lastly, Longhorn, trained with 2048 context length can extrapolate to 32K context length at inference time without much perplexity drop (See Figure 1 (right)). Notation Throughout this work, we use d to denote the Hadamard (elementwise) product, and b to denote the Kronecker (or outer) product between two tensors."
+        },
+        {
+          "page": 6,
+          "context": "This saves about Opd ˆ mq parameters per SSM module, where m is the dimension of kt, and d is the dimension of xt. However, Longhorn demonstrates better performance even with fewer parameters than Mamba (See Figure 1 (left), Table 1, Table 2). 3. The closed-form solution in Equation 6 does not need any specific initialization."
+        },
+        {
+          "page": 6,
+          "context": "In contrast, Mamba requires a special careful initialization of the A and εt. 4. Unlike DeltaNet (Yang et al., 2024), which struggles to extrapolate beyond training contexts, Longhorn successfully extrapolates to contexts 16x longer than it was trained for (Figure 1 (right)). 4 RELATED WORK This section provides a summary of recent advances in linear attention and state space models. Linear Attention Models Several methods reduce the quadratic complexity of Transformers by making attention linear with respect to context length."
+        },
+        {
+          "page": 8,
+          "context": ", 2019), WinoGrande (Wino) (Sakaguchi et al., 2021), ARC-easy (ARC-e) and ARC-challenge (ARC-c) (Clark et al., 2018), OpenBookQA (OBQA) (Mihaylov et al., 2018), Social Interaction QA (SIQA) (Sap et al., 2019), and Boolean questions (BoolQ) (Clark et al., 2019). We report the average perplexity across the above eight datasets throughout training in Figure 1 (left). Then we summarize the downstream evaluation results in Table 2."
+        },
+        {
+          "page": 8,
+          "context": "Then we summarize the downstream evaluation results in Table 2. Observation: From Figure 1 (left), it is evident that Longhorn not only achieves a lower average perplexity but also improves sampling efficiency by 1.8x compared to Mamba. In other words, Longhorn reaches the same average perplexity with nearly half the training data required by Mamba."
+        },
+        {
+          "page": 9,
+          "context": "In particular, we pick a disjoint validation set from SlimPajama dataset, rearrange it into batches of sequences of length T P t2048, 4096, 8192, 16384, 32768u, and then evaluate the pretrained model’s perplexity on those sequences. The results are summarized in Figure 1 (right). Observation: From the figure, we observe that Longhorn successfully extrapolates to contexts up to 16x longer than those used during training, this contrasts with DeltaNet (Yang et al., 2024), which highlights a limitation in that the model cannot extrapolate to longer contexts."
+        }
+      ],
+      "reference_count": 7,
+      "description": null,
+      "source": {
+        "pdf": "2407.14207.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.14207.pdf",
+        "page": 1,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig2",
+      "figure_number": "2",
+      "caption": "Figure 2: (left) Most existing sequence models consist of channel and sequence mixing layers. The sequence mixing layers can be viewed as “meta-modules” that compress history into a state St, which is then passed to later layers for sequence modeling. (middle) Sequence mixing can be seen as an online learning problem, where the SSM state St optimizes an online objective. The recurrent update of St is derived either by solving this objective in closed form or via a proximal update. (right) Longhorn’s update solves online associative recall, where the goal is to recover x P Rd based on a hint k P Rm from a state matrix S P Rdˆm. Longhorn’s update corresponds to the implicit online learning solution, where At “ 1dˆm ´ εt b kb2 and Bt “ pε d xtq b kt, and εt “ βt{p1 ` βtkJ",
+      "image": "figures/fig2.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2407.14207.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.14207.pdf",
+        "page": 2,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig3",
+      "figure_number": "3",
+      "caption": "Figure 3: Mamba Block",
+      "image": "figures/fig3.png",
+      "references": [
+        {
+          "page": 3,
+          "context": "But in both cases, the sequence mixing is done by the SSM module, and the channel mixing is done by the channel-wise MLP. Taking Mamba as an example (Gu & Dao, 2023), a Mamba model consists of a stack of homogeneous modules named Mamba block (the Φipxq); we provide a visualization of a single Mamba block in Figure 3 (Gu & Dao, 2023), which consists of an SSM block for sequence mixing (red), and an MLP block for channel mixing (blue). SSM: General Form The SSM block (in red) plays the crucial role of sequence mixing."
+        },
+        {
+          "page": 4,
+          "context": "Preprint. where we first get ot via a state-dependent linear projection on St, which is then fed into a subsequent channel mixing gated linear unit (blue in Figure 3), where σp¨q is a non-linear activation function. A key feature of this design in Equation 1 is that St has a linear recurrence, i.e., St is linear in St´1."
+        },
+        {
+          "page": 5,
+          "context": "In summary, the final Longhorn update of St becomes: St “ At d St´1 ` Bt, where At “ p1dˆm ´ εt b kd2 t q, Bt “ pεt d xtq b kt. (7) The final architecture of Longhorn follows Mamba strictly (Figure 3), except that we replace the SSM block with Longhorn’s recurrence. We also provide an efficient CUDA kernel for it."
+        }
+      ],
+      "reference_count": 3,
+      "description": null,
+      "source": {
+        "pdf": "2407.14207.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.14207.pdf",
+        "page": 4,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig4",
+      "figure_number": "4",
+      "caption": "Figure 4: Comparison of Longhorn to state-of-the-art SSMs on the MQAR benchmark. y-axis is the recall rate.",
+      "image": "figures/fig4.png",
+      "references": [
+        {
+          "page": 7,
+          "context": "Each experiment individually searches for the best learning rate from t10´4, 4.6 ˆ 10´4, 2.2 ˆ 10´3, 10´2u. Results are summarized in Figure 4. Figure 4: Comparison of Longhorn to state-of-the-art SSMs on the MQAR benchmark. y-axis is the recall rate."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2407.14207.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.14207.pdf",
+        "page": 7,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig5",
+      "figure_number": "5",
+      "caption": "Figure 5: Scaling law with 1024 and 4096 context length on OpenWebText with various SSM models and the LLaMA (strong Transformer) baseline.",
+      "image": "figures/fig5.png",
+      "references": [
+        {
+          "page": 8,
+          "context": "Then we experiment with 1024 or 4096 context length T and model sizes around 120M or 350M. Results are summarized in Table 1 and Figure 5. Model # Param."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2407.14207.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.14207.pdf",
+        "page": 8,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    }
+  ]
+}

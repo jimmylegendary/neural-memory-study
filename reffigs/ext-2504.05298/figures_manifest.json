@@ -1,0 +1,207 @@
+{
+  "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/2504.05298.pdf",
+  "engine": "pymupdf",
+  "figure_count": 8,
+  "figures": [
+    {
+      "figure_id": "fig1",
+      "figure_number": "1",
+      "caption": "Figure 1. TTT layers enable a pre-trained Diffusion Transformer to generate one-minute videos from text storyboards. We use Tom and Jerry cartoons as a proof of concept. The videos tell complex stories with coherent scenes composed of dynamic motion. Every video is produced directly by the model in a single shot, without editing, stitching, or post-processing. Every story is newly created.",
+      "image": "figures/fig1.png",
+      "references": [
+        {
+          "page": 5,
+          "context": "See Figure 8 in Appendix for examples of each format. • Format 1: A short summary of the plot in 5-8 sentences. Some of the examples are shown in Figure 1. • Format 2: A more detailed plot in roughly 20 sentences, with each sentence roughly corresponding to a 3-second segment. Sentences can be labeled as belonging to certain scenes or groups of scenes, but these labels will be treated only as suggestions. • Format 3: A storyboard."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2504.05298.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2504.05298.pdf",
+        "page": 1,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig2",
+      "figure_number": "2",
+      "caption": "Figure 2. All RNN layers can be expressed as a hidden state that transitions according to an update rule. The key idea in [43] is to make the hidden state itself a model f with weights W, and the update rule a gradient step on the self-supervised loss ℓ. Therefore, updating the hidden state on a test sequence is equivalent to training the model f at test time. This process, known as Test-Time Training (TTT), is programmed into TTT layers. Figure and caption taken from [43].",
+      "image": "figures/fig2.png",
+      "references": [
+        {
+          "page": 3,
+          "context": "The key idea in [43] is to use self-supervised learning to compress the historical context x1, . . . , xt into a hidden state Wt, by making the context an unlabeled dataset and the hidden state the weights of a machine learning model f. The update rule, illustrated in Figure 2, is a step of gradient descent on some self-supervised loss ℓ: Wt = Wt−1 −η ∇ℓ(Wt−1; xt), (1) with learning rate η. Intuitively, the output token is just the prediction on xt, made by f with the updated weights Wt: zt = f(xt; Wt)."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2504.05298.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2504.05298.pdf",
+        "page": 2,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig3",
+      "figure_number": "3",
+      "caption": "Figure 3. Overview of our approach. Left: Our modified architecture adds a TTT layer with a learnable gate after each attention layer. See Subsection 3.1. Right: Our overall pipeline creates input sequences composed of 3-second segments. This structure enables us to apply self-attention layers locally over segments and TTT layers globally over the entire sequence. See Subsection 3.2.",
+      "image": "figures/fig3.png",
+      "references": [
+        {
+          "page": 4,
+          "context": "We only modify the sequence modeling blocks, leaving everything else in the architecture unchanged. Each modified block, illustrated in the left panel of Figure 3, con- tinues from the X′ in Equation 8 and produces Z = gate(TTT, X′; α), (10) Z′ = gate(TTT′, Z; β), (11) Y = Z′ + X. (12) Note that TTT′ only makes another call to TTT, so they share the same underlying parameters θK, θV , θQ."
+        },
+        {
+          "page": 4,
+          "context": "Except for the first two text for- mats in the upcoming discussion, everything applies to both fine-tuning and inference. Our pipeline is illustrated in the right panel of Figure 3. Scenes and segments."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2504.05298.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2504.05298.pdf",
+        "page": 4,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig4",
+      "figure_number": "4",
+      "caption": "Figure 4. On-chip Tensor Parallel, discussed in Subsection 3.5. Left: To reduce the memory required on each SM for TTT-MLP, we shard the hidden state W (1) and W (2) across SMs, transferring them between HBM and SMEM only during initial loading and final output. Right: We update the hidden state entirely on-chip and use the DSMEM feature on the NVIDIA Hopper GPU architecture to AllReduce intermediate activations among SMs.",
+      "image": "figures/fig4.png",
+      "references": [
+        {
+          "page": 6,
+          "context": "However, the hidden state for TTT-MLP, namely the weights W (1) and W (2) of the two- layer MLP f, is too large to be stored in the SMEM of a single SM (when combined with inputs and activations). To reduce the memory required on each SM, we use Ten- sor Parallelism [39] to shard W (1) and W (2) across SMs, as shown in Figure 4. Similar to how large MLP layers can be sharded and trained across the HBMs of multiple GPUs, we apply the same idea now across the SMEMs of multiple SMs, treating each SM as the analogy of a GPU."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2504.05298.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2504.05298.pdf",
+        "page": 6,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig5",
+      "figure_number": "5",
+      "caption": "Figure 5. Video frames comparing TTT-MLP against Gated DeltaNet and sliding-window attention, the leading baselines in our human evaluation. TTT-MLP demonstrates better",
+      "image": null,
+      "references": [
+        {
+          "page": 8,
+          "context": "TTT-MLP improves over the second-best method by 34 Elo points on average. For context, GPT-4 scores 46 Elo points over GPT-3.5 Turbo (1163 vs. 1117), and GPT-4o scores 29 over GPT-4 Turbo (1285 vs. 1256) in LMSys Chatbot Arena [6], so our improvement by 34 is practically meaningful.7 Figure 5 compares frames of sample videos generated by TTT-MLP and the baselines. The videos illus- trated in Figure 5 can be accessed on the project website: https://test-time-training.github.io/video-dit 18-second elimination round."
+        },
+        {
+          "page": 8,
+          "context": "For context, GPT-4 scores 46 Elo points over GPT-3.5 Turbo (1163 vs. 1117), and GPT-4o scores 29 over GPT-4 Turbo (1285 vs. 1256) in LMSys Chatbot Arena [6], so our improvement by 34 is practically meaningful.7 Figure 5 compares frames of sample videos generated by TTT-MLP and the baselines. The videos illus- trated in Figure 5 can be accessed on the project website: https://test-time-training.github.io/video-dit 18-second elimination round. Note that local attention and TTT-Linear do not appear in Table 1."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2504.05298.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2504.05298.pdf",
+        "page": 7,
+        "extractor": "pymupdf-textonly",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig6",
+      "figure_number": "6",
+      "caption": "Figure 6. For 63-second videos, inference with full attention (over 300k tokens) would have taken 11× longer than local attention, and training 12× longer, as discussed in Sec- tion 1. TTT-MLP takes 2.5× and 3.8× re- spectively – significantly more efficient than full attention, but still less efficient than, for example, Gated DeltaNet, which takes 1.8× longer than local attention in both inference and training.",
+      "image": "figures/fig6.png",
+      "references": [
+        {
+          "page": 9,
+          "context": "Even after applying our improvements in Subsection 3.4 and 3.5, the efficiency of TTT-MLP is still worse than Gated DeltaNet and Mamba 2. This limita- tion is highlighted in Figure 6, where inference and training with TTT-MLP are 1.4× and 2.1× slower than with Gated DeltaNet, for example. Section 6 discusses two potential improvements of our TTT-MLP kernel for better efficiency."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2504.05298.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2504.05298.pdf",
+        "page": 8,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig7",
+      "figure_number": "7",
+      "caption": "Figure 7. Artifacts in videos generated by TTT-MLP. Temporal consistency: Objects sometimes morph at the boundaries of 3-second segments, potentially because the diffusion model samples from different modes across the segments. Motion naturalness: Objects sometimes float unnaturally because gravitational effects are not properly modeled. Aesthetics: Lighting changes do not consistently align with actions unless explicitly prompted. Complex camera movements, such as parallax, are sometimes depicted inaccurately.",
+      "image": "figures/fig7.png",
+      "references": [
+        {
+          "page": 9,
+          "context": "The generated 63-second videos demon- strate clear potential as a proof of concept, but still con- tain notable artifacts, especially in motion naturalness and aesthetics. Figure 7 illustrates examples of artifacts corre- sponding to three of our evaluation axes. We observe that videos with these kinds of artifacts are not particular to TTT-MLP, but common among all methods."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2504.05298.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2504.05298.pdf",
+        "page": 9,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig8",
+      "figure_number": "8",
+      "caption": "Figure 8. Illustration of the three prompt formats discussed in Subsection 3.2: (1) a short summary of the plot, (2) sentence-level descrip- tions of the segments, and (3) a detailed storyboard.",
+      "image": "figures/fig8.png",
+      "references": [
+        {
+          "page": 5,
+          "context": "formats listed below in the order of increasing detail. See Figure 8 in Appendix for examples of each format. • Format 1: A short summary of the plot in 5-8 sentences. Some of the examples are shown in Figure 1. • Format 2: A more detailed plot in roughly 20 sentences, with each sentence roughly corresponding to a 3-second segment."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2504.05298.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2504.05298.pdf",
+        "page": 14,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    }
+  ]
+}

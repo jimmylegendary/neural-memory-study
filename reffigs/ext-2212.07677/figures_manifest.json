@@ -1,0 +1,483 @@
+{
+  "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/2212.07677.pdf",
+  "engine": "pymupdf",
+  "figure_count": 16,
+  "figures": [
+    {
+      "figure_id": "fig1",
+      "figure_number": "1",
+      "caption": "Figure 1. Illustration of our hypothesis: gradient-based optimization and attention-based in-context learning are equivalent. Left:",
+      "image": "figures/fig1.png",
+      "references": [
+        {
+          "page": 5,
+          "context": "The prediction ˆyθ({eτ,1, . . . , eτ,N}, eτ,N+1) of the attention-based model, which depends on all tokens and on the parameters θ, is read-out from the y-entry of the updated N + 1-th token as explained in the previous section. The objective of training, visualized in Figure 1, is to mini- mize the expected squared prediction error, averaged over tasks minθ Eτ[||ˆyθ({eτ,1, . . . , eτ,N}, eτ,N+1) −yτ,test||2]. We achieve this by minibatch online minimization (by Adam (Kingma & Ba, 2014)): At every optimization step, we con- struct a batch of novel training tasks and take a step of stochastic gradient descent on the loss"
+        },
+        {
+          "page": 7,
+          "context": "ved in large Transformers is ex- plained by gradient descent on linear models. We now show that this limitation can be resolved by incorporating one additional element of fully-fledged Transformers: preceding self-attention layers by MLPs enables learning linear models by gradient descent on deep representations which motivates our illustration in Figure 1. Empirically, we demonstrate this by solving non-linear sine-wave regression tasks, see Figure 4."
+        },
+        {
+          "page": 17,
+          "context": "Intriguingly, both methods do generalize similarly well (or poorly) on this out-of-distribution experiment when changing λ, see again Figure 10. We show in Figure 1 the behavior for λ = 0.75 for which we see both methods steadily decreasing the loss within 50 steps. A.7."
+        }
+      ],
+      "reference_count": 3,
+      "description": null,
+      "source": {
+        "pdf": "2212.07677.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2212.07677.pdf",
+        "page": 2,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig2",
+      "figure_number": "2",
+      "caption": "Figure 2. Comparing one step of GD with a trained single linear self-attention layer. Outer left: Trained single LSA layer performance",
+      "image": "figures/fig2.png",
+      "references": [
+        {
+          "page": 5,
+          "context": "yθGD(xτ,test)∥, (2) the cosine similarity be- tween the sensitivities ∂ˆyθGD(xτ,test) ∂xtest and ∂ˆyθ(xτ,test) ∂xtest as well as (3) their difference ∥ ∂ˆyθGD(xτ,test) ∂xtest −∂ˆyθ(xτ,test) ∂xtest ∥again accord- ing to the L2 norm, which in both cases yields the explicit models computed by the algorithm. We show the results of these comparisons in Figure 2. We find an excellent agreement between the two models over a wide range of hyperparameters."
+        },
+        {
+          "page": 6,
+          "context": "Since our models are deep linear networks with respect to xtest we only correct for scaling mismatches between the two models – in this case the construction that implements GD and the trained weights. As shown in Figure 2, we observe (and can actually inspect by eye, see Appendix Figure 9) that a simple scaling cor- rection on the trained weights is enough to recover the weight construction implementing GD. This leads to an identical loss of GD, the trained Transformer and the linearly interpolated weights θI = (θ + θGD)/2."
+        },
+        {
+          "page": 6,
+          "context": "For both cases, we set α = 1 dur- ing training. We again observe that when training a single linear self-attention Transformer, for both inter- ventions, the Transformer performs equally to gradient descent outside of this training setups, see Figure 2 as well Appendix Figure 6. Note that the loss obtained through gradient descent also starts degrading quickly outside the training regime."
+        },
+        {
+          "page": 22,
+          "context": "A.11. Phase transitions We comment shorty on the curiously looking phase transitions of the training loss observed in many of our experiments, see Figure 2. Nevertheless, simply switching from a single-headed self-attention layer to a two-headed self-attention layer mitigates the random seed dependent training instabilities in our experiments presented in the main text, see left and center plot of Figure 15."
+        }
+      ],
+      "reference_count": 4,
+      "description": null,
+      "source": {
+        "pdf": "2212.07677.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2212.07677.pdf",
+        "page": 5,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig3",
+      "figure_number": "3",
+      "caption": "Figure 3. Far left column: The trained TF performance surpasses standard GD but matches GD++, our GD variant with simple iterative",
+      "image": "figures/fig3.png",
+      "references": [
+        {
+          "page": 6,
+          "context": "st token values at layer k, and ∆yk,N+1 the change in the y-entry of the test token after applying the k-th step of self-attention, and ∆Wk the k-th implicit change in the underlying linear model parameters W. When optimizing such Transformers with K layers, we observe that these models generally outper- form K steps of plain gradient descent, see Figure 3. Their behavior is however well described by a variant of gradient descent, for which we tune a single parameter γ defined through the transformation function H(X) which trans- forms the input data according to xj ←H(X)xj, with H(X) = (I −γXXT )."
+        },
+        {
+          "page": 6,
+          "context": "results in decreas- ing alignment between the two models (see center left col- umn), and the recurrent Transformer realigns perfectly with GD++ while matching its performance on in- and out-of distribution tasks. Again, we can interpolate between the Transformer weights found by optimization and the LSA- weight construction with learned η, γ, see Figure 3 & 6. We next consider deeper, non-recurrent 5-layer LSA-only Transformers, with different parameters per layer (i.e. no weight tying)."
+        },
+        {
+          "page": 7,
+          "context": "In both cases the TF aligns well with GD in the beginning of training but aligns much better with GD++ after training. Far right column: TF performance (in log-scale) mimics the one of GD++ well when testing on OOD tasks (α̸ = 1). loss close to 0, see Figure 3. Nevertheless, we see that the naive correction necessary for model interpolation used in the aforementioned experiments is not enough to interpolate without a loss increase."
+        },
+        {
+          "page": 15,
+          "context": "Comparing ten steps of gradient descent with trained recurrent ten-layer Transformers. Results comparable to recurrent Transformer with two layers, see Figure 3, but now with 10 repeated layers. We again observe for deeper recurrent linear self-attention only Transformers that overall GD++ and the trained Transformer align very well with one another and are again interpolatable leading to very similar behavior insight as well as outside training situations."
+        }
+      ],
+      "reference_count": 4,
+      "description": null,
+      "source": {
+        "pdf": "2212.07677.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2212.07677.pdf",
+        "page": 7,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig4",
+      "figure_number": "4",
+      "caption": "Figure 4. Sine wave regression: comparing trained Transformers with meta-learned MLPs for which we adjust the output layer with one step of gradient descent. Left: Plots of the learned initial functions as well as the adjusted functions through either a layer of self-attention or a step of GD. We observe similar initial functions as well as solutions for the trained TF compared fine-tuning a meta-learned MLP. Center: The performance of the trained Transformer is matched by meta-learned MLPs. Left: We observe strong alignment when comparing the prediction as well as the partial derivatives of the the meta-learned MLP and the trained Transformer.",
+      "image": "figures/fig4.png",
+      "references": [
+        {
+          "page": 17,
+          "context": "In order to compare the meta-training of the MLP and the Transformer, we choose the same seed to initialize the network weights for the MLPs and the input embedding trained by meta-learning i.e. backprop through training or the Transformer. This leads to the plots and almost identical learned initial function and updated functions shown in Figure 4. A.8."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2212.07677.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2212.07677.pdf",
+        "page": 9,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig5",
+      "figure_number": "5",
+      "caption": "Figure 5. Training a two layer SA-only Transformer using the",
+      "image": "figures/fig5.png",
+      "references": [
+        {
+          "page": 8,
+          "context": "er- formed in trained Transformers, we optimize a two-layer self-attention circuit on in-context data where alternating tokens include input or output data i.e. e2j = (xj) and e2j+1 = (0, yj). We again measure the loss as well as the mean of the norm of the partial derivative of the first layer’s output w.r.t. the input tokens during training, see Figure 5. First, the training speeds are highly variant given different training seeds, also reported in Garg et al."
+        },
+        {
+          "page": 8,
+          "context": ", the Transformer is able to match the performance of a single (not two) step gradient descent. Interestingly, before the Transformer performance jumps to the one of GD, token ej transformed by the first self-attention layer becomes notably dependant on the neighboring token ej+1 while staying independent on the others which we denote as eother in Figure 5. 0 10000 20000 30000 40000 Training steps 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 Loss GD 1 step TF 2 layers 0 10000 20000 30000 40000 Training steps 0.0 0.5 1.0 1.5 2.0 2.5 3.0 3.5 Norm part. derivatives t(ej)/ ej t(ej)/ ej + 1 t(ej)/ eother Figure 5. Training a two layer SA-only Transformer using the standard token construction."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2212.07677.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2212.07677.pdf",
+        "page": 8,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig6",
+      "figure_number": "6",
+      "caption": "Figure 6. Left & center left column: Comparing Transformers, GD and their weight interpolation on rescaled training distributions. In",
+      "image": "figures/fig6.png",
+      "references": [
+        {
+          "page": 6,
+          "context": "For both cases, we set α = 1 dur- ing training. We again observe that when training a single linear self-attention Transformer, for both inter- ventions, the Transformer performs equally to gradient descent outside of this training setups, see Figure 2 as well Appendix Figure 6. Note that the loss obtained through gradient descent also starts degrading quickly outside the training regime."
+        },
+        {
+          "page": 13,
+          "context": "A.2. Comparing the out-of-distribution behavior of trained Transformers and GD We provide more experimental results when comparing GD with tuned learning rate η and data transformation scalar γ and the trained Transformer on other data distributions than provided during training, see Figure 6. We do so by changing the in-context data distribution and measure the loss of both methods averaged over 10.000 tasks when either changing α that 1) affects the input data range x ∼U(−α, α)Nx or 2) the teacher by αW with W ∼N(0, I)."
+        },
+        {
+          "page": 13,
+          "context": "We do so by changing the in-context data distribution and measure the loss of both methods averaged over 10.000 tasks when either changing α that 1) affects the input data range x ∼U(−α, α)Nx or 2) the teacher by αW with W ∼N(0, I). This setups leads to results shown in the main text, in the first two columns of Figure 6 and in the corresponding plots of Figure 7. Although the match for deeper architectures starts to become worse, overall the trained Transformers behaves remarkably similar to GD and GD++ for layer depth greater than 1."
+        },
+        {
+          "page": 13,
+          "context": "The teacher scaling is identical to the one described above. See for results the two right columns of Figure 6, where we see almost identical behavior for recurrent architectures with less good match for deeper non-recurrent 13"
+        }
+      ],
+      "reference_count": 4,
+      "description": null,
+      "source": {
+        "pdf": "2212.07677.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2212.07677.pdf",
+        "page": 14,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig7",
+      "figure_number": "7",
+      "caption": "Figure 7. Comparing ten steps of gradient descent with trained recurrent ten-layer Transformers. Results comparable to recurrent Transformer with two layers, see Figure 3, but now with 10 repeated layers. We again observe for deeper recurrent linear self-attention only Transformers that overall GD++ and the trained Transformer align very well with one another and are again interpolatable leading to very similar behavior insight as well as outside training situations. Note the inferior performance to the non-recurrent five-layer Transformer which highlights the importance on specific learning rate as well γ parameter per layer/step.",
+      "image": "figures/fig7.png",
+      "references": [
+        {
+          "page": 13,
+          "context": "o by changing the in-context data distribution and measure the loss of both methods averaged over 10.000 tasks when either changing α that 1) affects the input data range x ∼U(−α, α)Nx or 2) the teacher by αW with W ∼N(0, I). This setups leads to results shown in the main text, in the first two columns of Figure 6 and in the corresponding plots of Figure 7. Although the match for deeper architectures starts to become worse, overall the trained Transformers behaves remarkably similar to GD and GD++ for layer depth greater than 1."
+        },
+        {
+          "page": 15,
+          "context": "Comparing twelve steps of GD++ with a trained twelve-layer Transformers with MLPs and 4 headed linear self-attention layer. Results comparable to the deep recurrent Transformer, see Figure 7, but now with 12 independent Transformer blocks including MLPs and 4-head linear self-attention. We omit LayerNorm."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2212.07677.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2212.07677.pdf",
+        "page": 15,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig8",
+      "figure_number": "8",
+      "caption": "Figure 8. Comparing twelve steps of GD++ with a trained twelve-layer Transformers with MLPs and 4 headed linear self-attention",
+      "image": "figures/fig8.png",
+      "references": [
+        {
+          "page": 7,
+          "context": "We leave a search for better weight corrections to future work. We further study Transformers with different depths for recurrent as well as non-recurrent architectures with multiple heads and equipped with MLPs, and find qualitatively equivalent results, see Appendix Fig- ure 7 and Figure 8. Additionally, in Appendix A.9, we provide results obtained when using softmax SA layers as well as LayerNorm, thus essentially retrieving the standard Transformer architecture."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2212.07677.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2212.07677.pdf",
+        "page": 15,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig9",
+      "figure_number": "9",
+      "caption": "Figure 9. Visualizing the weight matrices of trained Transformers. Left & outer left: Weight matrix products of a trained single linear",
+      "image": "figures/fig9.png",
+      "references": [
+        {
+          "page": 6,
+          "context": "Since our models are deep linear networks with respect to xtest we only correct for scaling mismatches between the two models – in this case the construction that implements GD and the trained weights. As shown in Figure 2, we observe (and can actually inspect by eye, see Appendix Figure 9) that a simple scaling cor- rection on the trained weights is enough to recover the weight construction implementing GD. This leads to an identical loss of GD, the trained Transformer and the linearly interpolated weights θI = (θ + θGD)/2."
+        },
+        {
+          "page": 16,
+          "context": "As discussed in the previous section A.3 there is redundancy in the way the trained Transformer can construct the matrix products leading to the weights corresponding to gradient descent. We therefore visualize WKQ = W T KWQ as well as WP V = PKWV in Figure 9. A.5."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2212.07677.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2212.07677.pdf",
+        "page": 16,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig10",
+      "figure_number": "10",
+      "caption": "Figure 10. Roll-out experiments: applying a trained single linear self-attention layer multiple times. We observe that different",
+      "image": "figures/fig10.png",
+      "references": [
+        {
+          "page": 17,
+          "context": "For GD we line search the otpimal learning rate η on 10.000 task. Interestingly, for both methods we observe quick divergence when applied multiple times, see left plot of Figure 10. Nevertheless, both of our update functions are described by a linear self-attention layer for which we can control the norm, post training, by a simple scale which we denote as λ."
+        },
+        {
+          "page": 17,
+          "context": "This results in the new update ytest + λ∆Wxtest for GD and ytest + λPV KT WQxtest for the trained self-attention layer which effectively re-tunes the learning rate for GD and the trained self-attention layer. Intriguingly, both methods do generalize similarly well (or poorly) on this out-of-distribution experiment when changing λ, see again Figure 10. We show in Figure 1 the behavior for λ = 0.75 for which we see both methods steadily decreasing the loss within 50 steps."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2212.07677.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2212.07677.pdf",
+        "page": 17,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig11",
+      "figure_number": "11",
+      "caption": "Figure 11. Visualizing the correction to the softmax operation when training Transformers on regression tasks. The left and center",
+      "image": "figures/fig11.png",
+      "references": [
+        {
+          "page": 19,
+          "context": "Furthermore, this architecture change leads to a very much improved alignment of the trained model and GD. Second, we can observe that when training a two-headed softmax self-attention layer on regression tasks the correction proposed above is actually observed in weight space, see Figure 11. Here, we visualize the matrix product within the softmax operation Wh,KQ per head which we scale with the last diagonal entry of PhWh,V which we denote by ηh = PhWh,V (−1, −1)."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2212.07677.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2212.07677.pdf",
+        "page": 19,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig12",
+      "figure_number": "12",
+      "caption": "Figure 12. Comparing trained two-headed and one-headed single-layer softmax self-attention with 1 step of gradient descent on",
+      "image": "figures/fig12.png",
+      "references": [
+        {
+          "page": 18,
+          "context": "In this section we investigate whether and when gradient-based learning emerges in trained softmax self-attention layers, and we provide an analytical argument to back our findings. First, we show, see Figure 12, that a single layer of softmax self-attention is not able to match GD performance. We tuned the learning rate as well as the weight initialization but found no significant difference over the hyperparameters we used througout this study."
+        },
+        {
+          "page": 19,
+          "context": "Note that if (W1,KQ −W2,KQ) is diagonal, and P and V chosen as in the Proposition of Appendix A.1, we recover our gradient descent construction. We base this derivation on empirical findings, see Figure 12, that, first of all, show the softmax self-attention performance increases drastically when using two heads instead of one. Nevertheless, the self-attention layer has difficulties to match the loss values of a model trained with GD."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2212.07677.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2212.07677.pdf",
+        "page": 20,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig13",
+      "figure_number": "13",
+      "caption": "Figure 13. GD++ analyses. Left: We visualize the change of the eigenspectrum induced by the input data transformation of GD++ for",
+      "image": "figures/fig13.png",
+      "references": [
+        {
+          "page": 21,
+          "context": "(I −γXXT )X)T = (I −γUΣU T )UΣU T (I −γUΣU T )T . We can simplify H++ further as H++ = (I −γUΣU T )UΣU T (I −γUΣU T )T = U(Σ −γΣ2)U T U(I −γΣ)U T (24) = U(Σ −2γΣ2 + γ2Σ3)U T (25) Given the eigenspectrum {λ1, . . . , λn} of H, we obtain an (unsorted) eigenspecturm for H++ with {λ1 −2γλ2 1 + γ2λ3 1, . . . , λn −2γλ2 n + γ2λ3 n} which we visualize in Figure 13 for different γ observed in practice. We hypotheses that the Transformer chooses γ in a way that on average, across the distribution of tasks, the data transformation (iteratively) decreases the condition number λ1/λn leading to accelerated learning."
+        },
+        {
+          "page": 21,
+          "context": "4.6, 7.712, 10.845, 17.196] as the minimum and maximum eigenvalues of XXT across all tasks where we cut the smallest eigenvalue for N = 10 at 1e−10. Furthermore, we extract the γ values from the weights of optimized recurrent 2-layer Transformers trained on different task distributions and obtain γ values of [0.179, 0.099, 0.056, 0.029], see again Figure 13. Note that the observed eigenvalues stay within [0, 1/γ] i.e. the two roots of f(λ, γ) = λ −2γλ2 + γ2λ3."
+        },
+        {
+          "page": 21,
+          "context": "t with too small γ, we move the original λn closer to the root of f(λ, γ) i.e. λ = 1/γ and therefore can change the smallest eigenvalue. Given the task distribution and its corresponding eigenvalue distribution, we see that choosing γ reduces the new condition number κ++ = λ++ 1 /λ++ n which leads to better conditioned learning, see center plot of Figure 13. Note that the optimal γ based on our derivation above is based on the maximum and minimum eigenvalue across all tasks and does not take the change of the eigenvalue distribution into account."
+        },
+        {
+          "page": 22,
+          "context": "hich decreases slightly when comparing to GD++ for the two-layer Transformer.Center right & right: The LayerNorm Transformer outperforms when GD when providing training input data that is significantly larger than the data provided during training. We furthermore visualize the condition number change for N = 25 and 10000 tasks in the right plot of Figure 13 and observe the distribution moving to desirable κ values close to 1. For γ values larger than 0.1 the distribution quickly exhibits exploding condition numbers."
+        }
+      ],
+      "reference_count": 4,
+      "description": null,
+      "source": {
+        "pdf": "2212.07677.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2212.07677.pdf",
+        "page": 21,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig14",
+      "figure_number": "14",
+      "caption": "Figure 14. Comparing trained 1-layer and 2-layer Transformers with LayerNorm and 1 step or 2 steps of gradient descent resp. Left column: The Transformers is not able to match the gradient descent performance with hand-tuned learning rate. Alignment plots: The alignment suffers significantly when comparing to linear self-attention layers although still reasonable alignment is obtained which decreases slightly when comparing to GD++ for the two-layer Transformer.Center right & right: The LayerNorm Transformer outperforms when GD when providing training input data that is significantly larger than the data provided during training.",
+      "image": "figures/fig14.png",
+      "references": [
+        {
+          "page": 19,
+          "context": "quipped with LayerNorm which we apply as usually done before the self-attention layer: Overall, we observe qualitatively similar results to Transformers with softmax self-attention layer i.e. a decrease in performance compared to GD accompanied with a decrease in alignment between models generated by the Transformer and models trained with GD, see Figure 14. Here, we test again a single linear self-attention layer succeeding LayerNorm as well as two layers where we skip the first LayerNorm and only include a LayerNorm between the two."
+        },
+        {
+          "page": 19,
+          "context": "We again assume the optimality of GD and argue that information of targets and inputs present in the tokens is lost by averaging when applying LayerNorm. This naturally leads to decreasing performance compared to GD, see first row of Figure 14. Although the alignment to GD and GD++, especially for two layers, is high, we overall see inferior performance to one or two steps of GD or two steps of GD++."
+        },
+        {
+          "page": 19,
+          "context": "e inferior performance to one or two steps of GD or two steps of GD++. Nevertheless, we speculate that LayerNorm might not only stabilize Transformer training but could also act as some form of data normalization procedure that implicitly enables better generalization for larger inputs as well as targets provided in-context, see OOD experiments in Figure 14. Overall we conclude that common architecture choices like softmax and LayerNorm seem supoptimal for the constructed in-context learning settings when comparing to GD or linear self-attention."
+        }
+      ],
+      "reference_count": 3,
+      "description": null,
+      "source": {
+        "pdf": "2212.07677.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2212.07677.pdf",
+        "page": 22,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig15",
+      "figure_number": "15",
+      "caption": "Figure 15. Phase transitions during training. Left: Loss based on 10 different random seeds when optimizing a single-headed self-",
+      "image": "figures/fig15.png",
+      "references": [
+        {
+          "page": 22,
+          "context": "riously looking phase transitions of the training loss observed in many of our experiments, see Figure 2. Nevertheless, simply switching from a single-headed self-attention layer to a two-headed self-attention layer mitigates the random seed dependent training instabilities in our experiments presented in the main text, see left and center plot of Figure 15. Furthermore, these transitions look reminiscent of the recently observed ”grokking” behaviour (Power et al., 2022)."
+        },
+        {
+          "page": 22,
+          "context": "Interestingly, when carefully tuning the learning rate and batchsize we can also make the Transformers trained in these linear regression tasks grokk. For this, we train a single Transformer block (self-attention layer and MLP) on a limited amount of data (8192 tasks), see right plot of Figure 15, and observe grokking like train and test loss phase transitions where test set first increases drastically before experiencing a sudden drop in loss almost matching the desired GD loss of 0.2. We leave a thorough investigation of these phenomena for future study."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2212.07677.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2212.07677.pdf",
+        "page": 23,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig16",
+      "figure_number": "16",
+      "caption": "Figure 16. Comparing trained Transformers with GD and their weight interpolation when training the Transformer on a fixed",
+      "image": null,
+      "references": [
+        {
+          "page": 5,
+          "context": "Note that we therefore never see the exact same training task twice during training. See Appendix A.12, especially Figure 16 for an analyses when using a fixed dataset size which we cycle over during training. We focus on solvable tasks and similarly to Garg et al."
+        },
+        {
+          "page": 23,
+          "context": "Therefore, we iterate over a single fixed batch of size B instead of drawing new batch of tasks at every iteration. Results can be found in Figure 16. Intriguingly, we find that (meta-)gradient descent finds Transformer weights that align remarkable well with the provided construction and therefore gradient descent even when provided with an arguably very small number of training tasks."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2212.07677.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2212.07677.pdf",
+        "page": 24,
+        "extractor": "pymupdf-textonly",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    }
+  ]
+}

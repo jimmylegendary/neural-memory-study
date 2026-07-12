@@ -1,0 +1,197 @@
+{
+  "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/2505.23735.pdf",
+  "engine": "pymupdf",
+  "figure_count": 8,
+  "figures": [
+    {
+      "figure_id": "fig1",
+      "figure_number": "1",
+      "caption": "Figure 1: Comparison of learning to memorize (Left) individual tokens, and (Right) the context.",
+      "image": "figures/fig1.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2505.23735.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2505.23735.pdf",
+        "page": 5,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig2",
+      "figure_number": "2",
+      "caption": "Figure 2: The illustration of tokens dependencies in SWA and Atlas or OmegaNet with different context length.",
+      "image": "figures/fig2.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2505.23735.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2505.23735.pdf",
+        "page": 8,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig3",
+      "figure_number": "3",
+      "caption": "Figure 3: Visualization of the Atlas’s (and our other variants’) architecture, and its hybrid counterpart with SWA.",
+      "image": "figures/fig3.png",
+      "references": [
+        {
+          "page": 13,
+          "context": "(2024) and use two hybrid variants of MAL and MAG for our Atlas model. The architectures are illustrated in Figure 3. For models with deep memory architectures we use 2-layer MLP with residual connections: M(·) = (·) +𝑊1𝜎(𝑊2(·))."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2505.23735.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2505.23735.pdf",
+        "page": 13,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig4",
+      "figure_number": "4",
+      "caption": "Figure 4: Performance of Atlas and baselines on BABILong benchmark. Atlas surpasses Titans performance and effec- tively scale to 10M context length in this task.",
+      "image": "figures/fig4.png",
+      "references": [
+        {
+          "page": 16,
+          "context": "We also follow the original setup in the benchmark and fine-tune our model. The results are reported in Figure 4. While Atlas shows competitive and on par performance with Titans until 1M context length, the performance of Titans drops in 10M."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2505.23735.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2505.23735.pdf",
+        "page": 14,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig5",
+      "figure_number": "5",
+      "caption": "Figure 5: The effect of local context length (i.e. 𝑐) on the performance of OmegaNet with different global context length.",
+      "image": "figures/fig5.png",
+      "references": [
+        {
+          "page": 19,
+          "context": ") more powerful memory architectures such as gated MLP can further enhance the performance of Atlas; (2) The hybrid variants further improve the performance, where MAG shows better improvement compared to MAL architecture; (3) Polynomial mappings as well as deep memory are particularly important when we use context memorization (i.e., Omega rule). Figure 5 also shows the effect of local context length (i.e., 𝑐) on the performance of the model. With the increase of 𝑐we can achieve better performance, mainly due to the gating parameters of 𝛾that can prune the context, whenever it is needed."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2505.23735.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2505.23735.pdf",
+        "page": 14,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig6",
+      "figure_number": "6",
+      "caption": "Figure 6: Loss curves for different setting with various hyperparameters",
+      "image": "figures/fig6.png",
+      "references": [
+        {
+          "page": 14,
+          "context": "What is the effect of the internal optimizer on the memory? (see Figure 6) Setup. We train our models with training context window of size 4K using FineWeb dataset (Penedo et al. 2024)."
+        },
+        {
+          "page": 18,
+          "context": "2.77 +Gated MLP Memory 19.53 53.09 +Attn (MAG) 19.90 53.08 +Attn (MAL) 20.26 52.63 Linear Memory 21.03 49.74 w/o Muon 19.65 52.56 𝑐= 1 21.98 49.26 w/o Polynomial Mapping 22.14 50.57 We set 𝑑= 256 and show the loss curves vs sequence position for all the five settings with function learning MLP M being defined and trained with different settings in Figure 6. We can see that in all the settings, the model learns non-trivial mappings from inputs to outputs with the 𝑙𝑜𝑠𝑠𝑗= ∥𝑖𝑗−𝑜𝑗∥2 2/∥𝑜𝑗∥2 2 being smaller than 1 eventually."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2505.23735.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2505.23735.pdf",
+        "page": 17,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig7",
+      "figure_number": "7",
+      "caption": "Figure 7: The results for associative mem- ory recall.",
+      "image": "figures/fig7.png",
+      "references": [
+        {
+          "page": 19,
+          "context": "(2023) we evaluate the performance of Atlas and Dot in Multi-Query Associative Recall (MQAR) task (Arora, Eyuboglu, Timalsina, et al. 2023). The results are reported in Figure 7. Both models show good performance compared to baselines and Atlas achieve the best performance per memory size compared to state-of-the-art models such as DeltaNet (Yang, Wang, Zhang, et al. 2024). 6.6 Ablation Study and Scaling Patterns In this section, we perform an ablation study on the differernt components of Atlas, and also evaluate its sca"
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2505.23735.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2505.23735.pdf",
+        "page": 19,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig8",
+      "figure_number": "8",
+      "caption": "Figure 8: Scaling patterns of Atlas, and OmegaNet with respect to (Left) training context length, and (Right) FLOPs.",
+      "image": "figures/fig8.png",
+      "references": [
+        {
+          "page": 19,
+          "context": "Model Size. Figure 8 shows the scaling pattern of Atlas, and OmegaNet, with respect to number of parameters and compared to baseline. Both models achieve a good scaling pattern with increasing the model size, achieving lower perplexity in all scales compared to baselines."
+        },
+        {
+          "page": 19,
+          "context": "Context Length. Figure 8 shows the scaling pattern of Atlas, and OmegaNet, with respect to the context length and compared to baseline. Both models due to high memory capacity can scale well, when increasing the context length. 7 Conclusion We introduced Atlas, a new long-term memory module designed to address the core limitations of modern recurrent models in long-contex"
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2505.23735.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2505.23735.pdf",
+        "page": 19,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    }
+  ]
+}

@@ -1,0 +1,466 @@
+{
+  "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/2407.04620.pdf",
+  "engine": "pymupdf",
+  "figure_count": 16,
+  "figures": [
+    {
+      "figure_id": "fig1",
+      "figure_number": "1",
+      "caption": "Figure 1. All sequence modeling layers can be expressed as a hidden state that transitions according to an update rule. Our key idea is to make the hidden state itself a model f with weights W , and the update rule a gradient step on the self-supervised loss ℓ. Therefore, updating the hidden state on a test sequence is equivalent to training the model f at test time. This process, known as Test-Time Training (TTT), is programmed into our TTT layers.",
+      "image": "figures/fig1.png",
+      "references": [
+        {
+          "page": 3,
+          "context": "Bottom: Examples of sequence modeling layers and their instantiations of the three components. The naive TTT layer was shown in Figure 1. Self-attention has a hidden state growing with context, therefore growing cost per token."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2407.04620.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.04620.pdf",
+        "page": 1,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig2",
+      "figure_number": "2",
+      "caption": "Figure 2. Comparing to Mamba, TTT-Linear and TTT-MLP have similar perplexity in 8k context (left) and better use of long context (right). Evaluations follow Kaplan et al. [43]. Left: Scaling trends on the Pile with 8k context, zoomed in between 350M and 1.3B parameters. Right: Similar to Transformer, TTT-Linear and TTT-MLP can keep reducing perplexity by conditioning on more tokens, while Mamba cannot after 16k context. All methods have matched training FLOPs as Mamba 1.4B.",
+      "image": "figures/fig2.png",
+      "references": [
+        {
+          "page": 2,
+          "context": "All methods have matched training FLOPs as Mamba 1.4B. 1 Introduction In 2020, the OpenAI scaling law paper (Kaplan et. al [43]) showed that LSTMs (a type of RNN) could not scale similarly to Transformers or effectively use long context. Now, with modern RNNs and best practices, we re-evaluate these findings in Figure 2. On the left, we observe that Mamba [27] – one of the most popular RNNs today – scales similarly to a strong Transformer, showing great progress since the LSTMs in 2020."
+        },
+        {
+          "page": 15,
+          "context": "See details of the TF finetune recipe in Appendix C. Experiments in Figure 2 (right). Compared to TTT-Linear, TTT-MLP with matched FLOPs per- forms worse at short context but better at long context."
+        },
+        {
+          "page": 15,
+          "context": "The Transformer in this figure is TF finetune, which is the stronger baseline in 32k context. Details of the experiments in Figure 2 are included in Appendix C. Our complete results for context lengths 1k, 2k, 4k, 8k, 16k, 32k, including TF finetune, are in Figure 15 (in Appendix). 3.3 Wall-clock time LLM training and inference can be decomposed into forward, backward, and generate."
+        },
+        {
+          "page": 17,
+          "context": "However, such instantiations can still require substantial wall-clock time, even after applying our improvements in efficiency. For example, TTT-MLP is effective in terms of FLOPs, as shown in Figure 2. But the additional complexity of the MLP structure increases wall-clock time much more relative to FLOPs, as shown in Figure 12."
+        },
+        {
+          "page": 19,
+          "context": "They gave invaluable advice to our experiments and presentation. For example, Sanmi suggested us to focus on TTT-Linear, Tatsu suggested the experiments in Figure 2 (left), and Carlos outlined Section 2. Acknowledgements Part of the compute for this project is generously supported by the Google TPU Research Cloud program and Hyperbolic Labs."
+        },
+        {
+          "page": 30,
+          "context": "For TTT-Linear, we tried linear warmup in the inner loop but did not observe a difference. Experiments in Figure 2 (right). To ensure fairness to Mamba, all methods in these experiments have matched training FLOPs and are trained with the same recipe (last row of Table 3) as Mamba 1.4B."
+        }
+      ],
+      "reference_count": 6,
+      "description": null,
+      "source": {
+        "pdf": "2407.04620.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.04620.pdf",
+        "page": 2,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig3",
+      "figure_number": "3",
+      "caption": "Figure 3. Top: A generic sequence modeling layer expressed as a hidden state that transitions according to an update rule. All sequence modeling layers can be viewed as different instantiations of three components in this figure: the initial state, update rule and output rule. Bottom: Examples of sequence modeling layers and their instantiations of the three components. The naive TTT layer was shown in Figure 1. Self-attention has a hidden state growing with context, therefore growing cost per token. Both the naive RNN and TTT layer compress the growing context into a hidden state of fixed size, therefore their cost per token stays constant.",
+      "image": "figures/fig3.png",
+      "references": [
+        {
+          "page": 3,
+          "context": "tial wall-clock time, even after applying our improvements in efficiency. It remains to be seen whether our framework can produce instantiations that either overcome this limitation or offer benefits outweighing it. 2 Method All sequence modeling layers can be viewed from the perspective of storing historic context into a hidden state, as shown in Figure 3.1 For example, RNN layers – such as LSTM [33], RWKV [59] and Mamba [27] layers – compress context into a state of fixed size across time. This compression has two consequences."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2407.04620.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.04620.pdf",
+        "page": 3,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig4",
+      "figure_number": "4",
+      "caption": "Figure 4. The self-supervised TTT loss ℓaveraged over all test sequences of the form x1,...,xT where T = 2048, for the first three TTT layers in a network with 125M parameters. One step of gradient descent is able to reduce TTT loss from ℓ(Wt−1;xt) to ℓ(Wt;xt). As t moves further along the test sequence, ℓ(Wt;xt) also improves further from ℓ(W0;xt). For visual clarity, loss values have been averaged over a sliding window of 10 timesteps. See Figure 14 (in Appendix) for complete results on all 12 layers.",
+      "image": "figures/fig4.png",
+      "references": [
+        {
+          "page": 4,
+          "context": "To make the learning problem nontrivial, we first process xt into a corrupted input ˜xt (details in Subsection 2.3), then optimize: ℓ(W ;xt) = ∥f ( ˜xt;W ) −xt∥2. (3) Similar to denoising autoencoders [77], f needs to discover the correlations between dimensions of xt in order to reconstruct it from partial information ˜xt.3 As shown in Figure 4, gradient descent is able to reduce ℓ, but cannot reduce it to zero. We discuss more sophisticated formulations of the self-supervised task in Subsection 2.3."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2407.04620.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.04620.pdf",
+        "page": 5,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig5",
+      "figure_number": "5",
+      "caption": "Figure 5. Naive implementation of a TTT layer with a linear model and online GD in the style of PyTorch. TTT_Layer can be dropped into a larger network like other sequence modeling layers. Training the network will optimize the parameters of Task in TTT_Layer, because both are subclasses of nn.Module. Since Learner is not a subclass of nn.Module, state.model is updated manually in the inner loop for each call of state.train. For simplicity, we sometimes overload model as model.parameters.",
+      "image": "figures/fig5.png",
+      "references": [
+        {
+          "page": 6,
+          "context": "In the outer loop, θK,θV ,θQ are optimized alongside θrest, and W is merely a hidden state, not a parameter. Figure 5 illustrates this difference with code, where θK and θV are implemented as parameters of the TTT layer, analogous to the Key and Value parameters of self-attention. Lastly, the training view θKxt has fewer dimensions than xt, so we can no longer use the output rule in Equation 1."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2407.04620.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.04620.pdf",
+        "page": 6,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig6",
+      "figure_number": "6",
+      "caption": "Figure 6. High-level computation graph of the first TTT mini-batch, where nodes are variables and edges are computations. The blue nodes are input variables, and yellow are output. Subsection 2.4: Since G1,...,Gb are not connected, they have no sequential dependency on each other, therefore can be computed in parallel. Subsection 2.5: We do not actually materialize the white nodes – the intermediate Gs and W s – to compute the output variables in the dual form.",
+      "image": "figures/fig6.png",
+      "references": [
+        {
+          "page": 7,
+          "context": "Therefore, batch GD has a smaller effective search space, which ends up hurting performance for language modeling. Our proposed solution – mini-batch gradient descent – is shown in Figure 6. Denote the TTT batch size by b."
+        },
+        {
+          "page": 8,
+          "context": "To make matters worse, for each xt ∈Rd, Gt is d × d, which incurs much heavier memory footprint and I/O cost than xt for large d. To solve these two problems, we make a simple observation: We do not actually need to materialize G1,...,Gb as long as we can compute Wb at the end of the mini-batch, and the output tokens z1,...,zb (see Figure 6). Now we demonstrate these computations with the simplified TTT-Linear case above."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2407.04620.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.04620.pdf",
+        "page": 7,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig7",
+      "figure_number": "7",
+      "caption": "Figure 7. Ablations on TTT mini-batch size b, where b = 1 is online GD and b = T is batch GD. We choose b = 16 for all experiments in this paper. Left: Smaller b improves perplexity since more GD steps are taken.5 The perplexity of 11.09 at b = 16 corresponds to the final result of TTT-Linear in Figure 10. Right: Forward time in dual form, with context length T = 2048. Total time (orange) can be decomposed into time for computing the W s at the end of every mini-batch (blue) and time for z1,...,zT (orange −blue).6 Time complexity for the W s is O(T × d2), constant in b, but the blue line decreases as larger b allows more parallelization until hardware utilization saturates. Time complexity for z1,...,zT is O(T × b × d), so the orange line first decreases with more parallelization, then increases as the extra computation for z1,...,zT becomes dominant.",
+      "image": "figures/fig7.png",
+      "references": [
+        {
+          "page": 7,
+          "context": "We use Gt = ∇ℓ(Wt′;xt), where t′ = t −mod(t,b) is the last timestep of the previous mini-batch (or 0 for the first mini-batch), so we can parallelize b gradient computations at a time. Empirically, b controls a trade-off between speed and quality, as shown in Figure 7. We chose b = 16 for all experiments in this paper."
+        },
+        {
+          "page": 8,
+          "context": "Denote X = [x1,...,xb], then: Wb = W0 −η b X t=1 Gt = W0 −2η b X t=1 (W0xt −xt)xT t = W0 −2η(W0X −X)XT . 5 In theory, b can potentially be too small such that the variance between mini-batches is too high, hurting optimization. However, we have not observed such an effect in practice. 6 For Figure 7, we use a single TTT layer in TTT-Linear 1.3B, implemented in pure PyTorch. Our fused kernel significantly improves time efficiency, but makes it difficult to cleanly decompose the time for computing Wb vs. z1,...,zb. 8"
+        },
+        {
+          "page": 9,
+          "context": "In practice, d is typically a few hundred and b is chosen to be only 16. As a consequence, wall-clock time for computing z1,...,zb is relatively small, as observed in the right panel of Figure 7. In our JAX implementation, training with the dual form is more than 5× faster than with primal. 2.6 Theoretical equivalences In Subsection 2.1, we mentioned that f can be a linear model or a neural network."
+        },
+        {
+          "page": 31,
+          "context": "The self-supervised TTT loss ℓaveraged over all test sequences of the form x1,...,xT where T = 2048, for all 12 TTT layers in a network with 125M parameters train on the Pile. The same network is also used for b = 1 (online GD) in the left panel of Figure 7. For layers in the middle, we observe that ∥xt∥rises steadily, causing all three losses to rise with it."
+        }
+      ],
+      "reference_count": 4,
+      "description": null,
+      "source": {
+        "pdf": "2407.04620.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.04620.pdf",
+        "page": 8,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig8",
+      "figure_number": "8",
+      "caption": "Figure 8. Parametric learners need to define two attributes: model and optimizer (left), and each learner uniquely induces a TTT layer (right). Two of the induced TTT layers: TTT-Linear and TTT-MLP, are proposed in this paper. The TTT layer with a linear model and batch GD is equivalent to linear attention [44].",
+      "image": "figures/fig8.png",
+      "references": [
+        {
+          "page": 10,
+          "context": "RNN layers TTT layers Sequence modeling layers w/ parametric learners Details in Figure 8 w/ nonparametric learners • Self-attention • … • Mamba • RWKV • LSTM • … Figure 9. RNN layers and TTT layers are both subsets of sequence modeling layers."
+        },
+        {
+          "page": 10,
+          "context": "The change from batch GD to mini-batch GD contributes the most improvement by a large margin. While the space of models × optimizers in Figure 8 is already large, machine learning is much richer than optimizing the parameters Wt of a model f . There are also nonparametric learners, such as nearest neighbors, support vector machines (SVMs), and kernel ridge regression."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2407.04620.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.04620.pdf",
+        "page": 9,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig9",
+      "figure_number": "9",
+      "caption": "Figure 9. RNN layers and TTT layers are both subsets of sequence modeling layers. RNN layers have a hidden state that is fixed in size across time. TTT layers with parametric learners are also RNN layers, since their hidden state is also fixed in size. TTT layers with nonparametric learners can represent self-attention, as discussed in Subsection 2.6.",
+      "image": "figures/fig9.png",
+      "references": [
+        {
+          "page": 11,
+          "context": "Under this new definition of TTT layers, both parametric learners such as that in Theorem 1 and nonparametric learners such as that in Theorem 2 can be included. Figure 9 summarizes this general definition of TTT layers in the broader scope of all sequence modeling layers. This general definition has an additional benefit for parametric learners: There can be more objects other than W in the internal storage of parametric learners, such as the optimizer state, which will also be included in the hidden state of the"
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2407.04620.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.04620.pdf",
+        "page": 10,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig10",
+      "figure_number": "10",
+      "caption": "Figure 10. Evaluations for context lengths 2k and 8k on the Pile. Details in Subsection 3.1. TTT-Linear has comparable performance as Mamba at 2k context, and better performance at 8k.",
+      "image": "figures/fig10.png",
+      "references": [
+        {
+          "page": 8,
+          "context": "We choose b = 16 for all experiments in this paper. Left: Smaller b improves perplexity since more GD steps are taken.5 The perplexity of 11.09 at b = 16 corresponds to the final result of TTT-Linear in Figure 10. Right: Forward time in dual form, with context length T = 2048."
+        },
+        {
+          "page": 11,
+          "context": "All models here have 125M parameters, and are trained according to the recipe in Subsection 3.1. The last row, with perplexity 11.09, is the final result of TTT-Linear in Figure 10. Starting from the equivalence discussed in Subsection 2.6, learnable W0 hurts slightly, but the rows below cannot train stably without it."
+        },
+        {
+          "page": 12,
+          "context": "As discussed in Subsection 2.7, Transformer and Mamba use different backbones, and TTT-Linear and TTT-MLP always use the Mamba backbone unless noted otherwise. As an ablation study, Figure 10 and Figure 11 contain TTT layers within the Transformer backbone. When a figure contains both the Transformer backbone and Mamba backbone, we denote them by (T) and (M), respectively."
+        },
+        {
+          "page": 13,
+          "context": "Griffin [18]), because our baselines are not hybrid. While hybrid architectures that use both self-attention and TTT layers may improve performance, they would reduce the clarity of our academic evaluation. 3.1 Short context: the Pile From Figure 10, we make a few observations: • At 2k context, TTT-Linear (M), Mamba, and Transformer have comparable performance, as the lines mostly overlap. TTT-MLP (M) performs slightly worse under large FLOP budgets."
+        },
+        {
+          "page": 13,
+          "context": "The Chinchilla paper empirically observed that the compute-optimal models following their recipe fall onto a line in the log-log plot of FLOPs vs. perplexity, as is often the case for scaling law experiments [34]. However, we do not observe a clean linear fit in Figure 10 or Figure 11 (the analogous experiments in Books), not even for Transformers. This is not surprising 13"
+        }
+      ],
+      "reference_count": 5,
+      "description": null,
+      "source": {
+        "pdf": "2407.04620.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.04620.pdf",
+        "page": 13,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig11",
+      "figure_number": "11",
+      "caption": "Figure 11. Evaluations for context lengths 2k and 32k on Books. Details in Subsection 3.2. Our complete results for context lengths 1k, 2k, 4k, 8k, 16k, 32k, including Transformer finetuning, are in Figure 15 (in Appendix). Most observations from the Pile still hold.",
+      "image": "figures/fig11.png",
+      "references": [
+        {
+          "page": 12,
+          "context": "As discussed in Subsection 2.7, Transformer and Mamba use different backbones, and TTT-Linear and TTT-MLP always use the Mamba backbone unless noted otherwise. As an ablation study, Figure 10 and Figure 11 contain TTT layers within the Transformer backbone. When a figure contains both the Transformer backbone and Mamba backbone, we denote them by (T) and (M), respectively."
+        },
+        {
+          "page": 13,
+          "context": "The Chinchilla paper empirically observed that the compute-optimal models following their recipe fall onto a line in the log-log plot of FLOPs vs. perplexity, as is often the case for scaling law experiments [34]. However, we do not observe a clean linear fit in Figure 10 or Figure 11 (the analogous experiments in Books), not even for Transformers. This is not surprising 13"
+        },
+        {
+          "page": 14,
+          "context": "stead of fitting them with linear regression due to the large error.11 3.2 Long context: Books To evaluate capabilities in long context, we experiment with context lengths ranging from 1k to 32k in 2× increments, using a popular subset of the Pile called Books3. The training recipe here is the same as that for Pile.12 From the subset of results in Figure 11, we make a few observations: • At 2k context on Books, all the observations from Pile 2k still hold, except that Mamba now performs slightly better than TTT-Linear (whereas their lines roughly overlapped for Pile 2k). • At 32k context, both TTT-Linear (M) and TTT-MLP (M) perform better than Mamba, similar to the observation from Pile 8k. Even TTT-"
+        },
+        {
+          "page": 32,
+          "context": "Complete results on Books, presented by context lengths. Figure 11 in Subsection 3.2 presents the subset of results for context lengths 2k and 32k. 32"
+        }
+      ],
+      "reference_count": 4,
+      "description": null,
+      "source": {
+        "pdf": "2407.04620.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.04620.pdf",
+        "page": 14,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig12",
+      "figure_number": "12",
+      "caption": "Figure 12. Latency on an NVIDIA A100 GPU with 80G HBM and PCIe connections.",
+      "image": "figures/fig12.png",
+      "references": [
+        {
+          "page": 2,
+          "context": "Transformers) is their linear (vs. quadratic) complexity. This asymptotic advantage is only realized in practice for long context, which according to Figure 12 is after 8k. On the other hand, once context is long enough, existing RNNs such as Mamba struggle to actually take advantage of the extra information being conditioned on."
+        },
+        {
+          "page": 15,
+          "context": "We only write inference kernels for this work because the training kernel would require substantial effort and cannot be used on our TPUs. Figure 12 shows the latency of our inference kernel for forward (prefill) and generate (decode). All models are 1.3B (1.4B for Mamba)."
+        },
+        {
+          "page": 17,
+          "context": "For example, TTT-MLP is effective in terms of FLOPs, as shown in Figure 2. But the additional complexity of the MLP structure increases wall-clock time much more relative to FLOPs, as shown in Figure 12. It remains to be seen whether our framework can produce instantiations that either overcome this limitation or offer benefits outweighing it. 4.3 Learning to Learn For decades, researchers have been arguing that learning to learn, also known as meta-learning or bi-level optimization, should be a critical component of intelligence [64, 5, 73, 50]."
+        }
+      ],
+      "reference_count": 3,
+      "description": null,
+      "source": {
+        "pdf": "2407.04620.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.04620.pdf",
+        "page": 15,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig13",
+      "figure_number": "13",
+      "caption": "Figure 13. Left: A residual block, the basic building block for Transformers. The sequence modeling block is instantiated into two variants: the Transformer backbone and Mamba backbone. Middle: TTT layer in the Transformer backbone. The LN before O comes from NormFormer [67]. Right: TTT layer in the backbone inspired by Mamba [27] and Griffin [18]. Following these two architectures, σ here is GELU [31]. To accommodate the extra parameters of the gate without changing the embedding dimension, we simply combine θK and θQ into a single projection.",
+      "image": "figures/fig13.png",
+      "references": [
+        {
+          "page": 12,
+          "context": "After experimenting with the Mamba backbone, we find that it also improves perplexity for TTT layers, so we incorporate it into our proposed method. See Figure 13 (in Appendix) for details. 3 Experiments We evaluate TTT-Linear and TTT-MLP by comparing with two baselines – Transformer and Mamba, a modern RNN. Our main codebase is based on EasyLM [25], an open-source project for training and serving LLMs in JAX."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2407.04620.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.04620.pdf",
+        "page": 29,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig14",
+      "figure_number": "14",
+      "caption": "Figure 14. The self-supervised TTT loss ℓaveraged over all test sequences of the form x1,...,xT where T = 2048, for all 12 TTT layers in a network with 125M parameters train on the Pile. The same network is also used for b = 1 (online GD) in the left panel of Figure 7. For layers in the middle, we observe that ∥xt∥rises steadily, causing all three losses to rise with it. Even for these layers, the gap between ℓ(W0;xt) and ℓ(Wt;xt) still increases with t . For visual clarity, loss values have been averaged over a sliding window of 10 timesteps.",
+      "image": "figures/fig14.png",
+      "references": [
+        {
+          "page": 5,
+          "context": "For visual clarity, loss values have been averaged over a sliding window of 10 timesteps. See Figure 14 (in Appendix) for complete results on all 12 layers. 2.2 Training a network with TTT layers The forward pass of a TTT layer also has a corresponding backward pass. Our forward pass only consists of standard differentiable operators except the gradient operator ∇."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2407.04620.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.04620.pdf",
+        "page": 31,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig15",
+      "figure_number": "15",
+      "caption": "Figure 15. Complete results on Books, presented by context lengths. Figure 11 in Subsection 3.2 presents the subset of results for context lengths 2k and 32k.",
+      "image": "figures/fig15.png",
+      "references": [
+        {
+          "page": 14,
+          "context": "Details in Subsection 3.2. Our complete results for context lengths 1k, 2k, 4k, 8k, 16k, 32k, including Transformer finetuning, are in Figure 15 (in Appendix). Most observations from the Pile still hold. given the differences in dataset, context length, tokenizer, and architecture."
+        },
+        {
+          "page": 15,
+          "context": "Details of the experiments in Figure 2 are included in Appendix C. Our complete results for context lengths 1k, 2k, 4k, 8k, 16k, 32k, including TF finetune, are in Figure 15 (in Appendix). 3.3 Wall-clock time LLM training and inference can be decomposed into forward, backward, and generate. Prompt processing during inference, also known as prefill, is the same operation as forward during training, except that the intermediate activations do not need to be stored for backward."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2407.04620.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.04620.pdf",
+        "page": 32,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig16",
+      "figure_number": "16",
+      "caption": "Figure 16. An alternative view of our complete results on Books, presented by model sizes, with context length as the x-axis. For all methods trained from scratch, perplexity becomes worse once the context length becomes too large. This trend is not observed with TF finetune, except for one case at the 125M scale. The best context length increases for larger models (trained from scratch).",
+      "image": "figures/fig16.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2407.04620.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2407.04620.pdf",
+        "page": 33,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    }
+  ]
+}

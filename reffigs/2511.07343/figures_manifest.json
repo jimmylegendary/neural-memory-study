@@ -1,0 +1,127 @@
+{
+  "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/2511.07343.pdf",
+  "engine": "pymupdf",
+  "figure_count": 5,
+  "figures": [
+    {
+      "figure_id": "fig1",
+      "figure_number": "1",
+      "caption": "Figure 1: The basic diagram for illustraing TNT memory hierarchy. In each row, the updates at the same value of 𝑡ran at the same time (run in parrallel). 𝑡= 0 is the initialization of the memory.",
+      "image": "figures/fig1.png",
+      "references": [
+        {
+          "page": 3,
+          "context": "efficient fine-tuning mechanism to address chunksize mismatch between training and inference in deep memory modules (Section 4.2). • Putting all above together, we introduce TNT, a general two-stage training paradigm that decouples training efficiency from inference performance by combining efficient pre-training with high-resolution fine-tuning (Figure 1, Figure 3, Section 4). • We validate TNT on the Titans architecture, achieving up to a 17.37× training speedup while improving accuracy, significantly advancing the practicality of expressive RNNs (Section 5). Problem Definition and Notations We aim to train a neural network with parameters θ ∈R𝑑𝑚to perform next-token prediction."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2511.07343.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2511.07343.pdf",
+        "page": 2,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig2",
+      "figure_number": "2",
+      "caption": "Figure 2: Sensitivity of inference chunk size on a 550M Titans model pre-trained with 𝐶= 64. Performance is optimal when the inference chunk size matches the training one.",
+      "image": "figures/fig2.png",
+      "references": [
+        {
+          "page": 5,
+          "context": "However, we observe that inference-time performance is highly sensitive to this pre-training choice. For example, as shown in Figure 2, a model pre-trained with a chunk size of 64 achieves optimal perplexity only when evaluated with that same chunk size. This result reveals a critical train-test mismatch and contradicts the intuition that smaller chunks at inference should yield superior performance by capturing fine-grained dependencies with a \"fresher\" learning signal."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2511.07343.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2511.07343.pdf",
+        "page": 4,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig3",
+      "figure_number": "3",
+      "caption": "Figure 3: Architectural overview of TNT Stage 1.",
+      "image": "figures/fig3.png",
+      "references": [
+        {
+          "page": 3,
+          "context": "fine-tuning mechanism to address chunksize mismatch between training and inference in deep memory modules (Section 4.2). • Putting all above together, we introduce TNT, a general two-stage training paradigm that decouples training efficiency from inference performance by combining efficient pre-training with high-resolution fine-tuning (Figure 1, Figure 3, Section 4). • We validate TNT on the Titans architecture, achieving up to a 17.37× training speedup while improving accuracy, significantly advancing the practicality of expressive RNNs (Section 5). Problem Definition and Notations We aim to train a neural network with parameters θ ∈R𝑑𝑚to perform next-token prediction."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2511.07343.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2511.07343.pdf",
+        "page": 5,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig4",
+      "figure_number": "4",
+      "caption": "Figure 4: Runtime comparison of different models and imple- mentations across varying sequence lengths, with the number of tokens per batch fixed at 0.5M. Additional results are presented in Figure 5.",
+      "image": "figures/fig4.png",
+      "references": [
+        {
+          "page": 7,
+          "context": "We first analyze single-step runtime performance by varying the sequence length while keeping the number of tokens per batch fixed. As shown in Figure 4, TNT’s runtime grows linearly with sequence length, in contrast to the quadratic growth of Titans and standard attention. This scaling advantage is significant at long contexts."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2511.07343.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2511.07343.pdf",
+        "page": 8,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig5",
+      "figure_number": "5",
+      "caption": "Figure 5: Runtime comparison of different models and implementations across varying sequence lengths, with the number of tokens per batch fixed at 0.5M.",
+      "image": "figures/fig5.png",
+      "references": [
+        {
+          "page": 8,
+          "context": "ng-context training scenarios. 2048 4096 8192 16384 32768 Sequence Length 103 Runtime (ms) FlashAttention JAX Attention Titans (C=16) TNT (CL=16) TNT (CL=128) Figure 4: Runtime comparison of different models and imple- mentations across varying sequence lengths, with the number of tokens per batch fixed at 0.5M. Additional results are presented in Figure 5. Time-to-Quality Comparison."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2511.07343.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2511.07343.pdf",
+        "page": 16,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    }
+  ]
+}

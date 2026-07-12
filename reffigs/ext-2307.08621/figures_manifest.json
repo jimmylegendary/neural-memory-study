@@ -1,0 +1,178 @@
+{
+  "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/2307.08621.pdf",
+  "engine": "pymupdf",
+  "figure_count": 6,
+  "figures": [
+    {
+      "figure_id": "fig1",
+      "figure_number": "1",
+      "caption": "Figure 1: Retentive network (RetNet) achieves low-cost inference (i.e., GPU memory, throughput, and latency), training parallelism, and favorable scaling curves compared with Transformer. Results of inference cost are reported with 8k as input length. Figure 6 shows more results on different sequence lengths.",
+      "image": "figures/fig1.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2307.08621.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2307.08621.pdf",
+        "page": 1,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig2",
+      "figure_number": "2",
+      "caption": "Figure 2: RetNet makes the “impossible triangle” possible, which achieves training parallelism, good performance, and low inference cost simultane- ously.",
+      "image": "figures/fig2.png",
+      "references": [
+        {
+          "page": 2,
+          "context": "Numerous efforts have continued to develop the next-generation architecture, aiming at retain- ing training parallelism and competitive perfor- mance as Transformers while having efficient O(1) inference. It is challenging to achieve the above goals simultaneously, i.e., the so-called “impossible triangle” as shown in Figure 2. There have been three main strands of research."
+        },
+        {
+          "page": 6,
+          "context": "The O(1) complexity reduces memory and inference latency while achieving equivalent results. 2.4 Relation to and Differences from Previous Methods Table 1 compares RetNet with previous methods from various perspectives. The comparison results echo the “impossible triangle” presented in Figure 2. Moreover, RetNet has linear memory complexity for long sequences due to the chunkwise recurrent representation."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2307.08621.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2307.08621.pdf",
+        "page": 2,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig3",
+      "figure_number": "3",
+      "caption": "Figure 3: Dual form of RetNet. “GN” is short for GroupNorm.",
+      "image": null,
+      "references": [
+        {
+          "page": 3,
+          "context": "We consider the original mapping v(n) 7→o(n) as vectors and obtain the retention mechanism as follows. The Parallel Representation of Retention As shown in Figure 3a, the retention layer is defined as: Q = (XWQ) ⊙Θ, K = (XWK) ⊙Θ, V = XWV Θn = einθ, Dnm = \u001aγn−m, n ≥m 0, n < m Retention(X) = (QK⊺⊙D)V (5) where Θ is the complex conjugate of Θ, and D ∈R|x|×|x| combines causal masking and exponential decay along relative distance as one matrix. Similar to self-attention, the parallel representation enables us to tr"
+        },
+        {
+          "page": 4,
+          "context": "Figure 3: Dual form of RetNet. “GN” is short for GroupNorm. The Recurrent Representation of Retention As shown in Figure 3b, the proposed mechanism can also be written as recurrent neural networks (RNNs), which is favorable for inference. For the n-th timestep, we recurrently obtain the output as: Sn = γSn−1 + K⊺ nVn Retention(Xn) = QnSn, n = 1, · · · , |x| (6) where Q, K, V, γ are the same as in Equation (5)."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2307.08621.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2307.08621.pdf",
+        "page": 4,
+        "extractor": "pymupdf-textonly",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig4",
+      "figure_number": "4",
+      "caption": "Figure 4: Pseudocode for the three computation paradigms of retention.",
+      "image": "figures/fig4.png",
+      "references": [
+        {
+          "page": 4,
+          "context": "So we normalize the head outputs separately. The pseudocode of retention is summarized in Figure 4. 4"
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2307.08621.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2307.08621.pdf",
+        "page": 5,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig5",
+      "figure_number": "5",
+      "caption": "Figure 5: Perplexity decreases along with scaling up the model size. We empirically observe that RetNet tends to outperform Transformer when the model size is larger than 2B.",
+      "image": "figures/fig5.png",
+      "references": [
+        {
+          "page": 7,
+          "context": "The implementation is based on TorchScale [MWH+22]. We train the models with 512 AMD MI200 GPUs. 3.2 Comparisons with Transformer Language Modeling As shown in Figure 5, we report perplexity on the validation set for the language models based on Transformer and RetNet. We present the scaling curves with three model sizes, i.e., 1.3B, 2.7B, and 6.7B."
+        },
+        {
+          "page": 8,
+          "context": "As shown in Table 3, the datasets include HellaSwag (HS) [ZHB+19], BoolQ [CLC+19], COPA [WPN+19], PIQA [BZB+20], Winograd, Winogrande [LDM12], and Sto- ryCloze (SC) [MRL+17]. The accuracy numbers are consistent with language modeling perplexity presented in Figure 5. RetNet achieves comparable performance with Transformer on zero-shot and in-context learning settings. 3.3 Training Cost As shown in Table 4, we compare the training speed and memory consumption of Transformer and RetNet, where the training sequence length is 8192."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2307.08621.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2307.08621.pdf",
+        "page": 7,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig6",
+      "figure_number": "6",
+      "caption": "Figure 6: Inference cost of Transformer and RetNet with a model size of 6.7B. RetNet outperforms Transformers in terms of memory consumption, throughput, and latency.",
+      "image": "figures/fig6.png",
+      "references": [
+        {
+          "page": 1,
+          "context": "Results of inference cost are reported with 8k as input length. Figure 6 shows more results on different sequence lengths. ∗Equal contribution. ⋄Corresponding author. arXiv:2307.08621v4 [cs.CL] 9 Aug 2023"
+        },
+        {
+          "page": 8,
+          "context": "For example, we train the RetNet models on an AMD MI200 cluster with decent throughput. It is notable that RetNet has the potential to further reduce cost via advanced implementation, such as kernel fusion. 3.4 Inference Cost As shown in Figure 6, we compare memory cost, throughput, and latency of Transformer and RetNet during inference. Transformers reuse KV caches of previously decoded tokens."
+        },
+        {
+          "page": 8,
+          "context": "We evaluate the 6.7B model on the A100-80GB GPU in our experiments. Figure 6 shows that RetNet outperforms Transformer in terms of inference cost. Memory As shown in Figure 6a, the memory cost of Transformer increases linearly due to KV caches."
+        },
+        {
+          "page": 8,
+          "context": "Figure 6 shows that RetNet outperforms Transformer in terms of inference cost. Memory As shown in Figure 6a, the memory cost of Transformer increases linearly due to KV caches. In contrast, the memory consumption of RetNet remains consistent even for long sequences, 8"
+        },
+        {
+          "page": 9,
+          "context": "The additional memory consumption of RetNet is almost negligible (i.e., about 3%) while the model weights occupy 97%. Throughput As presented in Figure 6b, the throughput of Transformer drops along with the decoding length increases. In comparison, RetNet has higher and length-invariant throughput during decoding, by utilizing the recurrent representation of retention."
+        },
+        {
+          "page": 9,
+          "context": "Latency Latency is an important metric in deployment, which greatly affects user experience. We report decoding latency in Figure 6c. Experimental results show that increasing batch size renders Transformer’s latency larger."
+        }
+      ],
+      "reference_count": 6,
+      "description": null,
+      "source": {
+        "pdf": "2307.08621.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2307.08621.pdf",
+        "page": 9,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    }
+  ]
+}

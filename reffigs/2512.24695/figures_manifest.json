@@ -1,0 +1,303 @@
+{
+  "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/2512.24695.pdf",
+  "engine": "pymupdf",
+  "figure_count": 12,
+  "figures": [
+    {
+      "figure_id": "fig1",
+      "figure_number": "1",
+      "caption": "Figure 1: The uniform and reusable structure as well as multi time scale update in the brain are the key components to unlock the continual learning in humans. Nested Learning (NL) allows for multi time-scale update for each component of the brain, while showing that well-known architectures such as Transformers are in fact linear layers with different frequency updates.",
+      "image": "figures/fig1.png",
+      "references": [
+        {
+          "page": 29,
+          "context": "This helps the associative memory to better manage its capacity by updating its parameters in a proper direction. The pseudocode for M3 is in Figure 1. In summary, one can say that M3 is the combination of Adam (Kingma et al. 2014a), Muon (Jordan et al. 2024), and our Continuum Memory System."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2512.24695.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2512.24695.pdf",
+        "page": 2,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig2",
+      "figure_number": "2",
+      "caption": "Figure 2: Nested Learning Paradigm that represent a machine learning model and its training procedure as a set of nested optimization problems. (Left) An example of Hybrid architecture. While deep learning perspective, as the flattened image of NL, does not provide insight about the depth of computation in the blocks, NL transparently represent all the inner gradient flows. (Right) A Neural Learning Module: A computational model that learns how to compress its own context flow. For example, the first level corresponds to the model’s most outer-loop training, often refer to as “pre-training” step.",
+      "image": "figures/fig2.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2512.24695.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2512.24695.pdf",
+        "page": 4,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig3",
+      "figure_number": "3",
+      "caption": "Figure 3: An example of comparing a FFN (e.g., MLP) with linear attention in a Transformer-based backbone, optimizing with gradient descent. The red components are blocks in the first level (with frequency 1), while blue components are blocks in the second level (frequency 𝐿). Linear attention with learnable initial memory state (referred to as Linear Attention++) is the same as an MLP layer but with in-context learning ability and adaptation to the input sequence.",
+      "image": "figures/fig3.png",
+      "references": [
+        {
+          "page": 11,
+          "context": "Both models are optimized on Next Token Prediction (NTP) objective with gradient descent. As discussed in the initial examples, and also illustrated in Figure 3, both models have two levels, and for the sake of clarity, we use red (resp. blue) to highlight computations/weight in the first level (resp. second level). More formally, let 𝑋= {𝑥𝑖}𝑇 𝑖=1 be an input sequence of tokens, the output of both blocks are computed as (For the sake of simplicity, we assume MLP(·) = ·𝑊MLP , and remove normalizations): 11"
+        },
+        {
+          "page": 14,
+          "context": "As discussed earlier, any MAML-based learning model is an instance of this case, but as a more specific example, we refer to the example of (MLP Layer vs. Linear Attention), which is discussed in Section 3.2 and Figure 3. Connections with Generation."
+        },
+        {
+          "page": 23,
+          "context": "Despite significant improvement resulted by this method, it is still unclear that how it enhances the performance. As we discussed in Figure 3 and its corresponding example, the main difference between feedforward network and modern recurrent memory modules (e.g., linear atten- tion (Katharopoulos et al. 2020) or deep memory modules (Behrouz et al. 2025c)) when their initial state of the memory is meta-learned, is the second level in memory modules that perform in-context learning and ad"
+        },
+        {
+          "page": 24,
+          "context": "From this perspective, modern architectures, are a set of artificial neurons (i.e., linear or deep feedforward networks), and each group of neurons has their own internal objective and so update mechanism. To this end, as a simple example, let us recall the AdaTransformer in Figure 3: Given 𝑋= {𝒙𝑖}𝑇 𝑖=1 as the input sequence, the output of the block is computed as (For the sake of simplicity, we assume MLP(·) = ·𝑊MLP , and remove normalizations): 𝒌𝑡= 𝒙𝑡𝑊𝒌, 𝒗𝑡= 𝒙𝑡𝑊𝒗, 𝒒𝑡= 𝒙𝑡𝑊𝒒, 𝒚attn,𝑡= Attn (𝒌𝑡, 𝒗𝑡, 𝒒𝑡) , 𝒚block,𝑡= 𝒚attn,𝑡𝑊LinAttn,𝑡, where 𝑊LinAttn,𝑡=𝑊LinAttn,𝑡−1 + 𝒗𝑡𝒌⊤ 𝑡, (69) The lowest frequency level is responsible for the"
+        },
+        {
+          "page": 29,
+          "context": "Similar studies such as the work of Devan Selvaraj (2025) and Pagliardini et al. (2025), while using multiple momentum terms, approach this long-context momentum for optimizers using a controlled learning rate for the additional momentum terms. 7.3 Ad-hoc Level Stacking: Initializing CMS with Pre-Trained Models In our discussion on Figure 3, we observed that the initial state of the memory modules are optimized in lower-frequency levels and so one can interpret them as MLP blocks in the vanilla Transformer architectures (Vaswani et al. 2017). Therefore, a natural question is if we can leverage pre-trained models to initialize CMS blocks."
+        },
+        {
+          "page": 31,
+          "context": "(78) For the sake of clarity, we use red (resp. blue) to highlight computations/weight in the upper level (resp. lower level). Similar to example in Figure 3, we can add a new level for each of 𝑊𝒌,𝑊𝒗,𝑊𝒒,𝑊𝜂, and 𝑊𝛼and allow them to be updated in-context. For the sake of efficiency, a simple version is to share the values for all the components in the nested system of associative memories: 𝒌𝑡= M𝒌,𝑡−1 (𝒙𝑡) , 𝒗𝑡= M𝒗,𝑡−1 (𝒙𝑡) , 𝒒𝑡= M𝒒,𝑡−1 (𝒙𝑡) , 𝜂𝑡= M𝜂,𝑡−1 (𝒙𝑡) , 𝛼𝑡= M𝛼,𝑡−1 (𝒙𝑡) , (79) min M□ L (M□; □𝑡, 𝒗𝑡)"
+        }
+      ],
+      "reference_count": 6,
+      "description": null,
+      "source": {
+        "pdf": "2512.24695.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2512.24695.pdf",
+        "page": 10,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig4",
+      "figure_number": "4",
+      "caption": "Figure 4: Optimization of function 𝝍(𝑟,𝜃) with standard momentum and our delta momentum.",
+      "image": "figures/fig4.png",
+      "references": [
+        {
+          "page": 20,
+          "context": "We start the optimization process from point (𝑟0,𝜃0) = (−3.5, 2) and continue until one of the algorithms converge to the optimal solution. The result is visualized in Figure 4. The delta momentum finds the solution faster, mainly due to its gradient-dependent weight decay that helps the momentum term to decay or stop when it is needed. 4.5 Going Beyond Simple Gradient Descent and Momentum Coming back to the discussion in Section 3.1 about the pre-training process and backpropagation being a form of associative memory, i"
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2512.24695.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2512.24695.pdf",
+        "page": 20,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig5",
+      "figure_number": "5",
+      "caption": "Figure 5: A comparison of Hope architectural backbone with Transformers (Normalization and potential data-dependent components are removed for the sake of clarity).",
+      "image": "figures/fig5.png",
+      "references": [
+        {
+          "page": 33,
+          "context": "To this end, we present Hope architecture: A neural learning module that incorporates self-modifying Titans followed by Continuum Memory System. The Hope design is illustrated in Figure 5. Formally, let 𝒙𝑡∈R𝑑for 𝑡= 1, . . . , 𝐿be the input, the Hope forward pass is defined as (we remove the normalization and convolution layers for the sake of clarity): 𝒐𝑡= Mmemory,𝑡−1 (𝒒𝑡) , 𝒌𝑡= M𝒌,𝑡−1 (𝒙𝑡) , 𝒗𝑡= M𝒗,𝑡−1 (𝒙𝑡) , 𝜂𝑡= M𝜂,𝑡−1 (𝒙𝑡) , 𝛼𝑡= M𝛼,𝑡−1 (𝒙𝑡) , (94) ˆ𝒗□,𝑡= M□,𝑡−1 (𝒗𝑡) , (95) M□,𝑡= M□,𝑡−1 \u0000𝛼𝑡𝑰−𝜂𝑡𝒌𝑡𝒌⊤ 𝑡 \u0001 −𝜂𝑡∇LM□,𝑡−1 \u0000M□,𝑡−1; 𝒌𝑡, ˆ𝒗"
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2512.24695.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2512.24695.pdf",
+        "page": 30,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig6",
+      "figure_number": "6",
+      "caption": "Figure 6: Class-incremental learning in the text classification domain on (Left) CLINC dataset (Larson et al. 2019), (Middle) Banking dataset (Casanueva et al. 2020), and (Right) DBpedia dataset (Auer et al. 2007). Hope-enhanced architecture achieves the best accuracy among other continual learning methods, including ICL.",
+      "image": "figures/fig6.png",
+      "references": [
+        {
+          "page": 34,
+          "context": "capability of Llama-3 models (with the same process of continual pre-training with 15B tokens but without any change in the MLP blocks), Elastic Weight Consolidation (EWC) (Kirkpatrick et al. 2017), and In-context Continual Learning with an External Learner (InCA) (Momeni et al. 2025) as the baselines of our evaluation. The results are reported in Figure 6. Hope shows the best performance across all continual learning baselines, including models with external learner (i.e., InCA)."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2512.24695.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2512.24695.pdf",
+        "page": 33,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig7",
+      "figure_number": "7",
+      "caption": "Figure 7: The effect of memory levels on the in-context learning performance of the model in (Left) MK-NIAH of RULER (Hsieh et al. 2024), (Middle) LongHealth (Adams et al. 2025), (Right) QASPER (Dasigi et al. 2021) benchmarks. Note that for QASPER benchmark (Right), the lower values indicate better performance.",
+      "image": "figures/fig7.png",
+      "references": [
+        {
+          "page": 35,
+          "context": "Note that the lowest-frequency memory corresponds to the most persistent memory of the model and so we expect models with higher lowest frequency to be more adaptive. The results are reported in Figure 7. Hope with any number of levels and also with any lowest frequency outperforms both ICL baseline as well as the efficient DuoAttention."
+        },
+        {
+          "page": 39,
+          "context": "Hope: Ablation Studies and Scaling In this section, we first study the importance of design choices we have made for the Hope architecture by performing ablation studies, where we remove or change one of the Hope’s components at a time. Note that, in the previous experiments, we have evaluated the significance of some components: E.g., Table 8 and Figure 7 have already been shown the effect of number of levels as well as the frequency of update on the performance of Hope in continual learning. In this section, to compare different variants, we use the average perplexity of models in language modeling as well as the average accuracy in common-sense reasoning tasks."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2512.24695.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2512.24695.pdf",
+        "page": 34,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig8",
+      "figure_number": "8",
+      "caption": "Figure 8: Continual Translation of a Novel Language (CTNL) task. Red points are the results with only one language. Blue points are the results in the continual leanring setup.",
+      "image": "figures/fig8.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2512.24695.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2512.24695.pdf",
+        "page": 35,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig9",
+      "figure_number": "9",
+      "caption": "Figure 9: BABILong Benchmark. Red points are the results of fine-tuned models, and Blue points are the large models’ zero-shot results.",
+      "image": "figures/fig9.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2512.24695.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2512.24695.pdf",
+        "page": 35,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig10",
+      "figure_number": "10",
+      "caption": "Figure 10: The effect of context usage on the perplexity of the model. We expect the per- plexity of a model with powerful memory management to decrease with more context.",
+      "image": "figures/fig10.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2512.24695.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2512.24695.pdf",
+        "page": 39,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig11",
+      "figure_number": "11",
+      "caption": "Figure 11: ViT test and train loss on ImageNet-21K (Ridnik et al. 2021), trained with AdamW, Muon, and our M3 optimizers.",
+      "image": "figures/fig11.png",
+      "references": [
+        {
+          "page": 40,
+          "context": "We vary the optimizer for training the ViT to understand which of the optimizers find more effective solutions in the same number of training steps. The training and test loss of trained models with different optimizers are reported in Figure 11. Our M3 shows the best training/test loss compared to both AdamW and Muon."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2512.24695.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2512.24695.pdf",
+        "page": 39,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig12",
+      "figure_number": "12",
+      "caption": "Figure 12: Training time of models with 140M and 1.3B parameters with Muon, AdaMuon, and M3 optimizers.",
+      "image": "figures/fig12.png",
+      "references": [
+        {
+          "page": 29,
+          "context": "Notably, this optimizer is designed as a proof-of-concept to support the design of CMS. The M3 optimizer per se, however, might suffer from computational overhead and so face challenges when scaling to larger networks (see Figure 12). Furthermore, it is notable that the main point of M3 design based on CMS is to delay the update of the memory to gain longer-context."
+        },
+        {
+          "page": 40,
+          "context": "To this end, we use two scales of 140M and 1.3B and train the same Transformer model using different optimizers of Muon (Jordan et al. 2024), AdaMuon (Si et al. 2025), and our M3. The results are reported in Figure 12. Our M3 optimizer, due to the use of multiple momentums (memories) is reletively slower compare to the Muon optimizer, and show on par efficiency with AdaMuon. 10 Conclusion In this paper, we introduced Nested Learning (NL) a new learning paradigm, in which modern machine learning systems are modeled as inter-connected, multi-level optimization pr"
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2512.24695.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2512.24695.pdf",
+        "page": 39,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    }
+  ]
+}

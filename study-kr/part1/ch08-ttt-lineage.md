@@ -42,7 +42,11 @@ $$
 
 셋째, **read**. 세 번째 view(test view) $q_t = W_Q x_t$로 갱신된 memory를 읽는다: $y_t = \mathcal{M}(q_t; W_t)$. 원문 표기 $\theta_K,\theta_V,\theta_Q$는 이 책의 $W_K,W_V,W_Q$에 대응한다.
 
-<!-- FIG: ch08/fig-01-ttt-layer -->
+이 세 요소(그림 8-1의 세 열 — initial state·update rule·output rule)로 보면, 원문은 naive RNN·self-attention·TTT를 같은 틀의 서로 다른 instantiation으로 나란히 세운다. self-attention은 상태가 $(k,v)$ 쌍의 append-only list라 read가 $O(t)$인 반면, TTT는 상태가 고정 크기 $W_t$라 read가 $O(1)$이라는 대비가 표의 Cost 열에 그대로 드러난다.
+
+![그림 8-1 — 모든 sequence modeling layer를 "hidden state + update rule"의 한 틀로 보고, naive RNN·self-attention·naive TTT를 세 요소(initial state, update rule, output rule)의 서로 다른 instantiation으로 나란히 세운 그림. TTT의 update rule은 self-supervised loss $\ell$에 대한 gradient step이고, 상태가 고정 크기라 read cost가 $O(1)$이다. 출처: Sun et al. 2024, *Learning to (Learn at Test Time)* (arXiv:2407.04620), 원문 Fig. 3 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-2407.04620-fig3.png)
+
+그림 8-1 — 모든 sequence modeling layer를 "hidden state + update rule"의 한 틀로 보고 naive RNN·self-attention·naive TTT를 세 요소의 instantiation으로 정리한 그림 (Sun et al. 2024, arXiv:2407.04620, 원문 Fig. 3의 third-party 재수록; 본서 결과 아님).
 
 $\mathcal{M}$의 구조에 따라 두 instantiation이 있다. **TTT-Linear**는 $\mathcal{M}(k;W)=Wk$, 즉 state가 linear attention과 같은 $d_v\times d_k$ 행렬이다. **TTT-MLP**는 $\mathcal{M}$이 2-layer MLP다 — 이후 라인이 표준화하는 deep memory(→ 12장)의 원형이다. 6장 카탈로그(표 6-2)의 TTT-Linear 행이 말하듯, 두 모델 다 (M1)이 전부다: momentum도 retention gate도 없다. 이 "없음"이 Part II를 여는 열쇠 구멍이다. 구현 세부 하나: 원문의 memory network는 TTT 중의 안정성을 위해 항상 residual과 LN을 두른다 — 원문 표기로 $f(x) = x + \mathrm{LN}(f_{\mathrm{res}}(x))$ — 그리고 TTT-MLP의 hidden 차원은 입력의 4×, activation은 GELU다 [Sun et al. 2024 §2.7]. 8.3절의 유도는 이 겉옷을 벗긴 $\mathcal{M}(k;W)=Wk$에 대한 것이다.
 
@@ -88,7 +92,11 @@ $$
 
 그러나 FlashAttention과의 유사성은 여기서 끝나고, 결정적 차이가 시작된다. FlashAttention의 tiling은 같은 수식의 bit-exact한 재배열이라 tile 크기는 성능에만 영향을 준다. chunk 크기 $C$는 (primal이든 dual이든) **계산되는 함수 자체를 바꾼다**: $C=1$이면 순수 online GD, $C=L$이면 사실상 1-step batch GD(8.3절의 linear-attention 극한), 그 사이의 모든 $C$는 서로 다른 layer다. 그래서 이 책은 $C$를 **semantic hyperparameter**라고 부른다 — 이 명제의 일반화와 명명은 9장이 맡고, 이 staleness가 train/serve 사이에서 일으키는 사고는 TNT의 주제다(→ 15장). 미리 정직하게 적어 두면, 이 stale 근사의 오차에 대한 형식적 bound는 여섯 논문 어디에도 없다(→ 9장, 15장).
 
-원문은 quality(작은 $C$가 유리)와 throughput(큰 $C$가 유리) 사이의 실험적 절충으로 중간 크기의 chunk $C=16$(원문 표기 $b=16$)을 전 실험 공통의 default로 채택했다 [Sun et al. 2024 §2.4, Fig. 7].
+원문은 quality(작은 $C$가 유리)와 throughput(큰 $C$가 유리) 사이의 실험적 절충으로 중간 크기의 chunk $C=16$(원문 표기 $b=16$)을 전 실험 공통의 default로 채택했다 [Sun et al. 2024 §2.4, Fig. 7]. 이 절충은 그림 8-2에서 눈으로 읽힌다: 왼쪽 panel은 $b$가 커질수록 perplexity가 단조 상승함을 보이고(작은 $b$일수록 더 많은 GD step을 밟아 quality가 좋다 — 곧 앞서 말한 "$C$가 함수 자체를 바꾼다"의 실험적 그림자다), 오른쪽 panel은 dual form의 forward 시간이 아주 작은 $b$(순차성 과다)와 아주 큰 $b$(chunk 내부 attention이 $O(C^2)$로 팽창) 양극단에서 모두 나빠져 중간 $b$에서 최소가 됨을 보인다. 두 곡선이 만나는 절충점이 $b=16$이다 — $C$가 성능 knob(오른쪽)이면서 동시에 함수 knob(왼쪽)이라는 이 장의 주장이 한 그림에 겹쳐 있다.
+
+![그림 8-2 — TTT mini-batch(=chunk) 크기 $b$에 대한 ablation. 왼쪽: $b$가 커질수록 perplexity가 상승($b{=}1$은 online GD, $b{=}T$는 batch GD) — 작은 $b$일수록 GD step이 많아 quality가 좋다. 오른쪽: dual form의 forward 시간이 중간 $b$에서 최소가 되어, quality와 throughput의 절충으로 $b{=}16$을 채택한다. 출처: Sun et al. 2024, *Learning to (Learn at Test Time)* (arXiv:2407.04620), 원문 Fig. 7 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-2407.04620-fig7.png)
+
+그림 8-2 — chunk 크기 $b$에 대한 quality(왼쪽: 작은 $b$가 유리) vs throughput(오른쪽: 중간 $b$가 최소 시간) 절충, $b{=}16$ 채택 (Sun et al. 2024, arXiv:2407.04620, 원문 Fig. 7의 third-party 재수록; 본서 결과 아님).
 
 ## 8.5 Outer loop: 이 layer 자체는 누가 훈련하는가
 
@@ -112,7 +120,11 @@ serving 관점에서 이 표는 안심 포인트이기도 하다. 폐기되는 �
 
 ## 8.6 스케일 증거와 파생
 
-[Sun et al. 2024]는 125M–1.3B 규모에서 TTT-Linear/TTT-MLP를 같은 규모의 Transformer 및 Mamba와 Pile·Books3로 비교해, 문맥이 길어질수록 뒤쪽 token의 perplexity가 계속 내려가는 반면 Mamba는 16K context 이후 개선이 정체한다고 보고한다 [Sun et al. 2024 Fig. 2] — 고정 크기 vector/matrix state의 capacity 한계(→ 5장)와 정합적인 결과다.
+[Sun et al. 2024]는 125M–1.3B 규모에서 TTT-Linear/TTT-MLP를 같은 규모의 Transformer 및 Mamba와 Pile·Books3로 비교해, 문맥이 길어질수록 뒤쪽 token의 perplexity가 계속 내려가는 반면 Mamba는 16K context 이후 개선이 정체한다고 보고한다 [Sun et al. 2024 Fig. 2] — 고정 크기 vector/matrix state의 capacity 한계(→ 5장)와 정합적인 결과다. 그림 8-3의 오른쪽 panel이 그 정체를 그대로 보여 준다: token index를 x축으로 두면 TTT-Linear·TTT-MLP는 Transformer처럼 perplexity 곡선이 끝까지 내려가지만, Mamba의 곡선은 오른쪽 끝에서 눕는다. 왼쪽 panel(FLOPs 대비 perplexity)은 이 이득이 compute-매칭 비교에서도 유지됨을 보인다.
+
+![그림 8-3 — 왼쪽: Pile 8k context에서 FLOPs 대비 perplexity scaling(350M–1.3B 구간). 오른쪽: token index를 x축으로 한 perplexity — TTT-Linear·TTT-MLP·Transformer는 문맥이 길어질수록 계속 내려가지만 Mamba는 뒤쪽에서 정체한다(고정 크기 state의 capacity 한계). 출처: Sun et al. 2024, *Learning to (Learn at Test Time)* (arXiv:2407.04620), 원문 Fig. 2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-2407.04620-fig2.png)
+
+그림 8-3 — scaling(왼쪽)과 long-context 이득(오른쪽): TTT 계열은 긴 문맥에서 perplexity가 계속 내려가는 반면 Mamba는 정체 (Sun et al. 2024, arXiv:2407.04620, 원문 Fig. 2의 third-party 재수록; 본서 결과 아님).
 
 다만 이 결과의 규모 감각은 정직하게 유지해야 한다. 이 라인 전체(TTT부터 Sleep까지)의 실증 상한은 1.3B parameters / 100B tokens 수준이며, 독자가 운영하는 frontier-scale serving의 증거는 아직 없다. 이 장이 확립하는 것은 "동작한다"이지 "그 규모에서 이긴다"가 아니다.
 

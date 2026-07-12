@@ -1031,9 +1031,21 @@ capacity는 어떤가. Hopfield 1982는 pattern 수가 약 $0.15\,d$를 넘으�
 
 왜 그런지의 직관은 kernel이다. $(x^\top s)^n = \phi_n(x)^\top \phi_n(s)$ — 차수 $n$ monomial feature map의 내적이다. 즉 energy의 차수를 올리는 것은 key들을 더 높은 차원의 공간으로 lift해서 "서로 orthogonal할 자리"를 늘리는 것과 같다. §5.2에서 capacity를 제한한 것이 "orthogonal한 방향의 개수 = $d_k$"였으므로, 공간을 $d^n$ 차원으로 키우면 한계도 따라 올라간다.
 
+이 차수 효과는 저장되는 memory의 성격 변화로도 눈에 보인다(그림 5-1). 차수 $n$이 작으면($n=2,3$) 각 memory는 여러 패턴에 걸친 분산된 feature에 가깝고, $n$을 크게 키우면($n=20,30$) 개별 패턴에 날카롭게 정렬된 prototype이 된다. Krotov & Hopfield 2016은 이것을 "feature-to-prototype transition"이라 부르는데, energy 봉우리가 뾰족해질수록 서로 다른 패턴의 attractor가 더 잘 분리되어 더 많은 패턴을 담을 수 있다는 것 — 즉 이 sharpening이 $d^{n-1}$ 스케일링의 기하학적 실체다.
+
+![그림 5-1 — dense associative memory에서 energy 차수 $n$을 올리면 저장된 memory의 성격이 바뀐다: 작은 $n$(2, 3)에서는 여러 digit에 걸친 분산된 feature, 큰 $n$(20, 30)에서는 하나의 패턴에 정렬된 prototype이 된다(아래 히스토그램은 각 memory가 투표하는 class 수의 분포). energy가 날카로워질수록 attractor가 분리되어 capacity가 커지는 메커니즘의 시각화다. 출처: Krotov & Hopfield, *Dense Associative Memory for Pattern Recognition* (arXiv:1606.01164), 원문 Fig.2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-1606.01164-fig2.png)
+
+그림 5-1 — dense associative memory에서 energy 차수 $n$을 올리면 저장된 memory의 성격이 바뀐다: 작은 $n$(2, 3)에서는 여러 digit에 걸친 분산된 feature, 큰 $n$(20, 30)에서는 하나의 패턴에 정렬된 prototype이 된다(아래 히스토그램은 각 memory가 투표하는 class 수의 분포). energy가 날카로워질수록 attractor가 분리되어 capacity가 커지는 메커니즘의 시각화다. 출처: Krotov & Hopfield, *Dense Associative Memory for Pattern Recognition* (arXiv:1606.01164), 원문 Fig.2 — **원저자의 그림(third-party), 본서의 결과가 아님**.
+
 이 사슬의 극한이 현대적 결말이다. $F$를 exponential로 보내면(연속 state + log-sum-exp energy), Ramsauer et al. 2021 (arXiv:2008.02217)이 보였듯 1-step retrieval update가 **정확히 softmax attention의 형태**가 되고(pattern을 선형 사상으로 key/value화하고 softmax의 역온도를 $1/\sqrt{d_k}$로 두는 조건 [Ramsauer et al. 2021 Eq. 10, App. A.4]), capacity는 $d$에 exponential로 커진다(저장 가능 pattern 수의 하한이 1보다 큰 상수의 $(d-1)/4$ 거듭제곱 꼴 [Ramsauer et al. 2021 Thm 3]). 즉 Transformer의 attention은 exponential energy를 갖는 modern Hopfield network의 retrieval로 읽을 수 있다.
 
 이 대응은 read의 비용 구조까지 설명한다. 고전 Hopfield의 read는 수렴까지 도는 fixed-point iteration이었다(§5.3). Ramsauer et al. 2021은 exponential energy 아래에서는 한 번의 update만으로 저장 pattern 근방으로 retrieval이 사실상 완료된다고 보고한다(잘 분리된 pattern에 대해 one update 후 오차가 separation에 지수적으로 작다 [Ramsauer et al. 2021 Thm 4]) — attention이 반복 없이 softmax 한 번으로 read를 끝내는 관행은 이 성질의 번역이다. energy를 날카롭게 만들수록 attractor의 basin이 가팔라져서, 반복 read가 1-step read로 접힌다.
+
+이 대응 사슬 전체는 한 다이어그램으로 요약된다(그림 5-2): 고전 Hopfield energy → 연속 상태의 log-sum-exp energy → softmax update rule → transformer attention의 네 상자가, 왼쪽에서 오른쪽으로 같은 대상을 점점 독자에게 익숙한 형태로 재서술한다. Ramsauer et al. 2021은 오른쪽 두 상자의 등식 — continuous modern Hopfield의 1-step update가 곧 $\mathrm{softmax}(\beta\,\xi^\top X)\,X^\top$이고, 역온도 $\beta=1/\sqrt{d_k}$·선형 사상을 두면 정확히 $\mathrm{softmax}(QK^\top/\sqrt{d_k})V$ — 을 이 그림의 핵심 주장으로 제시한다.
+
+![그림 5-2 — modern Hopfield network의 energy를 이진에서 연속 상태로 일반화하면(가운데 두 상자: log-sum-exp energy) 그 1-step update rule이 정확히 transformer의 softmax attention이 된다(오른쪽 두 상자). §5.4의 "exponential energy 극한 = softmax attention" 사슬을 한 줄로 보여 준다. 출처: Ramsauer et al., *Hopfield Networks is All You Need* (arXiv:2008.02217), 원문 Fig.1 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-2008.02217-fig1.png)
+
+그림 5-2 — modern Hopfield network의 energy를 이진에서 연속 상태로 일반화하면(가운데 두 상자: log-sum-exp energy) 그 1-step update rule이 정확히 transformer의 softmax attention이 된다(오른쪽 두 상자). §5.4의 "exponential energy 극한 = softmax attention" 사슬을 한 줄로 보여 준다. 출처: Ramsauer et al., *Hopfield Networks is All You Need* (arXiv:2008.02217), 원문 Fig.1 — **원저자의 그림(third-party), 본서의 결과가 아님**.
 
 <!-- FIG: ch05/fig-01-capacity-chain -->
 
@@ -1335,6 +1347,12 @@ $$
 
 지금까지의 모델들은 update rule을 **설계**했다. **Longhorn** (Liu et al. 2025, arXiv:2407.14207)의 제안은 방법론 자체의 전환이다: per-token으로 풀고 싶은 online 최적화 문제를 먼저 적고, 그 문제의 **closed-form 해**를 update rule로 삼는다. 논문의 표현으로 SSM은 "amortized online learner"다. 3장에서 배운 online learning의 프레임이 여기서 처음으로 모델 유도에 통째로 쓰인다.
 
+논문 자신이 이 전환을 한 판에 담는다(그림 6-1): sequence mixing layer를 "history를 state로 압축하는 online learner"로 보고, 일반형 online 목적(이전 state에 대한 근접항 + per-token 손실)의 argmin을 update로 삼은 뒤, 그 목적을 proximal $\ell_2$로 특수화하면 아래 (6-5)의 닫힌 해가 떨어진다는 그림이다.
+
+![그림 6-1 — sequence mixing을 online learner로 보는 Longhorn의 관점. 가운데는 일반형 online 목적함수 $L_t(S)=D(S,S_{t-1})+\ell_t(S)$와 그 argmin update, 오른쪽은 이를 proximal $\ell_2$로 특수화한 Longhorn 목적함수와 그 닫힌 해다(그림의 state $S$가 본서의 $W_t$, target $x$가 $v_t$). 본문 식 (6-5) 유도의 그림 판. 출처: Liu et al., Longhorn (arXiv:2407.14207), 원문 Fig.2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-2407.14207-fig2.png)
+
+그림 6-1 — sequence mixing을 online learner로 보는 Longhorn의 관점. 가운데는 일반형 online 목적함수와 그 argmin update, 오른쪽은 proximal $\ell_2$로 특수화한 Longhorn 목적함수와 닫힌 해(그림의 state $S$ = 본서의 $W_t$, target $x$ = $v_t$). 본문 식 (6-5)의 그림 판. 출처: Liu et al., Longhorn (arXiv:2407.14207), 원문 Fig.2 — 원저자의 그림(third-party), 본서의 결과가 아님.
+
 문제 설정은 proximal 형태다: 새 쌍은 잘 맞추되, 이전 state에서 너무 멀어지지 말 것.
 
 $$
@@ -1361,6 +1379,12 @@ implicit의 값어치는 무조건 안정성이다. $k_t$ 방향의 transition �
 
 training 무경험 독자를 위해 옮기면: explicit GD의 step size는 발산이라는 절벽이 있는 tuning 대상이고, implicit GD는 그 절벽을 수식 안에서 제거한 것이다. "임의의 $\eta_t>0$에서 안 터진다"는 것은 closed-form의 수학적 성질이라, gate head가 어떤 값을 내놓아도 안정성이 보장되어 step-size 안정성이 outer-loop 학습에서 분리된다 — 실제 Longhorn은 여기에 더해 $\eta_t$(원문 $\beta_t$)를 sigmoid로 $(0,1)$에 가두지만, 안정성 자체는 그 제한과 무관한 closed-form의 성질이다 [Longhorn §3.2]. retention gate는 없다($\alpha \equiv 1$): proximal 항 $\|W - W_{t-1}\|_F^2$ 자체가 유일한 (local) retention이며, 전역 감쇠 없이도 위의 수축 계수가 오래된 내용을 서서히 밀어낸다. systems 관점의 비용은 정직하게 0에 가깝다 — $\epsilon_t$ 계산은 내적 하나와 나눗셈 하나이고, kernel 구조는 DeltaNet과 동일하다. "공짜 안정성"이라는 점이 이 모델의 systems 요약이다.
 
+이 무조건 안정성은 종이 위 성질에 그치지 않는다. Longhorn은 2048 문맥으로 학습한 모델이 최대 16× 긴 문맥까지 perplexity 열화 없이 외삽하고, 같은 규모의 GLA·Mamba 대비 downstream perplexity와 sampling efficiency 모두에서 앞선다고 보고한다(그림 6-2) [Longhorn Fig. 1].
+
+![그림 6-2 — Longhorn의 경험적 결과. (왼쪽) SlimPajama 학습 토큰 대비 8개 downstream 평균 perplexity — Longhorn이 GLA·Mamba보다 낮고 약 1.8× sampling efficiency. (오른쪽) 2048 문맥으로 학습한 모델이 최대 16× 긴 문맥까지 perplexity 열화 없이 외삽. 출처: Liu et al., Longhorn (arXiv:2407.14207), 원문 Fig.1 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-2407.14207-fig1.png)
+
+그림 6-2 — Longhorn의 경험적 결과. (왼쪽) 학습 토큰 대비 downstream 평균 perplexity에서 Longhorn이 GLA·Mamba보다 낮고 약 1.8× sampling efficiency. (오른쪽) 2048 문맥 학습 → 최대 16× 긴 문맥 외삽, perplexity 열화 미미. 출처: Liu et al., Longhorn (arXiv:2407.14207), 원문 Fig.1 — 원저자의 그림(third-party), 본서의 결과가 아님.
+
 ## 6.6 RWKV-7: generalized delta rule — gate를 채널별 벡터로
 
 **RWKV-7 "Goose"** (Peng et al. 2025, arXiv:2503.14456)는 이 장 family의 현재 시점 최종 일반화다. GDN (6-4)의 스칼라 손잡이들을 전부 벡터로 승격한다: 스칼라 retention $\alpha_t$는 채널별 decay 벡터 $w_t\in(0,1)^{d_k}$로, 스칼라 write intensity $\eta_t$는 채널별 **in-context learning rate** 벡터 $a_t\in[0,1]^{d_k}$로 승격되고, 지우는 key와 쓰는 key가 **같은 key의 서로 다른 채널별 변조**로 분리된다: 제거용 $\hat k_t$는 $k_t$에 학습된 채널별 배율(원문의 removal-key multiplier)을 $\odot$로 곱한 뒤 head별 $\ell_2$ 정규화한 것이고, 기록용 $\tilde k_t$는 $k_t$의 각 채널을 $a_t$ 방향으로 보간한 것이다 — $\tilde k_t = k_t \odot \mathrm{lerp}(\mathbf{1}, a_t, \nu)$, $\nu$는 학습된 보간 계수(원문 표현 "replacement rate booster") [RWKV-7 Eq. 6–7, Eq. 15]. 별도의 projection 행렬을 더 두는 것이 아니라 같은 key precursor를 채널 단위로 두 갈래 성형하는 것이므로, projection 비용은 그대로다. 구조적으로 쓰면
@@ -1371,6 +1395,12 @@ W_t = W_{t-1}\Big(\mathrm{Diag}(w_t) - \hat k_t\,\big(a_t \odot \hat k_t\big)^\t
 $$
 
 (6-6)은 원문의 state evolution [RWKV-7 Eq. 17]을 행벡터 관행에서 이 책의 열벡터 관행으로 전치한 것으로, $a_t$가 제거 항 내부에 $\odot$로 곱해지는 위치까지 원문과 배치가 같다. 제거 key를 $\ell_2$ 정규화해 두는 이유도 원문이 명시한다: 제거량을 단위 norm으로 고정해 두면 in-context learning rate $a_t$가 "state에서 얼마나 지우고 얼마나 다시 써 넣는가"를 다른 항에 오염되지 않고 단독으로 조절하는 손잡이가 된다 [RWKV-7 Eq. 7 부근]. GDN에서는 지우기 강도와 쓰기 강도가 $\eta_t$ 하나에 묶여 있었다 — (6-6)은 그 묶음을 채널 단위로 풀어낸 것이다.
+
+원문은 이 갱신을 head 하나에 대한 그림으로 직접 보여준다(그림 6-3): "대각 − rank-1" transition에 기록 항 $v_t\tilde k_t^\top$을 더하는 (6-6)의 구조가, 지우는 key $\hat k_t$와 쓰는 key $\tilde k_t$가 같은 key precursor의 채널별 두 성형이라는 점과 함께 한눈에 들어온다.
+
+![그림 6-3 — RWKV-7의 state 갱신을 head 하나에 대해 시각화한 원문 그림(실제 state는 head당 $64\times64$, 그림은 $4\times4$ 축소). 대각 retention $\mathrm{Diag}(w_t)$에서 제거 key의 rank-1 항을 뺀 "대각 − rank-1" transition에 기록 항 $v_t\tilde k_t^\top$을 더하는 구조로, 본문 식 (6-6)과 동일하다(그림의 state $wkv_t$가 본서의 $W_t$, $\hat\kappa_t$가 제거 key $\hat k_t$; 원문은 행벡터 관행이라 전치 위치가 반대). 출처: Peng et al., RWKV-7 "Goose" (arXiv:2503.14456), 원문 Fig.2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-2503.14456-fig2.png)
+
+그림 6-3 — RWKV-7의 state 갱신을 head 하나에 대해 시각화한 원문 그림(실제 state는 head당 $64\times64$, 그림은 $4\times4$ 축소). "대각 − rank-1" transition($\mathrm{Diag}(w_t)$ − 제거 key rank-1)에 기록 항 $v_t\tilde k_t^\top$을 더하는 구조로 본문 식 (6-6)과 동일(그림의 $wkv_t$ = 본서 $W_t$, $\hat\kappa_t$ = $\hat k_t$; 원문은 행벡터 관행). 출처: Peng et al., RWKV-7 "Goose" (arXiv:2503.14456), 원문 Fig.2 — 원저자의 그림(third-party), 본서의 결과가 아님.
 
 $w_t = \alpha_t\mathbf{1}$, $a_t = \alpha_t\eta_t\mathbf{1}$, $\hat k_t = k_t$로 두면 transition이 $\alpha_t(I-\eta_t k_tk_t^\top)$로 (6-4)의 첫 항과 정확히 일치한다. 단 write 항까지 맞추려면 $\tilde k_t = \eta_t k_t$여야 하는데($v_t\tilde k_t^\top = \eta_t v_tk_t^\top$가 되도록), RWKV-7의 $\tilde k_t = k_t\odot\mathrm{lerp}(\mathbf 1,a_t,\nu)$가 임의의 GDN을 정확히 재현한다는 보장은 원문에 없다. 따라서 (6-6)은 GDN의 transition 구조를 **일반화**하는 것으로 읽되, 모든 GDN을 부분 경우로 정확히 포함한다는 단정은 유보한다. Miras의 분류로는 delta 계열에서 gate가 채널별 벡터($m=d$)인 경우가 정확히 RWKV-7이다 [Miras Eq. 9, §4]. transition이 "대각 - rank-1"이라는 사실에 주목하라. gate 계열(순수 대각)과 delta 계열(항등 - rank-1)의 합집합이며, 이 구조 덕에 chunkwise 병렬화는 DeltaNet과 같은 WY 계열 기법으로 처리된다(→ 9장).
 
@@ -1549,7 +1579,9 @@ $$
 
 ## 7.2 Mamba: selectivity — gate가 input의 함수가 되다
 
-LTI의 대가는 표현력이다. 계수가 token에 무관하므로 S4는 모든 token을 **같은 비율로** 감쇠시키고 같은 강도로 쓴다. "이 token은 기억하고 저 token은 무시한다"는 content 기반 선택이 원리적으로 불가능하다. Gu & Dao 2023 (arXiv:2312.00752)은 selective copying과 induction head 류의 합성 과제로 이 한계를 시연하고, 해법으로 **selectivity**를 제안했다: $\Delta_t, B_t, C_t$를 입력 $x_t$의 함수로 만든다($A$ 자체는 고정하되 $\Delta_t$를 통해 시변이 된다). 이것이 Mamba다.
+LTI의 대가는 표현력이다. 계수가 token에 무관하므로 S4는 모든 token을 **같은 비율로** 감쇠시키고 같은 강도로 쓴다. "이 token은 기억하고 저 token은 무시한다"는 content 기반 선택이 원리적으로 불가능하다. Gu & Dao 2023 (arXiv:2312.00752)은 selective copying과 induction head 류의 합성 과제로 이 한계를 시연하고(그림 7-1), 해법으로 **selectivity**를 제안했다: $\Delta_t, B_t, C_t$를 입력 $x_t$의 함수로 만든다($A$ 자체는 고정하되 $\Delta_t$를 통해 시변이 된다). 이것이 Mamba다.
+
+![그림 7-1 — Mamba의 selectivity를 요구하는 두 합성 과제. 입력과 출력 간격이 일정한 표준 copying(왼쪽)은 실제 입력을 볼 필요가 없어 시불변(LTI) convolution 모델이 완벽히 푼다. 그러나 간격이 무작위인 selective copying(오른쪽 위)과, 문맥에 따라 답을 회수해야 하는 induction heads(오른쪽 아래)는 관련 token(색칠)을 무관 token(흰색)과 content 기준으로 구별해 유지·무시를 결정하는 시변 모델을 요구한다. 이것이 LTI를 깨고 $\Delta_t,B_t,C_t$를 입력의 함수로 만든 이유다. 출처: Gu & Dao, *Mamba* (arXiv:2312.00752), 원문 Fig.2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-2312.00752-fig2.png)
 
 selectivity의 의미는 §7.1의 $\Delta$ 해석에서 바로 나온다. $\bar a_t = \exp(\Delta_t a)$가 token마다 달라지므로, 모델은 token을 보고 "state를 유지할까, 밀어낼까"를 결정한다. Gu & Dao 2023은 특정 파라미터화($N=1$, $A=-1$, $B=1$, $s_\Delta=\mathrm{Linear}$, $\tau_\Delta=\mathrm{softplus}$)에서 selective SSM이 고전 RNN의 gate 식 $h_t = (1-g_t)h_{t-1} + g_t x_t$, $g_t = \sigma(\mathrm{Linear}(x_t))$로 환원됨을 정리로 보여 [Gu & Dao 2023 Theorem 1, §3.5.1; 증명 App. C], 이것이 LSTM 이래의 gating과 같은 계보임을 명시한다.
 
@@ -1600,7 +1632,9 @@ $$
 
 이 식이 말하는 것: **decay 누적곱을 mask로 갖는 attention**과, 고정 크기 state의 recurrence는 같은 함수의 두 표현이다. 왼쪽(recurrent form)은 token당 $O(d_k d_v)$에 순차 계산하고, 오른쪽(attention form)은 $O(L^2)$에 완전 병렬 계산한다. 어느 쪽으로 계산할지는 **정확도가 아니라 하드웨어 사정으로 고르는 알고리즘 선택**이다.
 
-Dao & Gu 2024는 이것을 행렬 구조론으로 일반화한다. sequence mixing 전체를 하삼각 행렬 $\Gamma\odot(QK^\top)$의 곱으로 보면 이 행렬은 **semiseparable** 구조 — 하삼각 영역에 완전히 포함된 부분행렬(특히 대각선 아래 off-diagonal block)이 낮은 rank를 갖는 구조화 행렬; 대각을 가로지르는 block은 full rank일 수 있다 — 를 가지며, 이를 dense로 실체화해 곱하면 attention 모드, 인수분해된 구조를 이용해 곱하면 recurrent 모드가 된다 [Dao & Gu 2024, Def. 3.1]. "duality"라는 이름은 같은 구조화 행렬에 대한 이 두 곱셈 알고리즘의 쌍대성을 가리킨다.
+Dao & Gu 2024는 이것을 행렬 구조론으로 일반화한다. sequence mixing 전체를 하삼각 행렬 $\Gamma\odot(QK^\top)$의 곱으로 보면 이 행렬은 **semiseparable** 구조 — 하삼각 영역에 완전히 포함된 부분행렬(특히 대각선 아래 off-diagonal block)이 낮은 rank를 갖는 구조화 행렬; 대각을 가로지르는 block은 full rank일 수 있다 — 를 가지며, 이를 dense로 실체화해 곱하면 attention 모드, 인수분해된 구조를 이용해 곱하면 recurrent 모드가 된다 [Dao & Gu 2024, Def. 3.1]. "duality"라는 이름은 같은 구조화 행렬에 대한 이 두 곱셈 알고리즘의 쌍대성을 가리킨다. 이 대응과 두 집합의 교집합을 한 장으로 요약한 것이 그림 7-2다.
+
+![그림 7-2 — state-space duality의 전체 지도. 왼쪽은 SSM 표기와 masked-attention 표기의 성분별 대응($C\leftrightarrow Q$ read 주소, $B\leftrightarrow K$ write 주소, $X\leftrightarrow V$ 값, 그리고 state 행렬 $A\leftrightarrow$ decay mask $L$)과 각각의 linear form·quadratic form을 나열한다. 오른쪽은 SSM 집합과 structured masked attention 집합이 겹치는 영역이 곧 SSD임을 보인다 — $A$에 scalar-identity 구조를 준 SSM(= 이 장 식 (7-2)의 $\bar A_t=\alpha_t I$)이 1-semiseparable SMA와 정확히 만나며, RetNet·linear attention이 그 교집합 안에 놓인다(원문의 decay mask $L$은 이 책 표기에서 $\Gamma$). 출처: Dao & Gu, *Mamba-2* (arXiv:2405.21060), 원문 Fig.4 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-2405.21060-fig4.png)
 
 실전 답은 둘의 절충이다. sequence를 크기 $C$의 chunk로 자르고(§1.2의 chunk 시작 offset $\xi(t,C) = C\lfloor(t-1)/C\rfloor$ 사용), chunk 경계에서만 state를 전달하면:
 
@@ -1609,7 +1643,11 @@ y_t = \Big(\prod_{s=\xi(t,C)+1}^{t}\alpha_s\Big)\, W_{\xi(t,C)}\,q_t \;+\; \sum_
 \tag{7-4}
 $$
 
-첫 항은 chunk 경계 state의 기여(cross-chunk: GEMV를 chunk 단위로 모으면 $C\times d_k$ 대 $d_k\times d_v$ GEMM), 둘째 항은 chunk 내부의 masked attention($C\times C$ GEMM)이다. 경계 state의 갱신 역시 $d_v\times C$ 대 $C\times d_k$ GEMM 하나다. 결과: **모든 무거운 연산이 GEMM이 된다.** 이것이 Mamba-2가 tensor core를 되찾은 방법이고, [Dao & Gu 2024]는 이 SSD 알고리즘이 Mamba-1의 fused selective scan 대비 2–8× 빠르다고 보고한다. 스칼라 gate 덕에 커널이 단순해져 state 차원도 Mamba-1보다 크게 키울 수 있게 되었다. 원문은 이를 Mamba-1의 8× 이상이라고 표현하며 [Dao & Gu 2024 §1], 실험은 과제별로 $N \in \{16, 64, 256\}$을 쓴다 — 단일 default $N$은 논문에 명시가 없다 [Dao & Gu 2024 Fig. 8, Table 5].
+첫 항은 chunk 경계 state의 기여(cross-chunk: GEMV를 chunk 단위로 모으면 $C\times d_k$ 대 $d_k\times d_v$ GEMM), 둘째 항은 chunk 내부의 masked attention($C\times C$ GEMM)이다(그림 7-3). 경계 state의 갱신 역시 $d_v\times C$ 대 $C\times d_k$ GEMM 하나다. 결과: **모든 무거운 연산이 GEMM이 된다.**
+
+![그림 7-3 — SSD의 chunk 분해 알고리즘. sequence mixing 행렬(위)을 chunk 단위 block으로 나누면 대각 block(파랑)은 chunk 내부의 masked-attention 계산 — 식 (7-4)의 둘째 항, intra-chunk — 이 되고, off-diagonal block(주황)은 chunk 경계의 hidden state를 통해 전달되는 chunk 간 기여 — 첫 항, inter-chunk — 가 된다. 아래 그림은 같은 분해를 입력/state/출력의 chunk 흐름으로 다시 그린 것으로, chunk 안은 병렬(수직 화살표)로, 경계 state만 순차(수평 화살표)로 전달됨을 보인다. 이 분해가 무거운 연산을 전부 GEMM으로 바꿔 tensor core를 회복하는 것이 Mamba-2 속도 향상의 핵심이다. 출처: Dao & Gu, *Mamba-2* (arXiv:2405.21060), 원문 Fig.5 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-2405.21060-fig5.png)
+
+이것이 Mamba-2가 tensor core를 되찾은 방법이고, [Dao & Gu 2024]는 이 SSD 알고리즘이 Mamba-1의 fused selective scan 대비 2–8× 빠르다고 보고한다. 스칼라 gate 덕에 커널이 단순해져 state 차원도 Mamba-1보다 크게 키울 수 있게 되었다. 원문은 이를 Mamba-1의 8× 이상이라고 표현하며 [Dao & Gu 2024 §1], 실험은 과제별로 $N \in \{16, 64, 256\}$을 쓴다 — 단일 default $N$은 논문에 명시가 없다 [Dao & Gu 2024 Fig. 8, Table 5].
 
 한 가지를 지금 박아 두어야 한다. 식 (7-4)의 chunk 분해는 **항등 변형**이다. transition이 linear이기 때문에 결합법칙으로 항을 재배열했을 뿐, 계산되는 함수는 $C$와 무관하게 식 (7-3)과 bit-exact(부동소수점 재배열 오차 제외)로 같다. FlashAttention tiling과 정확히 같은 지위다. 9장에서 만나는 chunkwise training은 다르다 — state 갱신이 gradient(state에 비선형)가 되는 순간 이 재배열이 불가능해지고, chunk 시작 상태에 gradient를 고정하는 **근사**(식 (M4)의 stale-snapshot)가 들어오며, 그때부터 $C$는 함수 자체를 바꾸는 semantic hyperparameter(→ 9장)가 된다. "Mamba-2의 chunk는 tiling이고, TTT의 chunk는 근사다" — 이 한 문장이 이 장과 9장을 가르는 경계선이다.
 
@@ -1764,7 +1802,11 @@ $$
 
 셋째, **read**. 세 번째 view(test view) $q_t = W_Q x_t$로 갱신된 memory를 읽는다: $y_t = \mathcal{M}(q_t; W_t)$. 원문 표기 $\theta_K,\theta_V,\theta_Q$는 이 책의 $W_K,W_V,W_Q$에 대응한다.
 
-<!-- FIG: ch08/fig-01-ttt-layer -->
+이 세 요소(그림 8-1의 세 열 — initial state·update rule·output rule)로 보면, 원문은 naive RNN·self-attention·TTT를 같은 틀의 서로 다른 instantiation으로 나란히 세운다. self-attention은 상태가 $(k,v)$ 쌍의 append-only list라 read가 $O(t)$인 반면, TTT는 상태가 고정 크기 $W_t$라 read가 $O(1)$이라는 대비가 표의 Cost 열에 그대로 드러난다.
+
+![그림 8-1 — 모든 sequence modeling layer를 "hidden state + update rule"의 한 틀로 보고, naive RNN·self-attention·naive TTT를 세 요소(initial state, update rule, output rule)의 서로 다른 instantiation으로 나란히 세운 그림. TTT의 update rule은 self-supervised loss $\ell$에 대한 gradient step이고, 상태가 고정 크기라 read cost가 $O(1)$이다. 출처: Sun et al. 2024, *Learning to (Learn at Test Time)* (arXiv:2407.04620), 원문 Fig. 3 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-2407.04620-fig3.png)
+
+그림 8-1 — 모든 sequence modeling layer를 "hidden state + update rule"의 한 틀로 보고 naive RNN·self-attention·naive TTT를 세 요소의 instantiation으로 정리한 그림 (Sun et al. 2024, arXiv:2407.04620, 원문 Fig. 3의 third-party 재수록; 본서 결과 아님).
 
 $\mathcal{M}$의 구조에 따라 두 instantiation이 있다. **TTT-Linear**는 $\mathcal{M}(k;W)=Wk$, 즉 state가 linear attention과 같은 $d_v\times d_k$ 행렬이다. **TTT-MLP**는 $\mathcal{M}$이 2-layer MLP다 — 이후 라인이 표준화하는 deep memory(→ 12장)의 원형이다. 6장 카탈로그(표 6-2)의 TTT-Linear 행이 말하듯, 두 모델 다 (M1)이 전부다: momentum도 retention gate도 없다. 이 "없음"이 Part II를 여는 열쇠 구멍이다. 구현 세부 하나: 원문의 memory network는 TTT 중의 안정성을 위해 항상 residual과 LN을 두른다 — 원문 표기로 $f(x) = x + \mathrm{LN}(f_{\mathrm{res}}(x))$ — 그리고 TTT-MLP의 hidden 차원은 입력의 4×, activation은 GELU다 [Sun et al. 2024 §2.7]. 8.3절의 유도는 이 겉옷을 벗긴 $\mathcal{M}(k;W)=Wk$에 대한 것이다.
 
@@ -1810,7 +1852,11 @@ $$
 
 그러나 FlashAttention과의 유사성은 여기서 끝나고, 결정적 차이가 시작된다. FlashAttention의 tiling은 같은 수식의 bit-exact한 재배열이라 tile 크기는 성능에만 영향을 준다. chunk 크기 $C$는 (primal이든 dual이든) **계산되는 함수 자체를 바꾼다**: $C=1$이면 순수 online GD, $C=L$이면 사실상 1-step batch GD(8.3절의 linear-attention 극한), 그 사이의 모든 $C$는 서로 다른 layer다. 그래서 이 책은 $C$를 **semantic hyperparameter**라고 부른다 — 이 명제의 일반화와 명명은 9장이 맡고, 이 staleness가 train/serve 사이에서 일으키는 사고는 TNT의 주제다(→ 15장). 미리 정직하게 적어 두면, 이 stale 근사의 오차에 대한 형식적 bound는 여섯 논문 어디에도 없다(→ 9장, 15장).
 
-원문은 quality(작은 $C$가 유리)와 throughput(큰 $C$가 유리) 사이의 실험적 절충으로 중간 크기의 chunk $C=16$(원문 표기 $b=16$)을 전 실험 공통의 default로 채택했다 [Sun et al. 2024 §2.4, Fig. 7].
+원문은 quality(작은 $C$가 유리)와 throughput(큰 $C$가 유리) 사이의 실험적 절충으로 중간 크기의 chunk $C=16$(원문 표기 $b=16$)을 전 실험 공통의 default로 채택했다 [Sun et al. 2024 §2.4, Fig. 7]. 이 절충은 그림 8-2에서 눈으로 읽힌다: 왼쪽 panel은 $b$가 커질수록 perplexity가 단조 상승함을 보이고(작은 $b$일수록 더 많은 GD step을 밟아 quality가 좋다 — 곧 앞서 말한 "$C$가 함수 자체를 바꾼다"의 실험적 그림자다), 오른쪽 panel은 dual form의 forward 시간이 아주 작은 $b$(순차성 과다)와 아주 큰 $b$(chunk 내부 attention이 $O(C^2)$로 팽창) 양극단에서 모두 나빠져 중간 $b$에서 최소가 됨을 보인다. 두 곡선이 만나는 절충점이 $b=16$이다 — $C$가 성능 knob(오른쪽)이면서 동시에 함수 knob(왼쪽)이라는 이 장의 주장이 한 그림에 겹쳐 있다.
+
+![그림 8-2 — TTT mini-batch(=chunk) 크기 $b$에 대한 ablation. 왼쪽: $b$가 커질수록 perplexity가 상승($b{=}1$은 online GD, $b{=}T$는 batch GD) — 작은 $b$일수록 GD step이 많아 quality가 좋다. 오른쪽: dual form의 forward 시간이 중간 $b$에서 최소가 되어, quality와 throughput의 절충으로 $b{=}16$을 채택한다. 출처: Sun et al. 2024, *Learning to (Learn at Test Time)* (arXiv:2407.04620), 원문 Fig. 7 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-2407.04620-fig7.png)
+
+그림 8-2 — chunk 크기 $b$에 대한 quality(왼쪽: 작은 $b$가 유리) vs throughput(오른쪽: 중간 $b$가 최소 시간) 절충, $b{=}16$ 채택 (Sun et al. 2024, arXiv:2407.04620, 원문 Fig. 7의 third-party 재수록; 본서 결과 아님).
 
 ## 8.5 Outer loop: 이 layer 자체는 누가 훈련하는가
 
@@ -1834,7 +1880,11 @@ serving 관점에서 이 표는 안심 포인트이기도 하다. 폐기되는 �
 
 ## 8.6 스케일 증거와 파생
 
-[Sun et al. 2024]는 125M–1.3B 규모에서 TTT-Linear/TTT-MLP를 같은 규모의 Transformer 및 Mamba와 Pile·Books3로 비교해, 문맥이 길어질수록 뒤쪽 token의 perplexity가 계속 내려가는 반면 Mamba는 16K context 이후 개선이 정체한다고 보고한다 [Sun et al. 2024 Fig. 2] — 고정 크기 vector/matrix state의 capacity 한계(→ 5장)와 정합적인 결과다.
+[Sun et al. 2024]는 125M–1.3B 규모에서 TTT-Linear/TTT-MLP를 같은 규모의 Transformer 및 Mamba와 Pile·Books3로 비교해, 문맥이 길어질수록 뒤쪽 token의 perplexity가 계속 내려가는 반면 Mamba는 16K context 이후 개선이 정체한다고 보고한다 [Sun et al. 2024 Fig. 2] — 고정 크기 vector/matrix state의 capacity 한계(→ 5장)와 정합적인 결과다. 그림 8-3의 오른쪽 panel이 그 정체를 그대로 보여 준다: token index를 x축으로 두면 TTT-Linear·TTT-MLP는 Transformer처럼 perplexity 곡선이 끝까지 내려가지만, Mamba의 곡선은 오른쪽 끝에서 눕는다. 왼쪽 panel(FLOPs 대비 perplexity)은 이 이득이 compute-매칭 비교에서도 유지됨을 보인다.
+
+![그림 8-3 — 왼쪽: Pile 8k context에서 FLOPs 대비 perplexity scaling(350M–1.3B 구간). 오른쪽: token index를 x축으로 한 perplexity — TTT-Linear·TTT-MLP·Transformer는 문맥이 길어질수록 계속 내려가지만 Mamba는 뒤쪽에서 정체한다(고정 크기 state의 capacity 한계). 출처: Sun et al. 2024, *Learning to (Learn at Test Time)* (arXiv:2407.04620), 원문 Fig. 2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-2407.04620-fig2.png)
+
+그림 8-3 — scaling(왼쪽)과 long-context 이득(오른쪽): TTT 계열은 긴 문맥에서 perplexity가 계속 내려가는 반면 Mamba는 정체 (Sun et al. 2024, arXiv:2407.04620, 원문 Fig. 2의 third-party 재수록; 본서 결과 아님).
 
 다만 이 결과의 규모 감각은 정직하게 유지해야 한다. 이 라인 전체(TTT부터 Sleep까지)의 실증 상한은 1.3B parameters / 100B tokens 수준이며, 독자가 운영하는 frontier-scale serving의 증거는 아직 없다. 이 장이 확립하는 것은 "동작한다"이지 "그 규모에서 이긴다"가 아니다.
 
@@ -2738,7 +2788,7 @@ $$
 
 Q4의 답으로 [Titans]는 attention을 정밀한 short-term memory, LMM을 서서히 잊는 long-term memory로 두고 세 가지 합성을 제시한다 [Titans §4]. 세 변형 모두 persistent token을 포함한다. 풀네임은 **Memory as Context (MAC)**, **Memory as Gate (MAG)**, **Memory as Layer (MAL)** 이며 이하 약어로 쓴다.
 
-<!-- FIG: ch12/fig-01-mac-dataflow -->
+![그림 12-1 — MAC 아키텍처의 데이터 흐름. 세 branch가 나란히 있다: contextual(long-term) memory는 retrieval로 과거를 읽어 core branch 입력에 concat되고, attention을 통과한 출력이 다시 memory에 write되며(오른쪽 Update), persistent memory는 data-independent 학습 weight로 test time에 동결(눈송이)된다. 오른쪽 라벨이 test-time 역할 분담을 요약한다 — memory는 여전히 learning, core(attention)는 in-context learning, persistent는 fixed. 출처: Behrouz et al., Titans (arXiv:2501.00663), 원문 Fig.2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2501.00663-fig2.png)
 
 **MAC** [Titans §4.1, Eqs. 21–25]. sequence를 크기 $C$의 segment로 자른다(원문의 segment 크기 $C$ — 이 책은 chunk 크기와 동일시한다, 표 12-1). $n$번째 segment의 token 행렬을 $X^{(n)}\in\mathbb{R}^{C\times d}$(token $nC{+}1\ldots(n{+}1)C$)라 하자. segment가 들어오면, 직전 segment까지 갱신된 memory 상태 $W_{nC}$에서 **읽고**, attention을 돌린 뒤, 그 출력을 memory에 **쓴다**:
 
@@ -2760,7 +2810,7 @@ $$
 
 각 위치 $\tau$의 최종 read는 자기까지의 prefix 갱신으로 얻은 상태 $W_\tau$에서 이뤄져야 causal leakage가 없다 — segment-end 상태 $W_{(n+1)C}$에서 모든 위치를 읽으면 앞쪽 token이 뒤 token의 write를 보게 된다([Titans Eq. 16]은 chunk 안에서도 $M_t$를 prefix 누적으로 정의한다; [Titans Eq. 24–25]의 압축 표기가 이 token별 causal 계산을 제거하는 것은 아니다). chunkwise 구현에서는 causal triangular/prefix dual form으로 모든 $W_\tau$를 계산하고, $W_{(n+1)C}$는 다음 segment로의 handoff로 쓴다.
 
-즉 attention window 안에는 persistent token, memory에서 검색해 온 역사 $r$(원문 표기 $h_t$ — outer 2차 moment와의 충돌을 피해 개명, 표 12-1; 원문 mask 표기로는 $N_l$개의 long-term memory token인데, [Titans Eq. 21]의 query가 segment 전체 — $C$개 token — 이므로 차원상 $N_l = C$가 따라 나온다; 단 [Titans Fig. 3a] 캡션은 별도 상수 $N_l$ 표기를 유지한다), 현재 segment가 나란히 놓이고, 그 안에서 full causal attention이 돈다(전체 sequence 관점의 attention mask는 segment별 block-diagonal이다 [Titans Fig. 3a]). 설계 이유가 중요하다: (i) attention이 검색된 역사와 현재 데이터를 동시에 보므로 지금 long-term 정보가 필요한지를 token 단위로 판단할 수 있고, (ii) memory에는 attention이 처리한 표현만 쓰이므로 attention이 **write filter** 역할을 해 쓸모없는 token으로 인한 memory overflow를 줄인다 [Titans §4.1]. 원문의 write 식 $\mathcal{M}_t = \mathcal{M}_{t-1}(y_t)$ [Titans Eq. 24]는 "forward pass를 통해 weight를 갱신한다"는 관행 표기로, segment 내부의 write 세분(granularity)은 명시되어 있지 않다. 최종 read도 attention 출력 $a_\tau$를 $W_Q$ 재적용 없이 그대로 query로 쓴다 [Titans Eq. 25]. 또한 retrieval이 갱신 **전** 상태 $W_{nC}$를 읽으므로 read는 항상 한 segment만큼 stale하다.
+즉 attention window 안에는 persistent token, memory에서 검색해 온 역사 $r$(원문 표기 $h_t$ — outer 2차 moment와의 충돌을 피해 개명, 표 12-1; 원문 mask 표기로는 $N_l$개의 long-term memory token인데, [Titans Eq. 21]의 query가 segment 전체 — $C$개 token — 이므로 차원상 $N_l = C$가 따라 나온다; 단 [Titans Fig. 3a] 캡션은 별도 상수 $N_l$ 표기를 유지한다), 현재 segment가 나란히 놓이고, 그 안에서 full causal attention이 돈다(전체 sequence 관점의 attention mask는 segment별 block-diagonal이다 [Titans Fig. 3a]). 설계 이유가 중요하다(그림 12-1의 "read → attention → write" 흐름이 이 세 branch 배치를 그대로 보여준다): (i) attention이 검색된 역사와 현재 데이터를 동시에 보므로 지금 long-term 정보가 필요한지를 token 단위로 판단할 수 있고, (ii) memory에는 attention이 처리한 표현만 쓰이므로 attention이 **write filter** 역할을 해 쓸모없는 token으로 인한 memory overflow를 줄인다 [Titans §4.1]. 원문의 write 식 $\mathcal{M}_t = \mathcal{M}_{t-1}(y_t)$ [Titans Eq. 24]는 "forward pass를 통해 weight를 갱신한다"는 관행 표기로, segment 내부의 write 세분(granularity)은 명시되어 있지 않다. 최종 read도 attention 출력 $a_\tau$를 $W_Q$ 재적용 없이 그대로 query로 쓴다 [Titans Eq. 25]. 또한 retrieval이 갱신 **전** 상태 $W_{nC}$를 읽으므로 read는 항상 한 segment만큼 stale하다.
 
 **MAG** [Titans §4.2, Eqs. 26–28]. segmentation 없이 두 branch를 병렬로 돌린다. branch 1은 persistent prefix가 항상 보이는 sliding window attention(SWA), branch 2는 prefix가 붙은 전체 sequence 위를 식 (12-4)로 도는 LMM이다. 두 branch의 출력을 학습된 elementwise gate로 결합한다 — 실험에서는 각 branch 출력을 학습 가능한 벡터 weight로 normalize한 뒤 비선형 $\sigma(\cdot)$를 거쳐 곱한다 [Titans §4.2]. 원문은 이 결합을 $\otimes$로 쓰지만 이 책은 $\mathrm{gate}(\cdot,\cdot)$로 쓴다($\otimes$ 금지, §1.3). SWA가 선명한 short-term, LMM이 fading long-term이며, 구조가 다른 head들을 가진 multi-head layer로도 읽을 수 있다(Hymba 인용).
 
@@ -2866,7 +2916,9 @@ $$
 
 는 input-dependent 전이 계수 $\beta_\tau$, 입력 $\hat g_\tau$, hidden state $S_\tau$의 1차 **선형** recurrence다 — 정확히 S5/Mamba의 selective scan과 같은 모양이므로 parallel associative scan(→ 7장, 9장)으로 chunk 내 모든 $S_\tau$를 log-depth에 얻는다. 독자가 이미 아는 scan/prefix-sum kernel이 그대로 훈련 그래프의 한가운데에 등장하는 것이다.
 
-결과 구조가 [Titans]의 표현력-병렬성 협상이다: **intra-chunk는 linear**(matmul + scan으로 병렬), **inter-chunk는 nonlinear**(chunk 경계에서 갱신된 MLP weights가 다음 chunk의 loss에 비선형으로 재진입). 순차 임계 경로가 $L$이 아니라 $L/C$번의 MLP-weight 적용으로 줄고, 동시에 이 비선형 경계가 Thm 4.1의 표현력 주장의 근거로 지목된다 — DeltaNet 계열이 정확한 closed form을 위해 전부 linear로 남은 것과 의도적으로 다른 트레이드다. 추가 가속 옵션으로 $\alpha,\eta,\beta$를 token이 아니라 chunk의 함수로 두면 식 (12-9)가 LTI(linear time-invariant → 7장) 시스템이 되어 S4식 global convolution으로 계산 가능하지만 [Titans §3.2], 실험은 표현력을 위해 per-token 게이트를 유지했고 이 fast path는 끝내 평가되지 않았다.
+결과 구조가 [Titans]의 표현력-병렬성 협상이다(그림 12-2): **intra-chunk는 linear**(matmul + scan으로 병렬), **inter-chunk는 nonlinear**(chunk 경계에서 갱신된 MLP weights가 다음 chunk의 loss에 비선형으로 재진입). 순차 임계 경로가 $L$이 아니라 $L/C$번의 MLP-weight 적용으로 줄고, 동시에 이 비선형 경계가 Thm 4.1의 표현력 주장의 근거로 지목된다 — DeltaNet 계열이 정확한 closed form을 위해 전부 linear로 남은 것과 의도적으로 다른 트레이드다. 추가 가속 옵션으로 $\alpha,\eta,\beta$를 token이 아니라 chunk의 함수로 두면 식 (12-9)가 LTI(linear time-invariant → 7장) 시스템이 되어 S4식 global convolution으로 계산 가능하지만 [Titans §3.2], 실험은 표현력을 위해 per-token 게이트를 유지했고 이 fast path는 끝내 평가되지 않았다.
+
+![그림 12-2 — inner-loop 갱신을 가속기 친화적 연산으로 병렬화하는 세 조각. (왼쪽) chunk 안 갱신은 linear라 cumsum으로, chunk 경계를 넘는 재진입은 nonlinear라 gradient로 처리된다. (가운데) momentum buffer는 gradient를 미리 계산해 두면 1차 선형 recurrence가 되어 parallel associative sum 또는 global(convolution) kernel로 얻는다. (오른쪽) weight decay는 누적 곱을 대각으로 접어 넣은 matmul로 흡수된다 — 본문 식 (12-7)–(12-9)의 GEMM·scan 구조가 그림 그대로다. 출처: Behrouz et al., Titans (arXiv:2501.00663), 원문 Fig.1 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2501.00663-fig1.png)
 
 **outer 레시피** [Titans §5.1]: 훈련 길이 4K, Llama-2 tokenizer(32K vocab), AdamW lr 4e-4 cosine annealing, batch 0.5M tokens, weight decay 0.1 — Gated DeltaNet의 프로토콜을 따른다. 여기서 두 층위가 한 문장에 겹친다: outer optimizer(AdamW, weight decay $\lambda=0.1$)는 $\Theta$를 학습하는 통상의 훈련이고, inner optimizer(식 (12-4))는 모델 그 자체다. 기호로도 구분된다 — outer는 무첨자 상수($\eta$, $\lambda$), inner는 시간 첨자 게이트($\eta_t,\beta_t,\alpha_t$).
 
@@ -2907,9 +2959,13 @@ $$
 
 **S-NIAH (RULER, 2K–16K)** [Titans Table 2]. 기제별 귀속이 가장 선명한 실험이다. Titans 계열은 전 구간 80–99%를 유지한다(MAC PK-16K 98.4, MAG N-16K 98.6). 대조: Mamba-2는 PK-16K 5.4, W-8K/16K 0.0으로 붕괴 — erase는 있으나 얕은 state로는 부족하다; DeltaNet은 PK-16K 71.4까지 버티지만 N/W에서 무너진다 — replace는 해도 진짜 erase(forgetting)가 없다; TTT는 16K에서 처진다(PK-16K 88.4) — retention gate 부재 [Titans §5.3]. 즉 momentum+forgetting이 TTT를, deep nonlinear memory + erasure가 Mamba-2를, forgetting이 DeltaNet을 각각 이기게 만든 성분이라는 **가설**과 표의 패턴이 일관된다 — 단 이 표 자체는 성분별 ablation이 아니라 서로 다른 모델의 비교이므로, 인과 귀속은 Table 5의 통제 ablation이 뒷받침하는 범위로 한정된다.
 
-**BABILong** [Titans Fig. 6]. few-shot 설정에서 Titans (MAC)는 Mamba-2.8B, RWKV-6-7B, RecurrentGemma-9B, Gemma-9B, Llama3.1-8B, GPT-4, GPT-4o-mini를 모두 이긴다 — 훨씬 적은 parameter로. fine-tuning 설정에서는 작은 MAC가 fine-tune된 RMT·Mamba, RAG를 단 Llama3.1-8B(약 70× 더 많은 parameter [Titans §5.4]), 그리고 GPT-4, Qwen2.5-72B, Llama3.1-70B를 넘어서며 2M tokens 너머까지 정확도를 유지한다. 이 라인의 ">2M context" 헤드라인은 전부 이 실험(MAC, fine-tuned, baseline 수치는 벤치마크 저자 보고)에 얹혀 있다.
+**BABILong** [Titans Fig. 6]. few-shot 설정에서 Titans (MAC)는 Mamba-2.8B, RWKV-6-7B, RecurrentGemma-9B, Gemma-9B, Llama3.1-8B, GPT-4, GPT-4o-mini를 모두 이긴다 — 훨씬 적은 parameter로. fine-tuning 설정에서는 작은 MAC가 fine-tune된 RMT·Mamba, RAG를 단 Llama3.1-8B(약 70× 더 많은 parameter [Titans §5.4]), 그리고 GPT-4, Qwen2.5-72B, Llama3.1-70B를 넘어서며 2M tokens 너머까지 정확도를 유지한다. 이 라인의 ">2M context" 헤드라인은 전부 이 실험(MAC, fine-tuned, baseline 수치는 벤치마크 저자 보고)에 얹혀 있다(그림 12-3).
 
-**memory 깊이** [Titans Fig. 7, Fig. 8]. Pile 부분집합, 170M/360M/760M에서 $L_{\mathcal{M}}=1,2,3,4$ 비교: 깊을수록 전 길이에서 perplexity가 좋고 길이에 강건하며(효과는 작은 스케일에서 최대), 대가는 훈련 throughput의 선형 하락이다. 모든 깊이에서 tokens/sec은 sequence 길이에 대해 일정 — 즉 훈련 비용은 길이에 선형이다.
+![그림 12-3 — (위) S-NIAH(RULER) 정확도 표: Titans 계열이 2K–16K 전 구간을 유지하는 반면 Mamba-2/DeltaNet은 N·W 하위과제에서 붕괴한다. (아래) BABILong 정확도 대 sequence 길이 — (a) few-shot에서 Titans(MAC)가 GPT-4 등 훨씬 큰 모델을 앞서고, (b) fine-tuning에서 작은 MAC가 $10^6$ token 너머까지 정확도를 유지한다. 출처: Behrouz et al., Titans (arXiv:2501.00663), 원문 Fig.6(및 Table 2) — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2501.00663-fig6.png)
+
+**memory 깊이** [Titans Fig. 7, Fig. 8]. Pile 부분집합, 170M/360M/760M에서 $L_{\mathcal{M}}=1,2,3,4$ 비교: 깊을수록 전 길이에서 perplexity가 좋고 길이에 강건하며(효과는 작은 스케일에서 최대), 대가는 훈련 throughput의 선형 하락이다. 모든 깊이에서 tokens/sec은 sequence 길이에 대해 일정 — 즉 훈련 비용은 길이에 선형이다(그림 12-4).
+
+![그림 12-4 — memory 깊이 $L_{\mathcal{M}}\in\{1,2,3,4\}$가 perplexity에 주는 효과(170M/360M/760M). 깊은 memory일수록 모든 sequence 길이에서 perplexity가 낮고, 특히 길이가 늘 때의 열화가 완만하다 — linear memory($L_{\mathcal{M}}=1$)의 선형 압축 가정을 넘어서는 이득이 §12.3.6 deep-memory 논거의 실증이다. 비교 baseline은 Mamba. 출처: Behrouz et al., Titans (arXiv:2501.00663), 원문 Fig.7 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2501.00663-fig7.png)
 
 **효율** [Titans Fig. 9]. LMM은 Mamba-2/Gated DeltaNet보다 약간 느리다 — deep memory의 본질 비용에 더해 fused kernel 부재가 원인으로 지목된다. MAL이 전체에서 가장 빠른데, 이는 FlashAttention의 성숙도 덕이다 [Titans §5.8].
 
@@ -3055,7 +3111,9 @@ $$
 
 부수 축으로 data-dependent 여부, scalar vs channel-wise parameter가 있다 — 같은 4-tuple 좌표의 모델들이 부수 축에서만 갈리는 경우가 많다.
 
-<!-- FIG: ch13/fig-01-design-space -->
+이 네 축과 그 축 위의 대표 선택지, 그리고 한 layer가 입력을 memory에 쓰고(attentional bias + retention gate로 구성된 목적함수를 gradient descent로 최소화) 다시 읽어내는 흐름을 논문의 overview 그림이 한 장으로 요약한다(그림 13-1). 이 그림에서 memory는 associative memory 하나이고, "attentional bias $\mathcal{L}(\mathcal{M}(\mathcal{K});\mathcal{V})$ + retention $\mathrm{Ret}_t(\mathcal{M},\mathcal{M}_{t-1})$"라는 합이 곧 매 token 최소화되는 inner objective이며, 그 최소화 알고리즘의 선택이 네 번째 축이다 — 이 장의 나머지 전개는 이 한 그림의 각 칸을 채워 넣는 작업이다.
+
+![그림 13-1 — Miras framework의 개요. associative memory 설계를 네 개의 독립 축(memory architecture / attentional bias / retention gate / memory algorithm)으로 분해하고, 각 축의 대표 선택지와 "attentional bias + retention gate = 매 token 최소화되는 목적함수 → gradient descent" 흐름을 보인다. 출처: Behrouz et al., *It's All Connected* (Miras, arXiv:2504.13173), 원문 Fig.1 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2504.13173-fig1.png)
 
 ### 13.3.4 기존 모델의 재유도: 전부가 이 공간의 점이다
 
@@ -3204,7 +3262,9 @@ $$
 
 [Miras Eq. 27; (13-8)의 $1-\lambda_t$ 역할을 $\alpha_t$가 맡는다.] 논리: simplex-제약(softmax-재정규화) state는 증명 가능하게 유계이며, context가 아무리 길어도 state가 폭발할 수 없다. $W$가 MLP weights일 때는 같은 rule이 slice별로 적용된다.
 
-**블록 구조와 hybrid** [Miras §5.3]. Miras layer는 Llama macro 구조에서 attention 자리에 들어간다: SwiGLU 채널 MLP, RoPE, RMSNorm. token-mixing 블록 내부는 q/k/v projection 각각 뒤에 depthwise-separable 1D conv(kernel 4), 훈련 안정성을 위한 q·k의 $\ell_2$ normalization, 그리고 memory 읽기 출력의 normalization + linear output gate. hybrid 변형(Moneta-H/Yaad-H/Memora-H)은 Samba를 따라 Miras layer와 Sliding Window Attention layer를 순차 교차한다.
+**블록 구조와 hybrid** [Miras §5.3]. Miras layer는 Llama macro 구조에서 attention 자리에 들어간다: SwiGLU 채널 MLP, RoPE, RMSNorm. token-mixing 블록 내부는 q/k/v projection 각각 뒤에 depthwise-separable 1D conv(kernel 4), 훈련 안정성을 위한 q·k의 $\ell_2$ normalization, 그리고 memory 읽기 출력의 normalization + linear output gate. hybrid 변형(Moneta-H/Yaad-H/Memora-H)은 Samba를 따라 Miras layer와 Sliding Window Attention layer를 순차 교차한다. 그림 13-2가 이 세 층위를 한눈에 보인다: 왼쪽은 순수 변형(RMSNorm→Miras layer→SwiGLU의 residual 블록), 가운데는 Miras layer와 SWA를 번갈아 쌓는 hybrid, 오른쪽은 layer 내부 — k·q·v를 각각 conv로 만들고 q·k만 normalization하며, $\eta$와 $\alpha$ 게이트는 별도 low-rank(사다리꼴로 표시된 축소→확장) projection이 emit하고, 출력은 normalization 후 linear gate로 곱해지는 블록 설계다(그림 13-2 오른쪽의 $\eta,\alpha$ 분기가 §13.4에서 다룰 "gate를 만드는 정책은 outer loop가 학습한다"의 그림 대응물이다).
+
+![그림 13-2 — Miras 변형의 아키텍처. (왼쪽) 순수 recurrent 변형의 residual 블록, (가운데) Miras layer와 Sliding Window Attention을 교차하는 Samba식 hybrid, (오른쪽) Miras layer 내부 블록 설계: k/q/v projection 뒤의 depthwise conv, q·k의 normalization, low-rank로 emit되는 $\eta$·$\alpha$ 게이트, 출력 normalization + linear output gate. 출처: Behrouz et al., *It's All Connected* (Miras, arXiv:2504.13173), 원문 Fig.2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2504.13173-fig2.png)
 
 ### 13.3.8 표기 대응표
 
@@ -3297,7 +3357,9 @@ $$
 
 **S-NIAH (RULER)** [Miras Table 3]. 1K–8K 길이의 single needle-in-haystack 세 변형에서 평균 Moneta 93.5 / Yaad 92.9 / Memora 92.1 — GDN 75.8, TTT 66.1, DeltaNet 57.9, Mamba2 52.0과의 격차가 크다. 특히 haystack이 합성 노이즈인 S-NIAH-PK에서 Moneta는 8K에서도 98.8을 유지하는데, 논문은 이를 노이즈에 강건한 $p$-norm objective의 효과로 귀속한다 [Miras §6.3].
 
-**scaling 곡선** [Miras Fig. 3]. FLOPs-매칭 ppl(모델 크기 축)과 context 길이 축(2K–32K, 340M·760M) 모두에서 세 변형이 baseline보다 좋은 기울기를 보인다. 논문의 효율 주장 전체가 이 FLOPs 기준 그림 하나에 얹혀 있다는 점은 §13.7에서 다시 짚는다.
+**scaling 곡선** [Miras Fig. 3]. FLOPs-매칭 ppl(모델 크기 축)과 context 길이 축(2K–32K, 340M·760M) 모두에서 세 변형이 baseline보다 좋은 기울기를 보인다(그림 13-3). 왼쪽 패널은 같은 FLOPs 예산에서 Moneta·Yaad·Memora가 Transformer·Mamba2·TTT보다 낮은 perplexity에 도달함을, 가운데·오른쪽 패널은 context 길이를 2K에서 32K로 늘릴 때 baseline이 16K 이후 perplexity가 도로 치솟는 반면 세 변형은 완만하게 유지·개선됨을 보인다 — 논문은 이 "긴 context에서 더 낫게 scale한다"를 세 변형 공통의 효과로 귀속한다. 다만 논문의 효율 주장 전체가 이 FLOPs 기준 그림 하나에 얹혀 있다는 점(wall-clock·throughput 부재)은 §13.7에서 다시 짚는다.
+
+![그림 13-3 — C4에서의 scaling 패턴. (왼쪽) 모델 크기를 키울 때의 #FLOPs 대 perplexity, (가운데) 340M에서 context 길이 2K→32K, (오른쪽) 760M에서 context 길이 2K→32K. Moneta·Yaad·Memora 세 변형이 baseline보다 좋은 기울기를 보이며, 특히 긴 context에서 baseline의 perplexity 반등을 겪지 않는다. 출처: Behrouz et al., *It's All Connected* (Miras, arXiv:2504.13173), 원문 Fig.3 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2504.13173-fig3.png)
 
 **ablation** [Miras §6.4]. 세 개가 실렸고 각각이 설계 축 하나씩을 겨냥한다. (1) $p\in\{1,1.5,2,2.8,3,3.2,4\}$ sweep: 성능은 $p$에 대해 **비단조**이고 최적은 $p=3$, 최악은 $p=4$다. 흥미롭게도 $p$는 context-길이 scaling의 모양은 바꾸지 않는다. (2) $q\in\{2,3,4,5\}$ sweep: 반대로 $q$는 **scaling 패턴 자체를 바꾼다** — retention gate의 품질이 long-context 거동을 지배한다는 논문 주장의 가장 직접적인 증거다. (3) Yaad 구성요소 제거 [Miras Table 4]: 평균 LM 점수 53.98에서 retention gate 제거 시 50.63(−3.35), $\delta$ 입력-독립화 52.19(−1.79), $\ell_2$ branch 제거 52.86(−1.12), $\ell_1$ branch 제거 53.04(−0.94), MLP를 linear memory로 교체 51.57(−2.41). 기여 순위가 retention > deep memory > threshold의 입력 의존성 > bias 세부라는 것 — 논문이 "retention이 결정적 레버"라 주장한 순서 그대로다.
 
@@ -3384,6 +3446,10 @@ $$
 
 ### 14.3.2 Omega rule: token이 아니라 context를 memorize한다
 
+이 절 전체의 대비를 한 장으로 요약한 것이 원논문의 첫 그림이다(그림 14-1). 왼쪽은 현재 token 하나의 surprise로 memory를 갱신하는 계열(Titans·RWKV·DeltaNet·Longhorn·Moneta)이고, 오른쪽은 feature map $\phi(\cdot)$을 통과시킨 마지막 $c$개 token의 windowed loss로 갱신하는 Atlas·OmegaNet·Dot 계열이다 — 그리고 오른쪽 맨끝에 그 windowed regression의 **비모수** 대응으로 Transformer와 SWA가 놓인다(§14.3.5의 논지를 미리 그린 배치다).
+
+![그림 14-1 — 개별 token을 기억하는 것(왼쪽)과 context를 기억하는 것(오른쪽)의 대비. 왼쪽은 per-token surprise $\ell(\mathcal{M};k_t,v_t)$로 memory를 갱신하고, 오른쪽은 $\phi(\cdot)$로 lift한 뒤 마지막 $c$개 token의 합 $\sum_{i=t-c+1}^{t}\gamma_i^{(t)}\ell(\mathcal{M};k_i,v_i)$을 최소화한다(Omega rule). 하단은 각 방식에 속하는 모델 목록이며, 오른쪽의 "Nonparametric Examples"가 Transformer·SWA다. 출처: Behrouz et al., Atlas 축약 (arXiv:2505.23735), 원문 Fig.1 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2505.23735-fig1.png)
+
 기존 online 모델들의 inner 문제는 retention gate(→ 13장)를 붙인 per-token 최적화다 [Atlas Eq. 6]:
 
 $$
@@ -3399,9 +3465,9 @@ $$
 \tag{14-1}
 $$
 
-<!-- FIG: ch14/fig-01-omega-window -->
+![그림 14-2 — SWA와 Atlas/OmegaNet의 token 의존 구조 비교(하삼각 causal mask). SWA(맨왼쪽)는 폭이 고정된 banded mask라 각 query가 인접 $c$개만 본다. Atlas는 window $c$를 키울수록($c=1,4,7$) 의존이 하삼각 전체로 번지는데, 이는 windowed loss의 gradient가 chunk를 거쳐 이전 상태로 전파되기 때문이다 — 같은 banded 구조를 parametric memory가 어떻게 "누적"으로 바꾸는지 보여준다. 출처: Behrouz et al., Atlas 축약 (arXiv:2505.23735), 원문 Fig.2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2505.23735-fig2.png)
 
-여기서 $\gamma_{t,i}\in[0,1]$이 **window gate**다: step $t$의 window 안에서 $i$번째 token이 최적화에 참여하는 정도를 정하는 input-dependent gate로, $\gamma_{t,i}\to 0$이면 그 token을 최적화에서 **직접(hard) 잘라내고**, $\gamma_{t,i}\to 1$이면 온전히 포함한다 — 논문의 표현으로 **in-context pruning**이다 [Atlas §3.2]. 이 gate가 감당 가능한 이유가 바로 sliding window 구조다: step당 필요한 gate 수가 $c$개로 **상수**다. global 최적화(Eq. 7)에 input-dependent gate를 달려면 prefix 길이만큼의 gate 값이 필요해 — 공유 gate-producer의 파라미터는 고정이지만 gate 값의 수와 이를 계산·저장하는 비용이 문맥 길이에 따라 자라 — recurrent model의 장점이 사라진다.
+여기서 $\gamma_{t,i}\in[0,1]$이 **window gate**다: step $t$의 window 안에서 $i$번째 token이 최적화에 참여하는 정도를 정하는 input-dependent gate로, $\gamma_{t,i}\to 0$이면 그 token을 최적화에서 **직접(hard) 잘라내고**, $\gamma_{t,i}\to 1$이면 온전히 포함한다 — 논문의 표현으로 **in-context pruning**이다 [Atlas §3.2]. 이 gate가 감당 가능한 이유가 바로 sliding window 구조다: step당 필요한 gate 수가 $c$개로 **상수**다. window $c$를 키우면 SWA의 얇은 banded 의존이 하삼각 전체로 번지는데(그림 14-2), SWA는 그 폭 안을 비모수로 훑는 반면 Omega rule은 같은 폭을 parametric memory에 **누적**한다는 것이 두 방식의 갈림이다. global 최적화(Eq. 7)에 input-dependent gate를 달려면 prefix 길이만큼의 gate 값이 필요해 — 공유 gate-producer의 파라미터는 고정이지만 gate 값의 수와 이를 계산·저장하는 비용이 문맥 길이에 따라 자라 — recurrent model의 장점이 사라진다.
 
 Omega rule은 계보 전체를 극한으로 회수한다 [Atlas §3.2].
 
@@ -3499,7 +3565,9 @@ $$
 \mathcal{M}(z;W)=z+W_1\big(\sigma(W_2z)\odot W_3z\big),
 $$
 
-$W_1,W_2,W_3$ 전부가 inner loop에서 갱신되는 fast weights다. 합성은 Titans의 문법을 그대로 쓴다(→ 12장): MAG(SWA 브랜치와 gate 결합), MAL(memory block 다음 SWA block), 그리고 BABILong 실험에서는 MAC을 persistent memory tokens 없이 쓴다 [Atlas §6.3].
+$W_1,W_2,W_3$ 전부가 inner loop에서 갱신되는 fast weights다. 합성은 Titans의 문법을 그대로 쓴다(→ 12장): MAG(SWA 브랜치와 gate 결합), MAL(memory block 다음 SWA block), 그리고 BABILong 실험에서는 MAC을 persistent memory tokens 없이 쓴다 [Atlas §6.3]. 세 구성과 layer 내부 배선을 원논문이 한 장에 그려 둔다(그림 14-3).
+
+![그림 14-3 — Atlas 아키텍처(맨왼쪽)와 두 hybrid 구성(MAG·MAL), 그리고 Atlas layer의 block 설계(맨오른쪽). block 도해는 입력에서 Q/K/V projection(linear + 크기-4 short conv)과 세 gate $\gamma,\eta,\alpha$의 producer가 갈라져 나와 "ATLAS Layer"로 들어가는 배선을 보여준다. §14.7의 회계가 지적하듯 이 도해에는 feature map 차수 $p$·sketch 차원·memory head 분할이 표기되지 않는다. 출처: Behrouz et al., Atlas 축약 (arXiv:2505.23735), 원문 Fig.3 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2505.23735-fig3.png)
 
 설계 선택과 담당 결함의 대응을 한 줄씩 정리하면 — window loss(14-1)는 online 결함(1)을, $\phi_p/\phi^*$와 deep/gated memory는 capacity 결함(2)을, $\mathrm{NS}_\kappa(S_t)$는 관리 결함(3)을 맡고, $\alpha_t$(retention)와 $\beta_t$(momentum)는 Titans에서 상속된 상태 유지 장치다.
 
@@ -3610,7 +3678,9 @@ $$
 
 **S-NIAH (RULER)** [Atlas Table 3]. 4K로 훈련된 모델을 2K–16K needle-in-haystack에서 평가한다. 순수 recurrent 비교에서 Atlas는 S-NIAH-N 16K에서 84.0으로 Titans 80.2를 앞서고, DeltaNet(5.4)·TTT(4.4)와는 자릿수가 다르다. hybrid와 Transformer-like 가족은 더 강하다: Dot은 전 설정에서 93.2–100(S-NIAH-W 16K의 93.2가 최솟값), Atlas(MAG)는 S-NIAH-PK 16K에서 98.6 — 훈련 문맥의 4× 외삽이다.
 
-**BABILong** [Atlas §6.3, Fig. 4]. MAC backbone(persistent memory tokens 없이)으로 benchmark protocol에 따라 fine-tune한 설정이다. Atlas는 1M token까지 Titans와 동급이다가, 10M에서 Titans가 무너지는 지점에서 **+80% accuracy를 유지한다** — 이 논문의 헤드라인 long-context 주장이다. 논문은 이를 Muon(관리), polynomial kernel(capacity), context memorization(objective)의 합작으로 귀속시킨다 [Atlas §6.3].
+**BABILong** [Atlas §6.3, Fig. 4]. MAC backbone(persistent memory tokens 없이)으로 benchmark protocol에 따라 fine-tune한 설정이다. Atlas는 1M token까지 Titans와 동급이다가, 10M에서 Titans가 무너지는 지점에서 **+80% accuracy를 유지한다** — 이 논문의 헤드라인 long-context 주장이다(그림 14-4). 논문은 이를 Muon(관리), polynomial kernel(capacity), context memorization(objective)의 합작으로 귀속시킨다 [Atlas §6.3].
+
+![그림 14-4 — BABILong benchmark에서 context length(가로축, 로그 스케일)에 대한 정확도. Atlas(MAC)-FT가 10M token까지 높은 정확도를 유지하며, 1M 부근에서 무너지는 recurrent baseline(RWKV·RecurrentGemma·Gemma·Llama+RAG 등)과 갈린다. 4K 훈련 문맥의 수천 배를 외삽하는 구간이라는 점이 요지다. 출처: Behrouz et al., Atlas 축약 (arXiv:2505.23735), 원문 Fig.4 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2505.23735-fig4.png)
 
 **MAD synthetic suite** [Atlas Table 4]. 평균 Atlas 79.50 / OmegaNet 78.98 vs Titans 76.44, Transformers 75.46, Gated DeltaNet 71.04. 최대 격차는 memorization(91.4)과 fuzzy recall 축이다.
 
@@ -3686,6 +3756,10 @@ $$
 
 **Challenge 3 — 고정 pre-training chunk 크기에 대한 성능 민감성.** 논문의 새 실증 발견이다. 550M Titans를 $C=64$로 pre-train한 뒤 inference chunk 크기를 바꿔 가며 validation perplexity를 재면: $C=8$에서 36.45, 16에서 34.15, 32에서 24.23, **64에서 13.78(최적)**, 128에서 15.5, 256에서 17.88, 512에서 22.4 [TNT Fig. 2]. 훈련 때 쓴 chunk 크기에서만 최적이고, 양쪽으로 벗어나면 급격히 나빠진다. 특히 왼쪽이 인상적이다 — 더 작은 chunk는 더 신선한 gradient를 뜻하므로 직관적으로는 inference에서 더 좋아야 하는데, 실제로는 ppl이 2.6× 이상 폭발한다. 모델이 훈련 해상도에 **over-specialize**된 것이다 [TNT §3 Challenge 3]. 이것이 이 책이 **chunk-size mismatch**라 부르는 현상이다: 같은 checkpoint가 serving 때 memory update를 얼마나 자주 적용하느냐에 따라 전혀 다른 품질을 낸다. 이 발견은 이상적 serving 구성 — decode에서 chunk 크기 1, 즉 매 token online update — 을 위협한다. 큰 chunk로 싸게 훈련한 baseline은 이미 $C=8$에서 ppl이 36.45로 폭발하므로(Fig. 2의 최소 inference chunk가 8이다 — $C=1$ 자체는 측정되지 않았다), chunk 1로 직행하기 어렵기 때문이다.
 
+![그림 15-1 — 550M Titans를 $C=64$로 pre-train한 뒤 inference chunk 크기만 바꿔 가며 잰 validation perplexity. 훈련 chunk 크기(별표, $C=64$)에서 13.78로 최적이고, 양쪽으로 벗어나면 급격히 나빠진다 — 특히 더 작은 chunk(왼쪽)가 직관과 반대로 36.45까지 폭발한다. 출처: [TNT] (arXiv:2511.07343), 원문 Fig.2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2511.07343-fig2.png)
+
+위 문단이 나열한 perplexity 값들이 그리는 곡선이 그림 15-1이며, V자 바닥이 정확히 훈련 chunk 크기 $C=64$에 걸려 있다 — 이 비대칭 절벽, 특히 더 신선한 gradient를 뜻하는 작은 chunk 쪽이 오히려 더 나쁜 것이 chunk-size mismatch의 시각적 정의다.
+
 <!-- FIG-REF: ch09/fig-02-three-regimes -->
 
 세 challenge를 관통하는 논문의 핵심 주장은 이렇다: **훈련 효율과 inference 성능을 한 개의 chunk 크기가 동시에 결정하도록 놔두지 말고, 두 단계로 분리(decouple)하라.** Stage 1은 hierarchical memory로 최대 throughput의 pre-training을 하고, Stage 2는 전체 비용의 약 5–8%(구성에 따라; 최고 품질 4-local 구성은 약 8.3%)로 작은 chunk에 fine-tune해서 chunk-1 decode를 품질과 정렬한다. 결과 요약: 150M Titans 기준, 가장 정확한 Titans baseline($C=8$) 대비 목표 loss 도달까지 최대 17.37× 빠르면서 평균 perplexity는 오히려 개선(23.09 vs 25.07)되고 vanilla Transformer(23.58)도 이긴다 [TNT Table 1, Table 2].
@@ -3730,6 +3804,10 @@ TNT Stage 1의 구조를 한 문장으로 요약하면: **큰 chunk로 도는 �
 
 <!-- FIG: ch15/fig-01-tnt-hierarchy -->
 
+![그림 15-2 — TNT Stage 1의 아키텍처 개관. 위 블록: 큰 chunk 크기로 순차적으로 도는 하나의 global memory(long-range 담당). 아래 블록: 학습된 초기 상태 $W_L$(본서 표기 $W_{\mathrm{init}}$)에서 주기적으로 재초기화되어 대량 병렬화(Massive Parallelization)되는 $N$개의 local memory. 두 memory 모두 Compression(write)·Retrieval(read) 두 연산을 갖고, 두 경로의 출력이 합산되어 $y_t$가 된다 — 단 Q-K Projection은 local 경로에만 붙는다. 출처: [TNT] (arXiv:2511.07343), 원문 Fig.3 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2511.07343-fig3.png)
+
+이 구조 전체를 한 눈에 담은 것이 그림 15-2다: global 경로는 raw query를 Retrieval에 곧장 넣는 반면 local 경로만 Q-K Projection(§15.3.4)을 거치며, 아래 블록의 tile들이 병렬로 쌓인 모습이 뒤에서 설명할 periodic reset의 context parallelism을 그대로 시각화한다.
+
 **Global memory.** 상태 $W^{\mathrm{g}}$ (원문 기호 $V$; value 행렬과의 충돌 때문에 개명 — 표 15-1)는 매우 큰 chunk 크기 $C_{\mathrm{g}}$ (실험에서 2048)로 식 (15-2)의 표준 chunkwise recursion을 돈다:
 
 $$
@@ -3758,6 +3836,10 @@ $$
 [TNT Eq. 6]이다($C_{\mathrm{l}}\mid L_{\mathrm{s}}$ 가정).[^slip] 이것이 **periodic state reset**이다: TNT는 각 segment의 **시작**에서 local 상태를 outer loop가 학습한 $W_{\mathrm{init}}$으로 되돌린다 [TNT §4.1.1 "reset ... at the beginning of each segment"]. 즉 shard 첫 chunk의 anchor $A_t$가 직전 shard의 마지막 상태 대신 $W_{\mathrm{init}}$이 되어, shard $m$의 계산은 그 이전의 무엇에도 의존하지 않는다. (원문 Eq. 6을 1-based에서 "$t\equiv 0$일 때 $W_t=W_{\mathrm{init}}$"으로 옮기면 shard의 **마지막** token이 그 shard의 memory 대신 $W_{\mathrm{init}}$을 읽게 되므로 — reset을 shard 시작의 anchor로 둔 위 형태가 정합적 독해다.)
 
 이 reset이 왜 결정적인가. 비선형 recurrence는 parallel scan으로 병렬화할 수 없다 — scan은 결합법칙을 요구하는데 MLP를 통과하는 상태 전이에는 그것이 없다. reset은 그 병렬화 불가능한 사슬을 **아예 끊어**, $L/L_{\mathrm{s}}$개의 shard를 완전히 독립인 계산으로 만든다 — 장치에 분산(**context parallelism**)하거나 한 accelerator의 batch 축에 쌓아 kernel을 fatten할 수 있다 [TNT §4.1.1]. 비선형 deep-memory recurrence를 sequence 방향으로 병렬화하는, TNT가 제안하는 직접적·실용적 수단이다(일반적 비선형 recurrence의 exact 병렬화는 largely-unsolved 연구 문제로, 근사·반복 기반 시도가 별도로 있다). 대가는 명확하다: local memory는 shard 경계에서 모든 것을 잊는다. 그 손실의 보전이 global memory의 존재 이유다 — reset 없는 global이 long range를, reset 있는 local이 병렬성을 든다. ablation에서 global을 제거하면 ppl이 21.04에서 25.60으로 붕괴하는 것이 이 역할 분담의 실증이다 [TNT Table 3].
+
+![그림 15-3 — TNT memory 계층의 시간축 도해. 같은 행에서 같은 $t$ 값의 갱신은 동시에(병렬로) 실행되고 $t=0$은 memory 초기화를 뜻한다. 맨 위 global memory는 큰 chunk 하나가 sequence 전체를 순차적으로 관통하는 반면, 아래 $N$개의 local memory는 각자의 window(shard) 길이마다 $t=0$으로 reset되어 shard들이 서로 독립·병렬이 된다 — index가 커질수록 window가 짧아 더 자주 reset된다. 출처: [TNT] (arXiv:2511.07343), 원문 Fig.1 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2511.07343-fig1.png)
+
+각 local memory가 shard 경계에서 $t=0$으로 되돌아가 이후 계산이 그 이전의 무엇에도 무관해지는 이 병렬화 구조를 시간축으로 펼친 것이 그림 15-3이며, 위쪽 global의 드문 순차 handoff와 아래쪽 local의 잦은 reset이 한 그림에서 대비된다.
 
 $W_{\mathrm{init}}$이 **학습된다**는 점도 하중을 받는 설계다. 모든 shard가 0이 아니라 meta-learn된 prior에서 inner loop를 시작한다. Titans의 $W_{\mathrm{init}}$(원문 $M_0$)은 암묵적 존재였지만(→ 12장), TNT에서는 reset을 생존 가능하게 만드는 load-bearing 부품으로 승격된다 — 개념 자체는 4장의 MAML류 meta-learned initialization이다.
 
@@ -4055,7 +4137,11 @@ $$
 
 여러 최적화 문제로 분해된 모델에 질서를 주는 것이 **update frequency**다. [NL Def. 2]: 구성요소 $A$(parametric이든 attention 같은 non-parametric이든)의 frequency $f_A$는 단위 시간(데이터 포인트 하나당 갱신 한 번)당 갱신 횟수다. attention은 $f=\infty$, 동결 MLP는 $f=0$ — §16.2 "두 극단"의 형식화다. 순서는 $A\succ B$: $f_A>f_B$이거나, $f_A=f_B$이되 $B$의 시점 $t$ 계산이 $A$의 시점 $t$ 상태를 요구하면 $A$가 빠르다. 어느 쪽도 아니면 같은 **level**(같은 주기, 상호 독립)이다 — Adam의 1차/2차 moment가 대표적 동률 사례로 한 level에 병렬로 놓인다 [NL Def. 2, App B]. 정렬에서 **높은 level일수록 낮은 frequency**다.
 
-이제 시스템 전체가 정의된다. **Nested System** [NL Def. 3]: $K$개의 정렬된 level, level $k$는 (objective, context flow, feasible parameter)의 삼중항 집합 $\{(L^{(k)}_i,\ \mathcal{C}^{(k)}_i,\ \Theta^{(k)}_i)\}_{i=1}^{N_k}$이고 각 문제는 식 (16-1) 꼴 proximal GD로 최적화되되 일부 "box"는 non-parametric 해(예: attention)가 허용된다 [NL Eq. 19, §3.2]. **NSAM (Nested System of Associative Memories)** [NL Def. 4]는 모든 context가 key-value 집합인 특수형이고 [NL Eq. 20], Appendix A 일반형 [NL Def. 6, 7]은 선형화를 full loss로 되돌린다. **Neural Learning Module**은 아키텍처와 그 훈련 과정을 하나의 NSAM으로 함께 표현한 설계 단위이며, 같은 Transformer라도 SGD판과 Adam판은 **다른 module**이다 [NL §3.2].
+이제 시스템 전체가 정의된다. **Nested System** [NL Def. 3]: $K$개의 정렬된 level, level $k$는 (objective, context flow, feasible parameter)의 삼중항 집합 $\{(L^{(k)}_i,\ \mathcal{C}^{(k)}_i,\ \Theta^{(k)}_i)\}_{i=1}^{N_k}$이고 각 문제는 식 (16-1) 꼴 proximal GD로 최적화되되 일부 "box"는 non-parametric 해(예: attention)가 허용된다 [NL Eq. 19, §3.2]. **NSAM (Nested System of Associative Memories)** [NL Def. 4]는 모든 context가 key-value 집합인 특수형이고 [NL Eq. 20], Appendix A 일반형 [NL Def. 6, 7]은 선형화를 full loss로 되돌린다. **Neural Learning Module**은 아키텍처와 그 훈련 과정을 하나의 NSAM으로 함께 표현한 설계 단위이며, 같은 Transformer라도 SGD판과 Adam판은 **다른 module**이다 [NL §3.2]. 원논문은 이 관점을 한 장의 그림으로 요약한다(그림 16-1): hybrid 아키텍처(RNN+attention)를 deep learning식으로 "평탄화"하면 각 block 내부의 gradient flow가 가려져 아키텍처와 훈련이 분리돼 보이지만, NL은 같은 모델을 서로 다른 level의 gradient flow가 겹쳐 흐르는 white-box로 펼쳐 각 level이 자기 objective로 자기 context를 압축하는 associative memory임을 드러낸다 [NL §3.2, Fig. 2].
+
+![그림 16-1 — Nested Learning 패러다임. (좌) hybrid 아키텍처를 deep learning 관점으로 평탄화하면 내부 gradient flow가 가려지지만, NL은 이를 서로 다른 level의 gradient flow가 겹친 투명한 표현으로 펼친다. (우) Neural Learning Module — 각 level이 자기 context flow를 자기 주기로 압축하는 중첩 최적화(associative memory) 문제들. 출처: Behrouz et al., [NL] (arXiv:2512.24695), 원문 Fig. 2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2512.24695-fig2.png)
+
+그림 16-1 — Nested Learning 패러다임. (좌) hybrid 아키텍처를 deep learning 관점으로 평탄화하면 내부 gradient flow가 가려지지만, NL은 이를 서로 다른 level의 gradient flow가 겹친 투명한 표현으로 펼친다. (우) Neural Learning Module — 각 level이 자기 context flow를 자기 주기로 압축하는 중첩 최적화(associative memory) 문제들. 출처: Behrouz et al., [NL] (arXiv:2512.24695), 원문 Fig. 2 — 원저자의 그림(third-party), 본서의 결과가 아님.
 
 정의가 실제로 어떻게 작동하는지, 논문의 계단식 예제 네 개가 보여 준다 [NL §3.1–§3.2].
 
@@ -4072,7 +4158,11 @@ y_{\mathrm{block}} = y_{\mathrm{attn}}\,W_{\mathrm{MLP}}
 y_{\mathrm{block}} = y_{\mathrm{attn}}\,W_{\mathrm{LinAttn}}.
 $$
 
-유일한 차이는 **두 weight가 사는 level**이다: $W_{\mathrm{MLP}}$은 level 1(f=0)이라 context 불변, $W_{\mathrm{LinAttn}}$은 level 2에서 $W_t=W_{t-1}+v_tk_t^\top$로 in-context 갱신(초기값 $W_{\mathrm{init}}$은 level 1 NTP로 meta-learn)된다. 즉 **recurrent memory module=level 하나 추가된 MLP block, hybrid 아키텍처=일부 MLP block에 in-context 적응이 생긴 Transformer** [NL §3.2, §6] — "attention + SSM 이종 결합" 통념이 해소된다.
+유일한 차이는 **두 weight가 사는 level**이다: $W_{\mathrm{MLP}}$은 level 1(f=0)이라 context 불변, $W_{\mathrm{LinAttn}}$은 level 2에서 $W_t=W_{t-1}+v_tk_t^\top$로 in-context 갱신(초기값 $W_{\mathrm{init}}$은 level 1 NTP로 meta-learn)된다. 즉 **recurrent memory module=level 하나 추가된 MLP block, hybrid 아키텍처=일부 MLP block에 in-context 적응이 생긴 Transformer** [NL §3.2, §6] — "attention + SSM 이종 결합" 통념이 해소된다. 원논문 그림은 이 등가를 색으로 못박는다(그림 16-2): 빨강은 level 1(frequency 1, context 불변)의 계산·weight, 파랑은 level 2(frequency $L$, sequence에 대해 in-context 갱신)의 계산·weight로, FFN판과 Linear Attention++판은 같은 앞단 attention 위에서 대수적으로 동일하되 오직 두 번째 weight가 사는 level만 다르다 [NL §3.2, Fig. 3, Eq. 69].
+
+![그림 16-2 — AdaTransformer(Linear Attention++). Transformer block의 FFN을 초기 상태가 meta-learn된 linear attention으로 치환해도 출력이 대수적으로 동일하며, 유일한 차이는 두 weight가 사는 level이다: 빨강=level 1(frequency 1, context 불변 초기 MLP parameter), 파랑=level 2(sequence에 대한 in-context 갱신). 좌우는 같은 계산의 Nested Learning 관점과 Deep Learning 관점. 출처: Behrouz et al., [NL] (arXiv:2512.24695), 원문 Fig. 3 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2512.24695-fig3.png)
+
+그림 16-2 — AdaTransformer(Linear Attention++). Transformer block의 FFN을 초기 상태가 meta-learn된 linear attention으로 치환해도 출력이 대수적으로 동일하며, 유일한 차이는 두 weight가 사는 level이다: 빨강=level 1(frequency 1, context 불변 초기 MLP parameter), 파랑=level 2(sequence에 대한 in-context 갱신). 좌우는 같은 계산의 Nested Learning 관점과 Deep Learning 관점. 출처: Behrouz et al., [NL] (arXiv:2512.24695), 원문 Fig. 3 — 원저자의 그림(third-party), 본서의 결과가 아님.
 
 따름정리(12장 개념 회수): 초기 상태가 meta-learn되지 **않으면**($W_0=0$ 초기 linear Transformer) 그 block엔 persistent memory(→ 12장)가 없고, 출력 gating의 linear layer가 이를 대신한다는 것이 [NL §5]의 gating 해석 — "gating이 왜 도움이 되는가"의 구조적 답이다.
 
@@ -4281,7 +4371,11 @@ $$
 
 이다. 실무 세부 [NL §8.3]: $q,k$는 $\ell_2$ normalize(식 (16-3) DGD의 $\|x\|=\lambda$ 전제와 정합), window 4 local convolution. 변형 **Hope-Attention**은 self-modifying Titans를 softmax global attention으로 치환한 통제 변형으로 CMS 기여를 분리 측정한다 [NL §8.3].
 
-12장 어휘로: Hope는 Titans-MAC/MAG처럼 attention과 memory를 병렬 합성한 것이 아니라, Titans block의 **모든 구성요소를 한 level씩 위로 올리고**(projection·gate의 memory화) 뒤따르는 MLP를 CMS 주파수 스펙트럼으로 펼친 것이다. Titans의 persistent/long-term/short-term 삼분류(→ 12장)는 연속체의 세 점으로 흡수된다.
+12장 어휘로: Hope는 Titans-MAC/MAG처럼 attention과 memory를 병렬 합성한 것이 아니라, Titans block의 **모든 구성요소를 한 level씩 위로 올리고**(projection·gate의 memory화) 뒤따르는 MLP를 CMS 주파수 스펙트럼으로 펼친 것이다. Titans의 persistent/long-term/short-term 삼분류(→ 12장)는 연속체의 세 점으로 흡수된다. 원논문의 backbone 비교 그림(그림 16-3)이 이 직렬 구조를 Transformer와 나란히 놓는다: self-modifying Titans 뒤에 high/mid/low frequency FFN 사슬이 이어지고, 각 block에 붙은 chunk length·frequency 표기가 Transformer의 두 극단(attention $f=\infty$, FFN $f=0$)을 하나의 주파수 스펙트럼으로 대체함을 보여 준다 [NL §8.3, Fig. 5].
+
+![그림 16-3 — Hope의 아키텍처 backbone과 Transformer 비교(normalization·data-dependent 성분 생략). Hope는 self-modifying Titans(작은 state, 표현력 있는 rule) 뒤에 서로 다른 update frequency의 FFN 사슬(CMS: high/mid/low frequency)을 직렬로 잇는다. 각 block의 chunk length·frequency 표기가 long/short-term 이분법이 주파수 연속체로 펼쳐짐을 보여 준다. 출처: Behrouz et al., [NL] (arXiv:2512.24695), 원문 Fig. 5 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2512.24695-fig5.png)
+
+그림 16-3 — Hope의 아키텍처 backbone과 Transformer 비교(normalization·data-dependent 성분 생략). Hope는 self-modifying Titans(작은 state, 표현력 있는 rule) 뒤에 서로 다른 update frequency의 FFN 사슬(CMS: high/mid/low frequency)을 직렬로 잇는다. 각 block의 chunk length·frequency 표기가 long/short-term 이분법이 주파수 연속체로 펼쳐짐을 보여 준다. 출처: Behrouz et al., [NL] (arXiv:2512.24695), 원문 Fig. 5 — 원저자의 그림(third-party), 본서의 결과가 아님.
 
 ### 16.3.12 표기 대응표
 
@@ -4401,7 +4495,11 @@ state는 KV cache처럼 $O(L)$로 자라지 않고 시퀀스 길이에 상수다
 
 **BABILong** [NL Fig. 9]. 원 설정대로 fine-tune한 소형 모델 비교에서 Titans·ARMT·Hope가 1M token까지 경합하다 Titans·ARMT는 급락하고 **Hope는 10M token까지 유지된다**(논문은 CMS 설계를 원인으로 지목) [NL §9.2]. 정직성 항목: 이 10M은 **fine-tuning 전제**다 — zero-shot에서는 Hope 포함 모든 소형 모델이 크게 떨어지며, 저주파 level이 과제에 맞게 조정돼야 고주파 memory 관리가 작동한다 [NL §9.2].
 
-**continual learning** [NL Fig. 6, Fig. 8]. class-incremental 분류(CF 측정 프로토콜의 배경은 → 11장) 세 벤치마크 — CLINC(150 intent), Banking(77 intent), DBpedia(70 클래스) — 에서, Llama3-8B/Llama-3B를 ad-hoc level stacking(§16.3.8)으로 개조하고 15B tokens continual pre-training한 Hope 변형이 ICL, EWC(→ 11장), 외부 학습기 SOTA인 InCA를 전부 상회한다 [NL §9.1]. 신설 benchmark **CTNL**(MTOB Kalamang+Manchu; ChRF)에서는: 언어 하나씩은 Hope 변형이 ICL과 동급 이상, **두 언어를 순차로** 배우면 ICL은 붕괴(pre-training으로 회귀)하는 반면 Hope-1/2/3(추가 level 1/2/3개)은 level 수에 단조 개선되어 Hope-3는 단일 언어 성능을 거의 회복한다 [NL §9.1]. level ablation [NL Fig. 7]: level이 많을수록 좋고, 최저 주파수는 512가 최고이되 2K가 근접 성능에 훨씬 저렴해 효율 sweet spot이다 [NL §9.1].
+**continual learning** [NL Fig. 6, Fig. 8]. class-incremental 분류(CF 측정 프로토콜의 배경은 → 11장) 세 벤치마크 — CLINC(150 intent), Banking(77 intent), DBpedia(70 클래스) — 에서, Llama3-8B/Llama-3B를 ad-hoc level stacking(§16.3.8)으로 개조하고 15B tokens continual pre-training한 Hope 변형이 ICL, EWC(→ 11장), 외부 학습기 SOTA인 InCA를 전부 상회한다 [NL §9.1]. 신설 benchmark **CTNL**(MTOB Kalamang+Manchu; ChRF)에서는: 언어 하나씩은 Hope 변형이 ICL과 동급 이상, **두 언어를 순차로** 배우면 ICL은 붕괴(pre-training으로 회귀)하는 반면 Hope-1/2/3(추가 level 1/2/3개)은 level 수에 단조 개선되어 Hope-3는 단일 언어 성능을 거의 회복한다 [NL §9.1]. level ablation [NL Fig. 7]: level이 많을수록 좋고, 최저 주파수는 512가 최고이되 2K가 근접 성능에 훨씬 저렴해 효율 sweet spot이다 [NL §9.1]. 이 그래프(그림 16-4)는 세 long-context 벤치마크(MK-NIAH·LongHealth·QASPER)에서 memory level 수를 1→4로 늘리면 성능이 단조 개선되고, 어떤 level 수·최저 주파수에서도 ICL·DuoAttention baseline을 상회함을 보여 논문의 핵심 주장 — "더 많은 layer가 아니라 더 많은 level" — 을 실증한다 [NL §9.2, Fig. 7].
+
+![그림 16-4 — memory level 수가 in-context learning 성능에 미치는 효과 (좌: RULER MK-NIAH, 중: LongHealth, 우: QASPER — 우측은 perplexity라 낮을수록 좋음). level이 많을수록, 그리고 최저 주파수(lowest freq)가 낮을수록(persistent memory가 강할수록) 성능이 오르며, ICL·DuoAttention baseline(점선)을 상회한다. 출처: Behrouz et al., [NL] (arXiv:2512.24695), 원문 Fig. 7 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2512.24695-fig7.png)
+
+그림 16-4 — memory level 수가 in-context learning 성능에 미치는 효과 (좌: RULER MK-NIAH, 중: LongHealth, 우: QASPER — 우측은 perplexity라 낮을수록 좋음). level이 많을수록, 그리고 최저 주파수(lowest freq)가 낮을수록(persistent memory가 강할수록) 성능이 오르며, ICL·DuoAttention baseline(점선)을 상회한다. 출처: Behrouz et al., [NL] (arXiv:2512.24695), 원문 Fig. 7 — 원저자의 그림(third-party), 본서의 결과가 아님.
 
 **in-context recall과 MAD** [NL Table 3, 4]. 의무 서술 caveat이 여기 있다: 짧은 in-context recall에서는 **여전히 Transformer가 최고이고 격차가 크다** — FDA에서 Transformer 67.3 vs Hope 41.9, SWDE 71.4 vs 65.9. Hope는 attention-free 중 최고(Titans·RWKV-7·Comba 전부 상회)로 격차를 좁혔을 뿐이다 [NL §9.4]. [Atlas]의 53.55 vs 43.70([Atlas Table 5], → 14장)에서 확인된 in-context retrieval gap이 이 라인의 종합판에서도 **미해소**라는 뜻이다. 반면 합성 벤치마크 MAD에서는 Hope가 Transformer를 포함한 전부를 이긴다(compression 51.2, fuzzy ICR 52.1, memory 85.2) [NL Table 4].
 
@@ -4485,7 +4583,9 @@ Part II의 마지막 논문은 [Sleep] (*Language Models Need Sleep: Learning to
 
 <!-- FIG: ch17/fig-01-wake-sleep-lifecycle -->
 
-핵심 주장은 셋이다. 첫째, **continual learner에게는 training time도 test time도 없다.** 모델의 lifecycle은 새 입력을 받아 처리하는 **wake(active) phase**와, 입력을 최소화하거나 끊고 내부 계산으로 기억을 정리하고 자기를 개선하는 **sleep phase**의 주기적 교대로 재정의되어야 한다 [Sleep §3.1]. 이 책은 이것을 **wake/sleep lifecycle**이라고 부른다 — 이 라인이 Titans 이후 유지해 온 "test time"이라는 단어의 마지막 잔재를 지우는 주장이다. 둘째, **CF는 근본적으로 capacity 문제다.** 파라미터 수가 유한하므로 새 지식을 넣으려면 덮어써야 하고, 그래서 잊는다. 논문은 생물학의 offline consolidation을 replay(수면 중 최근 pattern의 재생)와 neuroplasticity(새 연결의 형성)의 **결합**으로 읽고, 그 처방으로 replay 기반 Knowledge Seeding에 점진적 **parameter expansion**을 함께 쓴다 [Sleep §3.2, §3.3](regularization(EWC류, → 11장)만 이 해법군에서 뺀다). 셋째, sleep은 두 단계다: NREM(slow-wave sleep)의 hippocampus→neocortex 기억 이전과 synaptic homeostasis에 대응하는 **Memory Consolidation**, 그리고 REM의 시냅스 강화·통합·미래 시뮬레이션에 대응하는 **Dreaming** [Sleep §1, §3].
+![그림 17-1 — [Sleep]이 그린 lifecycle 재정의. 왼쪽(Conventional Machine Learning)은 모델의 수명이 training time과 test time으로 갈리지만, 오른쪽(Continual Learning)에는 그 구분이 없고 Active(Wake)와 Sleep이 주기적으로 교대한다. 원저자는 sleep을 수동 상태가 아니라, 새 외부 입력을 끊고 fast·고주파 모듈의 기억을 저주파의 더 안정한(느린·큰) 성분으로 consolidate하는 내부 처리 구간으로 규정한다(오른쪽 아래는 그 처리를 수행하는 Hope 백본의 Low/Mid/High Frequency FFN 사슬). 출처: Behrouz et al., [Sleep] (arXiv:2606.03979), 원문 Fig.1 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2606.03979-fig1.png)
+
+핵심 주장은 셋이다. 첫째, **continual learner에게는 training time도 test time도 없다.** 모델의 lifecycle은 새 입력을 받아 처리하는 **wake(active) phase**와, 입력을 최소화하거나 끊고 내부 계산으로 기억을 정리하고 자기를 개선하는 **sleep phase**의 주기적 교대로 재정의되어야 한다 [Sleep §3.1]; 원논문은 이 재정의를 conventional ML의 train/test 이분법과 나란히 놓아 대비시킨다(그림 17-1). 이 책은 이것을 **wake/sleep lifecycle**이라고 부른다 — 이 라인이 Titans 이후 유지해 온 "test time"이라는 단어의 마지막 잔재를 지우는 주장이다. 둘째, **CF는 근본적으로 capacity 문제다.** 파라미터 수가 유한하므로 새 지식을 넣으려면 덮어써야 하고, 그래서 잊는다. 논문은 생물학의 offline consolidation을 replay(수면 중 최근 pattern의 재생)와 neuroplasticity(새 연결의 형성)의 **결합**으로 읽고, 그 처방으로 replay 기반 Knowledge Seeding에 점진적 **parameter expansion**을 함께 쓴다 [Sleep §3.2, §3.3](regularization(EWC류, → 11장)만 이 해법군에서 뺀다). 셋째, sleep은 두 단계다: NREM(slow-wave sleep)의 hippocampus→neocortex 기억 이전과 synaptic homeostasis에 대응하는 **Memory Consolidation**, 그리고 REM의 시냅스 강화·통합·미래 시뮬레이션에 대응하는 **Dreaming** [Sleep §1, §3].
 
 > **[해설]** 이 책의 좌표로 옮기면 이렇게 된다. 12–16장의 논문들은 전부 master update (M)의 성분을 바꿨다 — [Miras] (*It's All Connected*, arXiv:2504.13173; 이 책은 framework 이름 Miras로 통칭한다)는 objective를, [Atlas] (*Atlas: Learning to Optimally Memorize the Context at Test Time*, arXiv:2505.23735)는 window와 optimizer를, [TNT]는 훈련 경제학을, [NL]은 층위를 바꿨다. [Sleep]은 (M)을 건드리지 않는다. 바꾸는 것은 그 update들이 살아가는 **lifecycle**이다. inference 어휘로는 1장 Rosetta의 마지막 행이 이 장의 전부다: sleep phase는 서빙 fleet에 붙는 주기적 백그라운드 job, "weights의 background compaction"이다. 낮에는 요청을 처리하며 fast memory에 쓰고, 밤에는 트래픽을 끊고 compaction·GC를 돌린다 — 단지 그 대상이 로그나 cache가 아니라 모델의 파라미터일 뿐이다.
 
@@ -4494,6 +4594,10 @@ Part II의 마지막 논문은 [Sleep] (*Language Models Need Sleep: Learning to
 ## 17.3 Core mechanism (통일 표기)
 
 이 절은 sleep 한 사이클을 재구현 가능한 수준까지 전개한다. 구조는 기제의 실행 순서를 따른다: wake의 기반 구조(CMS) → sleep의 발화 시점 → Stage 1 Memory Consolidation(expansion → Knowledge Seeding → Learning to Imitate → reset) → Stage 2 Dreaming.
+
+Stage 1 한 사이클의 큰 그림이 그림 17-2다: 모델이 먼저 자기 파라미터 수를 늘려 capacity를 확보하고(§17.3.3의 expansion), 그다음 Knowledge Seeding으로 지식 추상을 고주파 memory에서 저주파 memory로 옮긴다 — 그 이전(§17.3.4)이 그림 오른쪽의 On-Policy Distillation(식 17-2)과 Imitation Learning(teacher가 seed → student가 imitate → reward로 정렬, §17.3.5)의 두 항으로 구현된다.
+
+![그림 17-2 — Memory Consolidation 개관. 모델은 새 low-rank 파라미터를 활성화해 capacity를 키운 뒤(왼쪽·가운데의 새 MLP/Linear expert), Knowledge Seeding으로 고주파에서 저주파 memory로 지식 추상을 이전한다. 오른쪽은 그 이전을 구현하는 두 항 — teacher가 만든 데이터와 student의 on-policy rollout을 섞는 GKD distillation, 그리고 teacher 행동을 student가 모방하도록 보상을 주는 Imitation Learning — 이다. 출처: Behrouz et al., [Sleep] (arXiv:2606.03979), 원문 Fig.2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2606.03979-fig2.png)
 
 ### 17.3.1 기반 구조: CMS와 식 (M5) — wake가 돌리는 것
 
@@ -4516,6 +4620,10 @@ $$
 ### 17.3.2 sleep은 언제 오는가: chunk 경계 스케줄
 
 sleep의 발화 시점은 학습되지 않고 chunk 스케줄에 고정된다. chunk 길이 목록 $\{C^{(1)},\dots,C^{(k)}\}$가 주어지면, sleep(그리고 memory consolidation)은 모든 $b\in\mathbb{N}$에 대해 step $\{C^{(1)}\times b,\dots,C^{(k)}\times b\}$에서만 일어난다 [Sleep §3.2]. 즉 어떤 블록이든 자기 갱신 경계에 도달하면, 갱신 직전에 그 블록의 지식이 다음 느린 블록으로 먼저 옮겨진다. frequency가 중첩되어 있으므로 consolidation은 다대일이다: update frequency 1K token의 블록 뒤에 10K token의 블록이 있으면, 느린 블록이 한 번 갱신되는 동안 빠른 블록은 10번 갱신되고, 따라서 빠른→느린 consolidation이 10번 일어난다 [Sleep §3.2]. 실험 구성의 chunk/update-period 사다리는 $C=$1k→5k→10k token이다 [Sleep Fig. 7] — frequency(단위 시간당 갱신 횟수)는 그 역수라 반대 방향으로 감소한다(1k 블록이 10k 블록보다 자주 갱신된다). 같은 고정 크기의 느린 memory에 10번을 반복해서 써 넣는 것 — 바로 그 지점이 CF가 일어날 자리이고, 그래서 다음 소절의 expansion이 필요해진다.
+
+이 다대일 스케줄이 그림 17-3에 그대로 그려져 있다: High/Mid/Low Frequency FFN이 각각 갱신 주기 $f_W=$1k/5k/10k token으로 배열되고, 빠른 블록은 Parameter Expansion을 반복하다가 자기 window가 만료되는 순간 한 단계 느린 FFN으로 Consolidation을 흘려보낸다. 빠른 블록이 여러 번 팽창·정리되는 동안 느린 블록은 한 번만 consolidation을 받는 frequency 중첩이 그림에서 눈으로 확인된다.
+
+![그림 17-3 — Multi-frequency memory hierarchy. 왼쪽은 Sequence Layer 위에 갱신 주기가 다른 FFN 사슬(High/Mid/Low, $f_W=$1k/5k/10k token)이 쌓인 CMS 백본이고, 오른쪽은 각 FFN이 Parameter Expansion을 반복하다 window 만료 시 다음 저주파 FFN으로 Consolidation을 넘기는 스케줄이다(1k→5k→10k). 원문 캡션의 $f_W$는 본서 표기의 update 주기 $C^{(\ell)}$에 해당한다. 출처: Behrouz et al., [Sleep] (arXiv:2606.03979), 원문 Fig.7 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2606.03979-fig7.png)
 
 ### 17.3.3 Stage 1a — parameter expansion: 덮어쓰지 말고 키워라
 

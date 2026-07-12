@@ -1,0 +1,174 @@
+{
+  "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/2406.06484.pdf",
+  "engine": "pymupdf",
+  "figure_count": 8,
+  "figures": [
+    {
+      "figure_id": "fig1",
+      "figure_number": "1",
+      "caption": "Figure 1: Speed-up of the chunkwise parallel form vs. the recurrent form.",
+      "image": "figures/fig1.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2406.06484.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2406.06484.pdf",
+        "page": 5,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig2",
+      "figure_number": "2",
+      "caption": "Figure 2: An illustration of DeltaNet neural architec- ture.",
+      "image": "figures/fig2.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2406.06484.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2406.06484.pdf",
+        "page": 6,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig3",
+      "figure_number": "3",
+      "caption": "Figure 3: Results on the synthetic MAD benchmark. Results other than DeltaNet are directly borrowed from Poli et al. [84]. (Multi-head) Hyena, DeltaNet and Mamba make use of convolutions, whereas GLA does not.",
+      "image": "figures/fig3.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2406.06484.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2406.06484.pdf",
+        "page": 7,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig4",
+      "figure_number": "4",
+      "caption": "Figure 4: Accuracy (%) on MQAR.",
+      "image": "figures/fig4.png",
+      "references": [
+        {
+          "page": 7,
+          "context": "We do not use convolutions for these experiments. Figure 4 shows that DeltaNet performs perfectly (even without convolution) in the hardest setting and outperforms Mamba (which uses convolutions) in the low-dimension setting. Next, we consider the MAD benchmark [84], a suite of synthetic token manipulation tasks designed to probe capabilities of model architectures."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2406.06484.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2406.06484.pdf",
+        "page": 7,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig5",
+      "figure_number": "5",
+      "caption": "Figure 5: Zero-shot model performance across selected benchmarks for 3B models. Llama-3.2-3B and PowerLM-3B are Transformer models, while the others are recurrent models. ARC results are averaged over normalized accuracy across ARC-Easy and ARC- Challenge.",
+      "image": "figures/fig5.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2406.06484.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2406.06484.pdf",
+        "page": 8,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig6",
+      "figure_number": "6",
+      "caption": "Figure 6: Training throughput of 1.3B models on a single H100.",
+      "image": "figures/fig6.png",
+      "references": [
+        {
+          "page": 7,
+          "context": "Training throughput. Figure 6 compares the training throughputs of different 1.3B models in different training lengths and batch size settings. The training speed of DeltaNet is close to GLA 7"
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2406.06484.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2406.06484.pdf",
+        "page": 8,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig7",
+      "figure_number": "7",
+      "caption": "Figure 7: Accuracy (%) on RegBench.",
+      "image": "figures/fig7.png",
+      "references": [
+        {
+          "page": 22,
+          "context": "During testing, a model is evaluated on pre- dicting the next token of testing sequences generated from held-out PFAs. Here again we ﬁnd that DeltaNet performs strongly compared to baselines, as shown in Figure 7. B Method Continued B.1 WY representation derivation To reduce notational clutter, we discuss only the ﬁrst chunk here."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2406.06484.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2406.06484.pdf",
+        "page": 22,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig8",
+      "figure_number": "8",
+      "caption": "Figure 8: Pytorch-like code snippet of the forward pass of our chunkwise algorithm for training DeltaNet. We omit the dimensions of batch size and number of heads for clarity.",
+      "image": "figures/fig8.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2406.06484.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2406.06484.pdf",
+        "page": 25,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    }
+  ]
+}

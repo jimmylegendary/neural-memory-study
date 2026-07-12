@@ -1,0 +1,250 @@
+{
+  "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/2405.21060.pdf",
+  "engine": "pymupdf",
+  "figure_count": 10,
+  "figures": [
+    {
+      "figure_id": "fig1",
+      "figure_number": "1",
+      "caption": "Figure 1: (Structured State-Space Duality.) This paper fleshes out the relationship between state space models and attention through the bridge of structured matrices.",
+      "image": "figures/fig1.png",
+      "references": [
+        {
+          "page": 6,
+          "context": "It is relatively simple and easy-to-implement compared to general selective SSMs (Gu and Dao 2023); Listing 1 provides a complete implementation in a few lines of code. Figure 1 provides a simple roadmap of the relationships between the concepts presented in this paper. 2.5 Notation Throughout this paper, we prefer using precise notation that can be mapped to code. Matrices and Vectors."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2405.21060.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2405.21060.pdf",
+        "page": 2,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig2",
+      "figure_number": "2",
+      "caption": "Figure 2: (State Space Models are Semiseparable Matrices.) As sequence transformations, state space models can be represented as a matrix transformation 𝑀∈R(T,T) acting on the sequence dimension T, sharing the same matrix for each channel in a head (Left). This matrix is a semiseparable matrix (Right), which is a rank-structured matrix where every submatrix contained on-and-below the diagonal (Blue) has rank at most N, equal to the SSM’s state dimension.",
+      "image": "figures/fig2.png",
+      "references": [
+        {
+          "page": 9,
+          "context": "However, we will generally use the convention that SSM refers to state space model, SS refers to semiseparable, and SSS refers to sequentially semiseparable. Figure 2 illustrates the sequence transformation perspective of state space models as semiseparable matrices. 9"
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2405.21060.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2405.21060.pdf",
+        "page": 9,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig3",
+      "figure_number": "3",
+      "caption": "Figure 3: (Structured Masked Attention.) SMA constructs a masked attention matrix 𝑀= 𝑄𝐾⊤◦𝐿for any structured matrix 𝐿, which defines a matrix sequence transformation 𝑌= 𝑀𝑉. All instances of SMA have a dual subquadratic form induced by a different contraction ordering, combined with the efficient structured matrix multiplication by 𝐿. Previous examples include Linear Attention (Katharopoulos et al. 2020) and RetNet (Y. Sun et al. 2023). Beyond SSD (1-semiseparable SMA), the focus of this paper, many other potential instantiations of structured attention are possible.",
+      "image": "figures/fig3.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2405.21060.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2405.21060.pdf",
+        "page": 15,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig4",
+      "figure_number": "4",
+      "caption": "Figure 4: (Structured State Space Duality.) State space duality describes the close relationship between state space models and masked attention. (Left) General SSMs and SMA both possess linear and quadratic forms, with direct analogs in notation. (Right) SSMs and SMA intersect at a large class of state space dual models (SSD) which capture many sequence models as special cases.",
+      "image": "figures/fig4.png",
+      "references": [
+        {
+          "page": 17,
+          "context": "ontraction and reducing in a different order, one can derive a linear form. • A natural special case of each one – more precisely, state space models with scalar-identity structure on the 𝐴 matrices, and structured masked attention with 1-semiseparable structure on its 𝐿mask – are duals of each other with the exact same linear and quadratic forms. Figure 4 summarizes the duality between these two representations. An extended related work and discussion (Section 10) describes the relationship between SSD and general SSMs / attention in more detail. 6 A Hardware-Efficient Algorithm for SSD Models The benefits of developing the theoretical SSD framework between SSMs, attention, and structured matrices"
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2405.21060.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2405.21060.pdf",
+        "page": 18,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig5",
+      "figure_number": "5",
+      "caption": "Figure 5: (SSD Algorithm.) By using the matrix transformation viewpoint of state space models to write them as semiseparable matrices (Section 3), we develop a more hardware-efficient computation of the SSD model through a block- decomposition matrix multiplication algorithm. The matrix multiplication also has an interpretation as a state space model, where blocks represent chunking the input and output sequence. Diagonal blocks represent intra-chunk compu- tations and the off-diagonal blocks represent inter-chunk computations, factored through the SSM’s hidden state.",
+      "image": "figures/fig5.png",
+      "references": [
+        {
+          "page": 28,
+          "context": "The communication bandwidth is linear in the number of workers. This decomposition is exactly the same as the block-decomposition in the SSD algorithm (Figure 5) to split into blocks / chunks. We illustrate this context parallelism in Figure 7 (Right). 8.3 Variable Length While pretraining often uses the same sequence lengths for the batch, during finetuning or inference, the model might need to process different input sequences of different lengths."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2405.21060.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2405.21060.pdf",
+        "page": 20,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig6",
+      "figure_number": "6",
+      "caption": "Figure 6: (Mamba-2 Architecture.) The Mamba-2 block simplifies the Mamba block by removing sequential linear projections; the SSM parameters 𝐴, 𝐵,𝐶are produced at the beginning of the block instead of as a function of the SSM input 𝑋. An additional normalization layer is added as in NormFormer (Shleifer, Weston, and Ott 2021), improving stability. The 𝐵and 𝐶projections only have a single head shared across the 𝑋heads, analogous to multi-value attention (MVA).",
+      "image": null,
+      "references": [
+        {
+          "page": 25,
+          "context": "The feature map can also be optionally applied to the 𝑋(𝑉) branch, for simplicity and symmetry. This is represented in Figure 6 by an arbitrary nonlinearity. By default, we simply choose 𝜓to be an elementwise Swish / SiLU function (Hendrycks and Gimpel 2016; Ramachandran, Zoph, and Le 2017)."
+        },
+        {
+          "page": 32,
+          "context": "Table 4: (Ablations: Mamba-2 block.) We ablate the major differences between the Mamba-2 and Mamba-1 neural network blocks (Figure 6, Section 7.1). Note that these components are independent of the inner sequence mixing layer; in these ablations, we use SSD for the inner SSM layer (differing from the S6 layer of Mamba-1)."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2405.21060.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2405.21060.pdf",
+        "page": 23,
+        "extractor": "pymupdf-textonly",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig7",
+      "figure_number": "7",
+      "caption": "Figure 7: (Parallelism with the Mamba-2 Block.) (Left: Tensor Parallelism) We split the input projection matrices 𝑊(𝑥),𝑊(𝑧) and the output projection matrix 𝑊(𝑜). Each SSM head (𝐴, 𝐵,𝐶,𝑋) ↦→𝑌lives on a single device. Choosing",
+      "image": null,
+      "references": [
+        {
+          "page": 27,
+          "context": "re groups of Δ, 𝐵,𝐶per GPU) 𝑥(𝑖) 𝑐 = conv1d(𝑥(𝑖)) ∈R𝐿×𝑒𝑑/2 𝑦(𝑖) = 𝑆𝑆𝑀𝐴,𝐵,𝐶,Δ(𝑥(𝑖) 𝑐) ∈R𝐿×𝑒𝑑/2 𝑦(𝑖) 𝑔 = 𝑦(𝑖) · 𝜙(𝑧(𝑖)) 𝑦(𝑖) 𝑛 = groupnorm(𝑦(𝑖) 𝑔) (number of groups divisible by degree of tensor parallel) out(𝑖) = 𝑦(𝑖) 𝑔𝑊(𝑜) 𝑖 ⊤∈R𝐿×𝑑/2 out = ∑︁ 𝑖 out(𝑖). (summing outputs from all GPUs with an all-reduce) We illustrate tensor parallel with Mamba-2 in Figure 7 (Left). 8.2 Sequence Parallelism For very long sequences, we might need to split the input and activation to different GPUs along the sequence length dimension. There are two main techniques: 1."
+        },
+        {
+          "page": 28,
+          "context": "This decomposition is exactly the same as the block-decomposition in the SSD algorithm (Figure 5) to split into blocks / chunks. We illustrate this context parallelism in Figure 7 (Right). 8.3 Variable Length While pretraining often uses the same sequence lengths for the batch, during finetuning or inference, the model might need to process different input sequences of different lengths. One naive way to handle this case is to right-pad all sequences in the batch to the maximum length, but this can be inefficient if sequenc"
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2405.21060.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2405.21060.pdf",
+        "page": 27,
+        "extractor": "pymupdf-textonly",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig8",
+      "figure_number": "8",
+      "caption": "Figure 8: (Multi-Query Associative Recall (MQAR)). Associative recall tasks are challenging for SSMs, which must memorize all relevant information into their recurrent state. The SSD layer combined with improved architecture allows for much larger state sizes in Mamba-2, which performs significantly better than Mamba-1 and even vanilla attention.",
+      "image": null,
+      "references": [
+        {
+          "page": 30,
+          "context": "Our baselines include standard multi-head softmax attention as well as the Based architecture which combines convolutions, local attention, and a linear attention variant. Results are shown in Figure 8. While Mamba-1 struggles on this task, Mamba-2 performs well across all settings."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2405.21060.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2405.21060.pdf",
+        "page": 28,
+        "extractor": "pymupdf-textonly",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig9",
+      "figure_number": "9",
+      "caption": "Figure 9: (Scaling Laws.) Models of size ≈125𝑀to ≈1.3𝐵parameters, trained on the Pile. Mamba-2 matches or exceeds the performance of Mamba as well as a strong “Transformer++” recipe. Compared to our Transformer baseline, Mamba-2 is Pareto dominant on performance (perplexity), theoretical FLOPs, and actual wall-clock time.",
+      "image": "figures/fig9.png",
+      "references": [
+        {
+          "page": 30,
+          "context": "Sun et al. 2023)), we omit those in the plot for clarity (see Gu and Dao (2023) for comparisons). Figure 9 shows scaling laws under the standard Chinchilla (Hoffmann et al. 2022) protocol, on models from ≈125𝑀to ≈1.3𝐵parameters. 9.2.2 Downstream Evaluations Table 1 shows the performance of Mamba-2 on a range of popular downstream zero-shot evaluation tasks, compared to the most well-known open source models at these sizes, most importantly Pythia (Bide"
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2405.21060.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2405.21060.pdf",
+        "page": 29,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig10",
+      "figure_number": "10",
+      "caption": "Figure 10: (Efficiency Benchmarks.) (Left) Our SSD is 2 −8× faster than a Mamba fused scan for large state expansion (𝑁= 64) and faster than FlashAttention-2 for sequence length 2k and above. (Right) Sequence length 4K: Increasing state expansion slows down the Mamba optimized scan implementation linearly. SSD can handle much larger state expansion factors without much slowdown.",
+      "image": "figures/fig10.png",
+      "references": [
+        {
+          "page": 31,
+          "context": "38.8 60.2 Mamba-2-MLP NeoX 6.13 4.18 69.3 65.0 76.4 68.1 37.0 63.1 38.2 59.6 Mamba-2-Attention NeoX 5.95 3.85 71.1 67.8 75.8 69.9 37.8 65.3 39.0 61.0 Mamba-2-MLP-Attention NeoX 6.00 3.95 70.0 66.6 75.4 70.6 38.6 64.6 39.2 60.7 9.3 Speed Benchmarks We benchmark the speed of the SSD algorithm against Mamba’s scan implementation and FlashAttention-2 (Figure 10). SSD, thanks to its reformulation to use matrix multiplication as a subroutine, can exploit specialized matrix multiplication (matmul) units on GPUs, also known as tensor cores."
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2405.21060.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/external/2405.21060.pdf",
+        "page": 29,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    }
+  ]
+}

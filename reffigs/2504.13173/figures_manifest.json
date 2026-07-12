@@ -1,0 +1,106 @@
+{
+  "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/2504.13173.pdf",
+  "engine": "pymupdf",
+  "figure_count": 4,
+  "figures": [
+    {
+      "figure_id": "fig1",
+      "figure_number": "1",
+      "caption": "Figure 1: The overview of Miras framework. Miras is based on four critical choices of (1) memory architecture, (2) attentional bias, (3) retention gate, and (4) memory learning algorithm. In this framework, the memory architecture determines the model capacity to memorize; attentional bias is responsible for modeling the underlying mapping patterns; retention gate determines how to balance learning new concepts and the retention of previously learned concepts; and memory learning algorithm is responsible for memory management.",
+      "image": "figures/fig1.png",
+      "references": [],
+      "reference_count": 0,
+      "description": null,
+      "source": {
+        "pdf": "2504.13173.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2504.13173.pdf",
+        "page": 3,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig2",
+      "figure_number": "2",
+      "caption": "Figure 2: Visualization of the Miras’s variant architecture, their hybrid counterpart with SWA, and block design of Miras layer.",
+      "image": "figures/fig2.png",
+      "references": [
+        {
+          "page": 14,
+          "context": "(2025b), we use low-rank projections to project the input into R𝑘and then to R𝑑, where 𝑘is a hyperparameter (usually 32 or 64). The backbone architecture is illustrated in Figure 2. Hybrid Models."
+        },
+        {
+          "page": 14,
+          "context": "For hybrid models, we follow the Samba (Ren et al. 2024) architecture, in which we sequentially combine our Miras layer with Sliding Window Attention (SWA). The illustration of hybrid model Figure 2. Parallelizable Training."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2504.13173.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2504.13173.pdf",
+        "page": 14,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig3",
+      "figure_number": "3",
+      "caption": "Figure 3: Scaling patterns when increasing (Left) model size, (Middle) sequence length (model size = 340M) (3) (Right) sequence length (model size = 760M) on C4 dataset.",
+      "image": "figures/fig3.png",
+      "references": [
+        {
+          "page": 16,
+          "context": "We first vary the training context length from 2K to 32K for two version of our model with size 340M and 760M. The results are reported in Figure 3 (Middle and Right). All three variants of Miras scales better than state-of-the-art baselines when increasing the context length."
+        },
+        {
+          "page": 16,
+          "context": "Model Size. We also report the #FLOPs vs. perplexity of our models and baselines in Figure 3 (Left). All three variants outperforms all baselines given almost the same budget of FLOPs."
+        }
+      ],
+      "reference_count": 2,
+      "description": null,
+      "source": {
+        "pdf": "2504.13173.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2504.13173.pdf",
+        "page": 16,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    },
+    {
+      "figure_id": "fig4",
+      "figure_number": "4",
+      "caption": "Figure 4: The effect of parameters 𝑝and 𝑞on the performance with different context length.",
+      "image": "figures/fig4.png",
+      "references": [
+        {
+          "page": 17,
+          "context": "We vary the value of 𝑝∈{1, 1.5, 2, 2.8, 3, 3.2, 4} and context window from 2K to 16K. The results are reported in Figure 4. Interestingly, there is no monotone pattern when increasing the value of 𝑝and the best performance is achieved when 𝑝= 3, while 𝑝= 4 17"
+        }
+      ],
+      "reference_count": 1,
+      "description": null,
+      "source": {
+        "pdf": "2504.13173.pdf",
+        "path": "/home/jimmy/repos/neural-memory-study/papers/2504.13173.pdf",
+        "page": 18,
+        "extractor": "pymupdf-clip",
+        "third_party": true,
+        "attribution_required": true,
+        "license": "unknown",
+        "usage_note": "Third-party figure from a cited source; source+page recorded; NOT the author's own result; reproducing it needs a license/permission check."
+      }
+    }
+  ]
+}

@@ -127,6 +127,12 @@ $$
 
 지금까지의 모델들은 update rule을 **설계**했다. **Longhorn** (Liu et al. 2025, arXiv:2407.14207)의 제안은 방법론 자체의 전환이다: per-token으로 풀고 싶은 online 최적화 문제를 먼저 적고, 그 문제의 **closed-form 해**를 update rule로 삼는다. 논문의 표현으로 SSM은 "amortized online learner"다. 3장에서 배운 online learning의 프레임이 여기서 처음으로 모델 유도에 통째로 쓰인다.
 
+논문 자신이 이 전환을 한 판에 담는다(그림 6-1): sequence mixing layer를 "history를 state로 압축하는 online learner"로 보고, 일반형 online 목적(이전 state에 대한 근접항 + per-token 손실)의 argmin을 update로 삼은 뒤, 그 목적을 proximal $\ell_2$로 특수화하면 아래 (6-5)의 닫힌 해가 떨어진다는 그림이다.
+
+![그림 6-1 — sequence mixing을 online learner로 보는 Longhorn의 관점. 가운데는 일반형 online 목적함수 $L_t(S)=D(S,S_{t-1})+\ell_t(S)$와 그 argmin update, 오른쪽은 이를 proximal $\ell_2$로 특수화한 Longhorn 목적함수와 그 닫힌 해다(그림의 state $S$가 본서의 $W_t$, target $x$가 $v_t$). 본문 식 (6-5) 유도의 그림 판. 출처: Liu et al., Longhorn (arXiv:2407.14207), 원문 Fig.2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-2407.14207-fig2.png)
+
+그림 6-1 — sequence mixing을 online learner로 보는 Longhorn의 관점. 가운데는 일반형 online 목적함수와 그 argmin update, 오른쪽은 proximal $\ell_2$로 특수화한 Longhorn 목적함수와 닫힌 해(그림의 state $S$ = 본서의 $W_t$, target $x$ = $v_t$). 본문 식 (6-5)의 그림 판. 출처: Liu et al., Longhorn (arXiv:2407.14207), 원문 Fig.2 — 원저자의 그림(third-party), 본서의 결과가 아님.
+
 문제 설정은 proximal 형태다: 새 쌍은 잘 맞추되, 이전 state에서 너무 멀어지지 말 것.
 
 $$
@@ -153,6 +159,12 @@ implicit의 값어치는 무조건 안정성이다. $k_t$ 방향의 transition �
 
 training 무경험 독자를 위해 옮기면: explicit GD의 step size는 발산이라는 절벽이 있는 tuning 대상이고, implicit GD는 그 절벽을 수식 안에서 제거한 것이다. "임의의 $\eta_t>0$에서 안 터진다"는 것은 closed-form의 수학적 성질이라, gate head가 어떤 값을 내놓아도 안정성이 보장되어 step-size 안정성이 outer-loop 학습에서 분리된다 — 실제 Longhorn은 여기에 더해 $\eta_t$(원문 $\beta_t$)를 sigmoid로 $(0,1)$에 가두지만, 안정성 자체는 그 제한과 무관한 closed-form의 성질이다 [Longhorn §3.2]. retention gate는 없다($\alpha \equiv 1$): proximal 항 $\|W - W_{t-1}\|_F^2$ 자체가 유일한 (local) retention이며, 전역 감쇠 없이도 위의 수축 계수가 오래된 내용을 서서히 밀어낸다. systems 관점의 비용은 정직하게 0에 가깝다 — $\epsilon_t$ 계산은 내적 하나와 나눗셈 하나이고, kernel 구조는 DeltaNet과 동일하다. "공짜 안정성"이라는 점이 이 모델의 systems 요약이다.
 
+이 무조건 안정성은 종이 위 성질에 그치지 않는다. Longhorn은 2048 문맥으로 학습한 모델이 최대 16× 긴 문맥까지 perplexity 열화 없이 외삽하고, 같은 규모의 GLA·Mamba 대비 downstream perplexity와 sampling efficiency 모두에서 앞선다고 보고한다(그림 6-2) [Longhorn Fig. 1].
+
+![그림 6-2 — Longhorn의 경험적 결과. (왼쪽) SlimPajama 학습 토큰 대비 8개 downstream 평균 perplexity — Longhorn이 GLA·Mamba보다 낮고 약 1.8× sampling efficiency. (오른쪽) 2048 문맥으로 학습한 모델이 최대 16× 긴 문맥까지 perplexity 열화 없이 외삽. 출처: Liu et al., Longhorn (arXiv:2407.14207), 원문 Fig.1 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-2407.14207-fig1.png)
+
+그림 6-2 — Longhorn의 경험적 결과. (왼쪽) 학습 토큰 대비 downstream 평균 perplexity에서 Longhorn이 GLA·Mamba보다 낮고 약 1.8× sampling efficiency. (오른쪽) 2048 문맥 학습 → 최대 16× 긴 문맥 외삽, perplexity 열화 미미. 출처: Liu et al., Longhorn (arXiv:2407.14207), 원문 Fig.1 — 원저자의 그림(third-party), 본서의 결과가 아님.
+
 ## 6.6 RWKV-7: generalized delta rule — gate를 채널별 벡터로
 
 **RWKV-7 "Goose"** (Peng et al. 2025, arXiv:2503.14456)는 이 장 family의 현재 시점 최종 일반화다. GDN (6-4)의 스칼라 손잡이들을 전부 벡터로 승격한다: 스칼라 retention $\alpha_t$는 채널별 decay 벡터 $w_t\in(0,1)^{d_k}$로, 스칼라 write intensity $\eta_t$는 채널별 **in-context learning rate** 벡터 $a_t\in[0,1]^{d_k}$로 승격되고, 지우는 key와 쓰는 key가 **같은 key의 서로 다른 채널별 변조**로 분리된다: 제거용 $\hat k_t$는 $k_t$에 학습된 채널별 배율(원문의 removal-key multiplier)을 $\odot$로 곱한 뒤 head별 $\ell_2$ 정규화한 것이고, 기록용 $\tilde k_t$는 $k_t$의 각 채널을 $a_t$ 방향으로 보간한 것이다 — $\tilde k_t = k_t \odot \mathrm{lerp}(\mathbf{1}, a_t, \nu)$, $\nu$는 학습된 보간 계수(원문 표현 "replacement rate booster") [RWKV-7 Eq. 6–7, Eq. 15]. 별도의 projection 행렬을 더 두는 것이 아니라 같은 key precursor를 채널 단위로 두 갈래 성형하는 것이므로, projection 비용은 그대로다. 구조적으로 쓰면
@@ -163,6 +175,12 @@ W_t = W_{t-1}\Big(\mathrm{Diag}(w_t) - \hat k_t\,\big(a_t \odot \hat k_t\big)^\t
 $$
 
 (6-6)은 원문의 state evolution [RWKV-7 Eq. 17]을 행벡터 관행에서 이 책의 열벡터 관행으로 전치한 것으로, $a_t$가 제거 항 내부에 $\odot$로 곱해지는 위치까지 원문과 배치가 같다. 제거 key를 $\ell_2$ 정규화해 두는 이유도 원문이 명시한다: 제거량을 단위 norm으로 고정해 두면 in-context learning rate $a_t$가 "state에서 얼마나 지우고 얼마나 다시 써 넣는가"를 다른 항에 오염되지 않고 단독으로 조절하는 손잡이가 된다 [RWKV-7 Eq. 7 부근]. GDN에서는 지우기 강도와 쓰기 강도가 $\eta_t$ 하나에 묶여 있었다 — (6-6)은 그 묶음을 채널 단위로 풀어낸 것이다.
+
+원문은 이 갱신을 head 하나에 대한 그림으로 직접 보여준다(그림 6-3): "대각 − rank-1" transition에 기록 항 $v_t\tilde k_t^\top$을 더하는 (6-6)의 구조가, 지우는 key $\hat k_t$와 쓰는 key $\tilde k_t$가 같은 key precursor의 채널별 두 성형이라는 점과 함께 한눈에 들어온다.
+
+![그림 6-3 — RWKV-7의 state 갱신을 head 하나에 대해 시각화한 원문 그림(실제 state는 head당 $64\times64$, 그림은 $4\times4$ 축소). 대각 retention $\mathrm{Diag}(w_t)$에서 제거 key의 rank-1 항을 뺀 "대각 − rank-1" transition에 기록 항 $v_t\tilde k_t^\top$을 더하는 구조로, 본문 식 (6-6)과 동일하다(그림의 state $wkv_t$가 본서의 $W_t$, $\hat\kappa_t$가 제거 key $\hat k_t$; 원문은 행벡터 관행이라 전치 위치가 반대). 출처: Peng et al., RWKV-7 "Goose" (arXiv:2503.14456), 원문 Fig.2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-2503.14456-fig2.png)
+
+그림 6-3 — RWKV-7의 state 갱신을 head 하나에 대해 시각화한 원문 그림(실제 state는 head당 $64\times64$, 그림은 $4\times4$ 축소). "대각 − rank-1" transition($\mathrm{Diag}(w_t)$ − 제거 key rank-1)에 기록 항 $v_t\tilde k_t^\top$을 더하는 구조로 본문 식 (6-6)과 동일(그림의 $wkv_t$ = 본서 $W_t$, $\hat\kappa_t$ = $\hat k_t$; 원문은 행벡터 관행). 출처: Peng et al., RWKV-7 "Goose" (arXiv:2503.14456), 원문 Fig.2 — 원저자의 그림(third-party), 본서의 결과가 아님.
 
 $w_t = \alpha_t\mathbf{1}$, $a_t = \alpha_t\eta_t\mathbf{1}$, $\hat k_t = k_t$로 두면 transition이 $\alpha_t(I-\eta_t k_tk_t^\top)$로 (6-4)의 첫 항과 정확히 일치한다. 단 write 항까지 맞추려면 $\tilde k_t = \eta_t k_t$여야 하는데($v_t\tilde k_t^\top = \eta_t v_tk_t^\top$가 되도록), RWKV-7의 $\tilde k_t = k_t\odot\mathrm{lerp}(\mathbf 1,a_t,\nu)$가 임의의 GDN을 정확히 재현한다는 보장은 원문에 없다. 따라서 (6-6)은 GDN의 transition 구조를 **일반화**하는 것으로 읽되, 모든 GDN을 부분 경우로 정확히 포함한다는 단정은 유보한다. Miras의 분류로는 delta 계열에서 gate가 채널별 벡터($m=d$)인 경우가 정확히 RWKV-7이다 [Miras Eq. 9, §4]. transition이 "대각 - rank-1"이라는 사실에 주목하라. gate 계열(순수 대각)과 delta 계열(항등 - rank-1)의 합집합이며, 이 구조 덕에 chunkwise 병렬화는 DeltaNet과 같은 WY 계열 기법으로 처리된다(→ 9장).
 

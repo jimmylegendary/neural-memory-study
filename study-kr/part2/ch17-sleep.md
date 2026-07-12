@@ -18,7 +18,9 @@ Part II의 마지막 논문은 [Sleep] (*Language Models Need Sleep: Learning to
 
 <!-- FIG: ch17/fig-01-wake-sleep-lifecycle -->
 
-핵심 주장은 셋이다. 첫째, **continual learner에게는 training time도 test time도 없다.** 모델의 lifecycle은 새 입력을 받아 처리하는 **wake(active) phase**와, 입력을 최소화하거나 끊고 내부 계산으로 기억을 정리하고 자기를 개선하는 **sleep phase**의 주기적 교대로 재정의되어야 한다 [Sleep §3.1]. 이 책은 이것을 **wake/sleep lifecycle**이라고 부른다 — 이 라인이 Titans 이후 유지해 온 "test time"이라는 단어의 마지막 잔재를 지우는 주장이다. 둘째, **CF는 근본적으로 capacity 문제다.** 파라미터 수가 유한하므로 새 지식을 넣으려면 덮어써야 하고, 그래서 잊는다. 논문은 생물학의 offline consolidation을 replay(수면 중 최근 pattern의 재생)와 neuroplasticity(새 연결의 형성)의 **결합**으로 읽고, 그 처방으로 replay 기반 Knowledge Seeding에 점진적 **parameter expansion**을 함께 쓴다 [Sleep §3.2, §3.3](regularization(EWC류, → 11장)만 이 해법군에서 뺀다). 셋째, sleep은 두 단계다: NREM(slow-wave sleep)의 hippocampus→neocortex 기억 이전과 synaptic homeostasis에 대응하는 **Memory Consolidation**, 그리고 REM의 시냅스 강화·통합·미래 시뮬레이션에 대응하는 **Dreaming** [Sleep §1, §3].
+![그림 17-1 — [Sleep]이 그린 lifecycle 재정의. 왼쪽(Conventional Machine Learning)은 모델의 수명이 training time과 test time으로 갈리지만, 오른쪽(Continual Learning)에는 그 구분이 없고 Active(Wake)와 Sleep이 주기적으로 교대한다. 원저자는 sleep을 수동 상태가 아니라, 새 외부 입력을 끊고 fast·고주파 모듈의 기억을 저주파의 더 안정한(느린·큰) 성분으로 consolidate하는 내부 처리 구간으로 규정한다(오른쪽 아래는 그 처리를 수행하는 Hope 백본의 Low/Mid/High Frequency FFN 사슬). 출처: Behrouz et al., [Sleep] (arXiv:2606.03979), 원문 Fig.1 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2606.03979-fig1.png)
+
+핵심 주장은 셋이다. 첫째, **continual learner에게는 training time도 test time도 없다.** 모델의 lifecycle은 새 입력을 받아 처리하는 **wake(active) phase**와, 입력을 최소화하거나 끊고 내부 계산으로 기억을 정리하고 자기를 개선하는 **sleep phase**의 주기적 교대로 재정의되어야 한다 [Sleep §3.1]; 원논문은 이 재정의를 conventional ML의 train/test 이분법과 나란히 놓아 대비시킨다(그림 17-1). 이 책은 이것을 **wake/sleep lifecycle**이라고 부른다 — 이 라인이 Titans 이후 유지해 온 "test time"이라는 단어의 마지막 잔재를 지우는 주장이다. 둘째, **CF는 근본적으로 capacity 문제다.** 파라미터 수가 유한하므로 새 지식을 넣으려면 덮어써야 하고, 그래서 잊는다. 논문은 생물학의 offline consolidation을 replay(수면 중 최근 pattern의 재생)와 neuroplasticity(새 연결의 형성)의 **결합**으로 읽고, 그 처방으로 replay 기반 Knowledge Seeding에 점진적 **parameter expansion**을 함께 쓴다 [Sleep §3.2, §3.3](regularization(EWC류, → 11장)만 이 해법군에서 뺀다). 셋째, sleep은 두 단계다: NREM(slow-wave sleep)의 hippocampus→neocortex 기억 이전과 synaptic homeostasis에 대응하는 **Memory Consolidation**, 그리고 REM의 시냅스 강화·통합·미래 시뮬레이션에 대응하는 **Dreaming** [Sleep §1, §3].
 
 > **[해설]** 이 책의 좌표로 옮기면 이렇게 된다. 12–16장의 논문들은 전부 master update (M)의 성분을 바꿨다 — [Miras] (*It's All Connected*, arXiv:2504.13173; 이 책은 framework 이름 Miras로 통칭한다)는 objective를, [Atlas] (*Atlas: Learning to Optimally Memorize the Context at Test Time*, arXiv:2505.23735)는 window와 optimizer를, [TNT]는 훈련 경제학을, [NL]은 층위를 바꿨다. [Sleep]은 (M)을 건드리지 않는다. 바꾸는 것은 그 update들이 살아가는 **lifecycle**이다. inference 어휘로는 1장 Rosetta의 마지막 행이 이 장의 전부다: sleep phase는 서빙 fleet에 붙는 주기적 백그라운드 job, "weights의 background compaction"이다. 낮에는 요청을 처리하며 fast memory에 쓰고, 밤에는 트래픽을 끊고 compaction·GC를 돌린다 — 단지 그 대상이 로그나 cache가 아니라 모델의 파라미터일 뿐이다.
 
@@ -27,6 +29,10 @@ Part II의 마지막 논문은 [Sleep] (*Language Models Need Sleep: Learning to
 ## 17.3 Core mechanism (통일 표기)
 
 이 절은 sleep 한 사이클을 재구현 가능한 수준까지 전개한다. 구조는 기제의 실행 순서를 따른다: wake의 기반 구조(CMS) → sleep의 발화 시점 → Stage 1 Memory Consolidation(expansion → Knowledge Seeding → Learning to Imitate → reset) → Stage 2 Dreaming.
+
+Stage 1 한 사이클의 큰 그림이 그림 17-2다: 모델이 먼저 자기 파라미터 수를 늘려 capacity를 확보하고(§17.3.3의 expansion), 그다음 Knowledge Seeding으로 지식 추상을 고주파 memory에서 저주파 memory로 옮긴다 — 그 이전(§17.3.4)이 그림 오른쪽의 On-Policy Distillation(식 17-2)과 Imitation Learning(teacher가 seed → student가 imitate → reward로 정렬, §17.3.5)의 두 항으로 구현된다.
+
+![그림 17-2 — Memory Consolidation 개관. 모델은 새 low-rank 파라미터를 활성화해 capacity를 키운 뒤(왼쪽·가운데의 새 MLP/Linear expert), Knowledge Seeding으로 고주파에서 저주파 memory로 지식 추상을 이전한다. 오른쪽은 그 이전을 구현하는 두 항 — teacher가 만든 데이터와 student의 on-policy rollout을 섞는 GKD distillation, 그리고 teacher 행동을 student가 모방하도록 보상을 주는 Imitation Learning — 이다. 출처: Behrouz et al., [Sleep] (arXiv:2606.03979), 원문 Fig.2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2606.03979-fig2.png)
 
 ### 17.3.1 기반 구조: CMS와 식 (M5) — wake가 돌리는 것
 
@@ -49,6 +55,10 @@ $$
 ### 17.3.2 sleep은 언제 오는가: chunk 경계 스케줄
 
 sleep의 발화 시점은 학습되지 않고 chunk 스케줄에 고정된다. chunk 길이 목록 $\{C^{(1)},\dots,C^{(k)}\}$가 주어지면, sleep(그리고 memory consolidation)은 모든 $b\in\mathbb{N}$에 대해 step $\{C^{(1)}\times b,\dots,C^{(k)}\times b\}$에서만 일어난다 [Sleep §3.2]. 즉 어떤 블록이든 자기 갱신 경계에 도달하면, 갱신 직전에 그 블록의 지식이 다음 느린 블록으로 먼저 옮겨진다. frequency가 중첩되어 있으므로 consolidation은 다대일이다: update frequency 1K token의 블록 뒤에 10K token의 블록이 있으면, 느린 블록이 한 번 갱신되는 동안 빠른 블록은 10번 갱신되고, 따라서 빠른→느린 consolidation이 10번 일어난다 [Sleep §3.2]. 실험 구성의 chunk/update-period 사다리는 $C=$1k→5k→10k token이다 [Sleep Fig. 7] — frequency(단위 시간당 갱신 횟수)는 그 역수라 반대 방향으로 감소한다(1k 블록이 10k 블록보다 자주 갱신된다). 같은 고정 크기의 느린 memory에 10번을 반복해서 써 넣는 것 — 바로 그 지점이 CF가 일어날 자리이고, 그래서 다음 소절의 expansion이 필요해진다.
+
+이 다대일 스케줄이 그림 17-3에 그대로 그려져 있다: High/Mid/Low Frequency FFN이 각각 갱신 주기 $f_W=$1k/5k/10k token으로 배열되고, 빠른 블록은 Parameter Expansion을 반복하다가 자기 window가 만료되는 순간 한 단계 느린 FFN으로 Consolidation을 흘려보낸다. 빠른 블록이 여러 번 팽창·정리되는 동안 느린 블록은 한 번만 consolidation을 받는 frequency 중첩이 그림에서 눈으로 확인된다.
+
+![그림 17-3 — Multi-frequency memory hierarchy. 왼쪽은 Sequence Layer 위에 갱신 주기가 다른 FFN 사슬(High/Mid/Low, $f_W=$1k/5k/10k token)이 쌓인 CMS 백본이고, 오른쪽은 각 FFN이 Parameter Expansion을 반복하다 window 만료 시 다음 저주파 FFN으로 Consolidation을 넘기는 스케줄이다(1k→5k→10k). 원문 캡션의 $f_W$는 본서 표기의 update 주기 $C^{(\ell)}$에 해당한다. 출처: Behrouz et al., [Sleep] (arXiv:2606.03979), 원문 Fig.7 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2606.03979-fig7.png)
 
 ### 17.3.3 Stage 1a — parameter expansion: 덮어쓰지 말고 키워라
 

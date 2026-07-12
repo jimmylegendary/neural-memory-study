@@ -95,7 +95,9 @@ $$
 
 부수 축으로 data-dependent 여부, scalar vs channel-wise parameter가 있다 — 같은 4-tuple 좌표의 모델들이 부수 축에서만 갈리는 경우가 많다.
 
-<!-- FIG: ch13/fig-01-design-space -->
+이 네 축과 그 축 위의 대표 선택지, 그리고 한 layer가 입력을 memory에 쓰고(attentional bias + retention gate로 구성된 목적함수를 gradient descent로 최소화) 다시 읽어내는 흐름을 논문의 overview 그림이 한 장으로 요약한다(그림 13-1). 이 그림에서 memory는 associative memory 하나이고, "attentional bias $\mathcal{L}(\mathcal{M}(\mathcal{K});\mathcal{V})$ + retention $\mathrm{Ret}_t(\mathcal{M},\mathcal{M}_{t-1})$"라는 합이 곧 매 token 최소화되는 inner objective이며, 그 최소화 알고리즘의 선택이 네 번째 축이다 — 이 장의 나머지 전개는 이 한 그림의 각 칸을 채워 넣는 작업이다.
+
+![그림 13-1 — Miras framework의 개요. associative memory 설계를 네 개의 독립 축(memory architecture / attentional bias / retention gate / memory algorithm)으로 분해하고, 각 축의 대표 선택지와 "attentional bias + retention gate = 매 token 최소화되는 목적함수 → gradient descent" 흐름을 보인다. 출처: Behrouz et al., *It's All Connected* (Miras, arXiv:2504.13173), 원문 Fig.1 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2504.13173-fig1.png)
 
 ### 13.3.4 기존 모델의 재유도: 전부가 이 공간의 점이다
 
@@ -244,7 +246,9 @@ $$
 
 [Miras Eq. 27; (13-8)의 $1-\lambda_t$ 역할을 $\alpha_t$가 맡는다.] 논리: simplex-제약(softmax-재정규화) state는 증명 가능하게 유계이며, context가 아무리 길어도 state가 폭발할 수 없다. $W$가 MLP weights일 때는 같은 rule이 slice별로 적용된다.
 
-**블록 구조와 hybrid** [Miras §5.3]. Miras layer는 Llama macro 구조에서 attention 자리에 들어간다: SwiGLU 채널 MLP, RoPE, RMSNorm. token-mixing 블록 내부는 q/k/v projection 각각 뒤에 depthwise-separable 1D conv(kernel 4), 훈련 안정성을 위한 q·k의 $\ell_2$ normalization, 그리고 memory 읽기 출력의 normalization + linear output gate. hybrid 변형(Moneta-H/Yaad-H/Memora-H)은 Samba를 따라 Miras layer와 Sliding Window Attention layer를 순차 교차한다.
+**블록 구조와 hybrid** [Miras §5.3]. Miras layer는 Llama macro 구조에서 attention 자리에 들어간다: SwiGLU 채널 MLP, RoPE, RMSNorm. token-mixing 블록 내부는 q/k/v projection 각각 뒤에 depthwise-separable 1D conv(kernel 4), 훈련 안정성을 위한 q·k의 $\ell_2$ normalization, 그리고 memory 읽기 출력의 normalization + linear output gate. hybrid 변형(Moneta-H/Yaad-H/Memora-H)은 Samba를 따라 Miras layer와 Sliding Window Attention layer를 순차 교차한다. 그림 13-2가 이 세 층위를 한눈에 보인다: 왼쪽은 순수 변형(RMSNorm→Miras layer→SwiGLU의 residual 블록), 가운데는 Miras layer와 SWA를 번갈아 쌓는 hybrid, 오른쪽은 layer 내부 — k·q·v를 각각 conv로 만들고 q·k만 normalization하며, $\eta$와 $\alpha$ 게이트는 별도 low-rank(사다리꼴로 표시된 축소→확장) projection이 emit하고, 출력은 normalization 후 linear gate로 곱해지는 블록 설계다(그림 13-2 오른쪽의 $\eta,\alpha$ 분기가 §13.4에서 다룰 "gate를 만드는 정책은 outer loop가 학습한다"의 그림 대응물이다).
+
+![그림 13-2 — Miras 변형의 아키텍처. (왼쪽) 순수 recurrent 변형의 residual 블록, (가운데) Miras layer와 Sliding Window Attention을 교차하는 Samba식 hybrid, (오른쪽) Miras layer 내부 블록 설계: k/q/v projection 뒤의 depthwise conv, q·k의 normalization, low-rank로 emit되는 $\eta$·$\alpha$ 게이트, 출력 normalization + linear output gate. 출처: Behrouz et al., *It's All Connected* (Miras, arXiv:2504.13173), 원문 Fig.2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2504.13173-fig2.png)
 
 ### 13.3.8 표기 대응표
 
@@ -337,7 +341,9 @@ $$
 
 **S-NIAH (RULER)** [Miras Table 3]. 1K–8K 길이의 single needle-in-haystack 세 변형에서 평균 Moneta 93.5 / Yaad 92.9 / Memora 92.1 — GDN 75.8, TTT 66.1, DeltaNet 57.9, Mamba2 52.0과의 격차가 크다. 특히 haystack이 합성 노이즈인 S-NIAH-PK에서 Moneta는 8K에서도 98.8을 유지하는데, 논문은 이를 노이즈에 강건한 $p$-norm objective의 효과로 귀속한다 [Miras §6.3].
 
-**scaling 곡선** [Miras Fig. 3]. FLOPs-매칭 ppl(모델 크기 축)과 context 길이 축(2K–32K, 340M·760M) 모두에서 세 변형이 baseline보다 좋은 기울기를 보인다. 논문의 효율 주장 전체가 이 FLOPs 기준 그림 하나에 얹혀 있다는 점은 §13.7에서 다시 짚는다.
+**scaling 곡선** [Miras Fig. 3]. FLOPs-매칭 ppl(모델 크기 축)과 context 길이 축(2K–32K, 340M·760M) 모두에서 세 변형이 baseline보다 좋은 기울기를 보인다(그림 13-3). 왼쪽 패널은 같은 FLOPs 예산에서 Moneta·Yaad·Memora가 Transformer·Mamba2·TTT보다 낮은 perplexity에 도달함을, 가운데·오른쪽 패널은 context 길이를 2K에서 32K로 늘릴 때 baseline이 16K 이후 perplexity가 도로 치솟는 반면 세 변형은 완만하게 유지·개선됨을 보인다 — 논문은 이 "긴 context에서 더 낫게 scale한다"를 세 변형 공통의 효과로 귀속한다. 다만 논문의 효율 주장 전체가 이 FLOPs 기준 그림 하나에 얹혀 있다는 점(wall-clock·throughput 부재)은 §13.7에서 다시 짚는다.
+
+![그림 13-3 — C4에서의 scaling 패턴. (왼쪽) 모델 크기를 키울 때의 #FLOPs 대 perplexity, (가운데) 340M에서 context 길이 2K→32K, (오른쪽) 760M에서 context 길이 2K→32K. Moneta·Yaad·Memora 세 변형이 baseline보다 좋은 기울기를 보이며, 특히 긴 context에서 baseline의 perplexity 반등을 겪지 않는다. 출처: Behrouz et al., *It's All Connected* (Miras, arXiv:2504.13173), 원문 Fig.3 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/2504.13173-fig3.png)
 
 **ablation** [Miras §6.4]. 세 개가 실렸고 각각이 설계 축 하나씩을 겨냥한다. (1) $p\in\{1,1.5,2,2.8,3,3.2,4\}$ sweep: 성능은 $p$에 대해 **비단조**이고 최적은 $p=3$, 최악은 $p=4$다. 흥미롭게도 $p$는 context-길이 scaling의 모양은 바꾸지 않는다. (2) $q\in\{2,3,4,5\}$ sweep: 반대로 $q$는 **scaling 패턴 자체를 바꾼다** — retention gate의 품질이 long-context 거동을 지배한다는 논문 주장의 가장 직접적인 증거다. (3) Yaad 구성요소 제거 [Miras Table 4]: 평균 LM 점수 53.98에서 retention gate 제거 시 50.63(−3.35), $\delta$ 입력-독립화 52.19(−1.79), $\ell_2$ branch 제거 52.86(−1.12), $\ell_1$ branch 제거 53.04(−0.94), MLP를 linear memory로 교체 51.57(−2.41). 기여 순위가 retention > deep memory > threshold의 입력 의존성 > bias 세부라는 것 — 논문이 "retention이 결정적 레버"라 주장한 순서 그대로다.
 

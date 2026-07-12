@@ -49,7 +49,9 @@ $$
 
 ## 7.2 Mamba: selectivity — gate가 input의 함수가 되다
 
-LTI의 대가는 표현력이다. 계수가 token에 무관하므로 S4는 모든 token을 **같은 비율로** 감쇠시키고 같은 강도로 쓴다. "이 token은 기억하고 저 token은 무시한다"는 content 기반 선택이 원리적으로 불가능하다. Gu & Dao 2023 (arXiv:2312.00752)은 selective copying과 induction head 류의 합성 과제로 이 한계를 시연하고, 해법으로 **selectivity**를 제안했다: $\Delta_t, B_t, C_t$를 입력 $x_t$의 함수로 만든다($A$ 자체는 고정하되 $\Delta_t$를 통해 시변이 된다). 이것이 Mamba다.
+LTI의 대가는 표현력이다. 계수가 token에 무관하므로 S4는 모든 token을 **같은 비율로** 감쇠시키고 같은 강도로 쓴다. "이 token은 기억하고 저 token은 무시한다"는 content 기반 선택이 원리적으로 불가능하다. Gu & Dao 2023 (arXiv:2312.00752)은 selective copying과 induction head 류의 합성 과제로 이 한계를 시연하고(그림 7-1), 해법으로 **selectivity**를 제안했다: $\Delta_t, B_t, C_t$를 입력 $x_t$의 함수로 만든다($A$ 자체는 고정하되 $\Delta_t$를 통해 시변이 된다). 이것이 Mamba다.
+
+![그림 7-1 — Mamba의 selectivity를 요구하는 두 합성 과제. 입력과 출력 간격이 일정한 표준 copying(왼쪽)은 실제 입력을 볼 필요가 없어 시불변(LTI) convolution 모델이 완벽히 푼다. 그러나 간격이 무작위인 selective copying(오른쪽 위)과, 문맥에 따라 답을 회수해야 하는 induction heads(오른쪽 아래)는 관련 token(색칠)을 무관 token(흰색)과 content 기준으로 구별해 유지·무시를 결정하는 시변 모델을 요구한다. 이것이 LTI를 깨고 $\Delta_t,B_t,C_t$를 입력의 함수로 만든 이유다. 출처: Gu & Dao, *Mamba* (arXiv:2312.00752), 원문 Fig.2 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-2312.00752-fig2.png)
 
 selectivity의 의미는 §7.1의 $\Delta$ 해석에서 바로 나온다. $\bar a_t = \exp(\Delta_t a)$가 token마다 달라지므로, 모델은 token을 보고 "state를 유지할까, 밀어낼까"를 결정한다. Gu & Dao 2023은 특정 파라미터화($N=1$, $A=-1$, $B=1$, $s_\Delta=\mathrm{Linear}$, $\tau_\Delta=\mathrm{softplus}$)에서 selective SSM이 고전 RNN의 gate 식 $h_t = (1-g_t)h_{t-1} + g_t x_t$, $g_t = \sigma(\mathrm{Linear}(x_t))$로 환원됨을 정리로 보여 [Gu & Dao 2023 Theorem 1, §3.5.1; 증명 App. C], 이것이 LSTM 이래의 gating과 같은 계보임을 명시한다.
 
@@ -100,7 +102,9 @@ $$
 
 이 식이 말하는 것: **decay 누적곱을 mask로 갖는 attention**과, 고정 크기 state의 recurrence는 같은 함수의 두 표현이다. 왼쪽(recurrent form)은 token당 $O(d_k d_v)$에 순차 계산하고, 오른쪽(attention form)은 $O(L^2)$에 완전 병렬 계산한다. 어느 쪽으로 계산할지는 **정확도가 아니라 하드웨어 사정으로 고르는 알고리즘 선택**이다.
 
-Dao & Gu 2024는 이것을 행렬 구조론으로 일반화한다. sequence mixing 전체를 하삼각 행렬 $\Gamma\odot(QK^\top)$의 곱으로 보면 이 행렬은 **semiseparable** 구조 — 하삼각 영역에 완전히 포함된 부분행렬(특히 대각선 아래 off-diagonal block)이 낮은 rank를 갖는 구조화 행렬; 대각을 가로지르는 block은 full rank일 수 있다 — 를 가지며, 이를 dense로 실체화해 곱하면 attention 모드, 인수분해된 구조를 이용해 곱하면 recurrent 모드가 된다 [Dao & Gu 2024, Def. 3.1]. "duality"라는 이름은 같은 구조화 행렬에 대한 이 두 곱셈 알고리즘의 쌍대성을 가리킨다.
+Dao & Gu 2024는 이것을 행렬 구조론으로 일반화한다. sequence mixing 전체를 하삼각 행렬 $\Gamma\odot(QK^\top)$의 곱으로 보면 이 행렬은 **semiseparable** 구조 — 하삼각 영역에 완전히 포함된 부분행렬(특히 대각선 아래 off-diagonal block)이 낮은 rank를 갖는 구조화 행렬; 대각을 가로지르는 block은 full rank일 수 있다 — 를 가지며, 이를 dense로 실체화해 곱하면 attention 모드, 인수분해된 구조를 이용해 곱하면 recurrent 모드가 된다 [Dao & Gu 2024, Def. 3.1]. "duality"라는 이름은 같은 구조화 행렬에 대한 이 두 곱셈 알고리즘의 쌍대성을 가리킨다. 이 대응과 두 집합의 교집합을 한 장으로 요약한 것이 그림 7-2다.
+
+![그림 7-2 — state-space duality의 전체 지도. 왼쪽은 SSM 표기와 masked-attention 표기의 성분별 대응($C\leftrightarrow Q$ read 주소, $B\leftrightarrow K$ write 주소, $X\leftrightarrow V$ 값, 그리고 state 행렬 $A\leftrightarrow$ decay mask $L$)과 각각의 linear form·quadratic form을 나열한다. 오른쪽은 SSM 집합과 structured masked attention 집합이 겹치는 영역이 곧 SSD임을 보인다 — $A$에 scalar-identity 구조를 준 SSM(= 이 장 식 (7-2)의 $\bar A_t=\alpha_t I$)이 1-semiseparable SMA와 정확히 만나며, RetNet·linear attention이 그 교집합 안에 놓인다(원문의 decay mask $L$은 이 책 표기에서 $\Gamma$). 출처: Dao & Gu, *Mamba-2* (arXiv:2405.21060), 원문 Fig.4 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-2405.21060-fig4.png)
 
 실전 답은 둘의 절충이다. sequence를 크기 $C$의 chunk로 자르고(§1.2의 chunk 시작 offset $\xi(t,C) = C\lfloor(t-1)/C\rfloor$ 사용), chunk 경계에서만 state를 전달하면:
 
@@ -109,7 +113,11 @@ y_t = \Big(\prod_{s=\xi(t,C)+1}^{t}\alpha_s\Big)\, W_{\xi(t,C)}\,q_t \;+\; \sum_
 \tag{7-4}
 $$
 
-첫 항은 chunk 경계 state의 기여(cross-chunk: GEMV를 chunk 단위로 모으면 $C\times d_k$ 대 $d_k\times d_v$ GEMM), 둘째 항은 chunk 내부의 masked attention($C\times C$ GEMM)이다. 경계 state의 갱신 역시 $d_v\times C$ 대 $C\times d_k$ GEMM 하나다. 결과: **모든 무거운 연산이 GEMM이 된다.** 이것이 Mamba-2가 tensor core를 되찾은 방법이고, [Dao & Gu 2024]는 이 SSD 알고리즘이 Mamba-1의 fused selective scan 대비 2–8× 빠르다고 보고한다. 스칼라 gate 덕에 커널이 단순해져 state 차원도 Mamba-1보다 크게 키울 수 있게 되었다. 원문은 이를 Mamba-1의 8× 이상이라고 표현하며 [Dao & Gu 2024 §1], 실험은 과제별로 $N \in \{16, 64, 256\}$을 쓴다 — 단일 default $N$은 논문에 명시가 없다 [Dao & Gu 2024 Fig. 8, Table 5].
+첫 항은 chunk 경계 state의 기여(cross-chunk: GEMV를 chunk 단위로 모으면 $C\times d_k$ 대 $d_k\times d_v$ GEMM), 둘째 항은 chunk 내부의 masked attention($C\times C$ GEMM)이다(그림 7-3). 경계 state의 갱신 역시 $d_v\times C$ 대 $C\times d_k$ GEMM 하나다. 결과: **모든 무거운 연산이 GEMM이 된다.**
+
+![그림 7-3 — SSD의 chunk 분해 알고리즘. sequence mixing 행렬(위)을 chunk 단위 block으로 나누면 대각 block(파랑)은 chunk 내부의 masked-attention 계산 — 식 (7-4)의 둘째 항, intra-chunk — 이 되고, off-diagonal block(주황)은 chunk 경계의 hidden state를 통해 전달되는 chunk 간 기여 — 첫 항, inter-chunk — 가 된다. 아래 그림은 같은 분해를 입력/state/출력의 chunk 흐름으로 다시 그린 것으로, chunk 안은 병렬(수직 화살표)로, 경계 state만 순차(수평 화살표)로 전달됨을 보인다. 이 분해가 무거운 연산을 전부 GEMM으로 바꿔 tensor core를 회복하는 것이 Mamba-2 속도 향상의 핵심이다. 출처: Dao & Gu, *Mamba-2* (arXiv:2405.21060), 원문 Fig.5 — **원저자의 그림(third-party), 본서의 결과가 아님**.](/home/jimmy/repos/neural-memory-study/figures/ref/ext-2405.21060-fig5.png)
+
+이것이 Mamba-2가 tensor core를 되찾은 방법이고, [Dao & Gu 2024]는 이 SSD 알고리즘이 Mamba-1의 fused selective scan 대비 2–8× 빠르다고 보고한다. 스칼라 gate 덕에 커널이 단순해져 state 차원도 Mamba-1보다 크게 키울 수 있게 되었다. 원문은 이를 Mamba-1의 8× 이상이라고 표현하며 [Dao & Gu 2024 §1], 실험은 과제별로 $N \in \{16, 64, 256\}$을 쓴다 — 단일 default $N$은 논문에 명시가 없다 [Dao & Gu 2024 Fig. 8, Table 5].
 
 한 가지를 지금 박아 두어야 한다. 식 (7-4)의 chunk 분해는 **항등 변형**이다. transition이 linear이기 때문에 결합법칙으로 항을 재배열했을 뿐, 계산되는 함수는 $C$와 무관하게 식 (7-3)과 bit-exact(부동소수점 재배열 오차 제외)로 같다. FlashAttention tiling과 정확히 같은 지위다. 9장에서 만나는 chunkwise training은 다르다 — state 갱신이 gradient(state에 비선형)가 되는 순간 이 재배열이 불가능해지고, chunk 시작 상태에 gradient를 고정하는 **근사**(식 (M4)의 stale-snapshot)가 들어오며, 그때부터 $C$는 함수 자체를 바꾸는 semantic hyperparameter(→ 9장)가 된다. "Mamba-2의 chunk는 tiling이고, TTT의 chunk는 근사다" — 이 한 문장이 이 장과 9장을 가르는 경계선이다.
 
