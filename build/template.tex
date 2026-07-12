@@ -1,0 +1,27 @@
+\documentclass[11pt,a4paper]{report}
+\usepackage{luatexja-fontspec}
+\setmainjfont{Noto Serif CJK KR}
+\setmainfont{Noto Serif CJK KR}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,longtable,array,multirow}
+\usepackage{graphicx}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{xcolor}
+\usepackage{fancyvrb}
+\usepackage[hidelinks,unicode]{hyperref}
+\usepackage{bookmark}
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{3}
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\graphicspath{{$graphics-path$}{./}{../}}
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+\title{$title$}
+\author{$author$}
+\date{$date$}
+\begin{document}
+$if(title)$\maketitle$endif$
+$if(toc)$\tableofcontents\clearpage$endif$
+$body$
+\end{document}
