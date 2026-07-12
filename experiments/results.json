@@ -194,6 +194,13 @@
   },
   "claim3_batch_scaling_Bmax": {
     "supports": "pair thesis: serving economics of decode-state (BW binds, opposite of capacity-bound KV cache)",
+    "batching_feasibility_gloss": {
+      "source": "E3/E1.3",
+      "caveat_tags": [
+        "REL"
+      ],
+      "note": "batching stays FEASIBLE via grouped-GEMM/BMM over the batch axis (per user analysis + ch24 proposal G); what dies is shared-weight AMORTIZATION: each request carries its own fast-weight state so arithmetic intensity is independent of B, and BW closes the batch early at B_max. Read the B_max limit as 'batch amortization vanishes', NOT 'batching is mathematically impossible'."
+    },
     "binding_resource": {
       "value": "BW",
       "unit": "class",

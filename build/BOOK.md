@@ -5325,6 +5325,28 @@ Atlas(→ 14장)는 feature map $\phi$로 key를 들어 올려 같은 memory 틀
 
 Hope(→ 16장)의 self-modifying Titans 블록은 main memory 하나만 RMW하지 않는다. NL은 $k,v,q,\eta,\alpha$ 투영 자신을 test-time에 갱신되는 memory로 바꾸므로(self-modifying, → 16장), 한 블록이 대략 **여섯 개의 associative memory**(main + 다섯 projection-memory)를 품는다. 단 여섯이 모두 매 token 고쳐 쓰이는 것은 아니다 — E3 회계는 **가장 빠른 level만 매 token RMW**($m_{\mathrm{fast}}{\approx}8$)하고 나머지 level은 더 크지만 낮은 빈도로 갱신되는 **상주 상태**로 본다(CMS의 level별 update cadence, → §20.6·§23.6). roofline bound 판정은 그대로 memory지만, 이 class는 두 가지를 더 요구한다. 첫째, per-token RMW **트래픽**은 fast level이 지배하되 **상주 상태 총량**이 여섯의 합이라 표 20-1의 상주 축에서 최상단에 앉는다(E4에서 Hope의 유효 상태는 momentum-deep급) — 이 "상주는 크되 대부분 저빈도"가 §20.6·§23.6의 cadence-tier 배치를 블록 내부로 부르는 이유다. 둘째, fused decode kernel이 하나의 state stream이 아니라 **여섯 개의 독립 RMW stream**을 한 step 안에 엮어야 한다 — §20.3의 fusion 문제가 여섯 겹으로 복잡해지고, 여섯 상태가 서로 다른 update cadence를 가질 수 있어(self-modifying $\eta,\alpha$는 main보다 느리게 변할 수 있다) §20.6의 cadence-tier 배치가 블록 **내부**로 들어온다. Hope는 그래서 "가장 무거운 decode class"이자 "cadence 계층을 한 블록 안에서 처음 강제하는 class"다.
 
+### 20.2.5 batch 축을 더한 memory forward: per-request fast-weight의 batched 실행 형태
+
+지금까지 §20.2는 한 request의 한 decode step을 봤다. 서빙은 여러 request를 동시에 흘리므로, 이 RMW step에 **batch 축**을 더한 실행 형태가 어떤 GEMM shape인지가 claim 1의 "왜 이 memory-bound가 batch로도 풀리지 않는가"를 shape 수준에서 정한다. 이 소절은 그 형태를 통일 표기로 편다(경제학은 §23.4·§24.4가 이미 담았고, 여기서는 그 아래의 kernel shape를 준다).
+
+먼저 read다. 한 request의 memory read는 $y_t=\mathcal{M}(q_t;W_t)$였다(§20.2.1). $B$개 request를 쌓으면 입력이 $X\in\mathbb{R}^{B\times C\times d}$($C{=}1$이 decode), per-request 상태가 $M\in\mathbb{R}^{B\times d\times d}$이고, 읽기는 batch 축마다 독립인
+
+$$
+Y[b] \;=\; X[b]\,M[b]^\top,\qquad b=1,\dots,B
+$$
+
+곧 **batched matmul(BMM)**이다 — decode의 $C{=}1$에서는 request마다 GEMV, prefill의 $C>1$에서는 request마다 GEMM(batch 축은 병렬이되 chunk 축의 token 병렬은 미래 token이 주어진 prefill/training에서만 살아 있고 autoregressive decode에는 없다, → §20.5). deep memory에서는 이 BMM이 두 겹이 된다: 표준 2-layer residual MLP $\mathcal{M}(z;W)=z+W_1\,\sigma(W_2 z)$(§20.2.2)의 batched shape는 $W_2\in\mathbb{R}^{B\times d_h\times d}$, $W_1\in\mathbb{R}^{B\times d\times d_h}$($d_h$는 memory-hidden 폭, expansion 4면 $d_h{=}4d$)이고, forward는 request별 두 BMM 사이에 elementwise $\sigma$·residual을 끼운 것이다.
+
+핵심은 이 BMM이 **일반 MLP layer처럼 안 펴진다**는 데 있다. 오늘의 dense MLP decode는 모든 request가 **같은** weight를 공유하므로 batch·token 축을 접어 $[B\!\cdot\!C,\,d]\,@\,[d,\,d_h]$ 한 장의 **shared-weight GEMM**으로 편다 — weight가 한 번 읽혀 $B\!\cdot\!C$개 행에 재사용되고, 그래서 arithmetic intensity가 $B$와 함께 오른다. 그런데 fast-weight memory는 request마다 $W_b$가 **다르다**(never-average: inner update는 request별 map 연산이라 batch 방향 평균이 정보 누설이다, → §20.3·claim 7). 축을 접으면 서로 다른 $W_b$가 한 GEMM에 섞일 수 없으므로, 실행은 request별 weight를 갖는 **strided-batched / grouped GEMM**으로 파편화된다 — 이것이 §20.5가 든 MFU 포획 손실 셋째 원인(grouped-GEMM 파편화)의 shape 수준 정체이고, ch24 제안 G(grouped-GEMM decode engine)가 복원하려는 바로 그 대상이다(→ 24장).
+
+> **[평가]** 이 shape가 claim 1을 구조로 못 박는다. shared-weight GEMM에서는 weight byte가 $B\!\cdot\!C$번 재사용돼 AI가 batch로 오르지만, grouped-GEMM에서는 각 $W_b$가 그 request에만 쓰여 **한 번 읽히고 한 번 써진다** — FLOP도 traffic도 함께 $B$에 비례하므로 그 비인 **arithmetic intensity가 batch $B$와 무관**하다(→ ch24 제안 G가 명시하는 economics의 shape 근거). 그래서 batch를 아무리 키워도 decode step은 §20.2의 memory-bound 평원을 벗어나지 못하고, 대역폭이 배치를 $B_{\max}$에서 조기에 닫는다(→ §23.4). 요컨대 batching은 **가능**하되(grouped-GEMM으로 batch가 *형성*됨) shared-weight batching의 amortization free-lunch는 **없다** — 이 둘의 구분이 이 소절의 요점이자 pair thesis의 두 절반이 만나는 지점이다: batch를 *형성*하는 것은 accelerator 절반(제안 G)의 일이고, 그 트래픽 하한을 낮추는 것은 memory-centric 절반(§20.6·제안 D)의 일이다.
+
+세 가지 정밀 보정이 이 shape 서술에 붙는다 — 원 형태 그대로 옮기면 구현 함정을 부르는 지점이다.
+
+- **update form의 두 층위.** 위 batched read의 짝인 write는 선형 dot-product memory의 극한에서 닫힌형 $M_t = M_{t-1}A_t - \eta_t\,\hat v_t k_t^\top$, $A_t=\alpha_t I-\eta_t k_t k_t^\top$로 떨어진다(→ 6장의 delta rule 계열의 선형 특수형). 이것은 **선형·dot-product objective의 특수형**이지 배포된 2-layer MLP memory의 update가 아니다 — 후자는 §20.3의 일반 $\nabla_W\ell$(L2형이면 residual-gradient 항 포함)을 memory MLP를 거슬러 계산한다. 게다가 $A_t$는 **identity-minus-rank-1**이라, batched로 $A\in\mathbb{R}^{B\times d\times d}$을 dense로 materialize하거나 $M\,A$를 dense BMM으로 계산하면 낭비다: 효율 구현은 $Mk$와 outer-product만 쓰는 factored 형태로 유지한다(위 dense-$A$ 표기는 shape 이해용일 뿐 구현 지침이 아니다).
+- **query는 static.** batch 축으로 tensorize되는 것은 self-modifying memory들이지만, 배포된 Hope에서 **query projection은 갱신되지 않는다** — $q_t=x_t W_q$가 유일한 non-adaptive projection이다(→ 16장; fully-adaptive q는 중간 variant 한정). 따라서 batched 상태 목록에서 $M_q$는 빠지고, request별 BMM으로 흐르는 self-modifying 상태는 $\{k,v,\eta,\alpha,\mathrm{mem}\}$ 계열이다.
+- **MoE 유비는 dispatch-form only.** request별 $W_b$를 batch로 흩뿌리는 이 형태는 MoE의 grouped-GEMM과 **dispatch 형태만** 닮았다. MoE는 다수 token이 소수 shared expert weight를 재사용해 그 weight를 상각하지만, 여기서는 request마다 weight가 달라 decode에서 group당 token이 사실상 1이라 amortization 이득이 없다(→ 24장 제안 G, claim 10) — 유비는 kernel-dispatch shape에서 성립하고 efficiency에서 깨진다.
+
 ## 20.3 decode에 들어온 backward pass: 새 serving primitive
 
 RMW의 byte 수는 무엇이 옮겨지는지를 말하지만, 무엇이 **계산되는지**는 말하지 않는다. 그리고 계산되는 것 안에 이 라인이 서빙 시스템에 던진 진짜 새로움이 있다.
@@ -5457,6 +5479,7 @@ decode가 memory-bound이고 그 bound가 whole-state RMW라면, 남은 설계 �
 ## 요약
 
 - 이 라인의 decode step은 아키텍처 class(matrix→deep→+momentum→Hope)와 무관하게 **결정적으로 memory-bound**이며, state RMW가 GEMV 연산을 약 394× 압도한다 — step 비용이 곧 whole-state 트래픽이다(anchor 6.44 GB/token, AI 0.59 FLOP/byte). class를 무겁게 할수록 더 memory-bound가 될 뿐이다.
+- batch 축을 더한 memory forward는 per-request 상태 $M\in[B,d,d]$·$W_2\in[B,d_h,d]$의 **batched matmul(BMM)**이다. request마다 weight가 달라(never-average) shared-weight GEMM $[B\!\cdot\!C,d]@[d,d_h]$로 안 펴지고 strided-batched/grouped GEMM으로 파편화되며, 각 $W_b$가 한 번 읽혀 한 번 쓰이므로 **AI가 batch $B$와 무관**하다 — batching은 *형성*되되(제안 G) amortization free-lunch는 없다는 것이 decode가 memory-bound로 남는 shape 수준 근거다(→ §23.4·24장).
 - decode 안으로 들어온 **backward pass**가 이 라인이 서빙 엔진에 던진 진짜 새 primitive다. forward-only인 오늘의 decode kernel과 달리, token마다 memory MLP를 거슬러 gradient를 계산해야 하며, 이를 융합할 fused deep-memory kernel은 존재하지 않는다.
 - FLOP density가 memory-centric 논증의 경계를 긋는다: memory MLP forward/backward와 NS-5는 GEMM-shaped(→ accelerator)이고, PIM이 정당한 곳은 elementwise epilogue(decay·renorm·AXPY)의 소수 FLOP뿐이며 그것도 directional(1.6× energy)이다. $\mathrm{NS}_5$는 고립하면 $\Theta(\kappa d^3)$ FLOP·$\Theta(d^2)$ traffic으로 AI $\Theta(\kappa d)$의 compute-bound GEMM이지만, whole-state RMW에 상각하면 step 기여 AI가 anchor에서 ≈6.7 FLOP/byte(directional)라 $C{=}1$ step은 memory-bound로 남는다 — 단 얇은 matrix+Muon은 그 경계의 회색지대다.
 - Atlas의 matrix·poly·exp 세 얼굴이 pair thesis를 한 축에 담는다: matrix·poly는 고정-상태 RMW(memory-centric decode), exp($\phi^*$)는 문맥-증가 KV(append-read 기준선)다. poly는 상태 트래픽을 ~1.5×만 올리며 capacity class를 하나 높이는(retention ~6.7×, cross-paper ordinal) 이 라인에서 가장 유리한 교환이다. Hope는 한 블록에 ~6개 RMW 상태를 품어 decode class 최상단이자 블록-내부 cadence 계층을 강제한다.
@@ -5468,6 +5491,7 @@ decode가 memory-bound이고 그 bound가 whole-state RMW라면, 남은 설계 �
 
 - [ ] 아키텍처 class별 decode RMW 트래픽을 $2\,m\,d^2\,L_{\mathrm{layer}}\,s$로 계산하고, 전 class가 왜 memory-bound인지 설명할 수 있다.
 - [ ] decode의 backward pass가 왜 "새 serving primitive"인지, forward-only KV decode와 무엇이 다른지 진술할 수 있다.
+- [ ] batch 축을 더한 memory forward가 왜 shared-weight GEMM이 아니라 grouped-GEMM인지, 그로 인해 AI가 batch $B$와 무관해 decode가 memory-bound로 남는 이유를 shape로 설명할 수 있다(그리고 dot-product 특수형 vs MLP 일반형, static query, MoE dispatch-form-only 세 보정을 구분할 수 있다).
 - [ ] 한 decode step의 FLOP을 (memory MLP f/b, NS-5, elementwise epilogue)로 나누고, PIM이 정당한 지점을 그중 어디로 한정해야 하는지 말할 수 있다.
 - [ ] chunk $C$가 왜 roofline의 x축인지, $C^*$의 절대값은 이전 안 되지만 곡선 모양은 이전되는 이유를 설명할 수 있다.
 - [ ] MFU가 5–10%로 "새는" 진짜 원인(작동점 선택)과 TNT의 chunk-1 이동이 그것을 어떻게 공략하는지 말할 수 있다.
@@ -5808,6 +5832,13 @@ decode 쪽 학습 후 비용의 스케일링은 claim1(E1.1/E3)이 준다. 전�
 
 이 분리가 서빙 스케줄러에 주는 함의는 직접적이다. 오늘의 엔진은 prefill과 decode를 같은 kernel family로 배치(batch)하고 continuous batching으로 섞는다. 이 라인에서는 **두 phase가 다른 병목 자원을 문다** — prefill은 FLOP, decode는 HBM 대역폭. 따라서 prefill-decode disaggregation(두 phase를 다른 하드웨어 풀로 분리)이 KV-cache 서빙에서보다 **더 강하게** 정당화된다: prefill 풀은 compute-dense accelerator를, decode 풀은 high-RMW-bandwidth memory 시스템을 원한다. 이것이 이 장이 pair thesis를 서빙 토폴로지로 옮기는 첫 결론이다.
 
+**batch×chunk 2D 병렬성: decode가 prefill보다 병렬성이 적은 이유.** 위 분리가 왜 병렬성 비대칭을 낳는지는 이 라인의 write가 **두 개의 독립 축**으로 병렬화된다는 사실에서 나온다. (i) **batch 축** — 서로 다른 sequence는 각자의 fast-weight 상태 $W^{(b)}_t$를 갖고, update를 결합하는 항이 없다. inner update는 request별 **map**이지 reduction이 아니어서(request 방향으로 평균하면 세션 간 정보가 샌다 — 이 never-average가 §23.4의 $B_{\max}$ 벽에 미시 근거 하나를 보탠다), batch 축은 **완전 병렬**이다. batched write는 request별 상태를 batch 차원으로 쌓은 grouped-GEMM/BMM으로 표현된다: matrix memory는 $W\!:[B,d_v,d_k]$, 표준 2-layer MLP memory는 $W_2\!:[B,d_h,d]$·$W_1\!:[B,d,d_h]$의 batched small-GEMM이다(→ 24장 제안 G). (ii) **chunk 축** — 한 sequence 안에서 상태는 chunk 경계를 따라 $W_0\to W_1\to\cdots$의 recurrence를 진다(→ 9장 (M4) stale-snapshot). chunk **내부**의 token은 chunk 시작 상태 $W_{\xi(t,C)}$에서 병렬 평가되므로 그 안에서만 token 병렬성이 열린다.
+
+결정적 경계는 이 chunk-내부 token 병렬성이 **token이 이미 주어진 prefill/training 전용**이라는 것이다. autoregressive **decode는 미래 token이 없어** chunk를 채울 수 없으므로 chunk 축이 붕괴하고 — **batch 축만** 남는다. 이것이 §23.3에서 decode를 memory-bound 절반으로 보낸 것의 병렬성 측 근거다: prefill은 (batch × chunk)의 2D 병렬성으로 큰 GEMM을 제조하지만, decode는 1D(batch)로 좁아지고 그나마도 §23.4의 $B_{\max}$ 대역폭 벽에서 조기에 닫힌다. 두 각주가 이 그림의 정밀도를 못 박는다.
+
+- **선형 특수형 ≠ 배포형.** matrix memory의 닫힌 write $W_t=W_{t-1}(\alpha_t I-\eta_t k_tk_t^\top)-\eta_t\hat v_t k_t^\top$(unified Gated DeltaNet 형, → §1.6)은 **linear·dot-product objective의 특수형**이다; 배포된 표준 2-layer MLP memory는 일반 $\nabla_W\ell$(L2형이면 residual-gradient $-\eta_t(\mathcal{M}(k_t;W)-\hat v_t)\,k_t^\top$ 항)로 갱신된다 — 둘을 같은 것으로 읽으면 batched-op 비용을 오산한다. 그리고 transition $A_t=\alpha_t I-\eta_t k_tk_t^\top$은 **identity-minus-rank-1**이라, dense $[B,d_k,d_k]$로 materialize해 $W\!\cdot\!A$를 BMM으로 도는 것은 낭비다 — $\alpha_t W_{t-1}-\eta_t(W_{t-1}k_t)k_t^\top$의 matvec+outer-product(rank-1)로 factored 유지한다.
+- **MoE 유비는 dispatch form뿐.** batched grouped-GEMM은 MoE dispatch와 **kernel 형태만** 닮았다 — MoE는 다수 token이 소수 shared expert weight를 재사용해 amortize하지만, 여기선 request마다 weight가 달라 group당 token≈1이라 **weight-재사용 amortization 이득이 없다**(→ §23.4 $B_{\max}$가 그 부재의 정량). 즉 batch는 grouped-GEMM으로 여전히 **형성**되지만(feasibility, 제안 G) arithmetic intensity가 $B$와 무관해 트래픽 하한을 낮추지 못한다(economics) — batchability는 memory-bound 결론을 훼손하지 않고 그 안에 예약된 자리에 앉는다(→ §23.4 [평가], `results.json` `batching_feasibility_gloss`).
+
 ## 23.4 Per-session weight state: 새로운 cache class의 sizing과 batching
 
 per-request로 변하는 weights는 오늘의 서빙 불변식 — "추론 중 weights는 shared·불변" — 을 깬다(→ 18장 §18.1). 그 결과 필요한 것이 **per-session weight state라는 새 cache class**다. KV cache와 나란히 놓되 성질이 반대인 이 class를 다섯 축으로 설계한다. 먼저 sizing과 batching.
@@ -5855,6 +5886,8 @@ pair thesis의 소프트웨어 절반이다. `hat-kv-manager`(오늘의 KV-cache
 - **G3 — 값 매겨지지 않은 dirty writeback.** `_evict_from()`은 dirty state를 공짜로 `del`한다(clean/recomputable 가정). 실제 TTT eviction은 writeback(또는 결정론적 prefix-replay 재계산)을 지는데 매니저는 **0으로 계상**한다 — E1.5의 synthetic eviction set(416 MiB)에서 그 writeback은 약 **3.05 mJ / 130 µs**이고, whole-session 상태(anchor 3.22 GB) 전량을 내리면 약 22.5 mJ / 962 µs로 footprint에 비례해 커진다[NO-WALLCLOCK for 절대치; 범주 오류 자체는 load-bearing].
 
 결론: session-weight 매니저는 KVCacheManager에 없는 event type — `update_in_place`, `mark_dirty/writeback`, `checkpoint/rollback`, `bind_to_sequence`, `free_on_update` — 을 1급으로 가져야 한다. KV 매니저를 확장하는 것이 아니라 **다른 class의 매니저**다. 이것이 §23.4의 checkpoint/restore 부채를 소프트웨어로 갚는 자리이며, `hat-kv-manager`의 로드맵 메모로 이월된다.
+
+**Paged Fast-Weight State Manager — 이름과 그 이름의 함정.** 이 다른-class 매니저를 한 이름으로 부르면 **Paged Fast-Weight State Manager**다 — §24.5 제안 I(per-session-weights serving stack)가 설계 표면으로 삼는, 위 다섯 event type을 1급으로 갖는 그 매니저다. 단 이름의 "Paged"는 오해를 부른다. PagedAttention의 페이징은 문맥 길이에 따라 **가변 길이로 자라는** KV를 비연속 block으로 담아 fragmentation을 없애는 기제인데(→ §23.8), session-weight 상태는 문맥과 무관하게 **폭에 의해 크기가 고정**($m\,d^2\,L_{\mathrm{layer}}$, → §23.4 Sizing)이라 페이징할 가변 길이가 없다. 따라서 이 매니저의 할당기는 PagedAttention식 page table이 아니라 **입장 시점에 크기가 확정되는 fixed-size slab**이고, 그 위에 §23.6의 frequency-tier 배치가 얹힌다 — 관리 축은 "이 세션이 얼마나 길어질까"가 아니라 "이 고정 블록을 어느 tier에 pin할까"다. 관리 **대상**도 NL이 열거한 self-modifying memory $\mathcal{M}_\square$에 그치지 않는다: 완전한 Hope는 CMS의 **다중-frequency mutable block**(level별 $\theta^{(\ell)}$, → 16장 (M5))과 **optimizer/momentum 상태 $S_t$**(→ §23.4 snapshot/rollback)까지 request별로 관리해야 하므로 하한은 오히려 더 크다. 반대로 query 생성기는 배포된 Hope에서 **static**($q_t=W_Q x_t$로 갱신 없음, $\square\in\{k,v,\eta,\alpha,\mathrm{mem}\}$만 mutable — → 16장)이라 이 mutable-state 목록에서 빠진다. 즉 상태 열거는 동시에 과소(CMS·momentum 누락)이자 과다(static query 포함)이며, 매니저 설계는 이 둘을 함께 보정해야 한다.
 
 ## 23.6 Frequency-tiered placement: 서빙 메모리 계층 그 자체
 
@@ -6043,6 +6076,10 @@ memory-centric 제안(D·E)은 pair thesis의 절반일 뿐이다. training/pref
 
 > **[리스크] G.** falsifier: decode가 결정적으로 memory-bound(AI 0.59 ≪ ridge 295, claim1)이므로 grouped-GEMM이 arithmetic intensity를 끌어올려도 state RMW 트래픽이 여전히 지배하면 이득이 상한에 막힌다. G는 batching **가능성**을 복원하는 것이지 트래픽 하한을 낮추지 않는다 — 그 하한은 소자 D의 몫이며, 그래서 G와 D는 같은 decode step을 나눠 맡는다.
 
+> **[해설] never-average — $B_{\max}$ 벽의 미시근거.** 제안 G가 batch를 *형성*하되 그 batch가 왜 shared-weight decode처럼 amortise되지 않는지의 뿌리는 하나의 불변식이다: serving에서 request별 fast weights $W_b$는 각자의 독립 trajectory이고, inner-loop update는 request 축으로 **절대 평균되어선 안 된다**. request $b$의 momentary surprise $g_{b,t}^{\mathrm{in}}=\nabla_W\ell(W_{b,t-1};k_{b,t},v_{b,t})$를 다른 request와 reduce하면 한 tenant의 문맥이 다른 tenant의 state로 새어 든다(정보 오염·leakage — 제안 D의 per-tenant isolation 요구와 같은 뿌리). 즉 batch는 request 방향으로 **map**이지 reduction이 아니다 — 각 $W_b$가 자기 gradient로만 갱신되는 벡터화된 병렬 실행이다. 이 unshared·비-reduction 성질이 곧 shared-weight 상각이 불가능한 **미시적 이유**이고, arithmetic intensity가 $B$와 무관해 대역폭이 배치를 조기에 닫는 $B_{\max}$ 벽(bandwidth-bound, → 23장 표 23-1)의 근원이다. 대비되는 것은 outer-loop meta-parameter $\Theta$다 — 이쪽은 훈련에서 batch로 평균하는 것이 정상이다(inner = request별 개별 map, outer = batch 평균; 두 loop의 형식 구분 → 4장). 요컨대 $B_{\max}$ 벽은 대역폭 회계의 우연이 아니라 inner-loop가 request별로 격리돼야 한다는 정확성 요구의 하드웨어적 그림자다.
+
+> **[평가] workload-class 라벨 — Self-Modifying Titans decode는 무엇인가.** 이 decode step을 오늘의 kernel 분류에 앉히면 attention 한 종류가 아니라 **"request마다 weight가 다른 recurrent MLP + batched fast-weight optimizer/update kernel"** 에 가깝다 — 세 성분의 결합이다: (i) request별 unshared 2-layer MLP memory의 recurrent 상태 전이(TTT layer, → 8장), (ii) 그 상태를 momentum·retention으로 갱신하는 batched optimizer step(→ STYLE (M2)), (iii) chunk/recurrent scan(→ 9장). 세 경계를 지킨다. **첫째**, chunk/scan 축의 token 병렬성은 **prefill/training 전용**이다 — autoregressive decode는 미래 token이 없어 chunk 축이 붕괴하고 batch 축만 병렬로 남는다($C{=}1$ 끝, → §24.2.1 claim7·15장). 그래서 decode의 유일한 batchable 차원이 request 축이고, 바로 그 축이 never-average(위 [해설])의 지배를 받는다. **둘째**, "MoE와 닮았다"는 유비는 **dispatch form에서만** 성립한다: MoE는 다수 token이 소수 shared expert weight를 재사용해 그 weight를 amortise하지만, 여기선 request마다 weight가 달라 decode 시 group당 token이 사실상 1이라 expert-weight 상각 이득이 없다 — dispatch 골격은 grouped-GEMM으로 같되 경제학은 정반대다(→ 리스크 G). **셋째**, 상태 전이의 clean matrix form은 linear·dot-product 특수형이고, 배포되는 2-layer MLP memory는 일반 $\nabla_W\ell$ update(residual-gradient 포함)를 쓴다 — 라벨의 "recurrent MLP"는 후자다(→ 8장). 이 라벨의 실천적 귀결은 앞 절과 같다: 한 decode step이 두 kernel로 갈려, state RMW 트래픽 하한은 소자 D가, batch 축 재조직(grouped-GEMM)과 inner-loop backward는 accelerator kernel G·H가 맡는다(제안 G·D가 같은 step을 나눠 맡는 분업, → 리스크 G·§24.4 [평가]).
+
 **제안 H — backward-capable serving kernel.** 이 라인의 decode는 inference인데 **backward pass를 품는다** — inner loop이 $\nabla_W \ell$를 계산해 state를 갱신하기 때문이다(→ 1장 Rosetta의 "backward pass가 decode에 들어온다", 8장). 오늘의 serving kernel은 forward-only로 설계되어 있어 이 primitive를 지원하지 않는다. 제안은 decode 경로에 inner-loop backward를 일급 연산으로 포함하는 serving kernel이다. NS-5(Newton–Schulz, → 14장)와 deep-memory의 FLOP density가 여기서 accelerator 자원을 요구하는 지점이며(→ 20장), 이것은 memory-centric 소자가 아니라 tensor-core 영역의 문제다.
 
 > **[리스크] H.** falsifier: inner-loop backward가 forward 대비 지배적 FLOP이 아니면(deep memory가 얕고 NS-$\kappa$ 반복이 적으면) 전용 primitive의 이득이 작아 기존 forward-only 커널을 재사용하는 편이 낫다. 즉 H의 정당성은 deep-memory·NS-5의 FLOP density가 실제로 높은 config에 한정되며(→ 20장), 그 density를 재는 것이 A100 runbook의 과제 중 하나다.
@@ -6094,6 +6131,7 @@ memory-centric 제안(D·E)은 pair thesis의 절반일 뿐이다. training/pref
 - [ ] E4가 capacity 축을 ppl이 아니라 long-context/retention 축으로 좁힌 근거(family 안 rank-동치, attention corner에서의 상관 반전, Titans→Atlas 도약을 설명하는 capacity-class 변화)를 설명할 수 있다.
 - [ ] near-memory update engine의 세 스테이지(state-tile 상주 버퍼, epilogue ALU lane, per-tenant slot table)가 claim1/4/8과 claim6의 API에 각각 어떻게 대응하는지 말할 수 있다.
 - [ ] 제안 J(learned schedule)가 왜 제안 A의 뒤에야 정직하게 돌릴 수 있는지, 그 두 falsifier가 무엇인지 진술할 수 있다.
+- [ ] never-average 원칙(inner = request별 map·no reduction, outer = batch 평균)이 왜 shared-weight 상각 불가의 미시근거이자 $B_{\max}$ 벽의 근원인지, 그리고 Self-Modifying Titans decode의 workload-class 라벨(request별 weight recurrent MLP + batched optimizer; chunk 축은 prefill-전용·decode엔 batch 축만; MoE 유비는 dispatch-form only로 amortization 이득 없음)이 제안 G·D의 분업과 어떻게 엮이는지 설명할 수 있다.
 - [ ] 어떤 제안 수치가 load-bearing 비율·crossover이고 어떤 것이 directional·이월 하한인지 판별할 수 있다.
 
 ## 다음 장으로
