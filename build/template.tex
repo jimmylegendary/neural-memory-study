@@ -6,6 +6,7 @@
 \setmonojfont{Noto Sans Mono CJK KR}
 \usepackage{amsmath,amssymb}
 \usepackage{calc}
+\usepackage{adjustbox}
 \usepackage{booktabs,longtable,array,multirow}
 \providecommand{\real}[1]{#1}
 \usepackage{graphicx}
@@ -19,6 +20,11 @@
 \captionsetup{labelformat=empty}
 \setcounter{tocdepth}{2}
 \setcounter{secnumdepth}{-2}
+% overflow safety net: let the breaker stretch a little and treat leftover badness as underfull,
+% not silently-overrunning boxes (paired with breakable.lua which inserts the break opportunities).
+\emergencystretch=3em
+\tolerance=2000
+\hbadness=1200
 \providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 \providecommand{\st}[1]{#1}
 \providecommand{\passthrough}[1]{#1}

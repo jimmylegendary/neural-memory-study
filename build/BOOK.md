@@ -3139,10 +3139,12 @@ $$
 **변형 1 — $f$-divergence retention과 scaled probability simplex.** state를 유계 영역에 가두는 것은 수치 안정성의 고전적 처방이다. $\mathcal{W}=\{W:\|W\|_1=c,\ W_{jl}\ge0\}$ — scaled probability simplex — 로 제약하면 $W$를 measure로 볼 수 있고, local retention $D_t$를 $f$-divergence $\sum_{jl}W'_{jl}\,f(W_{jl}/W'_{jl})$로 정의할 수 있다. 선형화된 loss와 결합하면 곱셈형 update $W_t=W_{t-1}\odot g(-\zeta_t-\eta_t\nabla_W\ell(W_{t-1};k_t,v_t))$가 나온다 [Miras Eq. 18]. $g=(f')^{-1}$이고 $\zeta_t$는 $\|W_t\|_1=c$를 강제하는 정규화 상수다. KL 특수화($f(\tau)=\tau\ln\tau$)에 Shannon entropy를 global retention $G_t(W)=\sum_{jl}W_{jl}\log W_{jl}$로 더하면, KKT 조건(제약 최적화의 1차 최적성 조건)에서
 
 $$
+\adjustbox{max width=\linewidth}{$\displaystyle
 W_t \;\leftarrow\; c\,\mathrm{softmax}\big((1-\lambda_t)\log W_{t-1} \;-\; \eta_t'\,\nabla_W\ell(W_{t-1};k_t,v_t)\big),
 \qquad
 \lambda_t=\frac{1/\alpha_t}{1/\alpha_t+1/\eta_t},\quad
 \eta_t'=\frac{1}{1/\alpha_t+1/\eta_t}
+$}
 \tag{13-8}
 $$
 
@@ -3742,12 +3744,14 @@ $$
 **Local memory와 periodic state reset.** 핵심 혁신은 local 쪽에 있다. 기본형($N=1$)에서 local memory $W^{\mathrm{l}}$은 chunk 크기 $C_{\mathrm{l}}$, shard 길이 $L_{\mathrm{s}}$ (원문 $S_L$), 그리고 **학습 가능한 초기 상태 $W_{\mathrm{init}}$**을 가지고 다음과 같이 갱신된다:
 
 $$
+\adjustbox{max width=\linewidth}{$\displaystyle
 W^{\mathrm{l}}_t \;=\; A_t \;-\; \sum_{\tau=\xi(t,C_{\mathrm{l}})+1}^{t} \eta_\tau\,\nabla_W\,\ell\big(A_t;\,k_\tau,v_\tau\big),
 \qquad
 A_t=\begin{cases}
 W_{\mathrm{init}} & \xi(t,C_{\mathrm{l}})\equiv 0 \pmod{L_{\mathrm{s}}}\ (\text{shard 첫 chunk})\\[2pt]
 W^{\mathrm{l}}_{\xi(t,C_{\mathrm{l}})} & \text{그 외}
 \end{cases}
+$}
 \tag{15-4}
 $$
 
@@ -4266,11 +4270,13 @@ memory가 linear(행렬)인 특수 사례엔 닫힌 recurrence가 나온다 [NL 
 **Hope** [NL §8.3]는 두 산물을 한 block에 직렬로 잇는다: **self-modifying Titans**(작은 state, 표현력 있는 DGD rule) 뒤에 **CMS**(큰 capacity, 단순한 rule)를 붙인다 — CMS는 지속 저장을 위해 capacity가 커 단순 rule, self-modifying Titans는 state가 작아 표현력 rule로 상보적이다 [NL §8.3]. forward는 (normalization·convolution 생략)
 
 $$
+\adjustbox{max width=\linewidth}{$\displaystyle
 z_t = \mathcal{M}\big(q_t;\ W_{\mathrm{mem},t-1}\big)
 \quad\text{(식 (16-4)의 갱신과 함께)},
 \qquad
 y_t = \mathrm{MLP}^{(f_k)}\big(\cdots\, \mathrm{MLP}^{(f_1)}(z_t)\big)
 \qquad [\text{NL Eq. 94–97}]
+$}
 $$
 
 이다. 실무 세부 [NL §8.3]: $q,k$는 $\ell_2$ normalize(식 (16-3) DGD의 $\|x\|=\lambda$ 전제와 정합), window 4 local convolution. 변형 **Hope-Attention**은 self-modifying Titans를 softmax global attention으로 치환한 통제 변형으로 CMS 기여를 분리 측정한다 [NL §8.3].
@@ -4524,10 +4530,12 @@ sleep의 발화 시점은 학습되지 않고 chunk 스케줄에 고정된다. c
 이 distillation에는 통상의 KD와 다른 두 난점이 있다 [Sleep §3.3]. (1) student가 teacher보다 capacity가 **크다**. teacher가 미리 생성해 둔 고정 데이터셋으로 student를 supervised 학습(sequence-level KD, Kim & Rush 2016)시키면 student 파라미터가 과소 활용된다. (2) 모델은 잠들어 있다 — 외부 데이터셋이 없으므로, 보유 corpus 위에서 teacher logits을 맞추는 고전적 Hinton식 KD를 쓸 수 없다. 해법은 Generalized Knowledge Distillation(GKD, Agarwal et al. 2024; → 11장)이다: teacher가 생성한 데이터와 student가 스스로 생성한 on-policy 데이터를 섞는다. 먼저 teacher $\mathrm{LM}_{\theta}$에서 sampling해 dataset $\mathcal{D}$를 만들고, on-policy distillation objective를 세운다 [Sleep §3.3]:
 
 $$
+\adjustbox{max width=\linewidth}{$\displaystyle
 \mathcal{L}_{\mathrm{GKD}}(\theta,\theta_{\mathrm{exp}})
 = (1-\lambda_{\mathrm{on}})\,\mathbb{E}_{(x,y)\sim\mathcal{D}}\!\big[\mathcal{F}\big(\mathrm{LM}_{\theta}\,\big\|\,\mathrm{LM}_{\theta_{\mathrm{exp}}}\big)(y|x)\big]
 \;+\;
 \lambda_{\mathrm{on}}\,\mathbb{E}_{x\sim\mathcal{D}}\,\mathbb{E}_{y\sim \mathrm{LM}_{\theta_{\mathrm{exp}}}(\cdot|x)}\!\big[\mathcal{F}\big(\mathrm{LM}_{\theta}\,\big\|\,\mathrm{LM}_{\theta_{\mathrm{exp}}}\big)(y|x)\big]
+$}
 \tag{17-2}
 $$
 

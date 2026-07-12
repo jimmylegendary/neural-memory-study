@@ -80,12 +80,14 @@ $$
 **Local memory와 periodic state reset.** 핵심 혁신은 local 쪽에 있다. 기본형($N=1$)에서 local memory $W^{\mathrm{l}}$은 chunk 크기 $C_{\mathrm{l}}$, shard 길이 $L_{\mathrm{s}}$ (원문 $S_L$), 그리고 **학습 가능한 초기 상태 $W_{\mathrm{init}}$**을 가지고 다음과 같이 갱신된다:
 
 $$
+\adjustbox{max width=\linewidth}{$\displaystyle
 W^{\mathrm{l}}_t \;=\; A_t \;-\; \sum_{\tau=\xi(t,C_{\mathrm{l}})+1}^{t} \eta_\tau\,\nabla_W\,\ell\big(A_t;\,k_\tau,v_\tau\big),
 \qquad
 A_t=\begin{cases}
 W_{\mathrm{init}} & \xi(t,C_{\mathrm{l}})\equiv 0 \pmod{L_{\mathrm{s}}}\ (\text{shard 첫 chunk})\\[2pt]
 W^{\mathrm{l}}_{\xi(t,C_{\mathrm{l}})} & \text{그 외}
 \end{cases}
+$}
 \tag{15-4}
 $$
 

@@ -179,10 +179,12 @@ $$
 **변형 1 — $f$-divergence retention과 scaled probability simplex.** state를 유계 영역에 가두는 것은 수치 안정성의 고전적 처방이다. $\mathcal{W}=\{W:\|W\|_1=c,\ W_{jl}\ge0\}$ — scaled probability simplex — 로 제약하면 $W$를 measure로 볼 수 있고, local retention $D_t$를 $f$-divergence $\sum_{jl}W'_{jl}\,f(W_{jl}/W'_{jl})$로 정의할 수 있다. 선형화된 loss와 결합하면 곱셈형 update $W_t=W_{t-1}\odot g(-\zeta_t-\eta_t\nabla_W\ell(W_{t-1};k_t,v_t))$가 나온다 [Miras Eq. 18]. $g=(f')^{-1}$이고 $\zeta_t$는 $\|W_t\|_1=c$를 강제하는 정규화 상수다. KL 특수화($f(\tau)=\tau\ln\tau$)에 Shannon entropy를 global retention $G_t(W)=\sum_{jl}W_{jl}\log W_{jl}$로 더하면, KKT 조건(제약 최적화의 1차 최적성 조건)에서
 
 $$
+\adjustbox{max width=\linewidth}{$\displaystyle
 W_t \;\leftarrow\; c\,\mathrm{softmax}\big((1-\lambda_t)\log W_{t-1} \;-\; \eta_t'\,\nabla_W\ell(W_{t-1};k_t,v_t)\big),
 \qquad
 \lambda_t=\frac{1/\alpha_t}{1/\alpha_t+1/\eta_t},\quad
 \eta_t'=\frac{1}{1/\alpha_t+1/\eta_t}
+$}
 \tag{13-8}
 $$
 

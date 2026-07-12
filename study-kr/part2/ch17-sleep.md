@@ -63,10 +63,12 @@ sleep의 발화 시점은 학습되지 않고 chunk 스케줄에 고정된다. c
 이 distillation에는 통상의 KD와 다른 두 난점이 있다 [Sleep §3.3]. (1) student가 teacher보다 capacity가 **크다**. teacher가 미리 생성해 둔 고정 데이터셋으로 student를 supervised 학습(sequence-level KD, Kim & Rush 2016)시키면 student 파라미터가 과소 활용된다. (2) 모델은 잠들어 있다 — 외부 데이터셋이 없으므로, 보유 corpus 위에서 teacher logits을 맞추는 고전적 Hinton식 KD를 쓸 수 없다. 해법은 Generalized Knowledge Distillation(GKD, Agarwal et al. 2024; → 11장)이다: teacher가 생성한 데이터와 student가 스스로 생성한 on-policy 데이터를 섞는다. 먼저 teacher $\mathrm{LM}_{\theta}$에서 sampling해 dataset $\mathcal{D}$를 만들고, on-policy distillation objective를 세운다 [Sleep §3.3]:
 
 $$
+\adjustbox{max width=\linewidth}{$\displaystyle
 \mathcal{L}_{\mathrm{GKD}}(\theta,\theta_{\mathrm{exp}})
 = (1-\lambda_{\mathrm{on}})\,\mathbb{E}_{(x,y)\sim\mathcal{D}}\!\big[\mathcal{F}\big(\mathrm{LM}_{\theta}\,\big\|\,\mathrm{LM}_{\theta_{\mathrm{exp}}}\big)(y|x)\big]
 \;+\;
 \lambda_{\mathrm{on}}\,\mathbb{E}_{x\sim\mathcal{D}}\,\mathbb{E}_{y\sim \mathrm{LM}_{\theta_{\mathrm{exp}}}(\cdot|x)}\!\big[\mathcal{F}\big(\mathrm{LM}_{\theta}\,\big\|\,\mathrm{LM}_{\theta_{\mathrm{exp}}}\big)(y|x)\big]
+$}
 \tag{17-2}
 $$
 

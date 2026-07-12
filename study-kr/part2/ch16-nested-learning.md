@@ -303,11 +303,13 @@ memory가 linear(행렬)인 특수 사례엔 닫힌 recurrence가 나온다 [NL 
 **Hope** [NL §8.3]는 두 산물을 한 block에 직렬로 잇는다: **self-modifying Titans**(작은 state, 표현력 있는 DGD rule) 뒤에 **CMS**(큰 capacity, 단순한 rule)를 붙인다 — CMS는 지속 저장을 위해 capacity가 커 단순 rule, self-modifying Titans는 state가 작아 표현력 rule로 상보적이다 [NL §8.3]. forward는 (normalization·convolution 생략)
 
 $$
+\adjustbox{max width=\linewidth}{$\displaystyle
 z_t = \mathcal{M}\big(q_t;\ W_{\mathrm{mem},t-1}\big)
 \quad\text{(식 (16-4)의 갱신과 함께)},
 \qquad
 y_t = \mathrm{MLP}^{(f_k)}\big(\cdots\, \mathrm{MLP}^{(f_1)}(z_t)\big)
 \qquad [\text{NL Eq. 94–97}]
+$}
 $$
 
 이다. 실무 세부 [NL §8.3]: $q,k$는 $\ell_2$ normalize(식 (16-3) DGD의 $\|x\|=\lambda$ 전제와 정합), window 4 local convolution. 변형 **Hope-Attention**은 self-modifying Titans를 softmax global attention으로 치환한 통제 변형으로 CMS 기여를 분리 측정한다 [NL §8.3].
