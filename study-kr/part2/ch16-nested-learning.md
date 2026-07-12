@@ -262,11 +262,13 @@ Hope의 sequence block은 [Titans]의 마지막 동결 지점을 푼다. Transfo
 **1단계 — 완전 적응형 memory** [NL Eq. 79–82]. 다섯 산출 $k_t, v_t, q_t, \eta_t, \alpha_t$ 전부를 각자의 memory가 만든다:
 
 $$
-k_t = \mathcal{M}_k(x_t; W_{k,t-1}),\quad
+\begin{aligned}
+&k_t = \mathcal{M}_k(x_t; W_{k,t-1}),\quad
 v_t = \mathcal{M}_v(x_t; W_{v,t-1}),\quad
-q_t = \mathcal{M}_q(x_t; W_{q,t-1}),\quad
-\eta_t = \mathcal{M}_\eta(x_t; W_{\eta,t-1}),\quad
+q_t = \mathcal{M}_q(x_t; W_{q,t-1}),\\
+&\eta_t = \mathcal{M}_\eta(x_t; W_{\eta,t-1}),\quad
 \alpha_t = \mathcal{M}_\alpha(x_t; W_{\alpha,t-1}),
+\end{aligned}
 $$
 
 각 $\mathcal{M}_\square$와 본체 $\mathcal{M}_{\mathrm{mem}}$은 $\min\ \ell(\mathcal{M}_\square; k_t, v_t)$를 최적화하고 출력은 $y_t=\mathcal{M}(q_t;W_{\mathrm{mem}})$이다. 요점: **inner learning rate $\eta_t$와 retention gate $\alpha_t$(→ 13장) 자체가 memory의 출력이다** — 12장에서 slow head가 산출하던 hyperparameter가 in-context 학습 객체가 된다. 모든 초기 상태 $\mathcal{M}_{\square,0}$은 sequence 전반에 meta-learn된다 [NL §8.1].
@@ -380,7 +382,7 @@ $$
 
 ### 16.4.2 inner loop: inference에서 무엇이 어떤 rule로 움직이는가
 
-decode 중 token 하나가 들어오면 Hope block의 일은 세 겹이다. (1) **fast memory들**($\mathcal{M}_k,\mathcal{M}_v,\mathcal{M}_\eta,\mathcal{M}_\alpha,\mathcal{M}_{\mathrm{mem}}$; $\mathcal{M}_q$ 적응 여부는 원문 상충이라 — §16.3.10 각주 1 — 다섯(정적)~여섯(적응형), 각 2-layer residual MLP)가 식 (16-5) 스케줄로 갱신된다. chunkwise 스케줄의 $1/C_\square$ 상환은 **훈련·prefill**에서만 성립한다(chunk 전체 token이 이미 있어 한 batch로 계산). autoregressive **decode**는 미래 token이 아직 없어 다음 chunk를 미리 batch할 수 없다: 이상적 $C=1$ decode는 매 token 순차 갱신(상환 없음, → 15장 TNT의 목표), $C>1$ decode는 $C$개를 버퍼링해 경계에서 지연 batch-update(chunk-size mismatch 위험, → 9·15장)하는 형태다 — 어느 쪽이든 정확한 decode 비용·latency는 공개 구현·측정이 없어 미확정이다. gate $\eta_t,\alpha_t$는 별도 학습기가 아니라 이 memory들의 forward 산출이다(표 16-3). (2) **CMS의 각 level**이 $C^{(\ell)}$ token마다 (M5)로 갱신된다 — inference 중에도 NTP truncated gradient step을 기하급수 간격으로 계속 밟는다. (3) 나머지($W_Q$·embedding·conv·norm)는 움직이지 않는다.
+decode 중 token 하나가 들어오면 Hope block의 일은 세 겹이다. (1) **fast memory들**($\mathcal{M}_k$, $\mathcal{M}_v$, $\mathcal{M}_\eta$, $\mathcal{M}_\alpha$, $\mathcal{M}_{\mathrm{mem}}$; $\mathcal{M}_q$ 적응 여부는 원문 상충이라 — §16.3.10 각주 1 — 다섯(정적)~여섯(적응형), 각 2-layer residual MLP)가 식 (16-5) 스케줄로 갱신된다. chunkwise 스케줄의 $1/C_\square$ 상환은 **훈련·prefill**에서만 성립한다(chunk 전체 token이 이미 있어 한 batch로 계산). autoregressive **decode**는 미래 token이 아직 없어 다음 chunk를 미리 batch할 수 없다: 이상적 $C=1$ decode는 매 token 순차 갱신(상환 없음, → 15장 TNT의 목표), $C>1$ decode는 $C$개를 버퍼링해 경계에서 지연 batch-update(chunk-size mismatch 위험, → 9·15장)하는 형태다 — 어느 쪽이든 정확한 decode 비용·latency는 공개 구현·측정이 없어 미확정이다. gate $\eta_t,\alpha_t$는 별도 학습기가 아니라 이 memory들의 forward 산출이다(표 16-3). (2) **CMS의 각 level**이 $C^{(\ell)}$ token마다 (M5)로 갱신된다 — inference 중에도 NTP truncated gradient step을 기하급수 간격으로 계속 밟는다. (3) 나머지($W_Q$·embedding·conv·norm)는 움직이지 않는다.
 
 state는 KV cache처럼 $O(L)$로 자라지 않고 시퀀스 길이에 상수다(산수는 §16.7). fast memory엔 별도 test-time optimizer가 필요 없다(DGD rule·gate가 곧 optimizer). 단, ablation 표의 "w/o Momentum" 행(13.58 vs 12.24 [NL Table 6])과 §9.6 산문("removes the momentum term in the self-modifying Titans")은 배포된 inner rule이 식 (16-4)에 없는 Titans식 momentum 항 $S_t$(→ 12장)를 실제로 지님을 말해 준다 — 그 정확한 수식 위치는 원문 어디에도 없다.
 <!-- VERIFIED(2026-07-12): §9.6이 momentum 항 존재를 명시(ablation 행 설명), 수식(Eq.88/90)에는 부재 — 간극 자체가 원문 사실. 공식 구현 부재. -->

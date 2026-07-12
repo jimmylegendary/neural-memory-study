@@ -73,7 +73,7 @@ NVIDIA의 자산은 두 가지다: GPU의 CUDA/cuDNN moat, 그리고 linear-atte
 
 세 번째 player는 조직이 아니라 생태계다. flash-linear-attention(fla)은 GLA·DeltaNet·GDN·RWKV 등 linear-memory 모델의 Triton kernel을 모은, 이 계보의 사실상 kernel 인프라다. 그러나 fla 역시 NVIDIA 자산과 같은 함정 위에 있다: **linear state를 전제**하므로, deep memory(TTT/Titans/Atlas)의 non-linear recurrence에는 그대로 통하지 않는다. deep-memory fused kernel은 open-source 쪽에서도 아직 공백이며, 이 공백이 21장이 말한 "이 가족이 아직 기다리는 FlashAttention-moment"의 kernel 측면이다.
 
-공백은 kernel에 그치지 않는다. serving 스택도 RMW state를 관리하지 못한다. 기존 KV-cache manager의 semantics — content-addressed prefix 재사용, append-only placement — 는 RMW state에 대해 범주 오류다(claim6, → 23장): 재사용률이 구조적으로 0이고(내용이 매 token 바뀌어 block hash가 재발하지 않는다), append-only가 stale 사본을 누적하며, dirty writeback이 값매김되지 않는다. TTT-state manager는 `update_in_place`·`mark_dirty/writeback`·`checkpoint/rollback`·`bind_to_sequence` 같은, KVCacheManager에 없는 event type을 필요로 한다.
+공백은 kernel에 그치지 않는다. serving 스택도 RMW state를 관리하지 못한다. 기존 KV-cache manager의 semantics — content-addressed prefix 재사용, append-only placement — 는 RMW state에 대해 범주 오류다(claim6, → 23장): 재사용률이 구조적으로 0이고(내용이 매 token 바뀌어 block hash가 재발하지 않는다), append-only가 stale 사본을 누적하며, dirty writeback이 값매김되지 않는다. TTT-state manager는 `update_in_place` · `mark_dirty/writeback` · `checkpoint/rollback` · `bind_to_sequence` 같은, KVCacheManager에 없는 event type을 필요로 한다.
 
 > **[평가]** open-source의 합리적 수는 이 두 공백을 먼저 메우는 것이다. **수 A — fla를 deep memory로 확장.** deep-memory용 Triton fused forward+backward chunk kernel(per-chunk batched fwd/bwd와 cumulative-sum state update의 융합)을 먼저 내는 팀이, 이 라인에서 linear-attention 시대의 FlashAttention이 그랬던 역할 — 사실상의 kernel 표준 — 을 차지한다. **수 B — serving 인프라에 RMW API를 추가.** vLLM-class 스택에 claim6의 missing API를 얹는 팀이 decode 반쪽의 소프트웨어 열쇠를 쥔다. 두 수 모두 하드웨어 자산 없이 둘 수 있고, 그래서 open-source가 진입 가능한 지점이다.
 
@@ -87,7 +87,7 @@ open-source가 왜 구조적으로 중요한가. Google이 논문으로 아키�
 
 **학계의 진입점은 아직 잠긴 이론과 측정이다.** 6편 어디에도 chunkwise staleness의 error bound가 없고(→ 9장), deep-memory·windowed·self-modifying 변형의 regret/capacity/expressivity 정리도 linear 특수 경우 밖에서는 비어 있다(dossier §3.2가 저자들 스스로 지목한 공백). 이것은 하드웨어 없이 종이와 증명으로 둘 수 있는 수이며, 이 라인의 다음 논문이 닫아야 할 자리다. 측정 쪽도 마찬가지다: 이 라인은 decode throughput·latency를 한 줄도 공개하지 않았고(→ 20장·23장), 우리 warrant조차 절대치는 roofline 하한이다(정직성 계약). 실제 kernel로 crossover $S^*$를 head-to-head로 재는 일(claim2의 A100 이월 항목)은 GPU 몇 장이면 되는, 소규모 연구실이 첫 저자로 설 수 있는 측정이다.
 
-**스타트업의 진입점은 decode 반쪽의 소프트웨어다.** claim6이 짚은 KV-cache manager의 범주 오류 — content-addressed 재사용률이 구조적으로 0, stale 사본 256× 누적, 값 안 매겨진 dirty writeback — 는 곧 시장 공백이다. RMW state를 관리하는 serving 계층(`update_in_place`·`mark_dirty/writeback`·`checkpoint/rollback`·`bind_to_sequence`)은 하드웨어 없이 소프트웨어로 짜는 제품이고, per-session weight state를 새 cache class로 다루는 인프라(→ 23장)는 vLLM-class 스택 위에서 독립 제품이 될 여지가 있다. 하드웨어 자산이 없다는 바로 그 제약이 이들을 소프트웨어 수로 몰아넣고, 그 수들이 마침 decode 반쪽에 집중되어 있다.
+**스타트업의 진입점은 decode 반쪽의 소프트웨어다.** claim6이 짚은 KV-cache manager의 범주 오류 — content-addressed 재사용률이 구조적으로 0, stale 사본 256× 누적, 값 안 매겨진 dirty writeback — 는 곧 시장 공백이다. RMW state를 관리하는 serving 계층(`update_in_place` · `mark_dirty/writeback` · `checkpoint/rollback` · `bind_to_sequence`)은 하드웨어 없이 소프트웨어로 짜는 제품이고, per-session weight state를 새 cache class로 다루는 인프라(→ 23장)는 vLLM-class 스택 위에서 독립 제품이 될 여지가 있다. 하드웨어 자산이 없다는 바로 그 제약이 이들을 소프트웨어 수로 몰아넣고, 그 수들이 마침 decode 반쪽에 집중되어 있다.
 
 > **[평가]** 진입점의 공통 문법은 하나다 — **자산의 비대칭이 곧 진입로의 지도다.** 대형 player가 하드웨어·컴파일러·제품을 쥔 자리(training 반쪽)는 진입이 비싸고, 아무도 아직 쥐지 못한 자리(decode 소프트웨어, 이론, 측정)는 진입이 싸다. 학계·스타트업의 합리적 수는 후자에 정확히 정렬되며, 이것은 다음 절의 분업 구조가 대형 3인에 국한되지 않고 진입자에게까지 확장된다는 뜻이다.
 

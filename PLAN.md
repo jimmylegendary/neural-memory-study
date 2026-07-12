@@ -4,11 +4,12 @@
 
 ## Phase 현황
 - **P0 Pre-research** ✅ 2026-07-11 — 6편 deep-read notes, prereq 커리큘럼(B0–B9), veridraft 통합 플랜, 종합 dossier (`dossier/PRE-RESEARCH.md`)
-- **P1 1차 집필 (W1 workflow)** ◀ 진행 중 — style/notation foundation → Part I 11개 장 + Part II 6개 장 한국어 초안 병렬 집필 + recon 2종(구현 가용성, 로컬 실험 환경) → 3-way audit (notation / continuity / coverage)
-- **P2 보정 라운드** — audit 결과 기반 fix 워크플로 반복, 서론·결론 골격, 장간 cross-ref 확정
-- **P3 Part III** — (a) HOPE+Dreaming 사내 A100 runbook (예외 시나리오 포함), (b) 로컬 host 실험 실행, (c) HAT IR 기반 decode 워크로드 modeling/DSE, (d) scaling 분석·법칙·projection, (e) pair-thesis 본문 + player-strategy 분석 집필
-- **P4 Veridraft 게이팅** — claims/bundle.json 원장 구축: 논문 요약 claim = P2(vendored PDF@commit warrant), 원저 정량 claim = P1(experiments/results.json@commit + result_refs), readiness 리포트
-- **P5 영어 제출판** — `paper-en/` LaTeX 파생 + 추출 논문 후보 재평가 (D1)
+- **P1 1차 집필** ✅ — style/notation foundation → Part I 11장 + Part II 6장 한국어 초안 + recon 2종 → 3-way audit
+- **P2 보정** ✅ — 3축 감사 fix + **codex(gpt-5.6-sol) cross-model 검증** (ch10 AI 누락항·ch14 Thm1 등 포착), 잔여 closure
+- **P3 Part III** ✅ — 실험 E1–E4(HAT DSE + CPU microbench + scaling digitize-fit) 실행 + ch18–25 집필 + 심화 + HOPE A100 runbook(`runbook/`); 그림 exp-a~f 렌더
+- **P4 Veridraft 게이팅 + 조립** ✅ — `claims/bundle.json` 30 claim gate PASS(P2 18 + P1 12); front/back matter; **309→310pp PDF 빌드** (`build/BOOK.pdf`, `build/template.tex`)
+- **P5 한국어판 마무리 QA** ✅ 2026-07-12 — cross-ref dangling 0, 인용 미해결 0, 그림 라벨 겹침 재생성(exp-b/exp-f), 시각 결함 5건 수정; 최종 빌드 310pp/미해결글리프 0/overfull 0. **사용자 결정: 309(310)pp depth 유지, 한국어판 우선.**
+- **P6 영어 제출판** ⬜ (미착수, D1) — `paper-en/` LaTeX 파생 + 추출 논문 후보 재평가
 
 ## 디렉토리
 ```

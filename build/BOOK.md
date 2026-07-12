@@ -4225,11 +4225,13 @@ Hope의 sequence block은 [Titans]의 마지막 동결 지점을 푼다. Transfo
 **1단계 — 완전 적응형 memory** [NL Eq. 79–82]. 다섯 산출 $k_t, v_t, q_t, \eta_t, \alpha_t$ 전부를 각자의 memory가 만든다:
 
 $$
-k_t = \mathcal{M}_k(x_t; W_{k,t-1}),\quad
+\begin{aligned}
+&k_t = \mathcal{M}_k(x_t; W_{k,t-1}),\quad
 v_t = \mathcal{M}_v(x_t; W_{v,t-1}),\quad
-q_t = \mathcal{M}_q(x_t; W_{q,t-1}),\quad
-\eta_t = \mathcal{M}_\eta(x_t; W_{\eta,t-1}),\quad
+q_t = \mathcal{M}_q(x_t; W_{q,t-1}),\\
+&\eta_t = \mathcal{M}_\eta(x_t; W_{\eta,t-1}),\quad
 \alpha_t = \mathcal{M}_\alpha(x_t; W_{\alpha,t-1}),
+\end{aligned}
 $$
 
 각 $\mathcal{M}_\square$와 본체 $\mathcal{M}_{\mathrm{mem}}$은 $\min\ \ell(\mathcal{M}_\square; k_t, v_t)$를 최적화하고 출력은 $y_t=\mathcal{M}(q_t;W_{\mathrm{mem}})$이다. 요점: **inner learning rate $\eta_t$와 retention gate $\alpha_t$(→ 13장) 자체가 memory의 출력이다** — 12장에서 slow head가 산출하던 hyperparameter가 in-context 학습 객체가 된다. 모든 초기 상태 $\mathcal{M}_{\square,0}$은 sequence 전반에 meta-learn된다 [NL §8.1].
@@ -4343,7 +4345,7 @@ $$
 
 ### 16.4.2 inner loop: inference에서 무엇이 어떤 rule로 움직이는가
 
-decode 중 token 하나가 들어오면 Hope block의 일은 세 겹이다. (1) **fast memory들**($\mathcal{M}_k,\mathcal{M}_v,\mathcal{M}_\eta,\mathcal{M}_\alpha,\mathcal{M}_{\mathrm{mem}}$; $\mathcal{M}_q$ 적응 여부는 원문 상충이라 — §16.3.10 각주 1 — 다섯(정적)~여섯(적응형), 각 2-layer residual MLP)가 식 (16-5) 스케줄로 갱신된다. chunkwise 스케줄의 $1/C_\square$ 상환은 **훈련·prefill**에서만 성립한다(chunk 전체 token이 이미 있어 한 batch로 계산). autoregressive **decode**는 미래 token이 아직 없어 다음 chunk를 미리 batch할 수 없다: 이상적 $C=1$ decode는 매 token 순차 갱신(상환 없음, → 15장 TNT의 목표), $C>1$ decode는 $C$개를 버퍼링해 경계에서 지연 batch-update(chunk-size mismatch 위험, → 9·15장)하는 형태다 — 어느 쪽이든 정확한 decode 비용·latency는 공개 구현·측정이 없어 미확정이다. gate $\eta_t,\alpha_t$는 별도 학습기가 아니라 이 memory들의 forward 산출이다(표 16-3). (2) **CMS의 각 level**이 $C^{(\ell)}$ token마다 (M5)로 갱신된다 — inference 중에도 NTP truncated gradient step을 기하급수 간격으로 계속 밟는다. (3) 나머지($W_Q$·embedding·conv·norm)는 움직이지 않는다.
+decode 중 token 하나가 들어오면 Hope block의 일은 세 겹이다. (1) **fast memory들**($\mathcal{M}_k$, $\mathcal{M}_v$, $\mathcal{M}_\eta$, $\mathcal{M}_\alpha$, $\mathcal{M}_{\mathrm{mem}}$; $\mathcal{M}_q$ 적응 여부는 원문 상충이라 — §16.3.10 각주 1 — 다섯(정적)~여섯(적응형), 각 2-layer residual MLP)가 식 (16-5) 스케줄로 갱신된다. chunkwise 스케줄의 $1/C_\square$ 상환은 **훈련·prefill**에서만 성립한다(chunk 전체 token이 이미 있어 한 batch로 계산). autoregressive **decode**는 미래 token이 아직 없어 다음 chunk를 미리 batch할 수 없다: 이상적 $C=1$ decode는 매 token 순차 갱신(상환 없음, → 15장 TNT의 목표), $C>1$ decode는 $C$개를 버퍼링해 경계에서 지연 batch-update(chunk-size mismatch 위험, → 9·15장)하는 형태다 — 어느 쪽이든 정확한 decode 비용·latency는 공개 구현·측정이 없어 미확정이다. gate $\eta_t,\alpha_t$는 별도 학습기가 아니라 이 memory들의 forward 산출이다(표 16-3). (2) **CMS의 각 level**이 $C^{(\ell)}$ token마다 (M5)로 갱신된다 — inference 중에도 NTP truncated gradient step을 기하급수 간격으로 계속 밟는다. (3) 나머지($W_Q$·embedding·conv·norm)는 움직이지 않는다.
 
 state는 KV cache처럼 $O(L)$로 자라지 않고 시퀀스 길이에 상수다(산수는 §16.7). fast memory엔 별도 test-time optimizer가 필요 없다(DGD rule·gate가 곧 optimizer). 단, ablation 표의 "w/o Momentum" 행(13.58 vs 12.24 [NL Table 6])과 §9.6 산문("removes the momentum term in the self-modifying Titans")은 배포된 inner rule이 식 (16-4)에 없는 Titans식 momentum 항 $S_t$(→ 12장)를 실제로 지님을 말해 준다 — 그 정확한 수식 위치는 원문 어디에도 없다.
 <!-- VERIFIED(2026-07-12): §9.6이 momentum 항 존재를 명시(ablation 행 설명), 수식(Eq.88/90)에는 부재 — 간극 자체가 원문 사실. 공식 구현 부재. -->
@@ -4767,7 +4769,7 @@ n=200 설정은 passage 200개를 한 번의 continued pretraining으로 흡수�
 
 **[Sleep]의 한계.** (1) **graft이지 co-training이 아니다** — sleep 기계는 기성 backbone에 부착되었고, wake/sleep을 처음부터 함께 훈련한 실증이 없다(§17.4의 의무 caveat). (2) **sleep 시점이 학습되지 않는다** — chunk 경계에 hard-wire되어 있고, 불규칙한 실전 트래픽 아래의 거동은 미지수다. (3) **dreaming이 task-aware다** — $(x_{\mathrm{ctx}},\tau)$, 즉 context와 평가 가능한 성능 측정이 sleep 중에 주어져야 한다. 완전 비지도 배포에는 $\tau$가 없으므로 [Sleep Eq. 5]의 이진 개선 보상을 무엇으로 대체할지가 공백이다. (4) **frozen reward model 의존** — 계속 변하는 student에 대한 고정 심판의 편향·drift가 검토되지 않았고, §17.6에서 본 대로 semantic reward 제거가 AIME-25에서는 오히려 이롭다(69.2 vs 69.0 [Sleep Table 1]). (5) **router 동역학 미명세** — 새로 활성화된 expert로 dispatch를 배우고 reset된 expert로의 dispatch를 멈추는 과정이 서술되지 않았다. 실구현의 실질적 공백이다. (6) **장기 안정성** — 수백 번의 sleep에 걸친 expansion+reset의 안정성, pre-allocate된 expert pool의 고갈 시점 모두 미검증. (7) **이론 부재** — CF를 capacity 문제로 재정의했지만, consolidation당 얼마의 capacity가 얼마의 forgetting을 막는지, upward distillation의 lossy "추상화"가 무엇을 보존하는지에 대한 형식적 진술이 없다. (8) **재귀적 self-modification의 안전성** — 매일 밤 자기 weights를 고쳐 쓰고 random expert로 novelty를 주입하는 모델의 안전·거버넌스 논의가 전혀 없다.
 
-동시대 지형에서의 위치도 기록해 둔다. [Sleep App. A.4]는 2026년의 on-policy self-distillation(OPSD) 물결 전체를 지도화하고 네 축으로 차별화한다: (i) 고정 teacher의 re-conditioning이 아니라 새로 키운 capacity로의 upward distillation, (ii) 평평한 teacher/student 쌍이 아니라 frequency로 정렬된 memory 사슬, (iii) consolidation만이 아니라 Dreaming을 포함한 2단계 sleep, (iv) 순수 per-token reverse-KL이 아니라 GKD+imitation learning. 그리고 OPSD의 보고된 실패 모드 — epistemic verbalisation 억제로 인한 최대 40%의 OOD 하락(Kim et al. 2026), 반복 적용 시의 leakage·collapse — 를 2단계 설계의 동기로 인용한다. OpenReview 2025년 9월 공개를 근거로 한 우선권 주장도 이 부록의 일부다.
+동시대 지형에서의 위치도 기록해 둔다. [Sleep App. A.4]는 2026년의 on-policy self-distillation(OPSD) 물결 전체를 지도화하고 네 축으로 차별화한다: (i) 고정 teacher의 re-conditioning이 아니라 새로 키운 capacity로의 upward distillation, (ii) 평평한 teacher/student 쌍이 아니라 frequency로 정렬된 memory 사슬, (iii) consolidation만이 아니라 Dreaming을 포함한 2단계 sleep, (iv) 순수 per-token reverse-KL이 아니라 GKD+imitation learning. 그리고 OPSD의 보고된 실패 모드 — epistemic verbalisation 억제로 인한 최대 40%의 OOD 하락(Kim et al. 2026, arXiv:2603.24472), 반복 적용 시의 leakage·collapse — 를 2단계 설계의 동기로 인용한다. OpenReview 2025년 9월 공개를 근거로 한 우선권 주장도 이 부록의 일부다.
 
 **라인의 완성형.** 이제 여섯 논문을 겹쳐 놓고 이 책의 결산을 적는다.
 
@@ -5035,9 +5037,9 @@ attention은 capacity가 무한(ordinal 4)인데 ppl은 오히려 나쁜 축에 
 **(D) 보조 검정 — state 양의 monotone 효과와, scaling으로 오독하면 안 되는 U-curve.** 두 개의 within-setting 보조 결과가 위 그림을 조인다. 첫째, TNT(150M, 동일 setting)에서 local memory 수를 0→4로 늘리면 avg ppl이 $23.53{\to}21.04{\to}20.74{\to}20.47{\to}20.15$로 단조 감소한다($\rho{=}-1.0$) — state를 더하면 품질이 오른다는 방향을 within-setting으로 확인하되, gain은 포화한다(+1에서 +4까지 $21.04{\to}20.15$, diminishing returns). 둘째 **경고**: TNT Fig 2의 550M Titans(train $C{=}64$)에서 inference chunk를 바꾼 ppl은 $C{=}8$의 36.45에서 train-matched $C{=}64$의 13.78로 내려갔다가 $C{=}512$의 22.40으로 다시 오르는 **U-curve**다. 이것은 scaling law가 **아니라** train/serve chunk resolution mismatch(TNT Challenge 3)이며, 최소가 스케일이 아니라 train chunk에 걸린다는 사실이 그 증거다. scaling 표에 이 점을 섞으면 안 된다.
 
 
-![그림 19-2 — E4 scaling fit: (좌) within-line ppl-vs-params/compute fit과 N,D confound, (중) 고정 1.3B cross-architecture ppl에 대한 state-bytes·capacity rank test, (우) capacity가 값을 하는 유일한 축인 BABILong retention과 Titans→Atlas 도약](/home/jimmy/repos/neural-memory-study/figures/exp-f-scaling-fits.png)
+![그림 19-2 — E4 scaling fit(2×2 panel): (좌상) within-line ppl-vs-params fit과 N,D confound, (우상) 고정 1.3B cross-architecture ppl에 대한 state-bytes·capacity rank test, (좌하) capacity가 값을 하는 유일한 축인 BABILong retention과 Titans→Atlas 도약, (우하) TNT train/serve chunk mismatch의 U-curve(scaling law가 아니라 resolution mismatch)](/home/jimmy/repos/neural-memory-study/figures/exp-f-scaling-fits.png)
 
-그림 19-2 — E4 정량 백본. 세로 fit(좌)은 params·compute 두 축을 함께 보여 N,D confound를 드러내고, 가운데 panel의 rank test는 ppl 축에서 capacity가 state-bytes와 rank-동치이며 attention을 넣으면 부호가 뒤집힘을 보인다. 오른쪽 panel의 retention 도약이 capacity 축이 예측력을 더하는 유일한 곳이다(실험 E4). 모든 절대 exponent는 directional, $\rho$·순서·비율만 load-bearing.
+그림 19-2 — E4 정량 백본(2×2). 세로 fit(좌상)은 params 축의 within-line 기울기와 N,D confound를 드러내고, 우상 panel의 rank test는 ppl 축에서 capacity가 state-bytes와 rank-동치이며 attention을 넣으면 부호가 뒤집힘을 보인다. 좌하 panel의 retention 도약이 capacity 축이 예측력을 더하는 유일한 곳이며, 우하 panel의 U-curve는 (D)의 경고 — train/serve chunk mismatch이지 scaling law가 아니라는 것 — 을 시각화한다. 모든 절대 exponent는 directional, $\rho$·순서·비율만 load-bearing.
 
 > **[평가]** E4는 A3의 falsifier 3("capacity가 state-bytes 대비 예측력을 더하는가")을 공개 점 위에서 **부분적으로 실행**했고, 답은 target-의존적이다: **ppl 축에서는 더하지 않으며(오히려 attention을 넣으면 오도), long-context retention 축에서는 더한다.** 이 검정은 여전히 이질적 tokenizer의 digitize된 점 위에서 rank-correlation으로만 성립하므로(§19.3), 같은 tokenizer·같은 state-bytes에서 continuous exponent를 내는 controlled run은 §19.8로 이월된다. 그러나 falsifier의 **방향**은 이미 결정되었다: capacity를 일급 축으로 세우되 그 자리는 quality-일반이 아니라 **retention**이다.
 
@@ -5420,7 +5422,7 @@ neural-memory 라인은 본질적으로 recurrent다. inner loop가 token마다 
 
 로또의 세를 선불했다고 해서 이 라인이 곧바로 실용화되는 것은 아니다. attention의 실용화에는 알고리즘 승리 이후 한 번의 **kernel 승리**가 더 필요했다. FlashAttention(Dao et al. 2022, arXiv:2205.14135)은 attention의 수학을 한 글자도 바꾸지 않고 — bit-exact tiling으로 — IO를 재조직해 attention을 메모리 병목에서 풀어냈다. 이후 FlashDecoding이 같은 아이디어를 decode까지 확장했다. attention이 오늘 어디서나 돌아가는 것은 이 kernel-level 돌파 덕이다.
 
-이 neural-memory 가족에는 그런 순간이 **아직 없다.** 그리고 그 부재는 추측이 아니라 생태계에서 관측된다. flash-linear-attention(FLA, 5,325★)은 이 라인의 **matmul-clean한** 계보 — `delta_net`, `gated_deltanet`, `gla`, `rwkv7`, `mamba2`, `mesa_net` 등 — 을 전부 production-grade Triton 커널로 layer·model 수준까지 커버한다. Gated DeltaNet(이하 GDN)은 NVIDIA의 공식 구현(NVlabs/GatedDeltaNet, 619★, ICLR 2025)까지 갖췄다. 그런데 이 라인의 정점인 **deep-memory + momentum** Titans는 FLA에서 `fla/ops/titans`의 **naive PyTorch 참조 구현**에 머물러 있다 — Triton 커널도, layer/model 통합도 없다. 같은 RFC(#107)에서 TTT와 Titans 커널이 함께 발의됐으나 TTT만 Triton화되고 Titans는 #214에서 정체했다.
+이 neural-memory 가족에는 그런 순간이 **아직 없다.** 그리고 그 부재는 추측이 아니라 생태계에서 관측된다. flash-linear-attention(FLA, 5,325★; 이하 이 장의 GitHub 별 수는 모두 2026-07 정찰 시점 값, → `notes/impl-availability.md`)은 이 라인의 **matmul-clean한** 계보 — `delta_net`, `gated_deltanet`, `gla`, `rwkv7`, `mamba2`, `mesa_net` 등 — 을 전부 production-grade Triton 커널로 layer·model 수준까지 커버한다. Gated DeltaNet(이하 GDN)은 NVIDIA의 공식 구현(NVlabs/GatedDeltaNet, 619★, ICLR 2025)까지 갖췄다. 그런데 이 라인의 정점인 **deep-memory + momentum** Titans는 FLA에서 `fla/ops/titans`의 **naive PyTorch 참조 구현**에 머물러 있다 — Triton 커널도, layer/model 통합도 없다. 같은 RFC(#107)에서 TTT와 Titans 커널이 함께 발의됐으나 TTT만 Triton화되고 Titans는 #214에서 정체했다.
 
 이 정체의 원인이 이 장의 핵심 증거다: **chunk-level momentum이 chunkwise closed form을 깨뜨린다.** momentum buffer $S_t=\beta_t S_{t-1}-\eta_t\nabla_W\ell$(식 (M2))의 재귀 항은 chunk 경계를 넘어 이어지므로, chunk 내부를 하나의 깨끗한 matmul로 접는 dual form이 성립하지 않는다. 바로 이 어려움이 [TNT]의 존재 이유였고(→ 9장·15장), 지금은 오픈소스 커널 생태계에 남긴 **실물 흔적** — Titans만 naive에 멈춘 자리 — 으로 확인된다.
 
@@ -5430,7 +5432,7 @@ neural-memory 라인은 본질적으로 recurrent다. inner loop가 token마다 
 
 이 정체가 우연한 엔지니어링 지연이 아니라 알고리즘의 구조적 성질임을 못박아 둔다. chunkwise 병렬화의 문법을 다시 부르자(→ 9장): sequential recurrence를 (i) chunk 내부를 하나의 큰 matmul로 접는 병렬 파트와 (ii) chunk 요약들만 잇는 inter-chunk sequential scan으로 분해한다. 이 분해가 성립하려면 per-token update가 상태의 affine map이어야 하고, 그 map들의 chunk-내 합성이 **associatively 결합 가능한 compact object(행렬 하나)**로 접혀야 한다. 어떤 알고리즘이 "matmul-clean"한가는 정확히 이 접힘이 되는가로 갈린다.
 
-**되는 쪽 — GDN.** GDN의 update $W_t=\alpha_tW_{t-1}(I-\eta_tk_tk_t^\top)+\eta_tv_tk_t^\top$는 $W$에 affine이고 memory가 linear(행렬)다. chunk 내 $\prod_i(I-\eta_ik_ik_i^\top)$ 곱은 WY/UT 표현으로 하나의 masked matmul(삼각 역행렬 한 번 — 그 자체가 GEMM)로 접힌다. 그래서 `delta_net`·`gated_deltanet`·`gla`·`rwkv7`·`mamba2`가 전부 FLA에 production-grade Triton으로 존재하고, GDN은 NVIDIA 공식 커널(NVlabs/GatedDeltaNet, 619★)까지 갖췄다.
+**되는 쪽 — GDN.** GDN의 update $W_t=\alpha_tW_{t-1}(I-\eta_tk_tk_t^\top)+\eta_tv_tk_t^\top$는 $W$에 affine이고 memory가 linear(행렬)다. chunk 내 $\prod_i(I-\eta_ik_ik_i^\top)$ 곱은 WY/UT 표현으로 하나의 masked matmul(삼각 역행렬 한 번 — 그 자체가 GEMM)로 접힌다. 그래서 `delta_net` · `gated_deltanet` · `gla` · `rwkv7` · `mamba2`가 전부 FLA에 production-grade Triton으로 존재하고, GDN은 NVIDIA 공식 커널(NVlabs/GatedDeltaNet, 619★)까지 갖췄다.
 
 **안 되는 쪽 — Titans(deep memory + momentum).** 두 겹의 장애가 겹친다.
 
@@ -5573,7 +5575,7 @@ NVIDIA의 자산은 두 가지다: GPU의 CUDA/cuDNN moat, 그리고 linear-atte
 
 세 번째 player는 조직이 아니라 생태계다. flash-linear-attention(fla)은 GLA·DeltaNet·GDN·RWKV 등 linear-memory 모델의 Triton kernel을 모은, 이 계보의 사실상 kernel 인프라다. 그러나 fla 역시 NVIDIA 자산과 같은 함정 위에 있다: **linear state를 전제**하므로, deep memory(TTT/Titans/Atlas)의 non-linear recurrence에는 그대로 통하지 않는다. deep-memory fused kernel은 open-source 쪽에서도 아직 공백이며, 이 공백이 21장이 말한 "이 가족이 아직 기다리는 FlashAttention-moment"의 kernel 측면이다.
 
-공백은 kernel에 그치지 않는다. serving 스택도 RMW state를 관리하지 못한다. 기존 KV-cache manager의 semantics — content-addressed prefix 재사용, append-only placement — 는 RMW state에 대해 범주 오류다(claim6, → 23장): 재사용률이 구조적으로 0이고(내용이 매 token 바뀌어 block hash가 재발하지 않는다), append-only가 stale 사본을 누적하며, dirty writeback이 값매김되지 않는다. TTT-state manager는 `update_in_place`·`mark_dirty/writeback`·`checkpoint/rollback`·`bind_to_sequence` 같은, KVCacheManager에 없는 event type을 필요로 한다.
+공백은 kernel에 그치지 않는다. serving 스택도 RMW state를 관리하지 못한다. 기존 KV-cache manager의 semantics — content-addressed prefix 재사용, append-only placement — 는 RMW state에 대해 범주 오류다(claim6, → 23장): 재사용률이 구조적으로 0이고(내용이 매 token 바뀌어 block hash가 재발하지 않는다), append-only가 stale 사본을 누적하며, dirty writeback이 값매김되지 않는다. TTT-state manager는 `update_in_place` · `mark_dirty/writeback` · `checkpoint/rollback` · `bind_to_sequence` 같은, KVCacheManager에 없는 event type을 필요로 한다.
 
 > **[평가]** open-source의 합리적 수는 이 두 공백을 먼저 메우는 것이다. **수 A — fla를 deep memory로 확장.** deep-memory용 Triton fused forward+backward chunk kernel(per-chunk batched fwd/bwd와 cumulative-sum state update의 융합)을 먼저 내는 팀이, 이 라인에서 linear-attention 시대의 FlashAttention이 그랬던 역할 — 사실상의 kernel 표준 — 을 차지한다. **수 B — serving 인프라에 RMW API를 추가.** vLLM-class 스택에 claim6의 missing API를 얹는 팀이 decode 반쪽의 소프트웨어 열쇠를 쥔다. 두 수 모두 하드웨어 자산 없이 둘 수 있고, 그래서 open-source가 진입 가능한 지점이다.
 
@@ -5587,7 +5589,7 @@ open-source가 왜 구조적으로 중요한가. Google이 논문으로 아키�
 
 **학계의 진입점은 아직 잠긴 이론과 측정이다.** 6편 어디에도 chunkwise staleness의 error bound가 없고(→ 9장), deep-memory·windowed·self-modifying 변형의 regret/capacity/expressivity 정리도 linear 특수 경우 밖에서는 비어 있다(dossier §3.2가 저자들 스스로 지목한 공백). 이것은 하드웨어 없이 종이와 증명으로 둘 수 있는 수이며, 이 라인의 다음 논문이 닫아야 할 자리다. 측정 쪽도 마찬가지다: 이 라인은 decode throughput·latency를 한 줄도 공개하지 않았고(→ 20장·23장), 우리 warrant조차 절대치는 roofline 하한이다(정직성 계약). 실제 kernel로 crossover $S^*$를 head-to-head로 재는 일(claim2의 A100 이월 항목)은 GPU 몇 장이면 되는, 소규모 연구실이 첫 저자로 설 수 있는 측정이다.
 
-**스타트업의 진입점은 decode 반쪽의 소프트웨어다.** claim6이 짚은 KV-cache manager의 범주 오류 — content-addressed 재사용률이 구조적으로 0, stale 사본 256× 누적, 값 안 매겨진 dirty writeback — 는 곧 시장 공백이다. RMW state를 관리하는 serving 계층(`update_in_place`·`mark_dirty/writeback`·`checkpoint/rollback`·`bind_to_sequence`)은 하드웨어 없이 소프트웨어로 짜는 제품이고, per-session weight state를 새 cache class로 다루는 인프라(→ 23장)는 vLLM-class 스택 위에서 독립 제품이 될 여지가 있다. 하드웨어 자산이 없다는 바로 그 제약이 이들을 소프트웨어 수로 몰아넣고, 그 수들이 마침 decode 반쪽에 집중되어 있다.
+**스타트업의 진입점은 decode 반쪽의 소프트웨어다.** claim6이 짚은 KV-cache manager의 범주 오류 — content-addressed 재사용률이 구조적으로 0, stale 사본 256× 누적, 값 안 매겨진 dirty writeback — 는 곧 시장 공백이다. RMW state를 관리하는 serving 계층(`update_in_place` · `mark_dirty/writeback` · `checkpoint/rollback` · `bind_to_sequence`)은 하드웨어 없이 소프트웨어로 짜는 제품이고, per-session weight state를 새 cache class로 다루는 인프라(→ 23장)는 vLLM-class 스택 위에서 독립 제품이 될 여지가 있다. 하드웨어 자산이 없다는 바로 그 제약이 이들을 소프트웨어 수로 몰아넣고, 그 수들이 마침 decode 반쪽에 집중되어 있다.
 
 > **[평가]** 진입점의 공통 문법은 하나다 — **자산의 비대칭이 곧 진입로의 지도다.** 대형 player가 하드웨어·컴파일러·제품을 쥔 자리(training 반쪽)는 진입이 비싸고, 아무도 아직 쥐지 못한 자리(decode 소프트웨어, 이론, 측정)는 진입이 싸다. 학계·스타트업의 합리적 수는 후자에 정확히 정렬되며, 이것은 다음 절의 분업 구조가 대형 3인에 국한되지 않고 진입자에게까지 확장된다는 뜻이다.
 
@@ -5857,7 +5859,7 @@ TNT의 chunk-size mismatch(→ 15장)는 라인 전체에서 **단일 설정의 
 
 ### 24.2.4 이 실험들의 vehicle: HOPE/Sleep 재현 runbook
 
-제안 A·B와, 라인 전체의 부재한 decode wall-clock(6편 전부 미공개, → 18장 §18.2)을 실측하려면 실행 가능한 재현 경로가 있어야 한다. 정찰 결과는 냉정하다: **6편 전부 공식 구현이 없고**, 사실상의 reference는 lucidrains/titans-pytorch 하나이며 그마저 논문 밖 확장이 섞여 있다. HOPE는 비공식 2종(84★/76★)이 소규모·단일 GPU 수준으로만 존재하고, **Sleep의 wake/sleep 파이프라인은 지구상에 구현이 0개**다.
+제안 A·B와, 라인 전체의 부재한 decode wall-clock(6편 전부 미공개, → 18장 §18.2)을 실측하려면 실행 가능한 재현 경로가 있어야 한다. 정찰 결과는 냉정하다: **6편 전부 공식 구현이 없고**, 사실상의 reference는 lucidrains/titans-pytorch 하나이며 그마저 논문 밖 확장이 섞여 있다. HOPE는 비공식 2종(84★/76★; 별 수는 2026-07 정찰 시점)이 소규모·단일 GPU 수준으로만 존재하고, **Sleep의 wake/sleep 파이프라인은 지구상에 구현이 0개**다.
 
 > **[평가] 제안 C — 하이브리드 4층 runbook.** (1) 베이스라인·백본 = flash-linear-attention + flame(공식급, multi-GPU 검증됨); (2) Titans neural memory = lucidrains 참조를 **논문 모드로 flag 고정**하고 `fla/ops/titans` naive를 수치 oracle로 병용; (3) HOPE = 자체 구현(비공식 2종은 참조·감사 대상이지 신뢰 기반 아님 — 둘 다 surrogate loss를 섞으므로 fork하면 "무엇을 측정했는지"가 모호해진다); (4) Sleep/Dreaming = 완전 자체 구현. 4층은 제안 A·B의 model-training 실험과 A100 runbook의 wall-clock 실측을 동시에 실어 나른다. Sleep 구현은 이 스터디의 잠재적 오픈소스 기여 지점이다.
 
@@ -5893,7 +5895,7 @@ decode step은 anchor(neural-mem-1.3B)에서 token마다 6.44 GB를 움직이고
 
 near-memory update engine에 대해서는 PIM이 **오직 write-heavy elementwise epilogue**(decay·renorm·AXPY)라는 소수 FLOP 지점에서만, 그것도 directional하게 등장한다. TTT epilogue의 약 3 MAC/elem에서 PIM은 1.6× energy 이득이나 2.1× latency 비용을 내고, rank-1에 가까운 1 MAC/elem에서는 energy와 latency 둘 다 이득이다(claim4/E1.2). latency 손해는 1과 3 MAC/elem 사이에서 뒤집혀 측정 격자의 3 MAC/elem에서 이미 물린다(1 MAC/elem에서는 0.7× time으로 이득).
 
-이 세 요구(높은 RMW 대역폭·per-tenant residency·write-heavy epilogue)를 하나의 소자 스케치로 모으면 **near-memory update engine**의 마이크로아키텍처가 된다(directional, silicon 미검증). 데이터패스는 세 스테이지다. (1) **state-tile 상주 버퍼** — 한 layer의 fast-weight $W$(+momentum $S_t$)를 tile 단위로 on-die/scratchpad에 붙잡는 SRAM. per-layer 상주가 가능한 폭(residency crossover $d^*{\approx}2896$ 아래)에서만 tile이 fit하고, 넘으면 streamed다 — whole-model pin은 Titans-170M만 가능하므로(claim4) 상주 단위는 layer다. (2) **epilogue ALU lane** — read된 state tile에 master update $W_t=\alpha_t W_{t-1}+S_t$(→ STYLE (M2))를 적용하는 write-heavy 경로: decay($\alpha_t\odot$), AXPY($S_t{=}\beta_t S_{t-1}-\eta_t g_t^{\mathrm{in}}$ 누적), renorm을 한 pass에 fuse한다. 이 lane이 §24.3.1이 PIM-적합으로 한정한 minority-FLOP epilogue(약 1–3 MAC/elem)를 흡수하고, GEMV/GEMM 형태의 gradient 계산 본체는 tensor-core로 되돌린다 — §24.6 배제 2와 정합이다. (3) **per-tenant residency slot table** — state가 sequence별 unshared 사본이므로(claim4), engine은 slot↔sequence 바인딩과 slot별 dirty 비트를 유지하는 작은 directory를 갖는다. 이 directory가 곧 §24.5 소프트웨어 층의 `bind_to_sequence`·`mark_dirty`의 하드웨어 짝이다: update는 append가 아니라 in-place로 slot을 덮어 T개 stale 버전 누적을 막고(claim6 G2, 256×), eviction 시 dirty slot은 반드시 writeback 경로로 흐른다(무료 drop 금지, G3). 요컨대 소자·매니저·kernel이 같은 세 measured 사실(memory-bound whole-state RMW, per-seq residency, 항상-dirty)을 세 층에서 각각 구현하며, 소자 D의 근거는 이 세 사실 어느 것도 위에 얹은 것이 아니라 논문들의 cost accounting에서 읽어 낸 것이다.
+이 세 요구(높은 RMW 대역폭·per-tenant residency·write-heavy epilogue)를 하나의 소자 스케치로 모으면 **near-memory update engine**의 마이크로아키텍처가 된다(directional, silicon 미검증). 데이터패스는 세 스테이지다. (1) **state-tile 상주 버퍼** — 한 layer의 fast-weight $W$(+momentum $S_t$)를 tile 단위로 on-die/scratchpad에 붙잡는 SRAM. per-layer 상주가 가능한 폭(residency crossover $d^*{\approx}2896$ 아래)에서만 tile이 fit하고, 넘으면 streamed다 — whole-model pin은 Titans-170M만 가능하므로(claim4) 상주 단위는 layer다. (2) **epilogue ALU lane** — read된 state tile에 master update $W_t=\alpha_t W_{t-1}+S_t$(→ STYLE (M2))를 적용하는 write-heavy 경로: decay($\alpha_t\odot$), AXPY($S_t{=}\beta_t S_{t-1}-\eta_t g_t^{\mathrm{in}}$ 누적), renorm을 한 pass에 fuse한다. 이 lane이 §24.3.1이 PIM-적합으로 한정한 minority-FLOP epilogue(약 1–3 MAC/elem)를 흡수하고, GEMV/GEMM 형태의 gradient 계산 본체는 tensor-core로 되돌린다 — §24.6 배제 2와 정합이다. (3) **per-tenant residency slot table** — state가 sequence별 unshared 사본이므로(claim4), engine은 slot↔sequence 바인딩과 slot별 dirty 비트를 유지하는 작은 directory를 갖는다. 이 directory가 곧 §24.5 소프트웨어 층의 `bind_to_sequence` · `mark_dirty`의 하드웨어 짝이다: update는 append가 아니라 in-place로 slot을 덮어 T개 stale 버전 누적을 막고(claim6 G2, 256×), eviction 시 dirty slot은 반드시 writeback 경로로 흐른다(무료 drop 금지, G3). 요컨대 소자·매니저·kernel이 같은 세 measured 사실(memory-bound whole-state RMW, per-seq residency, 항상-dirty)을 세 층에서 각각 구현하며, 소자 D의 근거는 이 세 사실 어느 것도 위에 얹은 것이 아니라 논문들의 cost accounting에서 읽어 낸 것이다.
 
 > **[평가] 제안 D — RMW-bandwidth decode 소자.** high-RMW-bandwidth state residency(per-layer 상주를 겨냥한 on-die/scratchpad 계층) + per-tenant state placement + elementwise epilogue를 위한 near-memory update path. 이 제안은 논문들의 cost accounting에 **근거한 것이지 그 위에 얹은 것이 아니다** — decode가 memory-bound whole-state RMW라는 사실은 measured structure이고, epilogue의 PIM 적합성은 minority-FLOP·directional로 한정된다. 절대 이득 배율은 silicon 검증 전까지 directional로만 인용한다. 한 요구가 더 있다 — **multi-tenant isolation과 privacy**다(dossier §3.2의 serving 공백). KV page는 append-once·공유 가능이라 tenant 간 격리가 논리적 partition으로 족하지만, RMW state는 tenant의 문맥이 weight에 **흡수**된 사본이라 slot이 물리적으로 격리돼야 하고(한 slot의 잔여가 다음 tenant에 새면 문맥 누출이다), free는 반드시 잔여 zeroization을 동반해야 한다. 이는 slot table의 bind/free semantics(claim6)를 소자 수준 격리 요구로 승격한다. 이 요구는 정직 판정의 두 지점에 얹는 새 주장이 아니라 per-tenant residency의 직접 귀결이다 — falsifier: state가 사실상 문맥을 복원 불가능하게 압축한다면(privacy가 압축으로 자동 확보되면) 물리 격리의 필요성이 약해진다. 그 복원 가능성 자체가 미해결 질문이므로 이 요구는 보수적으로 유지한다.
 
@@ -5961,7 +5963,7 @@ memory-centric 제안(D·E)은 pair thesis의 절반일 뿐이다. training/pref
 - 알고리즘 제안은 세 층이다. 두 CPU microbench가 chunk $C$-roofline 곡선(claim7)과 on/off-die RMW cliff(claim8)의 **모양**을 하드웨어 불문으로 고정했고, 이것이 제안 A(train/serve chunk-consistency grid)와 제안 B(state-capacity scaling fit)의 기대값이며, 두 실험의 vehicle은 하이브리드 4층 HOPE/Sleep 재현 runbook(제안 C)이다. E4가 공개 점 digitize로 두 부호를 이미 예열했다 — capacity는 ppl이 아니라 **long-context/retention 축**에서만 예측력을 얻고(A3를 좁힘), local-memory 수와 chunk mismatch U자가 제안 A·B의 낙하 방향을 고정한다. 여기에 제안 J(learned chunk/cadence schedule)가 고정 schedule을 학습 대상으로 올려 §24.3.2의 tier 배치와 맞물린다.
 - 하드웨어 memory-centric 절반은 정직 판정의 두 지점에서만 나온다: 제안 D(RMW-bandwidth decode 소자 — per-layer residency, per-tenant placement, near-memory epilogue engine; claim1/4/8)와 제안 E(frequency-tiered placement — NL/Sleep cadence의 tier 직역; claim5).
 - accelerator 절반이 그 짝이다: 제안 F(fused chunk kernel — momentum이 깨뜨린 chunkwise closed form의 미해결 커널), 제안 G(grouped-GEMM decode engine — per-request weights가 깬 batching 복원), 제안 H(backward-capable serving kernel — decode에 들어온 backward primitive).
-- 소프트웨어 접착층은 제안 I(per-session-weights serving stack)로, claim6의 다섯 누락 API(`update_in_place`·`mark_dirty/writeback`·`checkpoint/rollback`·`bind_to_sequence`·`free_on_update`)를 설계 요구사항으로 번역한다.
+- 소프트웨어 접착층은 제안 I(per-session-weights serving stack)로, claim6의 다섯 누락 API(`update_in_place` · `mark_dirty/writeback` · `checkpoint/rollback` · `bind_to_sequence` · `free_on_update`)를 설계 요구사항으로 번역한다.
 - 두 FORCED 방향 — 훈련용 새 소자, 일반 PIM — 은 논문들 자신의 증거(알고리즘을 dense matmul로 다시 빚음)에 반하므로 명시적으로 배제한다. 흥미로운 하드웨어 제안은 어느 한쪽이 아니라 **쌍**이다.
 - 모든 수치는 exploration-grade 계약 아래 읽는다: 비율·crossover·tier·bound만 load-bearing, 절대 µs/mJ은 roofline 하한(A100 runbook 이월), scratchpad/PIM 이득 배율은 directional.
 
@@ -6073,6 +6075,7 @@ Part III의 기여는 세 겹이다.
 > **범위** — 25개 장(Part I ch01–11, Part II ch12–17, Part III ch18–25) 전체를 grep해 수집·dedupe한 인용 목록이다. 각 항목 끝의 `[인용:]`은 그 문헌을 인용하는 장이다.
 > **표기 규약** (STYLE §2.5) — 6편 주 논문은 공식 축약 **[Titans]·[Miras]·[Atlas]·[TNT]·[NL]·[Sleep]**로, 외부 문헌은 저자-연도 + arXiv ID로 인용한다. arXiv 번호는 본문에 등장한 값을 그대로 싣고, 본문에 저자-연도만 있던 항목은 이 라운드에서 web으로 확인해 arXiv ID·저자·연도를 채웠다(확인 실패분은 §D 미해결).
 > **검증 상태** — 6편 메타데이터는 `notes/{id}.json`(web-verified)에서, 외부 arXiv ID는 각 장 본문에서, 저자-연도-only 항목(§C 일부)과 P3 이월 항목은 2026-07-12 WebSearch로 교차확인했다.
+> **2026-07-12 마감 라운드** — 본문 25장의 arXiv ID·GitHub 별 수·venue·issue #번호를 `notes/impl-availability.md` 및 web으로 spot-verify(in-text arXiv 토큰 71종이 모두 §A/B에 존재함을 역방향 확인). 마지막 미해결 "Kim et al. 2026" 해소(→ §B.9, §D). 그리고 본문에 inline으로만 인용돼(arXiv ID 없이) grep 수집에서 누락됐던 고전 15편 — Polyak 1964, Zinkevich 2003, Shalev-Shwartz 2011, McMahan 2011, Anderson 1972, Kohonen 1972, Hopfield 1982, Blelloch 1990, French 1999, McClelland et al. 1995, Williams 1992, Schmidhuber 1987/1992, Flash-Decoding 2023, Kung–Leiserson 1978 — 을 역방향 확인해 §B에 추가했다.
 
 ---
 
@@ -6126,6 +6129,7 @@ Part III의 기여는 세 겹이다.
 - Yang, S., Wang, B., Shen, Y., Panda, R., & Kim, Y. (2024). *Gated Linear Attention Transformers with Hardware-Efficient Training* (GLA). arXiv:2312.06635. ICML 2024. [인용: ch06, ch09]
 - Sun, Y., Dong, L., Huang, S., et al. (2023). *Retentive Network: A Successor to Transformer for Large Language Models* (RetNet). arXiv:2307.08621. [인용: ch06, ch09]
 - Martin, E., & Cundy, C. (2018). *Parallelizing Linear Recurrent Neural Nets Over Sequence Length.* arXiv:1709.04057. ICLR 2018. [인용: ch07]
+- Blelloch, G. E. (1990). *Prefix Sums and Their Applications.* Technical Report CMU-CS-90-190, Carnegie Mellon University. (associative scan 알고리즘의 표준 참조 — S5의 parallel scan) [인용: ch07]
 
 ### B.4 Test-Time Training (TTT) · online-learning 관점의 sequence model
 
@@ -6153,6 +6157,7 @@ Part III의 기여는 세 겹이다.
 
 - Robbins, H., & Monro, S. (1951). *A Stochastic Approximation Method.* Annals of Mathematical Statistics 22(3). (SGD의 기원) [인용: ch02]
 - Rumelhart, D. E., Hinton, G. E., & Williams, R. J. (1986). *Learning representations by back-propagating errors.* Nature 323. [인용: ch02]
+- Polyak, B. T. (1964). *Some methods of speeding up the convergence of iteration methods.* USSR Computational Mathematics and Mathematical Physics 4(5). (heavy-ball momentum의 기원) [인용: ch02]
 - Sutskever, I., Martens, J., Dahl, G., & Hinton, G. (2013). *On the importance of initialization and momentum in deep learning.* ICML 2013. [인용: ch02]
 - Duchi, J., Hazan, E., & Singer, Y. (2011). *Adaptive Subgradient Methods for Online Learning and Stochastic Optimization* (AdaGrad). JMLR 12. [인용: ch02]
 - Kingma, D. P., & Ba, J. (2015). *Adam: A Method for Stochastic Optimization.* arXiv:1412.6980. ICLR 2015. [인용: ch02]
@@ -6165,6 +6170,9 @@ Part III의 기여는 세 겹이다.
 
 ### B.7 Online learning · meta-learning · bilevel
 
+- Zinkevich, M. (2003). *Online Convex Programming and Generalized Infinitesimal Gradient Ascent.* ICML 2003. (OGD와 $O(\sqrt{L})$ regret 정리) [인용: ch03]
+- Shalev-Shwartz, S. (2011). *Online Learning and Online Convex Optimization.* Foundations and Trends in Machine Learning 4(2). (OCO 교과서적 정리; 본문의 "Shalev-Shwartz 2011"과 "Shalev-Shwartz 2012, §2.6"[ch03]은 발행연도 표기만 다른 동일 monograph) [인용: ch03]
+- McMahan, H. B. (2011). *Follow-the-Regularized-Leader and Mirror Descent: Equivalence Theorems and L1 Regularization.* AISTATS 2011. (FTRL↔mirror descent) [인용: ch03]
 - Hazan, E. (2019). *Introduction to Online Convex Optimization* (2nd ed.). arXiv:1909.05207. [인용: ch03]
 - Orabona, F. (2019). *A Modern Introduction to Online Learning.* arXiv:1912.13213. [인용: ch03]
 - Finn, C., Abbeel, P., & Levine, S. (2017). *Model-Agnostic Meta-Learning for Fast Adaptation of Deep Networks* (MAML). arXiv:1703.03400. ICML 2017. [인용: ch04]
@@ -6174,6 +6182,9 @@ Part III의 기여는 세 겹이다.
 ### B.8 Associative memory · Hopfield
 
 - Widrow, B., & Hoff, M. E. (1960). *Adaptive switching circuits* (LMS / delta rule). IRE WESCON Convention Record. [인용: ch05, ch06, ch08]
+- Anderson, J. A. (1972). *A simple neural network generating an interactive memory.* Mathematical Biosciences 14(3–4). (correlation matrix memory의 공동 기원) [인용: ch05]
+- Kohonen, T. (1972). *Correlation Matrix Memories.* IEEE Transactions on Computers C-21(4). (outer-product 저장의 원형) [인용: ch05]
+- Hopfield, J. J. (1982). *Neural networks and physical systems with emergent collective computational abilities.* Proceedings of the National Academy of Sciences (PNAS) 79(8). (energy 기반 auto-associative memory; Atlas/TNT가 capacity 정식화의 뿌리로 인용) [인용: ch05]
 - Krotov, D., & Hopfield, J. J. (2016). *Dense Associative Memory for Pattern Recognition.* arXiv:1606.01164. NeurIPS 2016. [인용: ch05]
 - Ramsauer, H., et al. (2021). *Hopfield Networks is All You Need.* arXiv:2008.02217. ICLR 2021. [인용: ch05]
 - Sukhbaatar, S., Grave, E., Bojanowski, P., & Joulin, A. (2019). *Augmenting Self-attention with Persistent Memory.* arXiv:1907.01470. [인용: ch12]
@@ -6181,10 +6192,14 @@ Part III의 기여는 세 겹이다.
 ### B.9 Continual learning · distillation · self-improvement
 
 - McCloskey, M., & Cohen, N. J. (1989). *Catastrophic Interference in Connectionist Networks.* Psychology of Learning and Motivation 24. [인용: ch11]
+- French, R. M. (1999). *Catastrophic forgetting in connectionist networks.* Trends in Cognitive Sciences 3(4). (CF·pseudo-rehearsal 계보 정리) [인용: ch11]
+- McClelland, J. L., McNaughton, B. L., & O'Reilly, R. C. (1995). *Why there are complementary learning systems in the hippocampus and neocortex.* Psychological Review 102(3). (CLS 이론 — Sleep의 wake/sleep 분업의 신경과학 근거) [인용: ch11]
+- Williams, R. J. (1992). *Simple statistical gradient-following algorithms for connectionist reinforcement learning* (REINFORCE). Machine Learning 8(3–4). (policy-gradient 항등식) [인용: ch11]
 - Kirkpatrick, J., et al. (2017). *Overcoming catastrophic forgetting in neural networks* (EWC). arXiv:1612.00796. PNAS 114(13). [인용: ch11]
 - Hinton, G., Vinyals, O., & Dean, J. (2015). *Distilling the Knowledge in a Neural Network.* arXiv:1503.02531. [인용: ch11]
 - Kim, Y., & Rush, A. M. (2016). *Sequence-Level Knowledge Distillation.* arXiv:1606.07947. EMNLP 2016. [인용: ch17]
 - Agarwal, R., et al. (2024). *On-Policy Distillation of Language Models* (GKD). arXiv:2306.13649. ICLR 2024. [인용: ch11]
+- Kim, J., Luo, X., Kim, M., Lee, S., Kim, D., Jeon, J., Li, D., & Yang, Y. (2026). *Why Does Self-Distillation (Sometimes) Degrade the Reasoning Capability of LLMs?* arXiv:2603.24472 (2026-03-25). (본문 "Kim et al. 2026" — [Sleep App. A.4]가 인용한 OPSD 실패 모드: epistemic verbalisation 억제 → 최대 40% OOD 하락) [인용: ch17]
 - Singh, A., et al. (2024). *Beyond Human Data: Scaling Self-Training for Problem-Solving with Language Models* (ReST^EM). arXiv:2312.06585. TMLR 2024. [인용: ch11]
 - Ouyang, L., et al. (2022). *Training language models to follow instructions with human feedback* (InstructGPT). arXiv:2203.02155. NeurIPS 2022. [인용: ch11]
 - Zweiger, A., et al. (2025). *Self-Adapting Language Models* (SEAL). arXiv:2506.10943. (Dreaming의 인접 계보) [인용: ch11]
@@ -6196,6 +6211,8 @@ Part III의 기여는 세 겹이다.
 
 - Dao, T., Fu, D. Y., Ermon, S., Rudra, A., & Ré, C. (2022). *FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness.* arXiv:2205.14135. NeurIPS 2022. [인용: ch10, ch21]
 - Dao, T. (2023). *FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning.* arXiv:2307.08691. [인용: ch10]
+- Dao, T., Haziza, D., Massa, F., & Sizov, G. (2023). *Flash-Decoding for Long-Context Inference.* PyTorch / Stanford CRFM 블로그. (FlashAttention의 IO 재조직을 decode까지 확장 — ch21의 prefill/decode 대칭 논거) [인용: ch21]
+- Kung, H. T., & Leiserson, C. E. (1978). *Systolic Arrays (for VLSI).* Sparse Matrix Proceedings 1978, SIAM. (systolic array = TPU MXU / GPU tensor core의 조상; GEMM density 공진화 서술) [인용: ch21]
 - Kwon, W., et al. (2023). *Efficient Memory Management for Large Language Model Serving with PagedAttention* (vLLM). arXiv:2309.06180. SOSP 2023. [인용: ch10]
 - Hoffmann, J., et al. (2022). *Training Compute-Optimal Large Language Models* (Chinchilla). arXiv:2203.15556. NeurIPS 2022. [인용: ch19]
 - Hooker, S. (2020). *The Hardware Lottery.* arXiv:2009.06489. [인용: ch21]
@@ -6203,6 +6220,8 @@ Part III의 기여는 세 겹이다.
 
 ### B.11 교과서 · 고전 참조
 
+- Schmidhuber, J. (1987). *Evolutionary Principles in Self-Referential Learning* (diploma thesis). TU München. (학습 절차 자체를 학습 대상으로 삼는 self-referential learning) [인용: ch16]
+- Schmidhuber, J. (1992). *Learning to control fast-weight memories: An alternative to dynamic recurrent networks.* Neural Computation 4(1). (fast weight programming의 원형) [인용: ch04, ch06, ch16]
 - Schmidhuber, J. (1993). *A "self-referential" weight matrix.* ICANN 1993. (self-modifying/self-referential 계보의 뿌리) [인용: ch04, ch06, ch16]
 - Goodfellow, I., Bengio, Y., & Courville, A. (2016). *Deep Learning.* MIT Press. (backprop·optimizer 교과서 서술) [인용: ch02]
 
@@ -6222,10 +6241,11 @@ Part III(ch21·ch22·ch24)의 hardware-lottery / player-strategy / proposals 논
 
 ## D. 미해결 인용 (unresolved)
 
-- **Kim et al. 2026** — [Sleep App. A.4]가 2026년 on-policy self-distillation(OPSD) 물결의 실패 모드("epistemic verbalisation 억제로 인한 최대 40% OOD 하락")를 인용하며 언급(ch17). 원문에 arXiv ID·정식 제목이 없고 WebSearch로도 식별 불가 — Sleep 논문 부록 내부 참조로만 존재. 정식 서지 미확정.
+- (없음 — 이 라운드에서 마지막 미해결 항목이던 "Kim et al. 2026"이 해소되어 §B.9로 편입됨. 아래 "확인 완료" 참조.)
 
 ### 확인 완료(과거 미해결 → 해소)
 
+- **Kim et al. 2026** (직전 미해결) — *해소.* [Sleep App. A.4]가 OPSD 실패 모드로 인용한 "epistemic verbalisation 억제 → 최대 40% OOD 하락"의 원전은 Jeonghye **Kim** et al. (2026), *Why Does Self-Distillation (Sometimes) Degrade the Reasoning Capability of LLMs?*, **arXiv:2603.24472** (2026-03-25; Qwen3-1.7B/8B·DeepSeek-Distill-Qwen-7B·Olmo3-7B-Instruct에서 최대 40% 하락, "epistemic verbalization 억제" 기제 명시). 2026-07-12 WebSearch+arXiv 초록 대조로 저자·제목·수치 3중 확인. §B.9에 정식 등재. (Sleep 부록은 arXiv ID 없이 저자-연도만 표기했으나 외부 식별 가능했음.)
 - **[GDN NVIDIA affiliation]** (P3 이월) — *해소.* Gated DeltaNet(arXiv:2412.06464)의 Jan Kautz·Ali Hatamizadeh는 NVIDIA, Songlin Yang은 MIT. 공식 구현 NVlabs/GatedDeltaNet, ICLR 2025. (§B.2)
 
 

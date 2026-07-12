@@ -54,7 +54,7 @@ neural-memory 라인은 본질적으로 recurrent다. inner loop가 token마다 
 
 로또의 세를 선불했다고 해서 이 라인이 곧바로 실용화되는 것은 아니다. attention의 실용화에는 알고리즘 승리 이후 한 번의 **kernel 승리**가 더 필요했다. FlashAttention(Dao et al. 2022, arXiv:2205.14135)은 attention의 수학을 한 글자도 바꾸지 않고 — bit-exact tiling으로 — IO를 재조직해 attention을 메모리 병목에서 풀어냈다. 이후 FlashDecoding이 같은 아이디어를 decode까지 확장했다. attention이 오늘 어디서나 돌아가는 것은 이 kernel-level 돌파 덕이다.
 
-이 neural-memory 가족에는 그런 순간이 **아직 없다.** 그리고 그 부재는 추측이 아니라 생태계에서 관측된다. flash-linear-attention(FLA, 5,325★)은 이 라인의 **matmul-clean한** 계보 — `delta_net`, `gated_deltanet`, `gla`, `rwkv7`, `mamba2`, `mesa_net` 등 — 을 전부 production-grade Triton 커널로 layer·model 수준까지 커버한다. Gated DeltaNet(이하 GDN)은 NVIDIA의 공식 구현(NVlabs/GatedDeltaNet, 619★, ICLR 2025)까지 갖췄다. 그런데 이 라인의 정점인 **deep-memory + momentum** Titans는 FLA에서 `fla/ops/titans`의 **naive PyTorch 참조 구현**에 머물러 있다 — Triton 커널도, layer/model 통합도 없다. 같은 RFC(#107)에서 TTT와 Titans 커널이 함께 발의됐으나 TTT만 Triton화되고 Titans는 #214에서 정체했다.
+이 neural-memory 가족에는 그런 순간이 **아직 없다.** 그리고 그 부재는 추측이 아니라 생태계에서 관측된다. flash-linear-attention(FLA, 5,325★; 이하 이 장의 GitHub 별 수는 모두 2026-07 정찰 시점 값, → `notes/impl-availability.md`)은 이 라인의 **matmul-clean한** 계보 — `delta_net`, `gated_deltanet`, `gla`, `rwkv7`, `mamba2`, `mesa_net` 등 — 을 전부 production-grade Triton 커널로 layer·model 수준까지 커버한다. Gated DeltaNet(이하 GDN)은 NVIDIA의 공식 구현(NVlabs/GatedDeltaNet, 619★, ICLR 2025)까지 갖췄다. 그런데 이 라인의 정점인 **deep-memory + momentum** Titans는 FLA에서 `fla/ops/titans`의 **naive PyTorch 참조 구현**에 머물러 있다 — Triton 커널도, layer/model 통합도 없다. 같은 RFC(#107)에서 TTT와 Titans 커널이 함께 발의됐으나 TTT만 Triton화되고 Titans는 #214에서 정체했다.
 
 이 정체의 원인이 이 장의 핵심 증거다: **chunk-level momentum이 chunkwise closed form을 깨뜨린다.** momentum buffer $S_t=\beta_t S_{t-1}-\eta_t\nabla_W\ell$(식 (M2))의 재귀 항은 chunk 경계를 넘어 이어지므로, chunk 내부를 하나의 깨끗한 matmul로 접는 dual form이 성립하지 않는다. 바로 이 어려움이 [TNT]의 존재 이유였고(→ 9장·15장), 지금은 오픈소스 커널 생태계에 남긴 **실물 흔적** — Titans만 naive에 멈춘 자리 — 으로 확인된다.
 
@@ -64,7 +64,7 @@ neural-memory 라인은 본질적으로 recurrent다. inner loop가 token마다 
 
 이 정체가 우연한 엔지니어링 지연이 아니라 알고리즘의 구조적 성질임을 못박아 둔다. chunkwise 병렬화의 문법을 다시 부르자(→ 9장): sequential recurrence를 (i) chunk 내부를 하나의 큰 matmul로 접는 병렬 파트와 (ii) chunk 요약들만 잇는 inter-chunk sequential scan으로 분해한다. 이 분해가 성립하려면 per-token update가 상태의 affine map이어야 하고, 그 map들의 chunk-내 합성이 **associatively 결합 가능한 compact object(행렬 하나)**로 접혀야 한다. 어떤 알고리즘이 "matmul-clean"한가는 정확히 이 접힘이 되는가로 갈린다.
 
-**되는 쪽 — GDN.** GDN의 update $W_t=\alpha_tW_{t-1}(I-\eta_tk_tk_t^\top)+\eta_tv_tk_t^\top$는 $W$에 affine이고 memory가 linear(행렬)다. chunk 내 $\prod_i(I-\eta_ik_ik_i^\top)$ 곱은 WY/UT 표현으로 하나의 masked matmul(삼각 역행렬 한 번 — 그 자체가 GEMM)로 접힌다. 그래서 `delta_net`·`gated_deltanet`·`gla`·`rwkv7`·`mamba2`가 전부 FLA에 production-grade Triton으로 존재하고, GDN은 NVIDIA 공식 커널(NVlabs/GatedDeltaNet, 619★)까지 갖췄다.
+**되는 쪽 — GDN.** GDN의 update $W_t=\alpha_tW_{t-1}(I-\eta_tk_tk_t^\top)+\eta_tv_tk_t^\top$는 $W$에 affine이고 memory가 linear(행렬)다. chunk 내 $\prod_i(I-\eta_ik_ik_i^\top)$ 곱은 WY/UT 표현으로 하나의 masked matmul(삼각 역행렬 한 번 — 그 자체가 GEMM)로 접힌다. 그래서 `delta_net` · `gated_deltanet` · `gla` · `rwkv7` · `mamba2`가 전부 FLA에 production-grade Triton으로 존재하고, GDN은 NVIDIA 공식 커널(NVlabs/GatedDeltaNet, 619★)까지 갖췄다.
 
 **안 되는 쪽 — Titans(deep memory + momentum).** 두 겹의 장애가 겹친다.
 

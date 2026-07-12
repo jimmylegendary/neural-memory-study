@@ -3,6 +3,7 @@
 > **범위** — 25개 장(Part I ch01–11, Part II ch12–17, Part III ch18–25) 전체를 grep해 수집·dedupe한 인용 목록이다. 각 항목 끝의 `[인용:]`은 그 문헌을 인용하는 장이다.
 > **표기 규약** (STYLE §2.5) — 6편 주 논문은 공식 축약 **[Titans]·[Miras]·[Atlas]·[TNT]·[NL]·[Sleep]**로, 외부 문헌은 저자-연도 + arXiv ID로 인용한다. arXiv 번호는 본문에 등장한 값을 그대로 싣고, 본문에 저자-연도만 있던 항목은 이 라운드에서 web으로 확인해 arXiv ID·저자·연도를 채웠다(확인 실패분은 §D 미해결).
 > **검증 상태** — 6편 메타데이터는 `notes/{id}.json`(web-verified)에서, 외부 arXiv ID는 각 장 본문에서, 저자-연도-only 항목(§C 일부)과 P3 이월 항목은 2026-07-12 WebSearch로 교차확인했다.
+> **2026-07-12 마감 라운드** — 본문 25장의 arXiv ID·GitHub 별 수·venue·issue #번호를 `notes/impl-availability.md` 및 web으로 spot-verify(in-text arXiv 토큰 71종이 모두 §A/B에 존재함을 역방향 확인). 마지막 미해결 "Kim et al. 2026" 해소(→ §B.9, §D). 그리고 본문에 inline으로만 인용돼(arXiv ID 없이) grep 수집에서 누락됐던 고전 15편 — Polyak 1964, Zinkevich 2003, Shalev-Shwartz 2011, McMahan 2011, Anderson 1972, Kohonen 1972, Hopfield 1982, Blelloch 1990, French 1999, McClelland et al. 1995, Williams 1992, Schmidhuber 1987/1992, Flash-Decoding 2023, Kung–Leiserson 1978 — 을 역방향 확인해 §B에 추가했다.
 
 ---
 
@@ -56,6 +57,7 @@
 - Yang, S., Wang, B., Shen, Y., Panda, R., & Kim, Y. (2024). *Gated Linear Attention Transformers with Hardware-Efficient Training* (GLA). arXiv:2312.06635. ICML 2024. [인용: ch06, ch09]
 - Sun, Y., Dong, L., Huang, S., et al. (2023). *Retentive Network: A Successor to Transformer for Large Language Models* (RetNet). arXiv:2307.08621. [인용: ch06, ch09]
 - Martin, E., & Cundy, C. (2018). *Parallelizing Linear Recurrent Neural Nets Over Sequence Length.* arXiv:1709.04057. ICLR 2018. [인용: ch07]
+- Blelloch, G. E. (1990). *Prefix Sums and Their Applications.* Technical Report CMU-CS-90-190, Carnegie Mellon University. (associative scan 알고리즘의 표준 참조 — S5의 parallel scan) [인용: ch07]
 
 ### B.4 Test-Time Training (TTT) · online-learning 관점의 sequence model
 
@@ -83,6 +85,7 @@
 
 - Robbins, H., & Monro, S. (1951). *A Stochastic Approximation Method.* Annals of Mathematical Statistics 22(3). (SGD의 기원) [인용: ch02]
 - Rumelhart, D. E., Hinton, G. E., & Williams, R. J. (1986). *Learning representations by back-propagating errors.* Nature 323. [인용: ch02]
+- Polyak, B. T. (1964). *Some methods of speeding up the convergence of iteration methods.* USSR Computational Mathematics and Mathematical Physics 4(5). (heavy-ball momentum의 기원) [인용: ch02]
 - Sutskever, I., Martens, J., Dahl, G., & Hinton, G. (2013). *On the importance of initialization and momentum in deep learning.* ICML 2013. [인용: ch02]
 - Duchi, J., Hazan, E., & Singer, Y. (2011). *Adaptive Subgradient Methods for Online Learning and Stochastic Optimization* (AdaGrad). JMLR 12. [인용: ch02]
 - Kingma, D. P., & Ba, J. (2015). *Adam: A Method for Stochastic Optimization.* arXiv:1412.6980. ICLR 2015. [인용: ch02]
@@ -95,6 +98,9 @@
 
 ### B.7 Online learning · meta-learning · bilevel
 
+- Zinkevich, M. (2003). *Online Convex Programming and Generalized Infinitesimal Gradient Ascent.* ICML 2003. (OGD와 $O(\sqrt{L})$ regret 정리) [인용: ch03]
+- Shalev-Shwartz, S. (2011). *Online Learning and Online Convex Optimization.* Foundations and Trends in Machine Learning 4(2). (OCO 교과서적 정리; 본문의 "Shalev-Shwartz 2011"과 "Shalev-Shwartz 2012, §2.6"[ch03]은 발행연도 표기만 다른 동일 monograph) [인용: ch03]
+- McMahan, H. B. (2011). *Follow-the-Regularized-Leader and Mirror Descent: Equivalence Theorems and L1 Regularization.* AISTATS 2011. (FTRL↔mirror descent) [인용: ch03]
 - Hazan, E. (2019). *Introduction to Online Convex Optimization* (2nd ed.). arXiv:1909.05207. [인용: ch03]
 - Orabona, F. (2019). *A Modern Introduction to Online Learning.* arXiv:1912.13213. [인용: ch03]
 - Finn, C., Abbeel, P., & Levine, S. (2017). *Model-Agnostic Meta-Learning for Fast Adaptation of Deep Networks* (MAML). arXiv:1703.03400. ICML 2017. [인용: ch04]
@@ -104,6 +110,9 @@
 ### B.8 Associative memory · Hopfield
 
 - Widrow, B., & Hoff, M. E. (1960). *Adaptive switching circuits* (LMS / delta rule). IRE WESCON Convention Record. [인용: ch05, ch06, ch08]
+- Anderson, J. A. (1972). *A simple neural network generating an interactive memory.* Mathematical Biosciences 14(3–4). (correlation matrix memory의 공동 기원) [인용: ch05]
+- Kohonen, T. (1972). *Correlation Matrix Memories.* IEEE Transactions on Computers C-21(4). (outer-product 저장의 원형) [인용: ch05]
+- Hopfield, J. J. (1982). *Neural networks and physical systems with emergent collective computational abilities.* Proceedings of the National Academy of Sciences (PNAS) 79(8). (energy 기반 auto-associative memory; Atlas/TNT가 capacity 정식화의 뿌리로 인용) [인용: ch05]
 - Krotov, D., & Hopfield, J. J. (2016). *Dense Associative Memory for Pattern Recognition.* arXiv:1606.01164. NeurIPS 2016. [인용: ch05]
 - Ramsauer, H., et al. (2021). *Hopfield Networks is All You Need.* arXiv:2008.02217. ICLR 2021. [인용: ch05]
 - Sukhbaatar, S., Grave, E., Bojanowski, P., & Joulin, A. (2019). *Augmenting Self-attention with Persistent Memory.* arXiv:1907.01470. [인용: ch12]
@@ -111,10 +120,14 @@
 ### B.9 Continual learning · distillation · self-improvement
 
 - McCloskey, M., & Cohen, N. J. (1989). *Catastrophic Interference in Connectionist Networks.* Psychology of Learning and Motivation 24. [인용: ch11]
+- French, R. M. (1999). *Catastrophic forgetting in connectionist networks.* Trends in Cognitive Sciences 3(4). (CF·pseudo-rehearsal 계보 정리) [인용: ch11]
+- McClelland, J. L., McNaughton, B. L., & O'Reilly, R. C. (1995). *Why there are complementary learning systems in the hippocampus and neocortex.* Psychological Review 102(3). (CLS 이론 — Sleep의 wake/sleep 분업의 신경과학 근거) [인용: ch11]
+- Williams, R. J. (1992). *Simple statistical gradient-following algorithms for connectionist reinforcement learning* (REINFORCE). Machine Learning 8(3–4). (policy-gradient 항등식) [인용: ch11]
 - Kirkpatrick, J., et al. (2017). *Overcoming catastrophic forgetting in neural networks* (EWC). arXiv:1612.00796. PNAS 114(13). [인용: ch11]
 - Hinton, G., Vinyals, O., & Dean, J. (2015). *Distilling the Knowledge in a Neural Network.* arXiv:1503.02531. [인용: ch11]
 - Kim, Y., & Rush, A. M. (2016). *Sequence-Level Knowledge Distillation.* arXiv:1606.07947. EMNLP 2016. [인용: ch17]
 - Agarwal, R., et al. (2024). *On-Policy Distillation of Language Models* (GKD). arXiv:2306.13649. ICLR 2024. [인용: ch11]
+- Kim, J., Luo, X., Kim, M., Lee, S., Kim, D., Jeon, J., Li, D., & Yang, Y. (2026). *Why Does Self-Distillation (Sometimes) Degrade the Reasoning Capability of LLMs?* arXiv:2603.24472 (2026-03-25). (본문 "Kim et al. 2026" — [Sleep App. A.4]가 인용한 OPSD 실패 모드: epistemic verbalisation 억제 → 최대 40% OOD 하락) [인용: ch17]
 - Singh, A., et al. (2024). *Beyond Human Data: Scaling Self-Training for Problem-Solving with Language Models* (ReST^EM). arXiv:2312.06585. TMLR 2024. [인용: ch11]
 - Ouyang, L., et al. (2022). *Training language models to follow instructions with human feedback* (InstructGPT). arXiv:2203.02155. NeurIPS 2022. [인용: ch11]
 - Zweiger, A., et al. (2025). *Self-Adapting Language Models* (SEAL). arXiv:2506.10943. (Dreaming의 인접 계보) [인용: ch11]
@@ -126,6 +139,8 @@
 
 - Dao, T., Fu, D. Y., Ermon, S., Rudra, A., & Ré, C. (2022). *FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness.* arXiv:2205.14135. NeurIPS 2022. [인용: ch10, ch21]
 - Dao, T. (2023). *FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning.* arXiv:2307.08691. [인용: ch10]
+- Dao, T., Haziza, D., Massa, F., & Sizov, G. (2023). *Flash-Decoding for Long-Context Inference.* PyTorch / Stanford CRFM 블로그. (FlashAttention의 IO 재조직을 decode까지 확장 — ch21의 prefill/decode 대칭 논거) [인용: ch21]
+- Kung, H. T., & Leiserson, C. E. (1978). *Systolic Arrays (for VLSI).* Sparse Matrix Proceedings 1978, SIAM. (systolic array = TPU MXU / GPU tensor core의 조상; GEMM density 공진화 서술) [인용: ch21]
 - Kwon, W., et al. (2023). *Efficient Memory Management for Large Language Model Serving with PagedAttention* (vLLM). arXiv:2309.06180. SOSP 2023. [인용: ch10]
 - Hoffmann, J., et al. (2022). *Training Compute-Optimal Large Language Models* (Chinchilla). arXiv:2203.15556. NeurIPS 2022. [인용: ch19]
 - Hooker, S. (2020). *The Hardware Lottery.* arXiv:2009.06489. [인용: ch21]
@@ -133,6 +148,8 @@
 
 ### B.11 교과서 · 고전 참조
 
+- Schmidhuber, J. (1987). *Evolutionary Principles in Self-Referential Learning* (diploma thesis). TU München. (학습 절차 자체를 학습 대상으로 삼는 self-referential learning) [인용: ch16]
+- Schmidhuber, J. (1992). *Learning to control fast-weight memories: An alternative to dynamic recurrent networks.* Neural Computation 4(1). (fast weight programming의 원형) [인용: ch04, ch06, ch16]
 - Schmidhuber, J. (1993). *A "self-referential" weight matrix.* ICANN 1993. (self-modifying/self-referential 계보의 뿌리) [인용: ch04, ch06, ch16]
 - Goodfellow, I., Bengio, Y., & Courville, A. (2016). *Deep Learning.* MIT Press. (backprop·optimizer 교과서 서술) [인용: ch02]
 
@@ -152,8 +169,9 @@ Part III(ch21·ch22·ch24)의 hardware-lottery / player-strategy / proposals 논
 
 ## D. 미해결 인용 (unresolved)
 
-- **Kim et al. 2026** — [Sleep App. A.4]가 2026년 on-policy self-distillation(OPSD) 물결의 실패 모드("epistemic verbalisation 억제로 인한 최대 40% OOD 하락")를 인용하며 언급(ch17). 원문에 arXiv ID·정식 제목이 없고 WebSearch로도 식별 불가 — Sleep 논문 부록 내부 참조로만 존재. 정식 서지 미확정.
+- (없음 — 이 라운드에서 마지막 미해결 항목이던 "Kim et al. 2026"이 해소되어 §B.9로 편입됨. 아래 "확인 완료" 참조.)
 
 ### 확인 완료(과거 미해결 → 해소)
 
+- **Kim et al. 2026** (직전 미해결) — *해소.* [Sleep App. A.4]가 OPSD 실패 모드로 인용한 "epistemic verbalisation 억제 → 최대 40% OOD 하락"의 원전은 Jeonghye **Kim** et al. (2026), *Why Does Self-Distillation (Sometimes) Degrade the Reasoning Capability of LLMs?*, **arXiv:2603.24472** (2026-03-25; Qwen3-1.7B/8B·DeepSeek-Distill-Qwen-7B·Olmo3-7B-Instruct에서 최대 40% 하락, "epistemic verbalization 억제" 기제 명시). 2026-07-12 WebSearch+arXiv 초록 대조로 저자·제목·수치 3중 확인. §B.9에 정식 등재. (Sleep 부록은 arXiv ID 없이 저자-연도만 표기했으나 외부 식별 가능했음.)
 - **[GDN NVIDIA affiliation]** (P3 이월) — *해소.* Gated DeltaNet(arXiv:2412.06464)의 Jan Kautz·Ali Hatamizadeh는 NVIDIA, Songlin Yang은 MIT. 공식 구현 NVlabs/GatedDeltaNet, ICLR 2025. (§B.2)

@@ -117,11 +117,19 @@ def fig_b():
     fig, (axL, axR) = plt.subplots(1, 2, figsize=(11, 4.5))
     # left: scatter energy vs time, log-log; annotate wins vs HBM
     cols = [C_KV, "#8e44ad", C_ACC, C_TTT]
+    # per-device label offsets + alignment so no label overlaps a point or the title
+    off = {"HBM3 3.35TB/s 7pJ (baseline)":        ((-10, -6), "right", "top"),
+           "PIM in-bank 8.2TB/s 3.9pJ":           ((10, 6),   "left",  "bottom"),
+           "on-die SRAM 10TB/s 0.4pJ 50MB":       ((10, -4),  "left",  "top"),
+           "sw-scratchpad 60TB/s 0.9pJ 256MB":    ((10, 10),  "left",  "bottom")}
     for k, e, t, c in zip(order, en, tm, cols):
         axL.scatter(t, e, s=140, color=c, zorder=5, edgecolor="white", lw=1)
-        axL.annotate(short[k], (t, e), textcoords="offset points", xytext=(8, 6),
-                     fontsize=8, color="#222")
+        (dx, dy), ha, va = off[k]
+        axL.annotate(short[k], (t, e), textcoords="offset points", xytext=(dx, dy),
+                     fontsize=8, color="#222", ha=ha, va=va)
     axL.set_xscale("log"); axL.set_yscale("log")
+    axL.set_xlim(3.5, 320)          # room for right/left labels
+    axL.set_ylim(1.1e2, 3.2e3)      # headroom so the HBM3 label clears the title
     axL.set_xlabel("time per 134MB-layer RMW  (µs)")
     axL.set_ylabel("energy per RMW  (µJ)")
     hb = dev[order[0]]

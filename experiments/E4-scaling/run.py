@@ -345,16 +345,23 @@ def render_figure(rows, results):
     # (b) ppl vs state-bytes, cross-arch @1.3B -----------------------------------
     ax = axs[0, 1]
     b = results["fit_b_ppl_vs_state_capacity"]
+    ax.set_xscale("log")
+    ax.set_xlim(0.55, 3.0e4)     # headroom on the right so high-state labels fit inside
+    st_max = max(pt["state_MB"] for pt in b["parametric_family_points"])
     for pt in b["parametric_family_points"]:
         ax.plot(pt["state_MB"], pt["wiki_ppl"], "o", color=C_C, ms=8)
-        ax.annotate(pt["model"], (pt["state_MB"], pt["wiki_ppl"]), fontsize=7.5,
-                    xytext=(6, 2), textcoords="offset points", color=C_C)
+        # points in the right third get left-anchored labels so they never run off the edge
+        if pt["state_MB"] >= st_max * 0.15:
+            ax.annotate(pt["model"], (pt["state_MB"], pt["wiki_ppl"]), fontsize=7.5,
+                        xytext=(-7, 2), textcoords="offset points", color=C_C, ha="right")
+        else:
+            ax.annotate(pt["model"], (pt["state_MB"], pt["wiki_ppl"]), fontsize=7.5,
+                        xytext=(6, 2), textcoords="offset points", color=C_C, ha="left")
     # attention points at ~0 fast-weight state (drawn at left edge marker)
     for pt in b["attention_points"]:
         ax.plot(1.0, pt["wiki_ppl"], "^", color=C_ATT, ms=8)
         ax.annotate(pt["model"], (1.0, pt["wiki_ppl"]), fontsize=7.5,
                     xytext=(6, 0), textcoords="offset points", color=C_ATT)
-    ax.set_xscale("log")
     ax.set_xlabel("fast-weight state (MB/model, bf16)  |  attention=0 (drawn at 1MB)")
     ax.set_ylabel("WikiText ppl @1.3B")
     rho_par = b["spearman_ppl_vs_capacity__parametric"]["rho"]
@@ -374,21 +381,23 @@ def render_figure(rows, results):
         col = C_ATT if att else C_C
         key = (pt["capacity_ordinal"], round(np.log10(pt["retention_tokens"]), 1))
         k = seen.get(key, 0); seen[key] = k + 1
-        dx = 0.13 * k                     # spread x for co-located points
-        dyoff = 6 + 11 * k                # stagger label vertically
+        dx = 0.26 * k                     # spread x for co-located points
+        # stagger labels DOWNWARD for the top cluster so they never hit the title
         ax.plot(pt["capacity_ordinal"] + dx, pt["retention_tokens"], "^" if att else "o",
                 color=col, ms=8)
         ax.annotate(pt["model"], (pt["capacity_ordinal"] + dx, pt["retention_tokens"]),
-                    fontsize=7, xytext=(7, dyoff - 6), textcoords="offset points", color=col)
-    ax.set_xlim(0.6, 4.7)
+                    fontsize=7, xytext=(8, -4 - 12 * k), textcoords="offset points", color=col,
+                    ha="left", va="top")
+    ax.set_xlim(0.6, 5.6)
     ax.set_yscale("log")
+    ax.set_ylim(1.2e5, 3.0e7)          # headroom above the 1e7 cluster; keeps labels clear of the title
     ax.set_xticks([1, 2, 3, 4])
     ax.set_xticklabels(["matrix\nO(d_k)", "deep-MLP", "deep-MLP\n+poly", "attention\nunbounded"], fontsize=7.5)
     ax.set_xlabel("capacity-proxy ordinal (Atlas)")
     ax.set_ylabel("BABILong sustained length (tokens)")
     rho_c = c["spearman_retention_vs_capacity__parametric"]["rho"]
-    ax.set_title("(c) retention vs capacity: rho=%.2f (parametric)" % rho_c)
-    ax.text(0.5, 0.06, "capacity earns its keep HERE (green);\nattention unbounded but ctx-bounded "
+    ax.set_title("(c) retention vs capacity: rho=%.2f (parametric)" % rho_c, pad=10)
+    ax.text(0.42, 0.10, "capacity earns its keep HERE (green);\nattention unbounded but ctx-bounded "
             "(grey) = retrieval gap", transform=ax.transAxes, fontsize=7.3, color="#555", ha="center")
 
     # (d) TNT support: chunk-mismatch U + local-mem monotone ----------------------
