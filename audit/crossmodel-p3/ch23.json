@@ -1,0 +1,58 @@
+[
+  {
+    "severity": "major",
+    "location": "서빙 지연·에너지 절대치를 제시하는 절",
+    "issue": "1.92 ms/token, 46.5 mJ/token 및 그 역수로 계산한 처리량을 실측 성능처럼 단정한다. 이 값들은 H100 실행 결과가 아니라 이상적인 HBM 대역폭·에너지 계수로 계산한 per-kernel roofline 하한이다.",
+    "evidence": "results.json meta.grade는 load-bearing claim을 ratios/crossover/tier/bound로 제한한다. claim1.decode_ms_per_token과 energy_mJ_per_token에는 REL, NO-WALLCLOCK, PER-KERNEL 태그가 있고, global_caveats는 6개 논문 모두 H100 wall-clock decode를 보고하지 않았다고 명시한다.",
+    "suggested_fix": "절대 지연·에너지·tok/s를 삭제하거나 ‘3.35 TB/s를 100% 달성한다고 가정한 분석적 하한’으로 명시하고, 본문의 결론은 memory-bound 분류와 상대 비율로 제한한다."
+  },
+  {
+    "severity": "major",
+    "location": "KV–TTT 교차점 S*=약 65k를 해석하는 절",
+    "issue": "65k 토큰부터 TTT의 전체 상태 트래픽이 KV보다 작아진다고 해석한다. 65k는 KV read와 TTT의 read 절반만 같아지는 지점이며, read+write 전체 RMW와의 교차점은 약 131k다.",
+    "evidence": "results.json claim2.S_star_read_tokens=65471의 note는 ‘KV read traffic == TTT read half’라고 정의하고, claim2.S_star_rmw_tokens=130942를 ‘KV read == full TTT RMW; the honest upper crossover’라고 별도로 명시한다.",
+    "suggested_fix": "65k를 read-half 교차점으로 한정하고, 전체 트래픽 우위는 131k 교차점으로 서술한다. 하나의 S*만 쓸 경우 비교 대상이 read인지 full RMW인지 식에 명시한다."
+  },
+  {
+    "severity": "major",
+    "location": "10 ms 목표의 B_max와 배치 처리량을 예측하는 절",
+    "issue": "B_max=5.2 같은 값을 실제 서빙 스택의 지원 배치 크기 또는 측정된 처리량으로 승격한다. 계산에는 가중치·활성·KV 공존, 커널 실행·스케줄링·tail overhead가 빠져 있어 bandwidth-only 상한일 뿐이다.",
+    "evidence": "results.json claim3.B_max_bw_10ms에는 REL과 NO-WALLCLOCK이 붙어 있다. carry_forward_to_A100_runbook는 ‘B_max under a full serving stack ... E3 B_max_cap is an upper bound’를 아직 측정할 항목으로 명시한다.",
+    "suggested_fix": "‘이상적 HBM 대역폭만 고려한 상한’으로 고치고 실제 동시 시퀀스 수나 SLA 달성치를 단정하지 않는다."
+  },
+  {
+    "severity": "major",
+    "location": "스크래치패드·PIM 하드웨어 효과를 결론 내리는 절",
+    "issue": "스크래치패드의 6.8배 에너지/14.9배 시간 개선이나 PIM의 에너지 우위를 구현 가능한 장치의 확정 성능으로 주장한다. 두 장치 twin은 분석 모델일 뿐 시뮬레이션 또는 실리콘 검증 결과가 아니다.",
+    "evidence": "results.json claim4의 해당 수치에는 NOVEL-SIM-FALSE가 붙어 있고, glossary는 novel twins가 provenance=analytical, simulation_ready=False, PPA-abstain이며 ‘DIRECTIONAL DSE only, never a shipping-device claim’이라고 규정한다. RESULTS.md도 novel-device 수치를 directional DSE로만 허용한다.",
+    "suggested_fix": "수치를 ‘가정된 대역폭·pJ/B 아래의 방향성 설계공간 결과’로 낮추고, 실제 장치의 성능·에너지 개선 또는 구현 타당성 결론은 삭제한다."
+  },
+  {
+    "severity": "major",
+    "location": "CPU RMW cliff와 H100/가속기 계층을 연결하는 절",
+    "issue": "CPU에서 측정한 3.9배 L3→DRAM cliff 또는 C*=32를 H100의 정량적 예측·검증으로 사용한다. 호스트와 H100은 ridge point와 on/off-die 계층 차이가 커서 CPU 실험은 곡선의 형태만 검증한다.",
+    "evidence": "results.json의 CPU-SHAPE glossary는 host ridge 약 34 FLOP/B가 H100 twin의 295 FLOP/B보다 약 9배 낮고 cache cliff도 약 100배 다른 위치라며 H100 절대치로 운반하지 말라고 명시한다. claim7은 H100 C*=306~430을 E3 closed form으로, claim8은 3.9배를 host measurement로 분리한다.",
+    "suggested_fix": "CPU 결과는 ‘용량 경계에서 cliff가 생기고 C 증가가 AI를 높이는 형태’의 증거로만 사용한다. H100의 C*, 대역폭 또는 개선 배수는 분석적 추정으로 별도 표기한다."
+  },
+  {
+    "severity": "major",
+    "location": "모델 규모에 따른 RMW scaling law 절",
+    "issue": "0.45→6.44→343 GB/token 계열을 논문에서 관측된 보편적 scaling law로 제시한다. 이는 m을 고정하고 가정한 d,L 및 모든 계층의 상태가 매 토큰 RMW된다는 canonical-shape 계산이며, 7B·70B 항목은 가상 구성이다.",
+    "evidence": "results.json claim1.scaling_rmw_GB_per_token에는 M-ASSUMED가 붙고 hypo-7B/hypo-70B로 표시된다. glossary의 M-ASSUMED는 m과 scale별 d,L이 published decode traces가 아니라 canonical transformer shapes라고 명시한다.",
+    "suggested_fix": "‘고정 m 및 가정한 d,L 아래에서 T_RMW=2m d^2 L·bytes로 증가한다’는 조건부 모델로 서술하고, 7B·70B는 hypothetical projection으로 표시한다."
+  },
+  {
+    "severity": "major",
+    "location": "KV 캐시는 capacity-bound이고 TTT만 bandwidth-bound라고 대조하는 절",
+    "issue": "capacity-bound와 bandwidth-bound를 상호 배타적인 workload 속성으로 일반화한다. KV 용량은 최대 context/batch를 제한하지만 dense-attention decode의 매 토큰 KV read 역시 메모리 대역폭에 묶일 수 있다.",
+    "evidence": "results.json claim2.kv_latency_grows_with_context 자체가 KV read 비용이 S에 따라 증가한다고 설명한다. claim3의 BW 판정은 10 ms 목표에서 분석한 TTT 상태 RMW에 대한 결과이며 모든 KV serving regime에 대한 roofline 분류가 아니다.",
+    "suggested_fix": "‘이 구성과 SLA에서 TTT의 B_max는 용량 한계보다 대역폭 한계가 먼저 온다’로 범위를 제한하고, KV는 장문맥에서 capacity와 read bandwidth가 모두 제약이 될 수 있다고 고친다."
+  },
+  {
+    "severity": "major",
+    "location": "훈련 하드웨어 결론 절",
+    "issue": "훈련에도 새로운 메모리 소자나 memory-centric 장치가 필수라고 결론 낸다. 실험이 지지하는 pair-thesis는 반대로 training/prefill을 chunk C가 큰 compute-bound accelerator regime으로 분류하며, 새 메모리 소자의 필요성을 시험하지 않았다.",
+    "evidence": "results.json meta.thesis와 claim7.supports는 ‘training/prefill is the accelerator regime’를 명시한다. 스크래치패드/PIM 결과는 decode-state placement의 directional DSE이며 NOVEL-SIM-FALSE다. 원전 논문들도 이 실험의 H100 wall-clock 또는 신규 메모리 소자 필요성을 입증하지 않는다.",
+    "suggested_fix": "훈련에 새 메모리 소자가 필요하다는 문장을 삭제한다. 결론을 decode/serving 상태 관리의 메모리 중심 기회와 training/prefill의 기존 가속기·chunk kernel 최적화라는 pair-thesis로 제한한다."
+  }
+]

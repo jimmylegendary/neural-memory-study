@@ -1,0 +1,58 @@
+[
+  {
+    "severity": "major",
+    "location": "청크 크기와 roofline 절",
+    "issue": "H100 교차점 C*≈306–430을 ‘수정된 AI(C)’에서 유도한 값으로 제시하지만, 그 값은 E3의 AI(C)=C(d+C)/(d+2C)를 사용한 결과다. 실제 CPU 실험이 명시한 수정식 AI(C)=(4C²d+6Cd²)/(4d²+8Cd)를 적용하면 H100 ridge 295.4 FLOP/B에서 C*는 d=512…8192에 대해 약 310…203이며, d=2048에서는 약 224이지 337이 아니다.",
+    "evidence": "experiments/results.json claim7은 H100 C*=430.2/374.5/337.1/316.6/306.0을 E3에서 인용한다. 반면 E2.1 원본의 formula_ch10은 AI(C)=(4C²d+6Cd²)/(4d²+8Cd)이다. 두 식은 FLOP 항의 계수가 달라 같은 roofline 교차점을 낼 수 없다.",
+    "suggested_fix": "하나의 일관된 바이트·FLOP 회계로 AI(C)를 다시 유도하고 C*를 재계산하라. E2 수정식을 채택한다면 H100 수치를 약 203–310으로 고치고, 현재 306–430 값은 삭제하라."
+  },
+  {
+    "severity": "minor",
+    "location": "청크 크기와 roofline 절의 C=1 설명",
+    "issue": "C=1의 산술 집약도를 정확히 1 FLOP/B로 취급하는 것은 장에서 사용하는 수정식과 모순된다. 수정식의 C=1 값은 d가 클 때 약 1.5 FLOP/B다.",
+    "evidence": "experiments/results.json claim7은 AI_at_C1_sequential_flopB=1.0이라고 하지만 E2.1의 수정식 (4C²d+6Cd²)/(4d²+8Cd)에 C=1,d=2048을 대입하면 약 1.499 FLOP/B다. bound 분류는 여전히 memory-bound지만 수치와 후속 C* 유도가 달라진다.",
+    "suggested_fix": "‘약 1’이라는 수치 주장을 ‘O(1) FLOP/B, 수정식 기준 약 1.5’로 고치고 동일한 식을 모든 roofline 계산에 사용하라."
+  },
+  {
+    "severity": "major",
+    "location": "디코드 비용의 절대 스케일 절",
+    "issue": "1.92 ms/token과 46.5 mJ/token을 H100 실측 성능처럼 단정한다. 두 값은 실리콘 측정값이 아니라 이상적 HBM roofline 하한과 대칭 7 pJ/B 에너지 가정에서 나온 분석값이다.",
+    "evidence": "experiments/results.json의 decode_ms_per_token과 energy_mJ_per_token에는 REL·NO-WALLCLOCK·PER-KERNEL 태그가 붙어 있고, global_caveats는 6개 논문이 H100 decode wall-clock을 보고하지 않았다고 명시한다. RESULTS.md도 절대 µs/token·mJ/token은 A100 runbook으로 이월하며 비율과 bound 분류만 본문 주장으로 허용한다.",
+    "suggested_fix": "절대치를 삭제하거나 ‘분석 twin의 이상적 roofline 하한’으로 명시하라. 본문 결론은 AI/ridge 비교와 memory-bound 분류, 상대 비율로 제한하라."
+  },
+  {
+    "severity": "major",
+    "location": "온칩 scratchpad와 PIM 절",
+    "issue": "scratchpad의 6.8× 에너지·14.9× 시간 개선과 PIM의 1.6× 에너지 개선을 확정된 하드웨어 효과로 승격한다. 해당 장치들은 검증된 실측 장치가 아니라 simulation_ready=False인 분석 twin이다.",
+    "evidence": "experiments/results.json claim4의 모든 scratchpad/PIM 결과에는 NOVEL-SIM-FALSE가 붙고, global_caveats는 이를 ‘DIRECTIONAL DSE only, never a shipping-device claim’으로 제한한다. RESULTS.md도 novel-twin 수치는 실리콘 검증 전까지 방향성만 허용한다.",
+    "suggested_fix": "‘분석 모델 내 방향성 순위’와 ‘상주한다고 가정할 때의 모델 비율’로 낮춰 쓰고, 장치가 실제로 해당 개선을 달성한다는 표현은 삭제하라."
+  },
+  {
+    "severity": "major",
+    "location": "업데이트 빈도에서 메모리 계층을 유도하는 절",
+    "issue": "업데이트 빈도만으로 HBM/CXL 배치가 직접 결정된다는 scaling law를 일반화한다. 원전의 update frequency는 학습 수준의 시간 척도 정의이지 하드웨어 배치 법칙이 아니며, 실험의 tier 표도 읽기 주기·용량·지연 예산을 고정한 탐색 모델에 불과하다.",
+    "evidence": "experiments/results.json claim5는 faster read/write cadence를 사용하는 E1.4의 별도 gating_rule이며 REL·NOVEL-SIM-FALSE·M-ASSUMED가 붙는다. Sleep 원문 Definition 1은 update frequency를 단위 시간당 weight update 횟수로만 정의한다. 논문은 특정 HBM3/CXL 배치를 도출하지 않는다.",
+    "suggested_fix": "‘빈도가 배치의 한 입력 변수’라고 한정하고 읽기 빈도, 용량, 이동 비용, 동시 상주 데이터와 지연 허용치를 함께 둔 조건부 DSE로 표현하라."
+  },
+  {
+    "severity": "major",
+    "location": "컨텍스트 길이에 따른 디코드 스케일링 절",
+    "issue": "TTT 모델의 전체 per-token latency가 컨텍스트 길이와 무관하다고 일반화한다. 컨텍스트 독립인 것은 고정 크기 fast-weight 상태의 격리된 RMW 항뿐이며, 실제 원전 아키텍처의 attention·local/global-context 목적함수·검색 경로까지 포함한 end-to-end 지연은 그렇지 않다.",
+    "evidence": "experiments/results.json claim2의 latency 값에는 REL·PER-KERNEL이 붙는다. Atlas 원문 §3은 global formulation이 과거 key/value 캐시를 요구해 메모리 소비와 update 제약을 늘린다고 명시한다. Titans는 neural memory를 attention과 결합한 hybrid 변형을 제시한다.",
+    "suggested_fix": "‘격리된 fast-weight RMW 트래픽은 S에 독립’으로 범위를 좁히고, 전체 모델 지연에 대한 결론은 실제 kernel 및 hybrid architecture 측정 전까지 유보하라."
+  },
+  {
+    "severity": "major",
+    "location": "학습 하드웨어 결론 절",
+    "issue": "신경 메모리 모델의 training에는 새로운 메모리 소자가 필요하다는 결론은 실험과 원전을 넘어선 강제 주장이다. 제공된 근거는 오히려 큰 chunk, matmul tensorization, hierarchical reset 같은 알고리즘으로 기존 accelerator 활용률을 높이는 방향이다.",
+    "evidence": "RESULTS.md의 pair thesis는 training/prefill을 accelerator regime으로 규정한다. Titans 원문 §3.2는 matmul 기반 병렬 학습을 제시하고, TNT 원문은 큰 hardware-friendly chunk와 state reset으로 최대 17× training speedup을 보고하며 hardware-specific small-chunk optimization 의존성을 제거한다고 설명한다.",
+    "suggested_fix": "새 메모리 소자의 필요성을 삭제하라. training 쪽 결론은 ‘chunking과 병렬화로 기존 accelerator 활용률을 높일 수 있다’로 제한하고, novel memory device는 decode-state DSE 가설로만 남겨라."
+  },
+  {
+    "severity": "minor",
+    "location": "교차 검증 절",
+    "issue": "세 방법이 모든 기준점에서 1% 미만으로 일치한다고 단정하지만 latency hand calculation은 그 범위를 벗어난다.",
+    "evidence": "experiments/results.json cross_validation의 rmw_ms_token은 E3=1.923, E1.1=1.9231, plan=1.9다. 1.9와 1.923의 상대 차이는 약 1.20%다. RESULTS.md는 이를 포함해 ‘Three-way agreement (<1%)’라고 쓴다.",
+    "suggested_fix": "‘대체로 약 1% 수준’ 또는 ‘최대 약 1.2%’로 수정하거나, 반올림 전 hand-calculation 값으로 다시 비교하라."
+  }
+]
