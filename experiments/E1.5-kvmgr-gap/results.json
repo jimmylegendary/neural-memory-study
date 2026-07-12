@@ -1,0 +1,121 @@
+{
+  "experiment": "E1.5-kvmgr-gap",
+  "title": "hat-kv-manager semantic-gap analysis for TTT/neural-memory RMW state",
+  "twin": "/home/jimmy/repos/hat-schema/twins/dgx_h100_x4.json",
+  "twin_provenance": "hat-schema SoT dgx_h100_x4.json",
+  "workload": {
+    "d": 2048,
+    "L": 24,
+    "m": 16,
+    "dtype_bytes": 2,
+    "kv_dim": 1024,
+    "state_bytes_layer": 134217728,
+    "state_bytes_model": 3221225472,
+    "kv_bytes_token_model": 98304
+  },
+  "headline": {
+    "G1_prefix_reuse": {
+      "kv_hit_rate": 0.5,
+      "ttt_hit_rate": 0.0,
+      "claim": "content-addressed prefix reuse (the manager's #1 value) is structurally 0 for RMW state: its content changes every token so no block hash recurs."
+    },
+    "G2_append_vs_rmw": {
+      "tokens": 256,
+      "memory_blowup_x": 256.0,
+      "live_versions": 256,
+      "claim": "place() is append-only with no in-place update, so T=256 per-token RMW mutations accrete 256 stale versions -> 256x the true 1-state working set."
+    },
+    "G3_dirty_writeback": {
+      "evict_bytes_dropped_MB": 416.0,
+      "mgr_charged_writeback_energy_pj": 0.0,
+      "owed_writeback_energy_uJ": 3053.5,
+      "owed_writeback_time_us": 130.2,
+      "claim": "_evict_from() del-drops dirty state for free (clean/recomputable assumption); dirty TTT state owes a full writeback the manager charges as ZERO."
+    }
+  },
+  "raw": {
+    "G1": {
+      "kv_hits": 32,
+      "kv_hit_rate": 0.5,
+      "ttt_hits": 0,
+      "ttt_hit_rate": 0.0,
+      "reuse_available_for_ttt": false
+    },
+    "G2": {
+      "tokens": 256,
+      "state_bytes_layer": 134217728,
+      "live_versions": 256,
+      "resident_bytes": 34359738368,
+      "true_working_set_bytes": 134217728,
+      "memory_blowup_x": 256.0,
+      "mgr_write_events": 256,
+      "true_rmw_writes": 256,
+      "dgx_twin_contrast": {
+        "index_versions": 1,
+        "spill_bytes": 0,
+        "evict_bytes": 34225520640
+      }
+    },
+    "G3": {
+      "n_blocks": 64,
+      "block_bytes": 8388608,
+      "spill_bytes": 67108864,
+      "evict_bytes_dropped": 436207616,
+      "mgr_charged_writeback_time_us": 0.0,
+      "mgr_charged_writeback_energy_pj": 0.0,
+      "owed_writeback_time_us": 130.21122865671643,
+      "owed_writeback_energy_pj": 3053453312.0
+    },
+    "api_audit": {
+      "present": [
+        "place(hashes)",
+        "prefix_reuse(hashes)",
+        "_evict_from(tier)",
+        "metrics()"
+      ],
+      "missing": [
+        "update_in_place(slot)",
+        "mark_dirty(slot) / writeback(slot)",
+        "checkpoint(seq) / rollback(seq)",
+        "bind_to_sequence(seq)",
+        "free_on_update(slot)"
+      ]
+    }
+  },
+  "api_grounding": {
+    "prefix_reuse": "manager.py:80-96 \u2014 content-addressed hits against self.index",
+    "place": "manager.py:98-121 \u2014 `if h in self.index: skip`; no update path; write charged once",
+    "_evict_from": "manager.py:123-139 \u2014 spill-copy down OR `del` drop; drop charges no wb time/energy"
+  },
+  "e3_cross_reference": {
+    "config": "neural-mem-1.3B",
+    "method": "Titans",
+    "params": "1.3B",
+    "d": 2048,
+    "L": 24,
+    "m": 16,
+    "kv_dim": 1024,
+    "state_MB_layer": 134.2,
+    "rmw_GB_token": 6.442,
+    "rmw_ms_token": 1.923,
+    "rmw_uJ_token": 45097.2,
+    "compute_ms_token": 0.0039,
+    "arith_intensity_flopB": 0.59,
+    "bound": "memory",
+    "S_star_tokens": 65536,
+    "C_star_tokens": 337.1,
+    "B_max_bw_10ms": 5.2,
+    "B_max_bw_50ms": 26.0,
+    "B_max_cap_HBM80GB": 26.7,
+    "B_max_cap_ondie_L2": 0.0163,
+    "state_per_seq_GB": 3.221
+  },
+  "caveats": [
+    "Exploration-grade / RELATIVE: hatir + hat twins are pre-silicon analytical cost models (repo self-declares 'ranking + crossover, not silicon-accurate absolutes'); we assert structure and ratios, not H100 wall-clock absolutes.",
+    "This is a SEMANTIC-GAP analysis: the numbers demonstrate that KVCacheManager's model is a category mismatch for RMW state (reuse=0, stale accretion, unpriced dirty writeback) \u2014 they are NOT a performance benchmark of a TTT-state manager (which does not yet exist).",
+    "G2's stale-accretion blow-up (== T) is the WORST case where no eviction fires; with the hot tier under pressure the manager instead DROPS dirty state (G3) \u2014 both branches are wrong for RMW, in opposite ways (retain garbage vs lose live state).",
+    "G3 forces the `del`-drop branch with a deliberately small backing tier; on a large twin the manager spills-copies instead, which is ALSO mispriced (a dirty spill is a real writeback but is charged as a clean copy at read energy, not write energy).",
+    "The 'owed writeback' cost uses HBM write energy/BW from the SoT twin (7 pJ/B, 3.35 TB/s); absolute owed cost scales with those and is a ratio-vs-manager (0) claim, not an absolute.",
+    "novel twins (swscratchpad/pim-cim) NOT used here \u2014 this gap is twin-independent (it is about the manager's event model); those twins may be judged simulation_ready=False by the verify committee and would only be cited as directional if used."
+  ]
+}

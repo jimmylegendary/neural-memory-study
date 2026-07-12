@@ -1,0 +1,50 @@
+================================================================================================================
+E1.4  FREQUENCY-TIERED PLACEMENT DSE — Nested-Learning/Sleep update cadence -> memory hierarchy
+================================================================================================================
+HW SoT: dgx_h100_x4.json twin (hat-schema SoT)
+  HBM3 3.35 TB/s / 7 pJ/B / 80 GB | L2(on-die) 50 MB @ 10 TB/s
+  tiers (cold->hot): CXL(0.50TB/s,15pJ/B,512GB) -> DDR5(0.40TB/s,12pJ/B,256GB) -> HBM3(3.35TB/s,7pJ/B,80GB) -> SRAM(60.00TB/s,1pJ/B,268MB)
+  model anchor: d=2048, L=24, bf16, 1 memory block = 8*d^2 = 67.1 MB/layer -> 1.61 GB all-layer
+
+-- per-token budget t_tok = fast-weight all-layer RMW on HBM3 --
+   state 1.61 GB | RMW traffic 3.22 GB | t_tok = 961.6 us/token (memory)
+
+-- E3 cross-check: E3 neural-mem-1.3B/HOPE state/layer=67.1 MB vs ours=67.1 MB -> MATCH
+
+-- PLACEMENT TABLE (per-level amortised per-token cost by tier; * = READ-admissible & fits) --------
+  level              state   P_read     P_wr    tol(us) |         CXL        DDR5        HBM3        SRAM  -> place
+  fast-weights      1.61GB        1        1        962 |   3221.226    4026.532     480.780*     26.843x  -> HBM3
+  CMS-chunk         1.61GB        1       64        962 |   3221.226    4026.532     480.780*     26.843x  -> HBM3
+  CMS-mid           1.61GB     4096     4096    3938549 |      0.786*      0.983*      0.117*      0.007x  -> CXL
+  sleep-experts     4.83GB   262144   262144  252067143 |      0.037*      0.046*      0.005*      0.000x  -> CXL
+  frozen-weights    2.60GB        1      inf        962 |   5200.000    6500.000     776.119*     43.333x  -> HBM3
+   (cell = amortised per-token READ us on that tier; * READ-admissible & fits, ' ' fits but too slow, x capacity-exceeded)
+
+-- PLACEMENT SUMMARY (update-frequency continuum -> memory hierarchy) --------------------
+   fast-weights    -> HBM3   [READ every token (per-token-gated)]
+   CMS-chunk       -> HBM3   [READ every token (per-token-gated)]
+   CMS-mid         -> CXL    [accessed every 4096 tok (cadence-gated)]
+   sleep-experts   -> CXL    [accessed every 262144 tok (cadence-gated)]
+   frozen-weights  -> HBM3   [READ every token (per-token-gated)]
+
+-- PAIR-THESIS READOUT --
+   fast weights: read+write EVERY token -> pinned to HBM3, amort write energy 11354.82 uJ/tok — the hot, write-heavy, unshared RMW state (memory-centric core).
+   CMS-mid (cadence 4096): read amortises 0.786 us/tok << t_tok 962 us -> relaxes to CXL (1.61 GB at 15 pJ/B), amort write energy 5.918 uJ/tok.
+   frozen weights: read/token, write NEVER -> HBM3 too, but READ-heavy (accelerator side of the pair thesis), NOT the write-heavy memory-centric opportunity.
+   => the placeable band = write-heavy RMW states with SUB-per-token access cadence; the update-frequency continuum IS a memory-hierarchy spec.
+
+-- (novel/exploration-grade) per-LAYER fast weights on the on-die scratchpad --
+   1 layer fast weights = 67.1 MB, scratchpad cap 281 MB -> fits=True
+   per-layer RMW: scratchpad 3.36 us / 127.51 uJ  vs HBM 40.06 us / 946.23 uJ  -> 7.4x cheaper energy on-die (per layer, streamed).
+   NOTE: all-layer state 1.61 GB does NOT fit on-die -> whole-model on-die pinning infeasible; residency must be per-layer/streamed (agrees with E3 B_max_ondie).
+
+[validate] all frequency-tier placement trends hold (read-gating, cadence->tier relaxation, tolerance monotonicity, on-die per-layer win).
+
+[written] results.json
+================================================================================================================
+TAKEAWAY: the Nested-Learning/Sleep update-frequency continuum maps cleanly onto the memory
+hierarchy — per-token fast weights pin to HBM (or per-layer on-die SRAM), chunk/query-cadenced
+levels stay read-gated to HBM while their SLOW writes amortise, and genuinely low-cadence
+(multi-timescale / sleep-consolidated) state relaxes to DDR/CXL with tolerance P*t_tok. The
+placeable band = write-heavy RMW states with sub-per-token access — the memory-centric core
+of the D4 pair thesis; frozen read-only weights sit on the read-heavy accelerator side.

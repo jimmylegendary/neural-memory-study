@@ -1,0 +1,75 @@
+============================================================================================================
+E1.3  KV-cache (append-once/read-many) vs TTT-state (read-modify-write) -- same HBM twin
+twin: HBM 3.35 TB/s, 7 pJ/B, 80 GiB  (dgx_h100_x4.json HBM level; minimal-device convention). PER TOKEN, whole model (xL).
+
+PANEL A) S* crossover -- context S where KV read traffic == TTT state traffic (per token)
+  Per config: TTT RMW GB/tok (const), TTT one-way read GB/tok (=half), and S* where the
+  linearly-growing KV read overtakes each. bf16 KV and fp8 KV (halves KV -> doubles S*).
+
+             config |    d  m  L |  TTT rmw TTT read  ms/tok  bnd |   S*_read    S*_rmw |  S*_fp8KV
+  -------------------------------------------------------------------------------------------------
+        Titans-340M | 1024 16 24 |   1.611G   0.805G   0.481 memory |     16368     32736 |     32736
+        Titans-760M | 1536 16 24 |   3.624G   1.812G   1.082 memory |     36827     73655 |     73655
+    neural-mem-1.3B | 2048 16 24 |   6.442G   3.221G   1.923 memory |     65471    130942 |    130942
+  neural-mem-1.3B-m8 | 2048  8 24 |   3.221G   1.611G   0.962 memory |     32736     65471 |     65471
+            hypo-7B | 4096 16 32 |  34.360G  17.180G  10.257 memory |    261884    523769 |    523769
+
+  Reading: at S < S*_read the TTT state read alone already moves more bytes/tok than the
+  whole KV cache read; TTT ALSO writes that state back (RMW), a traffic component the
+  append-once KV cache never has. S*_rmw = 2 x S*_read. fp8 KV pushes S* out 2x.
+
+TRAFFIC COMPOSITION (per token, whole model) at the 1.3B anchor (d=2048,m=16,L=24), S=64k:
+  KV  : read  3.224 GB (grows w/ S) + write 0.0983 MB (append, const)  -> write is 0.0030% of read  [READ-HEAVY]
+  TTT : read  3.221 GB + write  3.221 GB (const in S)      -> write is 100% of read       [WRITE == READ, RMW]
+  => qualitatively different memory systems: KV wants capacity+read-BW+sharing; TTT wants
+     write-BW + per-sequence residency + checkpoint/rollback (no reuse, always dirty).
+
+============================================================================================================
+PANEL B) B_max -- batch where UNSHARED TTT state RMW saturates HBM (breaks shared-weight batching)
+  Ordinary decode shares model weights across the batch, so weight reads amortize. TTT
+  fast-weights are PER-SEQUENCE state, RMW'd every token -> aggregate = B x rmw, no amortize.
+  BW-bound: B_max = target_ms / rmw_ms_token. Cap-bound: HBM 80GiB / state_per_seq.
+
+             config | rmw ms/tok state/seq GB | Bmax@10ms Bmax@50ms | Bmax_cap80GiB | ondie 1seq?
+  -----------------------------------------------------------------------------------------------
+        Titans-340M |      0.481        0.805 |     20.80    104.00 |         106.7 |       False
+        Titans-760M |      1.082        1.812 |      9.24     46.22 |          47.4 |       False
+    neural-mem-1.3B |      1.923        3.221 |      5.20     26.00 |          26.7 |       False
+  neural-mem-1.3B-m8 |      0.962        1.611 |     10.40     52.00 |          53.3 |       False
+            hypo-7B |     10.257       17.180 |      0.97      4.87 |           5.0 |       False
+
+  For latency-sensitive decode BW binds FAR before capacity (opposite of the KV cache,
+  which is capacity-bound). No config's whole-model state fits on-die L2 (50MB) even for
+  ONE sequence -> TTT state cannot be pinned on-die whole-model; must stream/partition.
+
+  Contrast -- KV decode B_max SHRINKS with context S, TTT B_max is INDEPENDENT of S
+  (1.3B anchor d=2048,L=24; KV GQA-8 bf16). B_max_bw = target / read_ms(S):
+      S tokens | KV ms/tok KV Bmax@50ms | TTT ms/tok TTT Bmax@50ms
+          4096 |     0.060       830.97 |      1.923         26.00
+         16384 |     0.241       207.78 |      1.923         26.00
+         65536 |     0.963        51.95 |      1.923         26.00
+        262144 |     3.850        12.99 |      1.923         26.00
+       1048576 |    15.400         3.25 |      1.923         26.00
+    -> KV B_max falls as context grows (read scales with S); TTT B_max is flat (state fixed).
+       Different batching economics: KV trades batch for context; TTT's batch ceiling is a
+       fixed per-sequence state-BW tax, hit at small B and unmovable by shortening context.
+
+============================================================================================================
+E3 CROSS-CHECK (expected values from experiments/E3-analytical/results.json):
+    ttt_rmw_GB_token: hatir=6.4425       E3=6.442        OK
+        ttt_ms_token: hatir=1.9231       E3=1.923        OK
+         S_star_read: hatir=65471        E3=65536        OK
+       B_max_bw_10ms: hatir=5.2          E3=5.2          OK
+       B_max_bw_50ms: hatir=25.999       E3=26.0         OK
+    state_per_seq_GB: hatir=3.2212       E3=3.221        OK
+  => hatir (tool) and E3 (closed-form) agree on the anchor: ALL PASS
+
+[serving.serve sanity] dense-attn KV decode ms/tok: ctx2k=0.7847 ctx32k=2.5806 (rises w/ ctx: True) -- vs TTT ms/tok flat in S
+
+============================================================================================================
+PAIR-THESIS TAKEAWAY (D4): on the SAME HBM device, KV-attention decode is read-heavy /
+capacity-bound / shareable and grows with context; TTT fast-weight decode is a per-token
+read-modify-write of an UNSHARED, write==read, context-INDEPENDENT state that saturates
+HBM bandwidth at small batch (B_max hit before capacity, unmovable by shortening context).
+=> decode/serving state management is a distinct, memory-centric problem, NOT a KV cache.
+============================================================================================================

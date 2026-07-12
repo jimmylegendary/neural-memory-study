@@ -1,0 +1,271 @@
+{
+  "experiment": "E1.3-kv-vs-ttt",
+  "workload_pair": {
+    "KV": "append-once/read-many: append 2*kv_dim*b (const) + read S*kv_dim*b (grows w/ S); shareable/reusable across seqs (prefix reuse)",
+    "TTT": "read-modify-write: read m*d^2 + write m*d^2 (equal halves, const in S); UNSHARED per-seq, always dirty, not content-addressable"
+  },
+  "hw": {
+    "bw_hbm_bps": 3350000000000.0,
+    "epb_hbm": 7.0,
+    "peak_macs_s": 494700000000000.0,
+    "hbm_cap_bytes": 85899345920,
+    "ondie_l2_bytes": 52428800,
+    "kv_dim_gqa8": 1024,
+    "provenance": "dgx_h100_x4.json HBM level (hat-schema SoT); minimal-device twin so roofline reflects HBM not enclosing fabric"
+  },
+  "panelA_S_star": [
+    {
+      "config": "Titans-340M",
+      "d": 1024,
+      "m": 16,
+      "L": 24,
+      "kv_dim": 1024,
+      "ttt_rmw_GB_token": 1.6106,
+      "ttt_read_GB_token": 0.8053,
+      "ttt_ms_token": 0.4808,
+      "ttt_uJ_token": 11435.4,
+      "ttt_bound": "memory",
+      "S_star_read_tokens": 16368,
+      "S_star_rmw_tokens": 32736,
+      "S_star_read_fp8KV_tokens": 32736
+    },
+    {
+      "config": "Titans-760M",
+      "d": 1536,
+      "m": 16,
+      "L": 24,
+      "kv_dim": 1024,
+      "ttt_rmw_GB_token": 3.6239,
+      "ttt_read_GB_token": 1.8119,
+      "ttt_ms_token": 1.0818,
+      "ttt_uJ_token": 25729.5,
+      "ttt_bound": "memory",
+      "S_star_read_tokens": 36827,
+      "S_star_rmw_tokens": 73655,
+      "S_star_read_fp8KV_tokens": 73655
+    },
+    {
+      "config": "neural-mem-1.3B",
+      "d": 2048,
+      "m": 16,
+      "L": 24,
+      "kv_dim": 1024,
+      "ttt_rmw_GB_token": 6.4425,
+      "ttt_read_GB_token": 3.2212,
+      "ttt_ms_token": 1.9231,
+      "ttt_uJ_token": 45741.4,
+      "ttt_bound": "memory",
+      "S_star_read_tokens": 65471,
+      "S_star_rmw_tokens": 130942,
+      "S_star_read_fp8KV_tokens": 130942
+    },
+    {
+      "config": "neural-mem-1.3B-m8",
+      "d": 2048,
+      "m": 8,
+      "L": 24,
+      "kv_dim": 1024,
+      "ttt_rmw_GB_token": 3.2212,
+      "ttt_read_GB_token": 1.6106,
+      "ttt_ms_token": 0.9616,
+      "ttt_uJ_token": 22870.7,
+      "ttt_bound": "memory",
+      "S_star_read_tokens": 32736,
+      "S_star_rmw_tokens": 65471,
+      "S_star_read_fp8KV_tokens": 65471
+    },
+    {
+      "config": "hypo-7B",
+      "d": 4096,
+      "m": 16,
+      "L": 32,
+      "kv_dim": 1024,
+      "ttt_rmw_GB_token": 34.3597,
+      "ttt_read_GB_token": 17.1799,
+      "ttt_ms_token": 10.2566,
+      "ttt_uJ_token": 243954.1,
+      "ttt_bound": "memory",
+      "S_star_read_tokens": 261884,
+      "S_star_rmw_tokens": 523769,
+      "S_star_read_fp8KV_tokens": 523769
+    }
+  ],
+  "panelB_B_max": [
+    {
+      "config": "Titans-340M",
+      "d": 1024,
+      "m": 16,
+      "L": 24,
+      "rmw_ms_token": 0.4808,
+      "state_per_seq_GB": 0.8053,
+      "B_max_bw_10ms": 20.8,
+      "B_max_bw_50ms": 103.998,
+      "B_max_cap_HBM80GiB": 106.667,
+      "ondie_L2_holds_one_seq": false,
+      "binding_at_10ms": "BW"
+    },
+    {
+      "config": "Titans-760M",
+      "d": 1536,
+      "m": 16,
+      "L": 24,
+      "rmw_ms_token": 1.0818,
+      "state_per_seq_GB": 1.8119,
+      "B_max_bw_10ms": 9.244,
+      "B_max_bw_50ms": 46.221,
+      "B_max_cap_HBM80GiB": 47.407,
+      "ondie_L2_holds_one_seq": false,
+      "binding_at_10ms": "BW"
+    },
+    {
+      "config": "neural-mem-1.3B",
+      "d": 2048,
+      "m": 16,
+      "L": 24,
+      "rmw_ms_token": 1.9231,
+      "state_per_seq_GB": 3.2212,
+      "B_max_bw_10ms": 5.2,
+      "B_max_bw_50ms": 25.999,
+      "B_max_cap_HBM80GiB": 26.667,
+      "ondie_L2_holds_one_seq": false,
+      "binding_at_10ms": "BW"
+    },
+    {
+      "config": "neural-mem-1.3B-m8",
+      "d": 2048,
+      "m": 8,
+      "L": 24,
+      "rmw_ms_token": 0.9616,
+      "state_per_seq_GB": 1.6106,
+      "B_max_bw_10ms": 10.4,
+      "B_max_bw_50ms": 51.999,
+      "B_max_cap_HBM80GiB": 53.333,
+      "ondie_L2_holds_one_seq": false,
+      "binding_at_10ms": "BW"
+    },
+    {
+      "config": "hypo-7B",
+      "d": 4096,
+      "m": 16,
+      "L": 32,
+      "rmw_ms_token": 10.2566,
+      "state_per_seq_GB": 17.1799,
+      "B_max_bw_10ms": 0.975,
+      "B_max_bw_50ms": 4.875,
+      "B_max_cap_HBM80GiB": 5.0,
+      "ondie_L2_holds_one_seq": false,
+      "binding_at_10ms": "BW"
+    }
+  ],
+  "traffic_decomposition": {
+    "anchor": "d=2048,m=16,L=24,S=65536,bf16",
+    "kv_read_GB_token": 3.2244,
+    "kv_write_MB_token_append": 0.098304,
+    "kv_write_pct_of_read": 0.003049,
+    "ttt_read_GB_token": 3.2212,
+    "ttt_write_GB_token": 3.2212,
+    "ttt_write_pct_of_read": 100.0
+  },
+  "kv_B_max_vs_S": [
+    {
+      "S_tokens": 4096,
+      "kv_ms_token": 0.0602,
+      "kv_B_max_50ms": 830.967,
+      "ttt_ms_token": 1.9231,
+      "ttt_B_max_50ms": 25.999
+    },
+    {
+      "S_tokens": 16384,
+      "kv_ms_token": 0.2406,
+      "kv_B_max_50ms": 207.78,
+      "ttt_ms_token": 1.9231,
+      "ttt_B_max_50ms": 25.999
+    },
+    {
+      "S_tokens": 65536,
+      "kv_ms_token": 0.9625,
+      "kv_B_max_50ms": 51.947,
+      "ttt_ms_token": 1.9231,
+      "ttt_B_max_50ms": 25.999
+    },
+    {
+      "S_tokens": 262144,
+      "kv_ms_token": 3.85,
+      "kv_B_max_50ms": 12.987,
+      "ttt_ms_token": 1.9231,
+      "ttt_B_max_50ms": 25.999
+    },
+    {
+      "S_tokens": 1048576,
+      "kv_ms_token": 15.4,
+      "kv_B_max_50ms": 3.247,
+      "ttt_ms_token": 1.9231,
+      "ttt_B_max_50ms": 25.999
+    }
+  ],
+  "e3_crosscheck": {
+    "anchor": "neural-mem-1.3B/Titans",
+    "checks": {
+      "ttt_rmw_GB_token": {
+        "hatir": 6.4425,
+        "E3": 6.442,
+        "pass": true
+      },
+      "ttt_ms_token": {
+        "hatir": 1.9231,
+        "E3": 1.923,
+        "pass": true
+      },
+      "S_star_read": {
+        "hatir": 65471,
+        "E3": 65536,
+        "pass": true
+      },
+      "B_max_bw_10ms": {
+        "hatir": 5.2,
+        "E3": 5.2,
+        "pass": true
+      },
+      "B_max_bw_50ms": {
+        "hatir": 25.999,
+        "E3": 26.0,
+        "pass": true
+      },
+      "state_per_seq_GB": {
+        "hatir": 3.2212,
+        "E3": 3.221,
+        "pass": true
+      }
+    },
+    "all_pass": true
+  },
+  "serving_sanity": {
+    "ok": true,
+    "per_token_ms_ctx2k": 0.7847,
+    "per_token_ms_ctx32k": 2.5806,
+    "kv_decode_grows_with_ctx": true,
+    "note": "dense-attention KV decode per-token latency RISES with context (KV read grows), confirming the KV read-many wall; contrast the S-INDEPENDENT TTT per-token latency in Panel B."
+  },
+  "headline": {
+    "anchor_config": "neural-mem-1.3B (d=2048, m=16, L=24, GQA-8, bf16)",
+    "ttt_rmw_GB_token": 6.4425,
+    "ttt_ms_token_HBM3": 1.9231,
+    "S_star_read_tokens": 65471,
+    "S_star_rmw_tokens": 130942,
+    "B_max_bw_10ms": 5.2,
+    "B_max_bw_50ms": 25.999,
+    "B_max_cap_HBM80GiB": 26.667,
+    "kv_write_pct_of_read": 0.003049,
+    "ttt_write_pct_of_read": 100.0
+  },
+  "caveats": [
+    "hatir/twin numbers are exploration-grade / RELATIVE (repo's own declaration): ranking + crossover, not silicon-accurate absolutes. Only ratios and crossover positions are promoted to text.",
+    "Minimal single-device HBM twin (params sourced from dgx_h100_x4.json HBM level), NOT the full multi-level dgx twin -- the full twin's InfiniBand top-of-stack (400 GB/s) would incorrectly bound a single-device decode-state question. This matches the two in-repo precedents' convention.",
+    "Per-kernel roofline only: no kernel-launch / scheduling / decode tail-effect overheads; per-token wall-clock is a lower bound.",
+    "The 6 papers do NOT publish H100 wall-clock decode; absolute us/token is externally unverifiable and deferred to the in-house A100 runbook (Part III-a). S*, B_max, and the read/write split are ratios/positions and are the load-bearing claims.",
+    "KV comparison fixes GQA-8 kv_dim=1024 (K,V heads x head-dim, E3 convention); MHA / other GQA groups shift S* linearly. The in-repo kv_cache_memory_dse example uses N=2*Hkv*d=2048 (head-dim 128); we adopt E3's kv_dim=1024 so tool and closed-form share coordinates.",
+    "State multipliers m (2-layer MLP=8d^2, +momentum=16d^2) are from published architecture descriptions, not released decode traces; HOPE's per-token fast level is the m used here, its slower CMS levels add lower-frequency resident state (see E1.4).",
+    "novel twins (novel-swscratchpad-npu, novel-pim-cim) are NOT used here (this experiment is a same-device KV-vs-TTT contrast on HBM); where they appear elsewhere the verify committee marks them simulation_ready=False / PPA-abstain, so any PIM/scratchpad result is directional DSE only, not a device claim.",
+    "B_max_cap uses HBM 80 GiB (85899345920 B) whole-model per-sequence state; a real serving stack also holds weights + activations, so the usable capacity ceiling is lower (B_max even smaller) -- our number is an upper bound on the capacity-bound batch."
+  ]
+}

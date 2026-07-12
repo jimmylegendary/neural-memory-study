@@ -1,0 +1,355 @@
+{
+  "experiment": "E1.4-frequency-tiers",
+  "title": "Frequency-tiered placement DSE (Nested-Learning/Sleep update cadence -> memory hierarchy)",
+  "supports": "Part III D4 pair thesis \u2014 'update-frequency continuum = memory-hierarchy spec' section",
+  "hw": {
+    "bw_hbm_bps": 3350000000000.0,
+    "epb_hbm": 7.0,
+    "hbm_cap_bytes": 85899345920,
+    "l2_bw_bps": 10000000000000.0,
+    "l2_cap_bytes": 52428800,
+    "provenance": "dgx_h100_x4.json twin (hat-schema SoT)",
+    "e3_cross_check": "E3 neural-mem-1.3B/HOPE state/layer=67.1 MB vs ours=67.1 MB -> MATCH"
+  },
+  "tiers": {
+    "CXL": {
+      "bw_bps": 500000000000.0,
+      "energy_pj_per_byte": 15.0,
+      "capacity_bytes": 549755813888,
+      "provenance": "plan datasheet (CXL pool 0.5 TB/s 15 pJ/B, +lat)"
+    },
+    "DDR5": {
+      "bw_bps": 400000000000.0,
+      "energy_pj_per_byte": 12.0,
+      "capacity_bytes": 274877906944,
+      "provenance": "plan datasheet (DDR5 ~0.4 TB/s 12 pJ/B)"
+    },
+    "HBM3": {
+      "bw_bps": 3350000000000.0,
+      "energy_pj_per_byte": 7.0,
+      "capacity_bytes": 85899345920,
+      "provenance": "dgx_h100_x4 twin (SoT)"
+    },
+    "SRAM": {
+      "bw_bps": 60000000000000.0,
+      "energy_pj_per_byte": 0.9,
+      "capacity_bytes": 281018368,
+      "provenance": "NOVEL novel-swscratchpad-npu twin (pre-silicon, simulation_ready=False)"
+    }
+  },
+  "tier_order_cold_to_hot": [
+    "CXL",
+    "DDR5",
+    "HBM3",
+    "SRAM"
+  ],
+  "model": {
+    "d": 2048,
+    "L": 24,
+    "dtype_bytes": 2,
+    "m_block": 8,
+    "block_bytes_per_layer": 67108864,
+    "block_bytes_all_layer": 1610612736,
+    "frozen_params": 1300000000.0,
+    "anchor": "neural-mem-1.3B (matches E3)"
+  },
+  "t_tok_us": 961.56,
+  "t_tok_definition": "per-token critical-path budget = fast-weight all-layer RMW time on HBM3",
+  "placement_table": [
+    {
+      "level": "fast-weights",
+      "desc": "neural-memory fast level: read+RMW every token (Titans core)",
+      "state_bytes": 1610612736,
+      "state_GB": 1.611,
+      "P_read": 1,
+      "P_write": 1,
+      "latency_tolerance_us": 961.6,
+      "tiers": {
+        "CXL": {
+          "fits_capacity": true,
+          "read_us_full": 3221.225,
+          "amort_read_us_per_tok": 3221.2255,
+          "rmw_us_full": 6442.451,
+          "rmw_energy_uJ_full": 48479.4,
+          "amort_write_energy_uJ_per_tok": 24239.7217,
+          "bound": "memory",
+          "read_admissible": false
+        },
+        "DDR5": {
+          "fits_capacity": true,
+          "read_us_full": 4026.532,
+          "amort_read_us_per_tok": 4026.5318,
+          "rmw_us_full": 8053.064,
+          "rmw_energy_uJ_full": 38815.8,
+          "amort_write_energy_uJ_per_tok": 19407.8835,
+          "bound": "memory",
+          "read_admissible": false
+        },
+        "HBM3": {
+          "fits_capacity": true,
+          "read_us_full": 480.78,
+          "amort_read_us_per_tok": 480.7799,
+          "rmw_us_full": 961.56,
+          "rmw_energy_uJ_full": 22709.6,
+          "amort_write_energy_uJ_per_tok": 11354.8198,
+          "bound": "memory",
+          "read_admissible": true
+        },
+        "SRAM": {
+          "fits_capacity": false,
+          "read_us_full": 26.844,
+          "amort_read_us_per_tok": 26.8435,
+          "rmw_us_full": 80.531,
+          "rmw_energy_uJ_full": 3060.2,
+          "amort_write_energy_uJ_per_tok": 1530.0821,
+          "bound": "compute",
+          "read_admissible": false
+        }
+      },
+      "recommended_tier": "HBM3",
+      "read_gated": true
+    },
+    {
+      "level": "CMS-chunk",
+      "desc": "HOPE CMS level QUERIED/token, UPDATED/chunk (read-gated)",
+      "state_bytes": 1610612736,
+      "state_GB": 1.611,
+      "P_read": 1,
+      "P_write": 64,
+      "latency_tolerance_us": 961.6,
+      "tiers": {
+        "CXL": {
+          "fits_capacity": true,
+          "read_us_full": 3221.225,
+          "amort_read_us_per_tok": 3221.2255,
+          "rmw_us_full": 6442.451,
+          "rmw_energy_uJ_full": 48479.4,
+          "amort_write_energy_uJ_per_tok": 378.7457,
+          "bound": "memory",
+          "read_admissible": false
+        },
+        "DDR5": {
+          "fits_capacity": true,
+          "read_us_full": 4026.532,
+          "amort_read_us_per_tok": 4026.5318,
+          "rmw_us_full": 8053.064,
+          "rmw_energy_uJ_full": 38815.8,
+          "amort_write_energy_uJ_per_tok": 303.2482,
+          "bound": "memory",
+          "read_admissible": false
+        },
+        "HBM3": {
+          "fits_capacity": true,
+          "read_us_full": 480.78,
+          "amort_read_us_per_tok": 480.7799,
+          "rmw_us_full": 961.56,
+          "rmw_energy_uJ_full": 22709.6,
+          "amort_write_energy_uJ_per_tok": 177.4191,
+          "bound": "memory",
+          "read_admissible": true
+        },
+        "SRAM": {
+          "fits_capacity": false,
+          "read_us_full": 26.844,
+          "amort_read_us_per_tok": 26.8435,
+          "rmw_us_full": 80.531,
+          "rmw_energy_uJ_full": 3060.2,
+          "amort_write_energy_uJ_per_tok": 23.9075,
+          "bound": "compute",
+          "read_admissible": false
+        }
+      },
+      "recommended_tier": "HBM3",
+      "read_gated": true
+    },
+    {
+      "level": "CMS-mid",
+      "desc": "multi-timescale down-sampled CMS level (access cadenced)",
+      "state_bytes": 1610612736,
+      "state_GB": 1.611,
+      "P_read": 4096,
+      "P_write": 4096,
+      "latency_tolerance_us": 3938549.1,
+      "tiers": {
+        "CXL": {
+          "fits_capacity": true,
+          "read_us_full": 3221.225,
+          "amort_read_us_per_tok": 0.7864,
+          "rmw_us_full": 6442.451,
+          "rmw_energy_uJ_full": 48479.4,
+          "amort_write_energy_uJ_per_tok": 5.9179,
+          "bound": "memory",
+          "read_admissible": true
+        },
+        "DDR5": {
+          "fits_capacity": true,
+          "read_us_full": 4026.532,
+          "amort_read_us_per_tok": 0.983,
+          "rmw_us_full": 8053.064,
+          "rmw_energy_uJ_full": 38815.8,
+          "amort_write_energy_uJ_per_tok": 4.7383,
+          "bound": "memory",
+          "read_admissible": true
+        },
+        "HBM3": {
+          "fits_capacity": true,
+          "read_us_full": 480.78,
+          "amort_read_us_per_tok": 0.1174,
+          "rmw_us_full": 961.56,
+          "rmw_energy_uJ_full": 22709.6,
+          "amort_write_energy_uJ_per_tok": 2.7722,
+          "bound": "memory",
+          "read_admissible": true
+        },
+        "SRAM": {
+          "fits_capacity": false,
+          "read_us_full": 26.844,
+          "amort_read_us_per_tok": 0.0066,
+          "rmw_us_full": 80.531,
+          "rmw_energy_uJ_full": 3060.2,
+          "amort_write_energy_uJ_per_tok": 0.3736,
+          "bound": "compute",
+          "read_admissible": false
+        }
+      },
+      "recommended_tier": "CXL",
+      "read_gated": false
+    },
+    {
+      "level": "sleep-experts",
+      "desc": "Sleep-consolidated experts: offline / idle-window cadence",
+      "state_bytes": 4831838208,
+      "state_GB": 4.832,
+      "P_read": 262144,
+      "P_write": 262144,
+      "latency_tolerance_us": 252067143.3,
+      "tiers": {
+        "CXL": {
+          "fits_capacity": true,
+          "read_us_full": 9663.676,
+          "amort_read_us_per_tok": 0.0369,
+          "rmw_us_full": 19327.353,
+          "rmw_energy_uJ_full": 145438.3,
+          "amort_write_energy_uJ_per_tok": 0.2774,
+          "bound": "memory",
+          "read_admissible": true
+        },
+        "DDR5": {
+          "fits_capacity": true,
+          "read_us_full": 12079.596,
+          "amort_read_us_per_tok": 0.0461,
+          "rmw_us_full": 24159.191,
+          "rmw_energy_uJ_full": 116447.3,
+          "amort_write_energy_uJ_per_tok": 0.2221,
+          "bound": "memory",
+          "read_admissible": true
+        },
+        "HBM3": {
+          "fits_capacity": true,
+          "read_us_full": 1442.34,
+          "amort_read_us_per_tok": 0.0055,
+          "rmw_us_full": 2884.68,
+          "rmw_energy_uJ_full": 68128.9,
+          "amort_write_energy_uJ_per_tok": 0.1299,
+          "bound": "memory",
+          "read_admissible": true
+        },
+        "SRAM": {
+          "fits_capacity": false,
+          "read_us_full": 80.531,
+          "amort_read_us_per_tok": 0.0003,
+          "rmw_us_full": 241.592,
+          "rmw_energy_uJ_full": 9180.5,
+          "amort_write_energy_uJ_per_tok": 0.0175,
+          "bound": "compute",
+          "read_admissible": false
+        }
+      },
+      "recommended_tier": "CXL",
+      "read_gated": false
+    },
+    {
+      "level": "frozen-weights",
+      "desc": "base model params: read/token, written NEVER (read-heavy side)",
+      "state_bytes": 2600000000,
+      "state_GB": 2.6,
+      "P_read": 1,
+      "P_write": null,
+      "latency_tolerance_us": 961.6,
+      "tiers": {
+        "CXL": {
+          "fits_capacity": true,
+          "read_us_full": 5200.0,
+          "amort_read_us_per_tok": 5200.0,
+          "rmw_us_full": 10400.0,
+          "rmw_energy_uJ_full": 78260.0,
+          "amort_write_energy_uJ_per_tok": 0.0,
+          "bound": "memory",
+          "read_admissible": false
+        },
+        "DDR5": {
+          "fits_capacity": true,
+          "read_us_full": 6500.0,
+          "amort_read_us_per_tok": 6500.0,
+          "rmw_us_full": 13000.0,
+          "rmw_energy_uJ_full": 62660.0,
+          "amort_write_energy_uJ_per_tok": 0.0,
+          "bound": "memory",
+          "read_admissible": false
+        },
+        "HBM3": {
+          "fits_capacity": true,
+          "read_us_full": 776.119,
+          "amort_read_us_per_tok": 776.1194,
+          "rmw_us_full": 1552.239,
+          "rmw_energy_uJ_full": 36660.0,
+          "amort_write_energy_uJ_per_tok": 0.0,
+          "bound": "memory",
+          "read_admissible": true
+        },
+        "SRAM": {
+          "fits_capacity": false,
+          "read_us_full": 43.333,
+          "amort_read_us_per_tok": 43.3333,
+          "rmw_us_full": 130.0,
+          "rmw_energy_uJ_full": 4940.0,
+          "amort_write_energy_uJ_per_tok": 0.0,
+          "bound": "compute",
+          "read_admissible": false
+        }
+      },
+      "recommended_tier": "HBM3",
+      "read_gated": true
+    }
+  ],
+  "per_layer_scratchpad": {
+    "block_bytes_per_layer": 67108864,
+    "scratchpad_cap_bytes": 281018368,
+    "fits_per_layer": true,
+    "sram_rmw_us": 3.355,
+    "sram_rmw_energy_uJ": 127.507,
+    "hbm_rmw_us": 40.065,
+    "hbm_rmw_energy_uJ": 946.235,
+    "energy_win_x": 7.42,
+    "all_layer_fits_on_die": false
+  },
+  "headline": {
+    "fast_weights_tier": "HBM3",
+    "cms_chunk_tier": "HBM3",
+    "cms_mid_tier": "CXL",
+    "sleep_experts_tier": "CXL",
+    "frozen_weights_tier": "HBM3",
+    "latency_tolerance_widens_with_cadence": "P_read * t_tok (linear in update period)",
+    "gating_rule": "resident copy is gated by max(read-cadence, write-cadence) i.e. the FASTER access; sub-per-token access cadence is what lets a write-heavy RMW state drop to DDR/CXL",
+    "per_layer_scratchpad_energy_win_x": 7.42
+  },
+  "caveats": [
+    "hatir/twin numbers are exploration-grade/RELATIVE (ranking + crossover + admissibility, not silicon-accurate absolutes); only ratios, tier orderings and admissibility flags are promoted to text (notes/local-experiments-plan.md \u00a75.1).",
+    "The SRAM tier is the NOVEL novel-swscratchpad-npu twin (268 MB @ 60 TB/s, 0.9 pJ/B, provenance=analytical): the hat-schema verify committee marks such pre-silicon designs simulation_ready=False / PPA-abstain (CATALOG.md). Its scratchpad results are DIRECTIONAL DSE only, not claims about a real device (\u00a75.2).",
+    "DDR5 and CXL tiers are the plan's documented datasheet order-of-magnitude numbers (0.4 TB/s/12 pJ/B and 0.5 TB/s/15 pJ/B), not from a verified twin; CXL access latency (~2 us) is NOT added to the amortised model here (traffic/energy structure only).",
+    "Per-kernel roofline only: no kernel-launch / scheduling / tail overhead; the amortised per-token time is a lower bound on the critical-path contribution, not a wall-clock (\u00a75.3).",
+    "The READ-cadence of CMS levels is architecture-dependent and NOT published as a decode trace: we model two honest regimes (queried-every-token => read-gated to HBM; genuinely down-sampled multi-timescale => access-cadenced => DDR/CXL) rather than assert one. The 6 papers do not publish H100 wall-clock decode, so t_tok is a roofline budget (\u00a75).",
+    "Write energy is approximated as ~half the symmetric RMW energy (read pJ/B == write pJ/B on these tiers); real r/w asymmetry (see stateful_writeback_dse.py) would shift write-energy figures but not the read-gated placement.",
+    "State sizes assume one 2-layer-MLP memory block = 8*d^2 elems per layer (m_block=8), matching the E3 analytical backbone (cross-checked above); sleep-experts uses 3 resident blocks as an illustrative low-frequency footprint, not a per-paper measured value."
+  ]
+}

@@ -18,6 +18,13 @@
 ## D4. Part III 척추 = 워크로드 분할 페어 논지
 "decode/serving state 관리 = memory-centric 기회 (per-token state read-modify-write, unshared·write-heavy), training/prefill = 여전히 accelerator 영역 (fused chunk kernel, grouped-GEMM)" — 이 **쌍(pair)** 을 Part III의 척추로 세우고 scaling law·player 분석을 그 아래 배치. memory-centric 논증은 정직 판정에서 진짜로 판명된 두 지점(decode state RMW 트래픽, update-frequency↔메모리 계층 배치)에만 사용.
 
+## D5. 사내 A100 클러스터 스펙 (인터뷰 2026-07-12) — runbook 전제
+- **스케줄러**: 없음 (수동 SSH / 직접 노드 할당) → runbook은 노드별 `torchrun --node_rank` + 명시적 `MASTER_ADDR` 방식, Slurm/K8s 미사용.
+- **컨테이너/네트워크**: Docker·Singularity 사용, 컴퓨트 노드 **인터넷 접근 가능** → HF checkpoint·pip·데이터셋 온라인 다운로드 경로로 작성.
+- **스토리지/인터커넥트**: NFS 공유 + InfiniBand → NCCL_IB 환경변수·IB hang 진단·NFS 체크포인트 병목 주의 절.
+- **fast-path**: A100 80G ×4 ×2 node = 8장 (최대 ~32장 multi-node).
+- **실측 목표**: **HOPE 재현 우선** (CMS + self-modifying Titans를 8장에서 학습·검증해 라인의 최신 아키텍처 재현). Dreaming/Sleep은 그 위에 별도 후속 스텝. (impl-availability.md: HOPE 공식 구현 없음, 자체 구현 대상; Sleep은 세계 최초 공개 구현이 될 것.)
+
 ## 상수
 - 대상 독자: transformer inference / efficient-transformer를 아는 AI system infra·architecture exploration 엔지니어, training 무경험.
 - 품질 우선(토큰/시간 비용 무시), veridraft v0.1.0 게이트 사용.

@@ -1,0 +1,71 @@
+====================================================================================================================
+E1.2 STATE-PLACEMENT DSE — where to put the per-token fast-weight state at TTT decode.
+A decode step reads S + writes S back (RMW). S is FIXED-size (independent of context) => on-chip
+residency is a designable choice, unlike the context-growing KV cache.
+
+Q1) Rank memory devices for a 134 MB per-layer state RMW step (epilogue 3 MAC/elem):
+  HBM3 3.35TB/s 7pJ (baseline)       traffic    268.4 MB | energy    1919.3 uJ |      80.1 us (memory)  [fits on-die]
+  on-die SRAM 10TB/s 0.4pJ 50MB      traffic    268.4 MB | energy     147.6 uJ |      26.8 us (memory)  [SPILLS to HBM]
+  sw-scratchpad 60TB/s 0.9pJ 256MB   traffic    268.4 MB | energy     281.9 uJ |       5.4 us (compute)  [fits on-die]
+  PIM in-bank 8.2TB/s 3.9pJ          traffic    268.4 MB | energy    1167.7 uJ |     167.8 us (compute)  [fits on-die]
+     -> lowest ENERGY: on-die SRAM 10TB/s 0.4pJ 50MB  |  lowest TIME: sw-scratchpad 60TB/s 0.9pJ 256MB
+     -> NOTE: the 50 MB L2 posts the lowest roofline energy but a 134 MB state SPILLS out of it
+        (the flat-twin cost path does not enforce residency — that is Q2's job); the REALIZABLE
+        winner that actually holds S is the 268 MB scratchpad (both fits AND lowest time).
+     -> on-chip residency wins energy AND time by ~1 order of magnitude over HBM3 when S fits.
+
+Q2) RESIDENCY CROSSOVER: sweep on-chip capacity vs per-layer state; when does S spill to HBM?
+     Per-layer state that FITS on-chip (crossover = capacity). '#L fit' = layers that co-reside.
+     cap \ config      Titans-170M  Titans-340M  Titans-760M  neural-mem-      hypo-7B     hypo-70B
+         52 MB               Y/2L         Y/1L         n/0L         n/0L         n/0L         n/0L
+         64 MB               Y/3L         Y/1L         n/0L         n/0L         n/0L         n/0L
+        128 MB               Y/6L         Y/3L         Y/1L         n/0L         n/0L         n/0L
+        268 MB              Y/14L         Y/8L         Y/3L         Y/2L         n/0L         n/0L
+        512 MB              Y/27L        Y/15L         Y/6L         Y/3L         n/0L         n/0L
+       1000 MB              Y/52L        Y/29L        Y/13L         Y/7L         Y/1L         n/0L
+     -> crossover state = the capacity itself. For the 268 MB scratchpad, single-layer state
+        fits up to neural-mem-1.3B (134 MB, d=2048) and SPILLS by hypo-7B (537 MB, d=4096):
+        crossover width d* ~= 2896 (m=16, bf16) : d<=2048 resident, d>=4096 spills.
+
+     Q2b) whole-model resident set over a 2-token decode window (each layer-state re-used every
+          token) spill to HBM, via hatir.residency.live_set_spill_bytes (scratchpad = 268 MB):
+        Titans-170M      L=12  whole-model     226.5 MB  peak-live     226.5 MB  spill/tok       0.0 MB
+        Titans-340M      L=24  whole-model     805.3 MB  peak-live     268.4 MB  spill/tok     570.4 MB
+        Titans-760M      L=24  whole-model    1811.9 MB  peak-live     226.5 MB  spill/tok    2566.9 MB
+        neural-mem-1.3B  L=24  whole-model    3221.2 MB  peak-live     268.4 MB  spill/tok    3221.2 MB
+        hypo-7B          L=32  whole-model   17179.9 MB  peak-live     536.9 MB  spill/tok   29527.9 MB
+        hypo-70B         L=80  whole-model  171798.7 MB  peak-live    2147.5 MB  spill/tok  221190.8 MB
+     -> only the smallest config (Titans-170M, 226 MB whole-model) fits the 268 MB scratchpad;
+        every larger config's L-layer state overruns it and the residency module reports a per-
+        token writeback+refetch spill to HBM => at scale, state placement is per-layer / streamed.
+
+Q3) PIM (in-bank) vs HBM+PE over EPILOGUE COMPUTE INTENSITY (MAC/elem), fixed 134 MB state:
+      MAC/elem |    HBM uJ    PIM uJ  E win |    HBM us    PIM us  T cost
+             1 |      1892      1087   1.7x |        80        56    0.7x
+             3 |      1919      1168   1.6x |        80       168    2.1x <- TTT epilogue
+             8 |      1986      1369   1.5x |        80       447    5.6x
+            32 |      2309      2335   1.0x |        80      1790   22.3x
+           128 |      3597      6201   0.6x |       229      7158   31.2x
+           512 |      8751     21663   0.4x |       917     28633   31.2x
+          1024 |     15623     42279   0.4x |      1833     57266   31.2x
+     -> movement-bound (low MAC/elem, incl the ~3-MAC/elem TTT epilogue): PIM is a
+        near-pure ENERGY win (cheaper local movement, no bus). Compute-bound (high MAC/elem): PIM's
+        slow scalar lane (1.2 vs 37 TMAC/s) costs latency; time crossover ~ 3 MAC/elem.
+
+Q4) Cross-check on the REAL novel .hw twins (full memory hierarchy loaded from hat-schema):
+     novel-swscratchpad-npu     traffic    4295.0 MB | energy   27947.5 uJ |     826.0 us (memory)
+     novel-pim-cim              traffic     268.4 MB | energy     120.8 uJ |     671.1 us (memory)
+     dgx-h100-x4 (ref)          traffic     268.4 MB | energy       0.0 uJ |     671.1 us (memory)
+     -> full-hierarchy traffic counts movement at EVERY tier (hbm->scratchpad->reg), so it is
+        NOT byte-comparable to the flat single-tier Q1 numbers; reported as a directional check.
+     -> dgx-h100-x4 shows 0 uJ because that twin omits per-tier energy_pj_per_byte (structural
+        check is traffic/time); both novel twins are provenance=analytical => sim_ready=False.
+====================================================================================================================
+Decision surface (pre-silicon): the TTT/neural-memory state is FIXED-size, so on-chip residency
+is a real design knob — but a 268 MB scratchpad holds only ~2 layers of a 1.3B state and no
+whole-model state past the smallest (170M) config, so placement is per-layer/streamed. PIM buys
+movement energy at the cost of compute latency (fine at TTT's ~3 MAC/elem). This is the memory-
+centric half of the pair thesis: decode state management is a placement/residency problem.
+[validate] all state-placement DSE trends hold (SRAM residency win, crossover, PIM energy/latency).
+
+[wrote] /home/jimmy/repos/neural-memory-study/experiments/E1.2-state-placement/results.json

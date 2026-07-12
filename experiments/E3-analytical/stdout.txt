@@ -1,0 +1,88 @@
+====================================================================================================
+E3.1  ANALYTICAL CROSSOVER MODEL — TTT/neural-memory decode (Part III D4 pair thesis)
+====================================================================================================
+HW SoT: dgx_h100_x4.json twin (hat-schema SoT)
+  HBM3 BW 3.35 TB/s | 7 pJ/B | cap 80 GB | on-die(L2) 50 MB
+  peak 989 TFLOP/s | RIDGE = 295.4 FLOP/B
+
+-- VALIDATION (reproduce plan hand-calc: d=2048, m=16, L=24, GQA-8 (kv_dim=1024), bf16) --------------------
+   state/layer 134.2 MB (exp 134) | RMW 6.44 GB/tok (exp 6.4) | 1.92 ms/tok (exp 1.9) | S* 65536 (exp ~65k)
+   ALL CHECKS PASS: True   {'state_MB_~134': True, 'rmw_GB_~6.4': True, 'rmw_ms_~1.9': True, 'S_star_~65k': True}
+
+-- CROSSOVER TABLE (bf16) — per-token TTT decode + S*/C*/B_max ------------------------------
+  config           meth        d   L   m  RMW GB  ms/tok   uJ/tok   bound   S* tok     C*  Bmax10ms  BmaxHBM
+  Titans-170M      Titans    768  12  16   0.453   0.135   3170.9  memory     9216  395.8     73.95    379.3
+  Titans-170M      Miras     768  12   8   0.226   0.068   1585.4  memory     4608  395.8    147.91    758.5
+  Titans-170M      Atlas     768  12  16   0.453   0.135   3170.9  memory     9216  395.8     73.95    379.3
+  Titans-170M      TNT       768  12   8   0.226   0.068   1585.4  memory     4608  395.8    147.91    758.5
+  Titans-170M      HOPE      768  12   8   0.226   0.068   1585.4  memory     4608  395.8    147.91    758.5
+  Titans-170M      Sleep     768  12   8   0.226   0.068   1585.4  memory     4608  395.8    147.91    758.5
+  Titans-340M      Titans   1024  24  16   1.611   0.481  11274.3  memory    16384  374.5     20.80    106.7
+  Titans-340M      Miras    1024  24   8   0.805   0.240   5637.1  memory     8192  374.5     41.60    213.3
+  Titans-340M      Atlas    1024  24  16   1.611   0.481  11274.3  memory    16384  374.5     20.80    106.7
+  Titans-340M      TNT      1024  24   8   0.805   0.240   5637.1  memory     8192  374.5     41.60    213.3
+  Titans-340M      HOPE     1024  24   8   0.805   0.240   5637.1  memory     8192  374.5     41.60    213.3
+  Titans-340M      Sleep    1024  24   8   0.805   0.240   5637.1  memory     8192  374.5     41.60    213.3
+  Titans-760M      Titans   1536  24  16   3.624   1.082  25367.2  memory    36864  350.2      9.24     47.4
+  Titans-760M      Miras    1536  24   8   1.812   0.541  12683.6  memory    18432  350.2     18.49     94.8
+  Titans-760M      Atlas    1536  24  16   3.624   1.082  25367.2  memory    36864  350.2      9.24     47.4
+  Titans-760M      TNT      1536  24   8   1.812   0.541  12683.6  memory    18432  350.2     18.49     94.8
+  Titans-760M      HOPE     1536  24   8   1.812   0.541  12683.6  memory    18432  350.2     18.49     94.8
+  Titans-760M      Sleep    1536  24   8   1.812   0.541  12683.6  memory    18432  350.2     18.49     94.8
+  neural-mem-1.3B  Titans   2048  24  16   6.442   1.923  45097.2  memory    65536  337.1      5.20     26.7
+  neural-mem-1.3B  Miras    2048  24   8   3.221   0.962  22548.6  memory    32768  337.1     10.40     53.3
+  neural-mem-1.3B  Atlas    2048  24  16   6.442   1.923  45097.2  memory    65536  337.1      5.20     26.7
+  neural-mem-1.3B  TNT      2048  24   8   3.221   0.962  22548.6  memory    32768  337.1     10.40     53.3
+  neural-mem-1.3B  HOPE     2048  24   8   3.221   0.962  22548.6  memory    32768  337.1     10.40     53.3
+  neural-mem-1.3B  Sleep    2048  24   8   3.221   0.962  22548.6  memory    32768  337.1     10.40     53.3
+  hypo-7B          Titans   4096  32  16  34.360  10.257 240518.2  memory   262144  316.6      0.97      5.0
+  hypo-7B          Miras    4096  32   8  17.180   5.128 120259.1  memory   131072  316.6      1.95     10.0
+  hypo-7B          Atlas    4096  32  16  34.360  10.257 240518.2  memory   262144  316.6      0.97      5.0
+  hypo-7B          TNT      4096  32   8  17.180   5.128 120259.1  memory   131072  316.6      1.95     10.0
+  hypo-7B          HOPE     4096  32   8  17.180   5.128 120259.1  memory   131072  316.6      1.95     10.0
+  hypo-7B          Sleep    4096  32   8  17.180   5.128 120259.1  memory   131072  316.6      1.95     10.0
+  hypo-70B         Titans   8192  80  16 343.597 102.566 2405181.7  memory  1048576  306.0      0.10      0.5
+  hypo-70B         Miras    8192  80   8 171.799  51.283 1202590.8  memory   524288  306.0      0.19      1.0
+  hypo-70B         Atlas    8192  80  16 343.597 102.566 2405181.7  memory  1048576  306.0      0.10      0.5
+  hypo-70B         TNT      8192  80   8 171.799  51.283 1202590.8  memory   524288  306.0      0.19      1.0
+  hypo-70B         HOPE     8192  80   8 171.799  51.283 1202590.8  memory   524288  306.0      0.19      1.0
+  hypo-70B         Sleep    8192  80   8 171.799  51.283 1202590.8  memory   524288  306.0      0.19      1.0
+
+-- (a) S* SWEEP (context where KV read == TTT RMW) ------------------------------
+      d   m  GQA8/bf16  GQA8/fp8KV  MHA/bf16
+   1024   8       8192       16384      8192
+   1024  16      16384       32768     16384
+   2048   8      32768       65536     16384
+   2048  16      65536      131072     32768
+   4096   8     131072      262144     32768
+   4096  16     262144      524288     65536
+   8192   8     524288     1048576     65536
+   8192  16    1048576     2097152    131072
+
+-- (b) C* SWEEP (chunk where intensity crosses ridge=295 FLOP/B) --------------------
+      d      C*   intensity I(C) at C=[1,4,16,64,256,1024]
+    512   430.2       1.0     4.0    15.5    57.6   192.0   614.4
+   1024   374.5       1.0     4.0    15.8    60.4   213.3   682.7
+   2048   337.1       1.0     4.0    15.9    62.1   230.4   768.0
+   4096   316.6       1.0     4.0    15.9    63.0   241.8   853.3
+   8192   306.0       1.0     4.0    16.0    63.5   248.5   921.6
+
+-- (c) B_max SWEEP (m=16; which constraint binds) ------------------------------
+  config           state/seq GB  Bmax@10ms  Bmax@50ms  BmaxHBM80 ondie/seq  binds@10ms
+  Titans-170M             0.226      73.95     369.77      379.3    0.2315          BW
+  Titans-340M             0.805      20.80     104.00      106.7    0.0651          BW
+  Titans-760M             1.812       9.24      46.22       47.4    0.0289          BW
+  neural-mem-1.3B         3.221       5.20      26.00       26.7    0.0163          BW
+  hypo-7B                17.180       0.97       4.87        5.0    0.0031          BW
+  hypo-70B              171.799       0.10       0.49        0.5    0.0003          BW
+
+-- dtype sensitivity (anchor d=2048,m=16,L=24) ------------------------------
+   bf16 :  6.442 GB/tok | 1.923 ms/tok
+   fp8  :  3.221 GB/tok | 0.962 ms/tok
+
+[written] results.json
+====================================================================================================
+PAIR-THESIS TAKEAWAYS:
+  decode side: TTT state RMW is memory-bound at every scale (intensity ~O(m+3) FLOP/B << ridge 295); the transformer's KV read only overtakes it past S*~65k tok (d=2048).
+  prefill/training side: the SAME recurrence turns compute-bound once chunk C>C*~337 (d=2048) — enlarge the chunk and you cross into accelerator territory.
+  serving side: unshared write-heavy state makes decode BW-bound on batch (B_max~5@10ms) long before HBM capacity, and too big to pin on-die.

@@ -1,0 +1,46 @@
+======================================================================================================================
+E1.1  TTT-decode per-token state RMW baseline on the DGX-H100 twin (Titans/Atlas-class)
+HBM backing (SoT): BW 3.35 TB/s | 7.0 pJ/B | peak 494.7 TMAC/s | ridge 295 FLOP/B
+state = m*d^2 elems (m=8: W1,W2 ; m=16: +momentum). Step = read state + write back (RMW).
+======================================================================================================================
+    d   m  dt   L |  state/lyr   RMW/lyr |   GB/tok   ms/tok   mJ/tok |  bound AI(F/B) mem/gemv
+----------------------------------------------------------------------------------------------------------------------
+ 1024   8   2  24 |      16.8M     33.6M |    0.805   0.2404    5.879 | memory    3.00     197x
+ 1024   8   1  24 |       8.4M     16.8M |    0.403   0.1202    3.060 | memory    6.00      98x
+ 1024  16   2  24 |      33.6M     67.1M |    1.611   0.4808   11.637 | memory    2.25     394x
+ 1024  16   1  24 |      16.8M     33.6M |    0.805   0.2404    6.000 | memory    4.50     197x
+ 2048   8   2  24 |      67.1M    134.2M |    3.221   0.9616   23.515 | memory    3.00     197x
+ 2048   8   1  24 |      33.6M     67.1M |    1.611   0.4808   12.241 | memory    6.00      98x
+ 2048  16   2  24 |     134.2M    268.4M |    6.442   1.9231   46.547 | memory    2.25     394x
+ 2048  16   1  24 |      67.1M    134.2M |    3.221   0.9616   23.998 | memory    4.50     197x
+ 4096   8   2  24 |     268.4M    536.9M |   12.885   3.8462   94.060 | memory    3.00     197x
+ 4096   8   1  24 |     134.2M    268.4M |    6.442   1.9231   48.963 | memory    6.00      98x
+ 4096  16   2  24 |     536.9M   1073.7M |   25.770   7.6925  186.187 | memory    2.25     394x
+ 4096  16   1  24 |     268.4M    536.9M |   12.885   3.8462   95.993 | memory    4.50     197x
+ 8192   8   2  24 |    1073.7M   2147.5M |   51.540  15.3850  376.239 | memory    3.00     197x
+ 8192   8   1  24 |     536.9M   1073.7M |   25.770   7.6925  195.851 | memory    6.00      98x
+ 8192  16   2  24 |    2147.5M   4295.0M |  103.079  30.7699  744.747 | memory    2.25     394x
+ 8192  16   1  24 |    1073.7M   2147.5M |   51.540  15.3850  383.970 | memory    4.50     197x
+----------------------------------------------------------------------------------------------------------------------
+(table prints L=24 slice; results.json holds all L in {12,24,48})
+
+HEADLINE (plan §0.5 canonical: d=2048, m=16, L=24, bf16):
+  state/layer      : 134.2 MB
+  RMW traffic/token: 6.44 GB   (2 x state x L)
+  decode time/token: 1.923 ms   (state-movement only, HBM-bound)
+  energy/token     : 46.55 mJ
+  bound            : memory  |  intensity 2.25 FLOP/B (ridge 295)  |  memory time = 394x GEMV compute
+
+CROSS-CHECK vs E3 analytical (bf16 configs; HAT hbm-only-energy vs E3 memory energy):
+                  config   E3 GB  HAT GB   E3 ms  HAT ms     E3 uJ    HAT uJ
+       Titans-340M/Atlas   1.611   1.611   0.481   0.481     11274     11274
+       Titans-340M/Sleep   0.805   0.805   0.240   0.240      5637      5637
+   neural-mem-1.3B/Atlas   6.442   6.442   1.923   1.923     45097     45097
+   neural-mem-1.3B/Sleep   3.221   3.221   0.962   0.962     22549     22549
+  -> HAT reproduces E3 traffic/time exactly (same twin BW); HAT total energy adds the
+     epilogue-MAC term E3 omits, so HAT mem-only energy == E3 (3-way self-consistent).
+
+[validate] all trends hold: every config memory-bound, below ridge, RMW>>GEMV;
+           traffic exactly linear in m, dtype, L.
+
+wrote /home/jimmy/repos/neural-memory-study/experiments/E1.1-decode-baseline/results.json  (48 configs)

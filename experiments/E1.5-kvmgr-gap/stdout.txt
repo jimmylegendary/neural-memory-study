@@ -1,0 +1,62 @@
+E1.5 — hat-kv-manager semantic-gap analysis (grounded in kv_manager/manager.py API)
+twin: /home/jimmy/repos/hat-schema/twins/dgx_h100_x4.json
+workload: d=2048 L=24 m=16 dt=2  ->  TTT state/layer=128 MB, state/model=3072 MB; KV/token/model=96.0 KB
+
+====================================================================================================
+G1) prefix_reuse(): content-addressed reuse — KV prefix HITS vs TTT-state MISSES
+  KV  (append/content-addressable): prefix_reuse hits = 32/32, hit_rate = 0.50
+  TTT (RMW/mutates every token):    prefix_reuse hits = 0/32, hit_rate = 0.00
+  -> the manager's #1 value (prefix reuse) is STRUCTURALLY unavailable to RMW state:
+     state content changes every token, so no hash ever recurs. Reuse ratio KV:TTT = 0.50 : 0.00.
+
+====================================================================================================
+G2) place(): append-once semantics vs per-token RMW — stale-version blow-up + write under-count
+  after T=256 per-token state mutations of a 128 MB/layer state:
+    manager index retains        256 state versions (stale accretion)
+    resident bytes                  32768 MB
+    TRUE RMW working set              128 MB  (only the current state is live)
+    memory blow-up factor           256.0x  (== T: no free-on-update path)
+    manager write EVENTS         256 (one per phantom new block)
+    true per-token RMW writes    256 of 128 MB each
+  contrast on the REAL dgx_h100_x4 twin: index=1 versions, spill=0 MB, evict/drop=32640 MB
+  -> place() models APPEND (new immutable block); it has NO in-place update, so RMW is
+     forced to masquerade as endless new blocks. On a LARGE tier this ACCRETES stale
+     versions (blow-up == T); on the real DGX twin capacity pressure instead DROPS/spills
+     dirty state (both branches wrong for RMW; the drop's cost is mispriced — see G3).
+
+====================================================================================================
+G3) _evict_from(): clean eviction vs dirty writeback — the unaccounted writeback DEBT
+  drove 64 dirty 8 MB state blocks through a capacity-pressured twin:
+    spill_bytes (copied down)        64.0 MB   (accounted as a CLEAN copy)
+    evict_bytes (DROPPED, del)      416.0 MB   (assumed clean/recomputable)
+    manager writeback time  it charged for the drops:   0.0 us
+    manager writeback energy it charged for the drops:  0.0 pJ
+    but dirty state OWES a writeback of the dropped bytes:
+      owed writeback time      130.2 us  (@3.35 TB/s HBM write)
+      owed writeback energy   3053.5 uJ  (@7 pJ/B write)
+  -> _evict_from() `del`-drops a block for free because a KV block is RECOMPUTABLE from its
+     tokens. TTT state is dirty + unshared + non-recomputable: dropping it LOSES the update.
+     Correct accounting owes a full writeback the manager charges as ZERO -> it systematically
+     UNDER-prices dirty-state eviction (the dominant cost of a write-heavy RMW manager).
+
+====================================================================================================
+API audit: what KVCacheManager EXPOSES vs what an RMW-state manager NEEDS
+  [present] place(hashes)                      append immutable content-addressed block on hot tier (append-once)
+  [present] prefix_reuse(hashes)               content-addressed reuse across requests (read-many)
+  [present] _evict_from(tier)                  clean eviction: spill-copy down OR del-drop (recomputable assumption)
+  [present] metrics()                          hit_rate, occupancy, spill/evict BYTES
+  [MISSING] update_in_place(slot)              RMW a resident slot's bytes without a new hash (no content change key)
+  [MISSING] mark_dirty(slot) / writeback(slot) dirty-tracking so eviction pays the writeback it owes
+  [MISSING] checkpoint(seq) / rollback(seq)    TTT state is speculative across a step; KV never rolls back
+  [MISSING] bind_to_sequence(seq)              unshared per-sequence state lifecycle (no cross-request sharing)
+  [MISSING] free_on_update(slot)               release the prior version at mutation (no stale-version accretion)
+  -> the four present methods are the append/read-many/content-addressable/clean-evict axis.
+     The five missing ones are exactly the RMW/dirty/unshared/speculative axis TTT needs.
+
+====================================================================================================
+Cross-reference: E3-analytical expectation (d=2048 row)
+  E3 rmw_GB_token=6.442 GB, S*=65536 tokens, bound=memory — the RMW traffic this manager cannot model as RMW.
+
+[validate] all three semantic gaps hold: reuse->0, blow-up>1x, dirty writeback under-priced.
+
+wrote results.json

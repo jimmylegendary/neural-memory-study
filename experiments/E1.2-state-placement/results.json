@@ -1,0 +1,416 @@
+{
+  "experiment": "E1.2-state-placement",
+  "workload": "TTT/neural-memory per-token fast-weight state RMW at decode",
+  "twin_provenance": {
+    "HBM3/on-die": "dgx-h100-x4.hw (hat-schema SoT)",
+    "scratchpad": "novel-swscratchpad-npu.hw (provenance=analytical, simulation_ready=False)",
+    "PIM": "novel-pim-cim.hw (provenance=analytical, simulation_ready=False)"
+  },
+  "Q1_device_ranking": {
+    "state_MB": 134.217728,
+    "epilogue_macs_per_elem": 3,
+    "devices": {
+      "HBM3 3.35TB/s 7pJ (baseline)": {
+        "traffic_MB": 268.4,
+        "energy_uJ": 1919.31,
+        "time_us": 80.13,
+        "bound": "memory",
+        "cap_MB": 80000.0,
+        "fits_one_layer": true
+      },
+      "on-die SRAM 10TB/s 0.4pJ 50MB": {
+        "traffic_MB": 268.4,
+        "energy_uJ": 147.64,
+        "time_us": 26.84,
+        "bound": "memory",
+        "cap_MB": 52.4,
+        "fits_one_layer": false
+      },
+      "sw-scratchpad 60TB/s 0.9pJ 256MB": {
+        "traffic_MB": 268.4,
+        "energy_uJ": 281.86,
+        "time_us": 5.37,
+        "bound": "compute",
+        "cap_MB": 268.4,
+        "fits_one_layer": true
+      },
+      "PIM in-bank 8.2TB/s 3.9pJ": {
+        "traffic_MB": 268.4,
+        "energy_uJ": 1167.69,
+        "time_us": 167.77,
+        "bound": "compute",
+        "cap_MB": 64000.0,
+        "fits_one_layer": true
+      }
+    },
+    "lowest_energy": "on-die SRAM 10TB/s 0.4pJ 50MB",
+    "lowest_time": "sw-scratchpad 60TB/s 0.9pJ 256MB"
+  },
+  "Q2_residency_crossover": {
+    "scratchpad_cap_MB": 268.435456,
+    "grid": [
+      {
+        "cap_MB": 52.4,
+        "cells": {
+          "Titans-170M": {
+            "one_layer_fits": true,
+            "layers_that_fit": 2
+          },
+          "Titans-340M": {
+            "one_layer_fits": true,
+            "layers_that_fit": 1
+          },
+          "Titans-760M": {
+            "one_layer_fits": false,
+            "layers_that_fit": 0
+          },
+          "neural-mem-1.3B": {
+            "one_layer_fits": false,
+            "layers_that_fit": 0
+          },
+          "hypo-7B": {
+            "one_layer_fits": false,
+            "layers_that_fit": 0
+          },
+          "hypo-70B": {
+            "one_layer_fits": false,
+            "layers_that_fit": 0
+          }
+        }
+      },
+      {
+        "cap_MB": 64.0,
+        "cells": {
+          "Titans-170M": {
+            "one_layer_fits": true,
+            "layers_that_fit": 3
+          },
+          "Titans-340M": {
+            "one_layer_fits": true,
+            "layers_that_fit": 1
+          },
+          "Titans-760M": {
+            "one_layer_fits": false,
+            "layers_that_fit": 0
+          },
+          "neural-mem-1.3B": {
+            "one_layer_fits": false,
+            "layers_that_fit": 0
+          },
+          "hypo-7B": {
+            "one_layer_fits": false,
+            "layers_that_fit": 0
+          },
+          "hypo-70B": {
+            "one_layer_fits": false,
+            "layers_that_fit": 0
+          }
+        }
+      },
+      {
+        "cap_MB": 128.0,
+        "cells": {
+          "Titans-170M": {
+            "one_layer_fits": true,
+            "layers_that_fit": 6
+          },
+          "Titans-340M": {
+            "one_layer_fits": true,
+            "layers_that_fit": 3
+          },
+          "Titans-760M": {
+            "one_layer_fits": true,
+            "layers_that_fit": 1
+          },
+          "neural-mem-1.3B": {
+            "one_layer_fits": false,
+            "layers_that_fit": 0
+          },
+          "hypo-7B": {
+            "one_layer_fits": false,
+            "layers_that_fit": 0
+          },
+          "hypo-70B": {
+            "one_layer_fits": false,
+            "layers_that_fit": 0
+          }
+        }
+      },
+      {
+        "cap_MB": 268.4,
+        "cells": {
+          "Titans-170M": {
+            "one_layer_fits": true,
+            "layers_that_fit": 14
+          },
+          "Titans-340M": {
+            "one_layer_fits": true,
+            "layers_that_fit": 8
+          },
+          "Titans-760M": {
+            "one_layer_fits": true,
+            "layers_that_fit": 3
+          },
+          "neural-mem-1.3B": {
+            "one_layer_fits": true,
+            "layers_that_fit": 2
+          },
+          "hypo-7B": {
+            "one_layer_fits": false,
+            "layers_that_fit": 0
+          },
+          "hypo-70B": {
+            "one_layer_fits": false,
+            "layers_that_fit": 0
+          }
+        }
+      },
+      {
+        "cap_MB": 512.0,
+        "cells": {
+          "Titans-170M": {
+            "one_layer_fits": true,
+            "layers_that_fit": 27
+          },
+          "Titans-340M": {
+            "one_layer_fits": true,
+            "layers_that_fit": 15
+          },
+          "Titans-760M": {
+            "one_layer_fits": true,
+            "layers_that_fit": 6
+          },
+          "neural-mem-1.3B": {
+            "one_layer_fits": true,
+            "layers_that_fit": 3
+          },
+          "hypo-7B": {
+            "one_layer_fits": false,
+            "layers_that_fit": 0
+          },
+          "hypo-70B": {
+            "one_layer_fits": false,
+            "layers_that_fit": 0
+          }
+        }
+      },
+      {
+        "cap_MB": 1000.0,
+        "cells": {
+          "Titans-170M": {
+            "one_layer_fits": true,
+            "layers_that_fit": 52
+          },
+          "Titans-340M": {
+            "one_layer_fits": true,
+            "layers_that_fit": 29
+          },
+          "Titans-760M": {
+            "one_layer_fits": true,
+            "layers_that_fit": 13
+          },
+          "neural-mem-1.3B": {
+            "one_layer_fits": true,
+            "layers_that_fit": 7
+          },
+          "hypo-7B": {
+            "one_layer_fits": true,
+            "layers_that_fit": 1
+          },
+          "hypo-70B": {
+            "one_layer_fits": false,
+            "layers_that_fit": 0
+          }
+        }
+      }
+    ],
+    "last_config_that_fits_one_layer": {
+      "config": "neural-mem-1.3B",
+      "state_MB": 134.2,
+      "d": 2048
+    },
+    "first_config_that_spills": {
+      "config": "hypo-7B",
+      "state_MB": 536.9,
+      "d": 4096
+    },
+    "crossover_width_d_star": 2896.0,
+    "note": "on-die 50MB L2 holds no single layer past Titans-340M; 256MB scratchpad holds up to 1.3B."
+  },
+  "Q2b_whole_model_spill": {
+    "scratchpad_cap_MB": 268.435456,
+    "policy": "largest",
+    "window_tokens": 2,
+    "per_config": {
+      "Titans-170M": {
+        "L": 12,
+        "whole_model_state_MB": 226.5,
+        "peak_live_MB": 226.5,
+        "spill_MB_per_token": 0.0,
+        "whole_model_fits_268MB": true
+      },
+      "Titans-340M": {
+        "L": 24,
+        "whole_model_state_MB": 805.3,
+        "peak_live_MB": 268.4,
+        "spill_MB_per_token": 570.4,
+        "whole_model_fits_268MB": false
+      },
+      "Titans-760M": {
+        "L": 24,
+        "whole_model_state_MB": 1811.9,
+        "peak_live_MB": 226.5,
+        "spill_MB_per_token": 2566.9,
+        "whole_model_fits_268MB": false
+      },
+      "neural-mem-1.3B": {
+        "L": 24,
+        "whole_model_state_MB": 3221.2,
+        "peak_live_MB": 268.4,
+        "spill_MB_per_token": 3221.2,
+        "whole_model_fits_268MB": false
+      },
+      "hypo-7B": {
+        "L": 32,
+        "whole_model_state_MB": 17179.9,
+        "peak_live_MB": 536.9,
+        "spill_MB_per_token": 29527.9,
+        "whole_model_fits_268MB": false
+      },
+      "hypo-70B": {
+        "L": 80,
+        "whole_model_state_MB": 171798.7,
+        "peak_live_MB": 2147.5,
+        "spill_MB_per_token": 221190.8,
+        "whole_model_fits_268MB": false
+      }
+    },
+    "caveat": "residency.py excludes PERSISTENT tensors from the transient set; TTT state is a 3rd class (persistent BUT mutated every token) so we tag it activation-class/transient to force the spill sim (plan limit #4); eviction-policy precision not claimed."
+  },
+  "Q3_pim_energy_latency": {
+    "state_MB": 134.2,
+    "ttt_epilogue_macs_per_elem": 3,
+    "sweep": [
+      {
+        "macs_per_elem": 1,
+        "hbm_uJ": 1892.5,
+        "pim_uJ": 1087.2,
+        "energy_win_x": 1.74,
+        "hbm_us": 80.1,
+        "pim_us": 55.9,
+        "time_cost_x": 0.7,
+        "hbm_bound": "memory",
+        "pim_bound": "compute"
+      },
+      {
+        "macs_per_elem": 3,
+        "hbm_uJ": 1919.3,
+        "pim_uJ": 1167.7,
+        "energy_win_x": 1.64,
+        "hbm_us": 80.1,
+        "pim_us": 167.8,
+        "time_cost_x": 2.09,
+        "hbm_bound": "memory",
+        "pim_bound": "compute"
+      },
+      {
+        "macs_per_elem": 8,
+        "hbm_uJ": 1986.4,
+        "pim_uJ": 1369.0,
+        "energy_win_x": 1.45,
+        "hbm_us": 80.1,
+        "pim_us": 447.4,
+        "time_cost_x": 5.58,
+        "hbm_bound": "memory",
+        "pim_bound": "compute"
+      },
+      {
+        "macs_per_elem": 32,
+        "hbm_uJ": 2308.5,
+        "pim_uJ": 2335.4,
+        "energy_win_x": 0.99,
+        "hbm_us": 80.1,
+        "pim_us": 1789.6,
+        "time_cost_x": 22.33,
+        "hbm_bound": "memory",
+        "pim_bound": "compute"
+      },
+      {
+        "macs_per_elem": 128,
+        "hbm_uJ": 3597.0,
+        "pim_uJ": 6200.9,
+        "energy_win_x": 0.58,
+        "hbm_us": 229.2,
+        "pim_us": 7158.3,
+        "time_cost_x": 31.23,
+        "hbm_bound": "compute",
+        "pim_bound": "compute"
+      },
+      {
+        "macs_per_elem": 512,
+        "hbm_uJ": 8751.0,
+        "pim_uJ": 21662.7,
+        "energy_win_x": 0.4,
+        "hbm_us": 916.7,
+        "pim_us": 28633.1,
+        "time_cost_x": 31.23,
+        "hbm_bound": "compute",
+        "pim_bound": "compute"
+      },
+      {
+        "macs_per_elem": 1024,
+        "hbm_uJ": 15622.9,
+        "pim_uJ": 42278.6,
+        "energy_win_x": 0.37,
+        "hbm_us": 1833.5,
+        "pim_us": 57266.2,
+        "time_cost_x": 31.23,
+        "hbm_bound": "compute",
+        "pim_bound": "compute"
+      }
+    ],
+    "pim_time_crossover_macs_per_elem": 3
+  },
+  "Q4_actual_novel_twins": {
+    "note": "full-hierarchy load; traffic sums all tiers (not comparable to flat Q1); directional only. dgx-h100-x4 reports 0 uJ because that twin omits per-tier energy_pj_per_byte annotations.",
+    "twins": {
+      "novel-swscratchpad-npu": {
+        "traffic_MB": 4295.0,
+        "energy_uJ": 27947.49,
+        "time_us": 825.96,
+        "bound": "memory",
+        "engine": null
+      },
+      "novel-pim-cim": {
+        "traffic_MB": 268.4,
+        "energy_uJ": 120.8,
+        "time_us": 671.09,
+        "bound": "memory",
+        "engine": "mac_lane"
+      },
+      "dgx-h100-x4 (ref)": {
+        "traffic_MB": 268.4,
+        "energy_uJ": 0.0,
+        "time_us": 671.09,
+        "bound": "memory",
+        "engine": null
+      }
+    },
+    "simulation_ready": false,
+    "provenance": "analytical (novel-swscratchpad-npu, novel-pim-cim) \u2014 exploration-grade, needs silicon."
+  },
+  "headline_numbers": [
+    "On-chip scratchpad (268MB/256MiB @60TB/s, 0.9pJ/B) vs HBM3 for a 134MB per-layer state RMW: 6.8x lower energy, 14.9x lower time \u2014 WHEN the state fits on-chip.",
+    "Residency crossover: a 268MB scratchpad holds a SINGLE layer's state up to d=2048 (neural-mem-1.3B, 134MB) and SPILLS to HBM by d=4096 (hypo-7B, 537MB); crossover width d*~=2896 (m=16, bf16).",
+    "Whole-model residency: only Titans-170M (L=12, 226MB total state) fits the 268MB scratchpad; every larger config (>=340M) overruns it and spills per token => at scale state placement is per-layer / streamed, not pinned whole-model.",
+    "PIM for the write-heavy epilogue: at TTT's ~3 MAC/elem it is a 1.6x energy win at 2.09x time; the latency cost only bites past ~3 MAC/elem (compute-bound epilogue)."
+  ],
+  "caveats": [
+    "hatir/twin numbers are exploration-grade/RELATIVE (rankings + crossover positions, not silicon-accurate absolutes); only ratios and crossover positions are promoted to text.",
+    "The two novel twins (novel-swscratchpad-npu, novel-pim-cim) are provenance=analytical => the verify committee flags simulation_ready=False / PPA abstain; PIM & scratchpad results are DIRECTIONAL DSE only, never a claim about a shipping device.",
+    "Q1/Q2/Q3 use FLAT single-tier device twins (params lifted from the real twins) so traffic is byte-comparable (2*S). Q4 loads the FULL-hierarchy novel twins whose traffic sums every tier (hbm->scratchpad->reg) and is therefore NOT comparable to Q1 \u2014 reported as a directional check.",
+    "residency.py excludes persistent tensors from the transient working set; TTT state is a 3rd class (persistent BUT mutated every token), so Q2b tags it activation-class/transient to force the spill sim \u2014 eviction-policy-level precision is not claimed (plan limit #4).",
+    "Per-kernel roofline only: no kernel-launch / scheduling / tail overheads; per-token ABSOLUTE latency is a lower bound, deferred to the in-house A100 runbook (Part III-a).",
+    "Per-layer state sizes (m=16, bf16) are canonical transformer shapes from E3-analytical, not released decode traces; PIM epilogue intensity (~3 MAC/elem) is from the published update rule."
+  ]
+}
