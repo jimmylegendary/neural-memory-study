@@ -3,16 +3,26 @@
 \setmainjfont{Noto Serif CJK KR}
 \setmainfont{Noto Serif CJK KR}
 \usepackage{amsmath,amssymb}
+\usepackage{calc}
 \usepackage{booktabs,longtable,array,multirow}
+\providecommand{\real}[1]{#1}
 \usepackage{graphicx}
+\setkeys{Gin}{width=\linewidth,keepaspectratio}
 \usepackage[margin=2.5cm]{geometry}
 \usepackage{xcolor}
 \usepackage{fancyvrb}
 \usepackage[hidelinks,unicode]{hyperref}
 \usepackage{bookmark}
+\usepackage{caption}
+\captionsetup{labelformat=empty}
 \setcounter{tocdepth}{2}
-\setcounter{secnumdepth}{3}
+\setcounter{secnumdepth}{-2}
 \providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\st}[1]{#1}
+\providecommand{\passthrough}[1]{#1}
+\providecommand{\pandocbounded}[1]{#1}
+\providecommand{\textsubscript}[1]{\ensuremath{_{#1}}}
+\providecommand{\textsuperscript}[1]{\ensuremath{^{#1}}}
 \graphicspath{{$graphics-path$}{./}{../}}
 $if(highlighting-macros)$
 $highlighting-macros$

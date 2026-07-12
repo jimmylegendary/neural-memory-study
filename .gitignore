@@ -1,3 +1,9 @@
 .venv/
 __pycache__/
 *.pyc
+build/*.aux
+build/*.log
+build/*.toc
+build/*.out
+build/BOOK.tex
+build/build_err.txt

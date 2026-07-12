@@ -38,7 +38,7 @@ neural-memory 라인은 본질적으로 recurrent다. inner loop가 token마다 
 
 이 네 수의 공통 문법은 하나다: **arithmetic intensity를 제조한다.** claim 7이 이 문법을 정량화한다 — chunk $C=1$(per-token rank-1 RMW = decode 영역)은 AI≈1 FLOP/byte로 memory-bound 평원에 앉아 있지만, $C$를 키우면 roofline을 타고 올라 crossover를 넘어 compute-bound로 옮겨 간다. 같은 알고리즘이 knob 하나로 두 영역을 오간다.
 
-<!-- FIG: exp-c -->
+![그림 21-1: chunk 크기 $C$에 따른 arithmetic intensity AI(C) 곡선 — memory-bound 평원에서 memory↔compute crossover를 넘어 compute-bound로 오르는 roofline 이동(claim 7).](../../figures/exp-c-chunk-roofline.png)
 
 (그림 c — chunk $C$에 따른 AI(C) 곡선이 memory-bound 평원에서 compute-bound로 오르는 모양; 주 담당은 9장·15장, → 20장에서 decode-side와 함께 배치.)
 

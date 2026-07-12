@@ -1,0 +1,9 @@
+# Part I — inference 엔지니어를 위한 배경
+
+이 라인의 논문들은 하나같이 독자가 이미 안다고 전제하는 어휘 위에 서 있다 — backprop, optimizer state, momentum, meta-learning, associative memory, chunkwise 병렬화. 그러나 이 책의 독자는 그 어휘의 절반을 모른다. Part I은 그 절반을 짓는다. 목표는 training을 처음부터 가르치는 것이 아니라, transformer inference를 아는 엔지니어가 **여섯 편의 수식을 자기 언어로 읽을 수 있는 최소한의 다리**를 놓는 것이다.
+
+설계 원칙은 둘이다. 첫째, 모든 training 개념은 **(state, update, cost)를 갖는 객체**로 도입한다. optimizer는 알고리즘이 아니라 상태 기계이고, momentum은 gradient를 저장하는 memory이며, backprop은 surprise를 나르는 통로다 — 이 관점이 Part II에서 "optimizer가 곧 sequence layer다"라는 주장을 범주 오류가 아니라 자연스러운 문장으로 만든다. 둘째, 각 장은 독자의 production 감각과 만나는 **systems bridge** — FLOP/byte 계산, GEMM shape, roofline 접점 — 를 최소 한 번 통과한다.
+
+장들의 연결은 이렇다. **1장**이 두 세계(weights가 얼어 있는 inference와 움직이는 learning)를 잇는 Rosetta stone과 책 전체의 기준 수식 (M)을 세운다. **2장**은 그 (M)의 재료 — backward pass와 optimizer(momentum, Adam, weight decay, Muon까지) — 를 객체로 도입한다(이 독자의 최대 공백). **3–4장**은 두 loop를 형식화한다: 3장은 online learning·regret·FTRL로 inner loop가 무엇을 최소화하는지를, 4장은 meta-learning·bilevel로 outer loop가 무엇을 학습하는지($W_{\mathrm{init}}$과 data-dependent gate)를 준다. **5–7장**은 memory 계보다: 5장(Hopfield → delta rule, crosstalk과 capacity), 6장(linear attention과 fast-weight programming; DeltaNet·Gated DeltaNet·Longhorn·RWKV-7), 7장(SSM 계보 S4 → Mamba-2와 SSD duality) — 이미 이 계열을 아는 독자는 훑고 지나가도 된다. **8장**은 TTT 원형(test-time adaptation → TTT-Linear/MLP와 dual form)으로 Part II의 직계 조상을 세우고, **9장**은 이 라인 전체의 실행 기반인 chunkwise-parallel training을 — stale-snapshot 근사와 "chunk는 함수 자체를 바꾸는 semantic knob"라는 명제를 — 정식화한다. **10장**은 흩어진 cost model을 한 장의 cheat sheet(roofline vs chunk size, glossary)로 묶어 Part III가 되돌아올 참조점을 만들고, **11장**은 continual learning·complementary learning systems·distillation·RL-lite로 [Sleep] 직전의 배경을 채운다.
+
+Part I을 마친 독자는 여섯 편의 어느 수식을 만나도 "이 gate는 누가 학습하는가", "이 state는 얼마나 크고 token당 몇 byte를 움직이는가"를 물을 수 있다. 그 두 질문이 Part II와 Part III를 관통한다.

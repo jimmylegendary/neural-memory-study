@@ -83,7 +83,6 @@ $$
 |---|---|---|---|---|---|---|
 | RMW GB/token | 0.45 | 1.61 | 3.62 | 6.44 | 34.36 | 343.6 |
 
-<!-- FIG: exp-a -->
 
 ![그림 19-1 — KV vs TTT 트래픽 crossover와 그 scaling: 문맥에 따라 자라는 KV 읽기 vs 폭에 따라 자라는 TTT RMW, 그리고 crossover 문맥 $S^*$의 스케일 이동](../../figures/exp-a-kv-ttt-crossover.png)
 
@@ -127,7 +126,6 @@ attention은 capacity가 무한(ordinal 4)인데 ppl은 오히려 나쁜 축에 
 
 **(D) 보조 검정 — state 양의 monotone 효과와, scaling으로 오독하면 안 되는 U-curve.** 두 개의 within-setting 보조 결과가 위 그림을 조인다. 첫째, TNT(150M, 동일 setting)에서 local memory 수를 0→4로 늘리면 avg ppl이 $23.53{\to}21.04{\to}20.74{\to}20.47{\to}20.15$로 단조 감소한다($\rho{=}-1.0$) — state를 더하면 품질이 오른다는 방향을 within-setting으로 확인하되, gain은 포화한다(+1에서 +4까지 $21.04{\to}20.15$, diminishing returns). 둘째 **경고**: TNT Fig 2의 550M Titans(train $C{=}64$)에서 inference chunk를 바꾼 ppl은 $C{=}8$의 36.45에서 train-matched $C{=}64$의 13.78로 내려갔다가 $C{=}512$의 22.40으로 다시 오르는 **U-curve**다. 이것은 scaling law가 **아니라** train/serve chunk resolution mismatch(TNT Challenge 3)이며, 최소가 스케일이 아니라 train chunk에 걸린다는 사실이 그 증거다. scaling 표에 이 점을 섞으면 안 된다.
 
-<!-- FIG: exp-f -->
 
 ![그림 19-2 — E4 scaling fit: (좌) within-line ppl-vs-params/compute fit과 N,D confound, (중) 고정 1.3B cross-architecture ppl에 대한 state-bytes·capacity rank test, (우) capacity가 값을 하는 유일한 축인 BABILong retention과 Titans→Atlas 도약](../../figures/exp-f-scaling-fits.png)
 
@@ -184,7 +182,6 @@ $$
 
 > **[해설]** (19-2)–(19-4)를 나란히 놓으면 pair thesis가 **scaling law 안에서** 드러난다. quality (19-2)는 params·tokens·capacity(단 capacity는 retention 축에서만, §19.6) 위에 살고, decode cost (19-3)는 state-bytes 위에 살며, 둘은 서로 다른 변수를 따른다. 그리고 training/prefill의 cost는 세 번째 법칙 — chunk $C$가 x축인 roofline(claim 7) — 을 따른다: 같은 알고리즘이 $C{=}1$(decode 영역)에서 AI≈1로 memory-bound이다가 $C$를 키우면 crossover를 넘어 compute-bound로 오른다. **하나의 모델, 두 cost 영역, 각자의 scaling law** — 이것이 D4 pair thesis의 정량적 얼굴이다.
 
-<!-- FIG: exp-c -->
 
 ![그림 19-3 — chunk $C$가 roofline의 x축: $C{=}1$의 memory-bound 평원에서 $C$를 키우면 compute-bound로 넘어가는 곡선(host 측정, 모양만 이전)](../../figures/exp-c-chunk-roofline.png)
 

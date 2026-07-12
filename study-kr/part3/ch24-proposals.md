@@ -63,14 +63,12 @@ decode step은 anchor(neural-mem-1.3B)에서 token마다 6.44 GB를 움직이고
 
 이 구조가 요구하는 소자의 성격은 분명하다: **높은 RMW 대역폭**, **per-tenant state residency**, 그리고 write-heavy elementwise epilogue를 위한 **near-memory update engine**. 근거는 두 실측이다. 첫째, TTT state 크기는 문맥에 무관하게 $(d, m, L)$로 고정되므로 on-chip 상주가 **설계 가능한 knob**이다(context에 따라 자라는 KV와 결정적으로 다른 지점, claim4/E1.2). state가 fit하는 폭에서는 268 MB scratchpad가 HBM3 대비 6.8× energy / 14.9× time 이득을 내지만(directional DSE), 폭이 커지면 spill한다 — residency crossover는 hidden dim $d^*{\approx}2896$이고, 268 MB 버퍼는 한 layer state를 $d{=}2048$(1.3B, 134 MB/layer)까지 담고 $d{=}4096$(7B, 537 MB/layer)에서 넘친다. whole-model 상주는 Titans-170M(226 MB) 하나만 fit하므로, **스케일에서 placement는 whole-model pin이 아니라 per-layer/streamed**다.
 
-<!-- FIG: exp-b -->
 ![그림 24-1 — state placement의 device별 energy/latency 트레이드오프와 residency crossover](../../figures/exp-b-state-placement.png)
 
 그림 24-1 — 134 MB/layer RMW state를 device별로 배치했을 때의 energy·time과, 268 MB scratchpad가 한 layer state를 담을 수 있는 폭의 상한(residency crossover $d^*{\approx}2896$). state가 fit하는 구간에서만 scratchpad가 HBM3를 이기며, 이득 배율은 `simulation_ready=False`인 directional DSE다(실험 E1.2 재구성).
 
 둘째, 이 상주/spill 불연속이 로컬 실측으로도 재현된다: on-die/off-die 경계에서 RMW 대역폭이 약 3.9× 꺾이는 cliff가 그것이다(claim8/E2.2, 그림 24-2). 소자 제안의 요지는 이 cliff의 **on-die 쪽에 layer state를 붙잡아 두는** 것이며, per-layer 단위로는 그것이 가능하다는 것이 E1.2/E1.4가 함께 보이는 결론이다.
 
-<!-- FIG: exp-e -->
 ![그림 24-2 — on-die/off-die RMW 대역폭 cliff (E1.2 residency crossover의 로컬 아날로그)](../../figures/exp-e-rmw-cliff.png)
 
 그림 24-2 — state가 on-chip cache에 상주하는 동안 RMW는 빠르고, 용량 경계를 넘겨 DRAM으로 spill하면 유효 대역폭이 약 3.9× 붕괴한다(in-cache peak÷DRAM). RMW가 element당 2× 바이트(동일 대역폭 환산 시 element throughput 0.5×)를 움직이는 것이 append-once KV가 피하는 write-back 세다. GB/s 절대값은 host 좌표이며 H100으로 이전하지 않는다 — 이전되는 것은 cliff의 **존재**뿐이다(실험 E2.2).
@@ -89,7 +87,6 @@ near-memory update engine에 대해서는 PIM이 **오직 write-heavy elementwis
 
 **정직한 경계 하나 — read cadence의 출처.** CMS-mid를 CXL로 내리는 근거는 그 level의 **read**가 4096 주기로 down-sample된다는 가정이다. 그러나 Nested Learning Eq. 70과 Sleep Eq. 1의 일반 forward는 **모든 CMS block을 각 token의 forward chain에서 호출**하며, 주기가 다른 것은 parameter **update**(Eq. 71/Eq. 2)뿐이다. 즉 write cadence가 4096이라고 read cadence까지 4096인 것은 아니다 — block이 매 token forward에 남으면 read는 per-token이고 gating rule은 그것을 HBM3에 pin한다. 따라서 CMS-mid의 CXL 강등은 그 block이 **sparse routing·cached activation·비활성 expert offload로 forward에서 genuinely 건너뛰어질 때에 한해** admissible하며(E1.4의 read cadence는 공개 decode trace가 아닌 그 가정 위의 값이다), 그렇지 않으면 활성 block은 per-token read 때문에 hot tier에 남는다. Sleep-consolidated expert도 consolidation cadence(262144)는 offline write이되 wake 중 read는 routing에 의존한다. 이 tier 배치가 조건부 directional 가설인 이유가 여기 있다.
 
-<!-- FIG: exp-d -->
 ![그림 24-3 — update cadence → memory-tier 허용 표](../../figures/exp-d-frequency-tiers.png)
 
 그림 24-3 — CMS level별 update 주기(행)와 memory tier(열)의 허용 관계. latency tolerance가 update 주기에 선형으로 넓어지므로($P_{\text{read}}\cdot t_{\text{tok}}$), down-sampled level일수록 싼 tier가 legally 허용된다. per-layer fast-weight block(67 MB)은 268 MB scratchpad에 fit해 HBM3 대비 7.4× energy 이득을 내지만 all-layer는 fit하지 않는다(실험 E1.4, scratchpad 이득은 directional).

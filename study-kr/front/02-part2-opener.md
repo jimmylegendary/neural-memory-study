@@ -1,0 +1,9 @@
+# Part II — 여섯 편의 정밀 독해
+
+Part II는 여섯 편을 순서대로 해부한다. 각 장은 같은 8절 구조를 따른다: 전작이 남긴 open question(bridge-in) → 이 논문의 문제의식 → 통일 표기로 쓴 core mechanism과 표기 대응표 → outer-loop 학습과 inner-loop test-time 학습의 분리 → concept ledger delta → 실험과 스케일 → systems/serving 함의 → 한계와 다음 논문으로의 인계(bridge-out). 이 격자가 여섯 편을 비교 가능하게 만든다.
+
+두 원칙이 Part II를 관통한다. 첫째, **모든 수식은 통일 표기로 환원된다.** 여섯 편은 같은 대상을 서로 다른(때로 상충하는) 기호로 쓰므로, 이 책은 fast/slow weights를 $W$/$\Theta$로, 게이트 3종을 $\eta_t$(inner learning rate)·$\beta_t$(momentum decay)·$\alpha_t$(retention, 남기는 비율)로 고정하고, 각 장은 자기 논문의 원 표기와의 대응표를 실어 독자가 원문과 대조할 수 있게 한다. 기준이 되는 것은 master update — "GD + momentum + weight decay가 sequence layer다"를 한 줄로 요약하는 식 (M) — 이며, 각 논문은 (M)의 어느 성분을 바꾼 것으로 서술된다. 둘째, **정직성 계약이 본문에 박혀 있다.** Muon 제거가 오히려 perplexity를 개선한 ablation, 닫히지 않은 retrieval 격차, momentum·gating을 벗겨 낸 TNT의 단순화, pre-trained backbone 위에 얹힌 Sleep의 graft — 논문에 불리한 사실은 해당 장이 반드시 담는다.
+
+장들은 하나의 연속 서사로 이어진다. **12장 [Titans]** — deep memory를 GD-with-momentum-and-decay로 갱신하는 sequence layer, 그리고 attention과의 세 결합(MAC/MAG/MAL). **13장 [Miras]** — 그 점 설계를 4축 설계 공간(architecture × attentional bias × retention × algorithm)으로 일반화하고 forget gate를 retention으로 재이론화; Moneta/Yaad/Memora. **14장 [Atlas]** — 그 공간의 각 축을 최적으로 밀어붙인다: capacity 이론, windowed Omega rule, inner Muon. **15장 [TNT]** — 훈련 비용을 계산해 지불하는 systems 편: chunk 경제학, reset과 context parallelism, Q-K projection, train/serve chunk-size mismatch. 이 라인이 내놓은 **유일한** wall-clock 증거가 여기 있다. **16장 [NL]** — 그 수가 보편적임을 선언한다: 모델도 optimizer도 backprop도 update frequency로 색인된 nested associative memory이고, CMS와 self-modifying Titans와 Hope가 그 종합이다. **17장 [Sleep]** — train/test 경계를 지운다: wake/sleep lifecycle, upward consolidation(Knowledge Seeding), Dreaming.
+
+여섯 장을 겹치면 layer 여섯 개가 아니라 **불변식 하나의 폐기** — "추론 중 weights는 변하지 않는다"의 소멸 — 가 남는다. 그 폐기가 만드는 배포 형태와 그것이 systems 엔지니어에게 던지는 질문을 정식화하는 것이 Part III의 몫이며, 그 인계는 18장이 이어받는다.

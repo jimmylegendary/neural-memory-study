@@ -1,0 +1,455 @@
+{
+  "bundle_id": "neural-memory-study-2026",
+  "boundary": "public",
+  "provenance_manifest": {
+    "exported_by": "manual",
+    "topic": "TTT / neural-memory decode = memory-centric (D4 workload-split pair thesis). Two claim classes: (A) P2 faithful-summary claims over the 6 Google Titans-lineage papers, each warranted by the vendored source PDF at a pinned commit; (B) P1 original quantitative claims from the study's own exploration-grade cost-model + CPU micro-bench experiments, each warranted by a committed machine-readable results.json with the metric transcribed verbatim.",
+    "note": "Honesty contract: all P1 quantitative results are EXPLORATION-GRADE. Load-bearing quantities are ratios, crossover positions, tier orderings and bound classifications (not silicon-accurate absolutes). Caveat tags carried in each claim text: REL (pre-silicon analytic cost model; ratios/crossovers only), NO-WALLCLOCK (roofline lower bound, no published H100 decode), NOVEL-SIM-FALSE (novel PIM/scratchpad twins are directional DSE, never a shipping-device claim), CPU-SHAPE (host micro-bench validates the SHAPE/crossover only, does not transport to H100 absolutes), M-ASSUMED (state multipliers from published architecture shapes, not released decode traces), directional/ordinal (cross-paper comparisons rank-only). Commit 59fc1ffb381677d04060d008e32b0b55ea995309 is the warrant anchor; every referenced file is git-tracked and clean at that commit. profile=systems-paper.",
+    "papers": {
+      "2501.00663": "Titans: Learning to Memorize at Test Time (Behrouz, Zhong, Mirrokni; Google Research, Dec 2024)",
+      "2504.13173": "It's All Connected / Miras: A Journey Through Test-Time Memorization, Attentional Bias, Retention, and Online Optimization (Apr 2025)",
+      "2505.23735": "Atlas: Learning to Optimally Memorize the Context at Test Time (May 2025)",
+      "2511.07343": "TNT: Improving Chunkwise Training for Test-Time Memorization (Nov 2025)",
+      "2512.24695": "Nested Learning: The Illusion of Deep Learning Architecture / HOPE (Dec 2025)",
+      "2606.03979": "Language Models Need Sleep: Learning to Self-Modify and Consolidate Memories (Jun 2026)"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "p2_titans_1",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "Titans learns a deep (multi-layer MLP) neural long-term memory module that is updated at test time by gradient descent on an associative-memory (surprise) loss, using a data-dependent momentum term to accumulate surprise across tokens and an adaptive weight-decay forgetting gate to bound memory capacity.",
+      "result_refs": [],
+      "evidence": [
+        { "id": "p2_titans_1_e1", "kind": "source_artifact", "ref": "papers/2501.00663.pdf@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.95 }
+      ]
+    },
+    {
+      "claim_id": "p2_titans_2",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "Titans integrates the neural long-term memory into a sequence backbone in three variants -- Memory as Context (MAC), Memory as Gate (MAG), and Memory as Layer (MAL) -- composed with short-term (attention) memory and input-independent persistent memory tokens.",
+      "result_refs": [],
+      "evidence": [
+        { "id": "p2_titans_2_e1", "kind": "source_artifact", "ref": "papers/2501.00663.pdf@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.95 }
+      ]
+    },
+    {
+      "claim_id": "p2_titans_3",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "Titans scales to context windows larger than 2M tokens and reports outperforming Transformer and modern linear-recurrent baselines on long-context and needle-in-haystack retrieval, with the deep (vs linear/matrix) memory driving the long-context gains.",
+      "result_refs": [],
+      "evidence": [
+        { "id": "p2_titans_3_e1", "kind": "source_artifact", "ref": "papers/2501.00663.pdf@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.93 }
+      ]
+    },
+    {
+      "claim_id": "p2_miras_1",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "Miras (It's All Connected) frames test-time memorization as associative memory driven by an attentional-bias objective, unifying Titans, TTT and linear-attention models as specific choices of four design axes: the attentional-bias (surprise) loss, the retention/forgetting regularizer, the memory architecture, and the memory optimizer.",
+      "result_refs": [],
+      "evidence": [
+        { "id": "p2_miras_1_e1", "kind": "source_artifact", "ref": "papers/2504.13173.pdf@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.95 }
+      ]
+    },
+    {
+      "claim_id": "p2_miras_2",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "Miras generalizes the memory-update objective beyond the L2 loss to robust p-norm attentional-bias objectives, and generalizes forgetting into an explicit retention gate (a weight-decay family), so different (loss, retention) pairs yield qualitatively different memory dynamics.",
+      "result_refs": [],
+      "evidence": [
+        { "id": "p2_miras_2_e1", "kind": "source_artifact", "ref": "papers/2504.13173.pdf@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.94 }
+      ]
+    },
+    {
+      "claim_id": "p2_miras_3",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "Miras instantiates three new models from the framework -- Moneta, Yaad, and Memora -- that the paper reports outperforming Transformers and recent linear-recurrent models on language modeling and long-context recall.",
+      "result_refs": [],
+      "evidence": [
+        { "id": "p2_miras_3_e1", "kind": "source_artifact", "ref": "papers/2504.13173.pdf@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.93 }
+      ]
+    },
+    {
+      "claim_id": "p2_atlas_1",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "Atlas learns to memorize the context rather than only the current token by optimizing the memory over a sliding window with the Omega rule, giving a locally-optimal context-level memory update in place of a purely online per-token update.",
+      "result_refs": [],
+      "evidence": [
+        { "id": "p2_atlas_1_e1", "kind": "source_artifact", "ref": "papers/2505.23735.pdf@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.95 }
+      ]
+    },
+    {
+      "claim_id": "p2_atlas_2",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "Atlas increases memory capacity with a polynomial feature mapping and updates the test-time memory with a Muon-based second-order (Newton-Schulz) optimizer, and its DeepTransformers generalization recasts the Transformer itself in this deep-memory framework.",
+      "result_refs": [],
+      "evidence": [
+        { "id": "p2_atlas_2_e1", "kind": "source_artifact", "ref": "papers/2505.23735.pdf@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.93 }
+      ]
+    },
+    {
+      "claim_id": "p2_atlas_3",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "Atlas reports sustaining long-context retrieval to very long contexts -- high BABILong sustained accuracy on the order of 10M tokens -- exceeding Titans and Transformer baselines, which the study reads as capacity (higher-order memory) buying retention length.",
+      "result_refs": [],
+      "evidence": [
+        { "id": "p2_atlas_3_e1", "kind": "source_artifact", "ref": "papers/2505.23735.pdf@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.92 }
+      ]
+    },
+    {
+      "claim_id": "p2_tnt_1",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "TNT targets the training-throughput bottleneck of deep test-time-memorization RNNs (Titans/TTT): their expressive deep memory is prohibitively slow to train because the test-time memory update is inherently sequential.",
+      "result_refs": [],
+      "evidence": [
+        { "id": "p2_tnt_1_e1", "kind": "source_artifact", "ref": "papers/2511.07343.pdf@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.95 }
+      ]
+    },
+    {
+      "claim_id": "p2_tnt_2",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "TNT introduces a parallelizable chunkwise training formulation with a chunk-size knob that trades a controllable approximation of the sequential update for large training-throughput gains while preserving the deep-memory model quality.",
+      "result_refs": [],
+      "evidence": [
+        { "id": "p2_tnt_2_e1", "kind": "source_artifact", "ref": "papers/2511.07343.pdf@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.94 }
+      ]
+    },
+    {
+      "claim_id": "p2_tnt_3",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "TNT reports narrowing much of the wall-clock/throughput gap to Transformer and linear-recurrent baselines while retaining the long-context advantages of test-time memorization; in the study this makes chunk size the roofline x-axis that moves the same algorithm from memory-bound to compute-bound.",
+      "result_refs": [],
+      "evidence": [
+        { "id": "p2_tnt_3_e1", "kind": "source_artifact", "ref": "papers/2511.07343.pdf@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.92 }
+      ]
+    },
+    {
+      "claim_id": "p2_nested_1",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "Nested Learning recasts a neural model as a set of nested / multi-level (and/or parallel) optimization problems, each with its own context flow and update frequency, treating architecture and optimizer as one continuum rather than two separate objects.",
+      "result_refs": [],
+      "evidence": [
+        { "id": "p2_nested_1_e1", "kind": "source_artifact", "ref": "papers/2512.24695.pdf@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.95 }
+      ]
+    },
+    {
+      "claim_id": "p2_nested_2",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "Nested Learning introduces a Continuum Memory System (CMS): a spectrum of memory modules updated at different frequencies, generalizing the binary short-term / long-term memory split into a frequency continuum -- which the study maps directly onto a memory-hierarchy tier assignment.",
+      "result_refs": [],
+      "evidence": [
+        { "id": "p2_nested_2_e1", "kind": "source_artifact", "ref": "papers/2512.24695.pdf@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.94 }
+      ]
+    },
+    {
+      "claim_id": "p2_nested_3",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "Nested Learning instantiates HOPE, a self-modifying recurrent architecture built from a deep optimizer and a CMS, that the paper reports outperforming baselines on language modeling and long-context tasks.",
+      "result_refs": [],
+      "evidence": [
+        { "id": "p2_nested_3_e1", "kind": "source_artifact", "ref": "papers/2512.24695.pdf@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.92 }
+      ]
+    },
+    {
+      "claim_id": "p2_sleep_1",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "The Sleep paper introduces a Sleep paradigm in which a model consolidates short-term in-context memories into its long-term parameters during dedicated offline sleep phases, addressing that existing LLMs fail to transfer temporal in-context knowledge into weights.",
+      "result_refs": [],
+      "evidence": [
+        { "id": "p2_sleep_1_e1", "kind": "source_artifact", "ref": "papers/2606.03979.pdf@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.95 }
+      ]
+    },
+    {
+      "claim_id": "p2_sleep_2",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "The Sleep paradigm distills fragile short-term memories into long-term storage via a self-modification / distillation mechanism organized into sleep phases, aiming at continual learning without catastrophic forgetting.",
+      "result_refs": [],
+      "evidence": [
+        { "id": "p2_sleep_2_e1", "kind": "source_artifact", "ref": "papers/2606.03979.pdf@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.93 }
+      ]
+    },
+    {
+      "claim_id": "p2_sleep_3",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "The sleep-augmented model (built on the HOPE/CMS lineage) reports sustaining long-context retention -- near-perfect BABILong accuracy on the order of 10M tokens -- and improving continual-learning benchmarks, positioning update cadence (per-token to offline sleep-window) as a first-class design axis.",
+      "result_refs": [],
+      "evidence": [
+        { "id": "p2_sleep_3_e1", "kind": "source_artifact", "ref": "papers/2606.03979.pdf@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.92 }
+      ]
+    },
+
+    {
+      "claim_id": "p1_rmw_per_token",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "[REL, M-ASSUMED, roofline lower bound] For the neural-mem-1.3B anchor (d=2048, m=16, L=24, bf16), a single decode step is a read-modify-write of the ENTIRE fast-weight state: ~6.44 GB moved per token (read m*d^2 + write m*d^2 over L layers), from a per-layer state of ~134 MB. Exploration-grade analytic cost model; the load-bearing content is the magnitude and the per-token-RMW structure, not a silicon-accurate absolute.",
+      "result_refs": ["r_rmw"],
+      "evidence": [
+        { "id": "p1_rmw_e1", "kind": "source_artifact", "ref": "experiments/results.json@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.95 }
+      ]
+    },
+    {
+      "claim_id": "p1_memory_bound",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "[REL, ratio] The decode step is deterministically memory-bound: its arithmetic intensity (~0.59 FLOP/byte) sits far below the DGX-H100 twin ridge (~295 FLOP/byte), and the state RMW traffic dominates the GEMV compute of a decode step by ~394x -- i.e. the step cost IS the state traffic. Directional ratio from the analytic cost model, not a measured wall-clock.",
+      "result_refs": ["r_memory_bound"],
+      "evidence": [
+        { "id": "p1_membound_e1", "kind": "source_artifact", "ref": "experiments/results.json@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.95 }
+      ]
+    },
+    {
+      "claim_id": "p1_kv_ttt_crossover",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "[REL, M-ASSUMED, directional] KV-cache and TTT-state decode traffic cross over at a context of S* ~ 65k tokens (hatir 65471, E3 closed form 65536, agreeing to <1%): below S* KV read is cheaper, above S* the context-independent TTT RMW is cheaper. Crossover POSITION is the promoted quantity, not a silicon absolute.",
+      "result_refs": ["r_sstar"],
+      "evidence": [
+        { "id": "p1_sstar_e1", "kind": "source_artifact", "ref": "experiments/results.json@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.95 }
+      ]
+    },
+    {
+      "claim_id": "p1_kv_ttt_write_asymmetry",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "[REL] KV cache is append-once/read-many: its write traffic is ~0.003% of its read traffic, whereas TTT state is symmetric RMW with write equal to read (100%), always dirty. This write-heaviness (not content-addressable, unshared) is why decode-state management is qualitatively unlike KV cache. Directional decomposition from the cost model.",
+      "result_refs": ["r_kv_ttt_write"],
+      "evidence": [
+        { "id": "p1_kvttt_e1", "kind": "source_artifact", "ref": "experiments/results.json@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.95 }
+      ]
+    },
+    {
+      "claim_id": "p1_batch_bw_bound",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "[REL, NO-WALLCLOCK] Decode-state serving is bandwidth-bound, not capacity-bound like KV cache: at a 10 ms/token budget the neural-mem-1.3B anchor admits only ~5.2 concurrent sequences (26 at 50 ms), far below the HBM-capacity batch, and at every scale on-die L2 (50 MB) cannot hold even one sequence's whole-model state. Roofline lower bound; directional serving economics.",
+      "result_refs": ["r_bmax"],
+      "evidence": [
+        { "id": "p1_bmax_e1", "kind": "source_artifact", "ref": "experiments/results.json@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.94 }
+      ]
+    },
+    {
+      "claim_id": "p1_scratchpad_resident_win",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "[REL, NOVEL-SIM-FALSE, directional] When a 134 MB/layer TTT state is made resident in a 268 MB software scratchpad twin, the RMW costs ~6.8x less energy and ~14.9x less time than on HBM3. This is a DIRECTIONAL design-space-exploration result on an analytical novel twin (simulation_ready=False), never a shipping-device claim.",
+      "result_refs": ["r_scratchpad"],
+      "evidence": [
+        { "id": "p1_scratchpad_e1", "kind": "source_artifact", "ref": "experiments/results.json@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.92 }
+      ]
+    },
+    {
+      "claim_id": "p1_residency_crossover",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "[REL, NOVEL-SIM-FALSE, directional] Because TTT state size is context-INDEPENDENT (fixed by d,m,L), on-chip residency is a designable knob with a width crossover at d* ~ 2896: neural-mem-1.3B (134 MB/layer, d=2048) still fits one layer in a 268 MB scratchpad, while hypo-7B (537 MB/layer, d=4096) spills. Directional DSE crossover on a novel twin.",
+      "result_refs": ["r_dstar"],
+      "evidence": [
+        { "id": "p1_dstar_e1", "kind": "source_artifact", "ref": "experiments/results.json@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.92 }
+      ]
+    },
+    {
+      "claim_id": "p1_frequency_tier_win",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "[REL, NOVEL-SIM-FALSE, directional] The Nested-Learning/Sleep update-cadence continuum maps onto memory-hierarchy tiers gated by the faster of read/write cadence: a per-LAYER fast-weight block (67 MB) resident in a 268 MB scratchpad costs ~7.42x less energy than HBM3 (the all-layer state does not fit). Directional DSE on a novel twin; sub-per-token cadence is what lets a write-heavy state legally drop to DDR/CXL.",
+      "result_refs": ["r_freqtier"],
+      "evidence": [
+        { "id": "p1_freqtier_e1", "kind": "source_artifact", "ref": "experiments/results.json@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.92 }
+      ]
+    },
+    {
+      "claim_id": "p1_kvmanager_gap",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "[REL, NO-WALLCLOCK] An existing KV-cache manager cannot manage TTT state: content-addressed prefix reuse (its #1 value) is structurally 0.0 hit-rate for RMW state (content changes every token, no block hash recurs); append-only placement accretes 256x (=T) stale versions over the true 1-state working set; and a dirty-state eviction the manager prices at 0 uJ actually owes a full ~3053.5 uJ writeback. Directional cost-model gaps.",
+      "result_refs": ["r_kvmgr"],
+      "evidence": [
+        { "id": "p1_kvmgr_e1", "kind": "source_artifact", "ref": "experiments/results.json@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.94 }
+      ]
+    },
+    {
+      "claim_id": "p1_chunk_roofline_axis",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "[CPU-SHAPE] Growing the training/prefill chunk C moves the SAME algorithm from memory-bound to compute-bound: on a host CPU roofline the C=1 per-token rank-1 RMW (the TTT decode regime) sits at arithmetic intensity ~1.0 FLOP/byte (~12% of roofline), and the measured memory->compute crossover is C* ~ 32 tokens. The CPU micro-bench validates the SHAPE/crossover only; the H100-twin C* is ~337 at d=2048, not 32.",
+      "result_refs": ["r_cstar"],
+      "evidence": [
+        { "id": "p1_cstar_e1", "kind": "source_artifact", "ref": "experiments/results.json@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.93 }
+      ]
+    },
+    {
+      "claim_id": "p1_rmw_bandwidth_cliff",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "[CPU-SHAPE] An in-cache RMW is cheap and overrunning the capacity boundary collapses effective bandwidth: on the host the L3->DRAM RMW bandwidth cliff is ~3.9x (264.8 vs 67.9 GB/s single-thread), and at saturated DRAM an RMW moves 2x the bytes/element of a read (~0.5x element throughput -- the write-back tax append-once KV avoids). CPU validates the SHAPE of the fit->spill cliff only, not H100 absolutes.",
+      "result_refs": ["r_cliff"],
+      "evidence": [
+        { "id": "p1_cliff_e1", "kind": "source_artifact", "ref": "experiments/results.json@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.93 }
+      ]
+    },
+    {
+      "claim_id": "p1_retention_capacity_rank",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "statement": "[directional, ordinal] Across the six papers, long-context sustained-retention length (BABILong, order-of-magnitude bins) is rank-perfectly correlated with the ordinal memory-capacity axis (matrix < deep-MLP < deep-MLP+poly): parametric Spearman rho ~ +1.0 (n=5, attention excluded because its limit is bounded training context, not capacity). Cross-paper comparison is ORDINAL only (different tokenizers/data/metrics); the rank ordering, not the absolute rho, is load-bearing.",
+      "result_refs": ["r_retention"],
+      "evidence": [
+        { "id": "p1_retention_e1", "kind": "source_artifact", "ref": "experiments/E4-scaling/results.json@59fc1ffb381677d04060d008e32b0b55ea995309", "trust": 0.9 }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "result_id": "r_rmw",
+      "description": "E1.1/E3/E1.3 decode-baseline on the DGX-H100 twin, anchor neural-mem-1.3B (d=2048, m=16, L=24, bf16). Per-token whole-state RMW traffic and per-layer state size. 3-way agreement (E1.1=6.4425, E3=6.442, E1.3=6.4425). Caveats: REL (pre-silicon analytic cost model), M-ASSUMED (state multiplier m from published architecture shape).",
+      "metrics": [
+        { "name": "rmw_GB_per_token", "value": 6.44, "unit": "GB/token" },
+        { "name": "state_MB_per_layer", "value": 134.2, "unit": "MB" }
+      ]
+    },
+    {
+      "result_id": "r_memory_bound",
+      "description": "E1.1/E3 arithmetic-intensity and bound classification for the decode step, anchor neural-mem-1.3B. AI << twin ridge (295.36 FLOP/byte) => deterministically memory-bound; state RMW dominates GEMV compute ~394x. Caveat: REL (directional ratio, not measured wall-clock).",
+      "metrics": [
+        { "name": "arith_intensity_flopB", "value": 0.59, "unit": "FLOP/byte" },
+        { "name": "memory_over_gemv_compute_ratio", "value": 393.8, "unit": "x" },
+        { "name": "twin_ridge_flop_per_byte", "value": 295.36477611940296, "unit": "FLOP/byte" }
+      ]
+    },
+    {
+      "result_id": "r_sstar",
+      "description": "E1.3/E3 KV-vs-TTT read-crossover context S* for neural-mem-1.3B (GQA-8, bf16). hatir 65471 vs E3 closed form 65536 agree to <1%. Caveats: REL, M-ASSUMED; crossover position promoted, not silicon absolute.",
+      "metrics": [
+        { "name": "S_star_read_tokens", "value": 65471, "unit": "tokens" },
+        { "name": "S_star_read_tokens_closedform_E3", "value": 65536, "unit": "tokens" },
+        { "name": "S_star_rmw_tokens", "value": 130942, "unit": "tokens" }
+      ]
+    },
+    {
+      "result_id": "r_kv_ttt_write",
+      "description": "E1.3 traffic decomposition (write as % of read) for KV cache vs TTT state at the anchor. KV append-once/read-many; TTT symmetric RMW. Caveat: REL.",
+      "metrics": [
+        { "name": "kv_write_pct_of_read", "value": 0.003, "unit": "%" },
+        { "name": "ttt_write_pct_of_read", "value": 100.0, "unit": "%" }
+      ]
+    },
+    {
+      "result_id": "r_bmax",
+      "description": "E3/E1.3 batch-scaling B_max for neural-mem-1.3B: BW-bound sequence count at 10 ms and 50 ms per-token budgets, and the on-die-fit test. Caveats: REL, NO-WALLCLOCK (roofline lower bound).",
+      "metrics": [
+        { "name": "B_max_bw_10ms", "value": 5.2, "unit": "sequences" },
+        { "name": "B_max_bw_50ms", "value": 26.0, "unit": "sequences" },
+        { "name": "ondie_L2_holds_one_seq", "value": 0, "unit": "bool" }
+      ]
+    },
+    {
+      "result_id": "r_scratchpad",
+      "description": "E1.2 state-placement DSE: resident 134 MB RMW in a 268 MB software-scratchpad twin vs HBM3. Energy and time win factors. Caveats: REL, NOVEL-SIM-FALSE (analytical novel twin, simulation_ready=False; directional DSE only).",
+      "metrics": [
+        { "name": "energy_win_x", "value": 6.8, "unit": "x" },
+        { "name": "time_win_x", "value": 14.9, "unit": "x" }
+      ]
+    },
+    {
+      "result_id": "r_dstar",
+      "description": "E1.2 residency crossover: context-independent TTT state fit->spill boundary in a 268 MB scratchpad. neural-mem-1.3B (134 MB/layer, d=2048) fits one layer; hypo-7B (537 MB/layer, d=4096) spills; crossover width d*. Caveats: REL, NOVEL-SIM-FALSE.",
+      "metrics": [
+        { "name": "crossover_width_d_star", "value": 2896, "unit": "hidden dim d" }
+      ]
+    },
+    {
+      "result_id": "r_freqtier",
+      "description": "E1.4 frequency-tiered placement: per-LAYER fast-weight block (67 MB) resident in a 268 MB scratchpad energy win vs HBM3 (all-layer does not fit). Caveats: REL, NOVEL-SIM-FALSE.",
+      "metrics": [
+        { "name": "per_layer_scratchpad_energy_win_x", "value": 7.42, "unit": "x" }
+      ]
+    },
+    {
+      "result_id": "r_kvmgr",
+      "description": "E1.5 hat-kv-manager semantic-gap analysis over TTT state. Prefix-reuse hit-rate (content-addressed reuse) is structurally zero; append-only place() accretes T=256 stale versions; dirty-eviction writeback the manager charges as zero but actually owes. Caveats: REL, NO-WALLCLOCK.",
+      "metrics": [
+        { "name": "prefix_reuse_hit_rate_ttt", "value": 0.0, "unit": "hit-rate" },
+        { "name": "stale_accretion_blowup_x", "value": 256.0, "unit": "x" },
+        { "name": "owed_writeback_energy_uJ", "value": 3053.5, "unit": "uJ" },
+        { "name": "mgr_charged_writeback_uJ", "value": 0.0, "unit": "uJ" }
+      ]
+    },
+    {
+      "result_id": "r_cstar",
+      "description": "E2.1 CPU numpy micro-bench: AI(C) curve and memory->compute crossover on the host roofline. C=1 rank-1 RMW at AI~1; measured discrete crossover C*=32 (all d in {512,1024,2048}); H100-twin closed-form C* ~337 at d=2048. Caveat: CPU-SHAPE (validates SHAPE/crossover only, not H100 absolutes).",
+      "metrics": [
+        { "name": "AI_at_C1_sequential_flopB", "value": 1.0, "unit": "FLOP/byte" },
+        { "name": "C_star_measured_discrete", "value": 32, "unit": "tokens" },
+        { "name": "C_star_h100_closedform_d2048", "value": 337.1, "unit": "tokens" }
+      ]
+    },
+    {
+      "result_id": "r_cliff",
+      "description": "E2.2 CPU numpy micro-bench: RMW bandwidth cliff at the L3->DRAM capacity boundary (single-thread), and the read-only-over-RMW throughput ratio at saturated DRAM. Caveat: CPU-SHAPE (on-die/off-die shape only; the H100 on/off-die ratio differs).",
+      "metrics": [
+        { "name": "l3_to_dram_cliff_x", "value": 3.9, "unit": "x" },
+        { "name": "incache_peak_gbps", "value": 264.8, "unit": "GB/s" },
+        { "name": "dram_gbps", "value": 67.9, "unit": "GB/s" },
+        { "name": "readonly_over_rmw_at_dram", "value": 0.5, "unit": "x" }
+      ]
+    },
+    {
+      "result_id": "r_retention",
+      "description": "E4-scaling fit_c_retention_vs_capacity: BABILong sustained-accuracy length (order-of-magnitude bins) vs ordinal memory-capacity axis across the six papers; parametric Spearman (attention/GPT-4 excluded, its limit is bounded training context not capacity), n=5. Titans->Atlas retention leap 6.67x. Caveat: directional/ordinal only (cross-paper: different tokenizers/data/metrics); rank ordering is load-bearing, not the absolute rho.",
+      "metrics": [
+        { "name": "spearman_retention_vs_capacity_rho", "value": 0.9999999999999999, "unit": "rho" },
+        { "name": "spearman_n", "value": 5, "unit": "points" },
+        { "name": "retention_ratio_atlas_over_titans", "value": 6.67, "unit": "x" }
+      ]
+    }
+  ]
+}

@@ -98,8 +98,6 @@ pair thesis의 소프트웨어 절반이다. `hat-kv-manager`(오늘의 KV-cache
 
 새 cache class의 네 번째 축이자 이 장에서 가장 신선한 memory-architecture 주장이다. [NL]/[Sleep]이 각 memory level에 부여한 **update cadence**(→ 16장·17장)는 그대로 **memory 계층의 tier 배치 명세**로 번역된다(claim5, E1.4). pair thesis가 memory-centric 논증을 펴는 두 정당한 지점 중 두 번째다(첫째는 §23.4의 decode RMW 트래픽).
 
-<!-- FIG: exp-d -->
-
 ![그림 23-1 — update cadence에서 memory-tier admissibility로의 번역: 상주 사본은 read/write 중 빠른 쪽 cadence로 tier가 정해진다](../../figures/exp-d-frequency-tiers.png)
 
 그림 23-1 — 각 memory level의 update cadence가 admissible한 memory tier를 정한다. 상주 사본은 read/write 중 **빠른 쪽** cadence에 의해 pin되며(gating rule), sub-per-token access는 트래픽을 임계 경로 아래로 amortise해 write-heavy RMW state를 legally CXL로 내려보낸다. anchor(neural-mem-1.3B, per-token 임계 경로 예산 $t_{\mathrm{tok}}\approx962\ \mu\mathrm{s}$)에서의 tier 배정은 표 23-3과 같다(실험 E1.4 재구성). [REL, NOVEL-SIM-FALSE for scratchpad]

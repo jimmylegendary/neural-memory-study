@@ -15,7 +15,8 @@
 
 **자산 1 — TPU pod + JAX/XLA 스택.** 이 라인의 핵심 도박은 "non-linear deep-memory recurrence를 dense matmul로 다시 빚으면 기존 accelerator에서 경쟁력이 난다"이다. 그 도박이 참인지는 large-GEMM에 최적화된 하드웨어와, custom kernel 없이도 그 GEMM을 잘 뽑는 컴파일러가 있어야 검증된다. TPU의 systolic array는 큰 dense GEMM에 특화된 소자이고, XLA는 그 위로 JAX 프로그램을 융합·스케줄한다. chunk 크기 $C$를 키우면 같은 알고리즘이 memory-bound에서 compute-bound로 오른다는 것(claim7, → 15장·9장)이 이 스택에서 곧바로 throughput으로 환원된다 — $C$가 roofline의 x축이고, TPU+XLA가 그 x축의 오른쪽(큰 $C$)을 값싸게 만든다.
 
-<!-- FIG: exp-c -->
+![그림 22-1: chunk 크기 C가 roofline의 x축 — C=1(decode)은 memory-bound, C를 키우면 compute-bound로 오른다](../../figures/exp-c-chunk-roofline.png)
+
 그림 22-1 — chunk 크기 $C$가 roofline의 x축이다: $C{=}1$(per-token RMW = decode 영역)은 memory-bound 평원에 있고 $C$를 키우면 crossover를 넘어 compute-bound로 오른다. TPU+XLA 스택의 자산은 이 곡선의 오른쪽 구간(대형 dense GEMM)을 custom kernel 없이 값싸게 만든다는 데 있다(실험 E2.1 재구성; host ridge는 H100 twin ridge의 약 1/9이므로 곡선의 **모양**만 이전, 측정 $C^*{\approx}32$는 host 값 — H100 closed-form은 306–430).
 
 이 자산의 결정적 증거가 [TNT]다. 150M Titans를 10B tokens로 TPUv5 pod 위 plain JAX(**custom kernel 없이**)로 훈련한 결과, 가장 정확한 Titans baseline(C=64) 대비 target loss까지 **17.4× 빠르면서** 평균 perplexity를 오히려 개선했고(23.09 vs 25.07), 32K 문맥에서는 $C_L{=}128$의 순수 JAX TNT가 FlashAttention(Pallas kernel)보다 step당 **1.3× 빠르다** [TNT §experiments]. 이 사실의 함의는 §22.4·§22.7에서 되짚지만, Google 자산 논증에 국한하면 명료하다: **CUDA/cuDNN moat를 우회한 채로도 이 라인이 성립함을 Google 스택이 자기 하드웨어 위에서 이미 보였다.** 아키텍처를 matmul로 빚어 두면 컴파일러가 kernel 성숙도의 공백을 상당 부분 메운다.
@@ -28,7 +29,8 @@
 
 **자산 2 — long-context 제품.** decode 절반의 경제학은 crossover 문맥 길이 $S^*$에 걸려 있다. KV cache 읽기 트래픽은 문맥에 비례해 자라지만 TTT state의 RMW 트래픽은 문맥에 무관하게 일정하므로, 그 아래에서는 KV가 싸고 그 위에서는 TTT가 싼 crossover가 존재한다(claim2, → 18장 §18.3). anchor에서 read-crossover는 약 65k token, 전체 RMW-crossover는 약 131k token이며, 폭에 따라 16k→1.05M token으로 이동한다.
 
-<!-- FIG: exp-a -->
+![그림 22-2: KV(문맥에 비례해 자라는 read)와 TTT(문맥에 무관한 RMW)의 트래픽 crossover S*](../../figures/exp-a-kv-ttt-crossover.png)
+
 그림 22-2 — KV(문맥에 비례해 자라는 read)와 TTT(문맥에 무관한 RMW)의 트래픽 crossover $S^*$. TTT의 경제적 이점이 나타나는 문맥 길이대(약 65k–131k token 이상)가, 정확히 long-context 제품이 판매하는 영역이다(실험 E1.3/E3 재구성; crossover **위치**만 load-bearing, 절대 µs/token은 roofline 하한으로 이월).
 
 > **[평가]** crossover가 놓인 자리가 전략적으로 결정적이다. TTT가 KV보다 유리해지는 문맥 길이는 대략 수만~수십만 token 이상인데, 이것은 정확히 Google이 제품으로 파는 regime(장문맥 Gemini 계열)이다. 즉 이 라인의 경제적 이점이 발현되는 지점과 Google 제품 라인의 판매 지점이 겹친다. long-context를 파는 조직만이 이 라인을 자기 제품 곡선 위에서 정당화할 수 있다 — 짧은 문맥만 서빙하는 곳에는 crossover 아래라 KV cache가 여전히 싸고, 이 라인을 도입할 사업적 이유가 약하다.

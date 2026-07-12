@@ -296,60 +296,71 @@ work is over-determined by the texts.
 
 ---
 
-## 4. Draft table of contents (150–200 pp.; working target ≈ 190 pp.)
+## 4. Table of contents (as assembled — 25 chapters + front/back, ≈ 204 pp.)
 
-Page budgets give full-path targets; the min-path column of the prereq curriculum
-(48 pp. Part I) is the compression valve if the total must land nearer 150.
+**Status (2026-07-12): reconciled to the built files** under `study-kr/`. This supersedes
+the draft ToC. Per-chapter page budgets follow `style/STYLE-NOTATION.md` §4.3 (v1.1), the
+authoritative budget; Part III budgets are this dossier's originals. The min-path column of
+`prereq-curriculum.md` (48 pp. Part I) remains the compression valve toward ≈ 155 pp.
 
-**Ch. 0 — Introduction: the thesis and how to read this book (4 pp.)**
-The two-loop Rosetta stone in miniature; the claim that six papers form one program;
-map of parts.
+Two structural changes vs the draft: (a) the standalone **Ch. 0 introduction** was folded
+into front matter (`front/00-preface.md`) plus **ch18**, which now opens Part III with the
+convergence + pair-thesis program; (b) the **B9 continual-learning interlude** became a
+first-class Part I chapter (**ch11**), so Part II is a clean six-chapter run (ch12–ch17)
+and every downstream chapter number shifted +1 from the draft.
 
-### Part I — Background for inference engineers (≈ 62 pp.)
-Directly from `prereq-curriculum.md`, mid-band budgets:
+### Front matter (`study-kr/front/`, ≈ 4 pp.)
+`00-preface.md` (audience, why these six, how to read + bypass route, pair-thesis preview,
+honesty contract, notation & 3-layer convention), `00-toc.md`, and the three Part openers
+(`01/02/03-partN-opener.md`).
 
-| Ch. | Module | pp. |
+### Part I — Background for inference engineers (`study-kr/part1/`, ≈ 78 pp.)
+Every concept as a (state, update, cost) object; each chapter clears one systems bridge.
+
+| Ch. | File / title | pp. |
 |---|---|---|
-| 1 | B0 Orientation & Rosetta stone | 3 |
-| 2 | B1 Training as a system: backprop + optimizers as objects (incl. Muon) | 10 |
-| 3 | B2 Online learning, OGD, regret, FTRL | 6 |
-| 4 | B3 Meta-learning / bilevel / learning-to-learn | 6 |
-| 5 | B4 Associative memory: Hopfield → delta rule | 8 |
-| 6 | B5 Linear attention & FWP; DeltaNet family, Longhorn, RWKV-7 | 10 |
-| 7 | B5b SSM lineage S4 → Mamba-2 duality | 6 |
-| 8 | B6 The TTT lineage proper | 7 |
-| 9 | B7 Chunkwise-parallel training (the enabler) | 10 |
-| 10 | B8 Consolidated systems bridge + glossary | 5 |
-| — | (B9 relocated to Part II interlude) | — |
+| 1 | ch01 — Orientation: inference/learning Rosetta stone; two loops ($W$ vs $\Theta$); master eq. (M) | 4 |
+| 2 | ch02 — Training as a system: backprop + optimizers (momentum/Adam/decay/Muon) as objects | 10 |
+| 3 | ch03 — Online learning: OGD, regret, FTRL | 6 |
+| 4 | ch04 — Meta-learning / bilevel: inner vs outer loop, MAML, $W_{\mathrm{init}}$ | 6 |
+| 5 | ch05 — Associative memory: Hopfield → delta rule; crosstalk, capacity | 8 |
+| 6 | ch06 — Linear attention & FWP: DeltaNet, Gated DeltaNet, Longhorn, RWKV-7 | 10 |
+| 7 | ch07 — SSM lineage: S4 → Mamba → Mamba-2, SSD duality | 6 |
+| 8 | ch08 — TTT lineage: test-time adaptation → TTT-Linear/MLP, dual form | 7 |
+| 9 | ch09 — Chunkwise-parallel training: one scheme, four instances; stale-snapshot, semantic-knob | 10 |
+| 10 | ch10 — Consolidated systems bridge: cost-model cheat sheet, roofline vs chunk size, glossary | 5 |
+| 11 | ch11 — Continual learning, complementary learning systems, distillation, RL-lite | 4–7 |
 
-### Part II — The six papers in depth (≈ 67 pp.)
+### Part II — The six papers in depth (`study-kr/part2/`, ≈ 57 pp.)
+Uniform 8-section grid; all math reduced to the unified notation / eq. (M); honesty caveats in-body.
 
-| Ch. | Content | pp. |
+| Ch. | File / title | pp. |
 |---|---|---|
-| 11 | Titans — mechanism, chunkwise math, MAC/MAG/MAL, per-mechanism S-NIAH attribution, systems reading | 10 |
-| 12 | Miras — the taxonomy, FTRL/Learning-Retaining, Moneta/Yaad/Memora, what the unification does and doesn't prove | 8 |
-| 13 | Atlas — capacity theory, Omega, Muon, DeepTransformers/Dot; the equivocal Muon ablation and the retrieval gap, honestly | 10 |
-| 14 | Interlude (B9): continual learning, consolidation, KD, RL-lite | 4 |
-| 15 | TNT — chunk economics, resets/context parallelism, Q-K projection, chunk-size mismatch; the line's only wall-clock evidence | 7 |
-| 16 | Nested Learning — levels/frequencies, optimizers-as-memories, CMS, self-modifying Titans, Hope; what is theorem vs. reverse-engineering | 11 |
-| 17 | Sleep — wake/sleep, Knowledge Seeding, Dreaming; the graft-vs-cotrain seam; OPSD context | 9 |
-| 18 | The arc as one program: bridges, concept ledger, convergence, the completed form and its two qualifications (§1–3 of this dossier, expanded) | 8 |
+| 12 | ch12 — Titans: mechanism, chunkwise math, MAC/MAG/MAL, per-mechanism S-NIAH, systems reading | 10 |
+| 13 | ch13 — Miras: the 4-axis taxonomy, FTRL/Learning–Retaining, Moneta/Yaad/Memora | 8 |
+| 14 | ch14 — Atlas: capacity theory, Omega, Muon, DeepTransformers/Dot; equivocal Muon ablation + retrieval gap | 10 |
+| 15 | ch15 — TNT: chunk economics, resets/context parallelism, Q-K projection, chunk-size mismatch; only wall-clock | 7 |
+| 16 | ch16 — Nested Learning: levels/frequencies, optimizers-as-memories, CMS, self-modifying Titans, Hope | 13 |
+| 17 | ch17 — Sleep: wake/sleep, Knowledge Seeding, Dreaming; the graft-vs-cotrain seam | 9 |
 
-### Part III — Original contribution (≈ 52 pp.)
+### Part III — Original contribution (`study-kr/part3/`, ≈ 60 pp.)
+Spine = the **D4 workload-split pair thesis**, formalized in ch18 and quantified by 8 exploration-grade experiments.
 
-| Ch. | Content | pp. |
+| Ch. | File / title | pp. |
 |---|---|---|
-| 19 | **Scaling analysis & candidate scaling laws for memory-centric models.** Digitize every published ppl-vs-FLOPs/params/context point across the six papers; propose state-bytes and capacity (Atlas' O(d_k^p)) as first-class scaling axes alongside params/tokens; small-model fits (see §5 angle A3) | 9 |
-| 20 | **Hardware bottleneck analysis.** Decode roofline of each architecture class (state read+*write* per token vs KV append-read); backward-pass-at-decode as a new serving primitive; NS-5/deep-memory FLOP density; chunk kernels; where MFU actually goes | 10 |
-| 21 | **Lessons from the Transformer/NVIDIA scaling era.** The hardware-lottery reading: attention won on GEMM density; this entire line is *designed into* matmuls (chunkwise, NS, resets) — what that predicts about adoption, kernels, and the FlashAttention-moment this family still awaits | 7 |
-| 22 | **Player-strategy analysis.** Why Google Research (TPU pods, JAX, long-context products) is the natural author; NVIDIA's position (Gated DeltaNet lineage); the open-source kernel ecosystem (flash-linear-attention); what each player rationally does next | 6 |
-| 23 | **Large-scale training & serving projections.** TNT economics extrapolated to 7–70B; prefill/decode split for hierarchical memories; per-session weight state as a new cache class (sizing, checkpoint/restore, multi-tenant batching); sleep as a fleet-level background job; cost model vs today's KV-cache serving | 8 |
-| 24 | **Proposals.** Algorithm-level: the 2–3 small experiments of §5 with results if run. HW-level: the honest memory-device/memory-centric assessment (§5 verdict) — frequency-tiered memory placement, RMW-bandwidth decode devices — plus the accelerator-side counterpart (fused chunk kernels, grouped-GEMM decode engines) | 9 |
-| 25 | Conclusion & research agenda | 3 |
+| 18 | ch18 — Convergence & the contribution program: completed form + two qualifications, D4 pair thesis, 8-claim map | 8 |
+| 19 | ch19 — Scaling analysis & candidate scaling laws: state-bytes and capacity ($O(d_k^p)$) as first-class axes | 9 |
+| 20 | ch20 — Hardware bottleneck: decode roofline per architecture; backward-pass-at-decode as a new serving primitive | 10 |
+| 21 | ch21 — Lessons from the Transformer/NVIDIA era: the hardware-lottery reading | 7 |
+| 22 | ch22 — Player-strategy: Google / NVIDIA / open-source kernel ecosystem; each player's next rational move | 6 |
+| 23 | ch23 — Large-scale training & serving projections: TNT economics to 7–70B; per-session weights as a cache class | 8 |
+| 24 | ch24 — Proposals: algorithm-level experiments + HW-level frequency-tiered placement / fused-kernel pair | 9 |
+| 25 | ch25 — Conclusion & research agenda | 3 |
 
 **Back matter** — bibliography (Veridraft/S2-verified pool), glossary index (≈ 5 pp.)
 
-Total: 4 + 62 + 67 + 52 + 5 ≈ **190 pp.** (min-path compression → ≈ 155 pp.)
+Total: 4 (front) + 78 (I) + 57 (II) + 60 (III) + 5 (back) ≈ **204 pp.**
+(min-path compression → ≈ 155 pp.)
 
 ---
 

@@ -137,7 +137,6 @@ pair thesis의 두 절반은 서로 다른 두 알고리즘이 아니라 **같�
 
 chunk 크기 $C$는 arithmetic intensity를 결정하는 knob이다(→ 9장). $C=1$은 per-token rank-1 RMW — 곧 §20.2의 decode 영역 — 이고 AI≈1 FLOP/byte로 memory-bound 평원에 앉는다. $C$를 키우면 chunk 안의 여러 token이 같은 chunk-start state $W_{\xi(t,C)}$에서 gradient를 평가하므로(stale-snapshot 근사, 식 (M4), → 9장) state 재사용이 늘고 AI가 roofline을 타고 오른다. 어느 $C^*$에서 memory↔compute 교차가 일어난다.
 
-<!-- FIG: exp-c -->
 ![그림 20-1 — chunk 크기 $C$에 따른 arithmetic intensity의 host roofline 상승: $C{=}1$(decode 영역)의 memory-bound 평원에서 $C^*$의 compute-bound 영역으로](../../figures/exp-c-chunk-roofline.png)
 
 그림 20-1 — DeltaNet-style chunkwise scan의 measured AI(C) 곡선. $C{=}1$(per-token RMW = TTT decode 영역)은 host roofline의 약 12%에 머무는 memory-bound 평원이고, $C$를 키우면 host ridge(≈34 FLOP/byte)를 넘어 measured $C^*{\approx}32$에서 compute-bound로 오른다. $d{=}2048$ measured throughput은 $C{=}1$의 4.56 GFLOP/s에서 $C{=}512$의 689.5 GFLOP/s까지 오른다. **곡선의 모양과 교차의 존재만 이전되고 $C^*$의 절대값은 이전되지 않는다**: host ridge는 H100 twin ridge(295 FLOP/byte)의 약 1/9이며, H100 closed-form $C^*$는 $d$에 따라 306–430이다($d{=}2048$에서 337.1). 실험 E2.1(CPU micro-bench, CPU-SHAPE) / E3 재구성.
@@ -168,14 +167,12 @@ decode가 memory-bound이고 그 bound가 whole-state RMW라면, 남은 설계 �
 
 먼저 상주의 물리적 한계. on-die L2(50 MB급)는 anchor에서 **한 sequence의 whole-model state조차** 담지 못한다(어느 스케일에서도, 실험 E1.3/E3). 따라서 whole-model을 on-die에 pin하는 선택지는 없고, 상주는 **per-layer/streamed**여야 한다. 이 제약이 state placement를 layer 단위 DSE로 만든다.
 
-<!-- FIG: exp-b -->
 ![그림 20-2 — per-layer RMW state의 device별 energy/latency와 residency crossover: state가 fit하는 폭에서는 scratchpad가 HBM을 이기고, 폭이 커지면 spill한다](../../figures/exp-b-state-placement.png)
 
 그림 20-2 — 134 MB/layer RMW를 네 device twin에 올린 결과. state가 268 MB scratchpad에 fit하는 동안 scratchpad는 HBM3 대비 **6.8× energy / 14.9× time** 이득을 낸다. 그러나 residency crossover가 있다: 268 MB 버퍼는 anchor($d{=}2048$, 134 MB/layer)까지 한 layer의 state를 담고 $d{=}4096$(7B, 537 MB/layer)에서 **spill**하며, crossover 폭은 $d^\star{\approx}2896$이다. whole-model이 268 MB에 드는 것은 Titans-170M(226 MB total)뿐이므로, 340M 이상에서는 상주가 per-layer/streamed다. scratchpad·PIM twin은 `simulation_ready=False`인 **directional DSE**이며, 이 이득 배율은 shipping-device 주장이 아니다(NOVEL-SIM-FALSE, §18.6). 실험 E1.2.
 
 그림 20-2의 메시지는 두 겹이다. 겉으로는 "state가 on-chip에 fit하면 scratchpad가 크게 이긴다"(analytic twin이 예측한 fit→spill 이득, directional)이고, 그 아래에는 "fit 여부 자체가 폭의 함수인 crossover"가 있다. 이 fit→spill 불연속은 추상적 경고가 아니라 host silicon에서 **직접 측정되는** 물리적 절벽으로도 확인된다. 그 절벽을 host CPU에서 직접 재면 다음이 나온다.
 
-<!-- FIG: exp-e -->
 ![그림 20-3 — on-die/off-die 경계에서의 RMW 대역폭 cliff: in-cache RMW가 capacity 경계를 넘으면 유효 대역폭이 불연속으로 꺾인다](../../figures/exp-e-rmw-cliff.png)
 
 그림 20-3 — L3 capacity 경계에서 RMW 유효 대역폭이 꺾이는 cliff. in-cache RMW peak는 **~265 GB/s**로 돌지만 capacity를 넘겨 DRAM으로 spill하면 **~68 GB/s**로 **약 3.9× 붕괴**한다(1-thread; in-cache peak÷DRAM 비). 또한 saturated DRAM에서 RMW는 element당 **2× byte**(read+write)를 옮긴다 — 이것이 **append-once KV cache가 피하는 write-back 세(稅)** 를 직접 측정한 값이고, 같은 byte 대역폭 환산 시 유효 element throughput은 read의 약 0.5×다. **GB/s 절대값은 H100으로 이전하지 않는다**(host cache cliff는 H100 on/off-die ridge와 100× 어긋난다); 이전되는 것은 cliff의 **존재**와 3.9× 붕괴의 **모양**뿐이다(CPU-SHAPE, §18.6). 실험 E2.2.
