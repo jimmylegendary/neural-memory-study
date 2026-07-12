@@ -168,3 +168,27 @@
 
 - 모든 수정은 v1.1 통일 표기($W$/$\Theta$, $\eta_t$/$\beta_t$/$\alpha_t$, $\ell$/$\mathcal{L}$, 열벡터, 조사 결합)·용어 규약을 준수하도록 작성했으며 새 위반을 도입하지 않았다.
 - 원전 대조로 사실 확인한 항목(RetNet γ, Longhorn sigmoid, Mamba bandwidth/matmul, Miras fn2·per-slice·one-approach, TTT equivalent-in-output·train-then-predict, Titans function-of-chunks, TNT reset-at-beginning·carry-reinit·수치, Atlas 93.2·unnormalized·linearly-independent, Sleep replay·frequency-def·sampled-task)은 §2 표의 "원문 확인"으로 표기.
+
+## ch02 (재실행)
+
+**상태**: §1의 "실패한 장" 해소. `codex exec -m gpt-5.6-sol -c model_reasoning_effort=xhigh`를 재실행해 `ch02-training-as-a-system.raw.md`/`.json` 확보(발견 **11건**: major 4 / minor 7). 검증 프롬프트는 이번 라운드의 다른 장과 달리 "개념 정확성"형(원전 대조 대신 자체 표기법 전제)으로 재작성했다.
+
+판정: **valid 8 / invalid(defensible) 3**. 조치: **applied 8 / deferred 1 / invalid(무조치) 2**. 표기는 §2와 동일(A/D/I, cr/M/m).
+
+| 장 | # | sev | 발견 요지 | 판정·근거 | 조치 |
+|---|---|---|---|---|---|
+| ch02 | F1 | M | update 서명 $(state_t,g_t){\mapsto}(state_{t+1},\Delta\Theta_t)$가 AdamW엔 $\Theta_t$·$t$ 필요 | invalid — STYLE 설계원칙(line 528) "(state,update,cost) 객체"는 의도적 추상. decoupled decay는 §2.5.3에서 $\Theta$에 직접 곱하는 **별도 modifier**로 합성되고(서명 밖), bias-correction의 step $t$는 state에 포함 가능. abstraction over-flag(§4.7 패턴) | **I** |
+| ch02 | F2 | M | §2.1-4·표2-1 "GEMM 없는 순수 elementwise"가 Shampoo·Muon과 모순 | valid — 장 후반(§2.5.5-6, §2.8)이 두 객체의 GEMM을 명시 → 절대 단정 자기모순(§4.5 패턴) | A (AdamW 계열 한정 + Shampoo/Muon 예외 명시) |
+| ch02 | F3 | M | §2.5.5 AdaGrad "Adam과 차이=decay 하나" 부정확 | valid — AdaGrad는 1차 moment EMA·bias-correction도 없고 분자가 raw $g_t$; 차이는 ≥2 | A (비교를 2차 moment로 한정 + 1차 moment 부재 병기) |
+| ch02 | F4 | M | §2.5.6 tuned quintic NS가 특이값을 **정확히 1로** 수렴시킨다 서술 | valid — Muon 계수 $(3.4445,-4.7750,2.0315)$는 정확 수렴을 포기(≈$[0.7,1.3]$ band); 결과 ≠ $UV^\top$. 원문 확인(kellerjordan Muon post) | A (이상적 $UV^\top$ vs tuned 근사 구분) |
+| ch02 | F5 | m | §2.2 "가장 빠르게 음수" steepest에 크기 제약 누락 | valid — norm 제약 없으면 $\langle g,\Delta\Theta\rangle$ 하한 없음 | A ("이동 크기를 고정하면" 추가) |
+| ch02 | F6 | m | (2-3) 전개서 초기항 $\Theta_0$ 누락 | valid — 정확전개 $\Theta_t=(1-\eta\lambda)^t\Theta_0+\sum u_i$; $\Theta_0{\neq}0$ 일반 | A ($\Theta_0$ 감쇠항 추가 — retention 서술 오히려 강화) |
+| ch02 | F7 | m | §2.5.2 momentum $\beta{=}0.9$ 6/43개 | valid — $1-0.9^6{=}46.9\%{<}50\%$; 7/44 필요(=ch11 F1·ch16 F9와 동일 교정) | A |
+| ch02 | F8 | m | 표2-2/2-3 Shampoo state를 **byte 열**에 $m^2{+}n^2$ | valid — fp32면 $4(m^2{+}n^2)$ B; 4× 단위 오류(다른 행은 전부 byte) | A (양 표 동시) |
+| ch02 | F9 | m | §2.5.4 Adam 트래픽 "SGD 약 3×" | defensible — RMW-텐서 카운트(weight 8B 기준 →24B=3×)면 정합이고 momentum "약 2×"와 동일 heuristic; 완전 byte(gradient 포함) 회계면 2.33×. "약" hedge. 장-횡단 cost 회계 통일 시 재검토(cf. ch03 F8) | **D** |
+| ch02 | F10 | m | §2.5.6·표 Muon "10-15 GEMM"은 quintic서 $3\kappa{=}15$ | invalid — 장이 이미 "반복당 2-3개→10-15"로 명시. $X^\top X$ 대칭곱을 2로 세면 하한 10, full 3이면 15 — 범위가 counting 모호성을 이미 포섭(already-hedged) | **I** |
+| ch02 | F11 | m | §2.7(d) $\epsilon$ 포함 (2-4)로 "정확히 $-\eta\,\mathrm{sign}(g)$·크기 정확히 $\eta$" | valid — $\epsilon{>}0$이면 크기 $\eta\lvert g\rvert/(\lvert g\rvert{+}\epsilon){\neq}\eta$; 예제는 $\epsilon{=}0$ 암묵 | A ((ε는 무시) 명시) |
+
+**적용 요지** — §2.1-4 optimizer step을 "AdamW 계열 기준, Shampoo·Muon은 GEMM 예외"로 한정(F2); §2.5.5 AdaGrad를 "2차 moment의 decay 유무 + 1차 moment 부재"로 정밀화(F3); §2.5.6 NS를 "고전 계수=정확 1 수렴 vs Muon tuned=1 근방 근사(≠$UV^\top$)"로 구분(F4); §2.2에 보폭 고정 조건(F5); (2-3)에 $\Theta_0$ 감쇠항(F6); momentum 6/43→7/44(F7, 라인 전체 정합); 표 2-2·2-3 Shampoo $m^2{+}n^2$→$4(m^2{+}n^2)$ B(F8); §2.7(d) ε 무시 명시(F11). 8건 모두 v1.1 통일 표기·용어 규약 준수, 새 위반 없음.
+
+**deferred/invalid 사유** — F1은 STYLE line 528이 못박은 "(state, update, cost) 객체" 설계 추상에 대한 over-flag(decay=합성 modifier, step=state)라 무조치. F9는 "약 N×"가 RMW-텐서 카운트(momentum 2×↔Adam 3×)로 자기정합한 coarse heuristic이라 defer. F10은 장이 이미 "2-3개/반복→10-15"로 대칭곱 counting 모호성을 hedge하고 있어 false-positive. — §4.6(cross-model 자기교정)·§4.7(통일 의도 vs 오류) 패턴의 재확인.

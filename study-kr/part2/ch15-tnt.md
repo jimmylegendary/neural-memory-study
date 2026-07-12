@@ -6,9 +6,9 @@
 
 없는 데는 이유가 있다. 이 라인의 모든 모델은 chunkwise-parallel training(→ 9장)이라는 트릭 — chunk 안의 모든 inner gradient를 chunk 시작 상태 $W_{\xi(t,C)}$에서 평가하는 stale-snapshot 근사, 즉 식 (M4) — 위에 서 있고, 이 트릭은 두 가지를 미해결로 남겼다. 첫째, 근사의 품질: chunk 크기 $C$를 키우면 gradient가 낡아(staleness) 품질이 떨어지고, 줄이면 kernel이 잘게 쪼개져 hardware가 논다. 실무는 $C$를 16-64에 고정해 왔지만 이 타협의 비용은 아무도 정량화하지 않았다. 둘째, $C$의 이중 신분: 병렬화 knob이면서 동시에 — 식 (M4)가 계산하는 함수 자체를 바꾸므로 — semantic hyperparameter다(→ 9장). 9장에서 명제로 세운 이 이중성의 실증적 발견자가 바로 이 장의 논문이며, Atlas까지는 훈련 $C$와 다른 $C$로 serving하면 어떻게 되는지 물은 적조차 없다.
 
-한 가지 수치가 사태의 심각성을 요약한다. deep memory(→ 12장) 계열의 훈련은 품질이 좋은 작은 chunk에서 peak FLOPs 대비 5-10% 미만의 utilization으로 돌아간다 — [TNT]가 LaCT(Zhang, Bi, et al. 2025, arXiv:2505.23884)를 인용해 보고하는 값이다 [TNT §3]. 독자의 어휘로 말하면, 이 라인의 모델들은 지금까지 MFU 한 자릿수의 workload였다. 표현력 논쟁 이전에, 이 훈련 경제학이 해결되지 않으면 어떤 Titans 후속도 대규모로 갈 수 없다.
+한 가지 수치가 사태의 심각성을 요약한다. deep memory(→ 12장) 계열의 훈련은 품질이 좋은 작은 chunk에서 peak FLOPs 대비 5-10% 미만의 utilization으로 돌아간다 — [TNT] (*TNT: Improving Chunkwise Training for Test-Time Memorization*, arXiv:2511.07343)가 LaCT(Zhang, Bi, et al. 2025, arXiv:2505.23884)를 인용해 보고하는 값이다 [TNT §3]. 독자의 어휘로 말하면, 이 라인의 모델들은 지금까지 MFU 한 자릿수의 workload였다. 표현력 논쟁 이전에, 이 훈련 경제학이 해결되지 않으면 어떤 Titans 후속도 대규모로 갈 수 없다.
 
-[TNT] (*TNT: Improving Chunkwise Training for Test-Time Memorization*, arXiv:2511.07343)는 이 지점을 정면으로 겨냥한 라인의 systems 편이다. 새 아키텍처가 아니라 **훈련 paradigm**이고, 주장하는 것도 표현력이 아니라 throughput과 chunk 경제학이다. 논문 제목의 TNT는 "Titans iNside Titans" 또는 "TTT iNside TTT"의 약자다 [TNT §1 각주 1] — 이름부터가 memory 안에 memory를 중첩하는 계층 구조를 가리킨다.
+[TNT]는 이 지점을 정면으로 겨냥한 라인의 systems 편이다. 새 아키텍처가 아니라 **훈련 paradigm**이고, 주장하는 것도 표현력이 아니라 throughput과 chunk 경제학이다. 논문 제목의 TNT는 "Titans iNside Titans" 또는 "TTT iNside TTT"의 약자다 [TNT §1 각주 1] — 이름부터가 memory 안에 memory를 중첩하는 계층 구조를 가리킨다.
 
 ## 15.2 문제의식: 세 개의 challenge
 

@@ -25,7 +25,7 @@
 1. **forward pass**: batch를 모델에 통과시켜 loss를 계산한다. 독자가 아는 prefill과 커널 구성이 같다 — GEMM과 attention의 연속이다.
 2. **loss 계산**: logits에서 스칼라 $\mathcal{L}$로의 reduction. 비용은 무시 가능하다.
 3. **backward pass**: $\mathcal{L}$의 모든 parameter에 대한 미분, 즉 gradient를 계산한다(§2.3). FLOPs는 forward의 약 2×다.
-4. **optimizer step**: gradient와 optimizer의 내부 state를 읽어 $\Theta$를 갱신한다(§2.5). GEMM이 없는 순수 elementwise pass이며, 철저히 bandwidth-bound다.
+4. **optimizer step**: gradient와 optimizer의 내부 state를 읽어 $\Theta$를 갱신한다(§2.5). AdamW 계열에서는 GEMM이 없는 순수 elementwise pass이며 철저히 bandwidth-bound다(단 Shampoo·Muon은 update에 GEMM이 들어오는 예외 — §2.5.5–6).
 
 이 loop를 독자가 매일 운용하는 serving loop 옆에 놓으면 대응이 즉시 보인다. 표 2-1은 1장의 Rosetta-Stone 사전을 training loop에 특화한 것이다.
 
@@ -50,7 +50,7 @@ $$
 \mathcal{L}(\Theta + \Delta\Theta) \;\approx\; \mathcal{L}(\Theta) + \langle \nabla_\Theta \mathcal{L},\; \Delta\Theta \rangle
 $$
 
-이고, 내적을 가장 빠르게 음수로 만드는 선택은 $\Delta\Theta = -\eta\, \nabla_\Theta\mathcal{L}$이다. 여기서 $\eta$는 **learning rate** — 한 step의 보폭이다(이 책에서 무첨자 $\eta$는 항상 outer loop의 상수 learning rate이고, 시간 첨자가 붙은 $\eta_t$는 token의 함수인 inner loop의 gate다. 첨자의 유무 자체가 정보다). 이것이 **gradient descent**의 전부다: 민감도 방향의 반대로, 보폭 $\eta$만큼, 반복해서 이동한다.
+이고, 이동 크기를 고정하면 내적을 가장 빠르게 음수로 만드는 선택은 $\Delta\Theta = -\eta\, \nabla_\Theta\mathcal{L}$이다. 여기서 $\eta$는 **learning rate** — 한 step의 보폭이다(이 책에서 무첨자 $\eta$는 항상 outer loop의 상수 learning rate이고, 시간 첨자가 붙은 $\eta_t$는 token의 함수인 inner loop의 gate다. 첨자의 유무 자체가 정보다). 이것이 **gradient descent**의 전부다: 민감도 방향의 반대로, 보폭 $\eta$만큼, 반복해서 이동한다.
 
 시스템 관점에서 gradient의 첫 번째 성질은 shape다. gradient는 parameter와 1:1 대응하는 같은 크기의 텐서이므로, gradient를 만들고 소비하는 모든 단계의 메모리 트래픽은 최소 "모델 크기 × 상수 배"다. 7B 모델이면 gradient 텐서 하나가 이미 수십 GB의 이동을 뜻한다. 두 번째 성질은 계산 경로다: 원소가 $10^9$개를 넘는 텐서의 편미분 전부를, 어떻게 forward 한 번 남짓의 비용으로 얻는가. 그것이 backward pass다.
 
@@ -110,7 +110,7 @@ $$
 | + weight decay | (없음) | $\Theta\leftarrow(1-\eta\lambda)\Theta+\cdots$ | 0 B | elementwise | retention gate의 원형 (→ 12·13장) |
 | AdamW | $m_t, h_t$ | $\Delta\Theta=-\eta\,\hat m_t/(\sqrt{\hat h_t}+\epsilon)$ | 8 B | elementwise | outer loop의 기본값; [NL]의 최적성 정리 (→ 16장) |
 | AdaGrad | $h_t$ (누적) | $\Delta\Theta=-\eta\, g_t/(\sqrt{h_t}+\epsilon)$ | 4 B | elementwise | FTRL과의 연결 (→ 3장), [NL §4] |
-| Shampoo | $L_t, R_t$ | $\Delta\Theta=-\eta\, L_t^{-1/4} G_t R_t^{-1/4}$ | 행렬당 $m^2{+}n^2$ | GEMM + 주기적 행렬 root | preconditioning의 극점, [NL §4] |
+| Shampoo | $L_t, R_t$ | $\Delta\Theta=-\eta\, L_t^{-1/4} G_t R_t^{-1/4}$ | 행렬당 $4(m^2{+}n^2)$ B | GEMM + 주기적 행렬 root | preconditioning의 극점, [NL §4] |
 | Muon | $m_t$ | $\Delta\Theta=-\eta\,\mathrm{NS}_\kappa(m_t)$ | 4 B | **GEMM ~10–15개**/행렬 | [Atlas]의 inner optimizer (→ 14장), [NL]의 M3 |
 
 ### 2.5.1 SGD: stateless한 기준점
@@ -135,7 +135,7 @@ $$
 
 $\beta \in [0,1)$은 momentum decay 상수다(보통 0.9). 식 (2-2)를 풀면 $m_t = \sum_{i\le t} \beta^{\,t-i} g_i$ — **momentum buffer는 과거 gradient들의 지수가중합**이다. 고전적 해석은 두 가지다: 물리적으로는 공이 관성을 갖고 골짜기를 구르는 것이고(Polyak 1964; 심층학습 문맥의 재조명은 Sutskever et al. 2013), 통계적으로는 잡음 낀 gradient의 저역 통과 필터다 — §2.4의 가파른 방향 진동은 부호가 번갈아 나타나므로 합산에서 상쇄되고, 완만한 방향의 일관된 성분은 최대 $1/(1-\beta)$배까지 증폭된다.
 
-이 책이 강조하는 세 번째 해석이 있다. **식 (2-2)는 linear recurrence다 — 독자가 아는 linear-RNN state 갱신, RetNet의 상수 decay, scan kernel이 처리하는 점화식과 정확히 같은 대수다.** 이 identity는 장식이 아니라 이 라인의 두 기둥을 떠받친다. 첫째, [Titans]는 momentum buffer를 그대로 inner loop에 이식해 "past surprise" $S_t$로 삼는데(원문 Eq. 10; → 12장), recurrence가 linear이기 때문에 chunk 안에서 associative scan으로 병렬 계산된다(→ 9장) — 독자의 prefix-sum kernel이 여기서 재취업한다. 둘째, [NL §4.2]는 식 (2-2)를 "gradient stream을 key 없이 압축하는 associative memory"로 읽고, GD + momentum 전체를 2-level 구조(안쪽 level이 gradient를 momentum memory로 압축하고, 바깥 level이 그 state를 weights에 적용)로 재구성한다 — 이것이 **momentum-as-memory**이며, 이 장은 객체로서의 사실만 확정하고 정리로서의 지위는 16장이 다룬다. memory로 읽는 순간 capacity 질문이 성립하는데, [NL §4.3]은 $\beta=0.9$일 때 누적 기여의 50% 이상이 최근 gradient 6개에, 99% 이상이 최근 43개에 집중됨을 지적한다 — momentum은 반감기가 짧은 memory이고, 그 짧음이 continual learning에서의 forgetting과 연결된다(→ 11장, 16장).
+이 책이 강조하는 세 번째 해석이 있다. **식 (2-2)는 linear recurrence다 — 독자가 아는 linear-RNN state 갱신, RetNet의 상수 decay, scan kernel이 처리하는 점화식과 정확히 같은 대수다.** 이 identity는 장식이 아니라 이 라인의 두 기둥을 떠받친다. 첫째, [Titans]는 momentum buffer를 그대로 inner loop에 이식해 "past surprise" $S_t$로 삼는데(원문 Eq. 10; → 12장), recurrence가 linear이기 때문에 chunk 안에서 associative scan으로 병렬 계산된다(→ 9장) — 독자의 prefix-sum kernel이 여기서 재취업한다. 둘째, [NL §4.2]는 식 (2-2)를 "gradient stream을 key 없이 압축하는 associative memory"로 읽고, GD + momentum 전체를 2-level 구조(안쪽 level이 gradient를 momentum memory로 압축하고, 바깥 level이 그 state를 weights에 적용)로 재구성한다 — 이것이 **momentum-as-memory**이며, 이 장은 객체로서의 사실만 확정하고 정리로서의 지위는 16장이 다룬다. memory로 읽는 순간 capacity 질문이 성립하는데, [NL §4.3]은 $\beta=0.9$일 때 누적 기여의 50% 이상이 최근 gradient 7개에, 99% 이상이 최근 44개에 집중됨을 지적한다 — momentum은 반감기가 짧은 memory이고, 그 짧음이 continual learning에서의 forgetting과 연결된다(→ 11장, 16장).
 
 ### 2.5.3 weight decay: $(1-\eta\lambda)$라는 retention의 원형
 
@@ -146,11 +146,11 @@ $\beta \in [0,1)$은 momentum decay 상수다(보통 0.9). 식 (2-2)를 풀면 $
 decoupled 형태에서 update의 구조가 투명해진다. 매 step $\Theta$에 $(1-\eta\lambda)$가 곱해지므로, update 기여를 $u_i$라 하면
 
 $$
-\Theta_t \;=\; \sum_{i \le t} (1-\eta\lambda)^{\,t-i}\; u_i
+\Theta_t \;=\; (1-\eta\lambda)^{\,t}\,\Theta_0 \;+\; \sum_{i \le t} (1-\eta\lambda)^{\,t-i}\; u_i
 \tag{2-3}
 $$
 
-— **weights 자체가 과거 update들의 지수가중 memory이고, $(1-\eta\lambda)$는 그 memory의 유지 비율**이다. 식 (2-2)와 식 (2-3)을 나란히 놓으면 buffer와 weights가 같은 대수의 두 인스턴스임이 보인다. 독자의 어휘로 번역하면 $(1-\eta\lambda)$는 retention gate의 원형 — 정확히는, cache에서 오래된 항목을 지수적으로 밀어내는 학습된 eviction의 가장 원시적 형태다. 이 인자를 상수에서 token의 함수 $\alpha_t$로 승격시킨 것이 식 (M2)의 retention 항 $\alpha_t W_{t-1}$이고, [Titans]는 이를 memory의 forgetting mechanism으로(→ 12장), [Miras]는 retention gate로 정식화한다(→ 13장; 정의 소유권은 그 장들에 있다). 이 장에서 확정할 사실은 하나다: **weight decay는 이미 언제나 memory 관리 연산이었다.**
+— 초기 weights $\Theta_0$조차 $(1-\eta\lambda)^{\,t}$로 지수 감쇠해 사라지므로, **weights 자체가 과거 update들의 지수가중 memory이고, $(1-\eta\lambda)$는 그 memory의 유지 비율**이다. 식 (2-2)와 식 (2-3)을 나란히 놓으면 buffer와 weights가 같은 대수의 두 인스턴스임이 보인다. 독자의 어휘로 번역하면 $(1-\eta\lambda)$는 retention gate의 원형 — 정확히는, cache에서 오래된 항목을 지수적으로 밀어내는 학습된 eviction의 가장 원시적 형태다. 이 인자를 상수에서 token의 함수 $\alpha_t$로 승격시킨 것이 식 (M2)의 retention 항 $\alpha_t W_{t-1}$이고, [Titans]는 이를 memory의 forgetting mechanism으로(→ 12장), [Miras]는 retention gate로 정식화한다(→ 13장; 정의 소유권은 그 장들에 있다). 이 장에서 확정할 사실은 하나다: **weight decay는 이미 언제나 memory 관리 연산이었다.**
 
 ### 2.5.4 Adam과 AdamW: 좌표별 보폭의 표준
 
@@ -175,7 +175,7 @@ $m_t$는 식 (2-2)의 EMA 형태이고, 새 성분은 $h_t$다: **좌표별 grad
 
 Adam의 $1/\sqrt{h_t}$를 일반화하면 optimizer 설계의 남은 절반이 보인다. **preconditioning**은 update를 $\Delta\Theta = -\eta\, P^{-1} g_t$로 바꾸는 것 — gradient를 그대로 쓰지 않고 행렬 $P$가 정의하는 좌표계에서 다시 재는 것이다. $P$가 loss의 curvature를 닮을수록 step은 2차(Newton) 방법에 가까워진다. Adam은 $P$를 대각으로 제한한 경우다.
 
-**AdaGrad**(Duchi et al. 2011, JMLR)는 대각 preconditioner의 원형으로, Adam과의 차이는 decay가 없다는 것 하나다: $h_t = h_{t-1} + g_t \odot g_t$로 전 이력을 **누적**하고 $\Delta\Theta = -\eta\, g_t/(\sqrt{h_t}+\epsilon)$로 갱신한다. 누적이므로 보폭은 단조 감소한다 — 유한한 스트림을 한 번 지나가는 online learning의 이론(regret 보장)에서 자연스러운 선택이고, 실제로 AdaGrad는 FTRL 계열 online 알고리즘과 정확히 접속된다(→ 3장). "state를 decay 없이 누적하는가, EMA로 잊는가"라는 이 대비를 기억해 두면 3장의 FTRL vs OGD, 13장의 retention 논의가 같은 축의 반복임이 보인다.
+**AdaGrad**(Duchi et al. 2011, JMLR)는 대각 preconditioner의 원형이다. Adam의 2차 moment $h_t$가 EMA인 데 반해 AdaGrad는 $h_t = h_{t-1} + g_t \odot g_t$로 전 이력을 **누적**한다 — 이 decay(EMA) 유무가 preconditioner를 가르는 핵심 차이다(더해서 AdaGrad는 1차 moment buffer $m_t$ 없이 현재 gradient $g_t$를 그대로 분자에 쓴다). 갱신은 $\Delta\Theta = -\eta\, g_t/(\sqrt{h_t}+\epsilon)$이다. 누적이므로 보폭은 단조 감소한다 — 유한한 스트림을 한 번 지나가는 online learning의 이론(regret 보장)에서 자연스러운 선택이고, 실제로 AdaGrad는 FTRL 계열 online 알고리즘과 정확히 접속된다(→ 3장). "state를 decay 없이 누적하는가, EMA로 잊는가"라는 이 대비를 기억해 두면 3장의 FTRL vs OGD, 13장의 retention 논의가 같은 축의 반복임이 보인다.
 
 **Shampoo**(Gupta et al. 2018, arXiv:1802.09568)는 대각 제한을 푼다. 행렬 parameter $W \in \mathbb{R}^{m\times n}$의 gradient $G_t$에 대해 좌우 두 통계 $L_t = L_{t-1} + G_t G_t^\top$ ($m\times m$), $R_t = R_{t-1} + G_t^\top G_t$ ($n\times n$)를 유지하고 $\Delta W = -\eta\, L_t^{-1/4}\, G_t\, R_t^{-1/4}$로 갱신한다 — 전체 $mn \times mn$ preconditioner를 Kronecker 곱 구조로 근사한 것이다. cost 프로파일이 질적으로 다르다: state가 param 개수가 아니라 행렬 차원의 제곱($m^2 + n^2$)으로 붙고, update에 GEMM과 행렬 거듭제곱근(주기적으로만 재계산하는 것이 관행)이 들어온다. 이 장에서 Shampoo가 필요한 이유는 실무가 아니라 계보다: [NL §4]는 SGD → Adam → AdaGrad → Shampoo → Muon을 "gradient를 어떤 memory로 압축해 어떤 좌표계를 학습하는가"의 한 스펙트럼으로 배열하며, 그 서열의 비대각 지점이 Shampoo다.
 
@@ -194,7 +194,7 @@ $$
 
 **Muon**은 hidden layer의 2차원 weight 행렬 전용 optimizer다(embedding·output head 등은 관행상 AdamW로 남긴다 — 같은 모델 안에 두 객체가 공존한다). 아이디어는 한 문장이다: momentum 행렬 $m_t$를 그대로 쓰지 않고, **가장 가까운 semi-orthogonal 행렬로 사영해서 쓴다.** SVD로 $m_t = U\Sigma V^\top$라 쓰면 그 사영은 $UV^\top$ — 특이값을 전부 1로 갈아 끼운 행렬로, matrix sign 계열 연산이라 **msign**으로도 불린다. 왜 이것이 좋은가: gradient/momentum 행렬은 소수의 지배적 방향(큰 특이값)에 에너지가 몰려 있어, 그대로 적용하면 update가 사실상 저rank가 된다. 직교화는 지배적 방향을 누르고 희귀하지만 유효한 방향을 살려 **모든 방향에 고른 크기로** 쓰게 한다 — Adam이 좌표별로 하던 스케일 평준화를 특이값 스펙트럼에 대해 하는 것이며, spectral norm 기하에서의 steepest descent이자 2차 정보의 근사로 읽힌다.
 
-SVD는 비싸므로 실제 구현은 **Newton–Schulz iteration** $\mathrm{NS}_\kappa$를 쓴다: 홀수 행렬 다항식 $X \leftarrow aX + bX(X^\top X) + cX(X^\top X)^2$을 $\kappa$회 반복하면 $X$의 특이벡터는 보존되고 특이값만 1로 수렴한다. Muon은 $\kappa=5$와 튜닝된 계수 $(a,b,c)=(3.4445,\,-4.7750,\,2.0315)$를 쓴다(Jordan et al. 2024). 시스템 독자에게 이 구현 선택이 핵심이다: **"직교화 = parameter shape의 GEMM 몇 개"**이므로, Muon은 optimizer step을 bandwidth-bound elementwise pass에서 tensor core가 도는 연산으로 바꾸면서도 state는 buffer 하나로 유지한다. 대규모 LLM pretraining에서의 실증은 Liu et al. 2025 (arXiv:2502.16982)가 보고한다.
+SVD는 비싸므로 실제 구현은 **Newton–Schulz iteration** $\mathrm{NS}_\kappa$를 쓴다: 홀수 행렬 다항식 $X \leftarrow aX + bX(X^\top X) + cX(X^\top X)^2$을 $\kappa$회 반복하면 $X$의 특이벡터는 보존한 채 특이값을 1 근방으로 몰아간다. 고전적 계수는 특이값을 정확히 1로 수렴시키지만, Muon이 쓰는 $\kappa=5$·튜닝된 계수 $(a,b,c)=(3.4445,\,-4.7750,\,2.0315)$(Jordan et al. 2024)는 정확한 1 수렴 대신 빠른 근사를 택해 특이값을 대략 1 부근(정확히 1이 아니라 얼추 $[0.7,\,1.3]$)에 모은다 — 결과가 이상적 $UV^\top$가 아니라 그 근사인 이유다. 시스템 독자에게 이 구현 선택이 핵심이다: **"직교화 = parameter shape의 GEMM 몇 개"**이므로, Muon은 optimizer step을 bandwidth-bound elementwise pass에서 tensor core가 도는 연산으로 바꾸면서도 state는 buffer 하나로 유지한다. 대규모 LLM pretraining에서의 실증은 Liu et al. 2025 (arXiv:2502.16982)가 보고한다.
 
 이 객체가 이 책에 등장하는 진짜 이유는 outer loop가 아니다. [Atlas]는 Muon을 **inner loop의 optimizer로** 이식한다: memory를 GD 대신 식 (2-5)로 갱신한다(원문 Eq. 32–33; 통일 표기로는 $S_t$에 $\mathrm{NS}_\kappa$를 적용해 $W_t = \alpha_t W_{t-1} + \eta_t\,\mathrm{NS}_\kappa(S_t)$ 꼴 — → 14장). 그 순간 $\kappa$는 decode 중 매 chunk마다 지불하는 추가 GEMM 개수가 되고, [Atlas §5]는 이 반복 횟수를 명시적으로 "internal test-time compute parameter"라고 부른다 — 반복을 늘리면 더 나은 memorization을 살 수 있다는 것이다.
 
@@ -228,7 +228,7 @@ step 2: $m_2 = 0.5\, m_1 + g_2 = \begin{bmatrix} -1 & 0 \\ -2 & 0 \end{bmatrix} 
 (b)의 $W_2$에서 새 token이 없다고 하자(gradient 0). decoupled decay는 그래도 매 step 곱해진다: $W_3 = 0.9\, W_2 = \begin{bmatrix} 0.9 & 0 \\ 1.8 & 0 \end{bmatrix}$, 읽기 $(0.9, 1.8)^\top$. 저장된 association이 접근 없이도 step마다 10%씩 증발한다 — TTL이 있는 cache entry처럼. 이 감쇠 인자를 token마다 계산되는 $\alpha_t$로 바꾸면 식 (M2)의 retention 항이 된다.
 
 **(d) Adam의 좌표별 평준화.**
-(a)의 $g_1$에서 0이 아닌 두 좌표를 보자: $(1,1)$ 원소는 $-2$, $(2,1)$ 원소는 $-4$로 크기가 2배 다르다. $t=1$에서 식 (2-4)를 bias correction까지 적용하면 $\hat m_1 = g_1$, $\hat h_1 = g_1 \odot g_1$이므로 update는 $-\eta\, g_1/\sqrt{g_1 \odot g_1} = -\eta\,\mathrm{sign}(g_1)$ — 두 좌표 모두 크기가 정확히 $\eta$다. gradient 크기가 2배 차이 나도 첫 step의 보폭은 동일하다: "sign-ish descent"를 이보다 짧게 보여 주는 계산은 없다. ($t\ge2$부터는 EMA가 이력을 반영해 순수 sign에서 벗어난다.)
+(a)의 $g_1$에서 0이 아닌 두 좌표를 보자: $(1,1)$ 원소는 $-2$, $(2,1)$ 원소는 $-4$로 크기가 2배 다르다. $t=1$에서 식 (2-4)를 bias correction까지 적용하면(ε는 무시) $\hat m_1 = g_1$, $\hat h_1 = g_1 \odot g_1$이므로 update는 $-\eta\, g_1/\sqrt{g_1 \odot g_1} = -\eta\,\mathrm{sign}(g_1)$ — 두 좌표 모두 크기가 정확히 $\eta$다. gradient 크기가 2배 차이 나도 첫 step의 보폭은 동일하다: "sign-ish descent"를 이보다 짧게 보여 주는 계산은 없다. ($t\ge2$부터는 EMA가 이력을 반영해 순수 sign에서 벗어난다.)
 
 **(e) Newton–Schulz의 특이값 평준화.**
 Muon의 $\mathrm{NS}_\kappa$가 하는 일을 보기 위해, 특이값이 $(1.2,\ 0.4)$인 momentum 행렬을 생각하자(예: $m = \mathrm{diag}(1.2, 0.4)$; 대각 행렬이면 NS 반복이 특이값 각각에 대한 스칼라 다항식이 된다). 손계산을 위해 고전적 3차 반복 $x \leftarrow 1.5x - 0.5x^3$을 쓴다(실전의 Muon은 §2.5.6의 튜닝된 5차 다항식을 쓰지만 원리는 같다):
@@ -257,7 +257,7 @@ Muon의 $\mathrm{NS}_\kappa$가 하는 일을 보기 위해, 특이값이 $(1.2,
 | momentum | 4 B | 8 B | elementwise | bandwidth-bound |
 | AdamW | 8 B | 16 B | elementwise | bandwidth-bound |
 | AdaGrad | 4 B | 8 B | elementwise | bandwidth-bound |
-| Shampoo | 행렬당 $m^2{+}n^2$ | 통계 갱신 GEMM | GEMM + 주기적 root | 혼합 |
+| Shampoo | 행렬당 $4(m^2{+}n^2)$ | 통계 갱신 GEMM | GEMM + 주기적 root | 혼합 |
 | Muon | 4 B | 8 B | **GEMM 10–15개/행렬** | compute 쪽으로 이동 |
 
 **step의 roofline 위치.** AdamW step은 param당 read가 weight·gradient·$m$·$h$, write가 weight·$m$·$h$ — 대략 24–28 B를 움직이며 FLOP은 십수 개다. arithmetic intensity가 1 FLOP/byte 언저리인, 독자의 분류로는 decode와 같은 극단적 bandwidth-bound 커널이다. 훈련 step 전체의 시간 구조가 이제 읽힌다: forward/backward는 prefill을 닮았고(두꺼운 GEMM, compute-bound), optimizer step은 decode를 닮았다(거대한 state의 순회, bandwidth-bound). Muon은 이 그림에서 유일하게 step을 GEMM으로 바꾸는 객체다 — state는 Adam의 절반이면서 연산은 tensor core로 옮긴다. "state를 덜 쓰고 compute를 더 쓴다"는 이 거래는 14장에서 inner loop의 test-time compute 논의로 반복된다.
