@@ -1,0 +1,86 @@
+[
+  {
+    "severity": "critical",
+    "location": "23.2 claim7의 AI·C* 문단",
+    "issue": "서로 다른 연산·트래픽 식을 하나의 roofline 곡선처럼 합쳤고 C=1 실측 AI도 오인용했다. 따라서 host C*≈32와 H100 C*=306–430을 같은 알고리즘의 ridge 이동으로 해석할 수 없다.",
+    "evidence": "experiments/results.json은 E2.1의 C=1 AI를 1.0으로 적지만 E2.1 원 결과는 d=2048에서 1.499다. E2.1은 FLOPs=4C²d+6Cd²인 DeltaNet scan을 쓰고, E3는 FLOPs=4C²d+4Cd²인 matrix-memory 모델로 I(C)=C(d+C)/(d+2C)를 쓴다. 연산식이 다르며 E2.1의 fp32 bytes 식 4d²+8Cd는 상태 read+write와 Q/K/V/O의 fp32 최소 트래픽도 2배 작게 센다.",
+    "suggested_fix": "E2.1과 E3를 별도 workload로 분리하고 C=1 AI를 1.50으로 바로잡는다. 동일한 FLOP·dtype·read/write byte 식으로 C*를 다시 계산하기 전에는 H100의 306–430을 TNT/HOPE의 crossover로 제시하지 말고 모델별 directional 값으로만 남긴다."
+  },
+  {
+    "severity": "major",
+    "location": "23.2 및 23.3의 prefill/training bound 판정",
+    "issue": "prefill과 training을 무조건 compute-bound accelerator 영역으로 확정한다. 근거는 C가 충분히 클 때의 조건부 roofline일 뿐 실제 TNT/HOPE 전체 phase의 bound 측정이 아니다.",
+    "evidence": "TNT 원전은 작은 chunk 16–64가 accelerator를 포화하지 못해 memory-bound라고 명시하며, 실험의 local chunk는 8–128이다. 장이 인용한 E3의 H100 C*는 306–430이므로 모든 local chunk가 그 아래다. global C_G=2048인 구성요소가 있더라도 local memories와 나머지 모델을 포함한 전체 prefill이 compute-bound라는 결론은 나오지 않는다.",
+    "suggested_fix": "“C>C*인 chunk kernel은 compute-bound가 될 수 있다”로 한정하고, TNT/HOPE 전체 prefill·training의 bound class와 disaggregation 우위는 실제 phase별 profile 전까지 directional 가설로 둔다."
+  },
+  {
+    "severity": "major",
+    "location": "23.2 표 23-1 다음 문단",
+    "issue": "RMW scaling을 “폭에 대한 세제곱 근처 성장(∝d²)”이라고 서술해 whole-model 식과 scaling fit을 혼동한다. d²는 per-layer 또는 L 고정일 때뿐이다.",
+    "evidence": "장의 식은 RMW∝m·d²·L_layer다. 표 23-1의 340M–70B 점을 log-log fit하면 parameter count에 대한 지수는 약 1.006, d에 대한 지수는 약 2.566이다. 따라서 같은 문장에서 “세제곱 근처”와 “∝d²”를 병기할 수 없으며, 모델 규모에 대해서는 거의 선형이다.",
+    "suggested_fix": "“per-layer는 d², whole-model은 d²L이며 이 표의 canonical shapes에서는 parameter count에 거의 선형”으로 교체하고 E4 scaling-fit의 축과 지수를 명시한다."
+  },
+  {
+    "severity": "major",
+    "location": "23.2의 70B latency 해석 및 23.4의 B_max 해석",
+    "issue": "B_max<1을 batch-1 영역으로 해석하고, 한 sequence도 HBM에 들어가지 않는 70B를 단일-HBM latency처럼 해석한다.",
+    "evidence": "E3에서 7B의 state-only 하한은 10.2566 ms/token이고 B_max@10ms=0.97이므로 10 ms 목표는 batch 1에서도 불가능하다. 70B state는 171.799 GB로 80 GiB HBM보다 커서 B_max_cap=0.5이며, 343.6 GB/3.35 TB/s=약 103 ms 계산은 해당 단일-device resident 구성이 실현 가능하지 않다.",
+    "suggested_fix": "7B는 “10 ms SLA infeasible at batch 1”로 쓰고, 70B는 sharding 또는 spill topology를 먼저 정한 뒤 aggregate bandwidth·capacity로 다시 계산한다."
+  },
+  {
+    "severity": "major",
+    "location": "23.4, 23.8 표 23-3의 “KV=capacity-bound / session-weight=bandwidth-bound”",
+    "issue": "KV-cache serving을 일반적으로 capacity-bound라고 단정해 pair thesis를 넘게 일반화한다. KV decode도 문맥과 SLA에 따라 HBM bandwidth가 먼저 묶일 수 있다.",
+    "evidence": "E1.3 자체의 kv_B_max_vs_S는 KV read bandwidth로 batch ceiling을 계산하며, S=1,048,576에서 50 ms ceiling이 3.247 sequence까지 내려간다. KV 용량은 resident batch/context의 제약이지만 decode latency의 binding resource가 항상 capacity인 것은 아니다.",
+    "suggested_fix": "KV는 “capacity pressure가 대표적이며 긴 문맥 decode에서는 bandwidth도 binding”으로, TTT는 “가정한 state-only 10/50 ms 모델에서 bandwidth ceiling이 capacity ceiling보다 작음”으로 범위를 제한한다."
+  },
+  {
+    "severity": "major",
+    "location": "23.5 G1·G2",
+    "issue": "reuse=0과 256× stale accretion을 RMW state의 구조적 속성처럼 확정한다. 둘 다 특정 toy-manager 사용 방식에서 나온 결과다.",
+    "evidence": "동일한 초기 상태와 동일 prefix라면 결정적 update 후 fast-weight snapshot도 동일하므로 prefix 단위 공유와 continuation 시 copy-on-write가 가능하다. E1.5 caveat도 256×를 eviction이 전혀 발생하지 않는 worst case라고 명시한다. 실험은 이 가능성을 측정하지 않고 T=256 append-only 호출을 구성했다.",
+    "suggested_fix": "reuse는 “기존 KV block API로는 직접 재사용되지 않으며 COW snapshot 설계가 필요”로, 256×는 “naive append-only/no-eviction worst case”로 한정한다."
+  },
+  {
+    "severity": "major",
+    "location": "23.5 G3 및 표 23-3 eviction 비용",
+    "issue": "3.05 mJ/130 µs를 whole-state의 full writeback 비용처럼 인용했다.",
+    "evidence": "E1.5 raw 결과에서 이 값은 의도적으로 drop시킨 436,207,616 bytes(416 MiB)에 대한 비용이다. anchor whole-model session state는 3,221,225,472 bytes이므로 같은 twin에서 write-only 비용은 약 22.55 mJ/961.6 µs다. 또한 toy manager의 즉시 0원 drop은 미래 KV recomputation 비용이 0이라는 뜻도 아니다.",
+    "suggested_fix": "3.05 mJ/130 µs를 “synthetic 416 MiB eviction set”으로 명시하고 whole-session 수치와 분리한다. KV 쪽도 drop 시점 비용과 향후 recomputation/swap 비용을 별도로 계상한다."
+  },
+  {
+    "severity": "major",
+    "location": "23.6 및 23.7의 frequency-tier 배정",
+    "issue": "CMS-mid와 sleep-experts의 CXL 배정을 load-bearing tier 순서로 확정하지만, 실험은 latency를 빠뜨린 illustrative directional DSE이며 CXL 선택도 비용 최적해로 유도되지 않는다.",
+    "evidence": "E1.4 caveat는 read cadence가 원전에 공개된 decode trace가 아니고, sleep footprint와 cadence가 illustrative이며, CXL access latency를 모델에 넣지 않았다고 명시한다. 사용한 수치에서 CXL은 0.5 TB/s·15 pJ/B, DDR5는 0.4 TB/s·12 pJ/B이고 둘 다 해당 state에 admissible하므로 CXL은 에너지 최소 tier도 아니다.",
+    "suggested_fix": "CXL/DDR 배정을 조건부 후보로 낮추고, 실제 read cadence·capacity·fabric latency·fleet aggregate bandwidth·최적화 목적을 넣은 뒤 tier를 선택한다. 262144-token sleep cadence도 가정값으로 명시한다."
+  },
+  {
+    "severity": "minor",
+    "location": "23.7 dream fan-out",
+    "issue": "Dreaming이 항상 5개 rollout을 생성한다고 일반화했다.",
+    "evidence": "Sleep 원전의 일반 알고리즘은 m≥1개의 dream을 생성한다. “five dreams”는 CPT 실험에서 passage마다 사용한 특정 설정일 뿐이며, randomized expert routing과 isolated fine-tuning instance가 rollout 수를 5로 고정하지 않는다.",
+    "suggested_fix": "“m개의 rollout을 생성하며 CPT 실험에서는 m=5”로 고친다."
+  },
+  {
+    "severity": "major",
+    "location": "23.8 crossover 비용 모델",
+    "issue": "read-crossover 65k와 full-RMW crossover 131k를 하나의 S* 규칙처럼 사용해 65k 위에서 TTT가 더 싸다고 읽히게 한다.",
+    "evidence": "E1.3에서 65,471은 KV read traffic=TTT read half이고, 130,942가 KV read traffic=TTT full RMW다. 65k–131k에서는 KV가 TTT read보다 크지만 full TTT RMW보다는 작으므로 어느 시스템이 싼지 단일 S*로 판정할 수 없다.",
+    "suggested_fix": "S*_read와 S*_rmw를 끝까지 분리하고, 경제적 승패는 full-cost threshold인 약 131k 및 동일 범위의 compute/overhead를 기준으로만 서술한다."
+  },
+  {
+    "severity": "critical",
+    "location": "23.8의 2k/32k latency 예시",
+    "issue": "full dense-attention serving latency와 TTT state-only roofline 하한을 동일 비용 척도처럼 배치했다.",
+    "evidence": "E1.3의 0.7847/2.5806 ms는 hatir.serving.serve가 낸 전체 dense-transformer sanity 값이다. 반면 1.9231 ms TTT 값과 65k/131k crossover는 fast-weight RMW 또는 KV-read kernel만 센다. 같은 결과에서 pure KV-read는 16k에 0.2406 ms, 65k에 0.9625 ms이므로 32k full-serving 2.581 ms를 state-only crossover의 증거로 사용할 수 없다.",
+    "suggested_fix": "2k/32k 절대 latency를 비용 비교에서 삭제하거나 양쪽 모두 동일 full-stack 범위로 재계산한다. 현재는 pure traffic crossover만 주장한다."
+  },
+  {
+    "severity": "critical",
+    "location": "23.9 load-bearing 결산",
+    "issue": "열거한 모든 결론이 E3·hatir·hand-calc 세 방법에서 1% 이내로 합치했다고 주장하지만 실제 cross-validation 범위를 크게 넘는다.",
+    "evidence": "experiments/results.json의 cross_validation은 anchor RMW bytes/time, S*_read, state size, B_max와 C*의 정성적 shape만 포함한다. prefill full-phase bound, KV-manager semantics, frequency-tier 순서, sleep placement에는 3-way 검증이 없다. scratchpad energy도 E1.2의 6.8×와 E1.4의 7.42×로 1% 이내가 아니다.",
+    "suggested_fix": "1% 합치 주장을 검증된 anchor scalar들에만 붙인다. tier·manager·sleep·prefill topology는 각각 단일 분석 또는 directional 설계 주장으로 별도 분류한다."
+  }
+]

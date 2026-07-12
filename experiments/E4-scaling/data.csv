@@ -1,0 +1,54 @@
+# E4 scaling-law digitization — published (model, params, tokens, context, metric, value) points.
+# Provenance columns: source (short name), arxiv_id, table_fig. Value = published number (NOT recomputed).
+# capacity_class / capacity_ordinal = Atlas O(d_k^p) capacity axis, coarse-grained:
+#   matrix=1 (O(d_k)), deep_mlp=2 (subquadratic bounded), deep_mlp_poly=3 (O(d_k^p)), attention=4 (exp map phi*, unbounded).
+# state_mult_m = fast-weight state size multiplier in units of d^2 per layer (bf16), directional:
+#   matrix~1, deep-MLP(W1 d*4d + W2 4d*d = 8 d^2; +momentum/2nd-moment buffers x2 -> 16),
+#   deep-MLP+poly ~ 16 on an expanded feature dim (>=16, we tag 24 directional), attention fast-weight m=0 (KV grows with context, priced separately).
+# d_model / L_layer = STANDARD Llama-family config for the size (assumption; per-size (d,L) not published in notes).
+#   340M: d=1024 L=24 ; 760M: d=1536 L=24 ; 1.3B: d=2048 L=24  (12*L*d^2 checks the param count).
+# HONESTY: setting_group is the ONLY legal fit boundary. Fit within one setting_group (same paper+tokenizer+data+metric) only.
+# Cross-paper rows (tokenizer/data differ: Titans/Miras Llama-2/FineWeb, Atlas/TNT T5, NL/Sleep 32K) are DIRECTIONAL/ordinal ONLY.
+source,arxiv_id,table_fig,setting_group,tokenizer,model,arch_class,params_M,tokens_B,context_train,metric,value,capacity_class,capacity_ordinal,state_mult_m,d_model,L_layer,note
+# ---- GROUP A: ppl vs params, WITHIN one line (Miras, FineWeb-Edu, WikiText ppl). N and D CO-SCALE (see honesty). ----
+Miras,2504.13173,Table2,miras_moneta_wikippl,FineWeb-Edu,Moneta,deep_mlp_poly,340,15,4096,wiki_ppl,26.19,poly,3,16,1024,24,Lp/Lq attentional bias
+Miras,2504.13173,Table2,miras_moneta_wikippl,FineWeb-Edu,Moneta,deep_mlp_poly,760,30,4096,wiki_ppl,21.18,poly,3,16,1536,24,
+Miras,2504.13173,Table2,miras_moneta_wikippl,FineWeb-Edu,Moneta,deep_mlp_poly,1300,100,4096,wiki_ppl,15.52,poly,3,16,2048,24,
+Miras,2504.13173,Table2,miras_gdn_wikippl,FineWeb-Edu,GatedDeltaNet,matrix,340,15,4096,wiki_ppl,27.01,matrix,1,1,1024,24,baseline re-reported
+Miras,2504.13173,Table2,miras_gdn_wikippl,FineWeb-Edu,GatedDeltaNet,matrix,760,30,4096,wiki_ppl,21.18,matrix,1,1,1536,24,
+Miras,2504.13173,Table2,miras_gdn_wikippl,FineWeb-Edu,GatedDeltaNet,matrix,1300,100,4096,wiki_ppl,16.42,matrix,1,1,2048,24,
+Miras,2504.13173,Table2,miras_yaad_wikippl,FineWeb-Edu,Yaad,deep_mlp,760,30,4096,wiki_ppl,20.99,huber,2,16,1536,24,2 points only
+Miras,2504.13173,Table2,miras_yaad_wikippl,FineWeb-Edu,Yaad,deep_mlp,1300,100,4096,wiki_ppl,15.18,huber,2,16,2048,24,
+NL,2512.24695,Table,nl_hope_wikippl,vocab32k,Hope,deep_mlp_poly,760,30,4096,wiki_ppl,18.68,cms,3,16,1536,24,2 points only
+NL,2512.24695,Table,nl_hope_wikippl,vocab32k,Hope,deep_mlp_poly,1300,100,4096,wiki_ppl,14.39,cms,3,16,2048,24,
+# ---- GROUP B: ppl vs state-bytes / capacity, CROSS-ARCHITECTURE at FIXED 1.3B (Atlas Table 2, T5, 100B tokens). same setting. ----
+Atlas,2505.23735,Table2,atlas_1p3B_ppl,T5,Transformer++,attention,1300,100,4096,wiki_ppl,18.53,exp_phi_star,4,0,2048,24,pure attention; fast-weight state m=0 (KV grows w/ ctx)
+Atlas,2505.23735,Table2,atlas_1p3B_ppl,T5,GatedDeltaNet,matrix,1300,100,4096,wiki_ppl,16.42,matrix,1,1,2048,24,
+Atlas,2505.23735,Table2,atlas_1p3B_ppl,T5,Samba,hybrid,1300,100,4096,wiki_ppl,16.13,hybrid,4,8,2048,24,attn+SSM hybrid (excluded from parametric fit)
+Atlas,2505.23735,Table2,atlas_1p3B_ppl,T5,Titans_LMM,deep_mlp,1300,100,4096,wiki_ppl,15.60,deep_mlp,2,16,2048,24,
+Atlas,2505.23735,Table2,atlas_1p3B_ppl,T5,Dot,attention,1300,100,4096,wiki_ppl,15.28,exp_phi_star,4,0,2048,24,attention generalization + deep memory
+Atlas,2505.23735,Table2,atlas_1p3B_ppl,T5,DeepTransformers,attention,1300,100,4096,wiki_ppl,15.67,exp_phi_star,4,0,2048,24,attention generalization
+Atlas,2505.23735,Table2,atlas_1p3B_ppl,T5,Atlas,deep_mlp_poly,1300,100,4096,wiki_ppl,14.97,poly,3,24,2048,24,poly feature map O(d_k^p)
+Atlas,2505.23735,Table2,atlas_1p3B_ppl,T5,Atlas++,deep_mlp_poly,1300,100,4096,wiki_ppl,14.40,poly,3,24,2048,24,gated-MLP memory
+# ---- GROUP C: long-context RETENTION length vs capacity (BABILong). CROSS-PAPER, DIRECTIONAL/ordinal only. ----
+# retention_tokens = approx length at which accuracy is still sustained (order-of-magnitude bins from BABILong figures).
+Multi,2606.03979,Fig6,babilong_retention,mixed,GPT-4,attention,1760000,999,128000,retention_tokens,200000,exp_phi_star,4,0,0,0,fails beyond 128-256K (effective-ctx bounded)
+Multi,2512.24695,BABILong,babilong_retention,mixed,RMT_ARMT,recurrent,137,999,999,retention_tokens,1000000,matrix,1,1,0,0,degrades past ~1M
+Multi,2501.00663,Fig6,babilong_retention,mixed,Titans_MAC,deep_mlp,760,30,4096,retention_tokens,1500000,deep_mlp,2,16,1536,24,sustains ~1-2M
+Multi,2505.23735,BABILong,babilong_retention,mixed,Atlas_MAC,deep_mlp_poly,760,30,4096,retention_tokens,10000000,poly,3,24,1536,24,>=80% at 10M
+Multi,2512.24695,BABILong,babilong_retention,mixed,Hope,deep_mlp_poly,760,30,4096,retention_tokens,10000000,cms,3,16,1536,24,to 10M
+Multi,2606.03979,Fig6,babilong_retention,mixed,Sleep_Hope,deep_mlp_poly,760,30,4096,retention_tokens,10000000,cms,3,16,1536,24,near-perfect to 10M
+# ---- GROUP D: state COUNT vs ppl WITHIN TNT (Table 3, C4/FineWeb/PG19 avg ppl, 150M). more local memories = more state. ----
+TNT,2511.07343,Table3,tnt_localmem,T5,Titans_base,deep_mlp,150,10,4096,avg_ppl,23.53,deep_mlp,2,16,768,12,0 local memories (base)
+TNT,2511.07343,Table3,tnt_localmem,T5,TNT_N1,deep_mlp,150,10,4096,avg_ppl,21.04,deep_mlp,2,16,768,12,+1 local memory
+TNT,2511.07343,Table3,tnt_localmem,T5,TNT_N2,deep_mlp,150,10,4096,avg_ppl,20.74,deep_mlp,2,16,768,12,+2
+TNT,2511.07343,Table3,tnt_localmem,T5,TNT_N3,deep_mlp,150,10,4096,avg_ppl,20.47,deep_mlp,2,16,768,12,+3
+TNT,2511.07343,Table3,tnt_localmem,T5,TNT_N4,deep_mlp,150,10,4096,avg_ppl,20.15,deep_mlp,2,16,768,12,+4
+# ---- GROUP E: train/serve chunk mismatch (TNT Fig 2, 550M Titans pre-trained at C=64). ppl vs INFERENCE chunk (U-shape, not a scaling law). ----
+TNT,2511.07343,Fig2,tnt_infer_chunk,T5,Titans550M_c64,deep_mlp,550,10,4096,infer_ppl,36.45,deep_mlp,2,16,1280,24,infer C=8
+TNT,2511.07343,Fig2,tnt_infer_chunk,T5,Titans550M_c64,deep_mlp,550,10,4096,infer_ppl,34.15,deep_mlp,2,16,1280,24,infer C=16
+TNT,2511.07343,Fig2,tnt_infer_chunk,T5,Titans550M_c64,deep_mlp,550,10,4096,infer_ppl,24.23,deep_mlp,2,16,1280,24,infer C=32
+TNT,2511.07343,Fig2,tnt_infer_chunk,T5,Titans550M_c64,deep_mlp,550,10,4096,infer_ppl,13.78,deep_mlp,2,16,1280,24,infer C=64 (train-matched, best)
+TNT,2511.07343,Fig2,tnt_infer_chunk,T5,Titans550M_c64,deep_mlp,550,10,4096,infer_ppl,15.50,deep_mlp,2,16,1280,24,infer C=128
+TNT,2511.07343,Fig2,tnt_infer_chunk,T5,Titans550M_c64,deep_mlp,550,10,4096,infer_ppl,17.88,deep_mlp,2,16,1280,24,infer C=256
+TNT,2511.07343,Fig2,tnt_infer_chunk,T5,Titans550M_c64,deep_mlp,550,10,4096,infer_ppl,22.40,deep_mlp,2,16,1280,24,infer C=512

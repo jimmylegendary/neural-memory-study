@@ -1,0 +1,86 @@
+[
+  {
+    "severity": "major",
+    "location": "§24.2.1",
+    "issue": "E2.1의 C=1 산술집약도를 약 1 FLOP/byte로 인용했지만, 실험에 명시된 식에 따르면 약 1.5 FLOP/byte다.",
+    "evidence": "E2.1의 식 AI(C)=(4C^2d+6Cd^2)/(4d^2+8Cd)에 C=1과 d={512,1024,2048}을 대입하면 각각 약 1.496~1.499 FLOP/byte다. memory-bound 판정은 유지되지만 수치 인용은 틀렸다.",
+    "suggested_fix": "C=1의 AI를 약 1.5 FLOP/byte로 고치고, host roofline 대비 약 12%라는 측정 결과와 구분해 기술한다."
+  },
+  {
+    "severity": "minor",
+    "location": "§24.2.1, §24.3.1 및 그림 24-2",
+    "issue": "3.9×를 L3→DRAM 용량 경계의 직접적인 cliff로 인용했지만, 실제 L3 plateau와 DRAM plateau의 비율은 약 3.0×다.",
+    "evidence": "E2.2의 RMW 1T plateau는 L3=200.69 GB/s, DRAM=67.87 GB/s로 2.96×다. 3.90×는 전체 in-cache 최고치 264.80 GB/s를 DRAM과 나눈 값이며 L3 경계 양쪽 plateau의 비율이 아니다.",
+    "suggested_fix": "L3→DRAM cliff는 약 3.0×로 고치고, 3.9×를 유지하려면 '최고 in-cache 처리량 대비 DRAM'이라고 정확히 한정한다."
+  },
+  {
+    "severity": "major",
+    "location": "§24.2.1, §24.3.1 및 그림 24-2",
+    "issue": "E2.2가 RMW의 처리량이 read-only의 0.5×임을 직접 측정했다고 해석한 것은 잘못이다.",
+    "evidence": "E2.2는 RMW GB/s에 read+write의 2배 analytic traffic을 계상하지만 read-only에는 read traffic만 계상한다. DRAM에서 RMW 67.9 traffic-GB/s와 read-only 34.0 GB/s는 element throughput으로 환산하면 거의 같으며, read-only 커널도 dependency-limited reduction이라 peak read bandwidth 측정이 아니다. 실측이 확정하는 것은 element당 analytic traffic이 2×라는 사실이지 RMW element throughput이 0.5×라는 사실이 아니다.",
+    "suggested_fix": "'RMW는 element당 read-only의 2× 바이트를 요구한다'로 제한하고, 0.5× throughput을 측정 사실로 인용하지 않는다."
+  },
+  {
+    "severity": "major",
+    "location": "§24.2.2",
+    "issue": "stale-snapshot 때문에 train/serve chunk가 서로 다른 함수를 계산한다는 점을 mismatch와 over-specialization의 확정된 원인으로 단정한다.",
+    "evidence": "TNT Fig. 2는 C_train=64인 550M 단일 설정의 성능 민감도만 보여 주며, 본문도 원인을 이론적으로 규명하지 않는다. Appendix D는 momentum·gating 등과의 결합을 future work로 남긴다. 함수 차이는 가능한 기제이지만 관찰된 붕괴의 인과 원인으로 검증되지 않았다.",
+    "suggested_fix": "'유력한 후보 기제' 또는 '제안 A가 검증할 가설'로 낮추고, loss-landscape probe 결과 전에는 mismatch의 뿌리라고 확정하지 않는다."
+  },
+  {
+    "severity": "major",
+    "location": "§24.3.1",
+    "issue": "분석 모델에서 나온 절대 traffic과 비율을 반복해서 '실측' 또는 'measured structure'로 취급한다.",
+    "evidence": "experiments/results.json은 E1.1/E1.2/E1.3을 pre-silicon analytic cost model로 규정하고, m 및 가상 7B·70B 형상도 M-ASSUMED로 표시한다. 따라서 6.44 GB/token, 0.45→343 GB/token, 394×는 공개 decode trace나 silicon 측정값이 아니라 가정된 형상과 이상적 peak를 이용한 조건부 roofline 산출값이다.",
+    "suggested_fix": "절대 traffic과 394×를 'canonical-shape analytic estimate'로 명시하고, 측정 사실로 승격하는 표현은 제거한다. load-bearing 결론은 bound class와 RMW 지배 방향으로 제한한다."
+  },
+  {
+    "severity": "minor",
+    "location": "§24.3.1",
+    "issue": "PIM latency 손해가 약 3 MAC/elem을 '넘겨야' 발생한다고 했지만 실험 격자에서는 3 MAC/elem에서 이미 2.09× 느리다.",
+    "evidence": "E1.2 Q3에서 1 MAC/elem의 time_cost_x는 0.70이지만 3 MAC/elem은 2.09다. 기록된 crossover=3은 최초로 손해가 관찰된 격자점이지 3을 초과한 뒤의 경계가 아니다.",
+    "suggested_fix": "'1과 3 MAC/elem 사이에서 뒤집히며, 측정 격자에서는 3 MAC/elem부터 latency 손해'로 고친다."
+  },
+  {
+    "severity": "critical",
+    "location": "§24.3.2",
+    "issue": "NL/Sleep의 update frequency를 CMS-mid 및 sleep expert의 read frequency까지 낮아진 것으로 치환해 CXL 배치를 정당화한다. 이는 원전의 실제 forward access와 모순된다.",
+    "evidence": "Nested Learning Eq. 70과 Sleep Eq. 1은 모든 CMS MLP 블록을 각 token의 forward chain에서 호출하고, Eq. 71/Eq. 2만 파라미터 update 주기를 다르게 한다. Sleep에서 추가된 expert도 consolidation 뒤 모델의 routed MLP 파라미터가 되어 wake forward에서 읽힌다. 따라서 write가 4096 또는 sleep 주기라는 사실은 read도 같은 주기라는 뜻이 아니다. E1.4의 CMS-mid read/write=4096 및 sleep-expert read/write=262144는 원전에서 측정·도출된 값이 아니라 별도 가정이며, 제시된 '빠른 쪽 cadence' 규칙을 적용하면 활성 블록은 per-token read 때문에 hot tier에 남아야 한다.",
+    "suggested_fix": "원전 그대로라면 활성 CMS 및 활성 sleep expert를 per-token read로 모델링한다. CXL은 명시적 sparse routing, cached activation, prefetch 또는 비활성 expert offload가 별도로 입증된 경우에만 조건부로 제안하고, update cadence의 '직역'이라는 주장은 제거한다."
+  },
+  {
+    "severity": "major",
+    "location": "§24.4 제안 F",
+    "issue": "momentum이 chunkwise closed form을 깨뜨린다는 주장은 원전과 반대이며, Titans 커널 구현 부재를 그 수학적 증거로 사용한 것도 성립하지 않는다.",
+    "evidence": "Titans Eq. 18은 chunk 내부의 momentum을 입력 의존 transition을 갖는 선형 recurrence로 명시하고, 모든 gradient를 병렬 계산한 뒤 parallel associative scan으로 S_t 전체를 계산할 수 있다고 설명한다. 구현이 naive PyTorch에 머문 사실은 구현 공백의 증거일 뿐 momentum의 chunkwise 병렬화 불가능성을 증명하지 않는다.",
+    "suggested_fix": "문제를 'momentum·retention을 포함한 fused Triton kernel의 구현·최적화 공백'으로 한정한다. momentum이 closed form 또는 병렬 scan을 깨뜨린다는 문장은 삭제한다."
+  },
+  {
+    "severity": "major",
+    "location": "§24.4 제안 G",
+    "issue": "서로 다른 request별 W를 grouped-GEMM으로 묶으면 arithmetic intensity가 상승해 memory-bound 영역에서 벗어날 수 있다고 주장하지만, 단순 grouping은 근본적 산술집약도를 높이지 않는다.",
+    "evidence": "B개의 독립 연산 y_b=W_bx_b에서는 FLOP과 W_b traffic이 모두 B에 비례하므로 AI≈2/dtype_bytes로 B와 무관하다. shared-weight GEMM만 하나의 W를 여러 vector에 재사용해 AI를 높인다. per-request mutable weights는 바로 그 재사용을 제거한다.",
+    "suggested_fix": "grouped/batched GEMV의 이득을 launch overhead·occupancy·scheduling 개선으로 제한한다. AI를 높이려면 동일 session W에 여러 token/vector를 적용하는 chunk·speculative batch, 구조화/저랭크 state 또는 명시적 state sharing이 필요하다고 적는다."
+  },
+  {
+    "severity": "major",
+    "location": "§24.5 G1 및 제안 I의 bind_to_sequence",
+    "issue": "content-addressed prefix reuse가 구조적으로 0이고 prefix 공유가 불가능하다는 결론은 동일 절에서 인정한 deterministic prefix snapshot 공유 가능성과 모순된다.",
+    "evidence": "동일한 초기 state와 deterministic update rule에서 동일 token prefix를 처리하면 서로 다른 요청도 동일한 W_t와 momentum state에 도달한다. 따라서 prefix/config/update-rule을 키로 snapshot을 공유하고 분기 시 copy-on-write하는 것이 원리상 가능하다. E1.5의 0 hit-rate는 특정 append-only manager trace의 결과이지 모든 content-addressed 재사용의 구조적 하한이 아니다.",
+    "suggested_fix": "0을 해당 manager/API 및 실험 workload에 한정한다. bind_to_sequence는 '분기 후 sequence-private'로 정의하고 동일 prefix snapshot의 공유와 copy-on-write를 명시적으로 지원한다."
+  },
+  {
+    "severity": "major",
+    "location": "§24.5 G3 및 제안 I의 mark_dirty/writeback",
+    "issue": "TTT state eviction은 반드시 full writeback을 해야 한다고 단정하지만, deterministic serving에서는 prefix replay로 state를 재계산할 수 있다.",
+    "evidence": "W_t와 momentum S_t는 초기 state, update rule 및 token prefix의 결정적 함수다. 따라서 dirty state는 writeback 없이 버리고 prefix를 재실행해 복구할 수도 있다. 비용이 KV 재계산보다 훨씬 클 수는 있지만 'dirty이므로 unrecomputable'은 성립하지 않는다.",
+    "suggested_fix": "eviction 비용을 writeback과 replay/recompute 중 선택하는 정책으로 모델링하고 두 비용을 모두 가격한다. checkpoint가 없는 경우에도 writeback이 논리적으로 필수라고 쓰지 않는다."
+  },
+  {
+    "severity": "major",
+    "location": "§24.5 제안 I의 free_on_update",
+    "issue": "retention gate alpha_t를 학습된 물리적 eviction/free 신호로 해석한 것은 의미론적 forgetting과 저장공간 수명 관리를 혼동한다.",
+    "evidence": "Titans Eq. 13의 alpha_t는 기존 M_t-1을 감쇠하거나 지우는 weight-decay/forget gate다. alpha_t=1이어도 다음 token의 update와 retrieval을 위해 같은 고정 크기 memory tensor와 slot은 계속 필요하다. 원전은 이 값을 allocation 해제 신호로 정의하지 않는다.",
+    "suggested_fix": "API를 apply_retention 또는 decay_in_place로 바꾼다. 물리적 free는 sequence 종료·offload·checkpoint 정책으로 결정하고, gate 기반 zero-page reclamation은 별도 검증된 최적화로만 제안한다."
+  }
+]
