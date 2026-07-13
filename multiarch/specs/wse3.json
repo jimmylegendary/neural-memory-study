@@ -161,5 +161,6 @@
   "Wafer-only (die) power is undisclosed; only the ~23 kW full CS-3 system figure exists, so tdp_w conflates system vs device.",
   "On-chip SRAM energy (pJ/byte) and memory line/burst size are not published; 1.0 pJ/B and 4 B are generic modeling assumptions (BRONZE).",
   "device peak is quoted by Cerebras as FP16, not BF16 - numerically identical 2-byte path but a semantic dtype note, not a verified BF16 spec."
- ]
+ ],
+ "round2_correction": "device peak 125 PF -> 12.5 PF DENSE FP16 (was sparse marketing). ridge 5.95->0.60; Cerebras is at roofline knee, not deeply memory-bound. capacity/BW unchanged GOLD."
 }

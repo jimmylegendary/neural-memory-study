@@ -40,7 +40,7 @@
      "scope": "core",
      "instances": 900000,
      "spatial_axis": "pe",
-     "peak_macs_per_s": 69440000000.0,
+     "peak_macs_per_s": 6944000000.0,
      "matrix_unit": [
       1,
       1,
@@ -52,12 +52,12 @@
      "energy_pj_per_mac": null,
      "dataflow": "dataflow_triggered",
      "process_node": "N5",
-     "device_peak_flops": 1.25e+17,
+     "device_peak_flops": 1.25e+16,
      "compute_dtype": "fp16",
      "provenance": {
       "value": "estimate",
       "confidence": "SILVER",
-      "source": "device peak = 125 PFLOPS FP16 (GOLD; Cerebras press + Tom's Hardware) / 900k cores / 2 = 6.944e10 MAC/s per core, back-derived for twin self-consistency. matrix_unit [1,1,8] = 8-wide FP16 SIMD FMAC lane per both verifiers (WSE-3 = 2x WSE-2's 4-wide; researcher's [1,1,4] was WSE-2-era) - BRONZE, a dataflow SIMD lane not a systolic tile. clock 1.1GHz is BRONZE (Cerebras does not publish WSE-3 clock). NOTE: neither 4- nor 8-wide @1.1GHz reconciles with the 125 PFLOPS top-line (implies ~63 MAC/cycle/core) - see unresolved."
+      "source": "device peak = 125 PFLOPS FP16 (GOLD; Cerebras press + Tom's Hardware) / 900k cores / 2 = 6.944e10 MAC/s per core, back-derived for twin self-consistency. matrix_unit [1,1,8] = 8-wide FP16 SIMD FMAC lane per both verifiers (WSE-3 = 2x WSE-2's 4-wide; researcher's [1,1,4] was WSE-2-era) - BRONZE, a dataflow SIMD lane not a systolic tile. clock 1.1GHz is BRONZE (Cerebras does not publish WSE-3 clock). NOTE: neither 4- nor 8-wide @1.1GHz reconciles with the 125 PFLOPS top-line (implies ~63 MAC/cycle/core) - see unresolved. | CORRECTED (results-review): device peak = 12.5 PFLOPS DENSE FP16 (was 125 PFLOPS which is Cerebras' SPARSE marketing headline, 10x sparsity). per-core 6.944e9 MAC/s back-derived from dense 1.25e16/900k cores/2. Capacity(44GB)/BW(21PB/s) unchanged & GOLD; only the sparse->dense compute peak fixed."
      }
     }
    ]

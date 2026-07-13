@@ -4,7 +4,7 @@
  "tier": "SILVER",
  "hw": {
   "bw_TBps": 21000.0,
-  "peak_PFLOPs": 124.992,
+  "peak_PFLOPs": 12.4992,
   "cap_GB": 44.0,
   "ondie_MB": 44000.0,
   "epb_pj_B": 1.0,
@@ -13,7 +13,7 @@
    1,
    8
   ],
-  "ridge_flopB": 5.95,
+  "ridge_flopB": 0.6,
   "ondie_is_backing": true
  },
  "anchor_1p3B": {
@@ -21,11 +21,11 @@
   "rmw_GB_token": 6.4425,
   "rmw_ms_token": 0.0003,
   "rmw_uJ_token": 6442.451,
-  "compute_ms_token": 3e-05,
+  "compute_ms_token": 0.00031,
   "arith_intensity_flopB": 0.594,
   "bound": "memory",
   "S_star_read_tokens": 65536,
-  "c_star_chunk": 6.0,
+  "c_star_chunk": 0.6,
   "B_max_10ms": 32596.29,
   "B_max_50ms": 162981.45,
   "state_fits_ondie": true
