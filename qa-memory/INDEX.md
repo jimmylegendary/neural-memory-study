@@ -1,18 +1,19 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-6건. story line 짤 때 여기서 꺼낸다.
+7건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
-### 모른다는 걸 안다 (known_unknown → decomposition) — 6건
+### 모른다는 걸 안다 (known_unknown → decomposition) — 7건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q003: 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
 - Q005: 1)surprise=k에 대한 v가 전부? 2)3개 gate 어떻게 학습? token축 맞아? backward시 gate값으로 S구하고 W up
 - Q006: 1)gate 3개 weight=d 벡터? 2)Persistent memory 정체·논문 위치·학습·정보·shape? 3)MAC 3부품 의존없이 
+- Q007: MAC 전체 forward 추적 검증: seq C×d→W_Q로 C query→NM으로 C출력→앞에 concat, persistent도 앞에→(N
 
-### 모른다는 것도 모른다 (unknown_unknown → exploration) — 18건
+### 모른다는 것도 모른다 (unknown_unknown → exploration) — 21건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
@@ -31,13 +32,17 @@
 - Q006: 1)gate 3개 weight=d 벡터? 2)Persistent memory 정체·논문 위치·학습·정보·shape? 3)MAC 3부품 의존없이 
 - Q006: 1)gate 3개 weight=d 벡터? 2)Persistent memory 정체·논문 위치·학습·정보·shape? 3)MAC 3부품 의존없이 
 - Q006: 1)gate 3개 weight=d 벡터? 2)Persistent memory 정체·논문 위치·학습·정보·shape? 3)MAC 3부품 의존없이 
+- Q007: MAC 전체 forward 추적 검증: seq C×d→W_Q로 C query→NM으로 C출력→앞에 concat, persistent도 앞에→(N
+- Q007: MAC 전체 forward 추적 검증: seq C×d→W_Q로 C query→NM으로 C출력→앞에 concat, persistent도 앞에→(N
+- Q007: MAC 전체 forward 추적 검증: seq C×d→W_Q로 C query→NM으로 C출력→앞에 concat, persistent도 앞에→(N
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 5건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 6건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
 - Q005: 1)surprise=k에 대한 v가 전부? 2)3개 gate 어떻게 학습? token축 맞아? backward시 gate값으로 S구하고 W up
 - Q006: 1)gate 3개 weight=d 벡터? 2)Persistent memory 정체·논문 위치·학습·정보·shape? 3)MAC 3부품 의존없이 
+- Q007: MAC 전체 forward 추적 검증: seq C×d→W_Q로 C query→NM으로 C출력→앞에 concat, persistent도 앞에→(N
 
 ### 안다는 걸 안다 (known) — 0건
 
@@ -124,6 +129,21 @@
 - **sliding window mag** (1): Q006
 - **retrieved vector c×d** (1): Q006
 - **n_p tokens** (1): Q006
+- **mac full forward** (1): Q007
+- **augmented sequence np+2c** (1): Q007
+- **write with y_t** (1): Q007
+- **output o_t=y_t⊗m*_t(y_t)** (1): Q007
+- **output gate not eltwise mul** (1): Q007
+- **sequence length preserved** (1): Q007
+- **block=layer** (1): Q007
+- **stack l layers** (1): Q007
+- **per-layer neural memory** (1): Q007
+- **embedding** (1): Q007
+- **lm head** (1): Q007
+- **no separate ffn** (1): Q007
+- **persistent memory as ffn** (1): Q007
+- **sec 4.4 block details** (1): Q007
+- **depthwise-separable conv** (1): Q007
 
 ## 3. 열린 실 (think_about)
 
@@ -151,6 +171,10 @@
 - [Q006] 검색 h_t가 segment 토큰당 1개(C×d)인지 요약 1개인지 원문 Fig/식으로 재확인
 - [Q006] gate가 head별인지(shape R^{d×H}) 원문 v1 미명세 — Atlas/Miras에서 정교화
 - [Q006] chunk 경계에서 메모리 상태 이어짐 = inter-chunk recurrence = 순차성(Q003/Q005 실, TNT가 손대는 지점)
+- [Q007] 출력 o_t가 C×d로 잘리는(segment 위치만) 정확한 방식 원문 Fig/식 재확인
+- [Q007] 메모리 M·S·persistent가 layer마다 독립인지, head마다 독립인지(멀티헤드 구조)
+- [Q007] 표준 FFN 없이 persistent만으로 충분한지 — ablation(persistent 기여가 weight decay>momentum>conv>persistent로 최하위였음, Q005 계열)
+- [Q007] layer 쌓을 때 각 layer 메모리가 서로 다른 추상화를 담는지(계층적 기억)
 
 ## 4. Storyline seeds
 
@@ -160,3 +184,4 @@
 - [Q004] (Titans (memory shape: matrix vs MLP vs FFN)) 메모리 형태 축(D): matrix(L_M=1, 선형 Wk) vs MLP(L_M≥2, 비선형 W_2σ(W_1 k)). MLP=FFN과 같은 구조지만 weight가 '고정 함수'가 아니라 '갱신되는 state'; Titans는 폭 d 유지(P_M≈L_M d²), state=2P_M. L_M=1=linear/DeltaNet 특수case. MLP면 gradient rank-1 아님→학습 비쌈(TNT로 이어짐).
 - [Q005] (Titans (gates inner/outer loop; MAC core/contextual/persistent)) Titans 학습의 핵심 구분: inner loop(추론, 매 토큰 M·S만 갱신, gate는 값만 계산) vs outer loop(사전학습, unrolled 사슬 backprop=optimizer 미분=meta-learning으로 gate 생성기·투영·P·M_0 학습). MAC은 write-then-read라 이번 write가 이번 출력에 반영. 세 부품: Core=attention(q,k,v), Contextual=neural memory MLP(memory q,k,v), Persistent=고정 벡터(q,k,v 아님).
 - [Q006] (Titans MAC details (persistent memory, NM projections, augmented seq shapes, chunking)) MAC 해부: NM=MLP 하나+투영 3개(쓰기 k,v / 읽기 q, 검색은 q!). 증강 시퀀스=[P(N_p,과제지식,Sec3.3) || 검색 h_t(C) || segment(C)]=N_p+2C 토큰이 softmax attention 입력. chunk=고정 비중첩(sliding 아님, 그건 MAG), 메모리는 chunk 넘어 이어짐(inter-chunk recurrence=순차성 실).
+- [Q007] (Titans MAC full forward + layer stacking + no separate FFN) MAC 한 블록 완결: 검색(q)→[P‖h_t‖S] attention(softmax)→write(y_t로 M 갱신)→출력 o_t=y_t⊗M*_t(y_t)(게이트). 이게 한 layer, 모델=임베딩→블록×L→LM head, 각 layer 자기 NM. 별도 FFN 없음(persistent가 FFN 역할). C×d 출력으로 길이 보존.

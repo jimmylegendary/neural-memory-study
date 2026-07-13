@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 6건.
+총 7건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -78,4 +78,17 @@
 - 생각할 것: N_p(persistent 토큰 수)·C(chunk 크기)의 전형값과 증강 시퀀스 N_p+2C가 attention 비용에 주는 영향; 검색 h_t가 segment 토큰당 1개(C×d)인지 요약 1개인지 원문 Fig/식으로 재확인; gate가 head별인지(shape R^{d×H}) 원문 v1 미명세 — Atlas/Miras에서 정교화; chunk 경계에서 메모리 상태 이어짐 = inter-chunk recurrence = 순차성(Q003/Q005 실, TNT가 손대는 지점)
 - storyline seed: MAC 해부: NM=MLP 하나+투영 3개(쓰기 k,v / 읽기 q, 검색은 q!). 증강 시퀀스=[P(N_p,과제지식,Sec3.3) || 검색 h_t(C) || segment(C)]=N_p+2C 토큰이 softmax attention 입력. chunk=고정 비중첩(sliding 아님, 그건 MAG), 메모리는 chunk 넘어 이어짐(inter-chunk recurrence=순차성 실).
 - 연상: Q002, Q004, Q005
+
+## Q007 · 2026-07-14 · Titans MAC full forward + layer stacking + no separate FFN
+
+**Q.** MAC 전체 forward 추적 검증: seq C×d→W_Q로 C query→NM으로 C출력→앞에 concat, persistent도 앞에→(Np+2C)×d를 attention softmax→(Np+2C)×d 출력→이걸 NM forward/backward update→update된 NM으로 (Np+2C) 다시 forward→attn output과 eltwise mul=출력? gate 3개 값은 따로. 이게 모델 전체 끝? layer 쌓나? 다른 FFN 없나?
+
+**A.** 대부분 정확. 정정1: 마지막 읽기는 raw Np+2C 입력이 아니라 y_t(attention 출력)를 forward — o_t=y_t⊗M*_t(y_t). 정정2: ⊗는 순수 eltwise mul 아니라 학습된 게이트(각 가지 정규화+σ+곱). 부수: 다음 층으로 가는 출력은 segment 위치 C×d(시퀀스 길이 보존, P·h_t 자리는 scratch). 이건 모델 전체가 아니라 '한 블록=한 layer'. layer를 쌓음: 블록ℓ 출력이 블록ℓ+1 입력, 각 layer는 자기만의 NM(M,S,투영,persistent). 전체=임베딩→(Titans 블록)×L→LM head. 별도 표준 FFN 없음 — persistent memory가 FFN 역할(FFN=W_V softmax(W_K x)=고정KV attention, Sukhbaatar). Block Details(Sec4.4)=residual/SiLU/q,k ℓ2정규화/q,k,v 뒤 depthwise-sep conv/출력 전 norm+linear gating, 여기 FFN 없음.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_unknown: 마지막 출력 읽기는 raw 증강입력이 아니라 y_t(attention 출력)를 갱신된 메모리에 넣음; o_t=y_t⊗M*_t(y_t); unknown_unknown: ⊗는 순수 eltwise mul 아니라 학습된 게이트(정규화+σ+곱); unknown_unknown: 별도 표준 FFN 없음 — persistent memory가 FFN(=고정KV attention) 역할을 대신; unknown_known: 이건 한 블록=한 layer; 모델=임베딩→블록×L→LM head, 각 layer가 자기 NM 보유; 다음 층 출력은 C×d(길이 보존)
+- 개념 key: MAC full forward, augmented sequence Np+2C, write with y_t, output o_t=y_t⊗M*_t(y_t), output gate not eltwise mul, sequence length preserved, block=layer, stack L layers, per-layer neural memory, embedding, LM head, no separate FFN, persistent memory as FFN, Sec 4.4 block details, depthwise-separable conv
+- 생각할 것: 출력 o_t가 C×d로 잘리는(segment 위치만) 정확한 방식 원문 Fig/식 재확인; 메모리 M·S·persistent가 layer마다 독립인지, head마다 독립인지(멀티헤드 구조); 표준 FFN 없이 persistent만으로 충분한지 — ablation(persistent 기여가 weight decay>momentum>conv>persistent로 최하위였음, Q005 계열); layer 쌓을 때 각 layer 메모리가 서로 다른 추상화를 담는지(계층적 기억)
+- storyline seed: MAC 한 블록 완결: 검색(q)→[P‖h_t‖S] attention(softmax)→write(y_t로 M 갱신)→출력 o_t=y_t⊗M*_t(y_t)(게이트). 이게 한 layer, 모델=임베딩→블록×L→LM head, 각 layer 자기 NM. 별도 FFN 없음(persistent가 FFN 역할). C×d 출력으로 길이 보존.
+- 연상: Q002, Q005, Q006
 
