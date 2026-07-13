@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 3건.
+총 4건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -39,4 +39,17 @@
 - 생각할 것: delta rule의 (I-βkk^T) 곱셈형 recurrence가 왜 병렬화를 어렵게 하나 → WY/UT chunkwise (G02/ch09, TNT); momentum이 실제로 얼마나 개선하나 — surprise 이후 under-memorization 정량; deep memory(MLP)가 matrix 대비 용량/표현력을 어디서 얻나 → Atlas 용량 이론(O(d_k^p))과 연결; Titans가 TC^0 넘는다는 Thm 4.1의 의미(상태추적 표현력)
 - storyline seed: 계보 한 줄: linear attn(순수 add,overflow) → DeltaNet(A:국소 error-correction overwrite) → Gated DeltaNet(+B:전역 forget) / TTT(+D:deep memory, but forget·momentum 없음) → Titans(A+B+C:momentum+D:deep = 네 축 통합, GDN(η=0)·TTT를 특수case로). 핵심 교훈: '국소 overwrite vs 전역 forget'을 구분하고, Titans의 새 조각=momentum.
 - 연상: Q001, Q002
+
+## Q004 · 2026-07-14 · Titans (memory shape: matrix vs MLP vs FFN)
+
+**Q.** matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP 구조와 shape은?
+
+**A.** matrix=행렬 W 하나(d×d), 읽기 Wk, 선형 사상만. MLP=W_2 σ(W_1 k), 중간 비선형으로 비선형 연상까지(용량↑,비쌈). 2-layer MLP=weight 2개+사이 activation 맞음(=hidden 1개); L_M=1이면 행렬 하나=선형 특수case. FFN=구조는 MLP와 동일(W_2 σ(W_1 x)) — 다른 건 역할: 보통 FFN weight는 inference 고정, Titans 메모리 MLP는 weight가 state라 매 토큰 갱신. 크기도: 표준 FFN hidden=4d 확장, Titans 메모리 MLP는 폭 d 유지→P_M≈L_M·d²(2층≈2d²). 보너스 FFN=W_V softmax(W_K x)=고정 KV attention=persistent memory 역할. Titans k→v MLP: k,v,q,v' 모두 d차원; 2층이면 W_1(d×d)→σ→W_2(d×d), 이 W_1/W_2가 곧 state M_t(매 토큰 갱신); state=2P_M(M_t+momentum S_t). MLP면 gradient가 rank-1 아니라 순차 recurrence 무거워짐→Titans가 DeltaNet보다 학습 비싼 이유(TNT 복선).
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known: MLP와 FFN은 '같은 구조'다 — 차이는 구조가 아니라 역할(고정 함수 vs 갱신되는 state); unknown_unknown: Titans 메모리 MLP는 폭 d 유지(확장 없음)라 P_M≈L_M·d²(2층≈2d²), 표준 FFN의 4d 확장과 다름; unknown_unknown: FFN=W_V softmax(W_K x)=고정 KV attention → Titans persistent memory의 정체; unknown_unknown: state=2P_M(weights+momentum), L_M=1이 linear/DeltaNet 특수case; MLP면 gradient가 rank-1 아님→순차 recurrence 무거워짐(TNT 복선, Q003 연결)
+- 개념 key: matrix memory, MLP memory, deep memory, activation function, FFN, feed-forward network, nonlinearity, hidden dimension, memory shape, P_M, state size, L_M layers, persistent memory, weights-as-state, expansion 4d, rank-1 gradient
+- 생각할 것: 왜 비선형(MLP)이 matrix보다 용량이 큰가 — 선형분리 불가 연상 구체 예 → Atlas 용량 이론(O(d_k^p)); Titans memory MLP가 width d(확장 없음)인 이유 — state 크기 vs 표현력 trade; 2-layer MLP의 gradient(backprop 전체)가 병렬화를 막는 방식 → chunkwise/TNT(Q003 순차성과 연결); 메모리 MLP 활성함수 선택(SiLU/GELU)이 test-time 학습에 주는 영향
+- storyline seed: 메모리 형태 축(D): matrix(L_M=1, 선형 Wk) vs MLP(L_M≥2, 비선형 W_2σ(W_1 k)). MLP=FFN과 같은 구조지만 weight가 '고정 함수'가 아니라 '갱신되는 state'; Titans는 폭 d 유지(P_M≈L_M d²), state=2P_M. L_M=1=linear/DeltaNet 특수case. MLP면 gradient rank-1 아님→학습 비쌈(TNT로 이어짐).
+- 연상: Q001, Q003
 
