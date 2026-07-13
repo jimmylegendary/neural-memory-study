@@ -1,10 +1,10 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-11건. story line 짤 때 여기서 꺼낸다.
+12건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
-### 모른다는 걸 안다 (known_unknown → decomposition) — 10건
+### 모른다는 걸 안다 (known_unknown → decomposition) — 11건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q003: 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1
@@ -15,8 +15,9 @@
 - Q008: 1)attn 출력은 Np+2C,d 아님(y의 shape)? 그걸 다시 흘리면 Np+2C,d? 2)gate 정체가 뭐야, eltwise 곱 맞아?
 - Q009: momentum이 병렬화를 어떻게 유지하는지 associative scan으로 설명해줘
 - Q010: MAC write 컨펌: attn 출력을 NM에 흘려 update한다는데, NM은 k에 대해 v 학습이잖아? attention block 외부에
+- Q012: 3개 gate는 어떤 shape의 weight를 어떻게 연산해서 scalar를 구하나? 동일 shape·연산이면 1번만 설명.
 
-### 모른다는 것도 모른다 (unknown_unknown → exploration) — 30건
+### 모른다는 것도 모른다 (unknown_unknown → exploration) — 31건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
@@ -47,8 +48,9 @@
 - Q010: MAC write 컨펌: attn 출력을 NM에 흘려 update한다는데, NM은 k에 대해 v 학습이잖아? attention block 외부에
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
+- Q012: 3개 gate는 어떤 shape의 weight를 어떻게 연산해서 scalar를 구하나? 동일 shape·연산이면 1번만 설명.
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 11건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 13건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
@@ -60,6 +62,8 @@
 - Q010: MAC write 컨펌: attn 출력을 NM에 흘려 update한다는데, NM은 k에 대해 v 학습이잖아? attention block 외부에
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
+- Q012: 3개 gate는 어떤 shape의 weight를 어떻게 연산해서 scalar를 구하나? 동일 shape·연산이면 1번만 설명.
+- Q012: 3개 gate는 어떤 shape의 weight를 어떻게 연산해서 scalar를 구하나? 동일 shape·연산이면 1번만 설명.
 
 ### 안다는 걸 안다 (known) — 1건
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
@@ -210,6 +214,16 @@
 - **per-token constant cost** (1): Q011
 - **systems modeling takeaway** (1): Q011
 - **gate value vs generator** (1): Q011
+- **gate computation** (1): Q012
+- **linear head** (1): Q012
+- **w in r^d vector** (1): Q012
+- **dot product to scalar** (1): Q012
+- **sigmoid softplus squash** (1): Q012
+- **three gates identical structure** (1): Q012
+- **per-token scalar** (1): Q012
+- **per-head option** (1): Q012
+- **outer-loop learned frozen at inference** (1): Q012
+- **tiny gate eval cost** (1): Q012
 
 ## 3. 열린 실 (think_about)
 
@@ -257,6 +271,9 @@
 - [Q011] '패러다임(optimizer=memory)'이 NL의 'backprop도 memory'로 확장되는 다리
 - [Q011] deep memory의 state 크기(2P_M)가 serving에서 KV와 다른 워크로드가 되는 지점(Part III/G09)
 - [Q011] 3변형 중 MAC이 왜 대표인지, MAG/MAL의 이득·손해 비교는 아직 안 팠음
+- [Q012] gate가 per-token 스칼라인지 per-head(w∈R^{d×H})인지 원문 v1 미명세 — Atlas/Miras에서 벡터/diagonal gate로 정교화되는지
+- [Q012] squash 선택(sigmoid vs softplus for θ)이 학습 안정성에 주는 영향
+- [Q012] gate 입력이 write 대상 u와 같은 것(x_t/y_t)이라는 점 — gate가 '이 토큰을 얼마나/어떻게 각인할지'를 그 토큰 스스로 정함
 
 ## 4. Storyline seeds
 
@@ -271,3 +288,4 @@
 - [Q009] (momentum parallelization via associative scan) momentum 병렬화의 정체: 선형(affine) 재귀 S_t=a_t S_{t-1}+b_t라 combine (a1a2,a2b1+b2)가 결합적→associative scan O(log C)(=Mamba SSM primitive). gate 계수 precompute+gradient chunkwise matmul. 진짜 병목은 nonlinear deep-memory gradient(chunk-start freeze, TNT로 이어짐). 이 조각이 Q003/Q005/Q006/Q008의 '순차성→chunkwise/scan' 실을 메커니즘으로 마감.
 - [Q010] (MAC memory write k,v projections (self-supervised)) MAC write 속살: attn-out u → k=uW_K(MLP 입력)·v=uW_V(golden) → ||M(k)-v||². 메모리 W_K/V는 attention과 별개 투영. self-supervised(토큰이 자기 k,v 생성)=Q001 LMM 코어와 동일, x_t 자리에 y_t. read는 다른 q로 연상 회상. 이게 '연상메모리=k→v 자기지도 학습'의 정확한 형태.
 - [Q011] (Titans synthesis / takeaways checkpoint) Titans 장 골격(8행): 패러다임(optimizer=memory) → update rule(surprise+momentum+forget gate) → 계보 통일(특수case Q003) → 메모리 형태(matrix vs MLP, state 2P_M) → inner/outer loop(meta-learning) → 아키텍처(단기+장기+persistent, MAC/MAG/MAL) → self-supervised write → chunkwise+scan 병렬 → 시스템(상수비용·고정 RMW·long-context). 사용자 4점=메커니즘, 여기에 패러다임·통일·deep·시스템 얹으면 완성.
+- [Q012] (Titans gate computation (shape/operation)) gate 3개=동일 구조: 토큰 u∈R^d에 w∈R^d 내적+bias→squash(sigmoid/softplus)→스칼라. w_θ/η/α만 다름, ~3d 파라미터, outer-loop 학습·추론 고정. 토큰이 자기 gate(각인 강도·momentum·forget)를 스스로 정함. per-token 상수비용의 tiny 부분.

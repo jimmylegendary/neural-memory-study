@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 11건.
+총 12건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -143,4 +143,17 @@
 - 생각할 것: 이 8행 재정리표가 곧 story line의 Titans 장 골격 후보 — 세미나 재작성 때 그대로 쓸지; '패러다임(optimizer=memory)'이 NL의 'backprop도 memory'로 확장되는 다리; deep memory의 state 크기(2P_M)가 serving에서 KV와 다른 워크로드가 되는 지점(Part III/G09); 3변형 중 MAC이 왜 대표인지, MAG/MAL의 이득·손해 비교는 아직 안 팠음
 - storyline seed: Titans 장 골격(8행): 패러다임(optimizer=memory) → update rule(surprise+momentum+forget gate) → 계보 통일(특수case Q003) → 메모리 형태(matrix vs MLP, state 2P_M) → inner/outer loop(meta-learning) → 아키텍처(단기+장기+persistent, MAC/MAG/MAL) → self-supervised write → chunkwise+scan 병렬 → 시스템(상수비용·고정 RMW·long-context). 사용자 4점=메커니즘, 여기에 패러다임·통일·deep·시스템 얹으면 완성.
 - 연상: Q001, Q002, Q003, Q004, Q005, Q007, Q008, Q009, Q010
+
+## Q012 · 2026-07-14 · Titans gate computation (shape/operation)
+
+**Q.** 3개 gate는 어떤 shape의 weight를 어떻게 연산해서 scalar를 구하나? 동일 shape·연산이면 1번만 설명.
+
+**A.** 3개 shape·연산 완전 동일, weight 값+squash만 다름(1번 설명 가능). gate=φ(u·w+b): 입력 u=write되는 토큰(standalone x_t/MAC y_t)∈R^d, weight w∈R^d 벡터 하나(+스칼라 bias), 연산=u·w d차원 내적→스칼라, squash φ=η,α는 sigmoid([0,1]), θ는 sigmoid/softplus(>0, v1 미명세). w_θ/w_η/w_α∈R^d, 총 파라미터≈3d(+bias). per-token cost의 'three tiny gate evaluations'=이 세 d-내적. w들은 outer loop 학습, 추론 땐 고정하고 매 토큰 u에서 스칼라만 계산. 멀티헤드면 w∈R^{d×n_head}→head별 스칼라(v1 미명세).
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known: 3 gate는 동일 구조(w∈R^d 내적+squash), weight·squash만 다름 → 한 번 설명으로 충분; unknown_unknown: gate 입력 u는 write되는 토큰(standalone x_t / MAC y_t)이고, 출력은 토큰당 스칼라(내적 결과); unknown_known: 총 파라미터 ~3d로 매우 작음; per-token 'tiny gate eval'=세 d-내적; outer-loop 학습·추론 고정(Q005 재확인)
+- 개념 key: gate computation, linear head, w in R^d vector, dot product to scalar, sigmoid softplus squash, three gates identical structure, per-token scalar, per-head option, outer-loop learned frozen at inference, tiny gate eval cost
+- 생각할 것: gate가 per-token 스칼라인지 per-head(w∈R^{d×H})인지 원문 v1 미명세 — Atlas/Miras에서 벡터/diagonal gate로 정교화되는지; squash 선택(sigmoid vs softplus for θ)이 학습 안정성에 주는 영향; gate 입력이 write 대상 u와 같은 것(x_t/y_t)이라는 점 — gate가 '이 토큰을 얼마나/어떻게 각인할지'를 그 토큰 스스로 정함
+- storyline seed: gate 3개=동일 구조: 토큰 u∈R^d에 w∈R^d 내적+bias→squash(sigmoid/softplus)→스칼라. w_θ/η/α만 다름, ~3d 파라미터, outer-loop 학습·추론 고정. 토큰이 자기 gate(각인 강도·momentum·forget)를 스스로 정함. per-token 상수비용의 tiny 부분.
+- 연상: Q005, Q006
 
