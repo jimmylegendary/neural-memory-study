@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 2건.
+총 3건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -26,4 +26,17 @@
 - 생각할 것: decode 시 MAC segment 경계를 1토큰씩 어떻게 처리하나; o=y⊗M*(y)의 gate ⊗가 정확히 뭔지(정규화+σ+곱); attention이 '무엇을 메모리에 쓸지 필터'한다는 것의 정량 함의(memory overflow 완화, ablation); persistent memory P=task knowledge(입력무관 파라미터)와 FFN=data-independent attention 관점
 - storyline seed: Titans 전체 블록=단기(softmax attention)+장기(LMM)+persistent 결합. MAC=retrieve→attention→write(attention출력을 메모리에)→output; MAG=병렬 게이트; MAL=직렬(최약). q,k,v 두 세트. Q001의 LMM 코어가 이 블록의 한 부품.
 - 연상: Q001
+
+## Q003 · 2026-07-14 · lineage (linear attn→DeltaNet→GDN→TTT→Titans)
+
+**Q.** 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1}→W_t recurrence(순차)인데 이해 안됨. 계보: linear attn(잊는게 없어 overflow)→gated deltanet(잊고 잊은 자리에 새로 씀)? 둘다 잊고 새로쓰는 거 같은데 뭐가 다름? Titans가 왜 TTT와 GDN 사이를 채웠다고 주장? 각 메커니즘·이득·손해와 Titans의 차이는?
+
+**A.** 핵심: '잊기(전역 decay)'와 '덮어쓰기(국소 delta/error-correction)'는 다른 두 축. rank-1 outer product=(Wk-v)k^T는 k 방향 한 슬롯만 v쪽으로 조정(고정크기 W에 GEMM 한 번, KV append와 대비). 순차성=W_t가 W_{t-1}에 의존하는 사슬(W_0→W_1→…), 순서대로만 계산→나중에 chunkwise 병렬(TNT) 필요의 이유. 4손잡이 표: A국소overwrite/B전역forget/C momentum/D deep. linear attn=순수 add(A✗B✗)→overflow; DeltaNet=A✓B✗; Gated DeltaNet=A✓B✓ but 얕은matrix·momentum없음; TTT=A✓(GD step)·deep 가능 but forget·momentum 없음; Titans=A✓B✓C✓D✓ 전부. 원문 App.C: momentum 끄면(η=0) 정확히 Gated DeltaNet, TTT는 forget·momentum 없는 gradient 특수case. 그래서 Titans=GDN의 forget+TTT의 deep+어디에도 없던 momentum을 합친 상위 일반화(네 축). momentum 이득=놀람 직후 토큰 under-memorization을 관성으로 각인.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_unknown: '잊기(전역 decay)'와 '덮어쓰기(국소 error-correction/delta)'는 독립된 두 축 — 사용자가 한 동작으로 뭉뚱그림; unknown_unknown: DeltaNet은 전역 forget 안 함(국소 overwrite만); GDN이 전역 forget을 추가 — '둘 다 잊는다'가 아님; unknown_unknown: Titans의 구별 조각은 momentum(과거 surprise) — GDN·TTT 어디에도 없던 것; 'forget+write'가 아니라 4축(A/B/C/D); unknown_unknown: 순차 recurrence(W_{t-1}→W_t)가 곧 학습이 비싼 이유 → chunkwise/TNT 복선
+- 개념 key: linear attention, DeltaNet, delta rule, Gated DeltaNet, TTT, rank-1 outer product, error-correction, forget gate, weight decay, momentum, sequential recurrence, data dependency, deep memory, Longhorn, RWKV-7, four-axis generalization
+- 생각할 것: delta rule의 (I-βkk^T) 곱셈형 recurrence가 왜 병렬화를 어렵게 하나 → WY/UT chunkwise (G02/ch09, TNT); momentum이 실제로 얼마나 개선하나 — surprise 이후 under-memorization 정량; deep memory(MLP)가 matrix 대비 용량/표현력을 어디서 얻나 → Atlas 용량 이론(O(d_k^p))과 연결; Titans가 TC^0 넘는다는 Thm 4.1의 의미(상태추적 표현력)
+- storyline seed: 계보 한 줄: linear attn(순수 add,overflow) → DeltaNet(A:국소 error-correction overwrite) → Gated DeltaNet(+B:전역 forget) / TTT(+D:deep memory, but forget·momentum 없음) → Titans(A+B+C:momentum+D:deep = 네 축 통합, GDN(η=0)·TTT를 특수case로). 핵심 교훈: '국소 overwrite vs 전역 forget'을 구분하고, Titans의 새 조각=momentum.
+- 연상: Q001, Q002
 
