@@ -1,0 +1,265 @@
+[
+  {
+    "title": "S5 divider",
+    "notes": "이제 계보의 세 번째 논문 Atlas입니다. 앞에서 Titans가 test-time에 memory를 갱신한다는 뼈대를 세웠고, Miras가 그 설계를 (memory 구조 x attentional bias x retention gate x learning algorithm)의 네 축으로 정리했다고 했죠. 그런데 Miras는 그 네 번째 축 — inner loop가 실제로 무슨 optimizer를 쓰는가 — 를 선언만 하고 비워 뒀습니다. Atlas는 그 빈칸을 포함해 세 개의 구멍을 한 논문에서 메웁니다. 오늘 이 섹션의 핵심 메시지는 하나입니다: Titans와 DeltaNet 계열은 '지금 이 token 하나를 잘 외우자'였는데, Atlas는 '최근 문맥 전체를 함께 잘 외우자'로 목표 자체를 바꿉니다. 부제의 세 단어 Omega rule, feature map, Muon이 각각 목표(objective), 용량(capacity), 관리(optimizer)를 담당한다고 기억하시면 이 섹션 전체가 이 셋의 조합입니다. 저자는 Google의 Behrouz 팀, arXiv:2505.23735입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "section",
+          "text": "Atlas — 문맥을 최적으로 기억하기",
+          "subtitle": "Behrouz et al., Atlas (arXiv:2505.23735)"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "목표를 바꾼다: token 하나 -> 최근 문맥 전체",
+            "Omega rule / feature map / Muon = 목표·용량·관리",
+            "softmax attention = 용량 무한한 associative memory 로 회수",
+            "다음 질문: 그걸 돌리는 데 얼마가 드는가 (-> TNT)"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "문제 세 가지",
+    "notes": "먼저 Atlas가 스스로 규정한 '문제'입니다. 현대 recurrent memory 모델에 세 가지 설계 결함이 있다고 봅니다. 첫째, online 갱신입니다. memory가 매 step 현재 token 하나만 보고 최적화되고, 그 이전 정보는 retention gate로 흐릿하게 유지될 뿐입니다. 이건 token 단위의 근시안적, greedy한 암기여서 '문맥 전체가 잘 저장됐는가'는 아무도 묻지 않습니다. 둘째, 용량 한계입니다. 잠시 뒤에 정리로 보겠지만, 단순 행렬 memory는 파라미터를 아무리 많이 줘도 저장할 수 있는 연상(key->value 쌍)의 수가 key 차원 d_k 수준에서 막힙니다. 셋째, memory 관리가 빈약합니다. inner optimizer가 거의 전부 1차 gradient descent라서, loss 표면의 나쁜 local minimum에 앉으면 질 낮은 key->value 매핑을 그대로 저장해 버립니다. 청중분들이 training은 안 해보셨어도 이렇게 생각하시면 됩니다: 첫째는 '무엇을 목표로 삼는가', 둘째는 '얼마나 담을 수 있는가', 셋째는 '얼마나 잘 채우는가'. Atlas는 이 셋에 각각 하나씩 처방을 답니다. 그리고 이 셋이 바로 다음 슬라이드의 세 손잡이입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "무엇이 부족했나 — 세 가지 설계 결함"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "1. online 갱신: 현재 token 하나만 보고 최적화 (근시안)",
+            "2. 제한된 capacity: 행렬 memory 는 저장 쌍 수 ~ O(d_k)",
+            "3. 표현력 없는 관리: inner optimizer 가 거의 1차 GD",
+            "-> '문맥 전체가 잘 저장됐는가' 를 아무도 묻지 않았다",
+            "각각 Omega rule / feature map / Muon 으로 대응"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "핵심 아이디어 — context 를 기억",
+    "notes": "Atlas의 핵심 가설을 한 장으로 요약한 그림입니다. 오른쪽 그림을 보시면, 왼쪽 계열(Titans, RWKV, DeltaNet 등)은 현재 token 하나의 surprise로 memory를 갱신합니다. 수식으로는 loss가 (k_t, v_t) 한 쌍짜리죠. Atlas는 오른쪽입니다. feature map φ를 통과시킨 뒤, 최근 c개 token의 loss를 함께 최소화합니다. 이걸 Omega rule이라고 부릅니다. 왜 이게 중요할까요? surprise의 언어로 말하면, 여러 token에 걸친 사건은 어느 한 token도 개별적으로는 놀랍지 않으면서 전체로는 기억할 가치가 있을 수 있습니다. 예를 들어 '어제 저녁 김대리가 예산을 승인했다' 같은 문장은 단어 하나하나는 평범하지만 묶음으로는 중요하죠. token 단위 loss는 이런 경우를 구조적으로 놓칩니다. 그래서 Atlas는 세 개의 처방을 조합합니다: 목표를 window로 넓히는 Omega rule, 용량을 키우는 feature map, 그리고 더 잘 채우는 Muon optimizer. 그림 오른쪽 맨 끝의 'Nonparametric Examples'가 Transformer와 SWA인데, 이게 Atlas 논지의 핵심 복선입니다 — attention도 사실은 같은 windowed regression을 '비모수적으로' 푸는 것이고, Atlas는 그걸 parametric memory로 옮긴 겁니다. 이 그림은 Atlas 원논문 Figure 1입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "핵심 아이디어 — token 이 아니라 context 를 외운다"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "왼쪽: 현재 token 1개의 surprise 로 갱신 (기존)",
+            "오른쪽: 최근 c개 token 을 함께 최소화 (Omega rule)",
+            "여러 token 에 걸친 사건은 token 단위로는 안 놀랍다",
+            "세 처방: Omega(목표) + feature map(용량) + Muon(관리)",
+            "맨 끝 비모수 예시 = Transformer·SWA (복선)"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2505.23735-fig1.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "용량 이론과 feature map",
+    "notes": "두 번째 결함, 용량 문제를 정리로 봅시다. Atlas는 이 계보 최초로 memory capacity를 형식적으로 정의합니다: memory가 inner loss를 정확히 0으로 만들며 저장할 수 있는, 선형독립 key를 가진 (key, value) 쌍의 최대 개수입니다. Proposition 1: 단순 행렬 memory W는 gradient descent로 최적화해도 최대 O(d_k)개밖에 저장 못 합니다. 증명은 순수한 rank 논증입니다 — 정확 저장은 WK=V를 요구하는데 미지수 수와 방정식 수를 세면 m <= d_k가 나옵니다. 함의가 핵심입니다: W는 d_k x d_v개의 파라미터를 갖는데 저장 용량은 d_k 수준입니다. 즉 state를 키워서 파라미터를 더 쓰는 것과 용량을 늘리는 것은 같은 일이 아닙니다. 그럼 어떻게 늘릴까요? key 차원을 직접 키우면 projection 비용이 커지니, 대신 feature map을 씁니다. polynomial feature map φ_p는 차수 p 이하의 모든 monomial을 쌓아서 차원을 Θ(d_k^p)로 올립니다. Proposition 2: 그러면 용량이 O(d_k^p)로 커지고, 게다가 어떤 optimizer를 쓰든 이 상한을 못 넘습니다. 그래서 feature map은 용량 상한 자체를 옮기는 손잡이고, optimizer는 그 상한 안에서 실제 도달 품질을 올리는 손잡이입니다 — 두 축이 직교합니다. 극한이 아름답습니다: Kronecker self-tensoring으로 무한 차원 feature를 만들면 exp(q·k) = φ*(q)·φ*(k)가 정확히 성립합니다. 즉 softmax attention은 무한 차원 위의 associative memory이고 용량이 무한대입니다. attention이 긴 문맥 recall에서 고정 state 모델을 이기는 이유가 신비가 아니라 용량 상한의 차이라는 걸 정리로 보여준 겁니다. 참고로 이 정리들은 '선형독립 key의 정확 보간'이라는 이상화된 기준이라, 실전 품질의 근사 대리 지표로 읽어야 합니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "방법 1 — 용량 이론: feature map 이 상한을 옮긴다"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "capacity = 정확히 저장 가능한 선형독립 (k,v) 쌍 수",
+            "Prop 1: 행렬 memory 는 최대 O(d_k) (rank 논증)",
+            "파라미터 d_k·d_v 인데 용량은 d_k -> state≠용량",
+            "polynomial φ_p: 차원 Θ(d_k^p) -> 용량 O(d_k^p)",
+            "feature map=용량 상한, optimizer=상한 내 품질 (직교)",
+            "φ*(무한차원): softmax attention = 용량 무한 memory"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "Omega rule",
+    "notes": "이제 첫 번째 처방, Omega rule을 자세히 봅시다. 기존 online 모델은 매 step token 하나짜리 loss에 retention gate를 붙여 최적화합니다. 반대 극단은 문맥 전체에 대한 global 최적화인데, 이건 두 가지 문제가 있습니다. 첫째 효율 — 매 step 모든 과거 key,value를 들고 있어야 해서 고정 state의 존재 이유가 사라집니다. 둘째 pruning 불가 — 문맥 중간에 무관한 구간이 끼면 '전부에 대한 최적'이 오히려 해가 되는데 특정 token을 잘라낼 gate가 없습니다. Atlas의 중간해가 Omega rule입니다: window 길이 c만큼, 최근 c개 token의 gated 합을 최소화합니다. 여기서 γ가 window gate입니다. γ가 0이면 그 token을 최적화에서 아예 잘라내고(hard pruning, admission control), 1이면 온전히 포함합니다. 이게 감당 가능한 이유는 sliding window라서 step당 gate 수가 c개로 상수이기 때문입니다. global이면 gate 수가 문맥 길이만큼 자라 recurrent의 장점이 사라지죠. 오른쪽 그림이 직관을 줍니다. SWA(맨 왼쪽)는 폭 고정 banded mask라 각 query가 인접 c개만 봅니다. Atlas는 window c를 1, 4, 7로 키우면 의존이 하삼각 전체로 번집니다 — windowed loss의 gradient가 chunk를 거쳐 이전 상태로 전파되기 때문입니다. 즉 같은 banded 구조를 SWA는 비모수로 훑고, Omega rule은 parametric memory에 '누적'합니다. 대수적으로 보면, DeltaNet의 전이는 key 하나짜리 rank-1 수정인데, Omega rule은 c개 key의 합이라 rank-c 수정입니다. delta rule을 window 크기만큼 rank로 일반화한 게 Omega rule의 정체입니다. c=1로 두면 정확히 Titans가 나옵니다 — Titans는 Omega의 window-1 특수 사례입니다. 이 그림은 Atlas 원논문 Figure 2입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "방법 2 — Omega rule: windowed objective"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "최근 c개 token 의 gated 합을 최소화 (window loss)",
+            "γ gate: 0=token 잘라냄(admission), 1=포함",
+            "sliding window -> step당 gate 수 c개로 상수",
+            "전이가 rank-c 수정 (DeltaNet 은 rank-1)",
+            "c=1 = Titans (Omega 의 window-1 특수 사례)"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2505.23735-fig2.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "Muon inner optimizer",
+    "notes": "세 번째 처방, 관리 문제입니다. Omega rule과 feature map을 갖춰도 optimizer가 GD면 여전히 1차입니다. windowed loss 표면의 나쁜 local minimum에 앉으면 낮은 품질의 매핑이 저장된다는 게 세 번째 진단이었죠. Atlas는 같은 objective를 Muon으로 최적화합니다. Muon의 핵심은 Newton-Schulz 반복입니다. momentum buffer S에 windowed gradient를 쌓은 뒤, 그냥 쓰지 않고 NS 반복을 κ번 돌립니다. 이 반복은 S의 SVD에서 가장 가까운 semi-orthogonal 행렬, 즉 U V^T로 수렴합니다. 결과적으로 update의 singular value들이 균등해지는데, 논문은 이걸 'token에 대한 2차 정보의 근사'로 읽습니다. 이게 Table 1의 'locally optimal memory' 성질입니다 — attention과 SWA는 regression을 그냥 풀어서 이 성질을 비모수적으로 갖는데, GD 기반 RNN은 전부 못 갖고, Atlas가 병렬화를 유지한 채 parametric하게 달성한 최초 사례라는 주장입니다. 여기서 시스템 관점의 새로운 손잡이가 하나 나옵니다: κ, NS 반복 횟수입니다. 논문은 이걸 명시적으로 'internal test-time compute parameter'라고 부릅니다. 반복을 더 돌리면 orthogonalization이 정확해지고 품질이 좋아지되 inference FLOPs가 선형으로 늘어납니다. state 크기는 전혀 안 건드리고 decode 연산량과 품질을 교환하는 dial입니다 — speculative decoding이 요청 단위 트레이드라면 κ는 layer 내부의 트레이드죠. 실전값은 κ=5, NS-5입니다. 다만 정직하게 말씀드리면, 뒤 결과에서 보겠지만 이 Muon 축의 실증적 가치는 아직 논쟁적입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "방법 3 — Muon: 근사 2차 memory 관리"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "momentum S 를 Newton-Schulz κ회로 orthogonalize",
+            "update singular value 균등화 = 2차 정보 근사",
+            "'locally optimal memory' (Table 1 신규 성질)",
+            "병렬화 유지한 최초의 parametric 2차 optimizer (주장)",
+            "κ = internal test-time compute dial (실전 NS-5)",
+            "state 불변으로 decode FLOPs <-> 품질 교환"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "아키텍처와 Transformer 가족",
+    "notes": "세 처방을 조립한 결과물들입니다. 세 개를 다 합친 게 Atlas고, memory를 gated MLP로 올린 변형이 Atlas++입니다. Omega rule에 polynomial feature와 GD만 쓰면 OmegaNet입니다. 중요한 건 이 모든 게 chunkwise 병렬화를 유지한다는 점입니다. 소박하게 구현하면 위치마다 c개의 gradient 행렬을 실체화해야 해서 메모리가 폭발하는데, Atlas는 window를 banded mask 하나로 처리합니다 — c=1이면 항등행렬, c>1이면 대각 앞 c-1개를 1로 둔 banded 하삼각 mask입니다. 각 token gradient는 한 번만 계산되고 mask가 합산하죠. 그래서 window는 훈련 비용을 거의 안 바꾸는 품질 knob이 됩니다. Muon까지 병렬화하는 열쇠는 구조적 관찰 하나입니다: gradient를 chunk 경계 상태에서 평가하기로 하면 momentum recurrence가 진화하는 memory와 완전히 분리된 linear scan이 되고, NS-5는 chunk 내 전 위치에 batched matmul로 동시에 적용됩니다. 그리고 논문의 두 번째 기둥이 여기 있습니다: 같은 기계로 Transformer를 다시 유도합니다. attention은 Nadaraya-Watson kernel regression의 비모수 해라는 재서술에서 출발해서, feature map을 정확한 exponential φ*로 바꾸면 DeepTransformers가 되는데, 이건 unnormalized softmax attention의 strict generalization입니다. 거기에 Hebbian 대신 Omega rule을 넣으면 Dot(Deep Omega Transformer)이 되고, 논문은 이걸 'Transformers with Delta rule', 즉 error-correcting attention이라 부릅니다. 아래 그림이 Atlas 아키텍처와 두 hybrid 구성(MAG, MAL), 그리고 layer 내부 배선입니다 — Q/K/V projection과 세 gate producer가 갈라져 ATLAS Layer로 들어갑니다. Atlas 원논문 Figure 3입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "방법 확정 — 아키텍처와 Transformer 일반화 가족"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "Atlas = 세 처방 결합, Atlas++ = gated-MLP memory",
+            "window = banded mask 하나 -> 훈련 비용 거의 불변",
+            "momentum 이 memory 와 분리 -> Muon 도 병렬화",
+            "DeepTransformers = φ* 로 unnormalized softmax 일반화",
+            "Dot = Hebbian 자리에 Omega -> error-correcting attention"
+          ]
+        },
+        "geometry": { "x": 60, "y": 150, "w": 840, "h": 90 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2505.23735-fig3.png"
+        },
+        "geometry": { "x": 60, "y": 250, "w": 840, "h": 250 }
+      }
+    ]
+  },
+  {
+    "title": "결과와 한계",
+    "notes": "결과입니다. 헤드라인은 long-context입니다. 오른쪽 BABILong 그림을 보시면, 4K 문맥으로 훈련한 모델을 훨씬 긴 문맥에서 평가하는데, Atlas는 1M token까지 Titans와 동급이다가 10M에서 Titans가 무너지는 지점에서도 높은 정확도를 유지합니다 — 훈련 문맥의 수천 배를 외삽하는 구간입니다. 논문은 이걸 Muon(관리), polynomial kernel(용량), context memorization(목표) 세 축의 합작으로 귀속시킵니다. language modeling과 commonsense reasoning에서도 Atlas와 Atlas++가 Titans, Gated DeltaNet, Transformer++를 앞섭니다. 정직성 계약을 지켜서 방향만 말씀드리면, 순수 recurrent 비교에서 Atlas가 최고 그룹입니다. 그런데 두 개의 의무적 caveat를 꼭 짚어야 합니다. 첫째, in-context retrieval 벤치마크에서는 Transformer가 여전히 이깁니다. Atlas가 recurrent 중 최고이고 gap을 좁혔지만 닫지는 못했습니다 — 그리고 이건 앞의 용량 이론이 예측하는 방향 그대로입니다. 무한 용량 비모수 memory(attention)와 유한 state parametric memory 사이의 격차는 Atlas의 모든 장치를 넣고도 남습니다. 둘째, ablation이 불편한 진실을 보여줍니다. window와 feature map과 deep memory는 명확히 기여하는데, Muon을 제거하면 perplexity가 오히려 개선됩니다. Muon이 산 건 reasoning accuracy 0.21포인트뿐입니다. 즉 제목의 'optimally'는 window와 capacity 축이 대부분 벌어다 준 것이고, 'locally optimal'을 담당하는 Muon의 기여는 과제 의존적입니다. 게다가 κ를 test-time compute dial이라 부르려면 κ에 대한 품질 곡선이 단조임을 보여야 하는데 그 측정이 논문에 없습니다. 마지막으로 가장 큰 공백: 이 논문 어디에도 wall-clock 수치가 한 건도 없습니다. '병렬화된다', 'overhead 없다'는 전부 구조 논증이지 측정이 아닙니다. 그림은 Atlas 원논문 Figure 4입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "결과 / 한계 — 강한 long-context, 남은 gap"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "BABILong: 10M token 까지 정확도 유지 (Titans 붕괴 지점)",
+            "LM·reasoning: Atlas/Atlas++ > Titans·GatedDeltaNet",
+            "caveat 1: in-context retrieval 은 Transformer 가 우위",
+            "caveat 2: Muon 제거 시 perplexity 오히려 개선",
+            "wall-clock 수치 0건 — 전부 구조 논증"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2505.23735-fig4.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "정리와 다음 연결",
+    "notes": "이 섹션을 정리하겠습니다. Atlas는 세 개의 구멍을 세 개의 손잡이로 메웠습니다: 목표를 window로 넓힌 Omega rule, 용량 상한을 옮기는 feature map, 그리고 근사 2차 관리인 Muon. 그리고 부산물로 softmax attention을 용량 무한한 associative memory로 정식화하고 Transformer의 두 일반화 가족을 파생시켰죠. 이 계보의 관점에서 Atlas의 위치는 '무엇을 얼마나 잘 기억하는가'의 정점입니다 — objective, capacity, optimizer, 이론까지 다 갖췄습니다. 그런데 바로 그 지점에서 다음 논문 TNT로 넘어가는 질문이 생깁니다. Atlas의 모든 것은 chunkwise 트릭 위에 서 있습니다 — gradient를 chunk 시작 상태라는 stale snapshot에서 평가하는 근사죠. 그런데 그 근사의 오차는 정량화된 적이 없고, chunk 크기 C는 그냥 throughput knob으로만 취급됩니다. 사실 C는 계산되는 함수 자체를 바꾸는 semantic knob인데도요. 특히 치명적인 mismatch가 방치돼 있습니다: 훈련은 큰 C에서 하는데 decode는 C=1의 세계입니다. TNT는 정확히 여기서 시작해서, 훈련-추론 chunk-size mismatch를 발견하고 계층적 memory와 주기적 reset으로 chunk 경제학 전체를 재설계합니다. Atlas가 '무엇을 얼마나 잘 기억하는가'라면, TNT는 '그걸 만들고 돌리는 데 얼마가 드는가'라는, 시스템 엔지니어인 여러분이 처음부터 묻고 있던 질문입니다. 그리고 조용한 복선 하나: Atlas가 'test-time training'을 'test-time memorization'으로 개명하며 in-context 적응은 학습이 아니라고 선을 그은 순간, '그럼 진짜 continual learning은 어디서 오는가'가 미결로 남습니다. 그 답이 뒤의 Nested Learning과 Sleep입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "summary",
+          "text": "S5 요약 — Atlas 가 메운 것, 남긴 것"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "세 구멍 = 세 손잡이: Omega(목표)·feature map(용량)·Muon(관리)",
+            "softmax = 용량 무한 memory 로 정식화 (+ DeepTransformers·Dot)",
+            "'무엇을 얼마나 잘 기억하나' 의 정점 (이론까지 완비)",
+            "남긴 것: chunkwise staleness 무정량, wall-clock 0건",
+            "다음(TNT): 훈련-추론 chunk-size mismatch = '얼마가 드는가'"
+          ]
+        }
+      }
+    ]
+  }
+]

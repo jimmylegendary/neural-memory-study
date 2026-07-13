@@ -1,0 +1,1000 @@
+{
+ "2501.00663": [
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2501.00663/figures/fig1.png",
+   "fig": "1",
+   "refs": 0,
+   "caption": "Figure 1: The illustration of how the training of neural memory can be done in parallel and using matmuls."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2501.00663/figures/fig2.png",
+   "fig": "2",
+   "refs": 2,
+   "caption": "Figure 2: Memory as a Context (MAC) Architecture. This architecture includes three branches of (1) core, (2) contextual (long-term) memory, and (3) pe"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2501.00663/figures/fig3.png",
+   "fig": "3",
+   "refs": 3,
+   "caption": "Figure 3: Attention masks for different variants of Titans."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2501.00663/figures/fig4.png",
+   "fig": "4",
+   "refs": 1,
+   "caption": "Figure 4: Memory as a Gate (MAG) Architecture. This architecture, similarly, has the three branches of (1) core, (2) contextual memory, and (3) persis"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2501.00663/figures/fig5.png",
+   "fig": "5",
+   "refs": 1,
+   "caption": "Figure 5: Memory as a Layer (MAL) Architecture. In this architecture, the memory layer is responsible to compress the past and current context before "
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2501.00663/figures/fig6.png",
+   "fig": "6",
+   "refs": 2,
+   "caption": "Figure 6: Performance of Titans and baselines on BABILong benchmark. Titans (MAC) outperforms all baselines, including extremely large models, e.g., G"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2501.00663/figures/fig7.png",
+   "fig": "7",
+   "refs": 1,
+   "caption": "Figure 7: The effect of memory depth on the perplexity. Deeper long-term memory results in better scaling in longer sequences."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2501.00663/figures/fig8.png",
+   "fig": "8",
+   "refs": 1,
+   "caption": "Figure 8: The effect of memory depth on training throughput"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2501.00663/figures/fig9.png",
+   "fig": "9",
+   "refs": 2,
+   "caption": "Figure 9: Training throughput compari- son of Titans and baselines."
+  }
+ ],
+ "2504.13173": [
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2504.13173/figures/fig1.png",
+   "fig": "1",
+   "refs": 0,
+   "caption": "Figure 1: The overview of Miras framework. Miras is based on four critical choices of (1) memory architecture, (2) attentional bias, (3) retention gat"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2504.13173/figures/fig2.png",
+   "fig": "2",
+   "refs": 2,
+   "caption": "Figure 2: Visualization of the Miras’s variant architecture, their hybrid counterpart with SWA, and block design of Miras layer."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2504.13173/figures/fig3.png",
+   "fig": "3",
+   "refs": 2,
+   "caption": "Figure 3: Scaling patterns when increasing (Left) model size, (Middle) sequence length (model size = 340M) (3) (Right) sequence length (model size = 7"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2504.13173/figures/fig4.png",
+   "fig": "4",
+   "refs": 1,
+   "caption": "Figure 4: The effect of parameters 𝑝and 𝑞on the performance with different context length."
+  }
+ ],
+ "2505.23735": [
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2505.23735/figures/fig1.png",
+   "fig": "1",
+   "refs": 0,
+   "caption": "Figure 1: Comparison of learning to memorize (Left) individual tokens, and (Right) the context."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2505.23735/figures/fig2.png",
+   "fig": "2",
+   "refs": 0,
+   "caption": "Figure 2: The illustration of tokens dependencies in SWA and Atlas or OmegaNet with different context length."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2505.23735/figures/fig3.png",
+   "fig": "3",
+   "refs": 1,
+   "caption": "Figure 3: Visualization of the Atlas’s (and our other variants’) architecture, and its hybrid counterpart with SWA."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2505.23735/figures/fig4.png",
+   "fig": "4",
+   "refs": 1,
+   "caption": "Figure 4: Performance of Atlas and baselines on BABILong benchmark. Atlas surpasses Titans performance and effec- tively scale to 10M context length i"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2505.23735/figures/fig5.png",
+   "fig": "5",
+   "refs": 1,
+   "caption": "Figure 5: The effect of local context length (i.e. 𝑐) on the performance of OmegaNet with different global context length."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2505.23735/figures/fig6.png",
+   "fig": "6",
+   "refs": 2,
+   "caption": "Figure 6: Loss curves for different setting with various hyperparameters"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2505.23735/figures/fig7.png",
+   "fig": "7",
+   "refs": 1,
+   "caption": "Figure 7: The results for associative mem- ory recall."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2505.23735/figures/fig8.png",
+   "fig": "8",
+   "refs": 2,
+   "caption": "Figure 8: Scaling patterns of Atlas, and OmegaNet with respect to (Left) training context length, and (Right) FLOPs."
+  }
+ ],
+ "2511.07343": [
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2511.07343/figures/fig1.png",
+   "fig": "1",
+   "refs": 1,
+   "caption": "Figure 1: The basic diagram for illustraing TNT memory hierarchy. In each row, the updates at the same value of 𝑡ran at the same time (run in parralle"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2511.07343/figures/fig2.png",
+   "fig": "2",
+   "refs": 1,
+   "caption": "Figure 2: Sensitivity of inference chunk size on a 550M Titans model pre-trained with 𝐶= 64. Performance is optimal when the inference chunk size matc"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2511.07343/figures/fig3.png",
+   "fig": "3",
+   "refs": 1,
+   "caption": "Figure 3: Architectural overview of TNT Stage 1."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2511.07343/figures/fig4.png",
+   "fig": "4",
+   "refs": 1,
+   "caption": "Figure 4: Runtime comparison of different models and imple- mentations across varying sequence lengths, with the number of tokens per batch fixed at 0"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2511.07343/figures/fig5.png",
+   "fig": "5",
+   "refs": 1,
+   "caption": "Figure 5: Runtime comparison of different models and implementations across varying sequence lengths, with the number of tokens per batch fixed at 0.5"
+  }
+ ],
+ "2512.24695": [
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2512.24695/figures/fig1.png",
+   "fig": "1",
+   "refs": 1,
+   "caption": "Figure 1: The uniform and reusable structure as well as multi time scale update in the brain are the key components to unlock the continual learning i"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2512.24695/figures/fig2.png",
+   "fig": "2",
+   "refs": 0,
+   "caption": "Figure 2: Nested Learning Paradigm that represent a machine learning model and its training procedure as a set of nested optimization problems. (Left)"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2512.24695/figures/fig3.png",
+   "fig": "3",
+   "refs": 6,
+   "caption": "Figure 3: An example of comparing a FFN (e.g., MLP) with linear attention in a Transformer-based backbone, optimizing with gradient descent. The red c"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2512.24695/figures/fig4.png",
+   "fig": "4",
+   "refs": 1,
+   "caption": "Figure 4: Optimization of function 𝝍(𝑟,𝜃) with standard momentum and our delta momentum."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2512.24695/figures/fig5.png",
+   "fig": "5",
+   "refs": 1,
+   "caption": "Figure 5: A comparison of Hope architectural backbone with Transformers (Normalization and potential data-dependent components are removed for the sak"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2512.24695/figures/fig6.png",
+   "fig": "6",
+   "refs": 1,
+   "caption": "Figure 6: Class-incremental learning in the text classification domain on (Left) CLINC dataset (Larson et al. 2019), (Middle) Banking dataset (Casanue"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2512.24695/figures/fig7.png",
+   "fig": "7",
+   "refs": 2,
+   "caption": "Figure 7: The effect of memory levels on the in-context learning performance of the model in (Left) MK-NIAH of RULER (Hsieh et al. 2024), (Middle) Lon"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2512.24695/figures/fig8.png",
+   "fig": "8",
+   "refs": 0,
+   "caption": "Figure 8: Continual Translation of a Novel Language (CTNL) task. Red points are the results with only one language. Blue points are the results in the"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2512.24695/figures/fig9.png",
+   "fig": "9",
+   "refs": 0,
+   "caption": "Figure 9: BABILong Benchmark. Red points are the results of fine-tuned models, and Blue points are the large models’ zero-shot results."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2512.24695/figures/fig10.png",
+   "fig": "10",
+   "refs": 0,
+   "caption": "Figure 10: The effect of context usage on the perplexity of the model. We expect the per- plexity of a model with powerful memory management to decrea"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2512.24695/figures/fig11.png",
+   "fig": "11",
+   "refs": 1,
+   "caption": "Figure 11: ViT test and train loss on ImageNet-21K (Ridnik et al. 2021), trained with AdamW, Muon, and our M3 optimizers."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2512.24695/figures/fig12.png",
+   "fig": "12",
+   "refs": 2,
+   "caption": "Figure 12: Training time of models with 140M and 1.3B parameters with Muon, AdaMuon, and M3 optimizers."
+  }
+ ],
+ "2606.03979": [
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2606.03979/figures/fig1.png",
+   "fig": "1",
+   "refs": 3,
+   "caption": "Figure 1: (Conventional Machine Learning vs. Continual Learning) While in conventional machine learning often the lifespan of the model is divided to "
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2606.03979/figures/fig2.png",
+   "fig": "2",
+   "refs": 0,
+   "caption": "Figure 2: An overview of Memory Consolidation. The model increases its own number of parameters to enhance its capacity (Section 3.2), and then using "
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2606.03979/figures/fig3.png",
+   "fig": "3",
+   "refs": 1,
+   "caption": "Figure 3: Class-incremental learning for text classification is evaluated on the (Left) CLINC dataset (Larson et al. 2019), (Middle) Banking dataset ("
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2606.03979/figures/fig4.png",
+   "fig": "4",
+   "refs": 1,
+   "caption": "Figure 4: Effect of memory levels on in-context learning performance for (Left) MK-NIAH from RULER (Hsieh et al. 2024), (Middle) LongHealth (Adams et "
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2606.03979/figures/fig5.png",
+   "fig": "5",
+   "refs": 2,
+   "caption": "Figure 5: Continual Translation of a Novel Language (CTNL) task. Red points show performance when train- ing on a single language, whereas blue points"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2606.03979/figures/fig6.png",
+   "fig": "6",
+   "refs": 1,
+   "caption": "Figure 6: Results on the BABILong benchmark. Red points correspond to fine-tuned models, whereas blue points correspond to zero-shot eval- uations of "
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2606.03979/figures/fig7.png",
+   "fig": "7",
+   "refs": 0,
+   "caption": "Figure 7: Multi-frequency memory hierarchy. Updates enter the High-Frequency FFN via repeated Parameter Expansion; when the window 𝑓𝑊expires, knowledg"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/2606.03979/figures/fig8.png",
+   "fig": "8",
+   "refs": 0,
+   "caption": "Figure 8: Memory consolidation by routed expert updates. Across Sleep cycles (left→right), a router selects and updates a small set of experts (solid)"
+  }
+ ],
+ "ext-1606.01164": [
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-1606.01164/figures/fig2.png",
+   "fig": "2",
+   "refs": 4,
+   "caption": "Figure 2: We show 25 randomly selected memories (feature detectors) for four networks, which use recti- ﬁed polynomials of degrees n = 2, 3, 20, 30 as"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-1606.01164/figures/fig4.png",
+   "fig": "4",
+   "refs": 1,
+   "caption": "Figure 4: The histograms of overlaps for models with n = 2, 3, 4 with power energy functions (left) and rectiﬁed polynomial energy functions (right). "
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-1606.01164/figures/fig5.png",
+   "fig": "5",
+   "refs": 1,
+   "caption": "Figure 5: Scaling behavior of the capacity vs. the number of neurons for n = 3 with power and rectiﬁed polynomial energy functions. Solid curve is the"
+  }
+ ],
+ "ext-2008.02217": [
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2008.02217/figures/fig1.png",
+   "fig": "1",
+   "refs": 4,
+   "caption": "Figure 1: We generalize the energy of binary modern Hopﬁeld networks to continuous states while keeping fast convergence and storage capacity properti"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2008.02217/figures/fig2.png",
+   "fig": "2",
+   "refs": 2,
+   "caption": "Figure 2: Left: A standard deep network with layers (■) propagates either a vector or a set of vectors from the input to the output. Right: A deep net"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2008.02217/figures/fig3.png",
+   "fig": "3",
+   "refs": 1,
+   "caption": "Figure 3: The layer Hopfield allows the association of two sets R (■) and Y (■). It can be integrated into deep networks that propagate sets of vector"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2008.02217/figures/fig4.png",
+   "fig": "4",
+   "refs": 1,
+   "caption": "Figure 4: The layer HopfieldPooling enables pooling or summarization of sets, which are obtained from the input or from previous layers. The input Y ("
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2008.02217/figures/fig5.png",
+   "fig": "5",
+   "refs": 1,
+   "caption": "Figure 5: The layer HopfieldLayer enables multiple queries of the training set, a reference set, prototype set, or a learned set (a learned matrix). T"
+  }
+ ],
+ "ext-2102.11174": [
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2102.11174/figures/fig1.png",
+   "fig": "1",
+   "refs": 1,
+   "caption": "Figure 1. A visualisation of a DPFP from a 2d space (the xy-plane)"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2102.11174/figures/fig2.png",
+   "fig": "2",
+   "refs": 2,
+   "caption": "Figure 2. Final evaluation loss of the softmax memory and various"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2102.11174/figures/fig3.png",
+   "fig": "3",
+   "refs": 1,
+   "caption": "Figure 3. Learning curves for different update rules. Sequence"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2102.11174/figures/fig4.png",
+   "fig": "4",
+   "refs": 1,
+   "caption": "Figure 4. Training curves for setting 1 with 600 unique keys/values (sampled without replacement) as described in Sec. 6.1.1."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2102.11174/figures/fig5.png",
+   "fig": "5",
+   "refs": 1,
+   "caption": "Figure 5. Final evaluation loss on synthetic setting 2 (with replace-"
+  }
+ ],
+ "ext-2212.07677": [
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2212.07677/figures/fig1.png",
+   "fig": "1",
+   "refs": 3,
+   "caption": "Figure 1. Illustration of our hypothesis: gradient-based optimization and attention-based in-context learning are equivalent. Left:"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2212.07677/figures/fig2.png",
+   "fig": "2",
+   "refs": 4,
+   "caption": "Figure 2. Comparing one step of GD with a trained single linear self-attention layer. Outer left: Trained single LSA layer performance"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2212.07677/figures/fig3.png",
+   "fig": "3",
+   "refs": 4,
+   "caption": "Figure 3. Far left column: The trained TF performance surpasses standard GD but matches GD++, our GD variant with simple iterative"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2212.07677/figures/fig4.png",
+   "fig": "4",
+   "refs": 1,
+   "caption": "Figure 4. Sine wave regression: comparing trained Transformers with meta-learned MLPs for which we adjust the output layer with one step of gradient d"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2212.07677/figures/fig5.png",
+   "fig": "5",
+   "refs": 2,
+   "caption": "Figure 5. Training a two layer SA-only Transformer using the"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2212.07677/figures/fig6.png",
+   "fig": "6",
+   "refs": 4,
+   "caption": "Figure 6. Left & center left column: Comparing Transformers, GD and their weight interpolation on rescaled training distributions. In"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2212.07677/figures/fig7.png",
+   "fig": "7",
+   "refs": 2,
+   "caption": "Figure 7. Comparing ten steps of gradient descent with trained recurrent ten-layer Transformers. Results comparable to recurrent Transformer with two "
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2212.07677/figures/fig8.png",
+   "fig": "8",
+   "refs": 1,
+   "caption": "Figure 8. Comparing twelve steps of GD++ with a trained twelve-layer Transformers with MLPs and 4 headed linear self-attention"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2212.07677/figures/fig9.png",
+   "fig": "9",
+   "refs": 2,
+   "caption": "Figure 9. Visualizing the weight matrices of trained Transformers. Left & outer left: Weight matrix products of a trained single linear"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2212.07677/figures/fig10.png",
+   "fig": "10",
+   "refs": 2,
+   "caption": "Figure 10. Roll-out experiments: applying a trained single linear self-attention layer multiple times. We observe that different"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2212.07677/figures/fig11.png",
+   "fig": "11",
+   "refs": 1,
+   "caption": "Figure 11. Visualizing the correction to the softmax operation when training Transformers on regression tasks. The left and center"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2212.07677/figures/fig12.png",
+   "fig": "12",
+   "refs": 2,
+   "caption": "Figure 12. Comparing trained two-headed and one-headed single-layer softmax self-attention with 1 step of gradient descent on"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2212.07677/figures/fig13.png",
+   "fig": "13",
+   "refs": 4,
+   "caption": "Figure 13. GD++ analyses. Left: We visualize the change of the eigenspectrum induced by the input data transformation of GD++ for"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2212.07677/figures/fig14.png",
+   "fig": "14",
+   "refs": 3,
+   "caption": "Figure 14. Comparing trained 1-layer and 2-layer Transformers with LayerNorm and 1 step or 2 steps of gradient descent resp. Left column: The Transfor"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2212.07677/figures/fig15.png",
+   "fig": "15",
+   "refs": 2,
+   "caption": "Figure 15. Phase transitions during training. Left: Loss based on 10 different random seeds when optimizing a single-headed self-"
+  }
+ ],
+ "ext-2307.08621": [
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2307.08621/figures/fig1.png",
+   "fig": "1",
+   "refs": 0,
+   "caption": "Figure 1: Retentive network (RetNet) achieves low-cost inference (i.e., GPU memory, throughput, and latency), training parallelism, and favorable scal"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2307.08621/figures/fig2.png",
+   "fig": "2",
+   "refs": 2,
+   "caption": "Figure 2: RetNet makes the “impossible triangle” possible, which achieves training parallelism, good performance, and low inference cost simultane- ou"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2307.08621/figures/fig4.png",
+   "fig": "4",
+   "refs": 1,
+   "caption": "Figure 4: Pseudocode for the three computation paradigms of retention."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2307.08621/figures/fig5.png",
+   "fig": "5",
+   "refs": 2,
+   "caption": "Figure 5: Perplexity decreases along with scaling up the model size. We empirically observe that RetNet tends to outperform Transformer when the model"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2307.08621/figures/fig6.png",
+   "fig": "6",
+   "refs": 6,
+   "caption": "Figure 6: Inference cost of Transformer and RetNet with a model size of 6.7B. RetNet outperforms Transformers in terms of memory consumption, throughp"
+  }
+ ],
+ "ext-2312.00752": [
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2312.00752/figures/fig1.png",
+   "fig": "1",
+   "refs": 1,
+   "caption": "Figure 1: (Overview.) Structured SSMs independently map each channel (e.g. 𝐷= 5) of an input 𝑥to output 𝑦through a higher dimensional latent state ℎ(e"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2312.00752/figures/fig2.png",
+   "fig": "2",
+   "refs": 4,
+   "caption": "Figure 2: (Left) The standard version of the Copying task involves constant spacing between input and output elements and is easily solved by time-inv"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2312.00752/figures/fig4.png",
+   "fig": "4",
+   "refs": 6,
+   "caption": "Figure 4: (Scaling Laws.) Models of size ≈125𝑀to ≈1.3𝐵parameters, trained on the Pile. Mamba scales better than all other attention-free models and is"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2312.00752/figures/fig5.png",
+   "fig": "5",
+   "refs": 4,
+   "caption": "Figure 5: (DNA Scaling Laws.) Pretraining on the HG38 (human genome) dataset. (Left) Fixing short context length 210 = 1024 and increasing size from ≈"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2312.00752/figures/fig6.png",
+   "fig": "6",
+   "refs": 1,
+   "caption": "Figure 6: (Great Apes DNA Classification.) Accuracy after fine- tuning on sequences of length 210 = 1024 up to 220 = 1048576 using pretrained models o"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2312.00752/figures/fig7.png",
+   "fig": "7",
+   "refs": 3,
+   "caption": "Figure 7: (Audio Pretraining.) Mamba improves performance over prior state-of-the-art (Sashimi) in autoregressive audio model- ing, while improving up"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2312.00752/figures/fig8.png",
+   "fig": "8",
+   "refs": 1,
+   "caption": "Figure 8: (Efficiency Benchmarks.) (Left) Training: our efficient scan is 40× faster than a standard implementation. (Right) Inference: as a recurrent"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2312.00752/figures/fig9.png",
+   "fig": "9",
+   "refs": 2,
+   "caption": "Figure 9: (Scaling laws: extra ablations.) (Left) Instead of (Right) Instead of"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2312.00752/figures/fig10.png",
+   "fig": "10",
+   "refs": 1,
+   "caption": "Figure 10: (Audio Pretraining (YouTubeMix) Ablations.) As a uniformly-sampled “continuous” signal modality, audio waveforms actu- ally benefit from LT"
+  }
+ ],
+ "ext-2312.06635": [
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2312.06635/figures/fig1.png",
+   "fig": "1",
+   "refs": 1,
+   "caption": "Figure 1: (a) FLASHLINEARATTENTION without materialization. This version is more memory-efficient. (b-c) FLASHLINEARAT- TENTION with materialization. "
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2312.06635/figures/fig2.png",
+   "fig": "2",
+   "refs": 1,
+   "caption": "Figure 2: Speed comparison on a single H100 GPU with batch size 32, number of heads 16, head dimension 64, and chunk size 64. Both x- and y-axes are o"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2312.06635/figures/fig3.png",
+   "fig": "3",
+   "refs": 4,
+   "caption": "Figure 3: Attention-style map to illustrate the chunkwise compu- tations in GLA. The inter-chunk dependencies (in gray) are not directly computed in t"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2312.06635/figures/fig4.png",
+   "fig": "4",
+   "refs": 1,
+   "caption": "Figure 4: Accuracy (%) on the synthetic MQAR task."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2312.06635/figures/fig5.png",
+   "fig": "5",
+   "refs": 1,
+   "caption": "Figure 5: Length extrapolation on the test set of SlimPajama and PG19. We pretrain 1.3B models from scratch on SlimPajama for 100B tokens with differe"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2312.06635/figures/fig6.png",
+   "fig": "6",
+   "refs": 1,
+   "caption": "Figure 6: Training throughput and memory footprint on an H100."
+  }
+ ],
+ "ext-2405.21060": [
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2405.21060/figures/fig1.png",
+   "fig": "1",
+   "refs": 1,
+   "caption": "Figure 1: (Structured State-Space Duality.) This paper fleshes out the relationship between state space models and attention through the bridge of str"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2405.21060/figures/fig2.png",
+   "fig": "2",
+   "refs": 1,
+   "caption": "Figure 2: (State Space Models are Semiseparable Matrices.) As sequence transformations, state space models can be represented as a matrix transformati"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2405.21060/figures/fig3.png",
+   "fig": "3",
+   "refs": 0,
+   "caption": "Figure 3: (Structured Masked Attention.) SMA constructs a masked attention matrix 𝑀= 𝑄𝐾⊤◦𝐿for any structured matrix 𝐿, which defines a matrix sequence"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2405.21060/figures/fig4.png",
+   "fig": "4",
+   "refs": 1,
+   "caption": "Figure 4: (Structured State Space Duality.) State space duality describes the close relationship between state space models and masked attention. (Lef"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2405.21060/figures/fig5.png",
+   "fig": "5",
+   "refs": 1,
+   "caption": "Figure 5: (SSD Algorithm.) By using the matrix transformation viewpoint of state space models to write them as semiseparable matrices (Section 3), we "
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2405.21060/figures/fig9.png",
+   "fig": "9",
+   "refs": 1,
+   "caption": "Figure 9: (Scaling Laws.) Models of size ≈125𝑀to ≈1.3𝐵parameters, trained on the Pile. Mamba-2 matches or exceeds the performance of Mamba as well as "
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2405.21060/figures/fig10.png",
+   "fig": "10",
+   "refs": 1,
+   "caption": "Figure 10: (Efficiency Benchmarks.) (Left) Our SSD is 2 −8× faster than a Mamba fused scan for large state expansion (𝑁= 64) and faster than FlashAtte"
+  }
+ ],
+ "ext-2406.06484": [
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2406.06484/figures/fig1.png",
+   "fig": "1",
+   "refs": 0,
+   "caption": "Figure 1: Speed-up of the chunkwise parallel form vs. the recurrent form."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2406.06484/figures/fig2.png",
+   "fig": "2",
+   "refs": 0,
+   "caption": "Figure 2: An illustration of DeltaNet neural architec- ture."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2406.06484/figures/fig3.png",
+   "fig": "3",
+   "refs": 0,
+   "caption": "Figure 3: Results on the synthetic MAD benchmark. Results other than DeltaNet are directly borrowed from Poli et al. [84]. (Multi-head) Hyena, DeltaNe"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2406.06484/figures/fig4.png",
+   "fig": "4",
+   "refs": 1,
+   "caption": "Figure 4: Accuracy (%) on MQAR."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2406.06484/figures/fig5.png",
+   "fig": "5",
+   "refs": 0,
+   "caption": "Figure 5: Zero-shot model performance across selected benchmarks for 3B models. Llama-3.2-3B and PowerLM-3B are Transformer models, while the others a"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2406.06484/figures/fig6.png",
+   "fig": "6",
+   "refs": 1,
+   "caption": "Figure 6: Training throughput of 1.3B models on a single H100."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2406.06484/figures/fig7.png",
+   "fig": "7",
+   "refs": 1,
+   "caption": "Figure 7: Accuracy (%) on RegBench."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2406.06484/figures/fig8.png",
+   "fig": "8",
+   "refs": 0,
+   "caption": "Figure 8: Pytorch-like code snippet of the forward pass of our chunkwise algorithm for training DeltaNet. We omit the dimensions of batch size and num"
+  }
+ ],
+ "ext-2407.04620": [
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.04620/figures/fig1.png",
+   "fig": "1",
+   "refs": 1,
+   "caption": "Figure 1. All sequence modeling layers can be expressed as a hidden state that transitions according to an update rule. Our key idea is to make the hi"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.04620/figures/fig2.png",
+   "fig": "2",
+   "refs": 6,
+   "caption": "Figure 2. Comparing to Mamba, TTT-Linear and TTT-MLP have similar perplexity in 8k context (left) and better use of long context (right). Evaluations "
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.04620/figures/fig3.png",
+   "fig": "3",
+   "refs": 1,
+   "caption": "Figure 3. Top: A generic sequence modeling layer expressed as a hidden state that transitions according to an update rule. All sequence modeling layer"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.04620/figures/fig4.png",
+   "fig": "4",
+   "refs": 1,
+   "caption": "Figure 4. The self-supervised TTT loss ℓaveraged over all test sequences of the form x1,...,xT where T = 2048, for the first three TTT layers in a net"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.04620/figures/fig5.png",
+   "fig": "5",
+   "refs": 1,
+   "caption": "Figure 5. Naive implementation of a TTT layer with a linear model and online GD in the style of PyTorch. TTT_Layer can be dropped into a larger networ"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.04620/figures/fig6.png",
+   "fig": "6",
+   "refs": 2,
+   "caption": "Figure 6. High-level computation graph of the first TTT mini-batch, where nodes are variables and edges are computations. The blue nodes are input var"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.04620/figures/fig7.png",
+   "fig": "7",
+   "refs": 4,
+   "caption": "Figure 7. Ablations on TTT mini-batch size b, where b = 1 is online GD and b = T is batch GD. We choose b = 16 for all experiments in this paper. Left"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.04620/figures/fig8.png",
+   "fig": "8",
+   "refs": 2,
+   "caption": "Figure 8. Parametric learners need to define two attributes: model and optimizer (left), and each learner uniquely induces a TTT layer (right). Two of"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.04620/figures/fig9.png",
+   "fig": "9",
+   "refs": 1,
+   "caption": "Figure 9. RNN layers and TTT layers are both subsets of sequence modeling layers. RNN layers have a hidden state that is fixed in size across time. TT"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.04620/figures/fig10.png",
+   "fig": "10",
+   "refs": 5,
+   "caption": "Figure 10. Evaluations for context lengths 2k and 8k on the Pile. Details in Subsection 3.1. TTT-Linear has comparable performance as Mamba at 2k cont"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.04620/figures/fig11.png",
+   "fig": "11",
+   "refs": 4,
+   "caption": "Figure 11. Evaluations for context lengths 2k and 32k on Books. Details in Subsection 3.2. Our complete results for context lengths 1k, 2k, 4k, 8k, 16"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.04620/figures/fig12.png",
+   "fig": "12",
+   "refs": 3,
+   "caption": "Figure 12. Latency on an NVIDIA A100 GPU with 80G HBM and PCIe connections."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.04620/figures/fig13.png",
+   "fig": "13",
+   "refs": 1,
+   "caption": "Figure 13. Left: A residual block, the basic building block for Transformers. The sequence modeling block is instantiated into two variants: the Trans"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.04620/figures/fig14.png",
+   "fig": "14",
+   "refs": 1,
+   "caption": "Figure 14. The self-supervised TTT loss ℓaveraged over all test sequences of the form x1,...,xT where T = 2048, for all 12 TTT layers in a network wit"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.04620/figures/fig15.png",
+   "fig": "15",
+   "refs": 2,
+   "caption": "Figure 15. Complete results on Books, presented by context lengths. Figure 11 in Subsection 3.2 presents the subset of results for context lengths 2k "
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.04620/figures/fig16.png",
+   "fig": "16",
+   "refs": 0,
+   "caption": "Figure 16. An alternative view of our complete results on Books, presented by model sizes, with context length as the x-axis. For all methods trained "
+  }
+ ],
+ "ext-2407.14207": [
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.14207/figures/fig1.png",
+   "fig": "1",
+   "refs": 7,
+   "caption": "Figure 1: (left) The average perplexity on eight downstream datasets for GLA, Mamba, and Longhorn (1.3B model) over seen tokens on SlimPajama. Longhor"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.14207/figures/fig2.png",
+   "fig": "2",
+   "refs": 0,
+   "caption": "Figure 2: (left) Most existing sequence models consist of channel and sequence mixing layers. The sequence mixing layers can be viewed as “meta-module"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.14207/figures/fig3.png",
+   "fig": "3",
+   "refs": 3,
+   "caption": "Figure 3: Mamba Block"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.14207/figures/fig4.png",
+   "fig": "4",
+   "refs": 1,
+   "caption": "Figure 4: Comparison of Longhorn to state-of-the-art SSMs on the MQAR benchmark. y-axis is the recall rate."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2407.14207/figures/fig5.png",
+   "fig": "5",
+   "refs": 1,
+   "caption": "Figure 5: Scaling law with 1024 and 4096 context length on OpenWebText with various SSM models and the LLaMA (strong Transformer) baseline."
+  }
+ ],
+ "ext-2503.14456": [
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig1.png",
+   "fig": "1",
+   "refs": 2,
+   "caption": "Figure 1: RWKV-7’s overall architecture."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig2.png",
+   "fig": "2",
+   "refs": 1,
+   "caption": "Figure 2: A simple illustration of the update mechanism of a single head of RWKV-7’s state. Note that the actual state size is 64×64 per head, not 4×4"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig3.png",
+   "fig": "3",
+   "refs": 3,
+   "caption": "Figure 3: Model Comparisons across Multilingual Benchmarks"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig4.png",
+   "fig": "4",
+   "refs": 3,
+   "caption": "Figure 4: Model Comparisons across English-Language Benchmarks"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig5.png",
+   "fig": "5",
+   "refs": 2,
+   "caption": "Figure 5: PG19 loss versus sequence position for RWKV and Mamba models trained on The Pile datasets."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig6.png",
+   "fig": "6",
+   "refs": 2,
+   "caption": "Figure 6: PG19 loss versus sequence position for RWKV7 models and predecessors trained on the World dataset."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig7.png",
+   "fig": "7",
+   "refs": 2,
+   "caption": "Figure 7: RWKV7-World3 pass-key retrieval evaluation"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig8.png",
+   "fig": "8",
+   "refs": 3,
+   "caption": "Figure 8: Minimum number of layers (lower is better) required to attain > 95% validation accuracy on group multiplication problems by sequence length "
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig9.png",
+   "fig": "9",
+   "refs": 3,
+   "caption": "Figure 9: Time vs. Sequence Length (H100)"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig10.png",
+   "fig": "10",
+   "refs": 2,
+   "caption": "Figure 10: The architecture of VisualRWKV-7. The input image is processed by three vision encoders, and the obtained features are concatenated. Afterw"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig11.png",
+   "fig": "11",
+   "refs": 2,
+   "caption": "Figure 11: The architecture of RWKV-7, drawn in detail."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig12.png",
+   "fig": "12",
+   "refs": 2,
+   "caption": "Figure 12: Training loss curve for RWKV-7 World models. Blue line: loss; Red line: smoothed loss; Green line: actual learning rate; Dotted red line: l"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig13.png",
+   "fig": "13",
+   "refs": 1,
+   "caption": "Figure 13: Reversi Training loss for different token types"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig14.png",
+   "fig": "14",
+   "refs": 1,
+   "caption": "Figure 14: Reversi Token consumption and win rates under different search configurations"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig15.png",
+   "fig": "15",
+   "refs": 2,
+   "caption": "Figure 15: Visualization example of RWKV’s WKV matrices."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig16.png",
+   "fig": "16",
+   "refs": 2,
+   "caption": "Figure 16: The global RMS and average stable rank of WKV matrices, plotted over sequence length."
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig17.png",
+   "fig": "17",
+   "refs": 0,
+   "caption": "Figure 17: Box Plots of ξ and α Across Models"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig18.png",
+   "fig": "18",
+   "refs": 0,
+   "caption": "Figure 18: Mean ξ and α Across Layers for Different Models"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig19.png",
+   "fig": "19",
+   "refs": 0,
+   "caption": "Figure 19: Maximum and Minimum of ξ Across Layers in Different Models"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig20.png",
+   "fig": "20",
+   "refs": 0,
+   "caption": "Figure 20: Maximum and Minimum of α Across Layers in Different Models"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig21.png",
+   "fig": "21",
+   "refs": 0,
+   "caption": "Figure 21: Box Plots of biases of dt Across Models"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig22.png",
+   "fig": "22",
+   "refs": 0,
+   "caption": "Figure 22: Mean biases of dt Across Layers for Different Models"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2503.14456/figures/fig23.png",
+   "fig": "23",
+   "refs": 0,
+   "caption": "Figure 23: Maximum and Minimum of biases of dt Across Layers in Different Models"
+  }
+ ],
+ "ext-2504.05298": [
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2504.05298/figures/fig1.png",
+   "fig": "1",
+   "refs": 1,
+   "caption": "Figure 1. TTT layers enable a pre-trained Diffusion Transformer to generate one-minute videos from text storyboards. We use Tom and Jerry cartoons as "
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2504.05298/figures/fig2.png",
+   "fig": "2",
+   "refs": 1,
+   "caption": "Figure 2. All RNN layers can be expressed as a hidden state that transitions according to an update rule. The key idea in [43] is to make the hidden s"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2504.05298/figures/fig3.png",
+   "fig": "3",
+   "refs": 2,
+   "caption": "Figure 3. Overview of our approach. Left: Our modified architecture adds a TTT layer with a learnable gate after each attention layer. See Subsection "
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2504.05298/figures/fig4.png",
+   "fig": "4",
+   "refs": 1,
+   "caption": "Figure 4. On-chip Tensor Parallel, discussed in Subsection 3.5. Left: To reduce the memory required on each SM for TTT-MLP, we shard the hidden state "
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2504.05298/figures/fig6.png",
+   "fig": "6",
+   "refs": 1,
+   "caption": "Figure 6. For 63-second videos, inference with full attention (over 300k tokens) would have taken 11× longer than local attention, and training 12× lo"
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2504.05298/figures/fig7.png",
+   "fig": "7",
+   "refs": 1,
+   "caption": "Figure 7. Artifacts in videos generated by TTT-MLP. Temporal consistency: Objects sometimes morph at the boundaries of 3-second segments, potentially "
+  },
+  {
+   "path": "/home/jimmy/repos/neural-memory-study/reffigs/ext-2504.05298/figures/fig8.png",
+   "fig": "8",
+   "refs": 1,
+   "caption": "Figure 8. Illustration of the three prompt formats discussed in Subsection 3.2: (1) a short summary of the plot, (2) sentence-level descrip- tions of "
+  }
+ ]
+}

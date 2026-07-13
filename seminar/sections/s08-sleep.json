@@ -1,0 +1,437 @@
+[
+  {
+    "title": "S8 divider",
+    "notes": "이제 이 세미나에서 가장 집중할 두 논문 중 두 번째, Sleep입니다. 정식 제목은 'Language Models Need Sleep: Learning to Self-Modify and Consolidate Memories'이고 2026년 6월에 나온 Behrouz, Hashemi, Mirrokni의 논문입니다. 앞의 다섯 논문 Titans, Miras, Atlas, TNT, Nested Learning은 전부 이 논문을 준비하기 위한 base라고 했었죠. 그 마지막 층이 여기서 완성됩니다. 한 문장으로 말하면 이렇습니다. 지금까지 우리는 모델이 학습을 마치면 weight를 얼려서 배포한다고 배웠는데, 이 논문은 '배포된 다음에도 모델이 밤에 자면서 낮에 배운 것을 정리하고 자기 자신을 고쳐 쓴다'는 그림을 제안합니다. training 무경험 청중을 위해 미리 안심시키자면, 어려운 훈련 수식은 거의 없습니다. 핵심은 '언제 무엇을 어디로 옮기는가'라는 시스템적 스케줄 이야기입니다. 이 섹션에서는 문제, 가설, 아이디어, 방법(두 단계의 sleep), 결과, 그리고 이 라인 전체가 도달한 완성형까지 순서대로 봅니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "section",
+          "text": "Language Models Need Sleep — 자기수정과 기억 공고화 (집중)",
+          "subtitle": "S8 · Behrouz, Hashemi, Mirrokni 2026 (arXiv:2606.03979)",
+          "bullets": [
+            "질문: continual LLM에게 train/test 분리가 맞는가",
+            "가설: 뇌처럼 wake/sleep 주기가 필요하다",
+            "wake=온라인 소비(CMS), sleep=오프라인 정리(2단계)",
+            "라인의 마지막 조각 — train/test 경계를 지운다"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "문제: NL이 남긴 절반",
+    "notes": "먼저 문제부터. 앞 장 Nested Learning은 아키텍처와 optimizer를 update frequency라는 하나의 축 위에 재배열했습니다. attention은 매 토큰 갱신되는 frequency 무한대의 메모리, 얼어붙은 MLP는 frequency 0의 메모리, 그리고 그 사이를 CMS라는 여러 주기의 MLP 사슬이 채웠죠. 그런데 NL은 네 가지 숙제를 남겼습니다. 첫째, catastrophic forgetting, 즉 새 것을 배우면 옛 것을 잊는 문제는 해결된 게 아니라 미뤄졌을 뿐입니다. 여러 주기로 덮어쓰기를 지연시켜도, 모든 층의 갱신 시점이 겹치는 순간 결국 덮어씁니다. 둘째, NL 저자들 스스로 '오프라인 consolidation, 즉 자면서 정리하는 과정은 이 논문 범위 밖'이라고 명시했습니다. 온라인 절반만 한 겁니다. 셋째, capacity가 고정입니다. 유한한 파라미터에 계속 압축해 넣으면 언젠가 옛 지식을 덮어씁니다. 넷째, 모든 적응이 입력이 흐르는 동안에만 일어나서, 모델이 입력을 끊고 자기 내부를 정리할 시간이 설계에 없습니다. 비유하면, 새 장기기억을 못 만드는 기억상실 환자가 '영원한 현재'를 사는 것과 같습니다. 배포된 LLM의 지식은 두 곳에만 있죠. 세션 끝나면 사라지는 context window, 그리고 pre-training 때 얼어붙은 weight. 이 둘을 잇는 다리가 없다는 게 출발점입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "문제: NL이 남긴 것 — consolidation의 절반"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "CF는 해결이 아니라 지연 — 주기 겹치면 덮어쓴다",
+            "offline consolidation은 NL이 명시적으로 범위 밖에 둠",
+            "capacity 고정 → 유한 파라미터엔 언젠가 덮어쓰기",
+            "모든 적응이 입력 흐를 때만 — 내부 정리 시간 없음",
+            "배포 LLM 지식 = 휘발성 context + 얼어붙은 weight",
+            "둘을 잇는 다리 부재 = '영원한 현재'를 사는 환자"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "가설: wake/sleep lifecycle",
+    "notes": "그럼 이 논문의 가설은 무엇인가. 축을 하나 더 놓자는 겁니다. 단, 수식의 축이 아니라 '시간'의 축입니다. 인간 기억 연구가 말하는 두 번째 consolidation, 즉 잠자는 동안 일어나는 offline consolidation을 LLM의 생애주기에 이식하자는 것이죠. 그림을 봅시다. 왼쪽은 우리가 아는 conventional machine learning입니다. 모델의 수명이 training time과 test time으로 딱 갈립니다. 오른쪽이 이 논문이 제안하는 continual learning입니다. 그 구분이 없고, 대신 Active, 즉 깨어 있는 wake phase와 Sleep phase가 주기적으로 교대합니다. 여기서 중요한 것은 sleep을 수동적인 '멈춤'이 아니라 능동적인 내부 처리 구간으로 규정한다는 점입니다. 새 외부 입력을 끊고, 빠르고 고주파인 모듈에 쌓인 기억을 더 안정적이고 느린 성분으로 옮겨 굳히는 시간이죠. 오른쪽 아래에 보이는 Low/Mid/High Frequency FFN 사슬이 그 처리를 수행하는 Hope 백본입니다. inference 엔지니어의 언어로 번역하면 이렇습니다. sleep phase는 서빙 fleet에 붙는 주기적 백그라운드 job이고, 낮에는 요청을 처리하며 fast memory에 쓰고, 밤에는 트래픽을 끊고 compaction과 GC를 돌립니다. 단지 그 대상이 로그나 cache가 아니라 모델의 파라미터일 뿐입니다. 이 그림은 원저자 논문 Figure 1입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "가설: 모델에겐 train/test가 아니라 wake/sleep이 필요"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "새 축은 수식이 아니라 '시간'의 축",
+            "wake = 입력 수신·처리",
+            "sleep = 입력 차단·내부 기억 정리(능동)",
+            "둘의 주기적 교대로 lifecycle 재정의",
+            "serving 언어: 밤에 도는 weight compaction job"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2606.03979-fig1.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "online-only의 3결함 & 3주장",
+    "notes": "NL의 CMS가 이미 wake 동안의 online consolidation을 했다고 했는데, 그럼 그걸로 충분하지 않았나? 논문은 online-only consolidation의 구조적 결함 셋을 짚습니다. 첫째, 추상화 수준이 그대로입니다. 추가 압축 없이 같은 수준의 지식을 옮기니 capacity를 그만큼 또 씁니다. 둘째, 선택적이고 retrieval 의존적입니다. 자주 불러내는 기억만 강화됩니다. 셋째, context에 갇혀 있습니다. 현재 문맥에서만 갱신이 유도되어, 새 지식과 옛 지식의 상위 통합이 안 일어납니다. 이 결함들에 대한 답으로 논문은 세 가지 핵심 주장을 세웁니다. 첫째, continual learner에겐 training time도 test time도 없다. 앞서 본 wake/sleep 재정의죠. 이건 이 라인이 Titans 이후 붙들고 있던 'test time'이라는 단어의 마지막 잔재를 지우는 주장이기도 합니다. 둘째, catastrophic forgetting은 근본적으로 capacity 문제다. 파라미터가 유한하니 새 것을 넣으려면 덮어써야 하고 그래서 잊는다. 그래서 처방이 뒤에 나올 parameter expansion, 즉 '덮어쓰지 말고 키워라'입니다. 셋째, sleep은 두 단계다. NREM 깊은 수면에 대응하는 Memory Consolidation, 그리고 REM 꿈에 대응하는 Dreaming. 이 두 단계가 이 섹션의 뼈대입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "online-only의 3결함 → 논문의 3핵심 주장"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "결함1 추상화 그대로 → capacity 재소모",
+            "결함2 선택적·retrieval 의존 → recall된 것만 강화",
+            "결함3 context에 갇힘 → 상위 통합 부재",
+            "주장1 train/test 없다 = wake/sleep lifecycle",
+            "주장2 CF는 capacity 문제 → '덮어쓰지 말고 키워라'",
+            "주장3 sleep 2단계: Consolidation(NREM) + Dreaming(REM)"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "wake 기반: CMS와 갱신 스케줄",
+    "notes": "이제 방법으로 들어갑니다. 먼저 wake 동안 돌아가는 기반 구조인데, 이건 새로 만든 게 아니라 NL의 CMS를 그대로 수입한 겁니다. 한 블록은 sequence-mixing layer, attention이든 Titans류 메모리 모듈이든, 그 뒤에 여러 주기의 MLP 블록 사슬이 이어집니다. 각 MLP는 자기만의 update 주기를 갖습니다. 오른쪽 그림에서 High/Mid/Low Frequency FFN이 각각 1k/5k/10k 토큰 주기로 배열된 게 그겁니다. 수식으로는 통일표기 M5, '각 블록은 토큰마다 error 기여분을 누적하고, 자기 chunk 경계에서만 그 누적을 파라미터에 한 번 적용한다'는 것이죠. 여기서 sleep이 언제 오는지가 핵심입니다. sleep은 학습되지 않고 chunk 경계 스케줄에 딱 고정됩니다. 어떤 블록이 자기 갱신 경계에 도달하면, 갱신하기 직전에 그 블록의 지식을 한 단계 느린 블록으로 먼저 옮깁니다. 주기가 중첩되어 있으니 이건 다대일입니다. 빠른 블록이 10번 갱신되는 동안 느린 블록은 1번 갱신되죠. 그럼 같은 크기의 느린 메모리에 10번을 반복해 써 넣게 되고, 바로 그 지점이 catastrophic forgetting이 터질 자리입니다. 그래서 다음 슬라이드의 parameter expansion이 필요해집니다. 오른쪽은 원저자 Figure 7입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "wake 기반: CMS 사슬과 chunk-경계 sleep 스케줄"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "기반은 NL의 CMS를 그대로 수입 (새 layer 없음)",
+            "블록마다 update 주기 다름 (1k→5k→10k)",
+            "M5: 토큰마다 누적, chunk 경계에서만 1회 적용",
+            "sleep은 학습X — chunk 경계에 고정",
+            "빠른→느린 consolidation은 다대일(10:1)",
+            "느린 메모리에 반복 write = CF 터질 자리"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2606.03979-fig7.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "Stage 1 Consolidation 개관",
+    "notes": "sleep의 첫 단계, Memory Consolidation의 큰 그림입니다. 세 동작으로 이뤄집니다. 왼쪽 그림에서 보듯, 첫째 모델이 먼저 자기 파라미터 수를 늘려서 capacity를 확보합니다. 새 MLP/Linear expert를 하나 여는 거죠. 둘째, Knowledge Seeding으로 지식 추상을 고주파 메모리에서 저주파 메모리로 옮깁니다. 오른쪽에 그 이전을 구현하는 두 항이 보입니다. 하나는 teacher가 만든 데이터와 student가 스스로 생성한 rollout을 섞는 GKD distillation, 다른 하나는 teacher의 행동을 student가 모방하도록 보상을 주는 Imitation Learning입니다. 여기서 꼭 기억할 반전 하나. 보통 distillation은 큰 teacher에서 작은 student로 지식을 내려보내는데, 여기선 방향이 반대입니다. 작은 것에서 큰 것으로, 그래서 논문은 이걸 upward distillation이라고 부릅니다. 왜 이런 구조인지는 다음 슬라이드들에서 하나씩 풀겠습니다. 지금은 '자기 전에 파라미터를 키우고, 사라질 지식을 새로 연 공간에 증류해 넣는다'는 큰 그림만 잡으면 됩니다. 이 그림은 원저자 Figure 2입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Stage 1 — Memory Consolidation 개관"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "① capacity 확보: 새 low-rank expert 활성화",
+            "② Knowledge Seeding: 고주파→저주파 지식 이전",
+            "③ 구현 = GKD distillation + Imitation Learning",
+            "방향이 거꾸로: 작은 것 → 큰 것 (upward)",
+            "핵심: 갱신 전에 사라질 지식을 새 공간에 증류"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2606.03979-fig2.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "Stage 1a parameter expansion",
+    "notes": "첫 동작, parameter expansion을 자세히 봅시다. 핵심 슬로건은 '덮어쓰지 말고 키워라'입니다. consolidation을 받는 쪽 블록에 새 파라미터를 열어 주는 겁니다. 각 MLP는 여러 expert를 가진 sparse mixture-of-experts라고 가정합니다. 빠른 블록의 지식을 느린 블록으로 옮길 때, 이미 저장된 지식과 간섭하지 않도록 새 low-rank expert 하나를 추가합니다. A와 B 두 개의 작은 행렬로 파라미터화된, rank가 아주 낮은 MLP죠. 옮겨지는 지식은 오직 이 새 파라미터에만 저장됩니다. 그래서 sleep이 지날 때마다 일부 layer의 파라미터가 자랍니다. 이게 CF에 대한 구조적 답입니다. 옛 지식이 물리적으로 있는 자리를 새 지식이 건드리지 않으니, 정규화로 '잊지 마' 하고 부탁하는 게 아니라 애초에 덮어쓸 수 없게 만드는 겁니다. 여기 infra 독자에게 아주 중요한 구현 노트가 있습니다. tensor 차원을 실행 중에 동적으로 바꾸면 컴파일된 그래프도, kernel autotuning도, checkpoint 포맷도 다 흔들립니다. 그래서 논문은 미래에 열릴 expert 전부를 초기화 시점에 미리 할당해 두고 forward/backward에서 mask만 씌웁니다. sleep에서 'expert를 추가한다'는 건 실제로는 그냥 mask를 하나 여는 것입니다. 덕분에 shape가 정적으로 유지됩니다. 뇌로 치면 고정된 capacity 안에서 새 연결을 형성해 뉴런을 활성화하는 것에 대응시킵니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Stage 1a — parameter expansion: 덮어쓰지 말고 키워라"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "각 MLP = sparse MoE (router + experts)",
+            "consolidation마다 새 low-rank expert(A·B) 추가",
+            "옮긴 지식은 새 파라미터에만 저장",
+            "CF 방지가 정규화가 아니라 '구조'로 보장",
+            "infra: 미래 expert 미리 할당 + mask로 여닫음",
+            "→ 정적 shape 유지, 재컴파일·autotune 무흔들림"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "Stage 1b Knowledge Seeding",
+    "notes": "둘째 동작, Knowledge Seeding입니다. 위로 가는 distillation이라고 했죠. teacher와 student를 정확히 짚는 게 중요합니다. teacher는 expansion 하기 전의 모델 상태입니다. 즉 빠른 블록이 아직 새 chunk로 덮어써지기 전의, 그 지식을 그대로 들고 있는 자기 자신이죠. student는 두 가지를 이미 거친 후의 상태입니다. 하나는 파라미터 확장, 둘은 빠른 블록의 갱신. 그러니까 student는 빠른 블록에선 이미 지식을 잃었지만 대신 느린 블록에 빈 expert 하나를 새로 받은 상태입니다. distillation은 student의 출력 분포를 teacher 쪽으로 당기는데, student에서 움직일 수 있는 건 오직 그 새 expert뿐입니다. 최적화가 성공하면 빠른 블록에서 사라진 지식이 느린 블록의 새 expert 안에 재구성됩니다. 이게 '갱신 전에 consolidate한다'의 정확한 수학적 형태입니다. 문제가 둘 있습니다. 첫째, student가 teacher보다 capacity가 큽니다. teacher가 미리 만든 고정 데이터로만 배우면 student가 자기 능력을 다 못 씁니다. 둘째, 모델이 자고 있어서 외부 데이터셋이 없습니다. 해법이 GKD입니다. teacher가 생성한 데이터와 student가 스스로 생성한 on-policy 데이터를 섞습니다. 이 두 번째 항, 즉 student가 자기가 만든 문장 위에서 교정받는 게 첫 문제의 답입니다. 그리고 두 가지 제약이 붙습니다. sampling 분포를 통해서는 역전파하지 않고, student 파라미터는 전부 얼려서 새 expert만 학습합니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Stage 1b — Knowledge Seeding: 위로 가는 distillation"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "teacher = 확장 전 자기 자신 (사라지기 전 지식)",
+            "student = 확장+갱신 후, 빈 새 expert 보유",
+            "움직이는 건 새 expert뿐 → 사라진 지식 재구성",
+            "난점: student가 더 크다 / 외부 데이터 없음",
+            "해법 GKD: teacher 데이터 + student on-policy 혼합",
+            "제약: sampling 통과 역전파X, 새 expert만 학습"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "Stage 1c LTI + reset",
+    "notes": "distillation만으로는 부족하다는 게 논문의 경험적 관찰입니다. student가 지식에 접근할 수 있게 됐어도, 그걸 실제로 쓰는 법은 못 배워서 teacher의 성능을 약하게만 흉내냅니다. 아는 것과 쓰는 것은 다르다는 거죠. 그걸 교정하는 RL 단계가 Learning to Imitate입니다. teacher가 생성한 데이터에서 앞부분 일부를 뽑아 student에게 이어 쓰게 하고, 잘 이어 썼으면 보상을 줍니다. 보상은 두 개를 섞습니다. 하나는 frozen reward model이 '의미가 같으면 1, 다르면 0' 주는 semantic 보상, 다른 하나는 편집거리 기반의 토큰 수준 유사도인 absolute 보상입니다. 이 LTI 보상과 앞의 GKD distillation을 합친 게 최종 Knowledge Seeding objective고, 계수 하나로 둘의 균형을 잡습니다. 그리고 consolidation이 끝나면 마지막 동작이 옵니다. 빠른 블록에 과거 sleep들이 추가했던 low-rank expert들을 전부 reset해서 그 capacity를 미래의 wake를 위해 되돌립니다. 이걸 synaptic-pruning reset이라 부릅니다. 계보를 짚으면, TNT의 periodic reset은 사슬을 끊어 throughput을 올리는 장치였는데, 여기선 '지식을 위로 옮긴 다음에만 지운다'는 memory-hygiene 원리로 승격됐습니다. inference 언어로는, eviction 전에 반드시 상위 계층으로 write-back하는 cache 정책입니다. 순 효과는 하나의 불변식입니다. 빠른 메모리는 작고 유연하게, 느린 메모리는 단조 성장하며 신선한 expert로만 쓰인다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Stage 1c — Learning to Imitate + synaptic-pruning reset"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "관찰: 지식 접근은 되나 '쓰는 법'은 못 배움",
+            "LTI: prefix 완성에 보상 주는 RL",
+            "보상 = semantic(frozen judge) + Levenshtein 유사도",
+            "최종 objective = GKD distill + LTI reward",
+            "끝나면 빠른 블록 옛 expert 일괄 reset",
+            "= write-back 후 eviction, memory-hygiene 원리"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "Stage 2 Dreaming",
+    "notes": "sleep의 둘째 단계, Dreaming입니다. REM 수면, 즉 꿈에 대응합니다. 모델이 자기 성능을 올려 줄 합성 데이터, 즉 dream을 스스로 생성하는 법을 배우는 self-modification 과정입니다. 이 자리 자체는 플러그인이라, 어떤 self-improvement 기법도 꽂을 수 있고, 논문은 SEAL이라는 방법 위에 시연했습니다. SEAL은 모델이 자기 갱신용 텍스트를 만들고, 그걸로 자신을 미세조정한 결과가 좋으면 그 생성을 RL로 강화하는 loop입니다. 절차는 다섯 단계입니다. 첫째 생성. context를 주고 dream 여러 개를 뽑는데, 이때 모든 MoE router가 정규 dispatch에 더해 random expert 하나를 추가로 켭니다. 무관한 지식을 일부러 섞어서, 숨어 있던 기억들 사이 새 패턴을 표면화하는 novelty 주입입니다. 오른쪽 그림이 sleep 사이클을 거치며 router가 expert들을 골라 갱신하는 모습입니다. 둘째 선별. gradient importance로 대부분의 dream을 기각하고 상위 몇 개에 다양성용 랜덤 샘플을 더합니다. 셋째 적용. 살아남은 각 dream마다 모델의 격리된 복사본을 LoRA로 미세조정합니다. 넷째 보상. 그 미세조정 결과가 실제 task에서 개선되면 dream 생성에 1을, 아니면 0을 줍니다. 다섯째 강화. 이 이진 보상으로 dream 생성 정책을 ReST^EM으로 최적화합니다. 이건 value network 없이 '생성→필터→생존 샘플에 SFT→반복'하는 간단한 EM 계열 RL입니다. 왜 consolidation을 먼저 하고 dreaming을 나중에 하냐면, 갓 배운 취약한 지식을 새 expert에 격리해 둔 다음 dreaming의 반복 self-training을 돌려야 그 지식이 덜 잊히기 때문입니다. 그림은 원저자 Figure 8입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Stage 2 — Dreaming: 자기 생성 데이터에 의한 self-modification"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "REM 대응 — dream을 스스로 만드는 법을 학습",
+            "SEAL 위에 시연 (self-edit → 좋으면 RL 강화)",
+            "① 생성 + random-expert로 novelty 주입",
+            "② gradient importance로 대부분 기각",
+            "③ dream마다 격리 instance를 LoRA SFT",
+            "④⑤ 개선되면 보상 → ReST^EM으로 정책 강화"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/reffigs/2606.03979/figures/fig8.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "세 regime과 정직성 caveat",
+    "notes": "여기서 이 섹션에서 가장 정직하게 짚어야 할 부분입니다. 우리는 지금까지 이 라인을 outer loop 훈련과 inner loop test-time 학습, 두 regime으로 봐 왔습니다. Sleep은 여기에 세 번째 regime을 추가합니다. regime 1은 backbone pre-training, regime 2는 wake, 즉 배포 중 입력이 흐를 때 CMS가 갱신되는 것, 그리고 regime 3이 신세계인데 sleep입니다. 배포된 삶의 주기적 일부로 도는 진짜 gradient 훈련이죠. 그런데 여기 반드시 말해야 할 caveat가 있습니다. Sleep의 sleep 기제, 즉 혼합 계수들, reward model, ReST^EM loop 그 어느 것도 pre-training에서 end-to-end로 meta-learn되지 않습니다. 이 라인의 정체성은 지금까지 'update rule 자체를 outer loop가 미분해서 배운다'였습니다. Titans의 gate들도, Atlas의 window gate도, NL의 self-modifying 목표도 다 그랬죠. Sleep은 이 라인 최초로, 핵심 메커니즘이 미분되어 통과되는 inner loop가 아니라 알고리즘적 wrapper인 논문입니다. 게다가 실험 대부분은 pre-trained Llama나 Qwen checkpoint 위에 sleep 기계를 graft, 즉 접붙인 겁니다. Hope 실험조차 NL 레시피로 처음부터 학습한 게 아니라 Llama에 작은 MLP 메모리 블록 다섯 개를 얹은 구성이고요. 이걸 결함으로 볼 것이냐 방법론적 이탈로 볼 것이냐는 해석의 문제지만, 정직하게 표시해야 할 라인의 이음새입니다. '언제 자고, 얼마나 키우고, 무엇을 꿈꿀지' 같은 lifecycle 수준 결정은 토큰 수준 gate와 달리 미분 가능하게 만들기 어려우니 wrapper는 불가피한 첫걸음이라는 독법과, NL 논리를 밀면 sleep의 knob들도 더 느린 level의 학습 대상이어야 하는데 그 일반화를 안 했다는 독법이 대칭적으로 존재합니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "세 optimization regime — 그리고 정직성 caveat"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "regime1 pre-train / regime2 wake / regime3 sleep",
+            "regime3 = 배포 중 도는 주기적 gradient 훈련",
+            "caveat: sleep knob들은 meta-learn 안 됨",
+            "라인 최초 — 핵심이 inner loop 아닌 알고리즘 wrapper",
+            "실험 대부분 Llama/Qwen 위 graft (co-train 아님)",
+            "→ 지워지지 않은 라인의 '이음새', 정직하게 표시"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "결과",
+    "notes": "결과를 봅시다. 정직성 계약대로 절대 수치보다 방향과 비율 위주로 읽겠습니다. 첫째 class-incremental learning. CLINC, Banking, DBpedia 같은 의도 분류에서 memory consolidation을 얹은 Hope가 in-context learning, EWC, 순정 Hope를 모두 상회합니다. 왼쪽 그림이 그 결과입니다. 해석은 두 가지인데, ICL 대비 이득은 프롬프트 적응을 지속적 파라미터 메모리로 바꾼 데서 오고, 순정 Hope 대비 이득은 명시적 self-distillation이 반복 in-context 갱신보다 나은 추상을 만든 데서 옵니다. 둘째, sleep 단계 수를 늘릴수록 성능이 단조 개선됩니다. 반대로 가장 persistent한 메모리를 더 자주 갱신하게 만들면 오히려 retention이 약해져 나빠지는데, 이건 '가장 느린 것은 가장 안정적이어야 한다'는 직관과 정확히 맞습니다. 셋째 지식 주입, SQuAD의 SEAL 프로토콜에서 Sleep이 SEAL을 넘습니다. 특히 여기서 Dreaming을 통째로 제거하면 성능이 폭락해서, 이 task의 이득은 대부분 dreaming에서 온다는 걸 보여 줍니다. 넷째 few-shot ARC. Llama-1B로 ICL이 0%, SEAL이 72.5%인데 Sleep이 80%에 도달합니다. 다섯째 수학 추론. Qwen3-8B AIME-24에서 Sleep이 GRPO 76.4 대비 79.2로 앞섭니다. 다만 정직하게 하나 짚으면, ablation에서 semantic reward를 제거하면 AIME-25에선 오히려 완전체보다 좋습니다. frozen reward model이라는 외부 의존이 균일하게 이롭지는 않다는 신호죠. 그리고 효율. step당 비용은 SFT의 4배지만, 같은 목표 성능에 도달하는 wall-clock으로 재면 SFT가 3.6배에서 4.8배 더 걸립니다. 즉 이 패러다임이 사는 건 싼 step이 아니라 step·sample 효율입니다. 그림은 원저자 Figure 3입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "결과: class-incremental, SQuAD>SEAL, ARC 80%, math"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "class-incremental: Hope+consolidation > ICL/EWC/순정",
+            "sleep 단계 수 ↑ → 단조 개선",
+            "SQuAD(SEAL protocol): Sleep > SEAL, 이득은 dreaming",
+            "few-shot ARC: ICL 0 → SEAL 72.5 → Sleep 80%",
+            "math AIME-24: Sleep 79.2 vs GRPO 76.4",
+            "효율: step 4× 비싸도 iso-accuracy 3.6–4.8× 이득"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/reffigs/2606.03979/figures/fig3.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "Systems/serving 함의",
+    "notes": "이 논문의 시스템 함의는 이 라인 어느 논문보다 큽니다. 앞 논문들은 layer를 바꿨지만 이건 배포 형태를 바꿉니다. 첫째, inference가 더 이상 forward-only가 아닙니다. wake 동안 CMS는 블록마다 토큰당 optimizer error 항을 계산하고, 파라미터 크기의 accumulator를 유지하며, 주기마다 weight에 씁니다. KV cache는 append-only인데 이건 read-modify-write입니다. 오른쪽 그림처럼 이 RMW 트래픽이 10장 cost model에 새 항으로 들어갑니다. 둘째, update frequency 사다리가 곧 storage-tier 사다리의 힌트입니다. 고주파 블록의 accumulator는 연산 가까이 있어야 하지만, 저주파 블록은 수천 토큰에 한 번만 건드리니 더 느린 계층에 두고도 write 비용을 상각할 수 있습니다. 셋째, session state의 범주가 바뀔 수 있습니다. fixed-state sequence 모듈을 쓰는 변형에선 지속 세션 상태가 KV cache가 아니라 파라미터, 즉 low-rank expert로 대체됩니다. 이건 KV 문제가 아니라 per-user weight-delta 서빙 문제고, multi-tenant LoRA adapter 서빙과 같은 부류입니다. adapter 버전 관리, routing, eviction이 세션 관리의 어휘가 됩니다. 넷째, sleep은 서빙 배포에 붙는 스케줄된 훈련 job입니다. 한 번의 sleep이 요구하는 걸 나열하면 그대로 인프라 명세서입니다. teacher corpus 생성, student rollout, reward-model 호출, dream마다 backward pass, dream별 독립 LoRA SFT job들, ReST^EM 반복. 그리고 sleep 한 번마다 새 모델 버전이 태어납니다. checkpoint 관리, cache 무효화, regression test, rollback이 릴리스 때 일이 아니라 상시 운영의 일이 됩니다. 정직하게 하나 남기면, 논문은 sleep 한 사이클의 wall-clock이나 에너지 분해를 제시하지 않았습니다. 이건 이 책 Part III가 검증할 가설이지 입증된 사실이 아닙니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Systems 함의: 배포 형태 자체가 바뀐다"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "inference가 forward-only 아님 → decode에 RMW 트래픽",
+            "frequency 사다리 = storage-tier 사다리 힌트",
+            "session state가 KV → per-user weight-delta로",
+            "= multi-tenant LoRA adapter 서빙 문제",
+            "sleep = 서빙에 붙는 스케줄 훈련 job, 매번 새 버전",
+            "정직성: wall-clock·에너지 분해는 논문에 없음"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/exp-e-rmw-cliff.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "NL 관계 & 완성형 연결",
+    "notes": "마무리로 이 논문이 라인에서 차지하는 자리를 정리합니다. NL과의 관계부터. 12장부터 16장까지 논문들은 전부 master update의 성분을 바꿨습니다. Miras는 objective를, Atlas는 window와 optimizer를, TNT는 훈련 경제학을, NL은 층위를 바꿨죠. Sleep은 그 update 규칙 자체는 건드리지 않습니다. 대신 그 update들이 살아가는 lifecycle을 바꿉니다. NL의 online consolidation이 절반이었다면, Sleep은 나머지 절반인 offline consolidation을 채워 CMS를 시간 축으로 확장한 겁니다. 그리고 이 라인 전체의 가장 큰 함의. Titans가 'test time에 외우는 법을 배우자'로 열었던 질문이, 여섯 편째에 이르러 train/test 경계 자체를 지웁니다. 모델은 결코 훈련이 끝나지 않고, 서빙 fleet은 설계상 주기적 fine-tuning job을 돕니다. 여섯 논문을 겹쳐 놓으면 하나의 완성형이 실제로 그려집니다. state는 모든 시간 규모에서 weight다. 모든 블록은 같은 associative memory 객체다. inner optimizer는 아키텍처와 대등한 설계 표면이다. 훈련은 어디서나 chunk-anchored다. 그리고 lifecycle은 wake/sleep이다. 제품으로 읽으면, 세션 상태가 mutable weight인 continually-learning LLM에 sleep 서비스가 배포에 붙어 있는 시스템입니다. 이게 다음 섹션, 완성형으로 이어지는 다리입니다. 단 정직하게, 이 완성은 개념적 완성이지 from-scratch 실증은 아직 1.3B 규모에 멈춰 있다는 것도 함께 넘깁니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "NL 관계 & 라인 완성형으로의 연결"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "12–16장은 update 성분을, Sleep은 lifecycle을 바꿈",
+            "NL online의 나머지 절반(offline)을 채움",
+            "'test time' 소거 — 훈련은 결코 끝나지 않는다",
+            "완성형: state=weight, 블록=associative memory",
+            "제품: mutable-weight LLM + 붙어 있는 sleep 서비스",
+            "단 개념적 완성 — 실증은 1.3B에 멈춤(다음 섹션)"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "S8 요약",
+    "notes": "이 섹션을 다섯 가지로 정리합니다. 첫째, Sleep은 continual learner에게 train/test 구분이 없다고 선언하고, 그 자리를 wake와 sleep의 주기적 교대로 대체합니다. 둘째, catastrophic forgetting을 capacity 문제로 재정의하고, '덮어쓰지 말고 키워라'는 parameter expansion으로 답합니다. 옛 지식 자리를 안 건드리니 CF를 구조로 막습니다. 셋째, sleep은 두 단계입니다. Memory Consolidation은 사라질 지식을 새 low-rank expert에 upward distillation으로 격리하고 reset으로 위생을 지킵니다. Dreaming은 자기 생성 데이터로 자신을 고쳐 씁니다. 넷째, 결과는 class-incremental, SQuAD에서 SEAL 상회, ARC 80%, 수학 우위로 방향이 일관되지만, graft 실험이고 knob들이 meta-learn되지 않는다는 이음새는 정직하게 남습니다. 다섯째, 시스템적으로 이건 layer가 아니라 배포 형태를 바꿉니다. serving fleet에 붙는 밤마다의 훈련 job, 매번 새 버전, per-user weight-delta 서빙. 이게 라인의 완성형이고, 다음 섹션으로 넘어갑니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "summary",
+          "text": "S8 요약 — Sleep"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "train/test 폐기 → wake/sleep lifecycle",
+            "CF=capacity 문제 → expansion으로 구조적 방지",
+            "sleep 2단계: Consolidation(격리) + Dreaming(자기수정)",
+            "결과 일관(SEAL·ARC·math) — 단 graft·wrapper 이음새",
+            "layer 아닌 배포 형태 변경 → 라인 완성형으로"
+          ]
+        }
+      }
+    ]
+  }
+]

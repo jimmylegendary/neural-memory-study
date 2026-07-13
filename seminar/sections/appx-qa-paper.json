@@ -1,0 +1,475 @@
+[
+  {
+    "title": "S12-00-divider",
+    "notes": "여기서부터는 부록입니다. 발표를 다 들으신 뒤, 여러분 같은 inference·infra 엔지니어가 실제로 던질 법한 날카로운 질문들을 논문별로 미리 정리해 두었습니다. 발표 중에 넘어간 부분이나, '그거 진짜야?' 하는 의심이 드는 지점을 여기서 다시 짚습니다. 각 슬라이드는 질문을 불릿으로 띄우고, 제가 말로 드리는 모범 답변을 노트에 담아 두었습니다. Q&A 시간에 이 순서대로 갈 필요는 없고, 궁금하신 논문부터 골라 물어보셔도 됩니다. 핵심 원칙 세 가지만 미리 말씀드리면: 첫째, 이 여섯 논문의 수치는 대부분 비율·방향이지 절대 실측 벤치마크가 아닙니다. 둘째, 앞 네 편(Titans·Miras·Atlas·TNT)은 뒤 두 편(NL·Sleep)을 위한 base라는 관점을 유지합니다. 셋째, 이 라인의 가장 큰 미해결은 '표현력'이 아니라 '서빙 경제학'입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "section",
+          "text": "부록 A — 논문별 예상 Q&A",
+          "subtitle": "inference·infra 엔지니어가 실제로 물을 법한 질문과 모범 답변"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "6편 각각 예상 질문 2~3개 + 모범 답변(노트)",
+            "질문은 메커니즘의 급소를 겨냥 — surprise·scan·Muon·mismatch·self-reference·dreaming",
+            "수치는 비율/방향 위주(정직성 계약 유지)",
+            "관통 주제: backward가 decode 안으로, 그리고 서빙 경제학"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "S12-01-titans-momentum",
+    "notes": "Titans에 대한 첫 질문은 거의 항상 이겁니다: '왜 momentum을 surprise라고 부르나? 그냥 optimizer 트릭 아닌가?' 답을 드리면 — Titans의 inner loss는 memory가 key를 넣었을 때 value를 얼마나 못 맞히는가, 즉 associative regression loss입니다. 이 loss의 gradient 크기가 곧 '지금 들어온 토큰이 이미 저장된 내용을 얼마나 위반하는가'를 재는 값이라, 저자들은 이걸 momentary surprise라고 부릅니다. gradient가 크다는 건 예상 밖 입력이라는 뜻이니까요. 그런데 문제가 있습니다. 큰 surprise가 한 번 터지면 그 직후에는 loss가 이미 낮아져서 gradient가 급감합니다. 즉 '놀라운 사건 바로 뒤에 이어지는 중요한 토큰들'이 약하게 저장돼요. 사람도 충격적인 순간 직후의 몇 초를 함께 기억하잖아요. 그래서 surprise에 관성을 붙입니다. 그게 momentum buffer S_t이고, S_t = beta_t S_{t-1} - eta_t g_t 입니다. 여기서 결정적인 포인트: 이건 그냥 SGD-with-momentum의 momentum buffer를 통째로 sequence layer의 recurrent state로 승격시킨 겁니다. 그리고 beta_t를 상수가 아니라 토큰의 함수로 둡니다. beta_t가 0에 가까우면 문맥이 바뀌었다고 보고 과거 surprise 전파를 끊고, 1에 가까우면 지금 토큰이 직전 문맥과 강하게 묶여 있다고 보고 그대로 흘려보냅니다. 그러니 'optimizer 트릭'이 맞긴 한데, 그 트릭을 데이터 의존적으로 만들어 sequence 모델의 메커니즘 자체로 끌어올린 것이 Titans의 첫 발명입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Titans Q1 — momentum이 왜 surprise인가?"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "Q. momentum은 그냥 optimizer 트릭 아닌가?",
+            "surprise = inner loss(associative regression)의 gradient 크기",
+            "큰 surprise 직후 gradient 급감 → 다음 토큰이 약하게 저장",
+            "S_t = beta_t·S_{t-1} - eta_t·g_t : optimizer state를 recurrent state로 승격",
+            "beta_t는 토큰 함수 — 문맥 전환이면 과거 surprise 차단"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "S12-02-titans-scan",
+    "notes": "두 번째 단골 질문: 'associative scan으로 병렬화한다는데, 정확히 어디가 어떻게 병렬화되나? 그리고 decode에서 진짜 backward를 돈다는 게 사실인가?' 그림을 보면서 설명하겠습니다. Titans 훈련 병렬화는 세 조각으로 나뉩니다. 첫째, chunk 안의 write. sequence를 크기 C의 chunk로 자르고, chunk 안의 모든 gradient를 chunk 시작 상태 W_0에서 평가합니다. 모든 gradient가 같은 동결 상태에서 계산되니까 C개를 동시에 계산할 수 있고, linear memory면 이게 GEMM 두 개로 tensorize됩니다. 여기서 중요한 감각 하나 — chunk 크기 C가 곧 write GEMM의 내적 차원이라, C가 arithmetic intensity의 손잡이입니다. 둘째, momentum. gradient들을 미리 다 계산해 두면 S_t = beta_t S_{t-1} - eta_t g_t 는 입력 의존 전이계수를 가진 1차 선형 recurrence가 됩니다. 이건 정확히 Mamba의 selective scan과 같은 모양이라, 여러분이 이미 아는 parallel associative scan, prefix-sum 커널이 그대로 훈련 그래프 한가운데에 들어갑니다. 셋째, chunk 경계. 여기만 nonlinear입니다 — 갱신된 MLP weights가 다음 chunk loss에 비선형으로 재진입하죠. 그래서 순차 임계 경로가 L이 아니라 L/C로 줄어듭니다. 이제 decode 질문. 네, 사실입니다. 이 라인에서 'decode = read-only forward + KV append'라는 불변식은 폐기됩니다. decode 한 스텝이 forward + backward + optimizer step + read가 됩니다. 다만 주의할 게 있어요. 훈련은 C>1의 chunk-start anchor로 stale gradient를 쓰는데 decode를 C=1로 하면 두 궤적이 달라집니다. C가 semantic hyperparameter이기 때문인데, 이 train/serve mismatch가 바로 TNT의 출발점입니다. 이 그림은 Titans 원논문 Figure 1입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Titans Q2 — associative scan 병렬화는 정확히 어디?"
+        },
+        "geometry": { "x": 60, "y": 60, "w": 840, "h": 60 }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "chunk 내 write: 모두 W_0에서 평가 → C개 동시, GEMM 2개",
+            "C = write GEMM 내적 차원 = intensity 손잡이",
+            "momentum: 1차 선형 recurrence = Mamba selective scan",
+            "chunk 경계만 nonlinear → 임계경로 L→L/C",
+            "decode에 backward 진입 — KV append 불변식 폐기",
+            "C_train ≠ C_decode면 궤적 달라짐 → TNT의 출발점"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/reffigs/2501.00663/figures/fig1.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "S12-03-miras-lp-huber",
+    "notes": "Miras에서 가장 날카로운 질문: '왜 Lp나 Huber loss가 L2를 이기나? 이론적 근거가 있나, 아니면 그냥 튜닝인가?' 정직하게 답하겠습니다. 먼저 동기는 명확합니다. L2 regression loss는 노이즈에 민감해요. 큰 residual, 즉 심하게 놀란 토큰 하나가 memory를 자기 크기만큼 흔들어 버립니다. Lp에서 p를 다이얼로 봅니다. p가 2보다 작으면 큰 residual의 영향을 눌러 노이즈에 강건해지고, p가 2보다 크면 큰 오차를 오히려 증폭해 기억합니다. 극한 p=1이면 residual의 크기는 버리고 부호만 write 신호로 쓰는데, 저자들은 이걸 value-less associative memory라고 부릅니다 — 어떤 key가 왔다는 사실은 저장하되 value 크기는 안 저장하는, 사람이 극단적 사건의 세부를 눌러버리는 coping mechanism의 유비죠. Huber는 이 둘의 절충입니다: threshold 안이면 L2, 밖이면 sign 방향으로 — 사실상 per-token gradient clipping이고, 그 threshold를 입력 의존적으로 학습합니다. 자, 여기서 정직성 포인트. 이게 왜 이기는가에 대한 정리는 없습니다. Miras가 실제로 출하한 Moneta는 (p,q)=(3,4)인데, q=4는 논문 자신의 FTRL 유도 범위(1<q<=2)를 벗어난 경험적 확장이고 별도 보증이 없습니다. 또 Miras의 핵심 등가 정리인 Prop 3.2는 상수 eta, 무제약 W, convexity를 가정하는데, 실제 출하 모델에서 이 가정이 전부 깨집니다 — gate는 data-dependent고, Memora는 simplex 제약이 있고, 2-layer MLP는 convexity를 깹니다. 그래서 저는 이렇게 정리합니다: Lp/Huber가 이기는 건 실증이고, 프레임의 가치는 '왜 이기는지 증명'이 아니라 '이런 변형들을 체계적으로 생성하는 문법'을 준 데 있습니다. 그림은 Miras framework overview(원논문 Fig.1)입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Miras Q — 왜 Lp / Huber가 L2를 이기나?"
+        },
+        "geometry": { "x": 60, "y": 60, "w": 840, "h": 60 }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "동기: L2는 큰 residual(놀란 토큰)에 과민",
+            "p<2 강건 / p>2 증폭 / p=1 = value-less memory",
+            "Huber = per-token gradient clipping, threshold 학습",
+            "정직성: 왜 이기는지 정리 없음 — 전부 실증",
+            "Moneta의 q=4는 유도 범위 밖 경험적 확장",
+            "가치 = 변형을 생성하는 '문법', 증명 아님"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/reffigs/2504.13173/figures/fig1.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "S12-04-miras-retention",
+    "notes": "Miras 관련 보조 질문 하나 더 자주 나옵니다: 'forget gate를 retention gate로 이름만 바꾼 거 아닌가? 실체가 뭐가 다른가?' 이건 용어 논쟁 같지만 실제로 설계 관점이 바뀝니다. Miras의 관찰은 이겁니다 — 기존 forget gate들은 전부 L2류 regularization의 특수형이고, gate가 하는 일은 '지우기'가 아니라 '새 association을 배우는 것과 이전 state에 머무르는 것 사이의 trade-off'입니다. 모델은 memory를 소거하는 게 아니라 유지하지 않기로 결정할 뿐이에요. 신경과학에서 뇌가 기억을 지우는 게 아니라 retrieval failure로 접근 불가능해진다는 관점과 같습니다. 그래서 forgetting이 아니라 retention이라고 부릅니다. 실무적으로 중요한 건, 이 재이론화가 retention을 네 설계축 중 하나로 독립시켰다는 점입니다. Miras는 여기서 mirror descent, Bregman divergence, elastic net 같은 online optimization 도구를 통째로 gate 설계로 수입합니다. 대표적으로 Memora는 softmax 재정규화로 state를 simplex에 가두는데, 이러면 context가 아무리 길어도 state가 증명 가능하게 발산할 수 없습니다 — decay가 아니라 확률 질량 경쟁에서 잊기가 나오는 거죠. 그러니까 이름 바꾸기가 아니라, '무엇을 잊을지'를 정규화 항의 선택이라는 설계 문제로 만든 겁니다. inference 관점에서 이게 왜 중요하냐면, state 발산이 없다는 건 긴 문맥에서 numerical stability를 공짜로 얻는다는 뜻이라 서빙에서 유리합니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Miras Q(보조) — forget을 retention으로 부르면 뭐가 다른가?"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "gate = 지우기 아님, learning vs 이전 state 유지의 trade-off",
+            "뇌: 삭제가 아니라 retrieval failure — retention이 정확",
+            "재이론화 → retention이 독립 설계축",
+            "mirror descent·Bregman·elastic net을 gate로 수입",
+            "Memora: softmax 재정규화 → state 발산 불가(simplex)",
+            "서빙 함의: 긴 문맥 numerical stability 공짜"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "S12-05-atlas-muon",
+    "notes": "Atlas의 급소 질문: 'Muon 같은 2차 근사 optimizer를 inner loop에 넣으면 chunkwise 병렬화가 깨지지 않나? Newton-Schulz 반복은 순차적일 텐데?' 좋은 질문이고, 답은 '안 깨진다, 구조적 관찰 하나 덕분에'입니다. 열쇠는 이겁니다: gradient를 chunk 경계 상태에서 평가하기로 한 순간, 각 토큰의 gradient g_t는 chunk 전체에 대해 미리 계산 가능해집니다. 그러면 momentum recurrence S_t = beta_t S_{t-1} - eta_t g_t 는 진화하는 memory W와 완전히 독립인 linear scan이 됩니다. 즉 momentum이 memory에서 분리돼요. 이 scan은 gate들의 대각행렬과 쌓아둔 gradient의 broadcast-and-matmul로 chunk 내 모든 S_t를 한 번에 얻습니다. 그다음이 핵심인데, Newton-Schulz는 per-matrix 다항식입니다 — 반복마다 X ← aX + b(XX^T)X + ... 꼴의 matmul 서너 개죠. 이건 chunk 내 전 위치의 S_t에 batched matmul로 동시에 적용됩니다. 순차로 남는 건 마지막 gated 누적 scan 하나뿐입니다. 그래서 세 단계 — gradient 병렬, momentum scan, batched NS — 로 '근사 2차 optimizer를 가진 최초의 parallelizable recurrent architecture'가 됩니다. 여기서 재밌는 손잡이 하나: NS 반복 횟수 kappa를 Atlas는 명시적으로 test-time compute 파라미터로 규정합니다. 반복을 더 돌리면 orthogonalization이 정확해지고 memorization이 좋아지되 inference FLOPs가 선형으로 늘어요. state 크기를 하나도 안 바꾸고 연산량과 품질을 교환하는 다이얼입니다 — 실전값은 kappa=5, NS-5입니다. 한 가지 정직성 경고: Atlas 원논문은 이 recurrence의 부호가 세 군데(Table 1, Eq.33, App D.4)에서 서로 다르고, Table 1 행은 실제로 부호 오탈자라 loss ascent가 됩니다. 재구현하실 거면 App D.4 관행을 따르세요.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Atlas Q — Muon이 chunkwise 병렬화를 유지하나?"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "핵심: gradient를 chunk 경계에서 평가 → momentum이 memory와 분리",
+            "S_t recurrence = W와 독립인 linear scan(1회 broadcast-matmul)",
+            "Newton-Schulz = per-matrix 다항식 → batched matmul 동시 적용",
+            "순차로 남는 건 최종 gated 누적 scan 하나",
+            "kappa(NS 반복) = test-time compute 다이얼, 실전 NS-5",
+            "정직성: 원문 부호 3곳 불일치, Table 1은 오탈자 → App D.4 따르라"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "S12-06-atlas-capacity",
+    "notes": "Atlas 보조 질문: 'memory capacity 정리를 내세우던데, 그거 믿어도 되나?' 방향은 믿되 문자 그대로는 조심하시라고 답합니다. Atlas가 이 라인 최초로 capacity를 형식적으로 정의한 건 진짜 기여입니다 — memory가 inner loss 0으로 정확히 매핑할 수 있는 선형독립 key 쌍의 최대 개수 m. Prop 1은 matrix memory가 최대 O(d_k)개밖에 저장 못 한다는 순수한 rank 논증이고, 이건 tight합니다. 그리고 feature map phi_p로 key를 들어올리면 capacity 상한이 O(d_k^p)로 옮겨가는데, 이건 어떤 optimizer를 쓰든 넘길 수 없는 상한이라 optimizer(Muon)와 직교하는 손잡이라는 게 설계의 골격입니다. 극한으로 Kronecker self-tensoring을 하면 exp(q·k)를 정확히 재현해서 softmax attention이 무한차원 feature 공간의 capacity-무한 associative memory로 회수됩니다 — 'KV cache는 압축 안 하는 memory'라는 직관이 정리 형태를 얻는 거죠. 자, 조심할 부분. deep MLP memory의 capacity를 다루는 Theorem 1은 검증된 정리로 읽으면 안 됩니다. Prop 1의 정의는 입력 key의 선형독립을 요구하는데 Theorem 1의 하한 O(d_k·d_v)는 그걸 초과합니다 — 즉 Theorem 1은 입력 key가 아니라 MLP가 내부에서 lift한 표현의 선형독립을 세는, 원문이 명시 안 한 다른 capacity 개념을 암묵적으로 씁니다. 증명도 하한을 깔끔히 세우지 못해요. 그래서 '깊이가 capacity 자체를 올린다'는 검증된 정리가 아니라 방향성 주장이고, 저는 Titans의 deep-memory ablation과 정합하는 선에서만 인용합니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Atlas Q(보조) — capacity 정리를 믿어도 되나?"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "Prop 1: matrix memory 최대 O(d_k) — 순수 rank 논증, tight",
+            "feature map phi_p → 상한 O(d_k^p), optimizer와 직교",
+            "극한: softmax = capacity-무한 memory(KV cache 직관의 정리화)",
+            "주의: deep-memory Theorem 1은 검증된 정리 아님",
+            "하한이 Prop 1 정의를 초과 — 다른 capacity 개념 암묵 사용",
+            "'깊이가 capacity를 올린다'는 방향성 주장으로만 인용"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "S12-07-tnt-mismatch",
+    "notes": "TNT의 핵심 발견에 대한 회의적 질문이 자주 나옵니다: 'chunk-size mismatch가 진짜 현상인가, 아니면 단일 그림 하나에만 근거한 거 아닌가?' 그림을 보면서 답하겠습니다. 근거는 이 Figure 2 하나가 맞습니다 — 550M Titans를 chunk 64로 pre-train한 뒤 inference chunk 크기만 바꿔가며 validation perplexity를 잰 곡선입니다. 숫자를 보면: chunk 8에서 ppl 36.45, 16에서 34.15, 32에서 24.23, 그리고 훈련값인 64에서 13.78로 최적, 128에서 15.5, 256에서 17.88, 512에서 22.4. V자 바닥이 정확히 훈련 chunk에 걸려 있습니다. 여기서 반직관적인 게 왼쪽입니다 — 더 작은 chunk는 더 신선한 gradient를 뜻하니까 직관적으로는 inference에서 더 좋아야 하는데, 실제로는 ppl이 2.6배 이상 폭발합니다. 모델이 훈련 해상도에 over-specialize된 거죠. 이제 회의론에 정직하게 답하면: 네, 정량적 근거는 이 한 그림이고 550M 단일 모델·단일 시드입니다. 하지만 이건 우연한 아티팩트가 아니라, 우리 세미나에서 계속 나온 '9장 명제', 즉 chunk 크기 C가 stale-snapshot anchor를 바꾸므로 계산되는 함수 자체를 바꾸는 semantic hyperparameter라는 이론적 예측의 실증입니다. FlashAttention tiling이 bit-exact인 것과 결정적으로 다르죠. 그래서 저는 이렇게 봅니다 — 발견의 통계적 강건성은 약하지만(단일 그림), 이론적 필연성은 강합니다. 그리고 이 발견이 실무적으로 아픈 이유는, 이상적 serving 구성인 chunk-1 decode를 위협하기 때문입니다. 큰 chunk로 싸게 훈련한 baseline은 chunk 8에서 이미 폭발하니 chunk 1로 직행을 못 해요. TNT의 two-stage training이 바로 이걸 5~8% 비용의 fine-tuning으로 치료하는 처방입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "TNT Q1 — chunk mismatch가 단일 그림에만 근거?"
+        },
+        "geometry": { "x": 60, "y": 60, "w": 840, "h": 60 }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "근거: Fig.2 하나(550M, C=64 훈련) 맞음",
+            "V자 바닥이 훈련 chunk 64(ppl 13.78)에 정확히 걸림",
+            "반직관: 작은 chunk(신선 gradient)가 오히려 36.45로 폭발",
+            "통계적 강건성 약함, 이론적 필연성 강함(9장 명제)",
+            "C = semantic hyperparameter ≠ FlashAttention tiling(bit-exact)",
+            "아픈 이유: 이상적 chunk-1 decode를 위협 → two-stage 처방"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/reffigs/2511.07343/figures/fig2.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "S12-08-tnt-reset",
+    "notes": "TNT 두 번째 질문: 'local memory를 shard 경계마다 리셋하면 long-range 정보를 다 잃는 거 아닌가? 병렬화 얻자고 기억을 버리는 거 아닌가?' 정확히 그 트레이드가 맞고, TNT의 설계 전체가 이 손실을 보전하는 구조입니다. 그림을 보죠. TNT는 memory를 둘로 나눕니다. 위쪽 global memory는 아주 큰 chunk(실험에서 2048)로 sequence 전체를 순차적으로 관통합니다 — 리셋 없이. 그래서 long-range가 여기 살아남고, chunk가 크니 드물고 큰 dense matmul이라 하드웨어가 포화됩니다. 16K 문맥이면 sequence당 직렬 handoff가 8번뿐이에요. 아래쪽 local memory들이 리셋 대상입니다. 왜 리셋이 결정적이냐 — 비선형 recurrence는 parallel scan으로 병렬화가 안 됩니다. scan은 결합법칙을 요구하는데 MLP를 통과하는 상태 전이엔 그게 없어요. 리셋은 그 병렬화 불가능한 사슬을 아예 끊어서, shard들을 완전히 독립인 계산으로 만듭니다 — device에 분산하거나 batch 축에 쌓아 커널을 살찌울 수 있죠. 이게 context parallelism이고, 비선형 deep-memory recurrence를 sequence 방향으로 병렬화하는 TNT의 직접적 수단입니다. 그럼 질문대로 local은 shard 경계에서 다 잊습니다. 그 손실의 보전이 정확히 global의 존재 이유예요. ablation이 이걸 실증합니다 — global을 제거하면 ppl이 21.04에서 25.60으로 붕괴합니다. 하나 더, 리셋이 정보 전멸이 아닌 이유는 학습된 초기상태 W_init 덕분입니다. 모든 shard가 0이 아니라 meta-learn된 prior에서 시작하고, W_init은 모든 shard로부터 gradient를 받아 조밀하게 학습됩니다. Titans에서 암묵적이던 초기상태가 여기선 리셋을 생존 가능하게 만드는 load-bearing 부품으로 승격된 겁니다. 그림은 원논문 Fig.3, Stage 1 아키텍처입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "TNT Q2 — reset이 long-range 기억을 파괴하지 않나?"
+        },
+        "geometry": { "x": 60, "y": 60, "w": 840, "h": 60 }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "global(큰 chunk, 리셋X): long-range + 하드웨어 포화",
+            "local(리셋O): 비선형 recurrence는 scan 병렬화 불가",
+            "reset = 사슬 절단 → shard 독립 = context parallelism",
+            "손실 보전이 global의 존재 이유",
+            "ablation: global 제거 시 ppl 21.04→25.60 붕괴",
+            "W_init(학습된 prior)이 리셋을 생존 가능하게"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/reffigs/2511.07343/figures/fig3.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "S12-09-nl-backprop-memory",
+    "notes": "이제 집중 논문 NL입니다. 가장 근본적인 질문: 'backprop이 associative memory라는 재해석, 관점은 예쁜데 실용적 함의가 있나? 아니면 그냥 철학인가?' 두 층으로 나눠 답하겠습니다. 먼저 주장의 내용. 1-layer linear layer를 task loss로 훈련하는 SGD 한 스텝을 인수분해하면 gradient가 rank-1 outer product u·x^T로 쪼개집니다. 여기서 x는 입력, u는 그 출력공간의 예측오차(Local Surprise Signal). 이걸 proximal 형식으로 다시 쓰면 '입력 x를 key로, 오차 u를 value로 하는 dot-product objective의 associative memory'와 정확히 동치입니다. 즉 backprop으로 훈련되는 layer는 '각 입력 → 그 예측오차'를 weights에 압축하는 memory다 — 이게 주장입니다. 그리고 momentum, Adam, AdaGrad, Muon이 전부 gradient를 압축하는 memory로 재해석됩니다. 이제 실용성. 저는 관점 자체는 검증 불가능한 선언에 가깝다고 봅니다. 하지만 그 관점이 '생성한 물건'은 ablation으로 기여가 측정된 구체물이에요. 예를 들어 momentum이 memory라면 capacity를 물을 수 있는데, decay 0.9면 최근 44스텝 너머는 사실상 못 기억합니다. 이게 continual learning 실패로 나타나고, 진단이 '모델 capacity가 아니라 optimizer의 memory management 실패'가 됩니다. 여기서 M3라는 새 optimizer가 나옵니다 — momentum을 두 주기로 나눠 느린 momentum이 장기 문맥을 잡는, Adam+Muon+CMS 조합이죠. 또 objective를 dot-product에서 L2로 바꾸면 delta rule이 optimizer 층위에서 재발명되는 DGD가 나옵니다. 그러니 답은: 관점의 참·거짓이 아니라 생성물 성능으로 정산됩니다. Hope의 ablation에서 DGD를 단순 GD로 바꾸면 ppl 12.24에서 13.41로 악화합니다 — 재해석이 실제로 설계를 낳았다는 증거입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "NL Q1 — backprop=memory에 실용적 함의가 있나?"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "주장: gradient = rank-1 u·x^T → 입력(key)→오차(value) memory",
+            "momentum·Adam·Muon 전부 gradient 압축 memory로 회수",
+            "관점 자체는 검증 불가 선언 — 가치는 '생성물'에",
+            "momentum capacity: decay 0.9면 ~44스텝이 한계",
+            "생성물: M3(Adam+Muon+CMS), DGD(optimizer 층위 delta rule)",
+            "정산: DGD→단순GD면 ppl 12.24→13.41 악화"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "S12-10-nl-query-static",
+    "notes": "NL 두 번째, 아주 날카로운 질문: 'Hope의 self-modifying Titans는 projection을 전부 memory로 승격시킨다면서, 왜 query만 static으로 남기나? 일관성이 없어 보인다.' 그림을 보면서 답하는데, 이건 사실 논문 자신의 프레임에 대한 내부 반례라 정직하게 다뤄야 합니다. self-modifying Titans의 아이디어는 Titans의 마지막 동결 지점을 푸는 겁니다. Titans에서 projection W_K, W_V, W_Q와 gate head는 in-context 동결이라, 토큰을 문맥화하는 능력이 pre-training 지식으로 상계됩니다. 1-layer projection은 토큰·위치만의 함수라 문맥에 따라 뜻이 바뀌는 단어를 원리적으로 놓쳐요. 그래서 처방은 '모든 projection과 gate를 test-time에 갱신되는 memory로 승격'입니다. inner learning rate eta_t와 retention gate alpha_t 자체가 memory의 출력이 되고, 각 memory가 자기 target을 스스로 생성하는 self-modification까지 갑니다. 그런데 여기서 query가 문제입니다. 논문의 수식(Eq.88)에는 q가 승격 대상 집합에 포함돼 있는데, 같은 절 본문은 q_t = W_Q x_t를 유일한 비적응 projection으로 명시합니다. 왜냐? ablation이 결정적입니다 — 'inner projection q 동결'이 오히려 perplexity를 개선합니다. 12.24 대 12.19예요. 즉 q를 memory로 만들면 손해입니다. 이건 논문 자신의 핵심 주장 '더 많은 level이 좋다'에 대한 내부 반례입니다. 잘못 놓인 level은 오히려 해가 된다는 거죠. 저자들도 이걸 '최종 설계는 q를 정적으로 읽는 것이 정합적'이라고 인정합니다. 그래서 답은: query가 static인 건 원리가 아니라 경험적 발견이고, NL의 한계 중 하나인 'level 설계가 전부 hand-set 경험적'이라는 문제의 대표 증거입니다. 그림은 Hope backbone(원논문 Fig.5)입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "NL Q2 — Hope의 query는 왜 static인가?"
+        },
+        "geometry": { "x": 60, "y": 60, "w": 840, "h": 60 }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "self-modifying Titans: 모든 projection·gate를 memory로 승격",
+            "eta_t·alpha_t 자체가 memory 출력, self-generated target까지",
+            "수식(Eq.88)엔 q 포함, 본문은 q만 비적응 명시 — 모순",
+            "ablation: q 동결이 ppl 개선 12.24→12.19",
+            "'더 많은 level이 좋다'에 대한 내부 반례",
+            "결론: static q는 원리 아닌 경험적 발견(level 설계=hand-set)"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/reffigs/2512.24695/figures/fig5.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "S12-11-nl-selfref",
+    "notes": "NL 세 번째 질문(고급): 'backprop이 self-referential이라 병렬화 안 된다고 했는데, self-modifying Titans는 그 self-reference를 아키텍처로 가져온 모델이잖아. 그럼 훈련이 왜 병렬화되나? 모순 아닌가?' 아주 좋은 질문이고, 답이 이 라인 전체의 핵심 타협을 드러냅니다. 먼저 왜 self-reference가 병렬화를 막는가. linear attention은 key/value가 memory 상태와 무관해서 scan으로 병렬화됩니다. 그런데 backprop의 value(예측오차 delta)는 memory 자신의 현재 상태가 만들어요. self-modifying Titans도 각 memory가 자기 target을 스스로 생성합니다. 자기 상태에 의존하는 value는 미리 계산할 수 없으니 순차적일 수밖에 없죠. 그럼 어떻게 병렬화하나? 답: chunk 안에서 value 생성기를 stale snapshot으로 동결합니다. 다음 chunk 전체의 key/value/self-target/gate를 전부 직전 chunk 끝 상태에서 한 번의 배치 pass로 생성하고, inner gradient도 그 snapshot 기준으로 평가합니다. 그러면 chunk 내 모든 gradient가 병렬 계산 가능해져 TTT dual form이 그대로 적용됩니다. 즉 정확한 self-reference는 여전히 순차적이고, chunkwise stale-snapshot 근사가 병렬성을 사는 공학적 타협입니다. 배포된 Hope는 정확한 self-modifying 모델의 근사물이에요. Schmidhuber의 self-referential weight matrix(1993)가 정확한 self-reference를 갖고도 병렬 훈련이 없어 스케일을 못 간 걸, Hope가 이 근사로 가는 겁니다. 정직성 포인트 두 개. 첫째, 이 근사가 정확한 모델을 얼마나 훼손하는지 — chunk 크기에 대한 오차 한계 — 는 논문에 없습니다. 둘째, 미스터리 하나 더: ablation의 'w/o momentum' 행(13.58 대 12.24)과 본문은 배포된 inner rule이 momentum 항을 실제로 지님을 말하는데, 그 정확한 수식이 원문 어디에도 없습니다. 재구현하실 분은 이 간극을 아셔야 합니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "NL Q3 — self-reference인데 왜 훈련이 병렬화되나?"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "self-ref가 막는 이유: value를 memory 자신 상태가 생성",
+            "해법: chunk 안에서 value 생성기를 stale snapshot으로 동결",
+            "→ chunk 내 gradient 병렬, TTT dual form 적용",
+            "정확한 self-reference는 여전히 순차 — chunkwise는 타협",
+            "정직성: 근사 오차 한계 없음(chunk 크기 의존)",
+            "미스터리: 배포 rule의 momentum 항 수식이 원문에 부재"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "S12-12-sleep-dreaming",
+    "notes": "이제 집중 논문 Sleep입니다. 가장 중요한 회의적 질문: 'dreaming이 실제로 재현됐나? 아니면 개념 제안인가? 그리고 실험이 Hope 위에서 돌아간 건가?' 그림을 보면서 정직하게 답하는데, 이게 Sleep 챕터에서 가장 조심해야 할 부분입니다. 먼저 dreaming이 뭔지. REM 대응 단계로, 모델이 자기 성능을 올려줄 합성 데이터(dream)를 스스로 생성하는 법을 배우는 self-modification입니다. 절차는 다섯 단계 — 생성(모든 MoE router가 random expert 하나를 추가 활성화해 novelty 주입), gradient 기반 선별, 각 dream으로 isolated instance를 LoRA fine-tune, downstream 성능이 개선되면 보상 1, 그 보상으로 dream 생성 policy를 ReST-EM으로 강화. proof of concept는 SEAL 위에 세워졌습니다. 그래서 '재현됐나'에 대한 답: 네 실험은 있습니다, 하지만. 가장 중요한 caveat 두 개. 첫째, Sleep의 sleep 기제 전체 — lambda 계수들, reward model, ReST-EM loop — 는 어느 것도 pre-training에서 end-to-end로 meta-learn되지 않습니다. 이 라인의 정체성은 지금까지 'update rule을 outer loop가 미분해 학습한다'였는데, Sleep은 라인 최초로 core mechanism이 미분되는 inner loop가 아니라 알고리즘적 wrapper인 논문입니다. 둘째, 그리고 이게 핵심인데 — Sleep의 Hope 계열 실험은 NL 레시피로 pre-train한 Hope checkpoint가 아닙니다. pre-trained Llama-3B/8B에 dim-64 MLP memory 블록 5개를 얹은 graft 구성입니다. 즉 식(17-1)을 관통하는 sleep-aware pre-training, 우리가 regime 1이라 부른 그 경로는 이 논문 실험 어디에서도 실행되지 않았습니다. regime 1은 논문이 정의한 가능성이지 실증된 경로가 아니에요. 그래서 제 평가: dreaming은 재현된 메커니즘이되, 그것이 얹힌 토대는 기성 checkpoint graft이고, 'wake/sleep까지 전부 nested optimization으로 훈련한다'는 자리는 비어 있습니다. 그림은 Memory Consolidation 개관(원논문 Fig.2)입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Sleep Q1 — dreaming이 실제로 재현됐나?"
+        },
+        "geometry": { "x": 60, "y": 60, "w": 840, "h": 60 }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "dreaming = 자기생성 데이터 self-modification(SEAL 기반)",
+            "5단계: 생성(random-expert novelty)→선별→LoRA→보상→ReST-EM",
+            "caveat 1: sleep 기제는 meta-learn 안 됨 = 알고리즘 wrapper",
+            "라인 최초로 core가 미분 inner loop 아님",
+            "caveat 2: Hope 실험 = Llama-3B/8B graft(+5 MLP), NL checkpoint 아님",
+            "regime 1(sleep-aware pretraining)은 미실증 가능성"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/reffigs/2606.03979/figures/fig2.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "S12-13-sleep-consolidation",
+    "notes": "Sleep 두 번째 질문: 'consolidation이 sleep마다 새 low-rank expert를 추가한다면 파라미터가 무한히 자라는 거 아닌가? capacity 성장이라는데 한계가 있을 텐데.' 정확한 지적이고, 설계의 급소입니다. 먼저 메커니즘. consolidation은 빠른 블록의 지식이 덮어써지기 직전에 그 지식을 다음 느린 블록으로 옮깁니다. 이때 간섭을 피하려고 느린 블록에 새 low-rank expert 하나(A, B 두 행렬, d_low << d)를 추가하고, 옮겨지는 지식은 오직 이 새 파라미터에만 저장합니다. student의 나머지 파라미터는 전부 동결이라 CF 방지가 regularization이 아니라 구조로 보장됩니다 — 물리적으로 덮어쓸 수가 없어요. retention gate가 soft했다면 이건 hard한 장치입니다. 자, 무한 성장 문제. 두 가지 답이 있습니다. 첫째, 구현이 사실 정적 shape입니다. tensor 차원을 동적으로 바꾸는 게 아니라, 미래에 열릴 expert 전부를 초기화 시점에 미리 할당해 두고 forward/backward에서 mask합니다. 'expert 추가'는 mask를 여는 것이고, shape가 정적이라 컴파일 그래프·커널 autotuning·checkpoint 포맷이 안 흔들립니다. 즉 미리 정한 한도 안에서만 자랍니다 — 뇌의 고정 capacity 유비죠. 둘째, 빠른 블록은 반대로 리셋됩니다. consolidation이 끝나면 빠른 블록에 과거 sleep들이 추가했던 expert를 전부 리셋해서 capacity를 미래 wake를 위해 되돌립니다. 저는 이걸 synaptic-pruning reset이라 부르는데, 계보가 중요합니다 — TNT의 리셋은 throughput 장치였는데, Sleep의 리셋은 '지식을 위로 옮긴 다음에만 지운다'는 memory-hygiene 원리입니다. inference 어휘로는 eviction 전에 반드시 상위 계층으로 write-back하는 cache 정책이에요. 그래서 순 불변식: 빠른 memory는 작고 plastic하게 유지되고, 느린 memory는 미리 할당된 한도 안에서 단조 성장합니다. 정직성 마무리: 그럼에도 논문은 CF를 '풀지' 않았습니다. 실험된 과제에서 줄였을 뿐이고, level 간 capacity의 원리적 배분은 여전히 열린 문제입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Sleep Q2 — consolidation은 파라미터가 무한히 자라나?"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "옮기는 지식은 새 low-rank expert(A,B)에만 저장 → CF를 구조로 차단",
+            "무한성장 X: 미래 expert 전부 pre-allocate + mask(정적 shape)",
+            "빠른 블록은 consolidation 후 리셋 → capacity 회수",
+            "synaptic-pruning reset: write-back 후에만 eviction",
+            "TNT 리셋(throughput) → Sleep 리셋(memory hygiene)로 승격",
+            "정직성: CF 해결 아님, 실험 과제에서 완화일 뿐"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "S12-14-cross-serving",
+    "notes": "마지막으로 논문 하나에 국한되지 않는, 여러분이 infra 엔지니어로서 가장 궁금해할 관통 질문입니다: '이 라인 전체를 실제로 서빙하면 뭐가 문제인가? 그리고 이게 정말 Transformer를 대체하나?' 두 개로 답하겠습니다. 먼저 서빙. 이 라인의 진짜 폭탄은 수식이 아니라 배포 모델에 있습니다. decode = read-only forward + KV append라는 불변식이 Titans부터 폐기됩니다 — decode 한 스텝이 forward + backward + optimizer step이 되죠. state는 KV cache처럼 O(L)로 안 자라고 시퀀스 길이에 상수지만, 그 상수가 mutable weights입니다. Hope block 하나가 2-layer MLP memory 여섯 개 — 대략 d×d_h급 행렬 12개 — 에 CMS level weights까지 얹습니다. 질적 차이가 치명적인데, 이 state는 read-only cache가 아니라 per-request로 달라지는 mutable weights라 shared-weight batching이 깨집니다. grouped-GEMM decode가 필요해지고, checkpoint/restore가 이 텐서들의 영속화가 됩니다. 그리고 Sleep의 continual 배포에선 모델이 서빙 중 사용자 데이터로 자기 NTP gradient step을 계속 밟습니다 — train/serve 경계의 영구 폐기죠. per-tenant weight 발산, rollback, provenance, 안전성 — 어느 것도 논문이 안 다룹니다. 6편 공통으로 decode의 wall-clock 수치가 전무합니다. 둘째, Transformer 대체 여부. 정직하게 — 아직 아닙니다. 짧은 in-context recall에서는 여전히 Transformer가 이기고 격차가 큽니다. NL의 종합판에서도 FDA 67.3 대 41.9, SWDE 71.4 대 65.9로 gap이 미해소입니다. Atlas에서 확인된 이 retrieval gap이 라인 끝까지 남아 있어요. from-scratch 실증 상한도 1.3B/100B tokens이고 7B+ 및 production 대비 우위는 열린 문제입니다. 그래서 제 결론: 이 라인은 Transformer 대체가 아니라, KV cache가 O(L)로 터지는 초장문맥 구간에서 상수 state로 버티는 상보재로 보는 게 정확합니다. 그리고 진짜 기여는 개별 모델이 아니라, 이 여섯 편이 앞 넷을 base로 뒤 둘(NL·Sleep)까지 밀어붙여 만든 통일 프레임 — 모든 것이 서로 다른 주기로 자기 문맥을 압축하는 associative memory라는 관점입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "관통 Q — 서빙 함의와 Transformer 대체 여부"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "decode에 backward 진입: forward+backward+optimizer step",
+            "state는 상수지만 mutable weights → shared-batch 깨짐",
+            "Sleep continual: 서빙 중 사용자 데이터로 gradient step",
+            "미해결: per-tenant 발산·rollback·provenance, decode wall-clock 전무",
+            "in-context recall gap 미해소(FDA 67.3 vs 41.9)",
+            "결론: 대체 아닌 초장문맥 상보재 + 통일 프레임이 본질"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "S12-15-summary",
+    "notes": "부록 Q&A를 요약하겠습니다. 다섯 가지만 기억하시면 됩니다. 첫째, 이 라인의 모든 메커니즘은 한 문장으로 압축됩니다 — optimizer를 sequence layer로 승격시키고, 그 hyperparameter를 학습된 함수로 바꾼 것. surprise=gradient, momentum=optimizer state, forgetting=weight decay가 전부 그 결과입니다. 둘째, 병렬화의 열쇠는 chunkwise stale-snapshot 근사입니다. chunk 크기 C는 단순 성능 knob이 아니라 계산되는 함수를 바꾸는 semantic hyperparameter이고, 이게 TNT의 mismatch 발견과 two-stage 처방의 뿌리입니다. 셋째, 이 여섯 편은 앞 넷이 뒤 둘을 위한 base입니다 — Titans가 (M2)를 세우고, Miras가 설계축을 열고, Atlas가 window와 optimizer를 넓히고, TNT가 훈련 경제학을 풀어, NL이 전체를 nested optimization으로 종합하고, Sleep이 lifecycle을 세웁니다. 넷째, 정직성. capacity 정리도 표현력 정리도 대부분 검증된 정리가 아니라 실증·방향성 주장이고, Sleep은 라인 최초로 core가 미분 안 되는 wrapper이며 Hope 실험은 graft입니다. 다섯째, 진짜 미해결은 표현력이 아니라 서빙 경제학입니다 — mutable per-request weights, decode wall-clock 부재, in-context recall gap. Q&A 질문 환영합니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "summary",
+          "text": "부록 Q&A 요약 — 다섯 가지 핵심"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "메커니즘: optimizer를 sequence layer로 승격 + gate를 학습",
+            "병렬화 열쇠 = chunkwise stale-snapshot, C는 semantic hyperparameter",
+            "앞 넷(Titans·Miras·Atlas·TNT)은 뒤 둘(NL·Sleep)의 base",
+            "정직성: 정리보다 실증·방향성, Sleep은 wrapper+graft",
+            "진짜 미해결 = 서빙 경제학(mutable weights·recall gap)"
+          ]
+        }
+      }
+    ]
+  }
+]

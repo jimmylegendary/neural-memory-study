@@ -1,0 +1,262 @@
+[
+  {
+    "title": "S6-divider",
+    "notes": "여기서부터가 base 4부작의 마지막, TNT입니다. 앞의 Titans, Miras, Atlas는 update rule의 '무엇을 어떻게 기억할 것인가'를 완성해 왔습니다. 그런데 이 세 논문 어디에도 'training에 몇 시간 걸린다'는 wall-clock 숫자가 없습니다. 왜일까요? 이 계열 모델은 전부 chunkwise-parallel training이라는 트릭 위에 서 있는데, 그 트릭이 두 가지를 미해결로 남겼기 때문입니다. 첫째는 chunk 크기가 품질과 속도를 동시에 결정하는 트레이드오프, 둘째는 훈련 chunk와 서빙 chunk가 달라지면 품질이 무너지는 mismatch입니다. TNT는 새 아키텍처가 아니라 '훈련 paradigm' 논문입니다. 제목 TNT는 'Titans iNside Titans', 즉 memory 안에 memory를 중첩한다는 뜻입니다. 오늘 이 섹션의 관점: TNT는 표현력이 아니라 '훈련 경제학'을 푼 systems 편이고, 여기서 심어 놓은 '서로 다른 주기로 갱신되는 계층'이라는 관념이 바로 다음 논문 Nested Learning의 씨앗이 됩니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "section",
+          "text": "TNT — chunkwise 학습을 개선하다",
+          "subtitle": "Titans iNside Titans — 표현력이 아니라 훈련 경제학을 푼 systems 편 (arXiv:2511.07343)"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "문제: chunk 크기 = 품질과 속도를 동시에 쥔 하나의 knob",
+            "작은 chunk 훈련은 peak FLOPs의 5-10%만 쓴다 (MFU 한 자릿수)",
+            "아이디어: 2단계 학습 + global/local 계층 memory + periodic reset",
+            "다음(Nested Learning)을 위한 base: '서로 다른 갱신 주기의 계층'"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "problem-chunk-tradeoff",
+    "notes": "먼저 문제를 정확히 짚겠습니다. 이 계열 모델의 심장은 chunkwise-parallel training입니다. token 하나하나 순차적으로 memory를 갱신하면 GPU가 놀기 때문에, C개 token을 한 chunk로 묶어 chunk 시작 상태에서 모든 gradient를 한꺼번에 계산합니다. 문제는 chunk 크기 C가 서로 반대인 두 가지를 동시에 결정한다는 겁니다. C를 키우면 matmul이 커져 하드웨어는 잘 도는데, chunk 안의 gradient가 전부 '낡은(stale)' 시작 상태에서 평가되므로 근사 품질이 떨어집니다. C를 줄이면 gradient는 신선해지는데, 연산이 잘게 쪼개져 하드웨어가 놉니다. 얼마나 노느냐? TNT가 LaCT를 인용해 보고하는 값이, 품질 좋은 작은 chunk에서 peak FLOPs 대비 5-10% 미만 utilization입니다. 우리 어휘로는 MFU 한 자릿수 workload라는 뜻입니다. 표현력 논쟁 이전에, 이 훈련 경제학이 안 풀리면 어떤 Titans 후속도 대규모로 못 갑니다. 그리고 이 트레이드오프를 지금까지 아무도 정량화하지 않았습니다 — 실무는 그냥 C를 16에서 64 사이에 고정해 왔을 뿐입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "① 문제 — chunk 크기라는 하나의 knob이 품질과 속도를 동시에 쥐고 있다"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "chunkwise training: C개 token을 묶어 chunk 시작 상태에서 gradient 일괄 계산",
+            "C ↑ : matmul 커짐 → 하드웨어는 잘 돌지만 gradient가 낡아 품질 ↓",
+            "C ↓ : gradient 신선 → 품질 좋지만 연산 잘게 쪼개져 하드웨어 논다",
+            "작은 chunk 훈련 = peak FLOPs의 5-10% 미만 utilization",
+            "= 이 계열은 지금까지 MFU 한 자릿수 workload였다",
+            "이 타협 비용을 아무도 정량화하지 않았다"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "hypothesis-three-challenges",
+    "notes": "TNT는 문제를 세 개의 challenge로 명명해 분해합니다 — 이 분류법 자체가 기여입니다. Challenge 1은 방금 말한 것: deep memory는 fine-grained 신호를 위해 작은 chunk를 원하는데, 작은 chunk는 훈련을 compute-bound가 아니라 memory-bound로 만든다. linear attention 계열은 SRAM에 상주하는 chunk kernel로 이를 피하지만, 그 kernel은 '선형 상태 전이'에 의존합니다. deep memory의 recurrence는 MLP의 forward/backward와 LayerNorm 같은 비선형을 통과하므로 그 kernel이 이식되지 않습니다. 비선형 recurrence를 sequence 방향으로 병렬화하는 건 parallel scan이 안 먹는 오래된 미해결 문제입니다. Challenge 2는 미묘합니다. memory는 key를 넣으면 value가 나오도록 학습되는데(write는 k→v), 정작 읽을 땐 query q로 읽습니다. 학습된 함수의 입력 domain 밖에서 평가하는 셈이고, 이 train/use 도메인 shift가 retrieval 품질을 깎습니다. attention에는 이 문제가 구조적으로 없습니다 — q와 모든 k의 내적을 명시적으로 계산하니까요. 압축하는 memory로 넘어오는 순간에만 생기는 세금입니다. Challenge 3은 다음 슬라이드에서 그림으로 보겠습니다. 세 challenge를 관통하는 핵심 가설은 한 문장입니다: 훈련 효율과 inference 성능을 하나의 chunk 크기가 동시에 결정하게 놔두지 말고, 두 단계로 분리하라(decouple).",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "② 가설 — 문제를 세 challenge로 규정하고, '분리(decouple)'를 처방하다"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "C1 효율: 작은 chunk = memory-bound; 비선형 recurrence엔 linear kernel 이식 불가",
+            "C2 domain 불일치: write는 k→v로 학습, read는 q로 → 학습 domain 밖 평가",
+            "  (attention엔 없는, 압축 memory만 내는 세금)",
+            "C3 chunk-size mismatch: 훈련 chunk에 over-specialize (다음 슬라이드)",
+            "핵심 가설: 훈련 효율과 inference 성능을 한 knob이 결정하게 두지 말라",
+            "→ 두 단계로 분리(decouple)하라"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "challenge3-mismatch-figure",
+    "notes": "이게 TNT의 새 실증 발견이자 Challenge 3, chunk-size mismatch입니다. 그림을 보세요. 550M Titans를 C=64로 pre-train한 뒤, inference chunk 크기만 바꿔 가며 validation perplexity를 쟀습니다. 결과가 V자 곡선인데, 바닥이 정확히 훈련 때 쓴 C=64에 걸립니다(ppl 13.78, 최적). 양쪽으로 벗어나면 급격히 나빠집니다. 특히 왼쪽이 충격적입니다. 상식적으로 더 작은 chunk는 더 신선한 gradient를 뜻하니 inference에서 더 좋아야 합니다. 그런데 실제로는 C=8에서 ppl이 36.45로, 2.6배 넘게 폭발합니다. 모델이 훈련 해상도에 완전히 over-specialize된 겁니다. 이게 왜 치명적이냐면, 이상적인 서빙은 decode에서 chunk 크기 1, 즉 매 token 온라인 갱신인데, 큰 chunk로 싸게 훈련한 모델은 chunk 1 근처에서 품질이 무너지니 그 이상적 서빙으로 직행할 수가 없습니다. 참고로 이 그림은 TNT 원저자의 Figure 2이고, 우리 스터디의 실측이 아닙니다. 정직성 원칙상 절대 수치보다 이 '비대칭 V자 절벽'이라는 방향성을 기억해 주세요.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "③ 발견 — chunk-size mismatch: 훈련 해상도에서만 최적인 비대칭 절벽"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "550M Titans, C=64로 pre-train → inference chunk만 변경",
+            "V자 바닥 = 훈련 chunk C=64 (ppl 13.78, 최적)",
+            "양쪽으로 벗어나면 품질 급락",
+            "직관 배반: 작은 chunk(신선한 gradient)가 오히려 최악",
+            "C=8에서 ppl 36.45 — 2.6배 폭발",
+            "→ 이상적 서빙(chunk-1 decode)으로 직행 불가"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2511.07343-fig2.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "idea-arch-global-local",
+    "notes": "이제 핵심 아이디어입니다. 그림 오른쪽이 TNT Stage 1의 아키텍처입니다. memory를 두 종류로 나눕니다. 위 블록은 global memory 하나 — 아주 큰 chunk 크기(실험에서 2048)로 sequence 전체를 순차적으로 관통합니다. 상태가 계속 이월되니 long-range 정보가 살아남고, chunk가 크니 드물고 큰 dense matmul, 즉 설계상 compute-bound입니다. 16K 문맥에 chunk 2048이면 순차 handoff가 딱 8번뿐입니다. 아래 블록은 N개의 local memory — 학습된 초기 상태에서 주기적으로 재초기화되어 대량 병렬화됩니다. 이 local이 fine-grained 정보를 담당하죠. 두 memory 모두 Compression(write)과 Retrieval(read) 두 연산을 갖고, 두 경로의 출력을 합해서 최종 y를 만듭니다. 한 가지 비대칭에 주목하세요 — Q-K Projection이라는 부품은 local 경로에만 붙습니다(뒤에서 설명). 왜 이렇게 역할을 나눴을까? reset되는 병렬 local이 속도를 벌고, 잊지 않는 순차 global이 그 대가로 잃어버릴 long-range를 보전합니다. 실제로 ablation에서 global을 빼면 ppl이 21에서 25.6으로 붕괴합니다 — 역할 분담이 실증된 거죠. 이 그림도 원저자 Figure 3입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "④ 아이디어 — hierarchical memory: 순차 global 1개 + 병렬 local N개"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "Global: 큰 chunk(2048)로 sequence 전체 순차 관통 → long-range",
+            "  드물고 큰 dense matmul = compute-bound (16K에 handoff 8번)",
+            "Local: 학습된 초기상태에서 주기적 reset → 대량 병렬 = fine-grained",
+            "두 경로 모두 write/read 2연산, 출력을 합산해 y_t",
+            "Q-K Projection은 local 경로에만 부착",
+            "global 제거 시 ppl 21.0 → 25.6 붕괴 (역할분담 실증)"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2511.07343-fig3.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "method-reset-parallelism",
+    "notes": "핵심 혁신은 local 쪽의 periodic state reset입니다. 그림을 시간축으로 펼친 게 이겁니다 — 같은 행에서 같은 t의 갱신은 동시에(병렬로) 실행되고, t=0은 memory 초기화를 뜻합니다. 맨 위 global은 큰 chunk 하나가 sequence 전체를 순차로 지나가지만, 아래 local들은 각자의 window(shard) 길이마다 t=0으로 되돌아갑니다. index가 커질수록 window가 짧아 더 자주 reset되죠. 왜 이게 결정적일까요. 비선형 recurrence는 parallel scan으로 병렬화할 수 없습니다 — scan은 결합법칙을 요구하는데 MLP를 통과하는 상태 전이엔 그게 없거든요. reset은 그 병렬화 불가능한 사슬을 아예 끊어버립니다. 각 shard의 계산이 이전 무엇에도 의존하지 않게 되니, shard들을 여러 장치에 뿌리거나(진짜 context parallelism) 한 accelerator의 batch 축에 쌓아 kernel을 뚱뚱하게 만들 수 있습니다. 대가는 명확합니다 — local memory는 shard 경계에서 다 잊습니다. 그 손실을 global이 보전하는 거죠. 그리고 reset 지점이 0이 아니라 '학습된' 초기 상태 W_init라는 점이 하중을 받습니다. 모든 shard가 meta-learn된 prior에서 inner loop를 시작합니다. Titans에서 암묵적이던 초기 상태가, 여기선 reset을 살아남게 만드는 핵심 부품으로 승격됩니다. 9장의 어휘로 하면, reset은 sequence 축을 잘라 진짜 batch 축으로 되돌리는 연산입니다. 그림은 원저자 Figure 1입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "④ 방법 — periodic reset: 비선형 recurrence의 사슬을 끊어 context 병렬화"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "비선형 recurrence는 parallel scan 불가 (결합법칙 없음)",
+            "reset = 병렬화 불가능한 사슬을 아예 절단",
+            "→ shard들이 완전 독립: 장치 분산 or batch축에 stack해 kernel fatten",
+            "대가: local은 shard 경계에서 전부 망각 → global이 보전",
+            "reset 지점은 0이 아닌 '학습된' 초기상태 W_init",
+            "= 모든 shard가 meta-learn된 prior에서 시작 (reset의 완충재)"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2511.07343-fig1.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "method-qk-projection-stage2",
+    "notes": "나머지 두 장치를 봅시다. 먼저 Q-K projection — Challenge 2의 처방입니다. query를 그대로 memory에 넣지 말고, 지금까지 관측된 key들이 스팬하는 부분공간으로 사영한 뒤 넣습니다. 사영 행렬은 key들의 outer product 합, 즉 Π_t = Σ k·kᵀ 형태로 매 token rank-1로 누적됩니다. 과거 key를 저장할 필요가 없고 상태는 상수 크기입니다. inference 어휘로 하면, 이 갱신은 KV cache append의 rank-1 GEMM 대응물이고 Π·q는 mat-vec 한 번입니다. attention이 읽을 때 qᵀK로 하던 'query를 key 통계와 대면시키는 일'을, 상수 크기 running-sum으로 미리 압축해 두는 셈이죠. 이 projection은 domain mismatch에 더 민감한 local에만 붙고, global은 raw query를 받습니다. 두 번째, Stage 2 — Challenge 3의 처방입니다. Stage 1이 큰 chunk로 효율적으로 pre-train을 끝냈으니, 이제 작은 local chunk로 짧게 fine-tune합니다. 놀라운 관찰은, 이 짧은 fine-tuning이 mismatch를 교정할 뿐 아니라 원래 성능을 넘어선다는 겁니다. 비용은 pre-training의 약 5-8%뿐입니다. 이상적 목표는 chunk 크기 1 — 이게 autoregressive 서빙과 정확히 맞물립니다. global이 큰 chunk dense 연산으로 prompt를 흡수하고(prefill), Stage 2로 적응된 local이 생성 중 token마다 갱신됩니다(decode). 이로써 chunk 크기는 더 이상 하나의 타협값이 아니라, Stage 1의 throughput knob과 Stage 2의 해상도 knob이라는 서로 독립인 두 knob이 됩니다. 이게 train-big / serve-small 레시피입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "④ 방법 — Q-K projection(C2) + Stage 2 fine-tuning(C3)"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "Q-K projection: query를 관측 key들의 span으로 사영 후 read",
+            "  Π=Σk·kᵀ, rank-1 누적, 상수 크기 상태 — local 경로에만",
+            "Stage 2: 작은 local chunk로 짧게 fine-tune (pre-train의 ~5-8%)",
+            "  mismatch 교정 + 원래 성능을 넘어섬",
+            "목표 chunk=1: global이 prefill 흡수 / local이 token마다 decode",
+            "→ chunk = 훈련 throughput knob과 서빙 해상도 knob으로 분리"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "results",
+    "notes": "결과를 봅시다. 정직성 원칙상 방향과 비율 위주로 읽겠습니다. 첫째 속도 — 목표 training loss 3.20에 도달하는 시간이 실전 지표입니다. 가장 정확한 Titans baseline(C=8)이 약 19.5시간 걸릴 때, TNT는 약 1.1시간으로 헤드라인 17.37배 빠릅니다. 중요한 건, 같은 chunk 크기 8끼리 비교해도 TNT가 7.7배 빠르다는 겁니다 — 이득의 원천이 단순히 chunk를 키운 게 아니라 구조 자체라는 뜻이죠. 둘째 품질 — 150M/10B tokens 기준, TNT Stage 1만으로 모든 RNN baseline과 vanilla Transformer의 perplexity를 이깁니다. Stage 2가 여기서 ppl을 더 내리고요. reasoning 정확도에서는 Gated Transformer까지 이깁니다. 셋째, 정직한 한계도 논문이 스스로 밝힙니다. kernel 최적화된 Gated Transformer는 아직 ppl에서도 time-to-loss에서도 못 이깁니다 — 하지만 TNT는 custom kernel 없는 순수 JAX인데도 32K에서 FlashAttention을 step당 이겼습니다. 즉 kernel 이전에 병렬 구조 자체가 승부를 갈랐다는 거죠. Ablation도 깔끔합니다 — local module을 1개에서 4개로 늘리면 ppl이 단조 개선되고(20.15까지), global을 빼면 25.6으로 붕괴, Q-K projection을 빼면 약 1 ppl 손해입니다. 다만 반드시 붙일 caveat: 이 모든 검증이 momentum, gating, Muon을 '명료성을 위해' 제거한 단순화 Titans 위에서 이뤄졌고, 규모도 150M/10B로 이 라인에서 가장 작은 축입니다. 본류 모델과의 합성은 측정된 적이 없습니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "⑤ 결과 — 목표 loss까지 최대 17배, 품질도 개선 (150M/10B)"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "속도: 가장 정확한 Titans(C=8) 대비 최대 17.37× (같은 C=8끼리도 7.7×)",
+            "  → 이득 원천은 chunk 확대가 아니라 구조",
+            "품질: Stage 1만으로 모든 RNN + vanilla Transformer의 ppl 격파",
+            "순수 JAX인데 32K에서 FlashAttention을 step당 추월",
+            "Ablation: local 1→4개 ppl 단조개선; global 제거 시 붕괴",
+            "정직: kernel-최적 Gated Transformer엔 아직 미달 / 단순화 Titans 위 검증"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "summary-bridge-nl",
+    "notes": "정리하고 다음으로 넘기겠습니다. TNT가 base 4부작에 남긴 것을 한 문장으로: 이 계열이 대규모로 갈 수 있도록 '훈련 경제학의 바닥'을 깔았습니다. 병렬성을 사기 위해 local의 기억을 주기적으로 태우고, 그 보험을 저해상도 global에 든 것 — 이게 TNT의 명료한 교환이었습니다. 그런데 여기서 다음 논문으로 넘어가는 결정적 관념이 하나 심어집니다. 잘 보세요 — TNT는 이미 서로 다른 세 개의 update frequency로 돌아가는 시스템입니다. global은 2048 token마다, local은 매 token마다, 그리고 W_init과 slow weights는 훈련에서만 갱신됩니다. 그리고 느린 시간 스케일에 주차된 지식(global, W_init)이 빠른 스케일의 reset에서 살아남습니다. 다만 TNT에게 이건 그냥 공학적 방편이었습니다 — 왜 이게 모델 전체의 조직 원리여야 하는지는 말하지 않았죠. 바로 다음 논문 Nested Learning이 그 선언을 합니다: 모델과 훈련 절차 전체가 각자의 update frequency로 자기 context를 압축하는, 중첩된 optimization 문제들의 시스템이라는 존재론입니다. TNT의 global/local 이분은 geometrically spaced 주파수의 연속체(Continuum Memory System)로 일반화되고, TNT의 reset은 Nested-CMS의 re-initialization으로, 하중을 받게 된 W_init은 다섯 knowledge-transfer 기제 중 하나로 분류됩니다. TNT가 이 모든 걸 통합하는 ontology를 요구했다면, NL이 그 ontology입니다. 여기까지가 base 4부작이고, 이제 집중해서 볼 두 논문으로 들어갑니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "summary",
+          "text": "핵심 정리 & 다음(Nested Learning)으로"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "TNT는 이 계열의 '훈련 경제학'의 바닥을 깐 systems 편",
+            "교환: 병렬성을 위해 local 기억을 주기 소각, 보험은 저해상도 global",
+            "2단계 학습으로 chunk를 throughput knob과 해상도 knob으로 분리",
+            "이미 3개 update frequency 시스템: global 2048마다 / local 매 token / slow는 훈련만",
+            "느린 스케일에 주차된 지식이 빠른 스케일 reset에서 생존",
+            "→ NL: 이 모두를 통합하는 존재론(중첩 optimization·CMS)이 다음 장"
+          ]
+        }
+      }
+    ]
+  }
+]

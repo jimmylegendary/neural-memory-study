@@ -1,0 +1,121 @@
+[
+  {
+    "title": "S11 divider",
+    "notes": "이제 마지막 섹션입니다. 지금까지 우리는 학습의 기초(S1)부터 시작해서, associative memory·linear attention·SSM·TTT라는 배경(S2)을 깔고, Titans→Miras→Atlas→TNT라는 네 편의 base 논문을 지나 Nested Learning과 Sleep이라는 두 편의 집중 대상을 거쳐, 이 여섯 편이 실은 하나의 완성형 배포 형태 — 세션 상태가 mutable weights인 continually-learning LLM에 sleep 서비스가 붙은 시스템 — 로 수렴한다는 것을 보았습니다. 그리고 S10에서 그 완성형을 하드웨어·스케일 관점에서 측정했죠. 이 마지막 섹션은 그 전체를 결산합니다. 핵심 메시지는 두 가지입니다. 첫째, 이 결산의 가치는 무엇을 증명했는가만큼 무엇을 정직하게 열어 두었는가에 있습니다. 둘째, 여섯 편의 논문이 각자의 open-questions 절에서 모두 같은 다섯 곳을 가리켰기 때문에, 남은 연구 어젠다는 우리가 임의로 고른 소망 목록이 아니라 텍스트에 의해 과잉 결정된 자리라는 것입니다. 이 섹션에서는 pair thesis를 한 문장으로 재확인하고, systems 엔지니어가 이어받을 다섯 어젠다를 짚고, 이 라인을 능동적으로 따라가려면 무엇을 봐야 하는지로 닫겠습니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "section",
+          "text": "마무리 — 열린 문제와 연구 어젠다",
+          "subtitle": "S11 · 무엇을 정착시켰고 무엇을 다음으로 넘겼나"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "pair thesis 재확인: decode=memory 기회, prefill/train=accelerator 영역",
+            "결산의 값은 열어 둔 것에 있다 — 정직성 계약을 끝까지",
+            "다섯 열린 문제: scale·serving 경제학·학습 스케줄·안전한 self-mod·미룬 이론",
+            "이 라인을 따라가려면 무엇을 볼 것인가"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "pair thesis 재확인",
+    "notes": "이 섹션 전체를 관통하는 한 문장이 pair thesis입니다. 이 라인의 배포는 질적으로 다른 두 개의 부하로 갈라지고, 각각의 최적 하드웨어 전략이 다르다 — 그래서 하드웨어 제안은 어느 한쪽이 아니라 반드시 쌍이어야 한다는 것이죠. 왼쪽 절반, decode/serving 상태 관리부터 보겠습니다. 여기서는 토큰마다 fast-weight state 전체를 read-modify-write, 즉 읽고 고쳐서 다시 쓰는 memory-centric 부하가 발생합니다. 우리가 anchor 모델에서 측정했듯이 이 단계는 arithmetic intensity가 굉장히 낮아서 결정적으로 memory-bound이고, 계산이 아니라 상태 트래픽이 비용을 지배합니다. 그리고 KV cache와 결정적으로 갈라지는 지점이 있습니다. KV는 한 번 쓰고 여러 번 읽는 append-once인데 TTT state는 매 토큰 대칭적으로 다시 쓰고, KV read는 문맥이 길어질수록 자라는 반면 TTT의 RMW는 문맥과 무관하게 일정합니다. 그래서 그 아래에서는 KV가 싸고 그 위에서는 TTT가 싼 crossover 문맥 길이가 존재합니다 — 오른쪽 그림이 바로 그것으로, 문맥이 짧을 땐 KV가 유리하다가 어느 지점을 넘으면 문맥-무관한 TTT가 유리해지는 교차를 보여줍니다. 이게 왜 중요하냐면, decode가 append-once KV와 질적으로 다른 memory 부하라는 사실이 새로운 memory 소자와 새로운 cache 클래스라는 기회를 여는 지점이기 때문입니다. 반대로 오른쪽 절반, training과 prefill은 chunk 크기 C가 roofline의 x축인 accelerator 부하입니다. C=1이면 per-token RMW라 memory-bound 평원에 있지만, C를 키우면 crossover를 넘어 compute-bound로 올라갑니다. 한 알고리즘이 knob 하나로 두 영역을 오가는 거죠. 여기는 기존 accelerator, 즉 GPU가 잘하는 영역입니다. 여기서 꼭 강조할 정직성 포인트: 우리가 load-bearing으로 주장하는 것은 비율과 crossover 위치와 bound class이지, 절대 마이크로초나 밀리줄 같은 수치가 아닙니다. 그 절대값은 roofline 하한이고 사내 A100 runbook으로 검증을 넘긴 값입니다. 그림은 우리 자체 실험 plot입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "요약: pair thesis — 한 배포, 두 부하"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "decode/serving = whole-state RMW, memory-bound → memory 기회",
+            "KV=append-once, TTT=매 토큰 대칭 RMW·문맥 무관",
+            "→ crossover 문맥 길이 존재 (그림)",
+            "prefill/train = chunk C가 roofline x축 → accelerator 영역",
+            "제안은 한쪽이 아니라 쌍(pair)이어야",
+            "load-bearing = 비율·crossover·tier·bound (절대값 아님)"
+          ]
+        },
+        "geometry": {"x": 40, "y": 150, "w": 470, "h": 340}
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/exp-a-kv-ttt-crossover.png"
+        },
+        "geometry": {"x": 520, "y": 135, "w": 420, "h": 340}
+      }
+    ]
+  },
+  {
+    "title": "다섯 연구 어젠다",
+    "notes": "이제 남긴 것, 즉 연구 어젠다입니다. 여섯 편의 open-questions 절이 전부 같은 다섯 공백으로 수렴했다는 것이 원저자 논지의 힘이었고, 이제 우리 측정이 어디까지 갔는지가 확정된 만큼 이 다섯은 systems 엔지니어가 이어받을 구체적 어젠다가 됩니다. 하나씩 짚겠습니다. 첫째, 스케일. 모든 품질 주장이 1.3B 파라미터, 100B 토큰에서 멈춰 있고 decode wall-clock은 여섯 편 전체에 부재합니다. 열린 질문은 memory-bound RMW라는 이 구조가 7B 이상, 실제 SFT/RLHF 파이프라인, production 데이터에서도 유지되는가입니다. 오른쪽 그림은 우리가 여섯 편이 흩어 놓은 점들을 digitize해 맞춘 candidate scaling fit인데, 여기서 정직한 역전이 하나 나옵니다 — state-capacity는 long-context/retention 축이지 perplexity 축이 아니라는 것이죠. attention은 ppl에서는 지면서 recall에서는 이깁니다. 이게 둘째 어젠다로 이어집니다. retrieval 격차와 hybrid workload. 격차가 parametric하게 닫히지 않으면 완성형은 attention과의 hybrid가 되고, 그러면 sliding-window KV와 RMW state가 한 소자 위에 공존하는 decode가 됩니다 — pair thesis가 한 소자 위로 접히는 거죠. 셋째, serving 경제학과 kernel. 이게 이 라인이 아직 기다리는 FlashAttention-moment입니다. per-request mutable weights가 shared-weight batching을 깨고, 기존 KV-cache manager는 RMW state에 대해 범주 오류입니다. 필요한 건 in-place RMW와 writeback 회계를 1급으로 삼는 TTT-state manager와, decode 경로에 backward pass를 하나로 묶은 backward-capable fused kernel입니다. 넷째, 학습되는 스케줄. chunk 크기, window, CMS frequency, level 수, sleep timing이 전부 손으로 설정돼 있습니다. cadence가 주어지면 tier는 결정적으로 따라오지만 cadence 자체를 학습하는 것은 아직 없습니다. 무엇을 언제 갱신할지와 무엇을 어디에 둘지를 함께 학습하는 co-design이 열린 질문입니다. 다섯째, task-free하고 안전한 self-modification, 그리고 미룬 이론. Sleep의 Dreaming은 명시적 쌍을 요구하고, 재귀적 weight self-editing에는 안전성 분석이 없습니다. 자기 weights를 세션마다 고쳐 쓰는 fleet의 privacy·발산·rollback·provenance가 새 문제이고, chunkwise staleness의 오차 한계라는 미룬 정리도 여기 있습니다. 이 다섯 번째는 유일하게 measurable 부분조차 우리 책이 밟지 못한 자리라는 점을 정직하게 말해 둡니다. 그림은 우리 자체 E4 실험 plot입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "남긴 것: 다섯 연구 어젠다"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "1 스케일: 구조가 7B+·real pipeline에서 유지되나 (wall-clock 부재)",
+            "2 retrieval 격차·hybrid: recall만 attention에서 → KV+RMW 공존",
+            "3 serving 경제학·kernel: TTT-state manager + backward-capable fused kernel",
+            "4 학습되는 스케줄: cadence↔tier co-design (지금은 전부 수동)",
+            "5 안전한 self-mod·미룬 이론: privacy·rollback + staleness 오차 한계"
+          ]
+        },
+        "geometry": {"x": 40, "y": 150, "w": 470, "h": 340}
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/exp-f-scaling-fits.png"
+        },
+        "geometry": {"x": 520, "y": 135, "w": 420, "h": 340}
+      }
+    ]
+  },
+  {
+    "title": "닫는 말",
+    "notes": "마지막 슬라이드입니다. 정리하겠습니다. 여섯 편은 test time에 외우는 법을 배우자는 Titans로 열어서, 모델은 언제 깨어 있고 언제 자야 하는가라는 Sleep으로 닫혔고, 그 사이에 추론 중 weights는 변하지 않는다는 transformer serving의 정의적 전제를 지웠습니다. 그 지움이 만든 것이 우리가 이 세미나 내내 쫓아온 새 workload입니다. 완성형은 개념적으로는 여섯 편의 텍스트만으로 도출되지만, 실증적으로는 세 유보 위에 서 있습니다 — 1.3B/100B라는 스케일 상한, 미해소 retrieval 격차, 부재한 decode wall-clock. 그래서 이 라인은 완결이 아니라 on-ramp, 진입로입니다. 이 라인을 능동적으로 따라가려면 무엇을 봐야 하느냐. 세 가지를 권합니다. 첫째, Titans가 약속한 larger-model 후속 논문 — 아직 미출간이고, 나오면 스케일 어젠다의 상당 부분이 갱신됩니다. 둘째, 이 라인 고유의 FlashAttention-moment, 즉 backward-capable fused decode kernel과 TTT-state manager가 오픈소스로 등장하는지 — 그게 serving 경제학의 티핑 포인트입니다. 셋째, sliding-window KV와 RMW state가 한 소자 위에 공존하는 hybrid로 안착하는지 아니면 자기만의 전용 소자를 얻는지. 어느 쪽이든, 그 결정은 layer의 우아함이 아니라 decode가 움직이는 바이트와 그것이 앉는 memory 계층에서 납니다. 그게 우리가 이 workload를 inference 엔지니어의 도구로 처음부터 끝까지 측정한 이유입니다. 감사합니다. 이제 Q&A로 넘어가겠습니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "summary",
+          "text": "닫는 말 — 완결이 아니라 on-ramp"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "6편이 지운 전제: 추론 중 weights 불변 → 새 workload",
+            "완성형은 세 유보 위 (1.3B/100B·retrieval 격차·wall-clock 부재)",
+            "볼 것 ①: Titans larger-model 후속 (미출간)",
+            "볼 것 ②: backward-capable fused kernel·TTT-state manager 등장",
+            "볼 것 ③: hybrid 안착 vs 전용 소자 — 승부는 바이트·memory 계층에서"
+          ]
+        }
+      }
+    ]
+  }
+]

@@ -1,0 +1,459 @@
+[
+  {
+    "title": "S7 divider — Nested Learning",
+    "notes": "이제 이 세미나의 첫 번째 집중 파트입니다. 지금까지 우리가 본 Titans, Miras, Atlas, TNT 네 논문은 사실 전부 '한 가지 부품' — 즉 sequence layer 하나 — 의 내부를 조금씩 바꿔 온 것이었습니다. Titans는 그 layer를 momentum 달린 gradient descent로 봤고, Miras는 그 안의 목적함수와 retention을 설계 축으로 만들었고, Atlas는 그 window와 optimizer를 바꿨고, TNT는 그걸 어떻게 싸게 훈련하느냐를 바꿨죠. 그런데 이 네 논문 모두, 그 layer를 '바깥에서 훈련시키는' AdamW, momentum, backpropagation 자체는 손대지 않고 고정된 배경으로 뒀습니다. Nested Learning은 바로 그 배경을 설계 대상으로 끌어들입니다. 오늘 핵심 문장 하나만 가져가신다면 이겁니다: '모델과 그것을 학습시키는 절차는 서로 다른 두 물건이 아니라, 하나의 중첩된 다층 최적화 시스템이다.' 그리고 그 안에서는 backpropagation도, momentum도, Adam도 전부 associative memory입니다. 이게 처음엔 이상하게 들릴 텐데, 오늘 이걸 여러분이 '아, 당연하네'라고 느끼게 만드는 게 제 목표입니다. 앞 네 논문은 이 논문을 이해하기 위한 base였습니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "section",
+          "text": "Nested Learning — 깊은 학습 아키텍처의 착시 (집중)",
+          "subtitle": "arXiv:2512.24695 · Behrouz et al., Google Research · NeurIPS 2025"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "핵심 주장: 모델 + 학습절차 = 하나의 중첩(nested) 다층 최적화 시스템",
+            "각 층 = 자기 context flow를 자기 주기로 압축하는 associative memory",
+            "통찰: backprop · momentum · Adam · Muon = 전부 gradient에 대한 memory",
+            "생성물: 새 optimizer + CMS + self-modifying Titans → 결합 = Hope"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "TNT가 남긴 문제 — layer 하나만 바꿔 왔다",
+    "notes": "먼저 지금까지의 흐름을 한 줄로 요약하겠습니다. 우리가 본 다섯 개 논문(Titans/Miras/Atlas/TNT, 그리고 그 전의 linear attention)은 전부 'sequence layer 하나'의 성분을 바꾼 겁니다. 무엇을 기억할지(objective), 얼마나 잊을지(retention), 어떤 optimizer로 갱신할지 — 이런 걸 바꿨죠. 그런데 그 layer를 바깥에서 훈련시키는 도구들, 즉 AdamW나 momentum이나 backpropagation은 한 번도 설계 공간 안에 들어온 적이 없습니다. 항상 '주어진 고정 배경'이었어요. 특히 TNT가 흥미로운 힌트를 남겼습니다. TNT는 큰 chunk로 천천히 갱신되는 global memory와, 자주 reset되는 local memory를 공존시켰죠. 즉 '서로 다른 주기로 갱신되는 구성요소들'과 '느린 지식이 빠른 reset을 살아남는 구조'를 만들었는데, TNT에서는 이게 그냥 throughput을 올리려는 공학적 트릭이었을 뿐, 왜 그게 모델 전체의 조직 원리여야 하는지는 설명하지 않았습니다. Nested Learning은 바로 이 지점에서 질문의 단위를 바꿉니다: layer가 아니라 '모델 전체 + 훈련 절차 전체'가 하나의 설계 대상이라고요.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "출발점: 지금까지 우리는 'layer 하나'만 바꿔 왔다"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "Titans/Miras/Atlas/TNT = 전부 sequence layer 하나의 성분만 교체",
+            "바깥의 AdamW · momentum · backprop = 손대지 않은 고정 배경",
+            "TNT의 힌트: 서로 다른 주기 갱신 + 느린 지식이 reset을 생존",
+            "그러나 TNT엔 '왜 그게 원리인가'라는 대답이 없었다",
+            "NL: 질문의 단위를 layer → 모델+훈련절차 '전체'로 바꾼다"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "문제의식 — LLM의 정적임(anterograde amnesia)",
+    "notes": "NL이 정의한 문제는 'LLM은 정적(static)이다'입니다. 무슨 뜻이냐면, 배포된 다음 모델이 새로 배울 수 있는 창구는 in-context learning, 즉 프롬프트에 넣어 주는 것뿐이라는 거예요. 지식이 사는 곳은 딱 두 군데입니다. 하나는 지금 이 순간의 context window(attention의 KV cache), 다른 하나는 사전학습이 끝나는 순간 얼어붙은 MLP weights. NL은 이걸 anterograde amnesia, 즉 '새 장기기억을 못 만드는 기억상실증'에 비유합니다. context에 들어온 정보가 장기 저장소인 feedforward layer까지 도달하지 못하고, window가 밀려나면 그냥 사라진다는 거죠. 신경생리학이 두 가지 힌트를 줍니다. 첫째, 뇌의 장기기억은 최소 두 단계를 거칩니다 — 깨어 있을 때의 online consolidation과, 잘 때 replay로 일어나는 offline consolidation. NL은 이 중 앞의 online만 다루고 뒤의 수면 consolidation은 명시적으로 범위 밖으로 선언합니다. 이 선언이 바로 다음 논문 Sleep으로 가는 인계선입니다. 둘째, 뇌는 여러 timescale로 계산을 조직하는데, 현대 모델은 update frequency가 두 극단밖에 없어요. attention은 매 token 다시 계산하니 무한대, MLP는 test time에 얼어 있으니 0. 그 사이가 텅 비어 있다는 게 핵심 진단입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "① 문제: 배포된 LLM은 새 장기기억을 못 만든다"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "지식이 사는 곳은 둘뿐: 지금 context window(KV) + 동결된 MLP weights",
+            "context 정보는 장기 저장소(FFN)에 못 닿고, window 밀리면 소멸",
+            "비유: anterograde amnesia — 새 장기기억 형성 불가",
+            "뇌 힌트①: 장기기억 = online + (수면)offline consolidation 2단계",
+            "뇌 힌트②: 다중 timescale 계산",
+            "현대 모델: frequency 두 극단뿐 (attention=∞, 동결 MLP=0), 사이가 빔"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "가설 — 하나의 중첩 최적화 시스템",
+    "notes": "그럼 NL이 이 문제를 어떻게 '규정'했는지 봅시다. 핵심 가설은 이겁니다: 어떤 머신러닝 모델이든, 그것을 훈련시키는 절차까지 통째로, 하나의 '중첩된 다층 병렬 최적화 문제 시스템'으로 표현된다. 그리고 그 시스템의 각 문제는 자기 자신의 context flow — 즉 자기가 압축해야 할 데이터 스트림 — 를 자기 고유의 주기로 압축하는 associative memory다. 여기서 associative memory라는 말이 계속 나올 텐데, 아주 쉽게 말하면 '어떤 입력(key)이 들어오면 그에 짝지어진 값(value)을 내놓도록 학습된 저장장치'입니다. 우리가 사람 얼굴을 보면 이름이 떠오르는 것처럼요. 중요한 건 context flow가 꼭 token일 필요가 없다는 점입니다. token일 수도 있고, gradient일 수도 있고, 상위 level이 보내는 신호일 수도 있어요. sequence layer의 context flow는 token이고, optimizer의 context flow는 gradient입니다. 이 한 장에서 여러분이 잡아야 할 그림은 이겁니다: 모델은 층층이 쌓인 memory들의 탑이고, 아래층일수록 빠르게(자주) 갱신되고 위층일수록 느리게 갱신된다. 그리고 이 '느림/빠름'의 축이 바로 update frequency이고, 그게 level을 정의합니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "② 가설: 모델+훈련절차 = 중첩 associative memory 시스템"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "어떤 모델이든 훈련절차와 함께 = nested·multi-level·병렬 최적화 시스템",
+            "각 문제 = 자기 context flow를 자기 주기로 압축하는 associative memory",
+            "associative memory = key→value 사상을 학습해 저장하는 장치",
+            "context flow는 token만이 아니다: gradient · 상위 신호도 가능",
+            "level = update frequency로 정렬 (높은 level = 낮은 주파수)",
+            "부산물: in-context learning은 level≥2면 반드시 생기는 구조적 성질"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "핵심 통찰 — backprop도 memory다",
+    "notes": "이제 이 세미나에서 제일 중요한, 그리고 처음 들으면 제일 낯선 통찰입니다. 'backpropagation도 associative memory다.' training을 안 해 보신 분들을 위해 아주 천천히 가겠습니다. 한 layer를 훈련시킨다는 건, 입력 x가 들어왔을 때 그 layer가 얼마나 틀렸는지(예측 오차)를 보고 weight를 조금 고치는 겁니다. 그 gradient, 즉 weight를 어느 방향으로 고칠지는 수학적으로 딱 두 조각의 곱으로 쪼개집니다: '입력 x'와 '그 출력에서의 오차 신호 u'. 이 오차 신호 u를 논문은 Local Surprise Signal, LSS라고 부릅니다 — '이 예측이 얼마나 놀라웠나'를 재는 값이죠. 그러니까 한 번의 gradient 업데이트는 '입력 x를 그 놀라움 u에 짝지어 weight에 새겨 넣는' 행위입니다. 이게 정확히 associative memory예요 — key는 입력, value는 그 예측 오차. 그래서 결론은: backprop으로 훈련되는 layer는 '각 입력 → 그 예측 오차'라는 사상을 weight에 압축하는 memory다. 여기서 딱 하나 주의할 점. 그럼 이게 우리가 아는 linear attention이랑 똑같냐? 아닙니다. linear attention은 key/value가 memory 상태와 무관해서 병렬로 쭉 계산할 수 있는데, backprop은 그 value(오차)를 memory 자기 자신이 만들어냅니다. 지금 weight가 얼마나 틀렸는지가 곧 target이 되니까요. 이걸 self-referential, 자기참조적이라고 하고, 바로 이 성질 때문에 backprop은 원래 병렬화가 안 됩니다. 이 사실은 뒤에서 Hope를 훈련시킬 때 다시 결정적으로 등장합니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "③ 통찰: 한 번의 gradient step = key(입력)→value(오차) memory"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "gradient = '입력 x' × '출력 오차 u' 두 조각의 곱(outer product)",
+            "u = Local Surprise Signal(LSS): 이 예측이 얼마나 놀라웠나",
+            "→ 한 step = 입력 x 를 그 놀라움 u 에 짝지어 weight에 새김",
+            "따라서 backprop으로 훈련되는 layer = '입력→오차' memory",
+            "단, linear attention과 다르다: value(오차)를 memory 스스로 생성",
+            "= self-referential → 그래서 backprop은 병렬화가 안 된다"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "그림 — Nested Learning 패러다임 (fig2)",
+    "notes": "이 그림이 방금 말씀드린 관점을 한 장으로 요약합니다. 원저자 Behrouz et al.의 논문 Figure 2입니다. 왼쪽을 보세요. 우리가 평소에 모델을 보는 방식, 즉 deep learning 관점입니다. RNN 블록, attention 블록을 그냥 위로 쌓아서 '평탄하게' 봅니다. 이렇게 보면 각 블록 안에서 실제로 무슨 gradient가 흐르는지가 다 가려져요. 그래서 아키텍처와 훈련이 별개의 것처럼 보입니다. 오른쪽이 NL 관점입니다. 같은 모델을 white-box로 펼쳐서, 서로 다른 level의 gradient flow가 겹쳐 흐르는 그림으로 그립니다. 각 level이 자기 목적함수로 자기 context를 압축하는 associative memory라는 게 드러나죠. 핵심 메시지는 '아키텍처의 다양성은 착시다'입니다. 우리가 attention, SSM, convolution, MLP가 다 다른 종류라고 느끼는 건, 그것들의 '해(solution)'만 보고 그것들이 풀고 있는 '문제(objective)'를 안 봤기 때문이라는 거예요. 문제 수준에서 보면 전부 gradient descent로 최적화되는 linear 또는 MLP associative memory이고, 다른 건 오직 level·objective·update frequency 셋뿐입니다. 제목의 'illusion(착시)'이 바로 이겁니다. 출처는 논문 Figure 2이고 본 세미나의 결과가 아닌 원저자 그림입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "'아키텍처 다양성은 착시' — 문제를 보면 전부 같은 memory"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "좌: deep learning 관점 — 블록을 쌓아 평탄화, gradient flow 가려짐",
+            "우: NL 관점 — 서로 다른 level의 gradient flow가 겹친 white-box",
+            "각 level = 자기 objective로 자기 context를 압축하는 memory",
+            "attention/SSM/conv/MLP의 차이 = level·objective·frequency뿐",
+            "출처: Behrouz et al. NL Fig.2 (원저자 그림)"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2512.24695-fig2.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "그림 — AdaTransformer: attention과 MLP를 하나로 (fig3)",
+    "notes": "이제 'level'이 실제로 뭘 하는지를 이 그림이 못박습니다. 원저자 Figure 3입니다. 논문은 아주 예쁜 등가성을 보여줍니다. Transformer 블록에서, attention 뒤에 붙는 MLP를 생각해 봅시다. 그 MLP를 linear attention으로 바꿔치기 하는데, 초기 상태를 사전학습으로 미리 배워 두면(meta-learn), 두 블록의 출력이 대수적으로 완전히 똑같아집니다. 수식으로는 attention 출력에 어떤 weight 행렬을 곱하느냐의 차이일 뿐이에요. 그럼 진짜 차이가 뭐냐? 오직 그 weight가 '어느 level에 사느냐'입니다. 그림에서 빨간색은 level 1 — frequency가 낮아서 context가 바뀌어도 안 변하는 고정 MLP weight입니다. 파란색은 level 2 — sequence를 따라가며 in-context로 계속 갱신되는 weight입니다. 그러니까 결론이 아름답습니다: recurrent memory 모듈이라는 건 그냥 'level이 하나 더 추가된 MLP 블록'이고, 우리가 hybrid 아키텍처라고 부르는 것(attention + SSM 섞은 것)은 사실 '일부 MLP 블록에 in-context 적응이 생긴 Transformer'일 뿐이라는 거예요. attention과 SSM을 이종 결합했다는 통념이 여기서 해소됩니다. 출처는 논문 Figure 3, 원저자 그림입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "④ 방법: attention·MLP·SSM은 'level만 다른' 같은 물건"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "Transformer의 MLP를 (초기상태 meta-learn한) linear attn으로 치환",
+            "→ 두 블록 출력이 대수적으로 동일",
+            "유일한 차이 = weight가 사는 level",
+            "빨강 = level 1 (context 불변, 고정 MLP)",
+            "파랑 = level 2 (sequence 따라 in-context 갱신)",
+            "결론: hybrid = 'MLP 블록에 in-context 적응이 생긴 Transformer'"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2512.24695-fig3.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "optimizer 재해석 — momentum·Adam·Muon도 memory",
+    "notes": "이제 관점을 optimizer로 돌립니다. 이게 이 논문의 진짜 대담한 수입니다. training을 안 해 보신 분들을 위해: momentum은 gradient descent를 부드럽게 만드는 흔한 트릭인데, 지난 gradient들을 조금씩 누적해서 관성을 주는 겁니다. NL은 이걸 이렇게 재해석합니다 — momentum은 '과거 gradient들을 자기 파라미터에 압축하는 Hebbian associative memory'다. Hebbian이라는 건 value 없이 입력끼리 연결만 강화하는 가장 단순한 memory예요. 그리고 memory라면 용량(capacity)을 물을 수 있죠. decay 0.9인 momentum은 최근 7개 gradient로 절반, 44개로 99%가 찹니다 — 즉 장기기억이 아니라 최근 기억입니다. 이게 왜 중요하냐면, continual learning에서 옛날 task를 까먹는 게 '모델 용량 부족'이 아니라 'optimizer의 memory 관리 실패'라는 진단이 나오거든요. 다음으로 Adam. Adam은 특정한 element-wise 제곱오차 목적함수를 상정하면 그 목적함수의 '최적' memory로 유도됩니다. 단, 이건 존재 논증이지 유일성 증명은 아닙니다 — Adam이 나오도록 목적함수를 잡은 거니까요. 마지막으로 Muon. Muon의 Newton-Schulz 반복은 momentum 갱신 한 번당 안쪽에서 여러 스텝을 도는 '내부 최적화 level'입니다. 즉 level 추가는 memory 계층만이 아니라 '뉴런당 계산 심도'를 늘리는 증폭기이기도 합니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "③ optimizer도 gradient에 대한 associative memory"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "momentum = 과거 gradient를 압축하는 Hebbian memory",
+            "그 capacity: decay 0.9 → 최근 7개로 50%, 44개로 99% (최근 기억)",
+            "→ continual forgetting = 용량 부족 아니라 optimizer memory 관리 실패",
+            "Adam = 특정 element-wise ℓ2 목적함수의 '최적' memory (존재 논증)",
+            "Muon = momentum 갱신당 여러 step 도는 '내부 level'",
+            "level 추가 = 계산 심도의 증폭기"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "생성물 1 — 더 표현력 있는 optimizer",
+    "notes": "여기서부터가 '이 관점이 왜 쓸모 있나'입니다. NL은 재해석에 그치지 않고, memory를 설계하던 문법 — 목적함수 바꾸기, 선형을 MLP로 올리기, feature map 씌우기, 출력에 비선형 넣기 — 을 그대로 optimizer에 이식해서 새 optimizer를 만들어냅니다. 세 개만 보겠습니다. 첫째, Delta Momentum. momentum의 내부 목적함수를 단순 내적에서 제곱오차 회귀로 바꾸면, momentum 갱신이 delta rule 꼴이 됩니다. 즉 update가 자기 상태에 의존하게 되면서 'gradient에 따라 달라지는 decay'가 생겨요. 이건 linear attention에서 DeltaNet으로 넘어간 것의 optimizer 버전입니다. 진동하는 곡률의 장난감 문제에서 표준 momentum보다 빨리 수렴합니다. 둘째, Deep Momentum GD. momentum을 행렬에서 MLP로 승격시킵니다 — 과거 gradient의 비선형 사상까지 저장하는 거죠. deep memory가 token에 했던 걸 gradient에 하는 겁니다. 그리고 재밌는 따름정리: 출력에 Newton-Schulz 비선형을 씌우면 Muon이 특수 사례로 튀어나옵니다. 즉 Muon은 '비선형 출력을 단 Hebbian momentum'이었던 거예요. 셋째, 뒤에서 자세히 볼 M3인데, CMS 원리를 gradient에 적용해 momentum을 두 개의 서로 다른 주기로 나눈 겁니다. 이 셋의 공통 메시지: optimizer 설계가 이제 '레시피'가 아니라 '문법'이 됩니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "④ 생성적 사용(1): memory 문법을 optimizer에 이식"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "Delta Momentum: 내부 objective를 ℓ2 회귀로 → gradient-의존 decay",
+            "  (linear attn→DeltaNet 전이의 optimizer 버전, 더 빨리 수렴)",
+            "Deep Momentum GD: momentum을 행렬→MLP로 승격(비선형 사상 저장)",
+            "따름정리: 출력에 NS 비선형 → Muon이 특수 사례로 회수",
+            "M3: CMS를 gradient에 적용, momentum을 두 주기로 분할",
+            "메시지: optimizer 설계 = 레시피 → 생성 '문법'"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "생성물 2 — Continuum Memory System (CMS)",
+    "notes": "두 번째 생성물이 CMS, Continuum Memory System입니다. 이게 오늘의 핵심 산물 중 하나예요. 앞에서 말했죠 — 현대 모델의 memory는 두 극단, attention(매 token)과 동결 MLP(frequency 0)뿐이라고. CMS는 그 사이를 채웁니다. 어떻게? MLP 블록을 여러 개 사슬처럼 연결하는데, 각 블록이 '서로 다른 주기'로 갱신됩니다. 첫 블록은 매 chunk마다, 다음 블록은 그보다 몇 배 긴 간격마다, 그 다음은 더 길게. 즉 update frequency의 스펙트럼이 생기는 거예요. 여기서 아주 중요한 점 두 가지. 첫째, 이 블록들이 갱신될 때 줄이는 loss는 안쪽 목적함수가 아니라 '진짜 task loss', 즉 next-token prediction입니다. 그러니까 CMS는 추론 중에도 문자 그대로 '천천히 계속 훈련되는' 겁니다. 둘째, 표준 Transformer의 MLP는 그냥 CMS의 특수 사례 — 블록 하나, frequency 0 — 입니다. CMS는 대체물이 아니라 일반화예요. CMS가 왜 catastrophic forgetting을 완화하냐면: 빠른 블록이 옛 지식을 덮어써도, 그 지식이 더 느린 블록에는 아직 살아 있고, 초기상태 backprop transfer가 그걸 다시 빠른 블록으로 순환시켜서 완전 소실을 어렵게 만듭니다. 그리고 이건 정확히 TNT의 periodic reset이 'throughput 트릭'에서 'level 구조의 원리'로 승격되는 자리입니다. 배포에도 좋은 소식 하나: 기존 Transformer의 MLP weight를 CMS 초기값으로 그냥 넣고 조금 더 학습시키는 ad-hoc level stacking으로 retrofit이 됩니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "④ 생성적 사용(2): CMS — 주파수 스펙트럼 memory"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "MLP 블록 사슬, 각 블록이 서로 다른 주기(chunk C^ℓ)로 갱신",
+            "attention(∞)과 동결 MLP(0) 사이를 연속체로 채움",
+            "갱신 loss = 진짜 task loss(NTP) → 추론 중에도 '천천히 훈련'",
+            "표준 Transformer MLP = CMS의 특수 사례(k=1, freq 0)",
+            "forgetting 완화: 느린 블록이 지식 보존 → 순환 재주입",
+            "TNT reset이 '트릭'→'원리'로 승격 / retrofit: MLP를 CMS 초기값으로"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "생성물 3 — self-modifying Titans",
+    "notes": "세 번째 생성물, self-modifying Titans입니다. 이게 sequence 블록 쪽의 마지막 동결 지점을 푸는 거예요. Titans나 Transformer를 보면, key/value/query를 만드는 projection들 — W_K, W_V, W_Q — 과 gate들은 사전학습 때 배우고 나면 추론 중엔 고정입니다. 문제는, 그 projection이 1-layer라서 token과 위치의 함수일 뿐이라, 문맥에 따라 뜻이 바뀌는 단어를 원리적으로 못 잡는다는 거예요. NL의 처방은 과감합니다: 그 모든 projection과 gate를, 심지어 learning rate와 retention gate까지, 전부 '추론 중에 갱신되는 memory'로 승격시켜라. 단계적으로 봅시다. 1단계는 완전 적응형 memory — k, v, q, 그리고 learning rate η와 gate α까지 다섯 개를 전부 각자의 작은 memory가 만들어냅니다. 여기서 놀라운 건, learning rate와 retention gate 자체가 memory의 출력이 된다는 거예요. 12장에서 slow head가 만들던 hyperparameter가 이제 in-context 학습 대상이 됩니다. 2단계는 진짜 self-modification: 각 memory가 자기 훈련 target을 스스로 생성합니다. 모델이 자기 훈련 데이터를 만들어서 자기 update 알고리즘을 배우는 거죠. 이건 Schmidhuber의 1993년 self-referential weight matrix 계보를, 이번엔 chunk 병렬화가 가능한 형태로 되살린 겁니다. 3단계는 token들이 서로 상관돼 있으니 안쪽 optimizer로 단순 GD 대신 DGD와 weight decay를 씁니다. 이게 앞서 본 '데이터-의존 decay'를 learning rule 층위에서 자동으로 붙여 줍니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "④ 생성적 사용(3): projection·gate·lr까지 전부 memory화"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "Titans의 마지막 동결 지점: W_K/W_V/W_Q·gate가 추론 중 고정",
+            "처방: 이 모든 것을 test-time에 갱신되는 memory로 승격",
+            "1단계: k·v·q·η(lr)·α(gate)를 각자의 memory가 산출",
+            "  → learning rate·retention gate 자체가 memory의 출력",
+            "2단계: 각 memory가 자기 target을 self-generate (Schmidhuber 계보)",
+            "3단계: 안쪽 rule = DGD + weight decay (데이터-의존 decay)"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "그림 — Hope: 세 생성물의 결합 (fig5)",
+    "notes": "이 셋을 한 블록에 합친 게 Hope입니다. 원저자 Figure 5로 Transformer와 나란히 그려져 있습니다. Hope 블록의 구조는 직렬입니다: 앞에 self-modifying Titans를 놓고, 그 뒤에 CMS를 붙입니다. 왜 이 순서냐면 둘이 상보적이기 때문이에요. self-modifying Titans는 state가 작아서 표현력 있는 DGD rule을 쓸 수 있고, CMS는 지속 저장을 위해 capacity가 커서 대신 단순한 rule을 씁니다. 작고 똑똑한 것 뒤에 크고 느린 것을 붙이는 거죠. 오른쪽 그림을 보시면, Transformer는 attention(frequency 무한대)과 FFN(frequency 0) 두 극단만 있습니다. 반면 Hope는 self-modifying Titans 뒤에 high, mid, low frequency FFN 사슬이 이어지고, 각 블록에 chunk length와 frequency가 적혀 있어요. 즉 long-term/short-term이라는 이분법이 하나의 주파수 스펙트럼으로 펼쳐진 겁니다. Titans의 persistent/long-term/short-term 세 분류가 이제 연속체의 세 점으로 흡수됩니다. 관점을 정리하면: Hope는 Titans처럼 attention과 memory를 병렬로 붙인 게 아니라, Titans 블록의 모든 구성요소를 한 level씩 위로 올리고, 뒤따르는 MLP를 CMS 주파수 스펙트럼으로 펼친 것입니다. 출처는 논문 Figure 5, 원저자 그림입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "결합 = Hope: self-modifying Titans → CMS 직렬"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "직렬: self-modifying Titans(작은 state·표현력 rule) → CMS(큰 용량·단순 rule)",
+            "상보적: 똑똑하고 작은 것 뒤에 크고 느린 것",
+            "Transformer: attention(∞) + FFN(0) 두 극단만",
+            "Hope: Titans 뒤 high/mid/low frequency FFN 사슬 = 주파수 스펙트럼",
+            "long/short-term 이분법 → 연속체의 여러 점으로 흡수",
+            "출처: Behrouz et al. NL Fig.5 (원저자 그림)"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2512.24695-fig5.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "그림 — 결과: 더 많은 level이 이긴다 (fig7)",
+    "notes": "결과로 갑니다. 논문의 헤드라인 주장은 '더 많은 layer가 아니라 더 많은 level이 필요하다'인데, 이 그림 — 원저자 Figure 7 — 이 그걸 실증합니다. 세 개의 long-context 벤치마크(RULER의 MK-NIAH, LongHealth, QASPER)에서 memory level 수를 1개에서 4개로 늘리면 성능이 단조롭게 좋아집니다. 그리고 어떤 level 수에서도, 어떤 최저 주파수에서도, ICL과 DuoAttention baseline(점선)을 넘어섭니다. 참고로 오른쪽 QASPER는 perplexity라 낮을수록 좋은 거예요. 추가로 continual learning 결과를 말로 얹겠습니다. class-incremental 텍스트 분류 세 벤치마크에서, Llama-3를 ad-hoc level stacking으로 개조한 Hope가 ICL, EWC, 그리고 외부 학습기 SOTA인 InCA를 전부 넘습니다. 새로 만든 CTNL 벤치마크 — 희귀 언어 두 개를 순차로 배우는 과제 — 에서는, ICL은 두 번째 언어를 배우면 무너지는 반면 Hope는 level을 1, 2, 3개로 늘릴수록 단조 개선돼서 Hope-3는 단일 언어 성능을 거의 회복합니다. 그리고 형식언어 인식: parity, a^n b^n, a^n b^n c^n 같은 과제에서, 훈련 분포 밖의 긴 입력에서도 Hope는 전부 100점입니다. Transformer는 parity 길이 일반화에서 0점으로 실패하죠. 단 정직하게 말하면 이건 정리(theorem)가 아니라 실증입니다 — NL엔 level 수에 따른 표현력 정리가 없어요. 출처는 논문 Figure 7, 원저자 그림입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "⑤ 결과: level↑ → 성능 단조 개선 + 길이 일반화 100%"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "level 1→4로 늘릴수록 세 long-context 벤치마크 단조 개선, baseline 상회",
+            "continual: Llama-3 retrofit Hope가 ICL·EWC·InCA(외부학습기 SOTA) 상회",
+            "CTNL(희귀언어 순차학습): ICL 붕괴 vs Hope는 level↑로 단일언어 회복",
+            "형식언어(parity, aⁿbⁿcⁿ): 분포 밖 길이도 전부 100 (Transformer 실패)",
+            "단, 정리 아닌 실증 — level 표현력 정리는 없음"
+          ]
+        },
+        "geometry": { "x": 60, "y": 100, "w": 840, "h": 145 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2512.24695-fig7.png"
+        },
+        "geometry": { "x": 60, "y": 252, "w": 840, "h": 248 }
+      }
+    ]
+  },
+  {
+    "title": "그림 — 결과의 정직한 상한 + serving batchability (exp-e)",
+    "notes": "이제 정직성 항목과 systems 함의를 함께 짚겠습니다. 먼저 결과의 caveat. 짧은 in-context recall — 예를 들어 FDA나 SWDE 같은 과제 — 에서는 여전히 Transformer가 최고이고 격차가 큽니다. FDA에서 Transformer 67.3 대 Hope 41.9. Hope는 attention-free 모델들 중에서 최고일 뿐, 이 라인이 계속 못 풀던 in-context retrieval gap은 종합판에서도 미해소입니다. 그리고 스케일. from-scratch 실증 상한은 1.3B 파라미터에 100B token이고, retrofit도 Llama3-8B까지입니다. Hope의 decode throughput이나 latency 같은 wall-clock 수치는 논문에 아예 없어요. 이제 serving batchability를 봅시다 — 여기가 우리 세미나의 systems 관점입니다. self-modifying Titans의 state는 KV cache와 근본적으로 다릅니다. KV cache는 read-only라서 여러 요청이 weight를 공유하며 batch할 수 있는데, 이 fast-weight memory는 per-request로 달라지는 mutable weights예요. 그래서 shared-weight batching이 깨집니다. 배치를 하려면 BMM이나 grouped-GEMM으로 요청별 다른 weight를 묶어야 하죠. 여기서 우리 자체 실험(그림)이 보여주는 핵심: 배칭 자체는 가능(feasible)하지만, 각 요청의 arithmetic intensity가 배치 크기 B와 무관하기 때문에, 대역폭이 배치를 조기에 닫아버립니다. 이 그림은 on-die/off-die 경계에서 RMW 대역폭이 절벽처럼 떨어지는 걸 보여줍니다 — memory가 on-die에 안 들어가면 갱신 트래픽이 급락해요. 그래서 절대 평균 내지 마십시오(never-average): 요청마다 state 크기와 chunk 주기가 다르면 유효 대역폭이 요청별로 다르고, 평균은 이 절벽을 가려버립니다. 이건 본 세미나의 자체 탐색 실험이며 비율·형태가 load-bearing 주장입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "⑤ 한계 + serving: batching은 되지만 대역폭이 먼저 닫는다"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "짧은 recall은 여전히 Transformer 우위(FDA 67.3 vs 41.9) — gap 미해소",
+            "상한: from-scratch 1.3B/100B, retrofit Llama3-8B / decode wall-clock 없음",
+            "state = mutable per-request weights → shared-weight batching 깨짐",
+            "배칭은 feasible(BMM/grouped-GEMM)이나 AI가 B와 무관",
+            "→ 대역폭이 배치를 조기에 닫음(on/off-die RMW 절벽)",
+            "never-average: 요청별 state·주기 다름 → 평균이 절벽을 가림"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/exp-e-rmw-cliff.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "한계와 Bridge-out — Sleep으로",
+    "notes": "마지막으로 한계를 정직하게 정리하고 다음 논문으로 넘기겠습니다. 논문이 스스로 그은 한계선이 넷입니다. 첫째, catastrophic forgetting은 해결되지 않았습니다. forgetting은 압축의 필연적 귀결이에요 — 용량이 유한하면 새 걸 넣기 위해 뭔가는 잊어야 합니다. CMS가 한 일은 '어디서, 얼마나 빨리 잊을지'를 주파수 축에 재배치한 것뿐, 원리적으로 푼 게 아닙니다. 둘째, level 설계가 경험적입니다. level 몇 개, 주파수 얼마, 어떤 구성요소를 어디 놓을지에 대한 이론이 없어요. 실제로 query projection을 memory화하면 오히려 성능이 나빠지는 내부 반례도 있습니다 — '잘못 놓인 level은 해가 된다'는 거죠. 셋째, 이론이 재해석까지만입니다. optimizer 역공학은 존재 논증이지 유일성 증명이 아니고, level 수에 따른 표현력 정리도 없습니다. 넷째, 서빙 경제학과 스케일이 미검증입니다. 자, 그럼 다음 논문 Sleep으로 넘어가는 다리를 놓겠습니다. 기억하시죠 — 신경생리학은 consolidation이 두 단계라고 했고, NL은 그중 online consolidation, 즉 '입력이 흐르는 동안'의 CMS 갱신만 구현했습니다. 수면 중 replay로 기억을 재조직하는 offline consolidation은 명시적으로 범위 밖으로 뒀어요. 그래서 NL의 세계에서는 모든 적응이 입력이 흐르는 동안 일어나고, 용량은 고정이고, 그래서 forgetting이 필연입니다. 남는 질문은 이겁니다: 빠른 level의 지식이 예정된 갱신으로 덮어써지기 전에, 그걸 어디로 옮길 것인가? Sleep의 답은 wake/sleep lifecycle을 세워서, 잠자는 동안 그 지식을 더 느린 블록에 새 expert로 위쪽 distillation하고 forgetting을 regularization이 아니라 capacity 성장으로 재정의하는 겁니다. 그리고 그 발화 시점이 정확히 CMS의 chunk 경계예요. 그게 다음 세션입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "⑥ 한계 → 다음 연결: 잊히기 전에 어디로 옮길까?"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "forgetting 미해결: CMS는 '어디서 잊을지' 재배치일 뿐(압축의 필연)",
+            "level 설계는 경험적 — query 동결이 더 좋은 내부 반례",
+            "이론은 재해석까지, 표현력 정리 없음 / 서빙·스케일 미검증",
+            "NL이 구현한 건 online consolidation뿐(입력 흐르는 동안)",
+            "수면 offline consolidation은 명시적 범위 밖 → 인계선",
+            "다음: Sleep — chunk 경계에서 지식을 느린 블록에 distill(capacity 성장)"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "S7 요약",
+    "notes": "이 섹션을 다섯 문장으로 닫겠습니다. 첫째, Nested Learning의 한 문장은 '모델과 훈련 절차는 하나의 중첩 최적화 시스템이고, 각 level은 자기 context flow를 자기 주기로 압축하는 associative memory다'입니다. 둘째, 그 관점의 결정적 통찰은 backprop·momentum·Adam·Muon이 전부 gradient에 대한 memory라는 것이고, 특히 backprop은 자기 target을 스스로 만드는 self-referential memory라 병렬화가 안 됩니다. 셋째, 이 관점은 기술용이 아니라 생성용이라, 세 가지 물건을 낳았습니다 — 더 표현력 있는 optimizer(Delta Momentum·DMGD·M3), 주파수 스펙트럼 memory인 CMS, 그리고 projection·gate·lr까지 전부 memory화한 self-modifying Titans. 넷째, 이 셋을 직렬로 결합한 게 Hope이고, '더 많은 layer가 아니라 더 많은 level'이 길이 일반화와 continual learning을 사준다는 걸 실증했습니다 — 단 짧은 recall gap과 서빙 경제학은 미해소입니다. 다섯째, systems 관점에서 이 라인의 문제는 풀리기는커녕 6배로 늘었습니다: per-request mutable weights라 batching이 깨지고, 대역폭이 배치를 조기에 닫습니다. 그리고 NL은 online consolidation만 구현해서, '잊히기 전에 옮길 곳'이라는 문제를 다음 논문 Sleep에 넘깁니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "summary",
+          "text": "S7 요약 — Nested Learning"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "한 문장: 모델+훈련절차 = 중첩 최적화 시스템, 각 level = associative memory",
+            "통찰: backprop·momentum·Adam·Muon = gradient memory (backprop은 self-referential)",
+            "생성물 3종: 새 optimizer(M3) · CMS(주파수 스펙트럼) · self-modifying Titans",
+            "결합=Hope: '더 많은 level'이 길이일반화·continual을 산다 (recall gap은 미해소)",
+            "systems: per-request mutable weights → batching 깨짐, 대역폭이 배치를 닫음",
+            "다음 → Sleep: online consolidation만 구현, '옮길 곳' 문제를 인계"
+          ]
+        }
+      }
+    ]
+  }
+]

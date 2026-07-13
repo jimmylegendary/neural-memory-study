@@ -1,0 +1,465 @@
+[
+  {
+    "title": "S10 divider",
+    "notes": "이제 마지막 큰 섹션입니다. 앞에서 우리는 여섯 편의 논문이 무엇을 문제로 삼고 어떻게 풀었는지를 알고리즘 관점에서 따라왔습니다. 이 섹션은 관점을 완전히 바꿉니다. 질문은 하나입니다 — 이 라인이 정말로 배포되려면, 이번엔 누구의 노력이 필요한가? 저는 transformer가 어떻게 상업화됐는지를 거울로 삼겠습니다. transformer는 attention이라는 알고리즘 하나로 상업화된 게 아니라, FlashAttention 같은 커널 혁신과 NVIDIA의 tensor core·NVLink·Megatron 같은 하드웨어·분산학습 혁신이 합작해서 상업화됐습니다. 세 겹의 노력이 각각 다른 주체에서 나왔죠. 이 섹션은 그 교훈을 test-time training(TTT) 라인에 적용해서, scaling law·하드웨어 병목·player 지도·서빙 청사진·구체적 제안을 거쳐 마지막에 '누가 무엇을 해야 하는가'로 착지합니다. 중요한 정직성 원칙 하나: 앞으로 나오는 숫자들은 대부분 비율과 방향만 신뢰하고, 절대치(ms, mJ)는 roofline 하한이라 확정 측정이 아니라는 점을 계속 상기하겠습니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "section",
+          "text": "Scaling과 HW 혁신 — 이번엔 누구의 노력이 필요한가",
+          "subtitle": "transformer 상업화의 3중 합작을 거울로, TTT 라인의 청사진과 분업을 그린다"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "유비: attention(알고리즘) + FlashAttention(커널) + NVIDIA(HW·분산)의 합작",
+            "scaling: params·tokens로 부족 — state-bytes·capacity 두 축을 더한다",
+            "병목: decode = memory-bound whole-state RMW, KV와 질적으로 다르다",
+            "결론: Google·NVIDIA·OSS·학계, 각자 다른 절반을 맡는 분업"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "유비: transformer 상업화의 3중 합작",
+    "notes": "먼저 거울을 봅시다. transformer가 오늘 어디서나 돌아가는 건 단일 발명 때문이 아닙니다. 세 겹의 노력이 겹쳐야 했습니다. 첫째 층은 알고리즘 — 2017년 attention 그 자체. 하지만 알고리즘만으로는 제품이 안 됩니다. 둘째 층은 커널 혁신입니다. FlashAttention은 attention의 수학을 한 글자도 바꾸지 않고, GPU 메모리 계층에 맞게 IO를 재조직해서 attention을 메모리 병목에서 풀어냈습니다. 이건 주로 학계·오픈소스가 해냈죠. 셋째 층은 하드웨어와 분산학습입니다. NVIDIA의 tensor core(dense matmul 전용 엔진), NVLink(칩 간 고속 연결), 그리고 Megatron 같은 tensor/pipeline 병렬 스택이 대규모 학습을 가능하게 했습니다. 핵심은 이겁니다 — 이 세 층이 서로 다른 주체에서 나왔고, 어느 하나도 혼자서는 상업화를 완성하지 못했습니다. 그래서 우리가 TTT 라인을 볼 때 물어야 할 질문은 '이 알고리즘이 맞나'가 아니라 '이 세 층이 지금 어디까지 채워졌고, 빈 칸은 누가 채우는가'입니다. 그게 이 섹션 전체의 척추입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "유비 — transformer는 어떻게 상업화됐나"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "① 알고리즘: attention (2017) — 표현력이 아니라 GEMM 친화성이 승부",
+            "② 커널: FlashAttention — 수학 불변, IO 재조직으로 메모리 병목 해소",
+            "③ HW·분산: NVIDIA tensor core · NVLink · Megatron 병렬",
+            "세 층은 서로 다른 주체가 채웠다 — 어느 하나도 혼자선 못 함",
+            "TTT 라인의 질문: 이 세 층 중 빈 칸은 지금 누가 채우나"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "attention이 이긴 진짜 이유 — hardware lottery",
+    "notes": "왜 attention이 이겼는지, 표현력이 아니라 하드웨어 관점에서 정직하게 짚겠습니다. attention의 핵심 연산은 두 개의 큰 행렬곱입니다 — QKᵀ와 PV. 둘 다 sequence 축 전체에 완전히 병렬이라 tensor core가 가장 좋아하는 모양, 즉 GEMM density가 높습니다. 반대로 고전 RNN은 시점 t의 상태가 t-1에 의존하는 sequential dependency 때문에 병렬화할 큰 행렬곱이 없고, 매 스텝이 작은 GEMV로 쪼개져 tensor core를 놀립니다. 그래서 RNN은 표현력이 부족해서가 아니라, 지수적으로 좋아지는 하드웨어를 '먹지 못해서' 밀렸습니다. 이게 hardware lottery라는 개념입니다 — 승부는 옳고 그름 이전에, 그 시대 소자가 값싸게 실행하는 모양을 통과하는가에서 갈립니다. 여기서 중요한 함의: neural-memory 라인은 본질적으로 recurrent입니다. 매 token마다 fast weight를 갱신하는 sequential 과정, 즉 RNN을 떨어뜨린 바로 그 dependency를 품고 있습니다. 그런데도 이 라인은 살아남았습니다. 오른쪽 그림은 Titans 논문의 그림 1로, 이 라인이 neural memory의 학습을 어떻게 병렬로, 행렬곱으로 재구성했는지를 보여줍니다. 다음 슬라이드에서 그 '선불한 세금'을 구체적으로 뜯어봅니다. (출처: Titans, Behrouz et al. 2025)",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "attention이 이긴 진짜 이유 — GEMM density와 hardware lottery"
+        },
+        "geometry": { "x": 40, "y": 60, "w": 880, "h": 70 }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "attention = QKᵀ·PV 두 개의 큰 matmul → GEMM density 높음",
+            "RNN = sequential dependency → 작은 GEMV, tensor core를 굶김",
+            "RNN이 밀린 건 표현력 아님 — 좋아지는 HW를 못 먹어서",
+            "hardware lottery: 시대 소자가 값싸게 하는 '모양'이 승부",
+            "TTT 라인도 본질은 recurrent — 같은 관문을 통과해야 산다"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/reffigs/2501.00663/figures/fig1.png"
+        },
+        "geometry": { "x": 520, "y": 150, "w": 420, "h": 300 }
+      }
+    ]
+  },
+  {
+    "title": "이 라인은 matmul 안에 설계돼 있다",
+    "notes": "이 라인이 hardware lottery의 세금을 '선불'했다는 게 무슨 뜻인지 구체적으로 봅시다. 저자들은 recurrent 알고리즘을 기존 accelerator에 맞도록 네 번 다시 빚었습니다. 첫째, chunkwise-parallel training — chunk 안의 모든 gradient를 chunk 시작 상태에서 평가하는 근사로, sequential recurrence를 chunk 단위 GEMM으로 바꿉니다. 정확성을 조금 내주고 matmul을 삽니다. 둘째, Atlas의 Newton-Schulz orthogonalization — 그 반복 자체가 batched 행렬곱의 연쇄입니다. 셋째, TNT의 periodic reset — local memory를 학습된 초기값으로 주기적으로 되돌려 비선형 recurrence 사슬을 끊고 context parallelism을 엽니다. 넷째, featurized keys — polynomial feature로 capacity마저 더 많은 matmul로 치환합니다. 이 네 수의 공통 문법은 하나 — arithmetic intensity를 제조한다는 겁니다. 오른쪽 그림이 그 핵심입니다. 이건 우리 자체 실험(exp-c)의 roofline인데, chunk 크기 C가 x축입니다. C=1(decode)은 memory-bound 평원에 앉아 있지만, C를 키우면 compute-bound로 올라갑니다. 같은 알고리즘이 손잡이 하나로 두 영역을 오갑니다. 정직성: crossover의 위치(host에서 C*≈32)는 하드웨어마다 달라 이전 안 되고, load-bearing한 건 '곡선의 모양'과 '제조가 가능하다'는 사실뿐입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "이 라인은 matmul 안에 설계돼 있다 — 세금을 선불했다"
+        },
+        "geometry": { "x": 40, "y": 60, "w": 880, "h": 70 }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "① chunkwise-parallel: recurrence → chunk 단위 GEMM",
+            "② Newton-Schulz: 반복 orthogonalize = batched matmul 연쇄",
+            "③ periodic reset(TNT): 사슬을 끊어 context parallel을 염",
+            "④ featurized keys: capacity마저 matmul로 치환",
+            "공통 문법 = arithmetic intensity 제조 (chunk C = roofline x축)"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/exp-c-chunk-roofline.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "FlashAttention-moment은 아직 안 왔다",
+    "notes": "여기가 이 섹션의 결정적 관측입니다. 알고리즘을 matmul로 빚었다고 곧바로 실용화되는 게 아닙니다. attention도 알고리즘 승리 이후 FlashAttention이라는 커널 승리가 한 번 더 필요했죠. 이 neural-memory 가족에는 그 순간이 아직 없습니다. 그리고 그 부재는 추측이 아니라 오픈소스 생태계에서 관측됩니다. flash-linear-attention(FLA)이라는 라이브러리는 이 라인의 matmul-clean한 계보 — delta_net, gated_deltanet, gla, mamba2 — 를 전부 production급 Triton 커널로 커버합니다. Gated DeltaNet은 NVIDIA 공식 구현까지 있죠. 그런데 이 라인의 정점인 deep-memory + momentum Titans는 FLA에서 naive PyTorch 참조 구현에 멈춰 있습니다. 같은 RFC에서 TTT와 Titans 커널이 함께 발의됐는데 TTT만 Triton화되고 Titans는 정체했습니다. 원인은 구조적입니다 — momentum buffer의 재귀 항이 chunk 경계를 넘어 이어져서, chunk 내부를 하나의 깨끗한 matmul로 접는 closed form을 깨뜨립니다. deep memory의 gradient도 rank-1 outer product가 아니라 MLP를 통과한 matmul 사슬이라 linear closed form이 없습니다. 오른쪽은 TNT 논문의 runtime 비교입니다 — 흥미롭게도 TNT는 plain JAX로, 커스텀 커널 없이 32K 문맥에서 FlashAttention을 이겼습니다. 상한은 존재한다는 신호죠. 하지만 momentum·gating을 뺀 단순화 버전에서만 검증된 결과라, 완성형 전체로의 이전은 아직 미검증입니다. 요컨대 이 라인은 로또 세금을 '부분적으로만' 냈습니다. (출처: TNT)",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "그러나 FlashAttention-moment은 아직 오지 않았다"
+        },
+        "geometry": { "x": 40, "y": 60, "w": 880, "h": 70 }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "FLA: delta·GDN·mamba2는 Triton 커널로 커버 — 이미 production",
+            "Titans(deep memory+momentum)는 naive PyTorch에 정체",
+            "원인: momentum 재귀가 chunkwise closed form을 깸",
+            "deep memory gradient = MLP 통과 matmul 사슬(rank-1 아님)",
+            "TNT는 plain JAX로 32K서 FlashAttention을 이김 → 상한은 존재",
+            "결론: 로또 세금을 '부분적으로만' 냈다"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 350 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/reffigs/2511.07343/figures/fig4.png"
+        },
+        "geometry": { "x": 520, "y": 150, "w": 420, "h": 320 }
+      }
+    ]
+  },
+  {
+    "title": "Scaling law — params·tokens로는 부족하다",
+    "notes": "이제 scaling law로 넘어갑니다. inference 엔지니어가 fleet을 sizing할 때 쓰는 두 질문이 있습니다 — 주어진 예산에 어떤 품질이 나오나(quality scaling), 주어진 품질을 서빙하는 데 자원이 얼마나 드나(cost scaling). transformer 세계에서 이 두 질문의 도구는 Chinchilla식 법칙과 KV cache sizing인데, 둘 다 params N과 tokens D라는 두 축 위에 삽니다. 그런데 이 라인은 그 두 축을 불충분하게 만듭니다. 왜냐면 서빙 상태가 KV cache가 아니라 weights이고, 그 weights 크기가 params와 분리된 독립 knob이며, 같은 N·D 아래서도 architecture class가 바뀌면 memory capacity가 O(d_k)에서 무한대까지 움직이기 때문입니다. 그래서 이 라인의 scaling law는 params·tokens 위에 두 개의 새 축을 얹어야 완결됩니다. 첫째는 cost 쪽 — state-bytes로, 서빙 상태 크기가 문맥이 아니라 폭의 제곱(m·d²·L)에 스케일합니다. 둘째는 quality 쪽 — capacity로, architecture를 저장 잠재력 순으로 정렬합니다. 방법론적 경고 하나: 여섯 편이 서로 다른 tokenizer(Llama-2, T5, 32K)를 써서 perplexity의 좌표계가 다릅니다. 그래서 논문 간 가로 비교는 함부로 못 하고, 같은 setting_group 안에서만 fit이 legal합니다. 이건 부정적 결론이 아니라 무엇이 정당한지의 경계를 못박는 겁니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Scaling law — 두 축이 모자란다"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "transformer 도구: Chinchilla 법칙 + KV sizing — 둘 다 (N, D) 위",
+            "이 라인은 두 축을 불충분하게 만든다",
+            "빠진 축 ①: state-bytes — 문맥 아닌 폭² (m·d²·L)에 스케일",
+            "빠진 축 ②: capacity — O(d_k) ~ 무한, architecture를 정렬",
+            "경고: tokenizer 이질성 → 논문 간 ppl 비교는 좌표계가 다름",
+            "legal fit = 같은 setting_group 안에서만"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "E4 — capacity는 어디서 값을 하는가",
+    "notes": "그럼 새로 세운 capacity 축이 정말 예측력이 있을까요? 우리는 여섯 편의 공개 점을 digitize해서 실제로 fit을 돌렸습니다(자체 실험 E4). 결과가 미묘하고 정직합니다. 답은 target에 따라 갈립니다. 먼저 perplexity 축. 고정 1.3B, 같은 tokenizer에서 여러 architecture의 ppl을 두 축 — raw state-bytes와 capacity 순위 — 에 대해 순위상관으로 검정하면, 둘의 상관이 정확히 같습니다(둘 다 rho -0.949). 즉 ppl 예측에서 capacity는 state-bytes 위로 아무것도 더하지 못합니다. 더 결정적인 건 attention을 넣었을 때입니다. attention은 capacity가 무한인데 ppl은 오히려 나쁜 축에 속해서, capacity로 ppl을 예측하면 부호가 뒤집힙니다(+0.094). 왜냐면 ppl은 raw retrieval capacity가 아니라 압축을 보상하기 때문입니다. 그런데 같은 capacity 축을 다른 target — long-context retention(BABILong의 유지 길이) — 에 대면 그림이 반전됩니다. capacity 순위와 retention 길이의 상관이 완벽합니다(rho +1.0). 가장 선명한 증거는 Titans에서 Atlas로의 도약입니다 — state-bytes는 1.5배밖에 안 늘었는데 retention 길이는 6.7배 뜁니다(1.5M → 10M tokens). raw byte로는 설명 못 하는 이 도약을 capacity class 변화가 설명합니다. 결론: capacity는 일급 축이 맞지만, 그 자리는 quality 일반이 아니라 오직 long-context retention입니다. 오른쪽 2x2 그림이 이 네 결과를 담고 있습니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "E4 — capacity가 값을 하는 유일한 축은 retention"
+        },
+        "geometry": { "x": 40, "y": 60, "w": 880, "h": 70 }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "ppl 축: capacity ↔ state-bytes 순위 동일(둘 다 rho -0.95)",
+            "attention 넣으면 capacity 부호 반전 — ppl은 압축을 보상",
+            "retention 축: capacity ↔ 유지길이 rho +1.0 (완벽)",
+            "Titans→Atlas: state-bytes 1.5× ↔ retention 6.7× 도약",
+            "결론: capacity 축의 자리는 quality 일반이 아니라 long-context"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/exp-f-scaling-fits.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "HW 병목 — decode = whole-state RMW",
+    "notes": "이제 cost 축의 핵심, 하드웨어 병목입니다. TTT 계열의 decode는 매 token마다 fast-weight state 전체를 읽고, 갱신하고, 되씁니다. 이걸 read-modify-write, RMW라고 부릅니다. 이 트래픽은 layer마다 state 크기의 두 배(read + write)입니다. anchor 설정(1.3B, m=16)에서 이 값이 token당 6.44 GB입니다. 감을 드리자면, bf16 1.3B weights 전체가 약 2.6 GB인데, 매 token마다 그걸 약 2.5번 왕복하는 트래픽입니다. arithmetic intensity는 0.59 FLOP/byte로, H100의 ridge 295보다 두 자릿수 아래 — 결정적으로 memory-bound입니다. 그 결과 state 트래픽이 decode step의 연산을 약 394배 압도합니다. 즉 step 비용이 곧 state 트래픽입니다. 그리고 중요한 대비: 이건 KV cache의 memory-bound와 질적으로 다릅니다. KV는 append-once, read-many, 공유 가능이고 write는 read의 0.003%밖에 안 됩니다. TTT는 write가 read와 같은 대칭 RMW(100%)이고, request마다 상태가 unshared입니다. 같은 'memory-bound'라는 단어를 붙이기 어려운 다른 부하죠. 이 병목은 architecture class를 올려도 사라지지 않습니다 — deep memory는 더 빠른 게 아니라 더 세게 대역폭 벽에 눌립니다. 그리고 폭에 따라 자랍니다: Titans-170M의 0.45 GB/token에서 가상 70B의 343 GB/token까지. 오른쪽은 그 병목의 물리적 증거 — on-die 캐시에 상주하다 DRAM으로 spill하면 RMW 대역폭이 약 3.9배 꺾이는 cliff입니다(자체 실험 exp-e).",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "decode 병목 — whole-state RMW, KV와 질적으로 다르다"
+        },
+        "geometry": { "x": 40, "y": 60, "w": 880, "h": 70 }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "decode = 매 token state 전체를 read-modify-write",
+            "anchor 6.44 GB/token, AI 0.59 → 결정적 memory-bound",
+            "state 트래픽이 연산을 약 394× 압도 (step 비용 = 트래픽)",
+            "KV: write=read의 0.003%, 공유 가능 / TTT: 100% 대칭, unshared",
+            "class 올려도 안 사라짐 — deep memory는 벽에 더 세게 눌림",
+            "폭 스케일: 170M 0.45 → 70B 343 GB/token"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 350 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/exp-e-rmw-cliff.png"
+        },
+        "geometry": { "x": 520, "y": 150, "w": 420, "h": 320 }
+      }
+    ]
+  },
+  {
+    "title": "KV vs TTT crossover S*",
+    "notes": "이 두 memory 시스템 — KV cache와 TTT state — 은 문맥 길이에 따라 정반대로 자랍니다. KV cache의 read 트래픽은 문맥 길이에 비례해 자랍니다. 문맥이 길수록 매 token 읽어야 할 과거가 많아지니까요. 반대로 TTT state의 RMW 트래픽은 문맥에 완전히 무관하게 고정입니다 — 상태 크기가 폭으로만 정해지니까요. 두 곡선이 자라는 방향이 반대이므로, 반드시 교차하는 문맥 길이가 존재합니다. 이걸 crossover S*라고 부릅니다. anchor에서 read 기준 crossover가 약 65k token, 전체 RMW 기준으로는 약 131k token입니다. S* 아래에서는 KV cache가 더 싼 메모리 시스템이고, 위에서는 TTT state가 더 쌉니다. 그리고 이 crossover는 폭에 따라 이동합니다 — 340M에서 16k, 1.3B에서 65k, 70B에서는 약 1.05M token으로. 이게 왜 전략적으로 중요하냐면, TTT가 유리해지는 영역(수만~수십만 token 이상)이 정확히 long-context 제품이 파는 regime이기 때문입니다. 짧은 문맥 챗봇은 crossover 아래라 KV가 여전히 싸고, 이 라인을 도입할 사업적 이유가 약합니다. 반대로 초장문맥을 공격적으로 파는 조직일수록 이 압력을 먼저 받습니다. 오른쪽 그림(자체 실험 exp-a)의 오른쪽 panel, 즉 S*가 폭에 따라 이동하는 scaling이 이 파트의 load-bearing 결과입니다. 절대치는 roofline 하한이라 방향과 위치만 신뢰합니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "KV vs TTT crossover — S* ≈ 65k, 폭 따라 이동"
+        },
+        "geometry": { "x": 40, "y": 60, "w": 880, "h": 70 }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "KV read ∝ 문맥 / TTT RMW = 문맥 무관 고정",
+            "반대 방향 → 반드시 crossover S* 존재",
+            "anchor: read-crossover ≈ 65k, full-RMW ≈ 131k token",
+            "폭 scaling: 340M 16k → 1.3B 65k → 70B ≈ 1.05M",
+            "S* 아래 = KV가 쌈 / 위 = TTT가 쌈",
+            "long-context 제품 regime과 정확히 겹침"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 350 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/exp-a-kv-ttt-crossover.png"
+        },
+        "geometry": { "x": 520, "y": 150, "w": 420, "h": 320 }
+      }
+    ]
+  },
+  {
+    "title": "새 serving primitive — per-session weight state",
+    "notes": "이 라인이 서빙 시스템에 던지는 진짜 새로움은 두 가지입니다. 첫째, decode 안에 backward pass가 들어옵니다. 이 라인의 decode는 추론인데, inner loop이 gradient를 계산해서 state를 갱신하기 때문에 backward가 decode의 critical path 위로 올라옵니다. 오늘의 serving 커널은 전부 forward-only로 설계돼 있어 이 primitive를 지원하지 않습니다. 둘째, 이게 더 근본적인데 — per-request로 변하는 weights입니다. 오늘의 서빙 불변식은 '추론 중 weights는 공유·불변'입니다. 여러 요청이 같은 weights를 재사용하니까 batch를 키우는 게 거의 공짜죠. 그런데 이 라인은 세션마다 weights가 변하므로 그 불변식이 깨집니다. 그 결과 필요한 게 per-session weight state라는 새로운 cache class입니다. 이 class는 KV cache와 성질이 정반대입니다. Sizing: 문맥 무관, 폭으로 고정(1.3B에서 세션당 3.2 GB, 7B 약 17 GB, 70B 약 172 GB — 단일 세션 상태가 whole-model weights와 같은 자릿수!). Batching: KV가 capacity-bound인 것과 달리 bandwidth-bound입니다. 7B에서 10ms 목표면 대역폭 상한 배치가 1 미만으로 몰립니다 — 사실상 batch-1. 왜냐면 request마다 상태가 unshared라 batch B의 트래픽이 B에 선형으로 자라고, shared-weight batching의 amortization이 없기 때문입니다. 추가로 checkpoint/rollback도 KV보다 비쌉니다 — speculative decoding rollback이 fast weights뿐 아니라 momentum까지 되돌려야 하니까요. load-bearing한 건 절대 숫자가 아니라 '7B에서 batch가 한 자릿수로 몰린다'는 class와 방향입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "새 cache class — per-session weight state"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "① backward가 decode critical path 위로 — forward-only 커널로 불가",
+            "② weights가 per-request 변함 → '공유·불변' 불변식이 깨짐",
+            "Sizing: 문맥 무관, 폭 고정 (1.3B 3.2GB · 7B ~17GB · 70B ~172GB)",
+            "Batching: capacity-bound(KV) 아니라 bandwidth-bound",
+            "7B·10ms 목표 → 배치 1 미만, 사실상 batch-1",
+            "checkpoint/rollback도 momentum까지 떠야 함(KV보다 비쌈)"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "Frequency-tiered placement",
+    "notes": "새 cache class 설계에서 가장 신선한 주장이 이겁니다. Nested Learning과 Sleep 논문이 각 memory level에 부여한 update cadence — per-token fast weights, chunk 주기 CMS level, sleep 주기 grown expert, frozen weights — 가 그대로 memory 계층의 tier 배치 명세로 번역됩니다. 규칙은 하나입니다. 상주 사본은 read와 write 중 '빠른 쪽' cadence로 tier가 정해집니다. 이걸 gating rule이라고 부릅니다. 그 귀결이 배치 표입니다. per-token fast weights는 가장 뜨거운 HBM3에 pin됩니다. CMS-chunk level은 chunk 단위로 쓰더라도 매 token 읽으면 read cadence가 붙잡아 HBM3에 남습니다. read와 write가 둘 다 4096 token 주기로 down-sample된 CMS-mid level은 CXL 같은 느린 tier로 legally 내려갑니다. sleep으로 consolidate된 expert는 offline cadence라 CXL로 갑니다. 오늘 서빙 엔지니어에게 이건 익숙한 것의 재서술입니다 — paged KV cache가 hot page를 HBM에, cold page를 host/CXL로 내리는 것과 같은 문법이죠. 다른 점은 '무엇이 hot인지'를 문맥 길이가 아니라 update frequency가 정한다는 겁니다. 정직한 경계 하나: 이 CXL 강등은 그 block이 forward에서 genuinely 건너뛰어질 때(sparse routing 등)에만 성립합니다. block이 매 token forward 체인에 남으면 read가 per-token이라 HBM에 pin됩니다. 그래서 이건 directional한 조건부 가설입니다. 오른쪽이 그 cadence→tier 허용 표(자체 실험 exp-d)입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Frequency-tiered placement — cadence가 tier를 정한다"
+        },
+        "geometry": { "x": 40, "y": 60, "w": 880, "h": 70 }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "NL/Sleep의 update cadence = memory 계층 배치 명세",
+            "gating rule: read/write 중 '빠른 쪽'이 tier를 pin",
+            "fast-weights(token/token) → HBM3",
+            "CMS-mid(4096/4096) → CXL, sleep-expert → CXL",
+            "KV의 hot/cold page와 같은 문법, 축만 '빈도'로 바뀜",
+            "경계: read가 실제로 down-sample될 때만 성립(directional)"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 350 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/exp-d-frequency-tiers.png"
+        },
+        "geometry": { "x": 520, "y": 150, "w": 420, "h": 320 }
+      }
+    ]
+  },
+  {
+    "title": "Player 지도 — 누가 어떤 자산을 쥐었나",
+    "notes": "이제 player 지도입니다. 왜 이 여섯 편이 모두 Google Research에서 나왔을까요? 우연이 아니라 자산 구조의 귀결입니다. 이 라인을 검증하려면 세 자산이 한 지붕 아래 있어야 합니다. 첫째, TPU pod + JAX/XLA 스택 — 이 라인의 도박은 'non-linear recurrence를 dense matmul로 다시 빚으면 기존 accelerator에서 경쟁력이 난다'인데, 그걸 검증하려면 큰 GEMM에 최적화된 하드웨어와 커널 없이도 그걸 잘 뽑는 컴파일러가 필요합니다. NVIDIA의 해자가 CUDA 커널이라면 Google의 대응 자산은 XLA라는 컴파일러 층입니다. 실제로 TNT가 plain JAX로 hand-written Pallas FlashAttention을 32K에서 이겼습니다 — 이 라인엔 성숙한 커널이 아니라 성숙한 컴파일러가 필요하다는 증거죠. 둘째, long-context 제품 — crossover 위 문맥을 파는 조직만이 이 라인을 제품 곡선 위에서 정당화합니다. 셋째, 여섯 편의 저작권이 한 팀에 누적. NVIDIA는 다릅니다 — deep memory의 저자가 아니라 인접 linear 계보(Gated DeltaNet)의 player이고, 그 커널 자산은 linear에만 통합니다(deep memory의 non-linear recurrence엔 SRAM chunk 커널이 port 안 됨). open-source(flash-linear-attention)도 같은 함정 — deep-memory fused 커널과 RMW-aware serving API가 공백입니다. 핵심 통찰: pair thesis 위에 겹치면 어느 player도 양쪽(decode 소프트웨어 + accelerator 커널)을 다 쥐지 못합니다. 이건 단일 승자가 아니라 분업 구조입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Player 지도 — 자산 비대칭이 곧 진입로의 지도"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "Google: TPU+XLA(컴파일러 해자) + long-context 제품 + 저작권",
+            "→ TNT가 plain JAX로 hand-Pallas FlashAttention을 32K서 이김",
+            "NVIDIA: CUDA moat·linear 커널 성숙 — 단 linear 계보에만 통함",
+            "OSS(fla): Triton·serving 커뮤니티 — deep 커널·RMW API 공백",
+            "어느 player도 pair 양쪽을 다 쥐지 못함 → 분업 구조",
+            "완성형 배포 = 세 절반의 수가 모두 놓여야 성립"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "제안 — 알고리즘과 HW를 쌍으로",
+    "notes": "구체적 제안으로 갑니다. 핵심 원칙: 이 workload는 두 절반이라 제안도 반드시 쌍으로 나옵니다. 어느 한쪽만 옹호하면 workload의 절반을 무시하는 겁니다. memory-centric 절반 — 이건 정직 판정이 인정한 딱 두 지점에서만 나옵니다. 제안 D: RMW-bandwidth decode 소자. decode가 memory-bound whole-state RMW라는 measured 사실 위에서, 높은 RMW 대역폭 + per-tenant state 상주 + write-heavy epilogue를 위한 near-memory update engine을 요구합니다. state 크기가 문맥 무관 고정이라 on-chip 상주가 설계 가능한 knob이 됩니다 — 오른쪽 그림(exp-b)이 device별 energy/latency 트레이드오프와 상주 crossover(폭 d*≈2896)를 보여줍니다. 제안 E: frequency-tiered placement engine — 방금 본 cadence→tier 직역입니다. accelerator 절반 — 제안 F: fused chunk kernel, momentum이 깨뜨린 chunkwise closed form을 푸는 그 미해결 커널, 이 라인이 기다리는 FlashAttention-moment의 후보입니다. 제안 G: grouped-GEMM decode engine — per-request weights가 깬 batching을 복원합니다. 단 arithmetic intensity 자체를 올리진 못하고 파편화 손실만 줄입니다(트래픽 하한은 소자 D의 몫). 제안 H: backward-capable serving kernel. 그리고 이 둘을 잇는 소프트웨어 접착층 제안 I: per-session-weights serving stack — update_in_place, mark_dirty/writeback, checkpoint/rollback, bind_to_sequence, free_on_update 다섯 API. 중요한 배제: 훈련용 새 소자와 일반 PIM은 논문들 자신의 증거(알고리즘을 matmul로 빚음)에 반하므로 명시적으로 배제합니다. 이 배제가 논증을 약화하는 게 아니라 신뢰 가능하게 만듭니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "제안 — 알고리즘과 HW는 반드시 쌍이다"
+        },
+        "geometry": { "x": 40, "y": 60, "w": 880, "h": 70 }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "memory-centric: D=RMW-bandwidth decode 소자, E=freq-tier placement",
+            "accelerator: F=fused chunk kernel(=FA-moment 후보)",
+            "G=grouped-GEMM decode(batching 복원), H=backward-capable kernel",
+            "접착: I=per-session-weights serving stack(5개 API)",
+            "배제: 훈련용 새 소자·일반 PIM (논문 자신의 증거에 반함)",
+            "D는 트래픽 하한, G는 batch 형성 — 같은 step을 나눠 맡음"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 350 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/exp-b-state-placement.png"
+        },
+        "geometry": { "x": 520, "y": 150, "w": 420, "h": 320 }
+      }
+    ]
+  },
+  {
+    "title": "누구의 노력이 필요한가",
+    "notes": "이제 이 섹션 전체의 착지점입니다. transformer 유비로 돌아가면 — 상업화는 알고리즘·커널·하드웨어 세 층이 서로 다른 주체에서 나와 합작한 결과였습니다. TTT 라인도 똑같습니다. 어느 한 player도 pair의 양쪽을 다 쥐지 못하므로, 필요한 건 분업입니다. Google: 이 라인의 저자이자 자연스러운 첫 배포자입니다. 다음 수는 compiler/economics 쪽 — deep-memory fused kernel을 TPU에서 내고, from-scratch scale-up(현재 실증 상한이 1.3B/100B뿐)으로 7B+에서 이점이 유지되는지 곡선을 긋는 것. 이 곡선을 값싸게 그릴 위치에 있는 유일한 조직 중 하나입니다. NVIDIA: deep memory가 crossover 위 제품에서 승기를 잡으면, 아키텍처 승부가 아니라 deep-memory fused CUDA kernel로 재진입합니다. 이건 정렬을 새로 만들어야 하는 고비용 공세라, NVIDIA는 커널 성숙의 timing에 베팅합니다. OSS(flash-linear-attention): 커널 생태계입니다. fla를 deep memory로 확장하는 Triton fused forward+backward 커널을 먼저 내는 팀이 이 라인의 커널 표준을 차지합니다. 단 느슨한 거버넌스가 크고 응집된 커널 하나를 밀기엔 약해서, 자원을 집중할 주체를 기다립니다. 학계·스타트업: 하드웨어 없이 둘 수 있는 수 — decode 반쪽의 RMW-aware serving 소프트웨어, 잠긴 이론(staleness bound), 실제 커널로 S*를 재는 측정. 가장 중요한 메시지: FlashAttention-moment이 오기 전인 지금이 진입 기회의 창입니다. deep-memory fused kernel을 먼저 내는 자가 표준을 정의하고, 그 순간 창은 닫히기 시작합니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "결론 — 누구의 노력이 필요한가"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "Google: deep-memory fused TPU 커널 + 7B+ scale-up 곡선(compiler/economics)",
+            "NVIDIA: deep memory 이기면 CUDA fused 커널로 재진입 — 커널 timing 베팅",
+            "OSS(fla): deep-memory Triton fwd+bwd 커널 = 커널 표준 first-mover",
+            "학계·스타트업: decode RMW-serving SW + 이론 + S* 측정",
+            "지금이 창(窓): FA-moment 오기 전, 먼저 낸 자가 표준을 정의"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "S10 요약",
+    "notes": "이 섹션을 다섯 문장으로 접겠습니다. 첫째, transformer 상업화는 알고리즘 하나가 아니라 attention·FlashAttention 커널·NVIDIA 하드웨어의 3중 합작이었고, TTT 라인도 같은 세 층을 요구합니다. 둘째, 이 라인의 scaling law는 params·tokens 위에 state-bytes와 capacity 두 축을 얹어야 완결되며, capacity는 perplexity가 아니라 오직 long-context retention 축에서만 예측력을 얻습니다. 셋째, decode는 whole-state RMW로 결정적 memory-bound이고, KV cache와 질적으로 다르며(대칭 write·unshared), crossover S*가 두 시스템의 영역을 문맥 축에서 나눕니다. 넷째, 이 라인도 hardware lottery에 순응해 matmul 안에 설계됐지만, momentum·deep memory 때문에 FlashAttention-moment은 아직 오지 않았고 — 그게 채택의 실질 병목입니다. 다섯째, 그래서 필요한 건 단일 승자가 아니라 분업입니다: Google(컴파일러·경제학·scale-up), NVIDIA(deep-memory fused 커널), OSS(커널 생태계), 학계·스타트업(decode 소프트웨어·이론·측정). 그리고 지금이 그 진입의 창입니다. 정직성 계약을 마지막으로 상기하면 — 비율·crossover·tier·bound만 load-bearing이고, 절대 ms/mJ은 roofline 하한, scratchpad/PIM 이득 배율은 directional입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "summary",
+          "text": "S10 요약 — Scaling과 HW 혁신"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "상업화 = 알고리즘 + 커널 + HW 3중 합작 (transformer의 교훈)",
+            "scaling: +state-bytes(cost) +capacity(retention에서만 quality)",
+            "decode = whole-state RMW, memory-bound, KV와 질적 차이 + crossover S*",
+            "matmul엔 순응했으나 FA-moment 미도래 = 채택 병목(momentum)",
+            "분업: Google·NVIDIA·OSS·학계 — 지금이 진입의 창"
+          ]
+        }
+      }
+    ]
+  }
+]

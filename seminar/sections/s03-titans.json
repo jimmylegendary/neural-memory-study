@@ -1,0 +1,292 @@
+[
+  {
+    "title": "S3 divider — Titans",
+    "notes": "이제 이 시리즈의 첫 논문, Titans입니다. 부제 그대로 '테스트 시점에 외우는 법을 배운다'는 뜻인데, 앞으로 볼 여섯 편의 base가 되는 논문입니다. 핵심 한 문장으로 요약하면 이렇습니다. 지금까지 우리가 아는 recurrent 계열 모델(linear attention, Mamba, DeltaNet)은 과거를 고정 크기 state에 눌러 담습니다. 그런데 Titans는 그 state를 '작은 신경망의 weights'로 보고, inference 도중에도 그 weights를 gradient로 계속 갱신합니다. 즉 모델 안에 optimizer를 통째로 집어넣은 겁니다. 오늘 발표에서 training을 처음 접하시는 분들이 가장 낯설어할 지점이 바로 이것 — decode 한 스텝 안에 forward뿐 아니라 backward(gradient 계산)가 들어온다는 사실입니다. 이 섹션에서 그 그림을 문제 정의부터 결과까지 차근차근 쌓겠습니다. 논문 구조를 여섯 단계 — 문제, 가설, 아이디어, 방법, 결과, 다음 논문으로의 연결 — 로 따라갑니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "section",
+          "text": "Titans — Learning to Memorize at Test Time",
+          "subtitle": "S3 · Behrouz, Zhong, Mirrokni (Google Research, 2024.12)"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "memory = 작은 신경망의 weights, state = 그 weights",
+            "test time에도 gradient로 memory를 계속 갱신",
+            "surprise + momentum + weight decay = 내장된 optimizer",
+            "이후 5편(Miras/Atlas/TNT/NL/Sleep)의 base"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "문제 — 빈 가운데",
+    "notes": "먼저 Titans가 풀려던 문제입니다. linear recurrent 모델의 근본 모순부터 짚겠습니다. attention은 정확하지만 길이의 제곱으로 비싸집니다. 반대로 linear recurrent 모델은 길이에 비례하는 싼 비용이지만, 과거 전체를 고정 크기 state 하나에 압축해 넣습니다. 문제는, 싼 비용이 가장 절실한 구간이 바로 아주 긴 문맥인데, 아주 긴 문맥일수록 작은 벡터 하나에 제대로 안 담긴다는 겁니다. 효율이 필요한 바로 그 자리에서 품질이 무너지도록 설계돼 있는 셈이죠. 바로 앞 배경 섹션에서 본 두 흐름을 떠올려 주세요. 한쪽엔 TTT가 있었습니다. state를 작은 모델의 weights로 보고 gradient로 갱신한다는 아이디어를 language modeling 스케일에서 처음 작동시켰죠. 그런데 TTT엔 세 가지 결핍이 있었습니다. 첫째, 지우는 방법이 없습니다. 순수 SGD라 write만 무한히 쌓여서 언젠가 포화합니다. 둘째, optimizer가 기억을 못 합니다. 매 토큰이 자기 gradient 하나만 반영해서, '놀라운 사건 직후의 토큰도 같이 저장해야 한다'는 시간적 흐름이 없습니다. 셋째, memory를 깊게(deep MLP) 만들면 뭐가 좋아지는지 실험으로 답을 안 했습니다. 다른 한쪽엔 DeltaNet 계열이 있었습니다. memory를 matrix로 묶어두는 대가로 정확한 병렬 학습 공식을 얻었고, Gated DeltaNet은 여기에 잊기 gate까지 붙였습니다. 정리하면, '표현력 있는 갱신 규칙 + 깊은 비선형 memory'와 '병렬 학습 가능성'이 양립 불가능한 것처럼 보였고, 그 가운데가 비어 있었습니다. Titans는 바로 그 빈 가운데를 채우겠다는 논문입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "① 문제 — 효율이 필요한 곳에서 품질이 무너진다"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "attention: 정확하지만 길이² 비용",
+            "linear recurrent: 싸지만 고정 state에 역사 압축",
+            "TTT의 결핍: 지우기 없음 · momentum 없음 · deep 미검증",
+            "DeltaNet: 병렬 학습 얻는 대신 linear matrix에 갇힘",
+            "→ '표현력 있는 memory'와 '병렬 학습'의 가운데가 비어 있음"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "가설 & 아이디어",
+    "notes": "그럼 Titans의 가설, 즉 '무엇을 문제로 규정했나'입니다. 논문은 모든 sequence 모델을 세 요소로 분해합니다 — memory 구조, write(갱신) 연산, read(검색) 연산. 이 관점에서 던지는 핵심 질문은 이겁니다. test time에 memory를 gradient로 갱신하면, 그리고 그 갱신 규칙을 제대로 설계하면, 고정 state의 한계를 넘을 수 있지 않을까? 아이디어의 출발점은 'memory는 weights다'라는 등식입니다. long-term memory module, 줄여서 LMM이라 부르는 작은 MLP가 있고, 그 weights 자체가 recurrent state입니다. 이 memory가 푸는 문제는 associative memory regression입니다. 배경 섹션에서 본 그 associative memory죠 — key가 오면 연관된 value를 되돌려준다. 토큰을 key와 value로 projection한 다음, memory가 key를 넣으면 value를 재생하도록 하는 것을 목표로 삼습니다. 손실은 간단히 'memory가 뱉은 값과 실제 value의 제곱 오차'입니다. 여기서 결정적으로 중요한 구분 하나. key/value를 만드는 projection weights는 inner 문제의 hyperparameter입니다. inference 중엔 절대 안 움직이고, 미리 학습된 값으로 고정입니다. 실제로 매 토큰 움직이는 건 memory의 weights뿐입니다. 이 두 층위 구분이 다음다음 슬라이드의 핵심입니다. 그리고 '무엇을 얼마나 세게 외울까'의 답이 surprise입니다. 지금 들어온 토큰이 이미 저장된 내용을 얼마나 위반하는가 — 그게 곧 손실의 gradient 크기이고, gradient가 클수록 새롭고 예상 밖이니 더 세게 외웁니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "② 가설 · ③ 아이디어 — memory는 weights, surprise는 gradient"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "가설: test time에 gradient로 memory를 갱신하면?",
+            "memory = 작은 MLP(LMM), weights가 곧 state",
+            "inner objective: key→value 재생 (associative regression)",
+            "surprise = inner loss의 gradient (클수록 새 정보 → 세게 write)",
+            "K/V projection은 hyperparameter — inference 중 동결"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "방법 — 세 성분 update",
+    "notes": "이제 방법을 확정합니다. Titans의 write 연산 전체는 딱 한 문장입니다 — 'mini-batch gradient descent에 momentum과 weight decay를 더한 optimizer 한 스텝'. 세 성분을 하나씩 보겠습니다. 첫째, surprise입니다. 기본형은 그냥 gradient descent 한 스텝이에요. 화면 아래 식에서 momentary surprise, 즉 지금 토큰의 gradient만큼 weights를 내립니다. 둘째, momentum입니다. 왜 필요할까요? 큰 surprise 직후엔 손실이 이미 낮아져서 gradient가 급감합니다. 그래서 놀라운 사건 바로 뒤에 이어지는 중요한 토큰들이 약하게 저장되는 문제가 생깁니다. 사람도 놀라운 순간이 한동안 주의를 붙들어서 그 시간대 전체를 기억하잖아요. 그걸 흉내 내려고 과거 surprise를 buffer에 누적합니다 — 이게 S_t, 문자 그대로 SGD-with-momentum의 momentum buffer입니다. 여기가 Titans의 첫 번째 발명이에요. optimizer의 내부 state를 sequence 레이어의 recurrent state로 승격시킨 겁니다. 셋째, weight decay, 즉 잊기입니다. 수백만 토큰을 다루려면 깊은 memory라도 언젠가 가득 차니까, 매 토큰마다 과거 weights를 알파 비율만큼만 남기고 줄입니다. 알파가 1이면 다 보존, 0이면 통째로 소거. 논문은 이 weight decay가 Mamba-2, GLA, Gated DeltaNet의 gate를 임의의 깊은 memory로 일반화한 것임을 보입니다. 이 세 성분을 합친 게 화면의 마지막 식, 이 시리즈 전체의 기준이 되는 master update입니다. 결정적으로, 이 세 손잡이 — learning rate 에타, momentum decay 베타, retention 알파 — 가 모두 상수가 아니라 토큰마다 학습된 함수가 뱉는 gate입니다. ablation 순위만 미리 말씀드리면 기여도는 weight decay가 가장 크고, 그다음 momentum입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "④ 방법 — GD + momentum + weight decay, gate는 토큰마다"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "surprise: Wₜ = Wₜ₋₁ − ηₜ·∇ℓ (gradient 한 스텝)",
+            "momentum: Sₜ = βₜ Sₜ₋₁ − ηₜ∇ℓ — 과거 surprise 누적",
+            "forgetting: Wₜ = αₜ Wₜ₋₁ + Sₜ — per-token weight decay",
+            "master update: 위 두 식 = optimizer 한 스텝",
+            "3 gate(η,β,α) 모두 토큰의 학습된 함수",
+            "기여도: weight decay > momentum > conv > persistent"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "outer vs inner loop",
+    "notes": "이 슬라이드가 이 섹션의 심장입니다. training을 처음 접하시는 분들의 첫 질문 — '그 gate들은 대체 누가 학습하나?' — 에 답합니다. 두 개의 loop가 있습니다. 바깥쪽 outer loop는 우리가 아는 평범한 pre-training입니다. 여기서 학습되는 건 memory의 순간 상태만 빼고 전부입니다 — key/value/query projection, gate를 뱉는 head, persistent token, attention 블록, 그리고 memory의 초기 상태까지. 이건 AdamW로, 대량의 데이터로, 딱 한 번 학습하고 배포 후엔 동결됩니다. 안쪽 inner loop는 memory의 weights를 갱신하는 것 자체인데, 이게 inference 중에도 매 토큰 돕니다. 즉 sequence마다 진화하는 텐서는 딱 둘 — memory weights W_t와 momentum buffer S_t뿐이고, 나머지는 전부 동결입니다. 여기서 가장 중요한 개념적 사실. outer gradient가 unroll된 inner update를 관통합니다. 무슨 말이냐면, key projection을 조금 바꾸면 매 토큰의 inner gradient가 바뀌고, 그게 memory 궤적 전체를 바꿔서 최종 손실을 바꿉니다. 그 연쇄 전체에 대한 gradient가 projection을 학습시키는 거예요. 4장 표현으로 'optimizer를 미분한다'. 그래서 gate에 대한 답은 이렇습니다. 에타, 베타, 알파의 '값'은 inference 중 매 토큰 새로 계산되지만, 그 값을 만드는 '함수'는 pre-training에서만 학습되고 이후 동결. 이 슬라이드 하나만 가져가셔도 됩니다. 학습은 함수를 만들고, inference는 그 함수로 매 토큰 memory를 고쳐 씁니다. 그 결과 decode의 정의가 바뀝니다 — 더는 read-only forward + KV append가 아니라, forward + backward + optimizer step + read가 됩니다. backward가 decode 안으로 들어온 거죠.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "무엇을 meta-learn하나 — outer(느림) vs inner(빠름)"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "outer loop: projection·gate head·persistent·attention — pre-training에서만, 이후 동결",
+            "inner loop: memory Wₜ와 momentum Sₜ만 — 매 토큰, inference 중에도",
+            "outer gradient가 unroll된 inner update를 관통 = 'optimizer를 미분'",
+            "gate 값은 매 토큰 계산, gate 함수는 학습 후 동결",
+            "decode 재정의: forward + backward + optimizer step + read"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "chunkwise 병렬화",
+    "notes": "여기서 시스템 엔지니어라면 즉시 걱정될 겁니다. 매 토큰 gradient를 순차로 계산하면 완전히 sequential이고 matmul이 없어서 가속기에서 최악이잖아요. Titans의 답은 chunkwise 병렬화입니다. 배경 섹션에서 본 그 chunk 트릭이죠. sequence를 크기 C의 chunk로 자르고, chunk 안의 모든 gradient를 'chunk 시작 시점의 동결된 weights'에서 한꺼번에 평가합니다. 같은 상태에서 평가하니까 C개를 동시에 계산할 수 있고, 이게 곧 GEMM 두 개로 바뀝니다. 여기서 chunk 크기 C가 그대로 write GEMM의 내적 차원이 됩니다 — 즉 C가 arithmetic intensity의 손잡이예요. 오른쪽 그림이 이 병렬화의 세 조각을 보여줍니다. 왼쪽 조각: chunk 안 갱신은 linear라서 cumsum으로 처리하고, chunk 경계를 넘는 재진입은 nonlinear라 gradient로 처리합니다. 가운데 조각: momentum buffer는 gradient를 미리 다 계산해 두면 1차 선형 recurrence가 되는데, 이건 정확히 Mamba의 selective scan과 같은 모양이라 parallel associative scan으로 log-depth에 풀립니다. 여러분이 이미 아는 scan 커널이 학습 그래프 한가운데 그대로 등장하는 거죠. 오른쪽 조각: weight decay는 누적 곱을 대각으로 접어 넣은 matmul로 흡수됩니다. 결과 구조가 Titans의 핵심 협상입니다 — chunk 안은 linear라서 병렬, chunk 사이는 nonlinear라서 표현력. 순차 임계 경로가 L이 아니라 L/C번의 MLP 적용으로 줄고, 동시에 그 비선형 경계가 표현력 주장의 근거가 됩니다. DeltaNet 계열이 정확한 closed form을 위해 전부 linear로 남은 것과 의도적으로 다른 선택이에요. 이 그림은 Titans 원논문 Figure 1입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "④ 방법(계속) — inner loop를 GEMM·scan으로"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "chunk 크기 C로 자르고 gradient를 chunk-start 상태에서 평가",
+            "→ C개 동시 계산 = write GEMM 2개 (C = 내적 차원)",
+            "momentum = 1차 선형 recurrence → associative scan",
+            "weight decay = 누적 곱을 대각 matmul로 흡수",
+            "intra-chunk linear(병렬) / inter-chunk nonlinear(표현력)",
+            "임계 경로 L → L/C"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2501.00663-fig1.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "합성 — MAC / MAG / MAL",
+    "notes": "지금까지는 memory 모듈 하나였습니다. 그런데 attention은 여전히 유용해요 — 정밀한 단기 기억이니까요. 그래서 Titans는 attention을 정밀한 short-term memory로, LMM을 서서히 잊는 long-term memory로 두고 둘을 합치는 세 가지 방법을 제안합니다. 오른쪽 그림이 그중 첫 번째, Memory as Context, 줄여서 MAC입니다. 세 갈래가 나란히 있습니다. contextual memory 갈래는 과거를 검색해 와서 현재 입력 앞에 붙이고, attention이 그 검색된 역사와 현재 데이터를 동시에 봅니다. attention 출력이 다시 memory에 write되죠. persistent memory 갈래는 입력과 무관한 학습된 prefix 토큰인데, test time엔 동결됩니다 — 그림의 눈송이 표시가 그거예요. 오른쪽 라벨이 test time의 역할 분담을 요약합니다 — memory는 여전히 학습 중, attention은 in-context learning, persistent는 고정. MAC의 설계 이유가 중요합니다. attention이 검색된 역사와 현재를 같이 보니까 지금 장기 정보가 필요한지를 토큰 단위로 판단할 수 있고, memory에는 attention이 걸러준 표현만 쓰이니까 attention이 일종의 write filter 역할을 합니다. 두 번째 MAG(Memory as Gate)는 sliding window attention과 LMM을 두 갈래로 병렬로 돌려서 gate로 섞습니다. 세 번째 MAL(Memory as Layer)은 LMM을 그냥 하나의 레이어로 attention 앞에 직렬로 쌓는 건데 — 논문은 이게 가장 약하다고 명시합니다. 파이프라인의 힘이 각 단의 힘으로 상한되니까요. 그런데 재밌는 건, H3 이래 거의 모든 기존 hybrid — Samba, Griffin — 가 사실상 이 MAL 모양이라는 겁니다. 그래서 뒤에 나올 'MAC/MAG가 MAL보다 낫다'는 결과는 개별 모델 비교를 넘어서 hybrid 설계 관행 자체에 대한 기소장이 됩니다. 이 그림은 Titans 원논문 Figure 2입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "합성 3형 — attention(단기) + LMM(장기)"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "MAC: 검색→attention→write, attention이 write filter",
+            "MAG: SWA와 LMM을 병렬로 gate 결합",
+            "MAL: LMM을 레이어로 직렬 — 가장 약함(명시)",
+            "persistent: 입력 무관 prefix, test time 동결",
+            "기존 hybrid(Samba/Griffin) = 사실상 MAL",
+            "→ MAC≈MAG > MAL"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2501.00663-fig2.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "결과 — 긴 문맥",
+    "notes": "결과입니다. 정직성 계약에 따라 절대치보다는 방향과 비율 위주로 말씀드리겠습니다. 먼저 검색 능력, S-NIAH(RULER 벤치마크)부터. 2천에서 1만6천 토큰 구간에서 Titans 계열은 전 구간 높은 정확도를 유지합니다. 대조적으로 Mamba-2는 긴 구간에서 붕괴하고 — erase는 있지만 얕은 state로는 부족하다는 거죠. DeltaNet은 일부 과제는 버티지만 다른 과제에선 무너집니다 — replace는 해도 진짜 forgetting이 없어서요. TTT도 긴 구간에서 처집니다 — retention gate가 없으니까요. 즉 앞에서 설계한 세 성분이 각각 어떤 경쟁자를 이기게 했는지가 표의 패턴과 일관됩니다. 오른쪽 그림이 이 라인의 헤드라인 결과, BABILong입니다. 위쪽 few-shot 설정에서 Titans의 MAC 변형이 훨씬 큰 모델들 — Mamba 2.8B, RWKV 7B, 심지어 GPT-4, GPT-4o-mini까지 — 를 앞섭니다. 훨씬 적은 파라미터로요. 아래쪽 fine-tuning 설정에서는 작은 MAC가 파라미터가 약 70배 많은 Llama3.1-8B, 그리고 Qwen2.5-72B, Llama3.1-70B까지 넘어서면서 200만 토큰 너머까지 정확도를 유지합니다. 이 시리즈에서 자주 인용되는 '2백만 토큰 이상' 헤드라인은 전부 이 실험에 얹혀 있습니다. 왜 이게 되냐면, 다음 슬라이드에서 볼 state 크기 교환 때문입니다. 한 가지 정직하게 덧붙이면, 이 비교들은 목적함수와 아키텍처가 동시에 다른 비통제 비교라서 개별 성분의 인과는 통제된 ablation이 뒷받침하는 범위에서만 주장할 수 있습니다. 그리고 baseline 수치는 벤치마크 저자 보고치입니다. 이 그림은 Titans 원논문 Figure 6입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "⑤ 결과 — 긴 문맥에서 훨씬 큰 모델을 앞선다"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "S-NIAH(2K–16K): Titans 전 구간 유지",
+            "Mamba-2 붕괴(얕은 state) · DeltaNet·TTT 부분 실패",
+            "BABILong: MAC가 GPT-4 등 큰 모델 앞섬",
+            "fine-tune MAC: ~70× 큰 Llama3.1-8B 초과, >2M token",
+            "성분↔경쟁자 대응은 통제 ablation 범위 내에서만"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2501.00663-fig6.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "결과 — deep memory & 한계",
+    "notes": "두 번째 결과, deep memory의 가치입니다. TTT가 미검증으로 남긴 그 질문이죠. 오른쪽 그림이 memory 깊이를 1층부터 4층까지 바꿔가며 perplexity를 본 겁니다. 결론은 명확합니다 — 깊을수록 모든 sequence 길이에서 perplexity가 좋고, 특히 길이가 늘어날 때의 열화가 완만합니다. 1층 memory, 즉 linear memory는 '역사가 선형 사상으로 압축 가능하다'는 가정을 깔고 있는데, 실제 key-value 구조는 비선형이라 2층 이상 MLP가 이깁니다. 통제된 ablation에서도 memory를 deep에서 linear로 바꾸면 long-context 점수가 확 떨어집니다. 대가는 훈련 throughput의 선형 하락이에요. 깊이를 늘린 만큼 느려집니다. 그리고 여기서 한계도 정직하게 짚겠습니다. 첫째, 이건 point design입니다. 왜 하필 제곱 오차 손실인가, 왜 하필 SGD+momentum+decay인가에 대한 논거가 없어요. 둘째, 미명시 세부가 많습니다 — gate의 함수형, memory MLP 폭, chunk 크기 같은 게 v1엔 없습니다. 셋째, 근사 비용이 미측정입니다. chunk 안 gradient는 stale한데 chunk 크기에 대한 ablation이 없고, 훈련은 chunk 단위 갱신, decode는 토큰 단위 갱신이라 train/serve 불일치 문제가 제기조차 안 됐습니다 — 이게 나중에 TNT의 출발점이 됩니다. 넷째, 표현력 정리는 증명이 없습니다. 다섯째, 증거가 전부 760M 파라미터 이하, 4K 훈련 길이에서 나왔습니다. 그리고 이 시리즈 전체에 걸쳐 반복할 의무 caveat — 모든 효율 수치는 training throughput이고, decode wall-clock 수치는 이 논문에도 시리즈 어디에도 없습니다. 이 그림은 Titans 원논문 Figure 7입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "⑤ 결과 — 깊은 memory가 이긴다, 그리고 한계"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "깊을수록 전 길이 perplexity↓, 길이 강건 (대가: throughput↓)",
+            "deep→linear 바꾸면 long-context 급락(ablation)",
+            "한계1: point design — 손실·optimizer 선택 논거 없음",
+            "한계2: gate 함수형·MLP 폭·C 미명시(v1)",
+            "한계3: chunk gradient stale, train/serve 불일치",
+            "증거 ≤760M/4K · decode wall-clock 수치 없음"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2501.00663-fig7.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "정리 & 다음 — Miras",
+    "notes": "이 섹션을 정리하고 다음 논문으로 연결하겠습니다. Titans가 한 일을 다섯 줄로 요약하면 — memory를 weights로 보고, surprise를 gradient로 정의하고, momentum으로 시간 흐름을 담고, weight decay로 잊고, 이 모두를 깊은 MLP에 넣고도 chunkwise로 병렬 학습했다. 그리고 시스템 관점의 핵심 교환 하나 — state가 길이에 무관하게 일정합니다. attention KV cache는 길이에 비례해 커지지만 LMM state는 memory weights + momentum buffer로 고정 크기예요. 200만 토큰 능력이 정확히 이 교환 위에 서 있습니다. 대가는 momentum buffer가 state를 2배로 만들고, decode가 read-modify-write가 된다는 것. 이제 다음 논문으로의 연결입니다. Titans가 남긴 가장 생산적인 유산은 결핍이 아니라 회수입니다. 논문의 Appendix C가 Gated DeltaNet, Longhorn, RWKV-7, TTT를 전부 자기 update의 특수 사례로 회수해요 — momentum을 끄면 Gated DeltaNet, forgetting과 momentum을 둘 다 끄면 TTT, 이런 식으로요. 그 순간 이 계보 전체가 하나의 설계 공간의 점들이라는 게 드러납니다. 그런데 Titans는 그 공간의 좌표축이 뭔지를 명명하지 않았어요. '모두가 제곱 오차 목적함수와 제곱 retention만 쓰고 있었다'는 관찰, 그리고 '목적함수 / retention / 아키텍처 / 알고리즘'이라는 4개 축의 명명 — 그게 바로 다음 논문 Miras의 출발점입니다. 재밌는 반전은, Miras의 출시 모델들이 오히려 Titans의 자랑인 momentum을 떼어내고 단순 gradient descent로 돌아간다는 거예요. 시조의 point design이 분해돼서 좌표계가 되는 과정을 다음 섹션에서 봅니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "summary",
+          "text": "정리 — Titans가 만든 것, Miras가 이어받는 것"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "memory=weights · surprise=gradient · momentum · weight decay · deep MLP",
+            "핵심 교환: state가 길이 불변 (KV cache는 길이 비례) → >2M token",
+            "대가: momentum buffer로 state 2배, decode = read-modify-write",
+            "App. C가 DeltaNet·TTT·RWKV-7을 특수 사례로 회수",
+            "⑥ 다음: 이 설계 공간의 좌표축을 명명 → Miras (목적함수·retention·구조·알고리즘)"
+          ]
+        }
+      }
+    ]
+  }
+]

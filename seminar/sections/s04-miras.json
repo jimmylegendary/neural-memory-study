@@ -1,0 +1,235 @@
+[
+  {
+    "title": "S4 divider",
+    "notes": "이제 두 번째 논문 Miras입니다. 정식 제목은 It's All Connected, 즉 '모든 것은 연결되어 있다'이고, 저자들이 붙인 framework 이름이 Miras입니다. Miras는 유산(legacy)이라는 뜻으로, 후속 연구가 밟을 설계 단계를 물려준다는 의도의 작명입니다. 앞에서 본 Titans를 기억하십시오. Titans는 '메모리를 test time에 gradient로 갱신할 수 있다'는 것을 보여준 하나의 구체적인 설계였습니다. 그런데 Titans는 왜 하필 L2 loss인지, 왜 momentum인지, forgetting이라는 말이 맞는 추상인지에 답하지 않고 끝났습니다. Miras는 새 아키텍처가 아니라 '지도'를 그려서 이 질문에 답합니다. 오늘 세미나의 큰 그림에서 Miras는 뒤에 나올 Nested Learning과 Sleep을 이해하기 위한 좌표계를 깔아주는 논문입니다. 이 좌표계 위에서 이후 모든 논문이 자기 위치를 설명하게 됩니다. 이 섹션이 끝나면 여러분은 '시퀀스 모델 = 무언가를 최소화하는 연상 메모리'라는 한 문장으로 이 분야 전체를 볼 수 있게 됩니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "section",
+          "text": "Miras — 모든 것은 연결되어 있다",
+          "subtitle": "It's All Connected: 시퀀스 모델 설계 공간의 통일 좌표계"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "Titans는 설계 공간의 한 점일 뿐",
+            "모든 시퀀스 모델 = 연상 메모리의 online 최적화",
+            "4축 설계 공간 + 세 신모델 Moneta/Yaad/Memora",
+            "다음(Atlas)에 넘긴 것: 비어 있는 optimizer 축"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "문제: 한 점만 찍고 끝났다",
+    "notes": "먼저 문제 제기입니다. Titans는 훌륭한 존재 증명이었지만, 논문 스스로 자기 설계가 일반적임을 암시하고도 그 일반형이 무엇인지는 답하지 않았습니다. 부록에서 Gated DeltaNet, RWKV-7, TTT 같은 기존 모델들이 전부 Titans 갱신식의 특수 사례라고 보여줬습니다. 특수 사례가 있으면 일반형이 있을 텐데, 그 설계 공간의 좌표계가 무엇인지, 각 축에서 Titans의 선택이 왜 좋은지는 공백으로 남았습니다. 구체적으로 세 가지 질문이 열려 있었습니다. 첫째, 왜 L2 loss인가? 메모리가 무엇을 잘 기억할지 정하는 내부 목적함수로 L2 regression을 쓴 건 관행이지 논증이 아닙니다. 둘째, 왜 momentum과 weight decay인가? 이것도 바깥 세계 딥러닝의 관행을 그냥 안쪽으로 옮겨 심은 것입니다. 셋째, forgetting이 옳은 개념인가? Titans는 gate를 '잊기 장치'라 불렀지만 그게 실제로 하는 일이 무엇인지 이론이 없었습니다. Titans 논문 스스로 'L2 너머의 목적함수'와 '더 나은 optimizer'를 명시적인 open problem으로 남겼습니다. Miras는 바로 이 세 질문에서 출발합니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "문제 — Titans는 좌표 하나만 찍었다"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "특수 사례(GDN·RWKV-7·TTT)는 보였지만 일반형은 미제시",
+            "왜 L2 loss인가? — 관행이지 논증이 아님",
+            "왜 momentum·weight decay인가? — 바깥 관행의 이식",
+            "'forgetting'이 옳은 추상인가? — 이론 부재",
+            "Titans가 남긴 open problem: 더 나은 objective·optimizer"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "가설: 두 관찰",
+    "notes": "이제 Miras의 가설, 즉 문제를 어떻게 규정했는지입니다. 두 개의 관찰로 압축됩니다. 관찰 1: 거의 모든 기존 시퀀스 모델은 사실 연상 메모리(associative memory)입니다. key를 넣으면 value를 돌려주는 장치죠. 그리고 이들이 내부적으로 쓰는 목적함수는 단 두 종류뿐이었습니다. 하나는 dot-product 유사도, 하나는 L2 regression. Miras는 이 내부 목적함수에 attentional bias라는 이름을 붙입니다. 인지과학에서 특정 자극을 우선시하는 성향을 가리키는 말인데, 여기서는 '이 메모리가 무엇을 우선해서 기억하는가'를 정의하는 loss라는 뜻입니다. 관찰 2가 더 재미있습니다. forgetting은 존재하지 않는다, retention만 있다. 기존 forget gate들은 전부 L2 정규화의 특수형이고, gate가 하는 일은 '지우기'가 아니라 '새것을 배우기 vs 이전 상태에 머무르기'의 저울질입니다. 모델은 기억을 소거하는 게 아니라 유지하지 않기로 결정할 뿐입니다. 이건 뇌가 기억을 지우는 게 아니라 인출 실패로 접근이 안 되는 것뿐이라는 신경과학 관점과도 맞습니다. 그래서 forget gate를 retention gate로 개명합니다. 이 두 관찰이 다음 슬라이드의 4축 프레임으로 이어집니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "가설 — 모두 같은 것을 하고 있었다"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "관찰 1: 거의 모든 시퀀스 모델 = 연상 메모리",
+            "내부 목적함수는 단 둘 — dot-product 또는 L2",
+            "이 내부 loss를 'attentional bias'로 명명",
+            "관찰 2: forgetting은 없다, retention만 있다",
+            "gate = '지우기'가 아니라 '배우기 vs 머무르기' 저울",
+            "forget gate → retention gate 개명"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "아이디어: 4축 설계 공간",
+    "notes": "핵심 아이디어입니다. 위 두 관찰을 밀고 나가면 시퀀스 모델 설계가 네 개의 독립적인 축으로 분해됩니다. 오른쪽 그림이 논문의 overview입니다. 첫째 축은 memory architecture, 메모리를 벡터로 둘지 행렬로 둘지 MLP로 둘지입니다. 둘째 축은 attentional bias, 방금 말한 내부 목적함수 L입니다. 이 메모리가 무엇을 우선해서 기억하느냐죠. 셋째 축은 retention gate, 새것을 얼마나 배우고 옛것을 얼마나 유지할지의 균형입니다. 논문은 long-context 성능을 좌우하는 결정적 레버가 바로 이 축이라고 주장합니다. 넷째 축은 memory learning algorithm, 그 목적함수를 어떤 방법으로 푸느냐입니다. 그냥 gradient descent인지, momentum을 붙이는지, Newton법인지, closed-form으로 푸는지. 그림에서 보시면 매 token마다 최소화되는 안쪽 목적함수는 'attentional bias 더하기 retention'이고, 그걸 gradient descent로 푸는 흐름이 그려져 있습니다. 이 그림 한 장의 각 칸을 채우는 게 이 논문 전체입니다. 참고로 이 그림은 Miras 원논문 Figure 1입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "아이디어 — 4축 설계 공간"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "① Memory architecture — 벡터/행렬/MLP",
+            "② Attentional bias — 내부 목적함수 L",
+            "③ Retention gate — 배우기 vs 유지의 균형",
+            "④ Learning algorithm — GD/momentum/Newton/…",
+            "매 token: (bias + retention) 최소화 → GD",
+            "축 ③이 long-context의 결정적 레버"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2504.13173-fig1.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "방법 1: 전부가 이 공간의 점이다",
+    "notes": "이 좌표계의 위력은, 기존 모델 전부가 이 4축 공간의 한 점으로 재유도된다는 것입니다. 예를 하나만 손으로 짚어 봅시다. attentional bias를 dot-product로 두면, '비슷한 key에 비례해서 크게 써라'는 목적함수가 되고, 그걸 풀면 순수하게 더하기만 하는 write가 나옵니다. 이게 linear attention, RetNet, Mamba-2 계열입니다. 옛날의 Hebbian '덧쓰기'죠. 반대로 bias를 L2 regression으로 바꾸면 '이미 있던 걸 고쳐 써라'가 되고, 이게 DeltaNet, Gated DeltaNet, RWKV-7 계열입니다. 6장에서 배운 '덧쓰기에서 고쳐쓰기로'라는 발전이, 여기서는 그냥 '목적함수를 바꿨을 뿐'이라는 한 문장으로 압축됩니다. 더 나아가서 softmax attention도 이 공간의 한 점입니다. L2 regression을 압축 없이 비모수적으로 푼 극한이고, 그래서 retention이 없고 state, 즉 KV cache가 계속 커지는 겁니다. attention이 선형적으로 메모리가 늘어나는 이유가 '압축하지 않는 연상 메모리이기 때문'이라고 설명됩니다. 정직하게 하나 짚으면, 이 표의 등호는 각 모델의 '원 설계 방정식' 수준의 동일시입니다. retention 열의 L2는 세부가 다른 gate들을 뭉뚱그린 것이고, 논문 각주도 이 해상도 한계를 인정합니다. 분류학으로는 정확하되 구현 수준의 완전 등가로 읽으면 과독입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "방법 ① — 기존 모델의 재유도"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "dot-product bias → 순수 덧쓰기 (linear attn·RetNet·Mamba-2)",
+            "L2 bias → 고쳐쓰기 (DeltaNet·GDN·RWKV-7)",
+            "'덧쓰기→고쳐쓰기' = 목적함수 교체 한 줄",
+            "softmax attention = 압축 없는 L2 해 → KV cache 그 자체",
+            "Titans-LMM·TTT·Mesa-layer 전부 한 점으로 좌표화",
+            "정직성: 표의 등호는 분류 수준, 구현 등가로 과독 금지"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "방법 2: Moneta / Yaad / Memora",
+    "notes": "그럼 이 지도에서 아직 안 가본 칸으로 가봅시다. 논문은 축 2번 bias와 축 3번 retention에 새 선택지를 채운 세 모델을 출하합니다. 오른쪽 그림이 이들의 아키텍처인데, 왼쪽은 순수 recurrent 블록, 가운데는 sliding window attention과 번갈아 쌓는 hybrid, 오른쪽은 layer 내부 설계입니다. 세 모델 모두 메모리는 2-layer MLP이고, 중요한 건 셋 다 optimizer는 그냥 plain GD라는 것입니다. momentum을 뺐어요. 이건 의도된 후퇴로, expressivity를 optimizer가 아니라 목적함수와 retention에 싣는 실험 설계입니다. 첫째, Moneta는 L2 대신 Lp loss를 씁니다. p가 3이면 잘 안 떠오르는 놀라운 token에 대한 기억 압력을 L2보다 날카롭게 줍니다. 여기에 Lq 정규화로 노출되는 메모리를 norm이 통제된 껍질에 붙잡아 둡니다. 출하값은 p=3, q=4입니다. 둘째, Yaad는 Huber loss를 씁니다. robust regression에서 오는 건데, 오차가 학습된 threshold보다 크면, 즉 outlier token이면 그 크기를 깎아서 기억합니다. 노이즈나 적대적 구간이 자기 크기만큼 메모리를 흔들지 못하게 하는 거죠. 셋째, Memora가 가장 우아합니다. retention을 KL divergence로 두고 메모리를 확률 simplex에 가둡니다. 갱신식이 softmax 형태라, state가 매 스텝 양수이고 합이 정규화됩니다. 그래서 context가 아무리 길어도 state가 절대 발산할 수 없습니다. 잊기가 decay가 아니라 확률 질량의 경쟁에서 나오는 거죠. 이걸 저는 retention-as-renormalization이라고 부릅니다. 이 그림은 Miras 원논문 Figure 2입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "방법 ② — 세 실증 모델"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "공통: 2-layer MLP memory, plain GD (momentum 의도적 제거)",
+            "Moneta: Lp bias(p=3) + Lq stability(q=4)",
+            "Yaad: Huber bias — outlier는 크기 깎아 기억",
+            "Memora: KL/simplex — softmax state, 발산 불가능",
+            "gate(η·α·δ)는 channel-wise, low-rank로 emit",
+            "hybrid(-H): sliding window attention 교차"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2504.13173-fig2.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "결과: attention 없이 hybrid를 이긴다",
+    "notes": "결과입니다. 헤드라인 주장은 '더 나은 attentional bias 더하기 retention이면, attention 없이도 attention hybrid를 이긴다'입니다. 오른쪽 scaling 곡선을 보시죠. 왼쪽 패널은 같은 FLOPs 예산에서 세 모델이 Transformer, Mamba2, TTT보다 낮은 perplexity에 도달함을, 가운데와 오른쪽 패널은 context 길이를 2K에서 32K로 늘릴 때의 거동입니다. 여기가 핵심인데, baseline들은 16K를 넘어가면 perplexity가 도로 치솟습니다. 반면 세 변형은 완만하게 유지되거나 오히려 좋아집니다. 긴 context에서 더 낫게 scale하는 거죠. 절대 수치보다 방향과 순서로 말씀드리면, 가장 큰 1.3B 모델을 100B token으로 훈련했을 때, 순수 recurrent인 Yaad가 Gated DeltaNet은 물론이고 hybrid인 Samba와 GDN-H2까지 perplexity에서 이겼습니다. attention을 한 layer도 안 쓰고 attention 섞은 모델을 이긴 겁니다. needle-in-haystack 회상 테스트에서도 세 모델이 baseline들을 크게 앞섭니다. ablation이 특히 교훈적입니다. p를 바꾸면 성능은 오르내리지만 scaling 모양은 안 바뀝니다. 그런데 q, 즉 retention을 바꾸면 scaling 패턴 자체가 바뀝니다. 기여 순위가 retention이 첫째, deep memory가 둘째, bias 세부가 그 다음입니다. 'retention이 결정적 레버'라던 주장의 가장 직접적인 증거입니다. 정직한 한계도 분명히 하겠습니다. 실증은 1.3B, 100B token에서 멈춥니다. 7B 이상, RLHF 이후, exact-copy recall이 지배하는 실무에서도 이 순서가 유지되는지는 이 논문이 답하지 않습니다. 그리고 효율 증거가 이 FLOPs 곡선 하나뿐이고 wall-clock이나 throughput 측정은 없습니다. 이 그림은 원논문 Figure 3입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "결과 — 순수 recurrent가 hybrid를 이긴다"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "헤드라인: attention 없이 attention hybrid를 이김",
+            "1.3B/100B: Yaad > GDN·Samba·GDN-H2 (ppl)",
+            "긴 context: baseline은 16K 이후 반등, 세 변형은 완만",
+            "S-NIAH 회상: 세 모델이 baseline 크게 상회",
+            "ablation: q(retention) 바꾸면 scaling 자체가 바뀜",
+            "한계: 1.3B에서 멈춤, wall-clock 측정 부재"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/ref/2504.13173-fig3.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "요약 + 다음 연결",
+    "notes": "정리하고 다음으로 넘어가겠습니다. Miras의 진짜 기여는 세 모델이 아니라 좌표계입니다. Moneta, Yaad, Memora의 수치는 1.3B에서 인상적이지만 거기서 멈춥니다. 반면 attentional bias, retention gate, 4축이라는 어휘는 이후 모든 논문이 무상으로 가져다 씁니다. 오늘 세미나 관점에서 이게 중요합니다. Titans가 '옵티마이저를 시퀀스 layer로 만들 수 있다'는 존재 증명이었다면, Miras는 그 move가 연 공간의 좌표계이고, 뒤에 나올 Nested Learning과 Sleep이 전부 이 좌표계 위에서 자기 위치를 설명합니다. 그리고 Miras가 다음 논문에 넘긴 숙제가 명확합니다. 네 번째 축, 즉 memory algorithm 축이 비어 있습니다. 세 모델 다 plain GD를 썼고 momentum을 일부러 뺐죠. Titans의 momentum, Longhorn의 implicit GD, Newton법 같은 더 나은 optimizer가 새 bias, 새 gate와 합쳐지면 어떻게 되는지는 열린 문제입니다. 둘째, 목적함수가 여전히 'token 하나'만 봅니다. 최근 여러 token이 함께 잘 저장돼 있는지는 아무도 안 물었습니다. 셋째, 이론이 없습니다. online 최적화 도구함을 통째로 수입했지만 그 보증이 요구하는 convexity를 2-layer MLP가 깨뜨립니다. 바로 이 세 숙제 - 비어 있는 optimizer 축, token 단위 목적함수, 부재하는 capacity 이론 - 이 그대로 다음 논문 Atlas의 목차가 됩니다. Atlas는 inner loop에 Muon 옵티마이저를 심고, 최근 여러 token을 함께 최적화하는 Omega rule을 도입하고, 정식 capacity 이론을 붙입니다. Miras가 지도를 그렸다면 Atlas는 그 지도의 빈 축을 최적화 이론으로 채우러 갑니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "summary",
+          "text": "S4 요약 — Miras가 남긴 것"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "실질 기여는 세 모델이 아니라 4축 좌표계",
+            "attentional bias·retention gate = 이후 논문 공용 어휘",
+            "retention이 long-context 성능의 결정적 레버(실증)",
+            "넘긴 숙제 ①: 비어 있는 optimizer 축(plain GD)",
+            "넘긴 숙제 ②: token 단위 목적함수 ③ capacity 이론 부재",
+            "→ Atlas: Muon·Omega rule·capacity 이론으로 채운다"
+          ]
+        }
+      }
+    ]
+  }
+]

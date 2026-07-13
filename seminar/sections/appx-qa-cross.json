@@ -1,0 +1,245 @@
+[
+  {
+    "title": "부록 B — 개요",
+    "notes": "이 divider에서 부록 B의 지형을 한 장으로 보여드립니다. 다룰 질문은 크게 세 묶음입니다. 첫째 묶음은 '이게 기존 방법과 뭐가 다른가'입니다 — RAG나 long-context attention과의 차이. 둘째 묶음은 '이게 진짜 되는가'입니다 — scaling 근거, decode 지연시간의 현실, batching 가능성. 셋째 묶음은 '그래서 나는 뭘 해야 하나'입니다 — memory-centric 관점이 억지가 아닌 이유, Google이 vLLM급 커널을 가졌는지, 이 라인이 transformer를 대체하는지, 그리고 지금 무엇을 공부·추적해야 하는지. 관통하는 한 문장은 이겁니다: 이 세미나가 정착시킨 것은 workload의 '구조'(memory-bound, RMW 대칭, context-무관, crossover의 존재)이지, 그 구조가 실리콘에서 내는 '절대 성능'이 아닙니다. 구조는 소자보다 오래 삽니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "section",
+          "text": "부록 B — 논문 무관 공통 Q&A"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "무엇이 다른가 — RAG / long-context attention 대비",
+            "정말 되는가 — scaling 근거 · decode latency · batching",
+            "그래서 무엇을 — memory-centric의 정당성 · 커널 · 대체 여부 · 추적 목록",
+            "관통 원칙: 정착된 것은 구조(비율·crossover·bound), 절대치는 하한"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "Q1 — TTT vs RAG vs long-context attention",
+    "notes": "가장 많이 나오는 질문입니다. '긴 문맥을 다루려면 RAG나 long-context attention을 쓰면 되는데 왜 test-time learning이냐'는 거죠. 세 가지는 '과거를 어디에 저장하는가'가 근본적으로 다릅니다. RAG는 과거를 외부 문서 저장소에 두고, 필요할 때 검색해서 프롬프트에 끼워 넣습니다 — 모델 자신은 아무것도 기억하지 않고, 검색기(retriever)의 품질에 좌우됩니다. Long-context attention은 과거를 KV cache에 통째로 남겨 둡니다 — 압축하지 않는 대신, 저장량이 문맥 길이에 비례해 무한정 자랍니다. softmax attention은 사실 capacity가 무한한 associative memory, 즉 '압축을 포기한 극한'입니다. TTT(이 라인)는 과거를 고정 크기 fast-weight 안에 '압축해서 흡수'합니다 — 문맥이 아무리 길어져도 상태 크기가 폭에 의해 고정됩니다. 오른쪽 그림이 핵심입니다: KV read 트래픽은 문맥에 비례해 자라고(파란 선), TTT의 RMW 트래픽은 문맥에 무관하게 평평합니다(빨간 선). 두 선이 만나는 crossover 문맥 길이 S*가 존재합니다 — anchor 1.3B에서 약 65k 토큰, 폭에 따라 16k에서 1M 토큰으로 이동합니다. 그 아래에서는 KV(=long-context attention)가 더 싼 메모리 시스템이고, 그 위에서는 TTT가 더 쌉니다. RAG와의 대비는 또 다릅니다: RAG는 명시적·검색기반·해석가능하지만 외부 검색 실패에 취약하고, TTT는 상태에 녹아들어 검색이 필요 없지만 무엇이 저장됐는지 들여다보기 어렵습니다. 정직하게: attention은 in-context recall에서 아직 이깁니다(53.55 vs 43.70). 그래서 실전 완성형은 셋 중 하나가 아니라 hybrid일 가능성이 큽니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Q1. TTT는 RAG·long-context attention과 뭐가 다른가"
+        },
+        "geometry": { "x": 40, "y": 60, "w": 880, "h": 70 }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "RAG: 과거를 외부 저장소에, 검색해서 프롬프트에 삽입",
+            "long-context attention: KV cache에 통째로 보관(문맥∝ 증가)",
+            "TTT: 고정 크기 fast-weight에 압축 흡수(문맥 무관)",
+            "crossover S*: 아래=KV 유리, 위=TTT 유리(65k→이동)",
+            "attention은 in-context recall 우위 → 완성형은 hybrid 유력"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/exp-a-kv-ttt-crossover.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "Q2 — 정말 scaling되나 근거",
+    "notes": "두 번째로 날카로운 질문입니다. '실험이 다 1.3B에서 멈춰 있는데, 이게 7B, 70B로 가도 성립하나?' 정직하게 말씀드립니다. 이 라인의 from-scratch 실증 상한은 1.3B params / 100B tokens이고(TNT는 150M), 그 이상은 아무도 공개하지 않았습니다. Titans가 2024년 12월에 약속한 'larger models' 논문은 아직 안 나왔습니다. 그럼 무엇이 근거인가. 두 가지를 구분해야 합니다. 첫째, quality scaling(품질이 규모로 좋아지는가): 여섯 편이 흩어 놓은 점들을 digitize해서 후보 법칙에 맞춘 게 오른쪽 그림입니다. 여기서 load-bearing한 것은 '순서(ordering)'뿐입니다 — 규모를 키우면 품질이 단조 개선된다는 방향. 절대 exponent는 못 냅니다. 왜냐하면 논문마다 tokenizer가 달라(Llama-2 vs T5 vs 32K) perplexity의 좌표계가 다르고, params와 tokens가 함께 커져서 순수 param law를 분리할 수 없기 때문입니다. 정직한 발견 하나: state-capacity 축은 perplexity를 예측하지 못하고(attention을 넣으면 부호가 뒤집힘), 오직 long-context retention을 예측합니다. 둘째, cost scaling(서빙 비용이 규모로 어떻게 자라는가): 이건 훨씬 단단합니다 — decode RMW 트래픽은 폭에 따라 0.45→6.44→343 GB/token으로, 세 독립 방법이 anchor에서 1% 이내로 합치했습니다. 즉 '품질이 계속 좋아지는가'는 방향만 있고, '비용이 어떻게 자라는가'는 구조가 측정됐습니다. 핵심 열린 질문: memory-bound RMW라는 '구조'가 7B+, SFT/RLHF, production 데이터에서도 유지되는가 — 이건 A100 runbook과 새 scaling run이 답할 자리입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Q2. 이게 정말 scaling되나 — 근거와 미검증"
+        },
+        "geometry": { "x": 40, "y": 60, "w": 880, "h": 70 }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "실증 상한 1.3B/100B — 그 이상 공개 0 (미검증)",
+            "품질 scaling: 순서만 load-bearing, exponent 불가(tokenizer 이질)",
+            "capacity는 ppl 아닌 long-context retention만 예측",
+            "비용 scaling: RMW 0.45→6.44→343 GB/token(3방법 1% 합치)",
+            "열린 질문: 구조가 7B+·production에서 유지되는가"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/exp-f-scaling-fits.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "Q3 — decode가 memory-bound면 실제 latency는",
+    "notes": "'decode가 memory-bound라는 건 알겠는데, 그래서 토큰 하나에 몇 밀리초 걸리냐'는 실무 질문입니다. 여기서 가장 정직해야 합니다. 제가 드릴 수 있는 숫자는 roofline '하한'뿐입니다. anchor 1.3B에서 토큰당 6.44 GB의 fast-weight state를 읽고 되쓰며(RMW), HBM3 대역폭 3.35 TB/s로 나누면 하한이 약 1.92 ms/token, 46.5 mJ/token입니다. 그런데 이 숫자는 제 주장의 근거가 '아닙니다'. 이유는 세 겹입니다. 첫째, 여섯 편의 원 논문이 H100 decode wall-clock을 하나도 공개하지 않아 외부 검증이 불가능합니다. 둘째, 이 하한은 순수 state 트래픽만 계산한 것이라, 실제로는 kernel launch 오버헤드, decode tail, scheduling 손실이 그 위에 얹힙니다 — measured가 roofline attainable의 12% 수준에 그친다는 host 측정도 있습니다. 셋째, fused deep-memory decode kernel이 아직 존재하지 않아, 커널을 따로 띄우면 트래픽이 4~6배로 부풀 수 있습니다. 그래서 제가 load-bearing하게 말할 수 있는 건 '구조'뿐입니다: 이 step은 결정적으로 memory-bound이고, state 트래픽이 연산을 약 394배 압도하며, 그 트래픽은 문맥이 아니라 폭에 비례해 자랍니다. 70B로 가면 토큰당 343 GB를 움직여야 하고, 이건 단일 80GB HBM에 안 들어가 sharding이 전제되며, 집계 대역폭만으로도 토큰당 하한이 100 ms 규모가 됩니다. 절대 밀리초는 전부 사내 A100 runbook의 carry-forward #1으로 넘겼습니다 — 진짜 KV read kernel과 진짜 TTT-state kernel을 head-to-head로 재는 게 그 검증입니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Q3. 실제 latency는? — 절대치는 미검증 하한"
+        },
+        "geometry": { "x": 40, "y": 60, "w": 880, "h": 70 }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "하한: anchor 1.92 ms/token · 46.5 mJ/token (주장 근거 아님)",
+            "논문 wall-clock 부재 → 외부 검증 불가",
+            "fused decode kernel 부재 → 따로 띄우면 4~6× 부풀 수",
+            "load-bearing 구조: memory-bound, 트래픽이 연산 394× 압도",
+            "70B: 343 GB/token, sharding 전제, 하한 ~100 ms 규모",
+            "절대치는 전부 A100 runbook 이월"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/exp-e-rmw-cliff.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "Q4 — 왜 memory-centric인가(forced 아닌가) + batching",
+    "notes": "두 질문을 묶었습니다. 둘 다 '이 라인의 memory-centric 주장이 억지 아니냐'는 의심에 답하기 때문입니다. 먼저 '왜 memory-centric이고, 이게 forced(억지) 아닌가'. 저는 'TTT가 새 메모리 소자를 요구한다'거나 '일반 PIM이 답이다'라고 주장하지 않습니다 — 오히려 반대입니다. 논문들의 자체 증거가 정반대 방향을 가리킵니다: 이 라인은 여섯 편 내내 알고리즘을 dense matmul로 다시 빚어 기존 accelerator에 맞췄습니다(chunkwise, Newton-Schulz, reset, featurized keys). 대부분의 FLOP은 PIM이 못 태우는 GEMM입니다. 그래서 memory-centric 논증은 딱 두 지점에서만 정당하게 폅니다: (1) decode의 whole-state RMW 트래픽 — 이건 커널로 못 줄이는 물리적 byte입니다. (2) update-frequency가 memory tier 배치를 직접 정한다는 점. 이 좁은 두 지점 밖에서 memory-centric을 밀면 그게 forced입니다. 다음, batching. '요청 여러 개를 묶으면 amortize되지 않나?' 됩니다, 그러나 free-lunch는 없습니다. 오늘의 dense MLP는 모든 요청이 '같은' weight를 공유해서 축을 접어 한 장의 shared-weight GEMM으로 폅니다 — weight가 한 번 읽혀 여러 요청에 재사용되니 batch를 키우면 arithmetic intensity가 오릅니다. 그런데 fast-weight는 요청마다 상태가 '다릅니다'(never-average: 요청 방향으로 평균하면 세션 간 정보가 샙니다). 그래서 batch는 grouped-GEMM/BMM으로 '형성'은 되지만, 각 weight가 그 요청에만 쓰여 FLOP도 트래픽도 함께 B에 비례합니다 — arithmetic intensity가 batch와 무관합니다. 결과: 10 ms 목표에서 최대 배치가 1.3B에 5.2, 7B에 0.97로 사실상 batch-1로 몰립니다. MoE와 dispatch 형태만 닮았지 amortization에서 갈립니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Q4. memory-centric은 억지 아닌가 + batching 되나"
+        },
+        "geometry": { "x": 40, "y": 60, "w": 880, "h": 70 }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "새 소자·PIM 요구 안 함 — 논문 증거는 dense matmul 순응",
+            "정당한 두 지점만: decode RMW 트래픽 · cadence→tier",
+            "batching 가능: grouped-GEMM/BMM으로 batch '형성'됨",
+            "그러나 weight가 요청마다 달라 amortization 없음(never-average)",
+            "AI가 batch와 무관 → B_max 5.2(1.3B)·0.97(7B), batch-1로 몰림"
+          ]
+        },
+        "geometry": { "x": 40, "y": 150, "w": 470, "h": 340 }
+      },
+      {
+        "content": {
+          "role": "media",
+          "kind": "image",
+          "url": "/home/jimmy/repos/neural-memory-study/figures/exp-c-chunk-roofline.png"
+        },
+        "geometry": { "x": 520, "y": 135, "w": 420, "h": 340 }
+      }
+    ]
+  },
+  {
+    "title": "Q5 — Google 커널 + transformer 대체 여부",
+    "notes": "미래·생태계 질문 둘을 묶었습니다. 먼저 'Google이 vLLM급 커널·서빙 스택을 이미 가졌나?' 정직한 답: 공개된 근거가 없습니다. 확실한 사실만 말하면 — deep-memory + momentum을 융합한 fused decode kernel은 오픈소스에도, 공개 문헌에도 존재하지 않습니다(flash-linear-attention은 linear 계보 DeltaNet/GDN/Mamba-2는 전부 Triton으로 커버하지만, Titans는 naive PyTorch 참조 구현에 멈춰 있습니다 — momentum이 chunkwise closed form을 깨서입니다). Google이 내부 TPU 커널을 가졌을 수는 있지만, 그건 6편 밖 정보라 저는 framing으로만 씁니다. 확실한 건 TNT가 custom kernel '없이' plain JAX로 32K에서 FlashAttention을 이겼다는 사실뿐입니다 — 즉 이 라인은 성숙한 커널보다 성숙한 컴파일러(XLA)에 기댑니다. 이 라인은 아직 자기만의 'FlashAttention-moment'을 기다리는 중이고, 그게 오기 전 지금이 진입 기회의 창입니다. 다음, '이 라인이 transformer를 대체하나?' 제 답은 '대체가 아니라 hybrid가 유력'입니다. 이유는 두 개의 냉정한 사실입니다: (1) attention은 in-context recall에서 여전히 이깁니다(53.55 vs 43.70, FDA 67.3 vs 41.9) — capacity 이론이 그 이유(무한 capacity)까지 설명합니다. 커널은 wall-clock을 풀지 이 품질 격차를 못 풉니다. (2) crossover S* 아래 짧은 문맥에서는 KV cache가 여전히 더 쌉니다. 그래서 합리적 완성형은 sliding-window attention(짧은·recall 성분)과 RMW state(긴·압축 성분)가 한 소자 위에 공존하는 hybrid입니다. 승부는 layer의 우아함이 아니라 decode가 움직이는 바이트와 그것이 앉는 memory 계층에서 납니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "content",
+          "text": "Q5. Google 커널 있나 · transformer 대체하나"
+        },
+        "geometry": { "x": 60, "y": 90, "w": 840, "h": 70 }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "Google vLLM급 커널: 공개 근거 없음(내부 TPU는 6편 밖 framing)",
+            "fused deep-memory kernel 부재 — Titans는 naive 참조 구현에 정체",
+            "확실한 사실: TNT가 plain-JAX로 FlashAttention 이김(컴파일러 우위)",
+            "대체? 아니오 — hybrid 유력",
+            "이유①: attention이 in-context recall 우위(커널이 못 푸는 품질)",
+            "이유②: crossover 아래 짧은 문맥은 KV가 여전히 저렴"
+          ]
+        },
+        "geometry": { "x": 60, "y": 170, "w": 840, "h": 320 }
+      }
+    ]
+  },
+  {
+    "title": "Q6 — 지금 뭘 공부/추적해야 하나 (요약)",
+    "notes": "마지막 질문이자 이 부록의 실천적 결산입니다. 'system 엔지니어로서 지금 무엇을 공부하고 무엇을 추적해야 하나.' 다섯 축으로 정리합니다. 첫째, 스케일의 실증 — Titans가 약속한 larger-model 논문(7번째 논문)이 나오는지, memory-bound RMW 구조가 7B+에서 유지되는지 추적하세요. 이게 나오면 이 세미나의 warrant를 갱신해야 합니다. 둘째, 이 라인의 FlashAttention-moment — deep-memory + momentum + reset을 융합한 fused chunk/decode kernel이 누구 손에서(Google, NVIDIA, 아니면 flash-linear-attention 커뮤니티) 먼저 나오는지. 이게 채택을 정합니다. flash-linear-attention repo의 Titans/Miras 커널 진행(#214)이 좋은 신호등입니다. 셋째, serving 인프라 — per-session weight를 새 cache class로 다루는 스택(update_in_place, checkpoint/rollback, dirty writeback을 1급으로 가진 매니저)이 vLLM급 위에 나타나는지. 여기가 스타트업·소규모 연구실이 첫 저자로 설 수 있는 빈 자리입니다. 넷째, 배경 기초 — 이 여섯 편을 읽으려면 associative memory, linear attention=fast-weight, delta rule, chunkwise parallel, Muon/Newton-Schulz, 그리고 무엇보다 optimizer(momentum)를 '추론 중 상태 업데이트'로 재해석하는 관점이 필요합니다(S1·S2에서 다뤘습니다). 다섯째, 열린 이론 — chunkwise staleness의 error bound, 그리고 self-modifying serving의 안전(per-tenant 발산, weight에 흡수된 context의 privacy). 한 줄 요약: 커널·스케일·서빙 스택 세 신호등을 보고, 절대 성능이 아니라 workload 구조의 변화를 추적하세요.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "summary",
+          "text": "Q6. 지금 추적할 다섯 신호등"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "① 스케일 실증 — 7번째(larger-model) 논문, 7B+에서 구조 유지?",
+            "② FlashAttention-moment — fused deep-memory kernel 누가 먼저(fla #214)",
+            "③ serving 스택 — RMW-aware cache manager 등장(빈 자리)",
+            "④ 기초 — associative memory·fast-weight·delta rule·Muon·optimizer 관점",
+            "⑤ 열린 이론 — staleness bound · self-modification 안전"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "title": "부록 B — 마무리 요약",
+    "notes": "부록 B를 한 장으로 닫습니다. 다섯 가지만 가져가시면 됩니다. 첫째, 세 방식은 과거를 어디 두느냐가 다릅니다 — RAG는 외부, attention은 KV cache, TTT는 고정 weight. crossover S*가 그 경계를 문맥 축에서 나눕니다. 둘째, scaling은 품질은 '순서'만, 비용은 '구조'가 측정됐고, 절대 성능은 미검증입니다. 셋째, decode latency의 절대치는 전부 하한이자 A100 runbook 이월이며, load-bearing한 건 memory-bound라는 구조뿐입니다. 넷째, memory-centric은 두 지점(RMW 트래픽·cadence→tier)에서만 정당하고, batching은 되지만 amortization은 없습니다. 다섯째, 이 라인은 transformer를 대체하기보다 hybrid로 공존할 가능성이 크고, 승부는 커널·스케일·서빙 스택 세 신호등에서 납니다. 관통하는 태도는 하나였습니다 — 무엇이 측정이고 무엇이 방향인지 매번 분리하기. 구조는 소자보다 오래 삽니다.",
+    "objects": [
+      {
+        "content": {
+          "role": "title",
+          "layout": "summary",
+          "text": "부록 B 마무리 — 다섯 줄"
+        }
+      },
+      {
+        "content": {
+          "role": "body",
+          "bullets": [
+            "저장 위치가 다르다: RAG(외부)·attention(KV)·TTT(고정 weight), 경계=S*",
+            "scaling: 품질은 순서만, 비용은 구조 측정, 절대치는 미검증",
+            "decode latency: 절대치는 하한·A100 이월, 구조(memory-bound)만 확정",
+            "memory-centric은 두 지점만 정당, batching은 되나 amortization 없음",
+            "대체 아닌 hybrid 유력 — 승부는 커널·스케일·서빙 스택"
+          ]
+        }
+      }
+    ]
+  }
+]
