@@ -1,0 +1,69 @@
+{
+  "_comment": "4x DGX H100 (32x H100 SXM5 / GH100) HAT twin, down to die->SM(PE)->ALU->ISA. Nested outer(backing/fabric)->inner(compute leaf). Numbers: NVIDIA H100/GH100 whitepaper + DGX H100 system guide + Hopper tuning guide + CUTLASS 3.x. Research: knowledge_h100_isa_kernels.md.",
+  "level_id": "ib", "role": "switch", "scope": "rack", "residency": "sw_managed",
+  "capacity_bytes": 2748779069440, "bandwidth_bps": 4.0e11,
+  "fabric": {"protocol": "infiniband_ndr", "topology_type": "fat_tree_rail_optimized",
+             "port_speed_bps": 4.0e11, "nics_per_node": 8, "node_injection_bps": 3.2e12},
+  "children": [{
+    "level_id": "nvlink", "role": "fabric", "scope": "tray", "residency": "sw_managed",
+    "capacity_bytes": 687194767360, "bandwidth_bps": 9.0e11, "peer_bandwidth_bps": 9.0e11, "duplex": "full",
+    "fabric": {"protocol": "nvlink4", "topology_type": "all_to_all", "switch_radix_ports": 64,
+               "links_per_gpu": 18, "link_bps": 5.0e10, "switches_per_node": 4},
+    "children": [{
+      "level_id": "hbm", "role": "hbm", "scope": "package", "residency": "sw_managed",
+      "capacity_bytes": 85899345920, "bandwidth_bps": 3.35e12, "line_bytes": 32,
+      "mem_standard": "hbm3", "bus_width_bits": 5120, "pin_rate_gbps": 5.24, "dies_per_stack": 8,
+      "die_density_gbit": 16, "energy_pj_per_byte": 7.0, "t_refi_us": 3.9, "t_rfc_ns": 260,
+      "provenance": "vendor_whitepaper",
+      "children": [{
+        "level_id": "l2", "role": "l2", "scope": "die", "residency": "hw_cache",
+        "capacity_bytes": 52428800, "bandwidth_bps": 1.0e13, "line_bytes": 128, "num_channels": 2,
+        "children": [{
+          "level_id": "smem", "role": "shared", "scope": "die", "residency": "hw_cache",
+          "capacity_bytes": 233472, "bandwidth_bps": 3.34e13, "line_bytes": 128,
+          "instances": 132, "spatial_axis": "sm", "cluster_size": 16, "peer_bandwidth_bps": 2.5e11,
+          "dma": {"engines": 1, "kind": "tma_cp_async_bulk", "descriptor_rate_per_s": 1.0e9},
+          "children": [{
+            "level_id": "reg", "role": "reg", "scope": "soc", "residency": "hw_cache",
+            "capacity_bytes": 262144, "bandwidth_bps": 2.0e14,
+            "occupancy": {"max_regs_per_thread": 255, "max_threads_per_sm": 2048,
+                          "max_warps_per_sm": 64, "max_blocks_per_sm": 32,
+                          "max_shared_per_block_bytes": 233472},
+            "children": [{
+              "level_id": "mxu", "role": "compute", "scope": "soc",
+              "instances": 132, "spatial_axis": "sm",
+              "peak_macs_per_s": 3.748e12, "matrix_unit": [16, 8, 16], "dtype_bytes": 2,
+              "acc_dtype_bytes": 4, "clock_hz": 1.98e9, "sustained_clock_hz": 1.83e9,
+              "dataflow": "output_stationary", "process_node": "N4",
+              "subpartitions": 4, "schedulers_per_sm": 4, "issues_per_clk": 1,
+              "units": {"fp32_fma": 128, "int32": 64, "fp64": 64, "tensor_core": 4, "sfu": 4, "ldst": 32},
+              "exec_hierarchy": {"warp_size": 32, "warpgroup_size": 128, "cluster_max_sms": 16,
+                                 "cta_max_threads": 1024},
+              "mma_isa": [
+                {"name": "mma.sync.aligned.m16n8k16", "sass": "HMMA", "scope": "warp",
+                 "mnk": [16, 8, 16], "in_dtype": "bf16", "acc_dtype": "f32", "threads": 32},
+                {"name": "wgmma.mma_async.aligned.m64n256k16", "sass": "HGMMA", "scope": "warpgroup",
+                 "mnk": [64, 256, 16], "in_dtype": "bf16", "acc_dtype": "f32", "threads": 128}
+              ]
+            }]
+          }]
+        }]
+      }]
+    }]
+  }],
+  "meta": {"tdp_w": 700, "cooling_class": "liquid_coldplate", "package_type": "cowos_2_5d",
+           "cluster": {"dgx_nodes": 4, "gpus_per_node": 8, "gpus_total": 32, "sms_total": 4224,
+                       "tensor_cores_total": 16896, "dense_bf16_pflops": 31.7}},
+  "trace": {
+    "event_format": "hatir_isa_v1",
+    "default_granularity": "isa",
+    "compute_from": "mma_isa",
+    "fields": ["seq", "kind", "opcode", "tier", "target", "bytes", "macs", "coord"],
+    "opcodes": {
+      "load": {"hbm": "LDGSTS", "l2": "LDG", "shared": "LDS", "reg": "MOV", "fabric": "NET_RECV",
+               "switch": "NET_RECV"},
+      "store": {"hbm": "STG", "l2": "STG", "shared": "STS", "reg": "MOV", "fabric": "NET_SEND",
+                "switch": "NET_SEND"}
+    }
+  }
+}
