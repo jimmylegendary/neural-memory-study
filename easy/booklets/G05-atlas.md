@@ -115,6 +115,14 @@ polynomial feature map $\phi_p(x)$ = 차수 $p$ 이하의 모든 monomial(곱항
 
 > **기호 풀이.** $\phi$ = feature map(key를 더 큰 공간으로 올리는 함수). $p$ = 차수(올리는 강도; $p$가 클수록 더 큰 공간). $D$ = 올라간 뒤의 차원($\Theta(d_k^p)$). $\phi^*$ = $p\to\infty$의 극한 map.
 
+> **시스템 모델링 관점 — 투영 파이프라인과 shape (토큰→NM 입력까지).** 원문은 메모리 목적을 $L(\mathcal{M}(K);V)\to L(\mathcal{M}(\phi(K));V)$로 재정의한다(§feature map). 단계별 shape:
+> 1. **key 투영**: $k_t=x_tW_K$, $W_K\in\mathbb{R}^{d_{in}\times d_k}$ → $k_t\in\mathbb{R}^{d_k}$. (value $v_t=x_tW_V\in\mathbb{R}^{d_v}$, query $q_t=x_tW_Q\in\mathbb{R}^{d_k}$도 동일 규칙)
+> 2. **feature map로 올림**: $\phi_p(k_t)=[k_t^\beta]_{|\beta|\le p}\in\mathbb{R}^{D}$, $D=\binom{d_k+p}{p}=\Theta(d_k^p)$.
+> 3. **NM 입력 = $\phi_p(k_t)$** (raw $k_t$가 아니라 **올린 것**이 메모리로 들어간다). 메모리 $\mathcal{M}:\mathbb{R}^{D}\to\mathbb{R}^{d_v}$ (matrix면 $\mathcal{M}\in\mathbb{R}^{d_v\times D}$, MLP면 입력차원 $D$). 손실 $=\lVert\mathcal{M}(\phi_p(k_t))-v_t\rVert^2$. 읽기도 query를 올려 $\mathcal{M}(\phi_p(q_t))$.
+> 즉 메모리 입력 차원이 $d_k\to D$로 커지는 게 용량을 $O(d_k)\to O(d_k^p)$로 올리는 원리다.
+
+> **주의 — 절대 $D$는 계산 불가(미명세).** $D=\Theta(d_k^p)$는 폭발적으로 크다(예 $d_k{=}64,p{=}3\Rightarrow D\sim$ 수십만). 실전에서는 **sketch(차원 축소 근사)** 로 줄이는데, 논문은 정확한 차수 $p$·sketch 차원을 **공개하지 않는다** → 방향(용량↑)은 알아도 절대값은 못 구한다. (§5 state 회계가 반쪽인 이유.)
+
 > **비유.** 원래 종이가 1차원 줄(선)이라 점을 몇 개밖에 못 찍었다. $\phi$는 그 줄을 넓은 평면·입체로 **펼치는** 것이다. 공간이 넓어지니 겹치지 않게 찍을 수 있는 점(= 저장할 연상)이 훨씬 많아진다. 차수 $p$가 "몇 차원까지 펼치나"를 정한다.
 
 > **직관.** 이 capacity 상한은 **optimizer와 무관**하다. 어떤 방법으로 갱신하든 $D$쌍을 못 넘는다. 그래서 feature map은 "용량 천장 자체를 옮기는 손잡이"이고, 뒤에 나올 Muon은 "그 천장 안에서 실제 도달 품질을 올리는 손잡이"다 — 두 축이 직교한다.

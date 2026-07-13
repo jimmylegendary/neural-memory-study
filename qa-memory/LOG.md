@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 19건.
+총 20건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -247,4 +247,17 @@
 - 생각할 것: NL self-modifying의 M_k/M_v/M_q가 각자 memory라는 건 파라미터·비용 폭증(투영도 test-time 갱신) — 시스템 관점 G09/serving; lucidrains titans-pytorch 코드로 Titans 자체의 투영 공유/분리를 (a)명시로 확정 가능 — 아직 코드 미확인; MAC이 attention 필터링을 각인하는 vs MAG/MAL이 raw 각인하는 것의 실측 차이(memory overflow, ablation); 이 '한 논문 미명세→다른 논문 명시' 패턴이 6편을 '하나의 완성형'으로 읽는 근거(스터디 페이퍼 수렴 논지)
 - storyline seed: Cross-paper 근거법: Titans가 남긴 모호함(투영 분리)을 NL이 해소(self-modifying Titans의 k/v/q=각자 M_k/M_v/M_q, +Transformer projections 별칭). 'attn out→메모리'는 MAC 전용(MAG/MAL은 raw). Atlas DeepTransformers=attention도 메모리. 교훈: 6편은 서로의 미명세를 채우는 하나의 프로그램이라 cross-reference가 유효(수렴 논지). 세미나: 'Titans가 열고 NL이 명시화'.
 - 연상: Q002, Q006, Q010, Q018
+
+## Q020 · 2026-07-14 · Atlas takeaways (3 mechanisms + DeepTransformers) + feature map shape pipeline
+
+**Q.** Atlas 정리: 발명 3개 맞나? 1)Omega rule 2)용량 확장 근거+방법(feature map 투영) 3)GD 대신 Muon. 그리고 feature map 투영 시 연산·shape이 NM 입력 단계까지 미명시—찾아서 명시해둬.
+
+**A.** 3개 맞음(+4번째). 1)Omega rule(γ admission gate, window c개). 2)용량=근거(Prop1 matrix O(d_k)=√파라미터/Prop2 φ_p면 O(d_k^p))+방법(key를 feature map φ로 투영). 3)Muon(GD 대신 Newton-Schulz orthogonalized momentum, 근사 2차). +4)DeepTransformers/Dot: deep memory+φ*가 unnormalized softmax attention 엄밀 일반화(attention을 특수case로). Atlas=Miras가 비운 optimizer/용량 축 채운 invention-heavy(Q015). feature map 파이프라인(원문 §feature map: L(M(K);V)→L(M(φ(K));V) 재정의): ①k_t=x_t W_K, W_K∈R^{d_in×d_k}, k_t∈R^{d_k}(v_t=x_t W_V∈R^{d_v}, q_t=x_t W_Q∈R^{d_k}) ②φ_p(k_t)=[k_t^β]_{|β|≤p}∈R^D, D=C(d_k+p,p)=Θ(d_k^p) ③NM 입력=φ_p(k_t)(raw k_t 아님), M:R^D→R^{d_v}(matrix면 M∈R^{d_v×D}) ④손실 ||M(φ_p(k_t))-v_t||² ⑤읽기 M(φ_p(q_t)). 입력차원 d_k→D가 용량 O(d_k)→O(d_k^p) 원리. 미명세: D=Θ(d_k^p) 폭발적, sketch로 줄이나 정확한 p·sketch 차원 미공개→절대 D 계산불가. booklet에 shape 파이프라인 추가·재빌드.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_unknown: NM 입력은 raw k_t(d_k)가 아니라 올린 φ_p(k_t)(D=Θ(d_k^p)) — 입력차원 확대가 용량 확대의 원리; unknown_known: Atlas 4번째 기여 DeepTransformers/Dot(deep memory+φ*가 softmax attention 일반화) — 사용자 3개에 빠짐; known 확정(사용자 지적 옳음): feature map 투영 shape이 booklet 미명시 → x_t→W_K→k_t→φ_p→NM 입력 파이프라인 추가; unknown_known: 절대 D 미명세(sketch·p 미공개)=근거등급 (c); L(M(φ(K));V) 재정의는 (a)텍스트 근거
+- 개념 key: Atlas 3 mechanisms, Omega rule, capacity theory Prop1 Prop2, feature map method, Muon Newton-Schulz, DeepTransformers Dot, attention as special case, feature map pipeline shapes, k=xW_K d_in×d_k, phi_p(k) in R^D, D=Theta(d_k^p), NM input is phi_p(k) not raw k, memory M R^D to d_v, sketch dimension undisclosed, L(M(phi(K));V) redefinition
+- 생각할 것: sketch(PolySketchFormer류)가 D=Θ(d_k^p)를 실제 얼마로 줄이나 — 원문 미공개, 후속/코드 확인; φ_p로 올린 뒤 메모리가 matrix면 M∈R^{d_v×D}로 파라미터 폭증 — Muon/feature map/state 비용의 상호작용(G09); DeepTransformers가 attention을 일반화한다는 게 Q016 용량 스펙트럼(softmax=φ* ∞)과 같은 이야기; Omega의 φ(k) 사용 update W_t=W_{t-1}(αI-Σγφφ^T)+Σγvφ^T이 feature map+admission을 한 식에 결합
+- storyline seed: Atlas 정리: 3기계(Omega rule/feature-map 용량[Prop1,2 근거+φ 방법]/Muon)+4번째 DeepTransformers(attention=deep memory+φ* 특수case). feature map 파이프라인: x_t→k_t=x_tW_K(d_k)→φ_p(k_t)(D=Θ(d_k^p))=NM 입력→M:R^D→R^{d_v}. 입력차원 d_k→D가 용량 확대 원리. 절대 D는 sketch 미공개로 계산불가. Miras 빈 축(optimizer/용량)을 채운 invention-heavy.
+- 연상: Q013, Q015, Q016, Q017
 
