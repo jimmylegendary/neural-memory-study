@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 21건.
+총 22건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -273,4 +273,17 @@
 - 생각할 것: serving state=global V+local W+Q-K covariance 총합 크기 — G09/Part III state 회계에 TNT 계층 반영; reset-to-W_init가 context parallelism(학습)엔 좋은데 serving decode(순차)엔 어떤 의미인지; prefill(global 큰 chunk)과 decode(local chunk1)의 비용 비대칭 — 내 Part III prefill/decode split과 정합; TNT가 serving 벤치 안 한 것=A2(chunk mismatch 재현·확장) 실험 여지, 내 페이퍼가 이미 지목
 - storyline seed: TNT=training 레시피(발명 아님): train/serve chunk mismatch(2.6x ppl) 해소를 위해 train chunk(큰)/serve chunk(1) decouple+Stage2 정렬, hierarchical global(prefill)/local(decode) memory, Q-K projection(읽기 mismatch). Serving 구조는 논문에 있음(global·local 둘다 배포, Q-K projection inference마다, 메모리 online 갱신 계속)—단 decode 비용 수치는 미측정. 이게 내 Part III(serving 비용 실측)가 메우는 지점: TNT 구조+Part III 비용=완성. 세미나: 'TNT가 serving 구조를 정의하고, 내 기여가 그 비용을 잰다'.
 - 연상: Q003, Q008, Q009, Q015, Q020
+
+## Q022 · 2026-07-14 · Part III credibility / experiments
+
+**Q.** NL 보는중 — 본서 저자 자체 실험은 얼마나 신뢰성 있지? 우리 HOST에서 실험한거지? HATIR로 실험한 결과야? 신뢰할 만하다는 걸 어케 증명? 실험환경 포함 재현방법도 적어서 신뢰성 증명해야 할듯
+
+**A.** 두 종류다: (a) HATIR roofline @ dgx_h100_x4 twin(analytical) — E1.1/1.2/1.3/1.4/1.5, (b) host CPU numpy 실측 — E2.1/2.2. 이 host엔 NVIDIA GPU가 없어 실제 GPU wall-clock은 0줄. 그래서 신뢰성은 '쟀다'가 아니라 4개다: 결정론 재현(analytical 6개+E1.2 crossover=재실행 bit-identical), 3중 교차검증(E3 closed-form/hatir/plan hand-calc가 anchor에서 <1% 일치), host CPU로 roofline 모양 확인, 모든 숫자 정직 등급화+A100 이월(반증)목록. 유일 비결정성(E1.2 spill sim의 set tie-break=PYTHONHASHSEED 의존)을 찾아 seed=0으로 고정. 단 교차검증은 '우리 계산이 옳다'만 증명하고 twin이 실제 silicon과 맞는지는 증명 못함(같은 twin BW 공유)→A100 runbook 이월.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_unknown: 이 host엔 GPU가 없어 절대치는 전부 roofline '하한'이지 측정이 아님; unknown_known: 신뢰성의 진짜 근거는 측정이 아니라 결정론적 재현+3중 교차검증+정직한 등급화; known_unknown: twin fidelity(twin이 실제 H100과 얼마나 맞나)는 교차검증으로도 안 풀려 A100 실측으로만 메움
+- 개념 key: exploration-grade, roofline lower bound, HATIR twin, cross-validation, determinism, PYTHONHASHSEED, A100 runbook, honesty contract, no-GPU-host
+- 생각할 것: 교차검증이 '계산 정확'만 증명하고 twin fidelity는 별개라는 구분 — 세미나에서 이 두 층을 분리해 보여야 과대주장 안 됨; hatir upstream: live_set_spill_bytes tie-break을 안정 정렬로 고쳐 seed 없이도 결정론화(현재는 seed 고정으로 우회); A100 runbook 6개 이월 항목이 곧 '다음에 실제로 재야 할 것' 리스트 = Part III-a 실행 계획
+- storyline seed: Part III(저자 기여)의 신뢰성 서사: '측정했다'가 아니라 '결정론적으로 재현되고, 3개 독립 경로가 <1% 수렴하며, 무엇이 아직 증명 안 됐는지를 먼저 밝힌 exploration-grade warrant'. 부록 E/REPRODUCE.md가 그 증거. 세미나에선 '왜 GPU 없이도 이 숫자를 믿나'를 이 4기둥으로 답한다.
+- 연상: Q021
 
