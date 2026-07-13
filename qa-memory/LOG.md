@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 14건.
+총 15건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -182,4 +182,17 @@
 - 생각할 것: FTRL vs OMD 동등성의 정확한 조건(선형화·W_0=0)과 비선형/deep memory에서 깨지는지; Bregman divergence potential h 선택이 Memora softmax(KL)와 어떻게 연결되는지 구체; 이 온라인 학습 프레임(regret bound)이 Miras에 이론 보증을 주는지 — note는 '새 bias/gate에 regret 이론 없음'이라 했음(열린 문제); G01(학습 기초)에 online learning/FTRL을 넣었어야 하나 — prereq 커리큘럼 B2가 이걸 요구했는데 booklet 반영 점검 필요
 - storyline seed: Miras 이론 척추: memory update=online optimization. 두 dual 관점 Descent(OMD, W_{t-1}에서)/FTRL(leader, Σℓ+R argmin), Online GD=FTRL 특수case. retention gate=정규화 R(ℓ2 Titans/ℓ1 sparse/ℓq Moneta/KL Memora). Learning-Retaining(Bregman)이 둘을 통합. Moneta A/W=FTRL 실현. 이게 '연상메모리=정규화된 온라인 학습'이라는 Miras 세계관.
 - 연상: Q003, Q013
+
+## Q015 · 2026-07-14 · Miras contribution positioning (framework vs invention)
+
+**Q.** Miras 핵심이 설계축 4개=일반화 형태+실험인가? 특별한 발명보다 '설계축이 있음을 증명'인가?
+
+**A.** 맞음, 중심은 단일 발명보다 통합 프레임워크(설계공간)=map/theory 논문. Titans=단일 아키텍처 발명 vs Miras=거의 모든 시퀀스 모델이 한 템플릿(연상메모리가 attentional bias를 retention 정규화와 online 최적화)의 인스턴스임을 보이는 지도. 단 '축 있음 증명'만은 아니고 4개 함께: ①설계축4(bias/retention/구조/algo)=언어 ②이론=FTRL/Learning-Retaining(retention=정규화 원리, Q014) ③새 instantiation Moneta/Yaad/Memora=빈 축(bias objective, retention) 채워 baseline(hybrid 포함)까지 이김=발명(단 framework 파생) ④ablation=retention>deep memory>… 어느 축 중요한지 지목. 발명 성격: ad-hoc 아니라 framework가 가리킨 자리를 채움(top-down 유도) vs Titans bottom-up. framework 가치=트릭더미→체계적 설계공간→후속 방향(Atlas가 Miras가 비운 optimizer 축을 Muon/Omega로 채움). 정직한 한계: 원문 스스로 새 bias/gate에 capacity/regret 이론 없고 chunkwise 근사오차 미정량 인정—강력한 조직화 렌즈+유망한 좌표지 완결 이론+킬러 단일발명은 아님.
+
+- 축: `known` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known: Miras 발명은 ad-hoc 아니라 framework가 가리킨 빈 축을 채운 top-down 유도(Titans bottom-up과 대비); unknown_unknown: '축 있음 증명'만이 아니라 4요소(설계축+FTRL이론+새 instantiation 승리+ablation 지목)가 함께가 핵심; unknown_unknown: framework 가치=후속 방향 제시 — Atlas가 Miras가 일부러 비운 optimizer 축을 채움(지도로 기능); unknown_known: 정직한 한계 — 원문도 새 bias/gate에 capacity/regret 이론 없음·chunkwise 근사오차 미정량 인정(완결 이론 아님)
+- 개념 key: framework paper, design space, unification, 4 design axes, generative use of framework, Moneta Yaad Memora as new instantiations, ablation retention most important, top-down vs bottom-up invention, framework guides Atlas, FTRL theory, honest limitation no regret theory, map for the line
+- 생각할 것: framework 논문 vs 발명 논문의 학술적 가치 평가 기준(재현·후속 파생·이론 완결성) — 내 스터디 페이퍼 Part III 논지와 연결; Miras가 비워둔 optimizer 축을 Atlas가 어떻게 채우나(Muon/Omega/capacity) — 다음 논문 예고; ablation의 'retention이 최상위 레버'가 이후 Atlas/TNT 설계 선택에 준 영향; 이 '4축 설계공간'이 나중에 Nested Learning의 '중첩 최적화 레벨'로 어떻게 확장/추상화되나
+- storyline seed: Miras 위치: 발명 논문이 아니라 프레임워크(지도) 논문. 핵심=설계축4(bias/retention/구조/algo)+FTRL 이론+빈 축 채운 파생 발명(Moneta/Yaad/Memora 승리)+ablation(retention 최상위). Titans(bottom-up 단일발명)와 대비되는 top-down 유도. 라인의 지도가 되어 Atlas(optimizer 축)를 낳음. 정직한 한계: 새 bias/gate 이론 없음. 세미나에서 'Titans=발명 vs Miras=지도'가 좋은 대비 프레임.
+- 연상: Q003, Q011, Q013, Q014
 
