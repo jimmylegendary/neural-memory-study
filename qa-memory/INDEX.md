@@ -1,10 +1,10 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-22건. story line 짤 때 여기서 꺼낸다.
+23건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
-### 모른다는 걸 안다 (known_unknown → decomposition) — 20건
+### 모른다는 걸 안다 (known_unknown → decomposition) — 22건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q003: 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1
@@ -25,8 +25,10 @@
 - Q021: TNT 정리: 1)train/inference chunk size 같아야 함 증명 2)chunk 최적+global,local memory 3)2
 - Q022: NL 보는중 — 본서 저자 자체 실험은 얼마나 신뢰성 있지? 우리 HOST에서 실험한거지? HATIR로 실험한 결과야? 신뢰할 만하다는 걸 어케
 - Q022: NL 보는중 — 본서 저자 자체 실험은 얼마나 신뢰성 있지? 우리 HOST에서 실험한거지? HATIR로 실험한 결과야? 신뢰할 만하다는 걸 어케
+- Q023: 핵심은 HATIR이 믿을만하냐, 거기서 쓴 HAT hw spec이 실제 hw를 얼마나 정교하게 표현하고 얼마나 정확한 spec data이냐일 것
+- Q023: 핵심은 HATIR이 믿을만하냐, 거기서 쓴 HAT hw spec이 실제 hw를 얼마나 정교하게 표현하고 얼마나 정확한 spec data이냐일 것
 
-### 모른다는 것도 모른다 (unknown_unknown → exploration) — 45건
+### 모른다는 것도 모른다 (unknown_unknown → exploration) — 46건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
@@ -72,8 +74,9 @@
 - Q021: TNT 정리: 1)train/inference chunk size 같아야 함 증명 2)chunk 최적+global,local memory 3)2
 - Q021: TNT 정리: 1)train/inference chunk size 같아야 함 증명 2)chunk 최적+global,local memory 3)2
 - Q022: NL 보는중 — 본서 저자 자체 실험은 얼마나 신뢰성 있지? 우리 HOST에서 실험한거지? HATIR로 실험한 결과야? 신뢰할 만하다는 걸 어케
+- Q023: 핵심은 HATIR이 믿을만하냐, 거기서 쓴 HAT hw spec이 실제 hw를 얼마나 정교하게 표현하고 얼마나 정확한 spec data이냐일 것
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 29건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 31건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
@@ -103,6 +106,8 @@
 - Q021: TNT 정리: 1)train/inference chunk size 같아야 함 증명 2)chunk 최적+global,local memory 3)2
 - Q021: TNT 정리: 1)train/inference chunk size 같아야 함 증명 2)chunk 최적+global,local memory 3)2
 - Q022: NL 보는중 — 본서 저자 자체 실험은 얼마나 신뢰성 있지? 우리 HOST에서 실험한거지? HATIR로 실험한 결과야? 신뢰할 만하다는 걸 어케
+- Q023: 핵심은 HATIR이 믿을만하냐, 거기서 쓴 HAT hw spec이 실제 hw를 얼마나 정교하게 표현하고 얼마나 정확한 spec data이냐일 것
+- Q023: 핵심은 HATIR이 믿을만하냐, 거기서 쓴 HAT hw spec이 실제 hw를 얼마나 정교하게 표현하고 얼마나 정확한 spec data이냐일 것
 
 ### 안다는 걸 안다 (known) — 3건
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
@@ -395,6 +400,18 @@
 - **a100 runbook** (1): Q022
 - **honesty contract** (1): Q022
 - **no-gpu-host** (1): Q022
+- **hatir** (1): Q023
+- **zigzag crosscheck** (1): Q023
+- **byte-exact** (1): Q023
+- **hat twin** (1): Q023
+- **datasheet peak** (1): Q023
+- **mfu** (1): Q023
+- **mbu** (1): Q023
+- **ideal vs achieved** (1): Q023
+- **provenance-typed calibration** (1): Q023
+- **fitted constant 거부** (1): Q023
+- **cancellation in ratios** (1): Q023
+- **s* traffic equality** (1): Q023
 
 ## 3. 열린 실 (think_about)
 
@@ -484,6 +501,9 @@
 - [Q022] 교차검증이 '계산 정확'만 증명하고 twin fidelity는 별개라는 구분 — 세미나에서 이 두 층을 분리해 보여야 과대주장 안 됨
 - [Q022] hatir upstream: live_set_spill_bytes tie-break을 안정 정렬로 고쳐 seed 없이도 결정론화(현재는 seed 고정으로 우회)
 - [Q022] A100 runbook 6개 이월 항목이 곧 '다음에 실제로 재야 할 것' 리스트 = Part III-a 실행 계획
+- [Q023] 발표 핵심 슬라이드: '왜 GPU 없이 낸 숫자를 믿나' → 두 층위(ZigZag byte-exact 검증 vs datasheet spec) + 상쇄 논증(S*는 스펙 오차에 불변)으로 답
+- [Q023] 정직한 약점 2개를 먼저 밝히기: twin 필드별 provenance 태그 일부만 + calibrated=no(core 경로는 ideal). 이걸 숨기지 말고 '그래서 절대치는 유보'로 연결
+- [Q023] twin fidelity를 실제로 좁히려면: A100/MI300X로 provenance 항 도출 → H100 leave-one-chip-out 예측오차 보고(사내 runbook). 이게 절대치 승격의 유일 경로
 
 ## 4. Storyline seeds
 
@@ -509,3 +529,4 @@
 - [Q020] (Atlas takeaways (3 mechanisms + DeepTransformers) + feature map shape pipeline) Atlas 정리: 3기계(Omega rule/feature-map 용량[Prop1,2 근거+φ 방법]/Muon)+4번째 DeepTransformers(attention=deep memory+φ* 특수case). feature map 파이프라인: x_t→k_t=x_tW_K(d_k)→φ_p(k_t)(D=Θ(d_k^p))=NM 입력→M:R^D→R^{d_v}. 입력차원 d_k→D가 용량 확대 원리. 절대 D는 sketch 미공개로 계산불가. Miras 빈 축(optimizer/용량)을 채운 invention-heavy.
 - [Q021] (TNT takeaways + serving (structure in paper, cost not; connects to Part III)) TNT=training 레시피(발명 아님): train/serve chunk mismatch(2.6x ppl) 해소를 위해 train chunk(큰)/serve chunk(1) decouple+Stage2 정렬, hierarchical global(prefill)/local(decode) memory, Q-K projection(읽기 mismatch). Serving 구조는 논문에 있음(global·local 둘다 배포, Q-K projection inference마다, 메모리 online 갱신 계속)—단 decode 비용 수치는 미측정. 이게 내 Part III(serving 비용 실측)가 메우는 지점: TNT 구조+Part III 비용=완성. 세미나: 'TNT가 serving 구조를 정의하고, 내 기여가 그 비용을 잰다'.
 - [Q022] (Part III credibility / experiments) Part III(저자 기여)의 신뢰성 서사: '측정했다'가 아니라 '결정론적으로 재현되고, 3개 독립 경로가 <1% 수렴하며, 무엇이 아직 증명 안 됐는지를 먼저 밝힌 exploration-grade warrant'. 부록 E/REPRODUCE.md가 그 증거. 세미나에선 '왜 GPU 없이도 이 숫자를 믿나'를 이 4기둥으로 답한다.
+- [Q023] (Part III credibility / HATIR + HAT spec fidelity) 세미나에서 성능 수치 신뢰성 파트: (1) 두 질문 분리 — 계산이 맞나(HATIR/ZigZag byte-exact O) vs 스펙이 실물이냐(datasheet peak, 미측정). (2) ideal-vs-실측 34% gap을 정직 공개. (3) 그럼에도 결론이 서는 이유 = 우리가 단정하는 양(crossover/bound/tier)은 모델 오차가 상쇄되는 양뿐이고, 상쇄 안 되는 절대 성능은 유보. 이 절제가 곧 신뢰성. G07 §14 + 부록 E가 근거.

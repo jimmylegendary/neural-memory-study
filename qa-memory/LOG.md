@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 22건.
+총 23건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -286,4 +286,17 @@
 - 생각할 것: 교차검증이 '계산 정확'만 증명하고 twin fidelity는 별개라는 구분 — 세미나에서 이 두 층을 분리해 보여야 과대주장 안 됨; hatir upstream: live_set_spill_bytes tie-break을 안정 정렬로 고쳐 seed 없이도 결정론화(현재는 seed 고정으로 우회); A100 runbook 6개 이월 항목이 곧 '다음에 실제로 재야 할 것' 리스트 = Part III-a 실행 계획
 - storyline seed: Part III(저자 기여)의 신뢰성 서사: '측정했다'가 아니라 '결정론적으로 재현되고, 3개 독립 경로가 <1% 수렴하며, 무엇이 아직 증명 안 됐는지를 먼저 밝힌 exploration-grade warrant'. 부록 E/REPRODUCE.md가 그 증거. 세미나에선 '왜 GPU 없이도 이 숫자를 믿나'를 이 4기둥으로 답한다.
 - 연상: Q021
+
+## Q023 · 2026-07-14 · Part III credibility / HATIR + HAT spec fidelity
+
+**Q.** 핵심은 HATIR이 믿을만하냐, 거기서 쓴 HAT hw spec이 실제 hw를 얼마나 정교하게 표현하고 얼마나 정확한 spec data이냐일 것 같다. 이 신뢰성 검증을 g07 pdf에도 포함해야 함. 발표에 쓸 거라 성능 수치에 매우 민감함.
+
+**A.** 신뢰성을 두 층위로 분해해야 함. (A) HATIR 계산: ZigZag(KU Leuven 독립 학술 oracle) 대비 operand별 DRAM traffic byte 0.00%(byte-exact) + MAC 정확 + bound 분류 일치로 검증됨 — 단 traffic 계수/구조까지이고 절대 에너지 pJ는 제외. (B) HAT spec: NVIDIA whitepaper/DGX guide/Hopper tuning/CUTLASS 출처 = datasheet peak-nominal이지 실물 측정 아님, 필드별 provenance 태그는 일부만. 결정적 gap: raw roofline은 100% util 가정 → 실측 H100 GEMM 959 vs 716 TFLOPS(~34% 과대), batch-1 decode MBU 26.9%. fit 상수는 '없는 칩에 몰래 수입'이라 방법론적으로 거부하고 provenance-typed(computed/technology/stack/residual)로 분해. 결론: 상쇄되는 양(S*=순수 traffic 등식 GB=GB→BW·MFU/MBU 둘 다 상쇄, bound 분류=2배 오차도 안 뒤집힘, tier 순서)만 단정하고 절대 성능(µs/mJ/GB·s)은 유보.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known: 신뢰성은 '두 층위'로 갈림 — 계산 정확(ZigZag로 검증됨) vs spec fidelity(datasheet peak, 미검증); unknown_unknown: raw roofline은 ideal(100% util)이라 실측 대비 GEMM ~34% 과대·decode MBU 26.9% — 절대치는 1.3~1.4배 낙관적; unknown_known: load-bearing 양이 견고한 진짜 이유 = 모델 오차가 비율/crossover에서 상쇄됨(S*는 GB=GB 등식이라 BW값도 MFU/MBU도 상쇄); known_unknown: fit 상수 거부 + provenance-typed 분해가 이 프로젝트의 방법론적 입장(발표에서 이걸 강점으로)
+- 개념 key: HATIR, ZigZag crosscheck, byte-exact, HAT twin, datasheet peak, MFU, MBU, ideal vs achieved, provenance-typed calibration, fitted constant 거부, cancellation in ratios, S* traffic equality
+- 생각할 것: 발표 핵심 슬라이드: '왜 GPU 없이 낸 숫자를 믿나' → 두 층위(ZigZag byte-exact 검증 vs datasheet spec) + 상쇄 논증(S*는 스펙 오차에 불변)으로 답; 정직한 약점 2개를 먼저 밝히기: twin 필드별 provenance 태그 일부만 + calibrated=no(core 경로는 ideal). 이걸 숨기지 말고 '그래서 절대치는 유보'로 연결; twin fidelity를 실제로 좁히려면: A100/MI300X로 provenance 항 도출 → H100 leave-one-chip-out 예측오차 보고(사내 runbook). 이게 절대치 승격의 유일 경로
+- storyline seed: 세미나에서 성능 수치 신뢰성 파트: (1) 두 질문 분리 — 계산이 맞나(HATIR/ZigZag byte-exact O) vs 스펙이 실물이냐(datasheet peak, 미측정). (2) ideal-vs-실측 34% gap을 정직 공개. (3) 그럼에도 결론이 서는 이유 = 우리가 단정하는 양(crossover/bound/tier)은 모델 오차가 상쇄되는 양뿐이고, 상쇄 안 되는 절대 성능은 유보. 이 절제가 곧 신뢰성. G07 §14 + 부록 E가 근거.
+- 연상: Q022, Q021
 
