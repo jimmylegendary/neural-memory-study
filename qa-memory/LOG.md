@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 8건.
+총 9건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -104,4 +104,17 @@
 - 생각할 것: write되는 게 segment C개인지 y_t 전체 Np+2C인지 원문 '틈'(M_t=M_{t-1}(y_t) 'tokens of y_t') 재확인 — 나는 C개(새 정보만) 읽기로 답함; chunk 시작 weight에서 gradient 평가하는 stale 근사가 품질에 주는 영향(chunk 클수록 stale↑) → TNT의 정확한 주제; read M*_t(y_t)에서 y_t를 W_Q로 투영 후 넣는지(query projection) 정확히; associative scan의 combine 연산자 (a1,b1)•(a2,b2)=(a1a2, a2b1+b2) — affine map 합성이 왜 결합법칙인지
 - storyline seed: MAC 계산 정밀화: attn 출력 (Np+2C)×d → 슬라이싱으로 segment C×d(길이축소는 슬라이싱, 모양보존은 gate) → NM write(MLP면 backprop으로 gradient) → 출력 y_t^seg⊗M*_t(y_t^seg). S_t·M_t는 weight-shaped 버퍼 1개(시퀀스축 아님), gate는 토큰당 스칼라 C개. scan=선형 momentum 재귀를 O(log C) 병렬(Mamba primitive), chunkwise=gradient를 chunk-start weight matmul 병렬 — 이게 '순차라 비쌈→TNT' 실의 정체.
 - 연상: Q003, Q005, Q006, Q007
+
+## Q009 · 2026-07-14 · momentum parallelization via associative scan
+
+**Q.** momentum이 병렬화를 어떻게 유지하는지 associative scan으로 설명해줘
+
+**A.** momentum 재귀 S_t=η_t S_{t-1}-θ_t g_t는 S_{t-1}에 대해 선형(affine): S_t=a_t S_{t-1}+b_t, a_t=η_t, b_t=-θ_t g_t. 결정적으로 a,b는 S에 의존 안 하고 토큰에서 미리 계산됨. 펼치면 감쇠 누적합 S_t=Σ_{i≤t}(∏_{i+1..t}η_j)(-θ_i g_i)=momentum 없는 cumsum에 감쇠 붙은 것. affine map 합성이 또 affine이라 combine (a1,b1)•(a2,b2)=(a1a2, a2b1+b2)이 결합법칙 성립→parallel associative scan으로 prefix[S1..SC]를 이진트리 O(log C) 깊이에 계산(순차 O(C) 대신), 총 O(C) work. prefix-sum 일반화=S4/S5/Mamba SSM primitive. gradient g_i는 chunkwise로 chunk-start weight에서 matmul 병렬 계산해 계수 확보. 그래서 momentum은 선형이라 감쇠 붙은 스캔으로 흡수될 뿐 병렬성 안 깸. 대비: S에 비선형이면 scan 불가 — deep MLP 메모리의 weight 재귀는 g_t가 M_{t-1}을 비선형 통과해 진짜 병목(chunk-start freeze로 우회, chunk 클수록 stale→TNT). weight decay 재귀 M_t=(1-α)M_{t-1}+S_t도 선형이라 scan 가능.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_unknown: momentum이 병렬화되는 근본 이유=선형(affine) 재귀라는 성질 자체 — scan이 병렬화하는 정확한 부류; unknown_unknown: combine 연산자 (a1,b1)•(a2,b2)=(a1a2,a2b1+b2)=affine 합성, 결합법칙이 스캔의 전제; unknown_unknown: parallel scan=이진트리 O(log C) 깊이(순차 O(C)), cumsum/Mamba와 동일 primitive; unknown_known: 진짜 병목은 nonlinear gradient(deep memory)라 chunk-start freeze로 우회; momentum·weight decay는 선형이라 '공짜'로 scan
+- 개념 key: associative scan, parallel prefix scan, linear recurrence, affine map composition, momentum, decay-weighted cumsum, combine operator associativity, O(log C) depth, tree scan, Mamba SSM parallelization, chunkwise, precomputable coefficients, nonlinear is the real bottleneck, weight decay linear recurrence
+- 생각할 것: Blelloch(work-efficient) vs Hillis-Steele(depth) scan 차이와 실제 GPU/TPU 구현; chunk-start freeze의 stale 근사가 품질에 주는 영향(chunk↑→stale↑) — TNT의 정확한 주제; 이게 Mamba의 selective scan과 정확히 같은 primitive인지(gate=selective A,B); combine (a2b1+b2)에서 b가 weight-shaped라 메모리·대역폭 비용이 스칼라 SSM보다 큰 점(state size)
+- storyline seed: momentum 병렬화의 정체: 선형(affine) 재귀 S_t=a_t S_{t-1}+b_t라 combine (a1a2,a2b1+b2)가 결합적→associative scan O(log C)(=Mamba SSM primitive). gate 계수 precompute+gradient chunkwise matmul. 진짜 병목은 nonlinear deep-memory gradient(chunk-start freeze, TNT로 이어짐). 이 조각이 Q003/Q005/Q006/Q008의 '순차성→chunkwise/scan' 실을 메커니즘으로 마감.
+- 연상: Q003, Q008
 

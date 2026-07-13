@@ -1,10 +1,10 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-8건. story line 짤 때 여기서 꺼낸다.
+9건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
-### 모른다는 걸 안다 (known_unknown → decomposition) — 8건
+### 모른다는 걸 안다 (known_unknown → decomposition) — 9건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q003: 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1
@@ -13,8 +13,9 @@
 - Q006: 1)gate 3개 weight=d 벡터? 2)Persistent memory 정체·논문 위치·학습·정보·shape? 3)MAC 3부품 의존없이 
 - Q007: MAC 전체 forward 추적 검증: seq C×d→W_Q로 C query→NM으로 C출력→앞에 concat, persistent도 앞에→(N
 - Q008: 1)attn 출력은 Np+2C,d 아님(y의 shape)? 그걸 다시 흘리면 Np+2C,d? 2)gate 정체가 뭐야, eltwise 곱 맞아?
+- Q009: momentum이 병렬화를 어떻게 유지하는지 associative scan으로 설명해줘
 
-### 모른다는 것도 모른다 (unknown_unknown → exploration) — 24건
+### 모른다는 것도 모른다 (unknown_unknown → exploration) — 27건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
@@ -39,14 +40,18 @@
 - Q008: 1)attn 출력은 Np+2C,d 아님(y의 shape)? 그걸 다시 흘리면 Np+2C,d? 2)gate 정체가 뭐야, eltwise 곱 맞아?
 - Q008: 1)attn 출력은 Np+2C,d 아님(y의 shape)? 그걸 다시 흘리면 Np+2C,d? 2)gate 정체가 뭐야, eltwise 곱 맞아?
 - Q008: 1)attn 출력은 Np+2C,d 아님(y의 shape)? 그걸 다시 흘리면 Np+2C,d? 2)gate 정체가 뭐야, eltwise 곱 맞아?
+- Q009: momentum이 병렬화를 어떻게 유지하는지 associative scan으로 설명해줘
+- Q009: momentum이 병렬화를 어떻게 유지하는지 associative scan으로 설명해줘
+- Q009: momentum이 병렬화를 어떻게 유지하는지 associative scan으로 설명해줘
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 6건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 7건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
 - Q005: 1)surprise=k에 대한 v가 전부? 2)3개 gate 어떻게 학습? token축 맞아? backward시 gate값으로 S구하고 W up
 - Q006: 1)gate 3개 weight=d 벡터? 2)Persistent memory 정체·논문 위치·학습·정보·shape? 3)MAC 3부품 의존없이 
 - Q007: MAC 전체 forward 추적 검증: seq C×d→W_Q로 C query→NM으로 C출력→앞에 concat, persistent도 앞에→(N
+- Q009: momentum이 병렬화를 어떻게 유지하는지 associative scan으로 설명해줘
 
 ### 안다는 걸 안다 (known) — 0건
 
@@ -57,7 +62,10 @@
 - **surprise** (2): Q001, Q005
 - **mac** (2): Q002, Q005
 - **two projection sets** (2): Q002, Q005
+- **momentum** (2): Q003, Q009
 - **deep memory** (2): Q003, Q004
+- **associative scan** (2): Q008, Q009
+- **parallel prefix scan** (2): Q008, Q009
 - **associative memory** (1): Q001
 - **key-value** (1): Q001
 - **query** (1): Q001
@@ -85,7 +93,6 @@
 - **error-correction** (1): Q003
 - **forget gate** (1): Q003
 - **weight decay** (1): Q003
-- **momentum** (1): Q003
 - **sequential recurrence** (1): Q003
 - **data dependency** (1): Q003
 - **longhorn** (1): Q003
@@ -155,14 +162,23 @@
 - **gradient by backprop** (1): Q008
 - **rank-1 closed form linear** (1): Q008
 - **mlp backprop inner** (1): Q008
-- **associative scan** (1): Q008
-- **parallel prefix scan** (1): Q008
 - **linear recurrence momentum** (1): Q008
 - **s is weight-shaped buffer** (1): Q008
 - **gate values per-token scalar** (1): Q008
 - **chunkwise parallel training** (1): Q008
 - **gradients at chunk-start weights** (1): Q008
 - **s4/s5/mamba scan primitive** (1): Q008
+- **linear recurrence** (1): Q009
+- **affine map composition** (1): Q009
+- **decay-weighted cumsum** (1): Q009
+- **combine operator associativity** (1): Q009
+- **o(log c) depth** (1): Q009
+- **tree scan** (1): Q009
+- **mamba ssm parallelization** (1): Q009
+- **chunkwise** (1): Q009
+- **precomputable coefficients** (1): Q009
+- **nonlinear is the real bottleneck** (1): Q009
+- **weight decay linear recurrence** (1): Q009
 
 ## 3. 열린 실 (think_about)
 
@@ -198,6 +214,10 @@
 - [Q008] chunk 시작 weight에서 gradient 평가하는 stale 근사가 품질에 주는 영향(chunk 클수록 stale↑) → TNT의 정확한 주제
 - [Q008] read M*_t(y_t)에서 y_t를 W_Q로 투영 후 넣는지(query projection) 정확히
 - [Q008] associative scan의 combine 연산자 (a1,b1)•(a2,b2)=(a1a2, a2b1+b2) — affine map 합성이 왜 결합법칙인지
+- [Q009] Blelloch(work-efficient) vs Hillis-Steele(depth) scan 차이와 실제 GPU/TPU 구현
+- [Q009] chunk-start freeze의 stale 근사가 품질에 주는 영향(chunk↑→stale↑) — TNT의 정확한 주제
+- [Q009] 이게 Mamba의 selective scan과 정확히 같은 primitive인지(gate=selective A,B)
+- [Q009] combine (a2b1+b2)에서 b가 weight-shaped라 메모리·대역폭 비용이 스칼라 SSM보다 큰 점(state size)
 
 ## 4. Storyline seeds
 
@@ -209,3 +229,4 @@
 - [Q006] (Titans MAC details (persistent memory, NM projections, augmented seq shapes, chunking)) MAC 해부: NM=MLP 하나+투영 3개(쓰기 k,v / 읽기 q, 검색은 q!). 증강 시퀀스=[P(N_p,과제지식,Sec3.3) || 검색 h_t(C) || segment(C)]=N_p+2C 토큰이 softmax attention 입력. chunk=고정 비중첩(sliding 아님, 그건 MAG), 메모리는 chunk 넘어 이어짐(inter-chunk recurrence=순차성 실).
 - [Q007] (Titans MAC full forward + layer stacking + no separate FFN) MAC 한 블록 완결: 검색(q)→[P‖h_t‖S] attention(softmax)→write(y_t로 M 갱신)→출력 o_t=y_t⊗M*_t(y_t)(게이트). 이게 한 layer, 모델=임베딩→블록×L→LM head, 각 layer 자기 NM. 별도 FFN 없음(persistent가 FFN 역할). C×d 출력으로 길이 보존.
 - [Q008] (Titans MAC shapes + scan/momentum/chunkwise) MAC 계산 정밀화: attn 출력 (Np+2C)×d → 슬라이싱으로 segment C×d(길이축소는 슬라이싱, 모양보존은 gate) → NM write(MLP면 backprop으로 gradient) → 출력 y_t^seg⊗M*_t(y_t^seg). S_t·M_t는 weight-shaped 버퍼 1개(시퀀스축 아님), gate는 토큰당 스칼라 C개. scan=선형 momentum 재귀를 O(log C) 병렬(Mamba primitive), chunkwise=gradient를 chunk-start weight matmul 병렬 — 이게 '순차라 비쌈→TNT' 실의 정체.
+- [Q009] (momentum parallelization via associative scan) momentum 병렬화의 정체: 선형(affine) 재귀 S_t=a_t S_{t-1}+b_t라 combine (a1a2,a2b1+b2)가 결합적→associative scan O(log C)(=Mamba SSM primitive). gate 계수 precompute+gradient chunkwise matmul. 진짜 병목은 nonlinear deep-memory gradient(chunk-start freeze, TNT로 이어짐). 이 조각이 Q003/Q005/Q006/Q008의 '순차성→chunkwise/scan' 실을 메커니즘으로 마감.
