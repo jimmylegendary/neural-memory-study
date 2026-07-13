@@ -1,10 +1,10 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-20건. story line 짤 때 여기서 꺼낸다.
+21건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
-### 모른다는 걸 안다 (known_unknown → decomposition) — 17건
+### 모른다는 걸 안다 (known_unknown → decomposition) — 18건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q003: 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1
@@ -22,8 +22,9 @@
 - Q017: 1)gamma weight shape 뭔데, 논문에 언급 없나? 2)Titans에서 Wq,k,v가 attention block 내부/외부 2쌍 
 - Q019: 다른 논문에서 attn out이 nm의 k,v input으로 쓰인다거나 attention 내부 W와 밖 W가 별도임을 알 수 있는 근거 찾아봐
 - Q020: Atlas 정리: 발명 3개 맞나? 1)Omega rule 2)용량 확장 근거+방법(feature map 투영) 3)GD 대신 Muon. 그리고
+- Q021: TNT 정리: 1)train/inference chunk size 같아야 함 증명 2)chunk 최적+global,local memory 3)2
 
-### 모른다는 것도 모른다 (unknown_unknown → exploration) — 42건
+### 모른다는 것도 모른다 (unknown_unknown → exploration) — 44건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
@@ -66,8 +67,10 @@
 - Q019: 다른 논문에서 attn out이 nm의 k,v input으로 쓰인다거나 attention 내부 W와 밖 W가 별도임을 알 수 있는 근거 찾아봐
 - Q019: 다른 논문에서 attn out이 nm의 k,v input으로 쓰인다거나 attention 내부 W와 밖 W가 별도임을 알 수 있는 근거 찾아봐
 - Q020: Atlas 정리: 발명 3개 맞나? 1)Omega rule 2)용량 확장 근거+방법(feature map 투영) 3)GD 대신 Muon. 그리고
+- Q021: TNT 정리: 1)train/inference chunk size 같아야 함 증명 2)chunk 최적+global,local memory 3)2
+- Q021: TNT 정리: 1)train/inference chunk size 같아야 함 증명 2)chunk 최적+global,local memory 3)2
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 26건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 28건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
@@ -94,6 +97,8 @@
 - Q019: 다른 논문에서 attn out이 nm의 k,v input으로 쓰인다거나 attention 내부 W와 밖 W가 별도임을 알 수 있는 근거 찾아봐
 - Q020: Atlas 정리: 발명 3개 맞나? 1)Omega rule 2)용량 확장 근거+방법(feature map 투영) 3)GD 대신 Muon. 그리고
 - Q020: Atlas 정리: 발명 3개 맞나? 1)Omega rule 2)용량 확장 근거+방법(feature map 투영) 3)GD 대신 Muon. 그리고
+- Q021: TNT 정리: 1)train/inference chunk size 같아야 함 증명 2)chunk 최적+global,local memory 3)2
+- Q021: TNT 정리: 1)train/inference chunk size 같아야 함 증명 2)chunk 최적+global,local memory 3)2
 
 ### 안다는 걸 안다 (known) — 3건
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
@@ -361,6 +366,22 @@
 - **memory m r^d to d_v** (1): Q020
 - **sketch dimension undisclosed** (1): Q020
 - **l(m(phi(k));v) redefinition** (1): Q020
+- **tnt training recipe not architecture** (1): Q021
+- **train/serve chunk mismatch 2.6x ppl** (1): Q021
+- **decouple train chunk from serve chunk** (1): Q021
+- **stage2 align to decode chunk** (1): Q021
+- **hierarchical global local memory** (1): Q021
+- **reset to w_init** (1): Q021
+- **2-stage training** (1): Q021
+- **q-k projection retrieval** (1): Q021
+- **prefill global big-chunk** (1): Q021
+- **decode local chunk-1** (1): Q021
+- **both memories deployed at serving** (1): Q021
+- **q-k projection at inference** (1): Q021
+- **memory updated online at inference** (1): Q021
+- **serving structure in paper cost not benchmarked** (1): Q021
+- **connects to part iii claim1-6 a1** (1): Q021
+- **decode wall-clock gap** (1): Q021
 
 ## 3. 열린 실 (think_about)
 
@@ -443,6 +464,10 @@
 - [Q020] φ_p로 올린 뒤 메모리가 matrix면 M∈R^{d_v×D}로 파라미터 폭증 — Muon/feature map/state 비용의 상호작용(G09)
 - [Q020] DeepTransformers가 attention을 일반화한다는 게 Q016 용량 스펙트럼(softmax=φ* ∞)과 같은 이야기
 - [Q020] Omega의 φ(k) 사용 update W_t=W_{t-1}(αI-Σγφφ^T)+Σγvφ^T이 feature map+admission을 한 식에 결합
+- [Q021] serving state=global V+local W+Q-K covariance 총합 크기 — G09/Part III state 회계에 TNT 계층 반영
+- [Q021] reset-to-W_init가 context parallelism(학습)엔 좋은데 serving decode(순차)엔 어떤 의미인지
+- [Q021] prefill(global 큰 chunk)과 decode(local chunk1)의 비용 비대칭 — 내 Part III prefill/decode split과 정합
+- [Q021] TNT가 serving 벤치 안 한 것=A2(chunk mismatch 재현·확장) 실험 여지, 내 페이퍼가 이미 지목
 
 ## 4. Storyline seeds
 
@@ -466,3 +491,4 @@
 - [Q018] (grounding rigor: MAC equations in text; two projection sets notation is ambiguous/unspecified) 근거등급 3단계(rigor 규율): (a)텍스트 식 명시=MAC forward Eq21-25; (b)정의 물려받은 충실 풀이=y_t→k=y_tW_K,v=y_tW_V(§3.1+Eq24); (c)미명세=메모리·attention 투영이 별개 행렬인지(기호 overload). Q017/Q018이 '명시 vs 추론'을 매 주장에 라벨하는 습관을 확립—세미나/페이퍼 정직성의 핵심.
 - [Q019] (cross-paper grounding: projection separation (NL explicit) + attn-out-to-memory (MAC-specific)) Cross-paper 근거법: Titans가 남긴 모호함(투영 분리)을 NL이 해소(self-modifying Titans의 k/v/q=각자 M_k/M_v/M_q, +Transformer projections 별칭). 'attn out→메모리'는 MAC 전용(MAG/MAL은 raw). Atlas DeepTransformers=attention도 메모리. 교훈: 6편은 서로의 미명세를 채우는 하나의 프로그램이라 cross-reference가 유효(수렴 논지). 세미나: 'Titans가 열고 NL이 명시화'.
 - [Q020] (Atlas takeaways (3 mechanisms + DeepTransformers) + feature map shape pipeline) Atlas 정리: 3기계(Omega rule/feature-map 용량[Prop1,2 근거+φ 방법]/Muon)+4번째 DeepTransformers(attention=deep memory+φ* 특수case). feature map 파이프라인: x_t→k_t=x_tW_K(d_k)→φ_p(k_t)(D=Θ(d_k^p))=NM 입력→M:R^D→R^{d_v}. 입력차원 d_k→D가 용량 확대 원리. 절대 D는 sketch 미공개로 계산불가. Miras 빈 축(optimizer/용량)을 채운 invention-heavy.
+- [Q021] (TNT takeaways + serving (structure in paper, cost not; connects to Part III)) TNT=training 레시피(발명 아님): train/serve chunk mismatch(2.6x ppl) 해소를 위해 train chunk(큰)/serve chunk(1) decouple+Stage2 정렬, hierarchical global(prefill)/local(decode) memory, Q-K projection(읽기 mismatch). Serving 구조는 논문에 있음(global·local 둘다 배포, Q-K projection inference마다, 메모리 online 갱신 계속)—단 decode 비용 수치는 미측정. 이게 내 Part III(serving 비용 실측)가 메우는 지점: TNT 구조+Part III 비용=완성. 세미나: 'TNT가 serving 구조를 정의하고, 내 기여가 그 비용을 잰다'.

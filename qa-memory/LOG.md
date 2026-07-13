@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 20건.
+총 21건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -260,4 +260,17 @@
 - 생각할 것: sketch(PolySketchFormer류)가 D=Θ(d_k^p)를 실제 얼마로 줄이나 — 원문 미공개, 후속/코드 확인; φ_p로 올린 뒤 메모리가 matrix면 M∈R^{d_v×D}로 파라미터 폭증 — Muon/feature map/state 비용의 상호작용(G09); DeepTransformers가 attention을 일반화한다는 게 Q016 용량 스펙트럼(softmax=φ* ∞)과 같은 이야기; Omega의 φ(k) 사용 update W_t=W_{t-1}(αI-Σγφφ^T)+Σγvφ^T이 feature map+admission을 한 식에 결합
 - storyline seed: Atlas 정리: 3기계(Omega rule/feature-map 용량[Prop1,2 근거+φ 방법]/Muon)+4번째 DeepTransformers(attention=deep memory+φ* 특수case). feature map 파이프라인: x_t→k_t=x_tW_K(d_k)→φ_p(k_t)(D=Θ(d_k^p))=NM 입력→M:R^D→R^{d_v}. 입력차원 d_k→D가 용량 확대 원리. 절대 D는 sketch 미공개로 계산불가. Miras 빈 축(optimizer/용량)을 채운 invention-heavy.
 - 연상: Q013, Q015, Q016, Q017
+
+## Q021 · 2026-07-14 · TNT takeaways + serving (structure in paper, cost not; connects to Part III)
+
+**Q.** TNT 정리: 1)train/inference chunk size 같아야 함 증명 2)chunk 최적+global,local memory 3)2 stage training 4)Q-K projection. 맞나? 근데 serving 시점에 어케 되는지 논문에 없나? global/local memory serving에도 배포? Q-K projection inference에도?
+
+**A.** 4개 맞음(1번 보정). 1)train/serve chunk mismatch 발견·해소: chunk64 학습→chunk8 decode면 ppl 2.6배 악화(Challenge3). 해법=다 같은 chunk가 아니라 train은 큰 chunk(효율)/최종은 decode chunk(=1)에 정렬=train·serve chunk decouple+Stage2 정렬. 2)hierarchical global(C_G=2048 순차)/local(N개 병렬 reset-to-W_init). 3)2-stage(Stage1 효율 pretrain, Stage2 ~5% 고해상도 fine-tune). 4)Q-K projection(key로 쓰고 query로 읽는 mismatch, Challenge2). TNT=아키텍처 아니라 training 레시피. Serving: 구조는 논문에 명시(성능 수치는 없음). Stage2 목표 C_L'=1=prefill-and-decode 패턴: prefill=global memory 큰 병렬 chunk로 프롬프트 흡수, decode=local memory 토큰별(chunk1) 갱신. Q직접답: global·local 둘다 serving 배포(global=prefill/local=decode, +Q-K covariance까지 상태로), Q-K projection은 읽기(Eq7)의 일부라 inference(prefill·decode)마다 함, 메모리는 training·inference 모두 online 갱신(line203). 미측정: decode wall-clock/throughput/footprint 벤치 없음(유일 수치는 32K prefill서 FlashAttn 1.3x, decode latency 아님). 이게 내 스터디 페이퍼 Part III(claim1-6, A1 'decode wall-clock 미공개')가 메우는 지점: serving state=global V+local W+Q-K covariance를 매 decode 토큰 RMW→memory-bound(claim1), KV와 다름(claim2), 대역폭이 배치 조기 닫음(claim3). TNT 구조+내 Part III 비용=완성.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_unknown: TNT 해법은 '같은 chunk'가 아니라 train(큰)/serve(1) chunk decouple+Stage2 정렬 — 사용자 '같아야 함' 보정; unknown_known: serving 구조는 논문 명시(prefill=global/big-chunk, decode=local/chunk1, Q-K projection은 읽기라 inference마다) — global·local 둘다 배포; unknown_unknown: serving 성능(decode wall-clock/throughput/footprint)은 TNT도 미측정 — 유일 수치는 prefill FlashAttn 1.3x; unknown_known: 이 serving 비용 공백이 정확히 내 스터디 페이퍼 Part III(claim1-6,A1)가 메우는 지점 — TNT 구조+Part III 비용=완성
+- 개념 key: TNT training recipe not architecture, train/serve chunk mismatch 2.6x ppl, decouple train chunk from serve chunk, Stage2 align to decode chunk, hierarchical global local memory, reset to W_init, 2-stage training, Q-K projection retrieval, prefill global big-chunk, decode local chunk-1, both memories deployed at serving, Q-K projection at inference, memory updated online at inference, serving structure in paper cost not benchmarked, connects to Part III claim1-6 A1, decode wall-clock gap
+- 생각할 것: serving state=global V+local W+Q-K covariance 총합 크기 — G09/Part III state 회계에 TNT 계층 반영; reset-to-W_init가 context parallelism(학습)엔 좋은데 serving decode(순차)엔 어떤 의미인지; prefill(global 큰 chunk)과 decode(local chunk1)의 비용 비대칭 — 내 Part III prefill/decode split과 정합; TNT가 serving 벤치 안 한 것=A2(chunk mismatch 재현·확장) 실험 여지, 내 페이퍼가 이미 지목
+- storyline seed: TNT=training 레시피(발명 아님): train/serve chunk mismatch(2.6x ppl) 해소를 위해 train chunk(큰)/serve chunk(1) decouple+Stage2 정렬, hierarchical global(prefill)/local(decode) memory, Q-K projection(읽기 mismatch). Serving 구조는 논문에 있음(global·local 둘다 배포, Q-K projection inference마다, 메모리 online 갱신 계속)—단 decode 비용 수치는 미측정. 이게 내 Part III(serving 비용 실측)가 메우는 지점: TNT 구조+Part III 비용=완성. 세미나: 'TNT가 serving 구조를 정의하고, 내 기여가 그 비용을 잰다'.
+- 연상: Q003, Q008, Q009, Q015, Q020
 
