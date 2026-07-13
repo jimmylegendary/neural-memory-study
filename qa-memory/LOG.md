@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 10건.
+총 11건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -130,4 +130,17 @@
 - 생각할 것: MAC에서 retrieve query는 raw segment(S W_Q)인데 write는 attn-out(y_t W_K/V) — 입력 스테이지가 다른 이유; read M*_t(y_t)도 query 투영(y_t W_Q) 거치는지 정확히; self-supervised (k,v)가 linear attention/DeltaNet/TTT 전부 공유하는 원리(토큰이 자기 key,value 제공); attention이 걸러준 y_t를 각인 vs raw token 각인의 실측 차이(memory overflow ablation)
 - storyline seed: MAC write 속살: attn-out u → k=uW_K(MLP 입력)·v=uW_V(golden) → ||M(k)-v||². 메모리 W_K/V는 attention과 별개 투영. self-supervised(토큰이 자기 k,v 생성)=Q001 LMM 코어와 동일, x_t 자리에 y_t. read는 다른 q로 연상 회상. 이게 '연상메모리=k→v 자기지도 학습'의 정확한 형태.
 - 연상: Q001, Q002, Q007
+
+## Q011 · 2026-07-14 · Titans synthesis / takeaways checkpoint
+
+**Q.** Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 전체 연산 4)chunk 순차/chunk내 병렬. 이렇게 맞을까?
+
+**A.** 4개 다 맞으나 전부 '메커니즘' 축. 보정: point1은 gate '값'이 per-token 계산, '생성기'는 outer loop 학습(token축 학습 아님); batch보다 chunk mini-batch. point3 MAC은 3변형 중 하나. 빠진 '의의' 축: A)패러다임=시퀀스 레이어가 test-time optimizer, 메모리=학습시키는 모델(Q001/Q010, NL/Sleep 씨앗) B)통일=DeltaNet/GDN/TTT/RWKV-7/Longhorn을 특수case로(momentum+forget+deep 동시)-가장 크게 빠진 1순위 takeaway(Q003) C)deep(MLP 비선형) memory가 용량 핵심+gradient rank-1 아님→병렬 어려움(Q004) D)시스템 takeaway: state=2P_M(weights+momentum), per-token≈5-6P_M 문맥무관 상수, 고정 RMW상태(KV와 성격 다름), long-context 2M+. 완성 정리=메커니즘4 + 패러다임/통일/deep+시스템.
+
+- 축: `known` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_unknown: 사용자 정리는 메커니즘 축만 — '의의' 축(패러다임·통일·deep·시스템)이 빠짐; unknown_unknown: 가장 큰 누락 takeaway=Titans가 family(DeltaNet/GDN/TTT/RWKV-7/Longhorn)를 특수case로 통일(Q003); unknown_known: 'token축으로 학습되는 gate'는 부정확 — 값은 per-token, 생성기는 outer loop(Q005); unknown_known: 시스템 모델링 목표엔 state=2P_M·per-token 상수비용·고정 RMW가 핵심 takeaway
+- 개념 key: Titans takeaways, paradigm optimizer-as-memory, family unification, special cases, deep memory capacity, inner outer loop meta-learning, MAC MAG MAL variants, self-supervised write, chunkwise parallel, state size 2P_M, per-token constant cost, systems modeling takeaway, gate value vs generator
+- 생각할 것: 이 8행 재정리표가 곧 story line의 Titans 장 골격 후보 — 세미나 재작성 때 그대로 쓸지; '패러다임(optimizer=memory)'이 NL의 'backprop도 memory'로 확장되는 다리; deep memory의 state 크기(2P_M)가 serving에서 KV와 다른 워크로드가 되는 지점(Part III/G09); 3변형 중 MAC이 왜 대표인지, MAG/MAL의 이득·손해 비교는 아직 안 팠음
+- storyline seed: Titans 장 골격(8행): 패러다임(optimizer=memory) → update rule(surprise+momentum+forget gate) → 계보 통일(특수case Q003) → 메모리 형태(matrix vs MLP, state 2P_M) → inner/outer loop(meta-learning) → 아키텍처(단기+장기+persistent, MAC/MAG/MAL) → self-supervised write → chunkwise+scan 병렬 → 시스템(상수비용·고정 RMW·long-context). 사용자 4점=메커니즘, 여기에 패러다임·통일·deep·시스템 얹으면 완성.
+- 연상: Q001, Q002, Q003, Q004, Q005, Q007, Q008, Q009, Q010
 
