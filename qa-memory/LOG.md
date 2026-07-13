@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 16건.
+총 17건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -208,4 +208,17 @@
 - 생각할 것: Atlas가 실제 쓴 차수 p·sketch를 미공개 → 용량 절대값 계산 불가(booklet §5, G09 state 회계 반쪽); γ admission(입장)과 Miras retention α eviction(퇴장)이 별개 문 — 둘 다 있는 모델의 상호작용; polynomial feature map이 state 크기·per-token 연산을 D=Θ(d_k^p)로 키우는 시스템 비용; c=1 Omega=Transformers with delta rule(unbounded+error-correcting)라는 note의 흥미로운 특수case
 - storyline seed: Atlas 3손잡이: Omega rule(γ admission gate, window c개 문맥 기억)+feature map(용량: matrix O(d_k)=√파라미터[Prop1 vectorize 증명]→poly O(d_k^p)[Prop2]→softmax φ* ∞[exp=<φ*,φ*> 유도])+Muon. 용량 스펙트럼이 'attention이 왜 이기나=용량 천장 차이'를 정리로 확정. Hopfield는 아이디어 계보, Atlas가 정식화. Miras가 비운 optimizer 축(Muon)+용량 축을 채움(Q015 실 회수).
 - 연상: Q003, Q005, Q013, Q015
+
+## Q017 · 2026-07-14 · grounding check: Atlas gamma shape (not fully specified) + Titans two projection sets (grounded)
+
+**Q.** 1)gamma weight shape 뭔데, 논문에 언급 없나? 2)Titans에서 Wq,k,v가 attention block 내부/외부 2쌍 존재—논문 어디 보고 알수있나, 근거 있나?
+
+**A.** 1)Atlas 논문은 부분만 명시: γ_i^(t)∈[0,1] input-dependent hard pruning, 토큰당 상수 c개({γ_i}_{i=1}^c). 명시 안 됨=γ 생성 projection의 정확한 weight shape('input-dependent parameters'까지만, w∈R^d+sigmoid 같은 형태 v1 미명세, Titans gate도 동일). 정정: Q016의 '기존 gate와 동일 projection(w∈R^d)'은 값이[0,1]·토큰당 c개까지만 근거, 생성기 weight shape은 관례적 추론이지 논문 근거 아님. 2)근거 있음(추론 아님): ①attention W_Q/K/V=§2 line161 K=xW_K,line180 W_Q,W_K,W_V∈R^{d_in×d_in}(표준 attention). ②neural memory W_K/V/Q=§3.1 line365 'W_K,W_V are hyperparameters in the [inner] loss'(메모리 associative loss 정의). ③Fig2(§4) line484-488 three branches core/contextual/persistent, core parameters=in-context learning(attention), contextual=memory 별개 branch. 두 세트 별개는 이 셋 종합(단일 문장 인용은 아니나 근거 명확: §3.1+§2+Fig2).
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: known 정정: Q016의 γ 생성기 weight shape(w∈R^d)은 논문 근거 아님—관례 추론. 논문 근거=γ∈[0,1]·input-dependent·토큰당 c개까지만; unknown_known: Titans 두 투영 세트는 근거 있음—§2(attention line180)+§3.1(memory line365 'hyperparameters in the loss')+Fig2(core/contextual 별개 branch), 단 단일 문장 인용은 아니고 3근거 종합; unknown_unknown: 논문들이 gate/투영 parameterization을 자주 미명세(input-dependent까지만) — '명시 vs 추론'을 습관적으로 구분해야 함(rigor)
+- 개념 key: gamma parameterization not spelled out, input-dependent gate, c gates per token, stated vs inferred, honest grounding, Titans two projection sets, attention W_Q/K/V Sec2, memory W_K/V/Q Sec3.1 inner-loss hyperparameter, MAC Fig2 core contextual persistent branches, line 365 hyperparameters in the loss
+- 생각할 것: 논문 미명세 항목 목록화(γ shape, gate head 단위, phi* deep-memory 실현, sketch 차원) — 재현/모델링 시 가정 필요; 메모리 W_K/V/Q와 attention W_Q/K/V가 정말 별개인지(공유 안 하는지) 코드/후속 구현으로 확정 가능한지; 이 'stated vs inferred' 습관이 스터디 페이퍼/세미나의 정직성(TODO-VERIFY)과 같은 규율; Atlas γ가 c개 상수라 global(전체 문맥) gate 대비 파라미터 절약이라는 설계 트레이드오프
+- storyline seed: Rigor 노드: 논문이 자주 미명세(γ shape, gate 단위 등)—'명시 vs 추론' 구분 필수. 근거 확인법: Titans 두 투영 세트=§2 attention(line180)+§3.1 memory inner-loss hyperparameter(line365)+Fig2 core/contextual 별개 branch. Atlas γ=[0,1]·토큰당 c개는 근거, 생성기 shape은 미명세. 세미나/페이퍼는 이 구분을 TODO-VERIFY로 지켜야.
+- 연상: Q002, Q006, Q012, Q016
 
