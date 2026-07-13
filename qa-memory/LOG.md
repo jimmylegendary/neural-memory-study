@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 23건.
+총 24건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -299,4 +299,17 @@
 - 생각할 것: 발표 핵심 슬라이드: '왜 GPU 없이 낸 숫자를 믿나' → 두 층위(ZigZag byte-exact 검증 vs datasheet spec) + 상쇄 논증(S*는 스펙 오차에 불변)으로 답; 정직한 약점 2개를 먼저 밝히기: twin 필드별 provenance 태그 일부만 + calibrated=no(core 경로는 ideal). 이걸 숨기지 말고 '그래서 절대치는 유보'로 연결; twin fidelity를 실제로 좁히려면: A100/MI300X로 provenance 항 도출 → H100 leave-one-chip-out 예측오차 보고(사내 runbook). 이게 절대치 승격의 유일 경로
 - storyline seed: 세미나에서 성능 수치 신뢰성 파트: (1) 두 질문 분리 — 계산이 맞나(HATIR/ZigZag byte-exact O) vs 스펙이 실물이냐(datasheet peak, 미측정). (2) ideal-vs-실측 34% gap을 정직 공개. (3) 그럼에도 결론이 서는 이유 = 우리가 단정하는 양(crossover/bound/tier)은 모델 오차가 상쇄되는 양뿐이고, 상쇄 안 되는 절대 성능은 유보. 이 절제가 곧 신뢰성. G07 §14 + 부록 E가 근거.
 - 연상: Q022, Q021
+
+## Q024 · 2026-07-14 · multiarch cross-architecture study
+
+**Q.** 더 다양한 hw twin에서 결과를 뽑자 — 동일 실험을 8개 아키텍처(H100/B100/VeraRubin/최신TPU/Meta/AMD/Groq/Cerebras)에서 동일하게. 각 hw spec을 다중검색으로 100% 신뢰 수치·die/PE 내부까지 구해 schema 만들고, HATIR로 개별 실험. 리뷰 고찰 여러번 걸쳐 진짜 맞나 검증.
+
+**A.** 신뢰도 등급제로 8개 twin 저작(다중검색+이중적대검증 workflow 28 agents, +결과재검증 10 agents). 등급: h100/mtia2 GOLD, b100/mi355x/tpu-v7/groq/wse3 SILVER, vr100 BRONZE(내부 미공개→directional). driver는 E3 closed-form을 twin-무관 파라미터화, H100에서 확정 anchor <0.02% 재현으로 게이트. 3대 발견: (1) S*=65536 전 아키텍처 동일=HW무관 workload 속성(상쇄 논증 실증) (2) decode 7/8 memory-bound(여유 380~1455×), 유일 예외 Cerebras는 wafer SRAM 21PB/s가 dense 12.5PF 대비 커서 roofline knee (3) 절대 decode 0.0003ms(Cerebras)~31.5ms(MTIA LPDDR) 5자릿수=state 배치가 축, SRAM-heavy가 병목 해소. 리뷰가 wse3 sparse(125PF)→dense(12.5PF) 오류를 잡아 knee 발견이 드러남.
+
+- 축: `unknown_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_unknown: bound 분류가 하드웨어 공간 전체에서 견고하되 극단적 BW-rich(wafer-scale)에서는 knee로 이동 — 경계 자체가 결과; unknown_known: S*가 HW 무관(workload 속성)임이 8개 실측으로 실증 = 상쇄 논증의 강한 증거; known_unknown: 절대 성능은 5자릿수 갈리고 축은 'state가 어디 사느냐'(SRAM/HBM/LPDDR); unknown_unknown: sparse/dense FLOPS 혼동이 결론(bound)을 뒤집을 수 있음 — 리뷰가 잡음(신뢰성 절차의 가치)
+- 개념 key: hw twin, confidence tier, GOLD SILVER BRONZE, S* HW-invariant, roofline knee, Cerebras wafer SRAM, Groq LPU, MTIA LPDDR, sparse vs dense FLOPS, state placement, provenance, HATIR parameterized
+- 생각할 것: 발표 핵심: '동일 실험 8칩'으로 pair thesis의 견고성(S* 불변·bound 견고)과 한계(Cerebras knee)를 동시에 — 견고+경계를 같이 보여야 정직; state 배치 축: SRAM-heavy(Cerebras/Groq)가 decode-state 병목을 구조적으로 해소 = memory-centric 논증의 하드웨어 증거; vr100(BRONZE)은 발표에서 '예비'로만. GOLD/SILVER 7칩으로 결론 서고 Rubin은 미래 참조; 절대치는 여전히 ideal 하한(부록 E) — 8칩에서도 단정 안 함, 비율/crossover/bound만
+- storyline seed: 세미나 '신뢰성' 파트의 정점: 성능 수치를 8개 아키텍처에서 뽑아, 우리가 단정하는 양(S* 불변·bound 견고)이 하드웨어 전체에서 성립함을 보이고, 동시에 그 경계(Cerebras knee)와 절대치 유보를 정직히 드러낸다. 2라운드 적대검증(spec 저작+결과)이 신뢰성의 증거. multiarch/REPORT.md + REVIEW-LOG.md가 근거.
+- 연상: Q023, Q022
 
