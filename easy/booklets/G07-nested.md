@@ -329,7 +329,48 @@ RMW에는 함정이 하나 있다. state가 on-die(SRAM/캐시)에 들어가느�
 
 ---
 
-## 14. 한계와 다음 권으로
+## 14. 이 숫자를 믿어도 되나 — 성능 수치의 신뢰성
+
+§13의 두 그림(crossover, RMW cliff)은 "본서 저자 자체 실험"이다. 발표에서 이 수치를 쓰려면 **"믿을 만한가"를 두 층위로 쪼개** 물어야 한다 — (A) 계산 엔진(HATIR)이 맞게 계산하나, (B) 넣은 하드웨어 스펙(HAT twin)이 실제 HW를 맞게 표현하나. 둘은 완전히 다른 질문이고, 답도 다르다.
+
+### (A) HATIR 계산은 독립 검증됐다 — 단 "traffic 계수"까지
+
+HATIR는 roofline/traffic cost model이다. 이게 맞는지는 **ZigZag**(KU Leuven의 공개 학술 cost model, `pip install zigzag-dse`)라는 **독립 oracle**과 같은 HW·workload·mapping에서 맞대 봐 검증했다. 결과: **operand별 DRAM traffic 바이트를 0.00% 오차(바이트 단위 정확)로 재현**, MAC 수 정확, memory-bound/compute-bound 분류 일치(GEMM 3형태 + spill 케이스). 남은 gap은 corner-tile 나머지뿐(≤15%).
+
+> **핵심.** 검증된 것은 **traffic 계수(몇 바이트가 오가나)와 bound 분류**다 — §13 crossover·cliff가 딛고 선 바로 그 양. 검증 안 된 것은 절대 에너지(pJ, 기술 노드 의존)다. 즉 "얼마나 오가나"는 독립 확인됐고, "그게 몇 줄(J)이냐"는 아니다.
+
+### (B) HAT spec은 NVIDIA 공식 문서 출처 — 단 datasheet peak값
+
+twin `dgx_h100_x4.json`의 숫자는 **NVIDIA H100/GH100 whitepaper + DGX 시스템 가이드 + Hopper 튜닝 가이드 + CUTLASS**에서 왔다(HBM3 3.35 TB/s, 7 pJ/B, L2 50 MB, ridge 295 FLOP/B 등). 정직하게 말하면 이건 **datasheet 규격(peak-nominal)이지, 특정 실물 한 대를 측정한 값이 아니다.** 그리고 아직 필드별 provenance 태그가 붙은 건 일부뿐이다.
+
+### 가장 중요한 gap — ideal(스펙) vs 실측(achieved)
+
+raw roofline은 **이용률 100%를 가정**한다. 실측과 대면 결과:
+
+| 양 | HATIR ideal | 실측 H100 | 낙관 정도 |
+|---|---|---|---|
+| GEMM (compute-bound) | 959 TFLOPS | 716 (cuBLAS, 72.4%) | **~34% 과대** |
+| batch-1 decode MBU (memory-bound) | (peak) | 26.9% | 더 큼 |
+
+즉 **raw HATIR 절대치는 실제보다 대략 1.3–1.4배 낙관적인 "이상적 하한"이다.** 중요한 건 이 gap을 다루는 방식이다 — 이 프로젝트는 MFU/MBU 같은 **fit 상수를 거부한다.** ("H100+CUDA의 특성을 상수에 인코딩해 없는 칩으로 몰래 수입하는 것 = 방법론적으로 무효.") 대신 gap을 출처(provenance)별로 분해한다: `computed`(설계식에서 결정론적 계산: wave/tile quantization·occupancy), `technology`(HBM 컨트롤러 이용률 ~0.7–0.9 등 기술 전이값), `stack`(kernel-launch floor·scheduler·CUDA-Graphs 같은 SW 오버헤드), `residual`(남는 것 — **크기를 보고하고 절대 소급 fit 안 함**). MFU 0.75를 넣으면 719 TFLOPS로 실측과 0.46%까지 붙지만, 그 상수는 default-off이고 core 경로는 ZigZag byte-exact를 유지한다.
+
+### 그래서 발표에서 무엇을 단정하고 무엇을 유보하나
+
+이게 결론이자 발표 규칙이다. **모델 오차가 상쇄되는 양만 단정하고, 안 되는 양은 유보한다.**
+
+> **믿어도 되는 것 (단정 가능).**
+> - **crossover $S^*$** — 이건 "KV read 바이트 = TTT RMW 바이트"라는 **순수 traffic 등식(GB = GB)**이다. 양변이 같은 대역폭·같은 MFU/MBU를 타므로 **BW 스펙값도, 이용률도 전부 상쇄**된다. twin BW가 틀려도, 실측 MFU가 50%여도 $S^*$는 그대로다. ZigZag가 traffic 계수를 byte-exact로 검증했으니 이 양은 견고하다.
+> - **bound 분류** — decode AI 0.59 vs ridge 295는 **2배 스펙 오차로도 안 뒤집힌다.**
+> - **tier 순서·비율** — 상대 비교라 공통 배수가 상쇄된다.
+
+> **유보할 것 (절대 성능으로 말하지 말 것).**
+> - **µs/token, mJ/token, GB/s** — 전부 ideal 하한이고 실측은 ~1.3–1.4배 나쁘다. datasheet peak에 기반한 값이라 실물 fidelity는 별도 검증(사내 A100 runbook)으로만 메운다. 발표에선 "이상적 하한, 실측 예정"으로만 인용.
+
+**한 줄로.** §13의 crossover·cliff는 *구조*(어디서 뒤집히나, 무엇이 memory-bound냐)를 말하는 그림이지 *절대 속도*를 재는 그림이 아니다. 이 라인에서 우리가 단정하는 건 상쇄로 견고한 구조뿐이고, 절대 성능은 정직하게 열어 둔다. (근거·재현: 본서 부록 E, `experiments/REPRODUCE.md`.)
+
+---
+
+## 15. 한계와 다음 권으로
 
 논문이 스스로 그은 한계선을 정리한다.
 
