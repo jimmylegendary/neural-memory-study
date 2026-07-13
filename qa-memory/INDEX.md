@@ -1,10 +1,10 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-15건. story line 짤 때 여기서 꺼낸다.
+16건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
-### 모른다는 걸 안다 (known_unknown → decomposition) — 13건
+### 모른다는 걸 안다 (known_unknown → decomposition) — 14건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q003: 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1
@@ -18,8 +18,9 @@
 - Q012: 3개 gate는 어떤 shape의 weight를 어떻게 연산해서 scalar를 구하나? 동일 shape·연산이면 1번만 설명.
 - Q013: Miras(easy G04): 1)Moneta W식에 W_{t-1}이 없는데 delta W 어케? A와 W 둘다 state? 2)Yaad는 왜 
 - Q014: Miras(easy G04)에서 FTRL과 Learning-Retaining 부분은 왜 빠짐? 중요한 거 아냐?
+- Q016: Atlas(easy G05): 1)Omega rule의 γ_{t,i} 어케 학습·shape·기존 3 gate와 동일? 2)feature map 
 
-### 모른다는 것도 모른다 (unknown_unknown → exploration) — 37건
+### 모른다는 것도 모른다 (unknown_unknown → exploration) — 38건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
@@ -57,8 +58,9 @@
 - Q014: Miras(easy G04)에서 FTRL과 Learning-Retaining 부분은 왜 빠짐? 중요한 거 아냐?
 - Q015: Miras 핵심이 설계축 4개=일반화 형태+실험인가? 특별한 발명보다 '설계축이 있음을 증명'인가?
 - Q015: Miras 핵심이 설계축 4개=일반화 형태+실험인가? 특별한 발명보다 '설계축이 있음을 증명'인가?
+- Q016: Atlas(easy G05): 1)Omega rule의 γ_{t,i} 어케 학습·shape·기존 3 gate와 동일? 2)feature map 
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 17건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 19건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
@@ -76,6 +78,8 @@
 - Q014: Miras(easy G04)에서 FTRL과 Learning-Retaining 부분은 왜 빠짐? 중요한 거 아냐?
 - Q015: Miras 핵심이 설계축 4개=일반화 형태+실험인가? 특별한 발명보다 '설계축이 있음을 증명'인가?
 - Q015: Miras 핵심이 설계축 4개=일반화 형태+실험인가? 특별한 발명보다 '설계축이 있음을 증명'인가?
+- Q016: Atlas(easy G05): 1)Omega rule의 γ_{t,i} 어케 학습·shape·기존 3 gate와 동일? 2)feature map 
+- Q016: Atlas(easy G05): 1)Omega rule의 γ_{t,i} 어케 학습·shape·기존 3 gate와 동일? 2)feature map 
 
 ### 안다는 걸 안다 (known) — 2건
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
@@ -277,6 +281,24 @@
 - **ftrl theory** (1): Q015
 - **honest limitation no regret theory** (1): Q015
 - **map for the line** (1): Q015
+- **omega rule** (1): Q016
+- **gamma admission gate** (1): Q016
+- **in-context pruning** (1): Q016
+- **per-token scalar gate** (1): Q016
+- **same learning as optimizer gates** (1): Q016
+- **capacity theory** (1): Q016
+- **proposition 1 matrix o(d_k)** (1): Q016
+- **vectorization proof** (1): Q016
+- **capacity is sqrt of params** (1): Q016
+- **polynomial feature map** (1): Q016
+- **o(d_k^p)** (1): Q016
+- **proposition 2** (1): Q016
+- **exponential feature map phi-star** (1): Q016
+- **softmax unbounded capacity** (1): Q016
+- **exp=phi*(q)phi*(k)** (1): Q016
+- **taylor tensor power derivation** (1): Q016
+- **dense hopfield lineage** (1): Q016
+- **capacity spectrum** (1): Q016
 
 ## 3. 열린 실 (think_about)
 
@@ -339,6 +361,10 @@
 - [Q015] Miras가 비워둔 optimizer 축을 Atlas가 어떻게 채우나(Muon/Omega/capacity) — 다음 논문 예고
 - [Q015] ablation의 'retention이 최상위 레버'가 이후 Atlas/TNT 설계 선택에 준 영향
 - [Q015] 이 '4축 설계공간'이 나중에 Nested Learning의 '중첩 최적화 레벨'로 어떻게 확장/추상화되나
+- [Q016] Atlas가 실제 쓴 차수 p·sketch를 미공개 → 용량 절대값 계산 불가(booklet §5, G09 state 회계 반쪽)
+- [Q016] γ admission(입장)과 Miras retention α eviction(퇴장)이 별개 문 — 둘 다 있는 모델의 상호작용
+- [Q016] polynomial feature map이 state 크기·per-token 연산을 D=Θ(d_k^p)로 키우는 시스템 비용
+- [Q016] c=1 Omega=Transformers with delta rule(unbounded+error-correcting)라는 note의 흥미로운 특수case
 
 ## 4. Storyline seeds
 
@@ -357,3 +383,4 @@
 - [Q013] (Miras (Moneta A/W dual state, Yaad Huber, channel-wise vector gate)) Miras 핵심: (a)retention을 forget에서 일반 목적으로 재정의, 4손잡이. (b)Moneta=ℓ_p bias+ℓ_q retention, dual state A(recurrent)/W(정규화 파생); Yaad=Huber(outlier robust); Memora=softmax 유계. (c)gate가 Titans scalar→Miras channel-wise 벡터(low-rank 2-matmul). Titans의 특수화를 4축 설계공간으로 연 것. gate 진화(scalar→벡터)가 Q012→Q013 실.
 - [Q014] (Miras online optimization (FTRL / Learning-Retaining)) Miras 이론 척추: memory update=online optimization. 두 dual 관점 Descent(OMD, W_{t-1}에서)/FTRL(leader, Σℓ+R argmin), Online GD=FTRL 특수case. retention gate=정규화 R(ℓ2 Titans/ℓ1 sparse/ℓq Moneta/KL Memora). Learning-Retaining(Bregman)이 둘을 통합. Moneta A/W=FTRL 실현. 이게 '연상메모리=정규화된 온라인 학습'이라는 Miras 세계관.
 - [Q015] (Miras contribution positioning (framework vs invention)) Miras 위치: 발명 논문이 아니라 프레임워크(지도) 논문. 핵심=설계축4(bias/retention/구조/algo)+FTRL 이론+빈 축 채운 파생 발명(Moneta/Yaad/Memora 승리)+ablation(retention 최상위). Titans(bottom-up 단일발명)와 대비되는 top-down 유도. 라인의 지도가 되어 Atlas(optimizer 축)를 낳음. 정직한 한계: 새 bias/gate 이론 없음. 세미나에서 'Titans=발명 vs Miras=지도'가 좋은 대비 프레임.
+- [Q016] (Atlas (Omega gamma gate, capacity theory Prop1/2, softmax unbounded)) Atlas 3손잡이: Omega rule(γ admission gate, window c개 문맥 기억)+feature map(용량: matrix O(d_k)=√파라미터[Prop1 vectorize 증명]→poly O(d_k^p)[Prop2]→softmax φ* ∞[exp=<φ*,φ*> 유도])+Muon. 용량 스펙트럼이 'attention이 왜 이기나=용량 천장 차이'를 정리로 확정. Hopfield는 아이디어 계보, Atlas가 정식화. Miras가 비운 optimizer 축(Muon)+용량 축을 채움(Q015 실 회수).

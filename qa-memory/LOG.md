@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 15건.
+총 16건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -195,4 +195,17 @@
 - 생각할 것: framework 논문 vs 발명 논문의 학술적 가치 평가 기준(재현·후속 파생·이론 완결성) — 내 스터디 페이퍼 Part III 논지와 연결; Miras가 비워둔 optimizer 축을 Atlas가 어떻게 채우나(Muon/Omega/capacity) — 다음 논문 예고; ablation의 'retention이 최상위 레버'가 이후 Atlas/TNT 설계 선택에 준 영향; 이 '4축 설계공간'이 나중에 Nested Learning의 '중첩 최적화 레벨'로 어떻게 확장/추상화되나
 - storyline seed: Miras 위치: 발명 논문이 아니라 프레임워크(지도) 논문. 핵심=설계축4(bias/retention/구조/algo)+FTRL 이론+빈 축 채운 파생 발명(Moneta/Yaad/Memora 승리)+ablation(retention 최상위). Titans(bottom-up 단일발명)와 대비되는 top-down 유도. 라인의 지도가 되어 Atlas(optimizer 축)를 낳음. 정직한 한계: 새 bias/gate 이론 없음. 세미나에서 'Titans=발명 vs Miras=지도'가 좋은 대비 프레임.
 - 연상: Q003, Q011, Q013, Q014
+
+## Q016 · 2026-07-14 · Atlas (Omega gamma gate, capacity theory Prop1/2, softmax unbounded)
+
+**Q.** Atlas(easy G05): 1)Omega rule의 γ_{t,i} 어케 학습·shape·기존 3 gate와 동일? 2)feature map 크기 대비 용량이 root라는 증거 어디? Hopfield 아냐? 맞으면 수식·설명 필요. 2-1)softmax attention 용량 무한? 수식 증거? 논문에 명시? hint라도?
+
+**A.** 1)Omega rule Eq9: min_W Σ_{i=t-c+1..t} γ_{t,i}||M(k_i)-v_i||². γ_{t,i}∈[0,1]=input-dependent per-token admission gate(hard pruning, γ→0=토큰 제거). 학습=기존 3 gate(θ,η,α)와 동일 메커니즘(학습 projection+sigmoid, 생성기 outer loop, 값 추론시 계산). shape=window 토큰당 스칼라→step당 c개. 역할은 새 4번째 gate(admission/pruning vs optimizer 스칼라). 2)root=Atlas Proposition 1(자기 정리, Hopfield 아님-Hopfield는 아이디어 계보). Prop1: 정확저장 m쌍=WK=V, vectorize (K^T⊗I)vec(W)=vec(V)=m·d_v 방정식 vs d_k·d_v 미지수, 임의 V엔 key 선형독립 필요→m≤d_k. 파라미터 d_k d_v인데 용량 d_k, d_v≈d_k면 용량=√파라미터=root. Prop2: φ_p(차수≤p monomial, D=C(d_k+p,p)=Θ(d_k^p))→용량 O(d_k^p). Hopfield(Krotov/Ramsauer)='고차 feature가 용량 올림'은 아이디어 출처, Atlas가 Prop1·2로 정식화. 2-1)논문에 명시(hint 아님)+수식 근거: exp(q^T k)=Σ (q^T k)^n/n!, (q^T k)^n=<q^⊗n,k^⊗n>→=<φ*(q),φ*(k)>, φ*(x)=(x^⊗n/√n!)_n 무한차원. Prop2 논리로 용량=∞. 논문이 'attention이 긴문맥 recall에서 고정state 이기는 root 원인'으로 제시. 스펙트럼: matrix O(d_k)→poly O(d_k^p)→softmax φ* ∞. booklet에 Prop1 증명+exp=φ*φ* 유도 추가·재빌드.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_unknown: γ_{t,i}는 새 4번째 gate(admission/pruning)지만 학습 메커니즘은 기존 3 gate와 동일(projection+sigmoid, outer-loop 생성기); unknown_known: 'root'(용량=√파라미터)는 Hopfield 아니라 Atlas Prop 1(vectorize→m≤d_k 증명); Hopfield는 아이디어 계보만; unknown_known: softmax 무한용량은 논문 명시+수식(exp=Σ(q^T k)^n/n!=<φ*(q),φ*(k)>, φ* 무한차원)—hint 아님; known 확정(사용자 지적 옳음): 내 booklet이 Prop1 증명·exp=φ*φ* 유도 생략 → 추가·재빌드
+- 개념 key: Omega rule, gamma admission gate, in-context pruning, per-token scalar gate, same learning as optimizer gates, capacity theory, Proposition 1 matrix O(d_k), vectorization proof, capacity is sqrt of params, polynomial feature map, O(d_k^p), Proposition 2, exponential feature map phi-star, softmax unbounded capacity, exp=phi*(q)phi*(k), Taylor tensor power derivation, dense Hopfield lineage, capacity spectrum
+- 생각할 것: Atlas가 실제 쓴 차수 p·sketch를 미공개 → 용량 절대값 계산 불가(booklet §5, G09 state 회계 반쪽); γ admission(입장)과 Miras retention α eviction(퇴장)이 별개 문 — 둘 다 있는 모델의 상호작용; polynomial feature map이 state 크기·per-token 연산을 D=Θ(d_k^p)로 키우는 시스템 비용; c=1 Omega=Transformers with delta rule(unbounded+error-correcting)라는 note의 흥미로운 특수case
+- storyline seed: Atlas 3손잡이: Omega rule(γ admission gate, window c개 문맥 기억)+feature map(용량: matrix O(d_k)=√파라미터[Prop1 vectorize 증명]→poly O(d_k^p)[Prop2]→softmax φ* ∞[exp=<φ*,φ*> 유도])+Muon. 용량 스펙트럼이 'attention이 왜 이기나=용량 천장 차이'를 정리로 확정. Hopfield는 아이디어 계보, Atlas가 정식화. Miras가 비운 optimizer 축(Muon)+용량 축을 채움(Q015 실 회수).
+- 연상: Q003, Q005, Q013, Q015
 

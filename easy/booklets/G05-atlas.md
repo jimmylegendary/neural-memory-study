@@ -93,11 +93,17 @@ Atlas는 이 둘 사이의 **중간해**를 고른다: window라서 step당 gate
 
 ### 나쁜 소식: 그냥 크게 만든다고 용량이 안 는다
 
-matrix 메모리($W$가 $d_v\times d_k$ 행렬)로 저장하면 용량은 최대 $O(d_k)$쌍이다.
+matrix 메모리($W$가 $d_v\times d_k$ 행렬)로 저장하면 용량은 최대 $O(d_k)$쌍이다. 이건 Atlas의 **Proposition 1**이고, 증명은 선형대수 한 줄이다.
 
 > **기호 풀이.** $d_k$ = key의 차원(열쇠 벡터 길이), $d_v$ = value의 차원. $W$의 파라미터 수는 $d_k\times d_v$. 용량 $m$ = 정확히 저장 가능한 쌍의 수.
 
-> **이 식은 이런 뜻.** 파라미터를 $d_k\times d_v$개나 썼는데 저장 칸은 $d_k$개뿐이다. 즉 **파라미터를 늘리는 것 ≠ 용량을 늘리는 것**. (예: $d_v$를 $d_k$만큼 키우면 파라미터는 제곱으로 느는데 용량은 여전히 $\sqrt{\text{파라미터}}$ 급.)
+> **이 식은 왜 성립하나 (Prop 1 증명).** $m$개 쌍을 오차 0으로 저장한다는 건 $WK=V$가 성립한다는 뜻이다($K=[k_1\cdots k_m]\in\mathbb{R}^{d_k\times m}$, $V=[v_1\cdots v_m]\in\mathbb{R}^{d_v\times m}$). 이를 vectorize하면
+> $$(K^\top\otimes I_{d_v})\,\mathrm{vec}(W)=\mathrm{vec}(V)$$
+> 즉 **$m\,d_v$개의 방정식**에 미지수는 $\mathrm{vec}(W)$의 **$d_k\,d_v$개**다. 임의의 $V$에 대해 풀리려면 key들이 **선형독립**이어야 하는데, $\mathbb{R}^{d_k}$에서 선형독립 벡터는 최대 $d_k$개 → **$m\le d_k$**. (tight: key가 full column rank면 $W^*=VK^{+}$(pseudoinverse)가 정확히 달성.)
+
+> **이 식은 이런 뜻 (= "root").** 파라미터를 $d_k\times d_v$개나 썼는데 저장 칸은 $d_k$개뿐이다. $d_v\approx d_k$면 파라미터 $\approx d_k^2$, 용량 $=d_k=\sqrt{\text{파라미터}}$ — **파라미터를 제곱으로 늘려도 용량은 제곱근 급**. 즉 **파라미터를 늘리는 것 ≠ 용량을 늘리는 것.**
+
+> **주의 — 이건 Hopfield가 아니라 Atlas 자신의 정리다.** "고차 feature가 용량을 올린다"는 **아이디어**는 dense/modern Hopfield(Krotov–Hopfield, Ramsauer et al.)에서 왔지만(계보), 위 $O(d_k)$ 상한과 아래 $O(d_k^p)$는 Atlas가 직접 증명한 **Proposition 1·2**다.
 
 메모리를 깊은 MLP로 만들면(depth↑) 용량이 좀 오르지만, 여전히 $(d_k,d_v)$에 대해 subquadratic이라 근본 한계는 못 넘는다.
 
@@ -115,7 +121,13 @@ polynomial feature map $\phi_p(x)$ = 차수 $p$ 이하의 모든 monomial(곱항
 
 ### 극한: softmax attention은 용량이 무한한 메모리였다
 
-$p$를 무한대로 보내면 $\phi^*$가 되고, 이때 $\exp(q^\top k)=\phi^*(q)^\top\phi^*(k)$가 **정확히** 성립한다. 즉 softmax attention은 무한 차원 공간 위의 associative memory이고, **용량이 unbounded(무한)**다.
+$p$를 무한대로 보내면 $\phi^*$가 되고, 이때 $\exp(q^\top k)=\phi^*(q)^\top\phi^*(k)$가 **정확히** 성립한다. 즉 softmax attention은 무한 차원 공간 위의 associative memory이고, **용량이 unbounded(무한)**다. 이건 논문에 **명시된 주장**이고(hint가 아님), 수식 근거도 명확하다.
+
+> **왜 $\exp(q^\top k)=\phi^*(q)^\top\phi^*(k)$인가 (유도).** 지수함수의 Taylor 전개 $\exp(z)=\sum_{n=0}^\infty \frac{z^n}{n!}$에 $z=q^\top k$를 넣는다. 여기서 $(q^\top k)^n=\langle q^{\otimes n},\,k^{\otimes n}\rangle$(텐서 $n$거듭제곱의 내적)이므로
+> $$\exp(q^\top k)=\sum_{n=0}^\infty \frac{\langle q^{\otimes n},k^{\otimes n}\rangle}{n!}=\sum_{n=0}^\infty \Big\langle \frac{q^{\otimes n}}{\sqrt{n!}},\,\frac{k^{\otimes n}}{\sqrt{n!}}\Big\rangle=\big\langle \phi^*(q),\,\phi^*(k)\big\rangle,\quad \phi^*(x)=\Big(\tfrac{x^{\otimes n}}{\sqrt{n!}}\Big)_{n=0}^\infty.$$
+> $\phi^*$가 무한 차원이므로, Prop 2의 논리(용량 = feature 공간 차원)를 그대로 적용하면 **용량 $=\infty$**. 논문은 이걸 "**attention이 긴 문맥 recall에서 고정-state RNN을 이기는 root 원인**"으로 제시한다 — 신비가 아니라 용량 천장의 차이다.
+
+> **핵심 — 용량 스펙트럼 한 줄.** matrix $O(d_k)$ → polynomial $\phi_p$ $O(d_k^p)$ → exponential/softmax $\phi^*$ $=\infty$. KV cache = 압축 안 하는(∞ 용량) 메모리, 고정 state = 압축하는(유한 용량) 메모리. Atlas의 feature map은 유한 메모리의 천장을 $O(d_k^p)$까지 끌어올려 그 격차를 좁히려는 시도다.
 
 > **핵심.** "attention이 긴 문맥 recall에서 고정 state 모델을 이기는 이유"가 여기서 정리로 확정된다 — 신비가 아니라 **용량 천장의 차이**다. KV cache = 압축하지 않는(= 용량 무한) 메모리, 고정 state = 압축하는(= 용량 유한) 메모리. Atlas의 feature map은 유한 메모리의 천장을 $O(d_k^p)$까지 끌어올려 그 격차를 좁히려는 시도다.
 
