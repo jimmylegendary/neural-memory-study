@@ -77,6 +77,33 @@ Miras의 가장 개념적인 재정의. 기존의 "forget gate"는 사실 memory
 
 > **비유.** retention gate = 학생의 **복습 정책**. "새 문제에 집중할래(plasticity)" vs "배운 걸 잊지 않을래(stability)"의 다이얼. Miras는 long-context 성능을 좌우하는 **가장 결정적인 손잡이**가 바로 이거라고 주장한다(뒤 §8의 ablation이 이를 뒷받침).
 
+### 두 최적화 관점 — FTRL과 Learning-Retaining (논문의 이론적 척추)
+
+논문 제목의 마지막 두 단어가 "**Retention, and Online Optimization**"이다. memory update를 **온라인 학습(online optimization)**으로 보는 게 Miras의 이론적 뼈대인데, 온라인 학습에는 서로 **동등한(dual)** 두 갈래가 있다.
+
+> **직관.** ① **Descent(OMD/OGD)** = "직전 상태 $W_{t-1}$에서 한 걸음 내려가기"(지금까지 본 Titans/DeltaNet 형태). ② **FTRL(Follow-The-Regularized-Leader)** = "매번 처음부터, **과거 모든 손실의 합 + 정규화**를 최소화하는 $W$를 다시 고르기". 둘은 같은 것을 다른 각도로 본 것이다.
+
+$$
+\text{FTRL:}\quad W_t \;=\; \arg\min_{W}\Big[\sum_{i=1}^{t}\hat\ell_i(W;k_i,v_i) \;+\; \tfrac{1}{\eta_t}R_t(W)\Big]
+$$
+
+> **기호 풀이.** $\hat\ell_i$ = $i$번째 토큰의 (선형화된) 손실. $\sum_i\hat\ell_i$ = "지금까지 본 것 전부를 잘 맞추려는" leader 항. $R_t(W)$ = **정규화(retention)** 항, $\eta_t$ = 그 세기. $\arg\min$ = 이 합을 가장 작게 만드는 $W$.
+
+> **핵심.** 원문이 증명하는 것: **Online GD는 FTRL의 특수case**($W_0=0$·선형화). 즉 "직전에서 내려가기"와 "전체 합을 다시 최소화하기"가 **같다**. 그리고 결정적으로 — **retention gate = FTRL의 정규화 $R(W)$**다. "얼마나 유지할지"가 임의의 gate가 아니라 **원리적으로 정의된 정규화**라는 뜻.
+
+retention 선택 = $R$ 선택이고, 그게 곧 §5의 변형들이다:
+
+| retention $R$ | 결과 | 모델 |
+|---|---|---|
+| $\lVert W\rVert_2^2$ | weight decay | Titans |
+| $\lVert W\rVert_1$ | soft-thresholding(sparse) | elastic net / hard forgetting |
+| $\lVert W\rVert_q$ | norm projection | Moneta ($A$/$W$ 이중구조) |
+| KL / Bregman | mirror descent | Memora (softmax) |
+
+> **핵심 — Learning-Retaining이 통합 렌즈.** Miras는 retention을 **Bregman divergence** $\mathrm{Ret}_t=D_h(W,W')$($h$=볼록 potential)로 일반화한다. 적절한 $h$면 이게 **FTRL을 정확히 재현**하므로, **Learning-Retaining이 OGD(descent)와 FTRL(leader)을 한 틀로 통합**하는 더 일반적인 관점이다. 논문 제목의 "Online Optimization"이 이 말: 시퀀스 모델 = 내부 목적(attentional bias)을 retention 정규화와 함께 **온라인 최적화**하는 것.
+
+> **비유.** Moneta의 $A$/$W$ 이중구조(§5)가 곧 이 FTRL의 실현이다: $A_t$ = gradient 누적(=leader, 과거 합), $W_t=\mathrm{prox}_R(A_t)$ = 정규화 걸어 뽑기(=argmin). 그래서 "$W_t$에 왜 $W_{t-1}$이 없나"의 답이 여기 있다 — **FTRL은 애초에 "$W_{t-1}$에서 내려가는" 게 아니라 "누적 $A$에 정규화를 거는" 형태**다.
+
 ---
 
 ## 4. 손잡이를 돌려 기존 모델을 재현하기

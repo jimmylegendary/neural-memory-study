@@ -1,10 +1,10 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-13건. story line 짤 때 여기서 꺼낸다.
+14건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
-### 모른다는 걸 안다 (known_unknown → decomposition) — 12건
+### 모른다는 걸 안다 (known_unknown → decomposition) — 13건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q003: 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1
@@ -17,8 +17,9 @@
 - Q010: MAC write 컨펌: attn 출력을 NM에 흘려 update한다는데, NM은 k에 대해 v 학습이잖아? attention block 외부에
 - Q012: 3개 gate는 어떤 shape의 weight를 어떻게 연산해서 scalar를 구하나? 동일 shape·연산이면 1번만 설명.
 - Q013: Miras(easy G04): 1)Moneta W식에 W_{t-1}이 없는데 delta W 어케? A와 W 둘다 state? 2)Yaad는 왜 
+- Q014: Miras(easy G04)에서 FTRL과 Learning-Retaining 부분은 왜 빠짐? 중요한 거 아냐?
 
-### 모른다는 것도 모른다 (unknown_unknown → exploration) — 33건
+### 모른다는 것도 모른다 (unknown_unknown → exploration) — 35건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
@@ -52,8 +53,10 @@
 - Q012: 3개 gate는 어떤 shape의 weight를 어떻게 연산해서 scalar를 구하나? 동일 shape·연산이면 1번만 설명.
 - Q013: Miras(easy G04): 1)Moneta W식에 W_{t-1}이 없는데 delta W 어케? A와 W 둘다 state? 2)Yaad는 왜 
 - Q013: Miras(easy G04): 1)Moneta W식에 W_{t-1}이 없는데 delta W 어케? A와 W 둘다 state? 2)Yaad는 왜 
+- Q014: Miras(easy G04)에서 FTRL과 Learning-Retaining 부분은 왜 빠짐? 중요한 거 아냐?
+- Q014: Miras(easy G04)에서 FTRL과 Learning-Retaining 부분은 왜 빠짐? 중요한 거 아냐?
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 14건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 15건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
@@ -68,6 +71,7 @@
 - Q012: 3개 gate는 어떤 shape의 weight를 어떻게 연산해서 scalar를 구하나? 동일 shape·연산이면 1번만 설명.
 - Q012: 3개 gate는 어떤 shape의 weight를 어떻게 연산해서 scalar를 구하나? 동일 shape·연산이면 1번만 설명.
 - Q013: Miras(easy G04): 1)Moneta W식에 W_{t-1}이 없는데 delta W 어케? A와 W 둘다 state? 2)Yaad는 왜 
+- Q014: Miras(easy G04)에서 FTRL과 Learning-Retaining 부분은 왜 빠짐? 중요한 거 아냐?
 
 ### 안다는 걸 안다 (known) — 1건
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
@@ -243,6 +247,19 @@
 - **titans vs miras gate** (1): Q013
 - **retention gate** (1): Q013
 - **memora softmax** (1): Q013
+- **ftrl** (1): Q014
+- **follow-the-regularized-leader** (1): Q014
+- **online optimization** (1): Q014
+- **omd ogd descent viewpoint** (1): Q014
+- **retention as regularizer r** (1): Q014
+- **online gd is ftrl special case** (1): Q014
+- **learning-retaining** (1): Q014
+- **bregman divergence retention** (1): Q014
+- **mirror descent** (1): Q014
+- **dual averaging** (1): Q014
+- **prox operator** (1): Q014
+- **moneta a/w as ftrl realization** (1): Q014
+- **retention=regularizer principled** (1): Q014
 
 ## 3. 열린 실 (think_about)
 
@@ -297,6 +314,10 @@
 - [Q013] Moneta의 A(accumulator) 추가로 state가 matrix의 16배 되는 비용(booklet §7, G09 시스템)
 - [Q013] Memora의 softmax/log 정규화가 state를 유계로 만들어 저정밀 저장 우호적인 점
 - [Q013] Atlas의 gate/optimizer가 Miras보다 더 정교해지는지(Muon, Omega) — 다음 논문
+- [Q014] FTRL vs OMD 동등성의 정확한 조건(선형화·W_0=0)과 비선형/deep memory에서 깨지는지
+- [Q014] Bregman divergence potential h 선택이 Memora softmax(KL)와 어떻게 연결되는지 구체
+- [Q014] 이 온라인 학습 프레임(regret bound)이 Miras에 이론 보증을 주는지 — note는 '새 bias/gate에 regret 이론 없음'이라 했음(열린 문제)
+- [Q014] G01(학습 기초)에 online learning/FTRL을 넣었어야 하나 — prereq 커리큘럼 B2가 이걸 요구했는데 booklet 반영 점검 필요
 
 ## 4. Storyline seeds
 
@@ -313,3 +334,4 @@
 - [Q011] (Titans synthesis / takeaways checkpoint) Titans 장 골격(8행): 패러다임(optimizer=memory) → update rule(surprise+momentum+forget gate) → 계보 통일(특수case Q003) → 메모리 형태(matrix vs MLP, state 2P_M) → inner/outer loop(meta-learning) → 아키텍처(단기+장기+persistent, MAC/MAG/MAL) → self-supervised write → chunkwise+scan 병렬 → 시스템(상수비용·고정 RMW·long-context). 사용자 4점=메커니즘, 여기에 패러다임·통일·deep·시스템 얹으면 완성.
 - [Q012] (Titans gate computation (shape/operation)) gate 3개=동일 구조: 토큰 u∈R^d에 w∈R^d 내적+bias→squash(sigmoid/softplus)→스칼라. w_θ/η/α만 다름, ~3d 파라미터, outer-loop 학습·추론 고정. 토큰이 자기 gate(각인 강도·momentum·forget)를 스스로 정함. per-token 상수비용의 tiny 부분.
 - [Q013] (Miras (Moneta A/W dual state, Yaad Huber, channel-wise vector gate)) Miras 핵심: (a)retention을 forget에서 일반 목적으로 재정의, 4손잡이. (b)Moneta=ℓ_p bias+ℓ_q retention, dual state A(recurrent)/W(정규화 파생); Yaad=Huber(outlier robust); Memora=softmax 유계. (c)gate가 Titans scalar→Miras channel-wise 벡터(low-rank 2-matmul). Titans의 특수화를 4축 설계공간으로 연 것. gate 진화(scalar→벡터)가 Q012→Q013 실.
+- [Q014] (Miras online optimization (FTRL / Learning-Retaining)) Miras 이론 척추: memory update=online optimization. 두 dual 관점 Descent(OMD, W_{t-1}에서)/FTRL(leader, Σℓ+R argmin), Online GD=FTRL 특수case. retention gate=정규화 R(ℓ2 Titans/ℓ1 sparse/ℓq Moneta/KL Memora). Learning-Retaining(Bregman)이 둘을 통합. Moneta A/W=FTRL 실현. 이게 '연상메모리=정규화된 온라인 학습'이라는 Miras 세계관.

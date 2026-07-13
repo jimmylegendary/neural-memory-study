@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 13건.
+총 14건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -169,4 +169,17 @@
 - 생각할 것: channel-wise(벡터) gate의 이득이 실측에서 얼마인지 — Miras ablation(retention이 최상위 레버)과 연결; Moneta의 A(accumulator) 추가로 state가 matrix의 16배 되는 비용(booklet §7, G09 시스템); Memora의 softmax/log 정규화가 state를 유계로 만들어 저정밀 저장 우호적인 점; Atlas의 gate/optimizer가 Miras보다 더 정교해지는지(Muon, Omega) — 다음 논문
 - storyline seed: Miras 핵심: (a)retention을 forget에서 일반 목적으로 재정의, 4손잡이. (b)Moneta=ℓ_p bias+ℓ_q retention, dual state A(recurrent)/W(정규화 파생); Yaad=Huber(outlier robust); Memora=softmax 유계. (c)gate가 Titans scalar→Miras channel-wise 벡터(low-rank 2-matmul). Titans의 특수화를 4축 설계공간으로 연 것. gate 진화(scalar→벡터)가 Q012→Q013 실.
 - 연상: Q003, Q004, Q012
+
+## Q014 · 2026-07-14 · Miras online optimization (FTRL / Learning-Retaining)
+
+**Q.** Miras(easy G04)에서 FTRL과 Learning-Retaining 부분은 왜 빠짐? 중요한 거 아냐?
+
+**A.** 맞음, 논문 제목 'Retention, and Online Optimization'의 이론적 척추이고 내 booklet이 사실상 건너뜀(추가함). 온라인 학습 두 갈래(dual): ①Descent(OMD/OGD) W_t=W_{t-1}-η∇ℓ (Titans/DeltaNet, 로컬); ②FTRL W_t=argmin_W[Σ_{i≤t} ℓ̂_i(W)+ (1/η)R_t(W)] (과거 손실 합+정규화 최소화, 글로벌). 원문 증명: Online GD=FTRL 특수case(W_0=0,선형화)→둘이 같음. 결정적: retention gate=FTRL의 정규화 R(W). R 선택=retention 선택: ℓ2=weight decay(Titans), ℓ1=sparse(elastic net), ℓq=Moneta, KL/Bregman=mirror descent(Memora). Learning-Retaining=retention을 Bregman divergence D_h(W,W')로 일반화, 적절한 h면 FTRL 정확 재현→OGD와 FTRL 통합하는 더 일반 렌즈. Moneta A/W 이중구조=FTRL 실현(A=gradient 누적=leader, W=prox_R(A)=argmin)→Q013의 'W에 W_{t-1} 없음' 답 완성(FTRL은 W_{t-1}에서 내려가는 게 아니라 누적 A에 정규화).
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_unknown: retention gate=FTRL의 정규화 R(W)라는 원리적 정체 — ad-hoc gate 아님(ℓ2/ℓ1/ℓq/KL이 다른 R); unknown_unknown: Online GD가 FTRL의 특수case → descent(W_{t-1}에서)와 leader(누적 합 argmin)가 동등; Learning-Retaining(Bregman)이 둘을 통합; known 확정(사용자 지적 옳음): 내 easy booklet이 논문 이론적 척추(FTRL/Learning-Retaining/Online Optimization)를 건너뜀 → 절 추가·재빌드; unknown_known: Moneta A/W 이중구조=FTRL/dual-averaging 실현(A=leader 누적, W=prox_R) → Q013 'W_{t-1} 없음'의 근본 답
+- 개념 key: FTRL, Follow-The-Regularized-Leader, online optimization, OMD OGD descent viewpoint, retention as regularizer R, online GD is FTRL special case, Learning-Retaining, Bregman divergence retention, mirror descent, dual averaging, prox operator, Moneta A/W as FTRL realization, retention=regularizer principled
+- 생각할 것: FTRL vs OMD 동등성의 정확한 조건(선형화·W_0=0)과 비선형/deep memory에서 깨지는지; Bregman divergence potential h 선택이 Memora softmax(KL)와 어떻게 연결되는지 구체; 이 온라인 학습 프레임(regret bound)이 Miras에 이론 보증을 주는지 — note는 '새 bias/gate에 regret 이론 없음'이라 했음(열린 문제); G01(학습 기초)에 online learning/FTRL을 넣었어야 하나 — prereq 커리큘럼 B2가 이걸 요구했는데 booklet 반영 점검 필요
+- storyline seed: Miras 이론 척추: memory update=online optimization. 두 dual 관점 Descent(OMD, W_{t-1}에서)/FTRL(leader, Σℓ+R argmin), Online GD=FTRL 특수case. retention gate=정규화 R(ℓ2 Titans/ℓ1 sparse/ℓq Moneta/KL Memora). Learning-Retaining(Bregman)이 둘을 통합. Moneta A/W=FTRL 실현. 이게 '연상메모리=정규화된 온라인 학습'이라는 Miras 세계관.
+- 연상: Q003, Q013
 
