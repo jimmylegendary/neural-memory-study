@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 7건.
+총 8건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -91,4 +91,17 @@
 - 생각할 것: 출력 o_t가 C×d로 잘리는(segment 위치만) 정확한 방식 원문 Fig/식 재확인; 메모리 M·S·persistent가 layer마다 독립인지, head마다 독립인지(멀티헤드 구조); 표준 FFN 없이 persistent만으로 충분한지 — ablation(persistent 기여가 weight decay>momentum>conv>persistent로 최하위였음, Q005 계열); layer 쌓을 때 각 layer 메모리가 서로 다른 추상화를 담는지(계층적 기억)
 - storyline seed: MAC 한 블록 완결: 검색(q)→[P‖h_t‖S] attention(softmax)→write(y_t로 M 갱신)→출력 o_t=y_t⊗M*_t(y_t)(게이트). 이게 한 layer, 모델=임베딩→블록×L→LM head, 각 layer 자기 NM. 별도 FFN 없음(persistent가 FFN 역할). C×d 출력으로 길이 보존.
 - 연상: Q002, Q005, Q006
+
+## Q008 · 2026-07-14 · Titans MAC shapes + scan/momentum/chunkwise
+
+**Q.** 1)attn 출력은 Np+2C,d 아님(y의 shape)? 그걸 다시 흘리면 Np+2C,d? 2)gate 정체가 뭐야, eltwise 곱 맞아? Np+2C,d가 어케 C,d 되냐? 3)NM update gradient 어케 구함, 미분? 4)scan이 뭔말? momentum도 C크기 g에 대해 한번에? S의 shape? gate값은 Np+2C 크기 scalar? t시점 S는 Np+2C 아니라 하나의 matrix여야 하는거 아님?
+
+**A.** 1)맞음: attn 출력 y_t=(Np+2C)×d(길이 보존). 그 뒤 segment 위치 C개만 잘라 y_t^seg(C×d)가 write+다음층으로, P·h_t 자리는 scratch로 버림. 2)⊗gate=두 텐서를 학습 벡터weight로 정규화+σ+elementwise 곱(eltwise 맞음, shape 보존 C×d). Np+2C→C는 gate가 아니라 '슬라이싱'(prefix 버림)이 함. 두 연산 분리: 슬라이싱(길이축소)+gate(모양보존). 3)미분함: matrix면 닫힌형 (Wk-v)k^T(rank-1), MLP면 진짜 backprop(forward→오차→W1,W2 gradient), 매 토큰. 이건 메모리 자신 loss inner backward(LM loss outer와 다름). 4)핵심: S_t는 메모리와 같은 weight-shaped 버퍼 1개(P_M), Np+2C 아님(사용자 직관 맞음). 시퀀스 차원은 '몇번째 토큰 gradient/gate 적용'만 셈. gate값=토큰당 스칼라(write되는 C개→C개). chunk: C토큰 각각 g_τ(weight-shaped)+gate 스칼라, 재귀 S_t=η_t S_{t-1}-θ_t g_t / M_t=(1-α_t)M_{t-1}+S_t. scan=이 1차 선형 momentum 재귀를 parallel associative scan(prefix-sum 일반화, 감쇠 누적합, affine map 결합)으로 O(log C)에 병렬 계산(S4/S5/Mamba primitive). chunkwise 트릭으로 C개 gradient도 chunk시작 weight에서 matmul 병렬. 순차 대신 matmul+scan.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_unknown: attn 출력은 (Np+2C)×d 전체; C로 줄이는 건 gate가 아니라 '슬라이싱'(segment 위치만 취함, prefix 버림); unknown_unknown: gate(⊗)는 shape 보존 elementwise 곱(정규화+σ 두름); 길이 축소는 슬라이싱 담당; unknown_unknown: scan=parallel associative scan=선형 momentum 재귀를 O(log C)에 병렬로 푸는 것(S4/S5/Mamba primitive); chunkwise는 gradient를 chunk-start weight에서 matmul 병렬; known 확정(사용자 직관 옳음): S_t는 weight-shaped 버퍼 1개(P_M), Np+2C 아님; 시퀀스 차원은 인덱스일 뿐. gate값은 토큰당 스칼라(C개)
+- 개념 key: attention output shape Np+2C, slicing to segment C, gate elementwise mul, shape reduction by slicing not gate, gradient by backprop, rank-1 closed form linear, MLP backprop inner, associative scan, parallel prefix scan, linear recurrence momentum, S is weight-shaped buffer, gate values per-token scalar, chunkwise parallel training, gradients at chunk-start weights, S4/S5/Mamba scan primitive
+- 생각할 것: write되는 게 segment C개인지 y_t 전체 Np+2C인지 원문 '틈'(M_t=M_{t-1}(y_t) 'tokens of y_t') 재확인 — 나는 C개(새 정보만) 읽기로 답함; chunk 시작 weight에서 gradient 평가하는 stale 근사가 품질에 주는 영향(chunk 클수록 stale↑) → TNT의 정확한 주제; read M*_t(y_t)에서 y_t를 W_Q로 투영 후 넣는지(query projection) 정확히; associative scan의 combine 연산자 (a1,b1)•(a2,b2)=(a1a2, a2b1+b2) — affine map 합성이 왜 결합법칙인지
+- storyline seed: MAC 계산 정밀화: attn 출력 (Np+2C)×d → 슬라이싱으로 segment C×d(길이축소는 슬라이싱, 모양보존은 gate) → NM write(MLP면 backprop으로 gradient) → 출력 y_t^seg⊗M*_t(y_t^seg). S_t·M_t는 weight-shaped 버퍼 1개(시퀀스축 아님), gate는 토큰당 스칼라 C개. scan=선형 momentum 재귀를 O(log C) 병렬(Mamba primitive), chunkwise=gradient를 chunk-start weight matmul 병렬 — 이게 '순차라 비쌈→TNT' 실의 정체.
+- 연상: Q003, Q005, Q006, Q007
 
