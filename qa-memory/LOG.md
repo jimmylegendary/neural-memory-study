@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 17건.
+총 18건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -221,4 +221,17 @@
 - 생각할 것: 논문 미명세 항목 목록화(γ shape, gate head 단위, phi* deep-memory 실현, sketch 차원) — 재현/모델링 시 가정 필요; 메모리 W_K/V/Q와 attention W_Q/K/V가 정말 별개인지(공유 안 하는지) 코드/후속 구현으로 확정 가능한지; 이 'stated vs inferred' 습관이 스터디 페이퍼/세미나의 정직성(TODO-VERIFY)과 같은 규율; Atlas γ가 c개 상수라 global(전체 문맥) gate 대비 파라미터 절약이라는 설계 트레이드오프
 - storyline seed: Rigor 노드: 논문이 자주 미명세(γ shape, gate 단위 등)—'명시 vs 추론' 구분 필수. 근거 확인법: Titans 두 투영 세트=§2 attention(line180)+§3.1 memory inner-loss hyperparameter(line365)+Fig2 core/contextual 별개 branch. Atlas γ=[0,1]·토큰당 c개는 근거, 생성기 shape은 미명세. 세미나/페이퍼는 이 구분을 TODO-VERIFY로 지켜야.
 - 연상: Q002, Q006, Q012, Q016
+
+## Q018 · 2026-07-14 · grounding rigor: MAC equations in text; two projection sets notation is ambiguous/unspecified
+
+**Q.** 결국 Titans 두 투영 세트는 글 근거 없고 그림+설명 추론? gate 통과나 attn out이 W_k,v로 입력되는 것도 그림에 없는데 설명 어딘가 있나? 애초에 nm용 Wq,k,v와 attn용 Wq,k,v를 다르게 할 이유가 있나?
+
+**A.** 정정3개. 정정1: MAC forward는 그림 아니라 §4.1 식으로 명시—Eq21 h_t=M*_{t-1}(q_t),q_t=S^(t)W_Q / Eq22 augment [P||h_t||S] / Eq23 y_t=Attn(S̃) / Eq24 M_t=M_{t-1}(y_t) / Eq25 o_t=y_t⊗M*_t(y_t) + 'updating weight through forward pass'. Q017에서 '그림 종합'이라 한 건 과소평가. 정정2: 하지만 'y_t가 W_K,W_V로 입력'은 Eq24에 재기술 안 됨—M(·)이 뭔지 §3.1 정의(line365 W_K,W_V=inner loss hyperparameter)를 y_t에 적용한 것. Q010 전개는 Eq24+§3.1 결합한 충실한 풀이지 MAC 식에 그 projection 단계는 안 그려짐(그림에도 없음). 정정3(중요): '두 쌍 별개'는 표기 모호—메모리(§3.1)도 attention(§2)도 같은 기호 W_Q/K/V, 논문이 '다른 행렬'이라 명시 안 함(overload). 확실=각자 투영 가짐(근거), 미명세=별개 행렬 vs 공유. Q017 '근거 있음'은 과했고 정확히는 '각자 투영 가짐 근거+별개 여부 미명세'. 이유: 꼭 달라야 할 하드 이유 없으나 묶을 이유도 없음—역할 다름(attention 유사도 vs 메모리 k→v 저장/검색), 입력·단계 다름(검색 raw segment/쓰기 y_t/attention 증강seq, MAC은 y_t 투영이라 애초에 다른 입력), 공유=자유도만 깎는 제약(투영 d×d 작아 절약 미미). 기본=각자 학습.
+
+- 축: `known` → `known` · comprehension: deep
+- 새로 드러난 것: known 정정(과소평가 바로잡음): MAC forward는 그림 아니라 §4.1 Eq21-25로 텍스트 명시—Q017의 '그림 종합' 과소평가; known 정정(과대평가 바로잡음): '두 투영이 별개 행렬'은 명시 안 됨(메모리·attention 같은 기호 W_Q/K/V overload)—Q017 '근거 있음'은 과함, 정확히는 '각자 투영 가짐 근거+별개 여부 미명세'; unknown_known: 'y_t→W_K,W_V 쓰기'는 Eq24에 재기술 안 되고 §3.1 M(·) 정의를 y_t에 적용한 풀이(그림·MAC식엔 그 단계 없음); unknown_known: 투영 분리 이유=역할·입력이 달라 묶을 이유 없음(하드 필연 아님); MAC은 메모리가 y_t 투영이라 애초에 다른 적용
+- 개념 key: MAC equations 21-25 in text, retrieve Eq21, write Eq24 M(y_t), output Eq25, implicit projection from Sec3.1 def, notation overload W_Q/K/V, separate vs shared not specified, stated vs inferred correction, reason to keep projections separate, different objectives and inputs, tying is unmotivated constraint
+- 생각할 것: 논문 표기 overload(W_Q/K/V 재사용)가 재구현 시 '메모리·attention 투영 공유 여부'를 코드 결정사항으로 남김 — 후속 구현(lucidrains 등) 확인; 명시 vs 추론 3단계로 라벨링: (a)식으로 명시(MAC forward) (b)정의 물려받아 풀이(y_t→k,v) (c)미명세(별개 행렬); 이 rigor 습관이 스터디 페이퍼/세미나에서 각 주장에 근거등급 붙이는 규율(TODO-VERIFY, Q017 실 연장); Q010의 self-supervised write 설명은 여전히 유효(정의 물려받은 충실 풀이)—단 '식에 있다'가 아니라 '정의+Eq24로 유도'로 표현해야
+- storyline seed: 근거등급 3단계(rigor 규율): (a)텍스트 식 명시=MAC forward Eq21-25; (b)정의 물려받은 충실 풀이=y_t→k=y_tW_K,v=y_tW_V(§3.1+Eq24); (c)미명세=메모리·attention 투영이 별개 행렬인지(기호 overload). Q017/Q018이 '명시 vs 추론'을 매 주장에 라벨하는 습관을 확립—세미나/페이퍼 정직성의 핵심.
+- 연상: Q002, Q006, Q010, Q017
 

@@ -1,6 +1,6 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-17건. story line 짤 때 여기서 꺼낸다.
+18건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
@@ -62,7 +62,7 @@
 - Q016: Atlas(easy G05): 1)Omega rule의 γ_{t,i} 어케 학습·shape·기존 3 gate와 동일? 2)feature map 
 - Q017: 1)gamma weight shape 뭔데, 논문에 언급 없나? 2)Titans에서 Wq,k,v가 attention block 내부/외부 2쌍 
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 20건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 22건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
@@ -83,10 +83,13 @@
 - Q016: Atlas(easy G05): 1)Omega rule의 γ_{t,i} 어케 학습·shape·기존 3 gate와 동일? 2)feature map 
 - Q016: Atlas(easy G05): 1)Omega rule의 γ_{t,i} 어케 학습·shape·기존 3 gate와 동일? 2)feature map 
 - Q017: 1)gamma weight shape 뭔데, 논문에 언급 없나? 2)Titans에서 Wq,k,v가 attention block 내부/외부 2쌍 
+- Q018: 결국 Titans 두 투영 세트는 글 근거 없고 그림+설명 추론? gate 통과나 attn out이 W_k,v로 입력되는 것도 그림에 없는데 설
+- Q018: 결국 Titans 두 투영 세트는 글 근거 없고 그림+설명 추론? gate 통과나 attn out이 W_k,v로 입력되는 것도 그림에 없는데 설
 
-### 안다는 걸 안다 (known) — 2건
+### 안다는 걸 안다 (known) — 3건
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
 - Q015: Miras 핵심이 설계축 4개=일반화 형태+실험인가? 특별한 발명보다 '설계축이 있음을 증명'인가?
+- Q018: 결국 Titans 두 투영 세트는 글 근거 없고 그림+설명 추론? gate 통과나 attn out이 W_k,v로 입력되는 것도 그림에 없는데 설
 
 ## 2. 개념 key별 클러스터 (연상)
 
@@ -312,6 +315,17 @@
 - **memory w_k/v/q sec3.1 inner-loss hyperparameter** (1): Q017
 - **mac fig2 core contextual persistent branches** (1): Q017
 - **line 365 hyperparameters in the loss** (1): Q017
+- **mac equations 21-25 in text** (1): Q018
+- **retrieve eq21** (1): Q018
+- **write eq24 m(y_t)** (1): Q018
+- **output eq25** (1): Q018
+- **implicit projection from sec3.1 def** (1): Q018
+- **notation overload w_q/k/v** (1): Q018
+- **separate vs shared not specified** (1): Q018
+- **stated vs inferred correction** (1): Q018
+- **reason to keep projections separate** (1): Q018
+- **different objectives and inputs** (1): Q018
+- **tying is unmotivated constraint** (1): Q018
 
 ## 3. 열린 실 (think_about)
 
@@ -382,6 +396,10 @@
 - [Q017] 메모리 W_K/V/Q와 attention W_Q/K/V가 정말 별개인지(공유 안 하는지) 코드/후속 구현으로 확정 가능한지
 - [Q017] 이 'stated vs inferred' 습관이 스터디 페이퍼/세미나의 정직성(TODO-VERIFY)과 같은 규율
 - [Q017] Atlas γ가 c개 상수라 global(전체 문맥) gate 대비 파라미터 절약이라는 설계 트레이드오프
+- [Q018] 논문 표기 overload(W_Q/K/V 재사용)가 재구현 시 '메모리·attention 투영 공유 여부'를 코드 결정사항으로 남김 — 후속 구현(lucidrains 등) 확인
+- [Q018] 명시 vs 추론 3단계로 라벨링: (a)식으로 명시(MAC forward) (b)정의 물려받아 풀이(y_t→k,v) (c)미명세(별개 행렬)
+- [Q018] 이 rigor 습관이 스터디 페이퍼/세미나에서 각 주장에 근거등급 붙이는 규율(TODO-VERIFY, Q017 실 연장)
+- [Q018] Q010의 self-supervised write 설명은 여전히 유효(정의 물려받은 충실 풀이)—단 '식에 있다'가 아니라 '정의+Eq24로 유도'로 표현해야
 
 ## 4. Storyline seeds
 
@@ -402,3 +420,4 @@
 - [Q015] (Miras contribution positioning (framework vs invention)) Miras 위치: 발명 논문이 아니라 프레임워크(지도) 논문. 핵심=설계축4(bias/retention/구조/algo)+FTRL 이론+빈 축 채운 파생 발명(Moneta/Yaad/Memora 승리)+ablation(retention 최상위). Titans(bottom-up 단일발명)와 대비되는 top-down 유도. 라인의 지도가 되어 Atlas(optimizer 축)를 낳음. 정직한 한계: 새 bias/gate 이론 없음. 세미나에서 'Titans=발명 vs Miras=지도'가 좋은 대비 프레임.
 - [Q016] (Atlas (Omega gamma gate, capacity theory Prop1/2, softmax unbounded)) Atlas 3손잡이: Omega rule(γ admission gate, window c개 문맥 기억)+feature map(용량: matrix O(d_k)=√파라미터[Prop1 vectorize 증명]→poly O(d_k^p)[Prop2]→softmax φ* ∞[exp=<φ*,φ*> 유도])+Muon. 용량 스펙트럼이 'attention이 왜 이기나=용량 천장 차이'를 정리로 확정. Hopfield는 아이디어 계보, Atlas가 정식화. Miras가 비운 optimizer 축(Muon)+용량 축을 채움(Q015 실 회수).
 - [Q017] (grounding check: Atlas gamma shape (not fully specified) + Titans two projection sets (grounded)) Rigor 노드: 논문이 자주 미명세(γ shape, gate 단위 등)—'명시 vs 추론' 구분 필수. 근거 확인법: Titans 두 투영 세트=§2 attention(line180)+§3.1 memory inner-loss hyperparameter(line365)+Fig2 core/contextual 별개 branch. Atlas γ=[0,1]·토큰당 c개는 근거, 생성기 shape은 미명세. 세미나/페이퍼는 이 구분을 TODO-VERIFY로 지켜야.
+- [Q018] (grounding rigor: MAC equations in text; two projection sets notation is ambiguous/unspecified) 근거등급 3단계(rigor 규율): (a)텍스트 식 명시=MAC forward Eq21-25; (b)정의 물려받은 충실 풀이=y_t→k=y_tW_K,v=y_tW_V(§3.1+Eq24); (c)미명세=메모리·attention 투영이 별개 행렬인지(기호 overload). Q017/Q018이 '명시 vs 추론'을 매 주장에 라벨하는 습관을 확립—세미나/페이퍼 정직성의 핵심.
