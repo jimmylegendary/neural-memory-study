@@ -197,6 +197,18 @@ TNT의 관찰: **짧은 fine-tuning으로 이 불일치가 교정되며, 원래 
 
 이것이 이 권의 레시피 **train-big / serve-small**이다.
 
+### 7.1 그래서 serving 시점에 실제로 무엇이 도는가
+
+이 레시피가 서빙 때 어떻게 펼쳐지는지는 **논문에 구조로 명시**돼 있다(Stage 2가 존재하는 이유 자체가 서빙 정렬이다). 자주 나오는 세 질문에 곧장 답하면:
+
+- **global·local 메모리 둘 다 배포되는가? → 그렇다.** 서빙 때 두 메모리가 **동시에 상태로 살아 있다.** prompt를 읽는 **prefill** 단계는 큰 chunk로 도는 **global memory**가 담당(long-range 압축), 토큰을 하나씩 뽑는 **decode** 단계는 chunk-1로 매 토큰 갱신되는 **local memory**가 담당. 두 경로의 출력이 합산돼 $y_t$가 된다(§6, Fig.3). 따라서 request마다 들고 있어야 할 상태 = global fast weights $P_f$ + local fast weights $N{\times}P_f$ + local의 Q-K projection 상태 $N{\times}d^2$ (§9.2와 동일).
+
+- **Q-K projection을 inference 때도 해야 하나? → 그렇다, 읽을 때마다.** Q-K projection은 훈련 전용 장치가 아니라 **읽기(retrieval) 연산의 일부**(§6.3, 논문 Eq.7)다. query를 key domain으로 되돌리는 이 투영은 prefill·decode의 **모든 읽기 스텝에서 수행**되고, 그 투영 행렬 $\Pi_t$ 자체도 local과 같은 리셋 규율로 **추론 중 online 갱신**된다. 즉 이 계열의 메모리는 서빙에서도 "읽기만" 하지 않는다 — decode 매 토큰마다 forward+backward로 **계속 학습(test-time learning)** 한다(§4의 불변식 폐기가 서빙에서 그대로 발현).
+
+- **그럼 서빙이 얼마나 빠른가? → 논문에 없다.** 위 prefill/decode 서술은 전부 **아키텍처 구조**일 뿐, chunk-1 decode의 실제 throughput·latency·메모리 footprint를 KV-cache Transformer와 맞대 잰 **실측 수치는 TNT 논문에 없다**(이 계열 6편 전체에 decode wall-clock 부재; 유일한 서빙류 수치는 prefill의 "FlashAttention 대비 1.3배"뿐, §8.1). **구조는 주되 비용은 안 준다** — 이 공백이 바로 시스템 관점에서 이 계열을 실제로 배포하려 할 때 직접 측정·모델링해야 하는 지점이다.
+
+> **시스템 모델링 관점.** TNT는 "decode가 **어떻게** 도는가"(prefill=global 큰 chunk / decode=local chunk-1 / Q-K projection은 읽기마다 / 메모리는 online 갱신)를 정의해 준다. 반면 "decode가 **얼마나** 드는가"(토큰당 latency, 동시 request throughput, per-request fast-weight 배치)는 우리가 §9의 상태식·트래픽식으로부터 직접 세워야 한다. **구조는 논문, 비용은 우리 몫**이라는 이 분업을 그대로 머리에 넣어 두면 §9의 모델링이 왜 필요한지가 분명해진다.
+
 ---
 
 ## 8. 결과: 얼마나 빨라지고, 품질은?
