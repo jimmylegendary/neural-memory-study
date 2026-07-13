@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 4건.
+총 5건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -52,4 +52,17 @@
 - 생각할 것: 왜 비선형(MLP)이 matrix보다 용량이 큰가 — 선형분리 불가 연상 구체 예 → Atlas 용량 이론(O(d_k^p)); Titans memory MLP가 width d(확장 없음)인 이유 — state 크기 vs 표현력 trade; 2-layer MLP의 gradient(backprop 전체)가 병렬화를 막는 방식 → chunkwise/TNT(Q003 순차성과 연결); 메모리 MLP 활성함수 선택(SiLU/GELU)이 test-time 학습에 주는 영향
 - storyline seed: 메모리 형태 축(D): matrix(L_M=1, 선형 Wk) vs MLP(L_M≥2, 비선형 W_2σ(W_1 k)). MLP=FFN과 같은 구조지만 weight가 '고정 함수'가 아니라 '갱신되는 state'; Titans는 폭 d 유지(P_M≈L_M d²), state=2P_M. L_M=1=linear/DeltaNet 특수case. MLP면 gradient rank-1 아님→학습 비쌈(TNT로 이어짐).
 - 연상: Q001, Q003
+
+## Q005 · 2026-07-14 · Titans (gates inner/outer loop; MAC core/contextual/persistent)
+
+**Q.** 1)surprise=k에 대한 v가 전부? 2)3개 gate 어떻게 학습? token축 맞아? backward시 gate값으로 S구하고 W update하고 그 뒤 gate 3개도 update? 어떻게/shape? 2-1)MAC기준 update 다하고 나온 출력을 이번 추론에 쓰나? 3)이 MLP가 neural memory? MAC의 core/contextual/persistent은 어떻게 구해짐? q,k,v로 설명됨?
+
+**A.** 1)yes: 순간 surprise=∇||M(k)-v||²=k→v 예측오차. 전체=순간+momentum(과거 surprise). 2)핵심: gate는 추론 때 갱신 X. inner loop(매 토큰)=gate 값을 x_t에서 계산(θ=softplus,η/α=sigmoid, linear head)→surprise ∇ℓ(메모리 내부 backward)→S=ηS-θ∇ℓ→M=(1-α)M+S. 바뀌는 건 M,S뿐. outer loop(사전학습)=매 토큰 M 업데이트가 forward 그래프의 일부, LM loss를 이 사슬 전체 관통해 backprop('optimizer를 미분'=meta-learning)해서 gate 생성기 w_θ/η/α, W_K/V/Q, P, attention, M_0을 학습; 추론 땐 고정. gate 값=스칼라(토큰/head당), 생성기=작은 R^d→스칼라 head. 2-1)yes: MAC은 검색→attention y→쓰기 M_t=M_{t-1}(y)→출력 o=y⊗M*_t(y). o가 이번 스텝 출력이고, 출력의 메모리 읽기는 방금 갱신된 M_t(write-then-read). 3)yes 그 MLP=neural(long-term) memory=Contextual Memory. Core=증강세그먼트 위 softmax attention(attention 자신의 q,k,v); Contextual=메모리 자신의 q(검색)/k,v(쓰기); Persistent=q,k,v 아님, 학습된 입력무관 토큰(과제지식).
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_unknown: gate는 추론 중 '학습'되지 않음 — 매 토큰 값만 계산(forward), 갱신되는 건 M,S뿐. gate '생성기 파라미터'는 outer loop에서만 학습; unknown_unknown: outer loop는 unrolled inner loop 전체를 관통해 backprop('optimizer를 미분'=meta-learning); 사용자가 상상한 '토큰마다 gate update'는 outer backprop에서 한 번; unknown_unknown: MAC 출력 o=y⊗M*_t(y)는 방금 갱신된 M_t를 읽음(write-then-read) — 이번 write가 이번 출력에 반영; unknown_known: Persistent memory는 q,k,v가 아니라 그냥 학습된 입력무관 벡터; Core=attention q,k,v, Contextual=memory q,k,v(두 세트)
+- 개념 key: surprise, gates, learning rate theta, momentum decay eta, weight decay alpha, inner loop, outer loop, meta-learning, bilevel, differentiate through optimizer, gate shape scalar, MAC, core, contextual memory, persistent memory, short-term vs long-term, write-then-read, two projection sets
+- 생각할 것: outer loop가 unrolled 사슬을 backprop할 때 메모리가 rank-1(선형) 아니면 무거워짐 → chunkwise 병렬(Q003/Q004 순차성 실과 연결, TNT); gate가 scalar per head인지 per channel인지 정확히(원문 v1 미명세) — Atlas/Miras에서 더 정교해짐; θ/η/α의 데이터 의존성이 '문맥 전환' 감지에 쓰이는 방식(η→0=context switch); Core의 attention이 full causal(MAC) vs sliding-window(MAG)인 차이가 비용/능력에 주는 영향
+- storyline seed: Titans 학습의 핵심 구분: inner loop(추론, 매 토큰 M·S만 갱신, gate는 값만 계산) vs outer loop(사전학습, unrolled 사슬 backprop=optimizer 미분=meta-learning으로 gate 생성기·투영·P·M_0 학습). MAC은 write-then-read라 이번 write가 이번 출력에 반영. 세 부품: Core=attention(q,k,v), Contextual=neural memory MLP(memory q,k,v), Persistent=고정 벡터(q,k,v 아님).
+- 연상: Q001, Q002, Q004
 
