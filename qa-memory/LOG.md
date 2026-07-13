@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 12건.
+총 13건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -156,4 +156,17 @@
 - 생각할 것: gate가 per-token 스칼라인지 per-head(w∈R^{d×H})인지 원문 v1 미명세 — Atlas/Miras에서 벡터/diagonal gate로 정교화되는지; squash 선택(sigmoid vs softplus for θ)이 학습 안정성에 주는 영향; gate 입력이 write 대상 u와 같은 것(x_t/y_t)이라는 점 — gate가 '이 토큰을 얼마나/어떻게 각인할지'를 그 토큰 스스로 정함
 - storyline seed: gate 3개=동일 구조: 토큰 u∈R^d에 w∈R^d 내적+bias→squash(sigmoid/softplus)→스칼라. w_θ/η/α만 다름, ~3d 파라미터, outer-loop 학습·추론 고정. 토큰이 자기 gate(각인 강도·momentum·forget)를 스스로 정함. per-token 상수비용의 tiny 부분.
 - 연상: Q005, Q006
+
+## Q013 · 2026-07-14 · Miras (Moneta A/W dual state, Yaad Huber, channel-wise vector gate)
+
+**Q.** Miras(easy G04): 1)Moneta W식에 W_{t-1}이 없는데 delta W 어케? A와 W 둘다 state? 2)Yaad는 왜 개념수준 수식·설명 없음? 원논문에 있나? 3)Miras layer block gate에 linear matmul 2개(autoencoder처럼)? 그럼 gate값이 scalar 아냐? Titans와 다른가?
+
+**A.** 1)Moneta는 state 두 벌이나 recurrence는 A_t에만: A_t=α_t A_{t-1}-η_t∇ℓ_p(W_{t-1};k,v), W_t=A_t/||A_t||_q^{q-2}. A=accumulator(진짜 recurrent state, A_{t-1} 씀), W=A를 ℓ_q norm 정규화한 파생값(그래서 W_{t-1} 없음). W_{t-1}은 gradient ∇ℓ_p(W_{t-1};·) 안에 들어감. delta W 직접 안 구함—step은 A에, W는 재계산. 진짜 state는 A 하나. 왜? Titans ℓ2감쇠=W공간 곱셈이면 끝, 일반 ℓ_q는 norm projection이라 쌓기(A)→투영(W) 이중구조 필요(q=2면 Titans로 붕괴). 2)원논문에 있음(Huber, 3형태). 내 easy booklet이 Moneta엔 수식주고 Yaad는 표에만—booklet 빈틈(수정함). 실제 Yaad: W_t=W_{t-1}-{η∇ℓ2 if ||M(k)-v||≤δ_t; η δ_t ∇ℓ1 else}. Huber=작은오차 ℓ2민감/큰오차 ℓ1클립(outlier robust, coping mechanism). Moneta와 달리 W_{t-1} 직접 사용. 3)정확: Miras gate는 channel별 벡터(η,δ,α∈R^d), scalar 아님. low-rank projection(2 matmul d→r→d=autoencoder 모양)으로 뽑음. Titans v1=scalar gate와 다름—Miras는 per-channel 벡터로 일반화(Q012 열린실의 답). booklet에 Yaad식+channel-wise gate 명시 추가·재빌드.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_unknown: Moneta recurrence는 W가 아니라 accumulator A에 있음(W=A의 ℓ_q정규화 파생, W_{t-1}은 gradient 안에); 일반 ℓ_q retention이 norm projection이라 이중 state 필요; unknown_unknown: Miras gate는 channel별 벡터(∈R^d), Titans scalar와 다름; low-rank 2-matmul(autoencoder)이 그 벡터 gate 생성 — Q012 열린실의 답; known 확정(사용자 지적 옳음): 내 easy booklet이 Yaad를 덜 설명(표에만)했음 → Yaad Huber 수식+A/W 명확화+channel-wise gate 추가·재빌드; unknown_known: Yaad=Huber(작은오차 ℓ2/큰오차 ℓ1 clip)=outlier robust coping mechanism, Moneta와 달리 W_{t-1} 직접 사용
+- 개념 key: Moneta, dual accumulator A and W, recurrence in A not W, lq norm retention projection, Yaad, Huber loss, gradient clipping, outlier robust, channel-wise gate vector, low-rank projection gate, autoencoder-shaped gate, scalar vs vector gate, Titans vs Miras gate, retention gate, Memora softmax
+- 생각할 것: channel-wise(벡터) gate의 이득이 실측에서 얼마인지 — Miras ablation(retention이 최상위 레버)과 연결; Moneta의 A(accumulator) 추가로 state가 matrix의 16배 되는 비용(booklet §7, G09 시스템); Memora의 softmax/log 정규화가 state를 유계로 만들어 저정밀 저장 우호적인 점; Atlas의 gate/optimizer가 Miras보다 더 정교해지는지(Muon, Omega) — 다음 논문
+- storyline seed: Miras 핵심: (a)retention을 forget에서 일반 목적으로 재정의, 4손잡이. (b)Moneta=ℓ_p bias+ℓ_q retention, dual state A(recurrent)/W(정규화 파생); Yaad=Huber(outlier robust); Memora=softmax 유계. (c)gate가 Titans scalar→Miras channel-wise 벡터(low-rank 2-matmul). Titans의 특수화를 4축 설계공간으로 연 것. gate 진화(scalar→벡터)가 Q012→Q013 실.
+- 연상: Q003, Q004, Q012
 

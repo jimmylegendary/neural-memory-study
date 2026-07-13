@@ -155,6 +155,14 @@ $$
 
 > **이 식은 이런 뜻이다.** "gradient를 accumulator에 쌓되(위 줄), 노출되는 memory는 항상 norm이 통제된 껍질 위에 있게 정규화한다(아래 줄)." Moneta는 **state를 두 벌**($A_t$와 $W_t$) 들고 다닌다 — 뒤 §7의 비용 계산에서 중요하다.
 
+> **주의 — $W_t$에 왜 $W_{t-1}$이 없나?** recurrence(과거→현재 연결)는 $W$가 아니라 **accumulator $A$에** 있다($A_t$가 $A_{t-1}$을 쓴다). $W_t$는 매 step $A_t$를 norm으로 정규화해 **다시 뽑는 파생값**이라 $W_{t-1}$을 직접 안 쓴다. 그렇다고 $W_{t-1}$이 사라진 건 아니다 — gradient $\nabla\ell_p(W_{t-1};\cdot)$ 안에 들어간다. 진짜 recurrent state는 $A$ 하나이고, "두 벌"은 $A$ + 그 파생 $W$다. (Titans의 $\ell_2$ 감쇠는 $W$-공간에서 곱셈으로 끝나 $A$가 필요 없지만, 일반 $\ell_q$ 유지는 "쌓기$A$→투영$W$"의 이중 구조가 필요하다. $q{=}2$면 Titans 형태로 붕괴.)
+
+$$
+\text{Yaad (Huber):}\quad W_t = W_{t-1} - \begin{cases}\eta_t\,\nabla_W\ell_2 & \text{if } \|\mathcal{M}(k_t)-v_t\|\le\delta_t\\[2pt] \eta_t\,\delta_t\,\nabla_W\ell_1 & \text{그 외}\end{cases}
+$$
+
+> **이 식은 이런 뜻이다.** 오차가 작으면($\le\delta_t$) 부드러운 $\ell_2$ gradient로, 크면 $\ell_1$ gradient에 $\delta_t$를 곱해(= gradient clipping) 갱신한다. 즉 Huber = "작은 오차엔 민감, 큰 오차(outlier)엔 둔감" — 엄청 놀라운 토큰 하나에 메모리가 과잉반응하지 않게 하는 **coping mechanism**(outlier robust). Moneta와 달리 Yaad는 $W_{t-1}$을 직접 쓴다(dual accumulator 없음). $\delta_t$ = channel별로 학습되는 Huber 임계값.
+
 $$
 \text{Memora:}\quad W_t = \mathrm{softmax}\big(\alpha_t\,\log W_{t-1} \;-\; \eta_t \nabla_W\ell_2\big)
 $$
@@ -164,6 +172,8 @@ $$
 ![그림 G04-2 — Miras 변형의 아키텍처. (왼쪽) 순수 recurrent 블록(RMSNorm→Miras layer→SwiGLU), (가운데) Miras layer와 Sliding Window Attention을 번갈아 쌓는 hybrid, (오른쪽) layer 내부: k/q/v projection 뒤 depthwise conv, q·k normalization, low-rank로 뽑히는 η·α 게이트, 출력 normalization + linear gate. 출처: Behrouz et al., It's All Connected (Miras, arXiv:2504.13173) Fig.2 — 원저자 그림.](/home/jimmy/repos/neural-memory-study/figures/ref/2504.13173-fig2.png)
 
 > **비유.** 그림 오른쪽에서 $\eta$·$\alpha$가 별도의 작은(low-rank) 가지에서 뽑히는 게 보인다. 이건 "복습 정책을 정하는 관제탑"이다. 이 관제탑 자체는 pre-training에서 학습되고, inference 때는 **token마다 게이트 값을 계산해 내놓기만** 한다(스스로 더 학습하진 않는다). 다음 절의 핵심 그림이다.
+
+> **핵심 — Miras의 gate는 scalar가 아니라 channel별 벡터다.** Titans(G03)의 gate($\theta,\eta,\alpha$)는 토큰당 **스칼라**였다. Miras는 이를 **channel-wise 벡터**($\eta_t,\delta_t,\alpha_t\in\mathbb{R}^d$)로 일반화한다 — memory의 $d$개 채널이 각자 자기 유지·보폭을 가진다. 그림 오른쪽의 "autoencoder처럼 생긴 matmul 2개"가 바로 이것: **low-rank projection**($d\to r\to d$, 병목 $r$)으로 $d$차원 gate 벡터를 싸게 뽑는다(전체 $d\times d$ 대신 $d\times r + r\times d$). 그래서 gate 값이 **스칼라가 아니라 벡터**이고, Titans보다 표현력이 크다(채널마다 다르게 유지·기억).
 
 ---
 
