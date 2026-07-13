@@ -1,0 +1,54 @@
+\documentclass[11pt,a4paper]{report}
+\usepackage{luatexja-fontspec}
+\setmainjfont{Noto Serif CJK KR}
+\setmainfont{Noto Serif CJK KR}
+\setsansjfont{Noto Sans CJK KR}
+\setmonojfont{Noto Sans Mono CJK KR}
+\usepackage{amsmath,amssymb}
+\usepackage{calc}
+\usepackage{adjustbox}
+\usepackage{booktabs,longtable,array,multirow}
+\providecommand{\real}[1]{#1}
+\usepackage{graphicx}
+\setkeys{Gin}{width=\linewidth,keepaspectratio}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{xcolor}
+\usepackage{fancyvrb}
+\usepackage[hidelinks,unicode]{hyperref}
+\usepackage{bookmark}
+\usepackage{newunicodechar}
+\newunicodechar{✗}{\ensuremath{\times}}
+\newunicodechar{✓}{\ensuremath{\checkmark}}
+\newunicodechar{∗}{\ensuremath{\ast}}
+\newunicodechar{⋇}{\ensuremath{\divideontimes}}
+\usepackage{etoolbox}
+\AtBeginEnvironment{longtable}{\small}
+\AtBeginEnvironment{tabular}{\small}
+
+\usepackage{caption}
+\captionsetup{labelformat=empty}
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{-2}
+% overflow safety net: let the breaker stretch a little and treat leftover badness as underfull,
+% not silently-overrunning boxes (paired with breakable.lua which inserts the break opportunities).
+\emergencystretch=3em
+\tolerance=2000
+\hbadness=1200
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\st}[1]{#1}
+\providecommand{\passthrough}[1]{#1}
+\providecommand{\pandocbounded}[1]{#1}
+\providecommand{\textsubscript}[1]{\ensuremath{_{#1}}}
+\providecommand{\textsuperscript}[1]{\ensuremath{^{#1}}}
+\graphicspath{{$graphics-path$}{./}{../}}
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+\title{$title$}
+\author{$author$}
+\date{$date$}
+\begin{document}
+$if(title)$\maketitle$endif$
+$if(toc)$\tableofcontents\clearpage$endif$
+$body$
+\end{document}

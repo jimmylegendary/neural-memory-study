@@ -1,0 +1,88 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage{luatexja-fontspec}
+\setmainjfont{Noto Serif CJK KR}
+\setmainfont{Noto Serif CJK KR}
+\setsansjfont{Noto Sans CJK KR}
+\setmonojfont{Noto Sans Mono CJK KR}
+\usepackage{amsmath,amssymb}
+\usepackage{calc}
+\usepackage{adjustbox}
+\usepackage{booktabs,longtable,array,multirow}
+\providecommand{\real}[1]{#1}
+\usepackage{graphicx}
+\setkeys{Gin}{width=\linewidth,keepaspectratio}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{xcolor}
+\usepackage{fancyvrb}
+\usepackage[most]{tcolorbox}
+\usepackage[hidelinks,unicode]{hyperref}
+\usepackage{bookmark}
+\usepackage{newunicodechar}
+\newunicodechar{✗}{\ensuremath{\times}}
+\newunicodechar{✓}{\ensuremath{\checkmark}}
+\newunicodechar{∗}{\ensuremath{\ast}}
+\newunicodechar{⋇}{\ensuremath{\divideontimes}}
+\usepackage{etoolbox}
+\AtBeginEnvironment{longtable}{\small}
+\AtBeginEnvironment{tabular}{\small}
+
+\usepackage{caption}
+\captionsetup{labelformat=empty,font=small,textfont=it}
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{-2}
+\emergencystretch=3em
+\tolerance=2000
+\hbadness=1200
+\linespread{1.08}
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\st}[1]{#1}
+\providecommand{\passthrough}[1]{#1}
+\providecommand{\pandocbounded}[1]{#1}
+\providecommand{\textsubscript}[1]{\ensuremath{_{#1}}}
+\providecommand{\textsuperscript}[1]{\ensuremath{^{#1}}}
+\graphicspath{{$graphics-path$}{./}{../}}
+
+% friendlier headings
+\usepackage{sectsty}
+\definecolor{accent}{HTML}{5B3FA8}
+\definecolor{accentd}{HTML}{2E1F55}
+\chaptertitlefont{\color{accentd}}
+\allsectionsfont{\color{accent}}
+
+% ---- callout boxes (mapped from blockquotes by callouts.lua) ----
+\newtcolorbox{cboxintuition}[1]{enhanced,breakable,colback=blue!4,colframe=blue!45,
+  boxrule=0.3pt,left=8pt,right=8pt,top=5pt,bottom=5pt,arc=2pt,
+  borderline west={2.5pt}{0pt}{blue!55},title={\bfseries #1},coltitle=blue!60!black,
+  fonttitle=\bfseries,attach title to upper=\hspace{0.6em}}
+\newtcolorbox{cboxsymbol}[1]{enhanced,breakable,colback=orange!5,colframe=orange!45,
+  boxrule=0.3pt,left=8pt,right=8pt,top=5pt,bottom=5pt,arc=2pt,
+  borderline west={2.5pt}{0pt}{orange!70},title={\bfseries #1},coltitle=orange!55!black,
+  fonttitle=\bfseries,attach title to upper=\hspace{0.6em}}
+\newtcolorbox{cboxsysmodel}[1]{enhanced,breakable,colback=green!4,colframe=green!45,
+  boxrule=0.3pt,left=8pt,right=8pt,top=5pt,bottom=5pt,arc=2pt,
+  borderline west={2.5pt}{0pt}{green!55!black},title={\bfseries #1},coltitle=green!45!black,
+  fonttitle=\bfseries,attach title to upper=\hspace{0.6em}}
+\newtcolorbox{cboxexample}[1]{enhanced,breakable,colback=gray!6,colframe=gray!45,
+  boxrule=0.3pt,left=8pt,right=8pt,top=5pt,bottom=5pt,arc=2pt,
+  borderline west={2.5pt}{0pt}{gray!60},title={\bfseries #1},coltitle=gray!30!black,
+  fonttitle=\bfseries,attach title to upper=\hspace{0.6em}}
+\newtcolorbox{cboxnote}[1]{enhanced,breakable,colback=red!4,colframe=red!40,
+  boxrule=0.3pt,left=8pt,right=8pt,top=5pt,bottom=5pt,arc=2pt,
+  borderline west={2.5pt}{0pt}{red!55},title={\bfseries #1},coltitle=red!55!black,
+  fonttitle=\bfseries,attach title to upper=\hspace{0.6em}}
+\newtcolorbox{cboxkey}[1]{enhanced,breakable,colback=accent!6,colframe=accent!45,
+  boxrule=0.3pt,left=8pt,right=8pt,top=5pt,bottom=5pt,arc=2pt,
+  borderline west={2.5pt}{0pt}{accent},title={\bfseries #1},coltitle=accentd,
+  fonttitle=\bfseries,attach title to upper=\hspace{0.6em}}
+
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+\title{$title$}
+\author{$author$}
+\date{$date$}
+\begin{document}
+$if(title)$\maketitle$endif$
+$if(toc)$\tableofcontents\clearpage$endif$
+$body$
+\end{document}
