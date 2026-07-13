@@ -1,10 +1,10 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-18건. story line 짤 때 여기서 꺼낸다.
+19건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
-### 모른다는 걸 안다 (known_unknown → decomposition) — 15건
+### 모른다는 걸 안다 (known_unknown → decomposition) — 16건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q003: 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1
@@ -20,8 +20,9 @@
 - Q014: Miras(easy G04)에서 FTRL과 Learning-Retaining 부분은 왜 빠짐? 중요한 거 아냐?
 - Q016: Atlas(easy G05): 1)Omega rule의 γ_{t,i} 어케 학습·shape·기존 3 gate와 동일? 2)feature map 
 - Q017: 1)gamma weight shape 뭔데, 논문에 언급 없나? 2)Titans에서 Wq,k,v가 attention block 내부/외부 2쌍 
+- Q019: 다른 논문에서 attn out이 nm의 k,v input으로 쓰인다거나 attention 내부 W와 밖 W가 별도임을 알 수 있는 근거 찾아봐
 
-### 모른다는 것도 모른다 (unknown_unknown → exploration) — 39건
+### 모른다는 것도 모른다 (unknown_unknown → exploration) — 41건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
@@ -61,8 +62,10 @@
 - Q015: Miras 핵심이 설계축 4개=일반화 형태+실험인가? 특별한 발명보다 '설계축이 있음을 증명'인가?
 - Q016: Atlas(easy G05): 1)Omega rule의 γ_{t,i} 어케 학습·shape·기존 3 gate와 동일? 2)feature map 
 - Q017: 1)gamma weight shape 뭔데, 논문에 언급 없나? 2)Titans에서 Wq,k,v가 attention block 내부/외부 2쌍 
+- Q019: 다른 논문에서 attn out이 nm의 k,v input으로 쓰인다거나 attention 내부 W와 밖 W가 별도임을 알 수 있는 근거 찾아봐
+- Q019: 다른 논문에서 attn out이 nm의 k,v input으로 쓰인다거나 attention 내부 W와 밖 W가 별도임을 알 수 있는 근거 찾아봐
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 22건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 24건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
@@ -85,6 +88,8 @@
 - Q017: 1)gamma weight shape 뭔데, 논문에 언급 없나? 2)Titans에서 Wq,k,v가 attention block 내부/외부 2쌍 
 - Q018: 결국 Titans 두 투영 세트는 글 근거 없고 그림+설명 추론? gate 통과나 attn out이 W_k,v로 입력되는 것도 그림에 없는데 설
 - Q018: 결국 Titans 두 투영 세트는 글 근거 없고 그림+설명 추론? gate 통과나 attn out이 W_k,v로 입력되는 것도 그림에 없는데 설
+- Q019: 다른 논문에서 attn out이 nm의 k,v input으로 쓰인다거나 attention 내부 W와 밖 W가 별도임을 알 수 있는 근거 찾아봐
+- Q019: 다른 논문에서 attn out이 nm의 k,v input으로 쓰인다거나 attention 내부 W와 밖 W가 별도임을 알 수 있는 근거 찾아봐
 
 ### 안다는 걸 안다 (known) — 3건
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
@@ -326,6 +331,18 @@
 - **reason to keep projections separate** (1): Q018
 - **different objectives and inputs** (1): Q018
 - **tying is unmotivated constraint** (1): Q018
+- **cross-paper evidence** (1): Q019
+- **nl self-modifying titans** (1): Q019
+- **m_k m_v m_q separate memory modules** (1): Q019
+- **transformer projections named separately** (1): Q019
+- **projections are distinct objects** (1): Q019
+- **mag parallel branch** (1): Q019
+- **mal separate blocks** (1): Q019
+- **atlas deeptransformers attention as memory** (1): Q019
+- **mac-specific design** (1): Q019
+- **attn out to memory** (1): Q019
+- **raw input to memory in mag/mal** (1): Q019
+- **evidence grade upgrade** (1): Q019
 
 ## 3. 열린 실 (think_about)
 
@@ -400,6 +417,10 @@
 - [Q018] 명시 vs 추론 3단계로 라벨링: (a)식으로 명시(MAC forward) (b)정의 물려받아 풀이(y_t→k,v) (c)미명세(별개 행렬)
 - [Q018] 이 rigor 습관이 스터디 페이퍼/세미나에서 각 주장에 근거등급 붙이는 규율(TODO-VERIFY, Q017 실 연장)
 - [Q018] Q010의 self-supervised write 설명은 여전히 유효(정의 물려받은 충실 풀이)—단 '식에 있다'가 아니라 '정의+Eq24로 유도'로 표현해야
+- [Q019] NL self-modifying의 M_k/M_v/M_q가 각자 memory라는 건 파라미터·비용 폭증(투영도 test-time 갱신) — 시스템 관점 G09/serving
+- [Q019] lucidrains titans-pytorch 코드로 Titans 자체의 투영 공유/분리를 (a)명시로 확정 가능 — 아직 코드 미확인
+- [Q019] MAC이 attention 필터링을 각인하는 vs MAG/MAL이 raw 각인하는 것의 실측 차이(memory overflow, ablation)
+- [Q019] 이 '한 논문 미명세→다른 논문 명시' 패턴이 6편을 '하나의 완성형'으로 읽는 근거(스터디 페이퍼 수렴 논지)
 
 ## 4. Storyline seeds
 
@@ -421,3 +442,4 @@
 - [Q016] (Atlas (Omega gamma gate, capacity theory Prop1/2, softmax unbounded)) Atlas 3손잡이: Omega rule(γ admission gate, window c개 문맥 기억)+feature map(용량: matrix O(d_k)=√파라미터[Prop1 vectorize 증명]→poly O(d_k^p)[Prop2]→softmax φ* ∞[exp=<φ*,φ*> 유도])+Muon. 용량 스펙트럼이 'attention이 왜 이기나=용량 천장 차이'를 정리로 확정. Hopfield는 아이디어 계보, Atlas가 정식화. Miras가 비운 optimizer 축(Muon)+용량 축을 채움(Q015 실 회수).
 - [Q017] (grounding check: Atlas gamma shape (not fully specified) + Titans two projection sets (grounded)) Rigor 노드: 논문이 자주 미명세(γ shape, gate 단위 등)—'명시 vs 추론' 구분 필수. 근거 확인법: Titans 두 투영 세트=§2 attention(line180)+§3.1 memory inner-loss hyperparameter(line365)+Fig2 core/contextual 별개 branch. Atlas γ=[0,1]·토큰당 c개는 근거, 생성기 shape은 미명세. 세미나/페이퍼는 이 구분을 TODO-VERIFY로 지켜야.
 - [Q018] (grounding rigor: MAC equations in text; two projection sets notation is ambiguous/unspecified) 근거등급 3단계(rigor 규율): (a)텍스트 식 명시=MAC forward Eq21-25; (b)정의 물려받은 충실 풀이=y_t→k=y_tW_K,v=y_tW_V(§3.1+Eq24); (c)미명세=메모리·attention 투영이 별개 행렬인지(기호 overload). Q017/Q018이 '명시 vs 추론'을 매 주장에 라벨하는 습관을 확립—세미나/페이퍼 정직성의 핵심.
+- [Q019] (cross-paper grounding: projection separation (NL explicit) + attn-out-to-memory (MAC-specific)) Cross-paper 근거법: Titans가 남긴 모호함(투영 분리)을 NL이 해소(self-modifying Titans의 k/v/q=각자 M_k/M_v/M_q, +Transformer projections 별칭). 'attn out→메모리'는 MAC 전용(MAG/MAL은 raw). Atlas DeepTransformers=attention도 메모리. 교훈: 6편은 서로의 미명세를 채우는 하나의 프로그램이라 cross-reference가 유효(수렴 논지). 세미나: 'Titans가 열고 NL이 명시화'.

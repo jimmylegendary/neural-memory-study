@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 18건.
+총 19건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -234,4 +234,17 @@
 - 생각할 것: 논문 표기 overload(W_Q/K/V 재사용)가 재구현 시 '메모리·attention 투영 공유 여부'를 코드 결정사항으로 남김 — 후속 구현(lucidrains 등) 확인; 명시 vs 추론 3단계로 라벨링: (a)식으로 명시(MAC forward) (b)정의 물려받아 풀이(y_t→k,v) (c)미명세(별개 행렬); 이 rigor 습관이 스터디 페이퍼/세미나에서 각 주장에 근거등급 붙이는 규율(TODO-VERIFY, Q017 실 연장); Q010의 self-supervised write 설명은 여전히 유효(정의 물려받은 충실 풀이)—단 '식에 있다'가 아니라 '정의+Eq24로 유도'로 표현해야
 - storyline seed: 근거등급 3단계(rigor 규율): (a)텍스트 식 명시=MAC forward Eq21-25; (b)정의 물려받은 충실 풀이=y_t→k=y_tW_K,v=y_tW_V(§3.1+Eq24); (c)미명세=메모리·attention 투영이 별개 행렬인지(기호 overload). Q017/Q018이 '명시 vs 추론'을 매 주장에 라벨하는 습관을 확립—세미나/페이퍼 정직성의 핵심.
 - 연상: Q002, Q006, Q010, Q017
+
+## Q019 · 2026-07-14 · cross-paper grounding: projection separation (NL explicit) + attn-out-to-memory (MAC-specific)
+
+**Q.** 다른 논문에서 attn out이 nm의 k,v input으로 쓰인다거나 attention 내부 W와 밖 W가 별도임을 알 수 있는 근거 찾아봐
+
+**A.** (b)투영 분리: 근거 있음, NL이 가장 명시적. NL이 'Transformer projections W_k,W_v,W_q'를 attention 것으로 따로 명명하고, self-modifying Titans에서 메모리 k/v/q가 각자 별도 memory 모듈에서 나옴(k_t=M_{k,t-1}(x_t), v_t=M_{v,t-1}(x_t), q_t=M_{q,t-1}(x_t), η_t=M_η, α_t=M_α)→메모리 생성기가 서로·attention과 완전 별개 객체임을 대놓고 보임(Titans 안 한 disambiguation을 NL이 함). 또 Titans/Atlas MAG(parallel branch)·MAL(memory block before SWA block)=모듈 분리→투영 각자. Atlas DeepTransformers=attention이 φ* 쓴 메모리→attention층·neural-memory층 각자 k,v,q. 결론: Q018 (c)미명세를 NL이 (a)명시로 승격(단 근거는 Titans 아닌 NL). (a)attn out→메모리 k,v: 근거 있으나 MAC 전용. Titans Eq24 M_t=M_{t-1}(y_t)+Atlas도 MAC 재사용(BABILong). 그러나 MAG는 raw 입력 병렬가지, MAL은 메모리 블록이 raw 시퀀스 먼저 처리→'attn out→메모리'는 Memory-as-Context 배치 선택이지 보편법칙 아님. MAG/MAL/비-MAC은 raw 토큰.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_unknown: NL이 Titans 모호함을 해소 — self-modifying Titans의 k/v/q가 각자 별도 memory 모듈(M_k/M_v/M_q)이라 투영 분리가 명시적; Q018 (c)미명세→(a)명시 승격; unknown_unknown: 'attn out→메모리 k,v'는 보편이 아니라 MAC 전용 — MAG(병렬 raw입력)/MAL(메모리 블록 먼저)/비-MAC은 raw 토큰을 메모리에; unknown_known: Atlas DeepTransformers가 attention=φ* 메모리임을 증명→attention·neural-memory가 같은 종류의 별개 memory 인스턴스(각자 투영); unknown_known: 계열 cross-reference로 한 논문의 미명세를 다른 논문이 명시(Titans 모호→NL 확정) — 리서치 방법으로 유효
+- 개념 key: cross-paper evidence, NL self-modifying Titans, M_k M_v M_q separate memory modules, Transformer projections named separately, projections are distinct objects, MAG parallel branch, MAL separate blocks, Atlas DeepTransformers attention as memory, MAC-specific design, attn out to memory, raw input to memory in MAG/MAL, evidence grade upgrade
+- 생각할 것: NL self-modifying의 M_k/M_v/M_q가 각자 memory라는 건 파라미터·비용 폭증(투영도 test-time 갱신) — 시스템 관점 G09/serving; lucidrains titans-pytorch 코드로 Titans 자체의 투영 공유/분리를 (a)명시로 확정 가능 — 아직 코드 미확인; MAC이 attention 필터링을 각인하는 vs MAG/MAL이 raw 각인하는 것의 실측 차이(memory overflow, ablation); 이 '한 논문 미명세→다른 논문 명시' 패턴이 6편을 '하나의 완성형'으로 읽는 근거(스터디 페이퍼 수렴 논지)
+- storyline seed: Cross-paper 근거법: Titans가 남긴 모호함(투영 분리)을 NL이 해소(self-modifying Titans의 k/v/q=각자 M_k/M_v/M_q, +Transformer projections 별칭). 'attn out→메모리'는 MAC 전용(MAG/MAL은 raw). Atlas DeepTransformers=attention도 메모리. 교훈: 6편은 서로의 미명세를 채우는 하나의 프로그램이라 cross-reference가 유효(수렴 논지). 세미나: 'Titans가 열고 NL이 명시화'.
+- 연상: Q002, Q006, Q010, Q018
 
