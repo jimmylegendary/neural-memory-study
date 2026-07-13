@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 9건.
+총 10건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -117,4 +117,17 @@
 - 생각할 것: Blelloch(work-efficient) vs Hillis-Steele(depth) scan 차이와 실제 GPU/TPU 구현; chunk-start freeze의 stale 근사가 품질에 주는 영향(chunk↑→stale↑) — TNT의 정확한 주제; 이게 Mamba의 selective scan과 정확히 같은 primitive인지(gate=selective A,B); combine (a2b1+b2)에서 b가 weight-shaped라 메모리·대역폭 비용이 스칼라 SSM보다 큰 점(state size)
 - storyline seed: momentum 병렬화의 정체: 선형(affine) 재귀 S_t=a_t S_{t-1}+b_t라 combine (a1a2,a2b1+b2)가 결합적→associative scan O(log C)(=Mamba SSM primitive). gate 계수 precompute+gradient chunkwise matmul. 진짜 병목은 nonlinear deep-memory gradient(chunk-start freeze, TNT로 이어짐). 이 조각이 Q003/Q005/Q006/Q008의 '순차성→chunkwise/scan' 실을 메커니즘으로 마감.
 - 연상: Q003, Q008
+
+## Q010 · 2026-07-14 · MAC memory write k,v projections (self-supervised)
+
+**Q.** MAC write 컨펌: attn 출력을 NM에 흘려 update한다는데, NM은 k에 대해 v 학습이잖아? attention block 외부에 W_k,v 있고 그걸로 input/golden 놓고 학습? attn-out을 입력에? golden은? 아니면 attn-out을 golden에 놓고 입력은 W_k 출력 k를 흘려? 뭔데
+
+**A.** 사용자가 빠진 연산 정확히 지적. write M_t=M_{t-1}(y_t) 속: 각 attn-out 토큰 u에 대해 k=u W_K, v=u W_V, loss=||M(k)-v||². W_K,W_V는 메모리 자신 투영(attention Q/K/V와 별개, outer-loop 학습, attention block 외부). MLP 입력=k=uW_K, golden(타깃)=v=uW_V. 3안이 맞음(입력=k), 단 golden은 raw attn-out이 아니라 v=uW_V(한 곳 보정). 2안(attn-out 직접 입력) 틀림. self-supervised: 토큰 u가 자기 자신으로 (k,v) 쌍 생성, 메모리는 k→v 학습. Q001 LMM 코어와 동일 메커니즘, 차이는 x_t 자리에 y_t(attention 출력)=attention이 걸러준 표현을 각인. read는 다른 토큰 q=u'W_Q로 꺼냄(q≈저장된 k면 짝 v 회상).
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_unknown: write는 attn-out u에 메모리 자신의 W_K,W_V를 걸어 k=uW_K(MLP 입력)·v=uW_V(golden) 생성 — 내가 이전에 안 펼친 연산; unknown_known: golden은 raw attn-out이 아니라 v=uW_V; MLP 입력은 k=uW_K(사용자 3안이 맞되 golden 보정); unknown_known: self-supervised — k도 v도 같은 u에서(토큰이 자기 (k,v) 쌍 생성); Q001 LMM 코어와 동일, x_t→y_t만 다름
+- 개념 key: memory write projections W_K W_V, self-supervised k-v, k=uW_K v=uW_V, associative loss, MLP input is k target is v, attention output as memory input, same as LMM core Q001, memory projections separate from attention, associative recall q matches k
+- 생각할 것: MAC에서 retrieve query는 raw segment(S W_Q)인데 write는 attn-out(y_t W_K/V) — 입력 스테이지가 다른 이유; read M*_t(y_t)도 query 투영(y_t W_Q) 거치는지 정확히; self-supervised (k,v)가 linear attention/DeltaNet/TTT 전부 공유하는 원리(토큰이 자기 key,value 제공); attention이 걸러준 y_t를 각인 vs raw token 각인의 실측 차이(memory overflow ablation)
+- storyline seed: MAC write 속살: attn-out u → k=uW_K(MLP 입력)·v=uW_V(golden) → ||M(k)-v||². 메모리 W_K/V는 attention과 별개 투영. self-supervised(토큰이 자기 k,v 생성)=Q001 LMM 코어와 동일, x_t 자리에 y_t. read는 다른 q로 연상 회상. 이게 '연상메모리=k→v 자기지도 학습'의 정확한 형태.
+- 연상: Q001, Q002, Q007
 

@@ -1,10 +1,10 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-9건. story line 짤 때 여기서 꺼낸다.
+10건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
-### 모른다는 걸 안다 (known_unknown → decomposition) — 9건
+### 모른다는 걸 안다 (known_unknown → decomposition) — 10건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q003: 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1
@@ -14,8 +14,9 @@
 - Q007: MAC 전체 forward 추적 검증: seq C×d→W_Q로 C query→NM으로 C출력→앞에 concat, persistent도 앞에→(N
 - Q008: 1)attn 출력은 Np+2C,d 아님(y의 shape)? 그걸 다시 흘리면 Np+2C,d? 2)gate 정체가 뭐야, eltwise 곱 맞아?
 - Q009: momentum이 병렬화를 어떻게 유지하는지 associative scan으로 설명해줘
+- Q010: MAC write 컨펌: attn 출력을 NM에 흘려 update한다는데, NM은 k에 대해 v 학습이잖아? attention block 외부에
 
-### 모른다는 것도 모른다 (unknown_unknown → exploration) — 27건
+### 모른다는 것도 모른다 (unknown_unknown → exploration) — 28건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
@@ -43,8 +44,9 @@
 - Q009: momentum이 병렬화를 어떻게 유지하는지 associative scan으로 설명해줘
 - Q009: momentum이 병렬화를 어떻게 유지하는지 associative scan으로 설명해줘
 - Q009: momentum이 병렬화를 어떻게 유지하는지 associative scan으로 설명해줘
+- Q010: MAC write 컨펌: attn 출력을 NM에 흘려 update한다는데, NM은 k에 대해 v 학습이잖아? attention block 외부에
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 7건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 9건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
@@ -52,6 +54,8 @@
 - Q006: 1)gate 3개 weight=d 벡터? 2)Persistent memory 정체·논문 위치·학습·정보·shape? 3)MAC 3부품 의존없이 
 - Q007: MAC 전체 forward 추적 검증: seq C×d→W_Q로 C query→NM으로 C출력→앞에 concat, persistent도 앞에→(N
 - Q009: momentum이 병렬화를 어떻게 유지하는지 associative scan으로 설명해줘
+- Q010: MAC write 컨펌: attn 출력을 NM에 흘려 update한다는데, NM은 k에 대해 v 학습이잖아? attention block 외부에
+- Q010: MAC write 컨펌: attn 출력을 NM에 흘려 update한다는데, NM은 k에 대해 v 학습이잖아? attention block 외부에
 
 ### 안다는 걸 안다 (known) — 0건
 
@@ -179,6 +183,15 @@
 - **precomputable coefficients** (1): Q009
 - **nonlinear is the real bottleneck** (1): Q009
 - **weight decay linear recurrence** (1): Q009
+- **memory write projections w_k w_v** (1): Q010
+- **self-supervised k-v** (1): Q010
+- **k=uw_k v=uw_v** (1): Q010
+- **associative loss** (1): Q010
+- **mlp input is k target is v** (1): Q010
+- **attention output as memory input** (1): Q010
+- **same as lmm core q001** (1): Q010
+- **memory projections separate from attention** (1): Q010
+- **associative recall q matches k** (1): Q010
 
 ## 3. 열린 실 (think_about)
 
@@ -218,6 +231,10 @@
 - [Q009] chunk-start freeze의 stale 근사가 품질에 주는 영향(chunk↑→stale↑) — TNT의 정확한 주제
 - [Q009] 이게 Mamba의 selective scan과 정확히 같은 primitive인지(gate=selective A,B)
 - [Q009] combine (a2b1+b2)에서 b가 weight-shaped라 메모리·대역폭 비용이 스칼라 SSM보다 큰 점(state size)
+- [Q010] MAC에서 retrieve query는 raw segment(S W_Q)인데 write는 attn-out(y_t W_K/V) — 입력 스테이지가 다른 이유
+- [Q010] read M*_t(y_t)도 query 투영(y_t W_Q) 거치는지 정확히
+- [Q010] self-supervised (k,v)가 linear attention/DeltaNet/TTT 전부 공유하는 원리(토큰이 자기 key,value 제공)
+- [Q010] attention이 걸러준 y_t를 각인 vs raw token 각인의 실측 차이(memory overflow ablation)
 
 ## 4. Storyline seeds
 
@@ -230,3 +247,4 @@
 - [Q007] (Titans MAC full forward + layer stacking + no separate FFN) MAC 한 블록 완결: 검색(q)→[P‖h_t‖S] attention(softmax)→write(y_t로 M 갱신)→출력 o_t=y_t⊗M*_t(y_t)(게이트). 이게 한 layer, 모델=임베딩→블록×L→LM head, 각 layer 자기 NM. 별도 FFN 없음(persistent가 FFN 역할). C×d 출력으로 길이 보존.
 - [Q008] (Titans MAC shapes + scan/momentum/chunkwise) MAC 계산 정밀화: attn 출력 (Np+2C)×d → 슬라이싱으로 segment C×d(길이축소는 슬라이싱, 모양보존은 gate) → NM write(MLP면 backprop으로 gradient) → 출력 y_t^seg⊗M*_t(y_t^seg). S_t·M_t는 weight-shaped 버퍼 1개(시퀀스축 아님), gate는 토큰당 스칼라 C개. scan=선형 momentum 재귀를 O(log C) 병렬(Mamba primitive), chunkwise=gradient를 chunk-start weight matmul 병렬 — 이게 '순차라 비쌈→TNT' 실의 정체.
 - [Q009] (momentum parallelization via associative scan) momentum 병렬화의 정체: 선형(affine) 재귀 S_t=a_t S_{t-1}+b_t라 combine (a1a2,a2b1+b2)가 결합적→associative scan O(log C)(=Mamba SSM primitive). gate 계수 precompute+gradient chunkwise matmul. 진짜 병목은 nonlinear deep-memory gradient(chunk-start freeze, TNT로 이어짐). 이 조각이 Q003/Q005/Q006/Q008의 '순차성→chunkwise/scan' 실을 메커니즘으로 마감.
+- [Q010] (MAC memory write k,v projections (self-supervised)) MAC write 속살: attn-out u → k=uW_K(MLP 입력)·v=uW_V(golden) → ||M(k)-v||². 메모리 W_K/V는 attention과 별개 투영. self-supervised(토큰이 자기 k,v 생성)=Q001 LMM 코어와 동일, x_t 자리에 y_t. read는 다른 q로 연상 회상. 이게 '연상메모리=k→v 자기지도 학습'의 정확한 형태.
