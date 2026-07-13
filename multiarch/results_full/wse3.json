@@ -1,0 +1,148 @@
+{
+ "twin": "wse3.json",
+ "key": "wse3",
+ "tier": "SILVER",
+ "backing_role": "sram",
+ "hw_summary": {
+  "bw_TBps": 21000.0,
+  "peak_PFLOPs": 12.4992,
+  "cap_GB": 44.0,
+  "ondie_MB": 44000.0,
+  "epb_pj_B": 1.0,
+  "matrix_unit": [
+   1,
+   1,
+   8
+  ]
+ },
+ "E1.1_decode_baseline": {
+  "rmw_GB_token": 6.4425,
+  "rmw_ms_token": 0.0003,
+  "rmw_uJ_token": 6442.451,
+  "compute_ms_token": 0.00031,
+  "arith_intensity_flopB": 0.594,
+  "bound": "memory",
+  "bound_margin_x": 1.0
+ },
+ "E1.2_state_placement": {
+  "state_MB_layer": 134.2,
+  "whole_model_state_GB": 3.221,
+  "ondie_cap_MB": 44000.0,
+  "ondie_is_backing": true,
+  "backing_rmw": {
+   "traffic_MB": 268.4,
+   "time_us": 0.013,
+   "energy_uJ": 268.435
+  },
+  "ondie_rmw": {
+   "traffic_MB": 268.4,
+   "time_us": 0.013,
+   "energy_uJ": 268.435
+  },
+  "fits_1layer_ondie": true,
+  "fits_whole_ondie": true,
+  "residency_crossover_d_star": 37081,
+  "ondie_vs_backing_energy_x": 1.0,
+  "ondie_vs_backing_time_x": 1.0,
+  "placement_verdict": "whole-model resident on-die"
+ },
+ "E1.3_kv_vs_ttt": {
+  "S_star_read_tokens": 65536,
+  "S_star_note": "KV read == TTT RMW crossover; pure workload property (HW-invariant)",
+  "B_max_10ms": 32596.29,
+  "B_max_50ms": 162981.45,
+  "kv_ms_token_by_ctx": {
+   "2048": 0.0,
+   "8192": 0.0,
+   "32768": 0.0001
+  },
+  "ttt_ms_token_const": 0.0003,
+  "kv_write_pct_of_read": 0.003,
+  "ttt_write_pct_of_read": 100.0
+ },
+ "E1.4_frequency_tiers": {
+  "state_MB": 134.2,
+  "budget_us_per_token": 100.0,
+  "cadence_to_tier": {
+   "every_1_tok": "sram",
+   "every_16_tok": "CXL",
+   "every_256_tok": "CXL",
+   "every_4096_tok": "CXL"
+  },
+  "note": "per-token pins hot (only hot meets budget un-amortised); sub-per-token amortises to cold pool"
+ },
+ "E1.5_kvmgr_gap": {
+  "dirty_writeback_owed_uJ": 134.218,
+  "dirty_writeback_owed_us": 0.006,
+  "kv_manager_prices_it_as": 0,
+  "note": "KVCacheManager _evict_from() del-drops dirty state free; real TTT eviction owes 1 full writeback"
+ },
+ "E3_analytical": {
+  "ridge_flopB": 0.6,
+  "S_star": 65536,
+  "c_star_chunk": 0.6,
+  "B_max_10ms": 32596.29
+ },
+ "E4_scaling": [
+  {
+   "scale": "Titans-170M",
+   "d": 768,
+   "L": 12,
+   "rmw_GB_token": 0.453,
+   "rmw_ms_token": 0.0,
+   "S_star_tokens": 18432,
+   "whole_state_GB": 0.226,
+   "fits_ondie": true
+  },
+  {
+   "scale": "Titans-340M",
+   "d": 1024,
+   "L": 24,
+   "rmw_GB_token": 1.6106,
+   "rmw_ms_token": 0.0001,
+   "S_star_tokens": 32768,
+   "whole_state_GB": 0.805,
+   "fits_ondie": true
+  },
+  {
+   "scale": "Titans-760M",
+   "d": 1536,
+   "L": 24,
+   "rmw_GB_token": 3.6239,
+   "rmw_ms_token": 0.0002,
+   "S_star_tokens": 49152,
+   "whole_state_GB": 1.812,
+   "fits_ondie": true
+  },
+  {
+   "scale": "neural-mem-1.3B",
+   "d": 2048,
+   "L": 24,
+   "rmw_GB_token": 6.4425,
+   "rmw_ms_token": 0.0003,
+   "S_star_tokens": 65536,
+   "whole_state_GB": 3.221,
+   "fits_ondie": true
+  },
+  {
+   "scale": "hypo-7B",
+   "d": 4096,
+   "L": 32,
+   "rmw_GB_token": 34.3597,
+   "rmw_ms_token": 0.0016,
+   "S_star_tokens": 262144,
+   "whole_state_GB": 17.18,
+   "fits_ondie": true
+  },
+  {
+   "scale": "hypo-70B",
+   "d": 8192,
+   "L": 80,
+   "rmw_GB_token": 343.5974,
+   "rmw_ms_token": 0.0164,
+   "S_star_tokens": 1048576,
+   "whole_state_GB": 171.799,
+   "fits_ondie": true
+  }
+ ]
+}

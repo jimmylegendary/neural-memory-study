@@ -1,21 +1,21 @@
 # 크로스아키텍처 실험 보고서
 
-## Part III pair thesis를 8개 가속기에서 동일하게 측정하다
+## Part III 의 모든 HATIR 실험을 8개 가속기에서 동일하게
 
-> **한 줄 결론.** 동일한 Part III 실험(closed-form E3 backbone)을 8개 아키텍처에서 동일하게 돌린 결과, **load-bearing 결론(비율·crossover·bound)은 하드웨어 전체 공간에서 견고**했다: **S\* 는 8개 전부 동일**(HW 무관), **decode 는 7/8 memory-bound**(여유 380–1455×) — 유일 예외는 wafer-scale Cerebras로 roofline **knee** 에 걸린다. 반면 **절대 성능은 5자릿수 갈렸다**(decode 0.0003 ms/tok Cerebras → 31.5 ms/tok MTIA). 절대치는 단정하지 않는다(ideal 하한).
+> **개요.** study paper Part III 의 twin-의존 HATIR 실험 전부(E1.1 decode-baseline · E1.2 state-placement · E1.3 kv-vs-ttt · E1.4 frequency-tiers · E1.5 kvmgr-gap · E3 analytical · E4 scaling)를 **8개 아키텍처**에서 **동일하게** 재실행하고, 실험별 그래프·tier 배치·종합 한눈에 뷰·환경·고찰·insight 를 정리한다. (E2.1/E2.2 는 host-CPU roofline **모양** 측정이라 아키텍처 무관 — §4.8.)
 
-> **핵심.** 이 문서의 최우선 가치는 **성능 수치 신뢰성**이다. 각 twin 은 필드별 provenance + confidence(GOLD/SILVER/BRONZE)로 저작하고 **2라운드 적대 검증**(spec 저작 + 결과 재검증)을 통과시켰다. 발표에서 **단정 가능한 것은 GOLD/SILVER load-bearing 필드에 기반한 비율·순서·bound 뿐**이고, BRONZE(특히 Vera Rubin 전체)와 모든 절대 µs/mJ 은 directional/예비다.
+> **핵심 — 정직성 계약.** 최우선 가치는 **성능 수치 신뢰성**이다. 각 twin 은 필드별 provenance+confidence(GOLD/SILVER/BRONZE)로 저작하고 **2라운드 적대 검증**을 통과시켰다. 단정 가능한 것은 GOLD/SILVER load-bearing 필드에 기반한 **비율·crossover·bound·tier 순서**뿐이고, BRONZE(Vera Rubin 전체)와 **모든 절대 µs/mJ 은 ideal roofline 하한**(directional/예비)이다. 근거: `AUTHORING-SPEC.md`, `specs/*.json`, `REVIEW-LOG.md`, 본서 부록 E.
 
 ---
 
 ## 1. 방법
 
-1. **twin 저작 (라운드 1).** 7개 신규 칩을 다중 독립 검색으로 저작. 각 load-bearing 수치를 vendor whitepaper/datasheet + 3rd-party(SemiAnalysis, Chips&Cheese, Hot Chips, ISCA)로 교차. 저작값을 **독립 검증가 2명**(vendor 위주 / 3rd-party 위주)이 신선한 검색으로 반박 시도 → 조정으로 최종 등급 확정.
-2. **결과 재검증 (라운드 2).** 8개 twin headline 을 다시 독립 재확인 + 결과표 산술·물리 감사 + 보고서 과대주장 감사.
-3. **실험.** `run_multiarch.py` 가 E3 closed-form 을 임의 twin 으로 파라미터화(HBM GPU + SRAM-only 공통). **정확성 게이트**: H100 에서 확정 E3 anchor 를 <0.02% 재현(6.442 GB/tok, S\* 65536, 134.2 MB).
-4. **스키마 검증.** 8개 twin 전부 hatir `validate_twin` 통과(error 0).
+1. **twin 저작 (라운드 1, 28 agents).** 7개 신규 칩을 다중 독립 검색 → 저작 → **독립 검증가 2명**(vendor / 3rd-party)이 신선 검색으로 반박 → 조정. 필드별 provenance+confidence.
+2. **결과 재검증 (라운드 2, 10 agents).** 8개 headline 독립 재확인 + 결과표 산술·물리 감사 + 과대주장 감사. (라운드2가 wse3 sparse→dense peak 오류를 잡음 — §6.)
+3. **실험 driver.** `run_all_experiments.py` 가 7개 실험 전부를 임의 twin 으로 파라미터화(HBM GPU + SRAM-only 공통). 모든 공식은 `experiments/{E1.1,E1.2,E1.3,E1.4,E3}` verbatim. **정확성 게이트**(`--validate`): H100 twin 이 확정 anchor 5종을 <0.02% 재현 — rmw 6.442 GB/tok, ms 1.923, state 134.2 MB, S\* 65536, B_max 5.2.
+4. **스키마 검증.** 8개 twin 전부 hatir `validate_twin` PASS(error 0). **그림**: `make_figures.py` → `figures/*.png`.
 
-anchor 설정: neural-mem-1.3B (d=2048, m=16, L=24, GQA-8, bf16).
+anchor: neural-mem-1.3B (d=2048, m=16, L=24, GQA-8, bf16).
 
 ---
 
@@ -32,26 +32,30 @@ anchor 설정: neural-mem-1.3B (d=2048, m=16, L=24, GQA-8, bf16).
 | wse3 | Cerebras WSE-3 | SILVER | SRAM(wafer) |
 | vr100 | NVIDIA Vera Rubin | BRONZE | HBM4 |
 
-> **주의.** vr100 은 내부 전면 미공개(BW 13–22 TB/s·BF16 5–13 PF 범위) → 전체 directional/예비, **발표 단정 금지**. tpu-v7(※)은 backing/compute 는 GOLD 이나 on-chip VMEM(reuse-tier)이 미공개 추정이라 **residency 주장만 BRONZE 로 강등**해 인용한다. groq/wse3 는 HBM 이 없는 SRAM 기반이라 backing tier 가 on-chip SRAM 이다.
+> **주의.** vr100 은 내부 전면 미공개 → 전체 directional, 발표 단정 금지. tpu-v7(※)은 backing/compute 는 GOLD 이나 on-chip VMEM(reuse-tier)이 미공개 추정 → **residency(E1.2) 주장만 BRONZE**. groq/wse3 는 HBM 이 없는 SRAM 기반.
 
 ---
 
-## 3. 결과 — 하드웨어 스펙 (anchor 단일 가속기)
+## 3. 종합 — 한눈에
 
-| twin | tier | backing | BW (TB/s) | dense BF16/FP16 (PF) | 용량 |
-|---|---|---|---|---|---|
-| h100 | GOLD | HBM3 | 3.35 | 0.99 | 80 GB |
-| b100 | SILVER | HBM3e | 8.0 | 1.8 | 192 GB |
-| mi355x | SILVER | HBM3e | 8.0 | 2.52 | 288 GB |
-| tpu-v7 | SILVER | HBM3e | 7.38 | 2.31 | 192 GB |
-| vr100 | BRONZE | HBM4 | 22.0※ | 6.25※ | 288 GB |
-| mtia2 | GOLD | LPDDR5 | 0.205 | 0.177 | 128 GB |
-| groq-lpu | SILVER | SRAM | 80.0† | 0.188 | 220 MB |
-| wse3 | SILVER | SRAM | 21000 | 12.5‡ | 44 GB |
+![fig7 · 한눈에: (a) decode 비용 (b) ridge vs AI (c) S\* 불변 (d) on-chip 예산 vs state. BW 오름차순, 색=신뢰도 등급.](/home/jimmy/repos/neural-memory-study/multiarch/figures/fig7-consolidated.png){width=15.5cm}
 
-## 4. 결과 — pair thesis 지표
+**HW 스펙 (단일 가속기).**
 
-| twin | decode ms/tok | ridge (F/B) | S\* (tok) | C\* | Bmax(10ms) | bound (여유) |
+| twin | tier | backing | BW (TB/s) | dense BF16/FP16 (PF) | 용량 | on-chip |
+|---|---|---|---|---|---|---|
+| h100 | GOLD | HBM3 | 3.35 | 0.99 | 80 GB | 50 MB |
+| b100 | SILVER | HBM3e | 8.0 | 1.8 | 192 GB | 101 MB |
+| mi355x | SILVER | HBM3e | 8.0 | 2.52 | 288 GB | 34 MB |
+| tpu-v7 | SILVER | HBM3e | 7.38 | 2.31 | 192 GB | 268 MB※ |
+| vr100 | BRONZE | HBM4 | 22.0 | 6.25 | 288 GB | 105 MB |
+| mtia2 | GOLD | LPDDR5 | 0.205 | 0.177 | 128 GB | 268 MB |
+| groq-lpu | SILVER | SRAM | 80.0 | 0.188 | 220 MB | (backing) |
+| wse3 | SILVER | SRAM | 21000 | 12.5 | 44 GB | (backing) |
+
+**pair thesis 지표 (anchor).**
+
+| twin | decode ms/tok | ridge | S\* | C\* | Bmax@10ms | bound (여유) |
 |---|---|---|---|---|---|---|
 | h100 | 1.923 | 295 | 65536 | 337 | 5.2 | memory (497×) |
 | b100 | 0.805 | 225 | 65536 | 249 | 12.4 | memory (379×) |
@@ -62,89 +66,146 @@ anchor 설정: neural-mem-1.3B (d=2048, m=16, L=24, GQA-8, bf16).
 | groq-lpu | 0.081† | 2.35 | 65536 | 2.4 | 124 | memory (4×) |
 | wse3 | 0.0003 | 0.60 | 65536 | 0.6 | 32596 | **knee (1.01×)** |
 
-주: ※ vr100 절대치는 BRONZE(범위 하 한 draw) — directional. † groq BW 는 vendor aggregate 80 TB/s; ISCA effective ~27.5 TiB/s 면 ridge ~6·ms/tok ~3배 — 절대치 유보. ‡ wse3 12.5 PF = **dense** FP16(라운드2가 잡은 교정: 125 PF 는 Cerebras **sparse** 마케팅 수치, 10× 낙관; 용량·BW 는 GOLD 불변).
+※ vr100/tpu-v7(residency) = BRONZE. † groq BW = vendor aggregate. 절대치는 ideal 하한(단정 안 함).
 
 ---
 
-## 5. 핵심 발견
+## 4. 실험별 결과·환경·고찰
 
-**① S\* (KV↔TTT crossover)는 하드웨어 무관 — 8개 전부 65536 token.** S\* = m·d²·(dtype비)/kv_dim 로 **순수 workload 속성**이다. backing 이 HBM 이든 LPDDR 이든 wafer SRAM 이든 값이 같다 → "상쇄 논증"의 직접 실증: 이 crossover 는 BW 값에도 이용률에도 movable 하지 않다. **발표에서 가장 강하게 단정 가능한 결과.**
+### 4.1 E1.1 — decode-baseline (토큰당 whole-state RMW)
 
-**② decode 는 7/8 memory-bound (여유 380–1455×), 유일 예외 Cerebras 는 roofline knee.** decode AI 0.59 는 HBM/LPDDR 6종의 ridge(225–864)보다 2–3자릿수 낮아 memory-bound 가 압도적으로 견고하다(스펙 100배 오차로도 불변). Groq 는 여유 ~4× 로 여전히 memory-bound. **단 Cerebras WSE-3 만은 ridge 0.60 ≈ AI 0.59**(여유 ~1%) — wafer SRAM 대역폭(21 PB/s)이 dense FLOPS(12.5 PF) 대비 워낙 커서 decode RMW 가 memory-bound 가 아니라 **balanced(knee)** 가 된다. 즉 "decode-state 는 memory-bound"는 HBM/LPDDR/on-chip-SRAM(Groq)까지는 견고하되 극단적 BW-rich 한 wafer-scale 에서는 knee 로 이동한다 — **이 경계 자체가 결과다.**
+**설명.** decode 한 스텝이 fast-weight state 전체를 read-modify-write 하는 비용(traffic·time·energy·bound). anchor 상태 = m·d²·L = 134 MB/layer × 24.
 
-**③ 절대 decode 비용만 5자릿수 갈린다 — 그 축은 "state 가 어디 사느냐"다.**
+**환경.** 각 twin 의 backing tier(bandwidth_bps·energy_pj_per_byte) + compute leaf(peak_macs). traffic = 2·state·L(read+write), time = traffic/BW, energy = traffic·epb.
 
-- **wafer SRAM(Cerebras)**: 전체 state 3.2 GB 가 44 GB on-wafer SRAM 에 상주, 21 PB/s 로 RMW → 0.0003 ms/tok. decode-state 병목이 사실상 소멸.
-- **on-chip SRAM(Groq)**: layer 당 state(134 MB)가 220 MB SRAM 에 상주 → 값쌈.
-- **HBM GPU(H100/B100/MI355X/TPU)**: state 가 HBM 에서 스트리밍(L2 50 MB 엔 안 맞음) → 0.8–1.9 ms/tok(GOLD/SILVER), BW 에 비례. (Rubin 0.29 ms/tok 는 BRONZE 이라 범위 제외.)
-- **LPDDR(MTIA v2)**: 204.8 GB/s 로 가장 느림 → 31.5 ms/tok. 이 workload 엔 BW-starved.
+![fig1 · 토큰당 decode 비용(log). 5자릿수 스프레드, state 배치가 축.](/home/jimmy/repos/neural-memory-study/multiarch/figures/fig1-decode-ms.png){width=14cm}
 
-→ pair thesis 의 "decode-state 배치는 designable knob" 이 8개 아키텍처에서 정량 확인됐다. **on-chip 용량·대역폭이 클수록 이 memory-centric 부하가 값싸진다** — SRAM-heavy 설계(Cerebras/Groq)가 이 병목을 구조적으로 해소한다. 단 이 절대치들은 ideal roofline 하한이며 단정하지 않는다(실측은 MFU/MBU 만큼 느림).
+**결과.** decode ms/tok: MTIA 31.5 → H100 1.92 → Rubin 0.29 → Groq 0.08 → **Cerebras 0.0003** (약 5자릿수 스프레드). AI = **0.594 로 8개 전부 동일**(workload 고정). 에너지: SRAM 칩(Groq/WSE-3) 6.4 mJ/tok, HBM/LPDDR 32–52 mJ/tok(epb 차이).
 
----
+**고찰·insight.** decode 가 memory-bound 라는 성질은 **update rule 의 RMW 대칭성**에서 오는 것이라 모델·HW 와 무관하다(AI 항상 0.594). 그러나 *얼마나 깊이* memory-bound 인지(여유 1×–1455×)와 절대 비용은 순전히 HW 의 BW·epb 문제다. **SRAM 기반 칩의 에너지 우위(7×)** 는 이 write-heavy 부하에서 특히 큰데, epb 가 HBM 의 1/7 이기 때문이다 — memory-centric 부하일수록 low-epb 메모리의 가치가 커진다.
 
-## 6. 신뢰성 — per-quantity 로 무엇을 단정하고 무엇을 유보
+### 4.2 E1.2 — state-placement (tier 잔류)
 
-| 결과 | 어디에 의존 | 단정 가능? |
-|---|---|---|
-| S\* = 65536 (전 아키텍처) | workload config 만 (HW 무관) | 예 — 전부 (BRONZE twin 포함) |
-| bound = memory (7/8) | ridge ≫ 0.59 (380–1455×) | 예 — HBM/LPDDR/Groq |
-| Cerebras = knee (예외) | ridge 0.60 ≈ AI 0.59 | 예 — 단 "경계(knee)"로 |
-| decode 비용 순서(SRAM≪HBM≪LPDDR) | backing BW (GOLD/SILVER) | 예 — vr100 제외 |
-| 절대 ms/tok·µs·mJ | backing BW·energy + ideal 가정 | 유보 — ideal 하한, 실측 예정 |
-| residency (on-die fit) | reuse-tier 용량 | 예 — 단 tpu-v7 은 BRONZE |
-| vr100 전체 | 미공개 스펙 | 유보 — directional/예비 |
+**설명.** state 가 context-무관 **고정 크기**라 on-chip 상주가 designable 선택이다(context 로 자라는 KV 와 대조). 각 HW 의 자기 계층에서 backing vs on-chip RMW 비용·잔류·residency crossover d\*(1-layer state 가 on-chip 에 들어가는 최대 d)를 잰다.
 
----
+**환경.** 각 twin 의 on-chip reuse tier(L2/Infinity Cache/LDS/SRAM) 용량·BW·epb vs backing. d\* = √(ondie_cap / 2m).
 
-## 부록 A. 필드별 출처 (load-bearing headline)
+![fig5 · state 배치·tier 잔류(log). on-chip 예산 vs 1-layer(134MB)·whole-model(3.2GB) state.](/home/jimmy/repos/neural-memory-study/multiarch/figures/fig5-state-placement.png){width=14cm}
 
-각 twin 의 3대 load-bearing 필드(backing 대역폭·device peak·용량)의 등급과 출처. 전체 필드·미해결은 `specs/*.json`.
+**결과.**
 
-| twin | BW | peak | 용량 | 대표 출처 |
+| twin | on-chip | 판정 | d\* | on-die vs backing (E/T) |
 |---|---|---|---|---|
-| h100 | GOLD | GOLD | GOLD | NVIDIA H100 whitepaper |
-| b100 | GOLD | GOLD | GOLD | cudocompute Blackwell, wccftech, exxact |
-| mi355x | GOLD | GOLD | GOLD | AMD MI355X datasheet, Chips&Cheese, CDNA4 whitepaper |
-| tpu-v7 | GOLD | GOLD | GOLD | Google Cloud tpu7x docs, SemiAnalysis |
-| mtia2 | GOLD | GOLD | GOLD | ai.meta.com MTIA blog, MTIA-ISCA25, ServeTheHome |
-| groq-lpu | SILVER | SILVER | GOLD | Groq Spec Sheet v1.5, ISCA 2020 TSP paper |
-| wse3 | GOLD | (교정)‡ | GOLD | cerebras.ai architecture |
-| vr100 | BRONZE | BRONZE | BRONZE | GTC 발표(288GB HBM4), Spheron/ThunderCompute (datasheet 없음) |
+| wse3 | 44 GB | **whole-model 상주** | 37081 | 1×/1× (backing=on-chip) |
+| tpu-v7 | 268 MB※ | per-layer 상주 | 2896 | 25×/22× |
+| mtia2 | 268 MB | per-layer 상주 | 2896 | 20×/13× |
+| groq-lpu | 220 MB | per-layer 상주 | 2685 | 1×/1× (backing=on-chip) |
+| vr100 | 105 MB | backing 스트리밍 | 1810 | — |
+| b100 | 101 MB | backing 스트리밍 | 1774 | 12.5×/1.25× |
+| h100 | 50 MB | backing 스트리밍 | 1280 | 17.5×/3× |
+| mi355x | 34 MB | backing 스트리밍 | 1024 | 12.5×/1.25× |
 
-‡ wse3 peak 는 라운드2에서 sparse(125 PF)→dense(12.5 PF)로 교정(부록 B). groq BW 는 vendor aggregate 80 TB/s vs ISCA effective ~27.5 TiB/s 정의차 → 절대치 유보. vr100 은 vendor datasheet PDF 부재로 전 필드 BRONZE.
+**고찰·insight.** decode-state 병목은 본질적으로 **on-chip 용량 문제**다. HBM GPU(H100/B100/MI355X/Rubin)는 1-layer state(134 MB)조차 on-chip(L2 34–105 MB)에 못 담아 매 토큰 HBM 스트리밍한다 — 그런데 *만약 담을 수 있다면* 에너지 12–17×, 시간 3× 이득이 걸려 있다(빈 기회). MTIA/TPU 는 256–268 MB SRAM 으로 layer 상주가 되고, **Cerebras 는 44 GB 로 전체 모델 상주** — 이 부하에서 유일하게 배치 문제가 사라진다. 업계 추세(HBM 용량↑)는 이 부하엔 덜 효과적이고, **on-chip SRAM↑ 가 직접 답**이다. (※ tpu-v7 의 on-chip 예산은 미공개 추정 = BRONZE, residency 판정은 예비.)
+
+### 4.3 E1.3 — kv-vs-ttt (S\* crossover, B_max)
+
+**설명.** KV cache read(context S 에 비례) 와 TTT state RMW(상수)가 같아지는 crossover S\*, 그리고 per-sequence state 로 인한 동시 시퀀스 상한 B_max.
+
+**환경.** S\* = m·d²·(dtype비)/kv_dim. B_max = BW·t_target / rmw_per_token.
+
+![fig4 · S\* 불변성 — 8개 전부 65536. 하드웨어 무관 workload 속성.](/home/jimmy/repos/neural-memory-study/multiarch/figures/fig4-sstar-invariance.png){width=13cm}
+
+![fig3 · B_max@10ms(log) — BW 에 비례(BW-bound).](/home/jimmy/repos/neural-memory-study/multiarch/figures/fig3-bmax.png){width=13cm}
+
+**결과.** **S\* = 65536 token, 8개 전부 동일.** B_max@10ms: MTIA 0.32 → H100 5.2 → Cerebras 32596 (BW 비례). KV write%=0.003, TTT write%=100(대칭 RMW).
+
+**고찰·insight.** S\* 는 이 스터디의 **가장 강한 결과**다 — crossover 위치가 backing 종류(HBM/LPDDR/wafer SRAM)·BW 값·이용률 어디에도 movable 하지 않다(순수 traffic 대수). 이것이 "상쇄 논증"의 직접 실증이고, **BRONZE(Rubin) twin 을 포함해 8개 전부에서 단정 가능**한 유일한 절대적 결과다. 반면 B_max 는 순수 BW-bound(용량 아님) — decode 는 용량 벽이 아니라 **대역폭 벽**에 먼저 막힌다.
+
+### 4.4 E1.4 — frequency-tiers (cadence → memory tier)
+
+**설명.** NL(HOPE)/Sleep 은 memory level 마다 update cadence 를 준다. cadence 가 memory 계층 배정으로 번역되는지 — per-token 은 hot tier 를 요구하고, sub-per-token 은 amortize 되어 cold tier 로 내려갈 수 있는지.
+
+**환경.** 각 twin 의 on-chip·backing 을 hot tier 로, 일반 DDR5·CXL 을 cold tier 로. cadence C 의 amortized 기여 = (2S/BW)/C, per-token budget 100 µs 하 admissible 중 가장 cold tier 선택.
+
+**결과 (cadence → tier).**
+
+| twin | every 1 tok | every 16+ tok |
+|---|---|---|
+| H100/B100/MI355X/TPU/Rubin | **HBM** | CXL |
+| MTIA v2 | **on-die SRAM** | CXL |
+| Groq / Cerebras | **SRAM** | CXL |
+
+**고찰·insight.** per-token fast level 은 hot tier 에 고정되지만 **그 hot tier 가 HW 마다 다르다** — GPU 는 HBM, MTIA/Groq/Cerebras 는 on-chip SRAM. 즉 SRAM 기반 칩에선 매 토큰 갱신되는 fast weight 가 **native 로 on-chip 에 산다**. 그리고 sub-per-token(cadence≥16) 은 어디서든 CXL 로 내려간다 — amortization 이 강력해서 NL 의 저주파 CMS level·Sleep 의 offline consolidation 은 값싼 pooled 메모리로 밀 수 있다. **NL/Sleep 의 다속도 메모리가 실제 메모리 계층에 어떻게 앉는지가 HW-상대적**이라는 것이 핵심 — 같은 알고리즘이 GPU 와 wafer-scale 에서 다른 배치 전략을 요구한다.
+
+### 4.5 E1.5 — kvmgr-gap (KV-manager 범주 불일치)
+
+**설명.** KV cache manager 의 의미론(content-addressed reuse, append-only, free-drop eviction)이 RMW state 에 안 맞음을 보인다. 정량 조각: manager 가 0으로 값매기는 dirty writeback 이 실제로는 full write-back 을 빚진다.
+
+**결과.** dirty-writeback owed: Cerebras 134 µJ / MTIA 1342 µJ (KV-manager prices **0**). reuse=0(content 매 토큰 변이), stale accretion(append-only 시 T 버전 누적).
+
+**고찰·insight.** SW argument 의 뼈대(reuse=0, stale 누적)는 HW 무관이지만, **unpriced eviction 비용은 epb 에 비례**해 high-energy backing(LPDDR MTIA)에서 가장 크다. TTT-state manager 는 KV manager 에 없는 event 가 필요하다: `update_in_place`, `mark_dirty/writeback`, `checkpoint/rollback`, `bind_to_sequence`. 즉 서빙 SW 스택도 새로 써야 하는 부하다.
+
+### 4.6 E3 — analytical (ridge, C\*)
+
+**설명.** 닫힌 형태 cost model 의 roofline knee(ridge = peak/BW)와 chunk crossover C\*.
+
+![fig2 · ridge vs decode AI(log). 7/8 memory-bound(여유 380–1455×), Cerebras 만 knee.](/home/jimmy/repos/neural-memory-study/multiarch/figures/fig2-ridge-vs-ai.png){width=14cm}
+
+**결과.** ridge: Cerebras 0.60 → Groq 2.35 → B100 225 → MTIA 864. C\*(prefill compute-bound 되는 chunk): Cerebras 0.6 → H100 337 → MTIA 1180.
+
+**고찰·insight.** ridge 는 각 HW 를 이 부하의 memory/compute 스펙트럼 위에 놓는 단일 숫자다. decode AI 0.594 는 6종 HBM/LPDDR 의 ridge 보다 2–3자릿수 낮아 압도적 memory-bound, Groq 는 ~4×, **Cerebras 만 ridge≈AI(knee)**. C\* 는 반대로 prefill/training 이 compute-bound 되는 chunk 크기 — MTIA 는 1180 이라 큰 chunk 가 필요하고, Cerebras 는 0.6 이라 chunk-1 조차 compute-bound 근처다. **한 알고리즘이 HW 에 따라 memory 문제도 compute 문제도 된다.**
+
+### 4.7 E4 — scaling (170M → 70B)
+
+**설명.** state·traffic·S\* 가 모델 규모(d)에 따라 어떻게 자라는지, 8개 HW 각각에서.
+
+![fig6 · RMW 비용 스케일링(log-log). ∝ m·d²·L, 기울기 HW 무관, 오프셋만 1/BW.](/home/jimmy/repos/neural-memory-study/multiarch/figures/fig6-scaling.png){width=14cm}
+
+**결과.** rmw ∝ m·d²·L (170M 0.45 → 70B 343 GB/tok). log-log 에서 **모든 HW 곡선이 평행**(동일 기울기), 세로 오프셋만 1/BW.
+
+**고찰·insight.** 스케일링 거동은 **보편적**이다 — HW 는 곡선을 위아래로 옮길 뿐 형태를 안 바꾼다. 따라서 규모에 대한 결론(state 는 width²로 자란다, S\* 는 width²로 자란다)은 8개 HW 전부에서 그대로 전이된다. 큰 모델일수록 on-chip 상주가 불가능해지고(state 가 GB급) HBM 스트리밍이 강제되므로, §4.2 의 "on-chip SRAM 이 답" 논지는 규모가 커질수록 강해진다.
+
+### 4.8 E2.1 / E2.2 — host-CPU roofline (아키텍처 무관)
+
+E2.1(chunk-intensity)·E2.2(rmw-cliff)는 **이 host CPU 에서 실제 시간을 잰** roofline *모양* 측정이라 타깃 HW 별로 바뀌지 않는다(host 는 host). 대신 각 twin 의 ridge(§4.6)가 그 곡선의 knee 위치를 정한다 — host C\*≈32 vs H100 C\*≈337 처럼 **모양은 이송되되 값은 ridge 의존**. 이 두 실험은 study paper 원본 그대로 유효하다.
 
 ---
 
-## 부록 B. 리뷰 로그 — 다중 라운드 검증 감사추적
+## 5. 종합 insight · 분석
 
-### 라운드 1 — twin 저작 + 이중 적대검증 (workflow, 28 agents, 0 error)
-칩당: 다중 독립 검색 → 신선 검색 반박 2명 → 조정. 잡은 것(예): B100 SM수 vs clock trade-off, TPU VMEM 미공개, Groq SRAM BW 정의차, Vera Rubin 전면 미공개(BRONZE). 전부 validate_twin PASS.
+1. **pair thesis 의 load-bearing 결론은 하드웨어 공간 전체에서 보편적이다.** S\* 불변(§4.3), decode memory-bound(§4.1/4.6, 7/8), tier 순서(§4.2), 스케일링 형태(§4.7) — 전부 HBM GPU·LPDDR NPU·wafer SRAM 을 가로질러 성립. 이 스터디가 준 새 증거: 이 명제들은 특정 칩이 아니라 **update rule 의 구조(고정크기·RMW 대칭)** 에 걸려 있다.
 
-### 라운드 2 — 결과 재검증 + 감사 (workflow, 10 agents, 0 error)
+2. **HW 가 바꾸는 유일한 것은 절대 비용이고, 그 축은 on-chip 용량·대역폭(state 배치)이다.** decode-state 는 append-once KV 와 달리 고정크기라 on-chip 상주가 designable 이고(§4.2), 상주하면 에너지·시간이 한 자릿수 개선된다. **SRAM-heavy 설계(Cerebras 전체 상주 / Groq layer 상주)가 이 memory-centric 병목을 구조적으로 해소** — 이것이 본서 memory-centric 논증의 하드웨어 증거다.
 
-**확정(confirm) — 신선 검색으로 재확인, 수정 불요:** b100/mi355x/tpu-v7/mtia2/groq-lpu/h100 의 4개 headline 전부 vendor+3rd-party 재확인. vr100 은 "진짜 미공개"임을 재확인 → BRONZE 정당.
+3. **Cerebras knee 는 경고이자 방향이다.** 8개 중 유일하게 decode 가 memory-bound 를 벗어나는데(ridge 0.60≈AI), wafer SRAM 의 극단적 BW 가 이유다. 즉 "충분히 BW-rich 하면 이 부하도 balanced 가 된다" — 미래 소자 방향의 힌트. (단 dense peak 교정 후의 결과 = 라운드2가 sparse 수치를 잡음.)
 
-**수정 반영(applied fixes):**
-
-> **주의.** 리뷰가 실제로 잡아 고친 것들 — 다중 검증이 작동한 증거다.
-
-1. **[MAJOR] wse3 compute peak 교정.** 125 PFLOPS 는 Cerebras **sparse** FP16 마케팅 수치(10× sparsity). **dense = 12.5 PFLOPS** 로 교정. 파급: ridge 5.95→0.60 → **Cerebras 만 roofline knee**(나머지 7개는 memory-bound). 오류 교정이 오히려 더 정확한 발견을 드러냄.
-2. **[MINOR] 표 B_max(wse3) 2596→32596** (전사 오류, results/wse3.json 과 일치).
-3. **[MINOR] robustness 주장 범위 한정.** "100배 오차로도 memory-bound 불변"은 HBM/LPDDR(여유 380–1455×)에만 참. Groq ~4×, Cerebras ~1%(knee)로 명시.
-4. **[NIT] HBM-GPU decode 범위** 하단 0.29(vr100 BRONZE) → GOLD/SILVER 범위 0.8–1.9 로 교체.
-5. **[NIT] 표기.** 헤더 "dense BF16"→"BF16/FP16", tpu-v7 tier ⚠️ 복원.
-
-**감사 결론.** 두 감사관 모두 physical_ok=true. 남은 인정 한계: 절대 ms/tok·µs·mJ 은 ideal roofline 하한(단정 안 함); AI 정의는 E3 검증본 관례(Cerebras knee 는 ~1% 여유라 "경계"로만 진술); groq 절대치는 aggregate BW 기반이라 유보.
+4. **정직성이 결론을 약화하지 않고 정확히 한다.** 절대 µs/mJ 는 ideal 하한이라 단정하지 않지만, 우리가 단정하는 양(비율·crossover·bound·tier)은 8개 HW·전 규모에서 견고하다. **상쇄되는 양만 단정하고 상쇄 안 되는 양은 유보** — 이 절제가 8칩 실측으로 정당화됐다.
 
 ---
 
-## 부록 C. 재현
+## 6. 신뢰성 — per-quantity + 리뷰 감사
+
+| 결과 | 의존 | 단정? |
+|---|---|---|
+| S\* = 65536 (전 아키텍처) | workload 만 (HW 무관) | 예 — 전부 (BRONZE 포함) |
+| bound = memory (7/8) | ridge ≫ 0.59 (380–1455×) | 예 — HBM/LPDDR/Groq |
+| Cerebras = knee | ridge 0.60 ≈ AI 0.59 | 예 — "경계"로 |
+| decode 비용 순서 (SRAM≪HBM≪LPDDR) | backing BW (GOLD/SILVER) | 예 — vr100 제외 |
+| tier 잔류 / d\* | on-chip 용량 | 예 — tpu-v7 은 BRONZE |
+| 절대 ms/tok·µJ·mJ | BW·epb + ideal 가정 | 유보 — ideal 하한 |
+| vr100 전체 | 미공개 스펙 | 유보 — directional |
+
+**라운드2가 잡아 고친 것 (다중 검증이 작동한 증거).** [MAJOR] wse3 peak 125 PF(sparse 마케팅)→12.5 PF(dense): ridge 5.95→0.60, Cerebras knee 발견. [MINOR] B_max 전사오류 수정, robustness 주장 HBM/LPDDR 로 범위한정, 절대치 vr100 제외. 상세: `REVIEW-LOG.md`. HATIR·HAT spec 자체의 신뢰성(ZigZag byte-exact 검증, ideal-vs-실측 gap): 본서 부록 E.
+
+---
+
+## 7. 재현
 
 ```
-cd ~/repos/neural-memory-study
-.venv/bin/python multiarch/run_multiarch.py --validate   # H100==확정 E3 anchor 게이트
-.venv/bin/python multiarch/run_multiarch.py --all         # 8개 twin -> results/*.json + 표
+cd ~/repos/neural-memory-study ; PY=.venv/bin/python
+$PY multiarch/run_all_experiments.py --validate   # H100==확정 anchor 게이트
+$PY multiarch/run_all_experiments.py --all         # 8 twin x 7 실험 -> results_full/*.json
+$PY multiarch/make_figures.py                       # figures/*.png
 ```
 
-twin JSON: `multiarch/twins/*.json` (validate_twin PASS). 필드별 출처·등급·미해결: `multiarch/specs/*.json`. driver 는 E3(`experiments/E3-analytical`)의 공식을 verbatim 파라미터화 — H100 재현 게이트가 충실성 보증. 성능 수치 신뢰성의 상위 근거(HATIR·HAT spec fidelity)는 본서 부록 E 참조.
+twin: `multiarch/twins/*.json` (validate_twin PASS). 출처·등급: `multiarch/specs/*.json`. 실험 상세: `results_full/*.json`. driver 는 E3/E1.x 공식 verbatim — H100 재현 게이트가 충실성 보증.

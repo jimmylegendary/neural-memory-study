@@ -1,0 +1,1186 @@
+{
+ "b100": {
+  "twin": "b100.json",
+  "key": "b100",
+  "tier": "SILVER",
+  "backing_role": "hbm",
+  "hw_summary": {
+   "bw_TBps": 8.0,
+   "peak_PFLOPs": 1.8,
+   "cap_GB": 206.16,
+   "ondie_MB": 100.66,
+   "epb_pj_B": 5.0,
+   "matrix_unit": [
+    16,
+    8,
+    16
+   ]
+  },
+  "E1.1_decode_baseline": {
+   "rmw_GB_token": 6.4425,
+   "rmw_ms_token": 0.8053,
+   "rmw_uJ_token": 32212.255,
+   "compute_ms_token": 0.00213,
+   "arith_intensity_flopB": 0.594,
+   "bound": "memory",
+   "bound_margin_x": 378.94
+  },
+  "E1.2_state_placement": {
+   "state_MB_layer": 134.2,
+   "whole_model_state_GB": 3.221,
+   "ondie_cap_MB": 100.7,
+   "ondie_is_backing": false,
+   "backing_rmw": {
+    "traffic_MB": 268.4,
+    "time_us": 33.554,
+    "energy_uJ": 1342.177
+   },
+   "ondie_rmw": {
+    "traffic_MB": 268.4,
+    "time_us": 26.844,
+    "energy_uJ": 107.374
+   },
+   "fits_1layer_ondie": false,
+   "fits_whole_ondie": false,
+   "residency_crossover_d_star": 1774,
+   "ondie_vs_backing_energy_x": 12.5,
+   "ondie_vs_backing_time_x": 1.25,
+   "placement_verdict": "streamed from backing (no on-die residency)"
+  },
+  "E1.3_kv_vs_ttt": {
+   "S_star_read_tokens": 65536,
+   "S_star_note": "KV read == TTT RMW crossover; pure workload property (HW-invariant)",
+   "B_max_10ms": 12.42,
+   "B_max_50ms": 62.09,
+   "kv_ms_token_by_ctx": {
+    "2048": 0.0126,
+    "8192": 0.0503,
+    "32768": 0.2013
+   },
+   "ttt_ms_token_const": 0.8053,
+   "kv_write_pct_of_read": 0.003,
+   "ttt_write_pct_of_read": 100.0
+  },
+  "E1.4_frequency_tiers": {
+   "state_MB": 134.2,
+   "budget_us_per_token": 100.0,
+   "cadence_to_tier": {
+    "every_1_tok": "hbm",
+    "every_16_tok": "CXL",
+    "every_256_tok": "CXL",
+    "every_4096_tok": "CXL"
+   },
+   "note": "per-token pins hot (only hot meets budget un-amortised); sub-per-token amortises to cold pool"
+  },
+  "E1.5_kvmgr_gap": {
+   "dirty_writeback_owed_uJ": 872.415,
+   "dirty_writeback_owed_us": 16.777,
+   "kv_manager_prices_it_as": 0,
+   "note": "KVCacheManager _evict_from() del-drops dirty state free; real TTT eviction owes 1 full writeback"
+  },
+  "E3_analytical": {
+   "ridge_flopB": 225.0,
+   "S_star": 65536,
+   "c_star_chunk": 249.4,
+   "B_max_10ms": 12.42
+  },
+  "E4_scaling": [
+   {
+    "scale": "Titans-170M",
+    "d": 768,
+    "L": 12,
+    "rmw_GB_token": 0.453,
+    "rmw_ms_token": 0.0566,
+    "S_star_tokens": 18432,
+    "whole_state_GB": 0.226,
+    "fits_ondie": true
+   },
+   {
+    "scale": "Titans-340M",
+    "d": 1024,
+    "L": 24,
+    "rmw_GB_token": 1.6106,
+    "rmw_ms_token": 0.2013,
+    "S_star_tokens": 32768,
+    "whole_state_GB": 0.805,
+    "fits_ondie": true
+   },
+   {
+    "scale": "Titans-760M",
+    "d": 1536,
+    "L": 24,
+    "rmw_GB_token": 3.6239,
+    "rmw_ms_token": 0.453,
+    "S_star_tokens": 49152,
+    "whole_state_GB": 1.812,
+    "fits_ondie": true
+   },
+   {
+    "scale": "neural-mem-1.3B",
+    "d": 2048,
+    "L": 24,
+    "rmw_GB_token": 6.4425,
+    "rmw_ms_token": 0.8053,
+    "S_star_tokens": 65536,
+    "whole_state_GB": 3.221,
+    "fits_ondie": false
+   },
+   {
+    "scale": "hypo-7B",
+    "d": 4096,
+    "L": 32,
+    "rmw_GB_token": 34.3597,
+    "rmw_ms_token": 4.295,
+    "S_star_tokens": 262144,
+    "whole_state_GB": 17.18,
+    "fits_ondie": false
+   },
+   {
+    "scale": "hypo-70B",
+    "d": 8192,
+    "L": 80,
+    "rmw_GB_token": 343.5974,
+    "rmw_ms_token": 42.9497,
+    "S_star_tokens": 1048576,
+    "whole_state_GB": 171.799,
+    "fits_ondie": false
+   }
+  ]
+ },
+ "groq-lpu": {
+  "twin": "groq-lpu.json",
+  "key": "groq-lpu",
+  "tier": "SILVER",
+  "backing_role": "sram",
+  "hw_summary": {
+   "bw_TBps": 80.0,
+   "peak_PFLOPs": 0.188,
+   "cap_GB": 0.23,
+   "ondie_MB": 230.69,
+   "epb_pj_B": 1.0,
+   "matrix_unit": [
+    320,
+    320,
+    1
+   ]
+  },
+  "E1.1_decode_baseline": {
+   "rmw_GB_token": 6.4425,
+   "rmw_ms_token": 0.0805,
+   "rmw_uJ_token": 6442.451,
+   "compute_ms_token": 0.02035,
+   "arith_intensity_flopB": 0.594,
+   "bound": "memory",
+   "bound_margin_x": 3.96
+  },
+  "E1.2_state_placement": {
+   "state_MB_layer": 134.2,
+   "whole_model_state_GB": 3.221,
+   "ondie_cap_MB": 230.7,
+   "ondie_is_backing": true,
+   "backing_rmw": {
+    "traffic_MB": 268.4,
+    "time_us": 3.355,
+    "energy_uJ": 268.435
+   },
+   "ondie_rmw": {
+    "traffic_MB": 268.4,
+    "time_us": 3.355,
+    "energy_uJ": 268.435
+   },
+   "fits_1layer_ondie": true,
+   "fits_whole_ondie": false,
+   "residency_crossover_d_star": 2685,
+   "ondie_vs_backing_energy_x": 1.0,
+   "ondie_vs_backing_time_x": 1.0,
+   "placement_verdict": "per-layer resident on-die"
+  },
+  "E1.3_kv_vs_ttt": {
+   "S_star_read_tokens": 65536,
+   "S_star_note": "KV read == TTT RMW crossover; pure workload property (HW-invariant)",
+   "B_max_10ms": 124.18,
+   "B_max_50ms": 620.88,
+   "kv_ms_token_by_ctx": {
+    "2048": 0.0013,
+    "8192": 0.005,
+    "32768": 0.0201
+   },
+   "ttt_ms_token_const": 0.0805,
+   "kv_write_pct_of_read": 0.003,
+   "ttt_write_pct_of_read": 100.0
+  },
+  "E1.4_frequency_tiers": {
+   "state_MB": 134.2,
+   "budget_us_per_token": 100.0,
+   "cadence_to_tier": {
+    "every_1_tok": "sram",
+    "every_16_tok": "CXL",
+    "every_256_tok": "CXL",
+    "every_4096_tok": "CXL"
+   },
+   "note": "per-token pins hot (only hot meets budget un-amortised); sub-per-token amortises to cold pool"
+  },
+  "E1.5_kvmgr_gap": {
+   "dirty_writeback_owed_uJ": 161.061,
+   "dirty_writeback_owed_us": 1.678,
+   "kv_manager_prices_it_as": 0,
+   "note": "KVCacheManager _evict_from() del-drops dirty state free; real TTT eviction owes 1 full writeback"
+  },
+  "E3_analytical": {
+   "ridge_flopB": 2.35,
+   "S_star": 65536,
+   "c_star_chunk": 2.4,
+   "B_max_10ms": 124.18
+  },
+  "E4_scaling": [
+   {
+    "scale": "Titans-170M",
+    "d": 768,
+    "L": 12,
+    "rmw_GB_token": 0.453,
+    "rmw_ms_token": 0.0057,
+    "S_star_tokens": 18432,
+    "whole_state_GB": 0.226,
+    "fits_ondie": true
+   },
+   {
+    "scale": "Titans-340M",
+    "d": 1024,
+    "L": 24,
+    "rmw_GB_token": 1.6106,
+    "rmw_ms_token": 0.0201,
+    "S_star_tokens": 32768,
+    "whole_state_GB": 0.805,
+    "fits_ondie": true
+   },
+   {
+    "scale": "Titans-760M",
+    "d": 1536,
+    "L": 24,
+    "rmw_GB_token": 3.6239,
+    "rmw_ms_token": 0.0453,
+    "S_star_tokens": 49152,
+    "whole_state_GB": 1.812,
+    "fits_ondie": true
+   },
+   {
+    "scale": "neural-mem-1.3B",
+    "d": 2048,
+    "L": 24,
+    "rmw_GB_token": 6.4425,
+    "rmw_ms_token": 0.0805,
+    "S_star_tokens": 65536,
+    "whole_state_GB": 3.221,
+    "fits_ondie": true
+   },
+   {
+    "scale": "hypo-7B",
+    "d": 4096,
+    "L": 32,
+    "rmw_GB_token": 34.3597,
+    "rmw_ms_token": 0.4295,
+    "S_star_tokens": 262144,
+    "whole_state_GB": 17.18,
+    "fits_ondie": false
+   },
+   {
+    "scale": "hypo-70B",
+    "d": 8192,
+    "L": 80,
+    "rmw_GB_token": 343.5974,
+    "rmw_ms_token": 4.295,
+    "S_star_tokens": 1048576,
+    "whole_state_GB": 171.799,
+    "fits_ondie": false
+   }
+  ]
+ },
+ "h100": {
+  "twin": "h100.json",
+  "key": "h100",
+  "tier": "GOLD",
+  "backing_role": "hbm",
+  "hw_summary": {
+   "bw_TBps": 3.35,
+   "peak_PFLOPs": 0.9895,
+   "cap_GB": 85.9,
+   "ondie_MB": 52.43,
+   "epb_pj_B": 7.0,
+   "matrix_unit": [
+    16,
+    8,
+    16
+   ]
+  },
+  "E1.1_decode_baseline": {
+   "rmw_GB_token": 6.4425,
+   "rmw_ms_token": 1.9231,
+   "rmw_uJ_token": 45097.157,
+   "compute_ms_token": 0.00387,
+   "arith_intensity_flopB": 0.594,
+   "bound": "memory",
+   "bound_margin_x": 497.46
+  },
+  "E1.2_state_placement": {
+   "state_MB_layer": 134.2,
+   "whole_model_state_GB": 3.221,
+   "ondie_cap_MB": 52.4,
+   "ondie_is_backing": false,
+   "backing_rmw": {
+    "traffic_MB": 268.4,
+    "time_us": 80.13,
+    "energy_uJ": 1879.048
+   },
+   "ondie_rmw": {
+    "traffic_MB": 268.4,
+    "time_us": 26.844,
+    "energy_uJ": 107.374
+   },
+   "fits_1layer_ondie": false,
+   "fits_whole_ondie": false,
+   "residency_crossover_d_star": 1280,
+   "ondie_vs_backing_energy_x": 17.5,
+   "ondie_vs_backing_time_x": 2.99,
+   "placement_verdict": "streamed from backing (no on-die residency)"
+  },
+  "E1.3_kv_vs_ttt": {
+   "S_star_read_tokens": 65536,
+   "S_star_note": "KV read == TTT RMW crossover; pure workload property (HW-invariant)",
+   "B_max_10ms": 5.2,
+   "B_max_50ms": 26.0,
+   "kv_ms_token_by_ctx": {
+    "2048": 0.03,
+    "8192": 0.1202,
+    "32768": 0.4808
+   },
+   "ttt_ms_token_const": 1.9231,
+   "kv_write_pct_of_read": 0.003,
+   "ttt_write_pct_of_read": 100.0
+  },
+  "E1.4_frequency_tiers": {
+   "state_MB": 134.2,
+   "budget_us_per_token": 100.0,
+   "cadence_to_tier": {
+    "every_1_tok": "hbm",
+    "every_16_tok": "CXL",
+    "every_256_tok": "CXL",
+    "every_4096_tok": "CXL"
+   },
+   "note": "per-token pins hot (only hot meets budget un-amortised); sub-per-token amortises to cold pool"
+  },
+  "E1.5_kvmgr_gap": {
+   "dirty_writeback_owed_uJ": 939.524,
+   "dirty_writeback_owed_us": 40.065,
+   "kv_manager_prices_it_as": 0,
+   "note": "KVCacheManager _evict_from() del-drops dirty state free; real TTT eviction owes 1 full writeback"
+  },
+  "E3_analytical": {
+   "ridge_flopB": 295.36,
+   "S_star": 65536,
+   "c_star_chunk": 337.1,
+   "B_max_10ms": 5.2
+  },
+  "E4_scaling": [
+   {
+    "scale": "Titans-170M",
+    "d": 768,
+    "L": 12,
+    "rmw_GB_token": 0.453,
+    "rmw_ms_token": 0.1352,
+    "S_star_tokens": 18432,
+    "whole_state_GB": 0.226,
+    "fits_ondie": true
+   },
+   {
+    "scale": "Titans-340M",
+    "d": 1024,
+    "L": 24,
+    "rmw_GB_token": 1.6106,
+    "rmw_ms_token": 0.4808,
+    "S_star_tokens": 32768,
+    "whole_state_GB": 0.805,
+    "fits_ondie": true
+   },
+   {
+    "scale": "Titans-760M",
+    "d": 1536,
+    "L": 24,
+    "rmw_GB_token": 3.6239,
+    "rmw_ms_token": 1.0818,
+    "S_star_tokens": 49152,
+    "whole_state_GB": 1.812,
+    "fits_ondie": false
+   },
+   {
+    "scale": "neural-mem-1.3B",
+    "d": 2048,
+    "L": 24,
+    "rmw_GB_token": 6.4425,
+    "rmw_ms_token": 1.9231,
+    "S_star_tokens": 65536,
+    "whole_state_GB": 3.221,
+    "fits_ondie": false
+   },
+   {
+    "scale": "hypo-7B",
+    "d": 4096,
+    "L": 32,
+    "rmw_GB_token": 34.3597,
+    "rmw_ms_token": 10.2566,
+    "S_star_tokens": 262144,
+    "whole_state_GB": 17.18,
+    "fits_ondie": false
+   },
+   {
+    "scale": "hypo-70B",
+    "d": 8192,
+    "L": 80,
+    "rmw_GB_token": 343.5974,
+    "rmw_ms_token": 102.5664,
+    "S_star_tokens": 1048576,
+    "whole_state_GB": 171.799,
+    "fits_ondie": false
+   }
+  ]
+ },
+ "mi355x": {
+  "twin": "mi355x.json",
+  "key": "mi355x",
+  "tier": "SILVER",
+  "backing_role": "hbm",
+  "hw_summary": {
+   "bw_TBps": 8.0,
+   "peak_PFLOPs": 2.5166,
+   "cap_GB": 309.24,
+   "ondie_MB": 33.55,
+   "epb_pj_B": 5.0,
+   "matrix_unit": [
+    16,
+    16,
+    32
+   ]
+  },
+  "E1.1_decode_baseline": {
+   "rmw_GB_token": 6.4425,
+   "rmw_ms_token": 0.8053,
+   "rmw_uJ_token": 32212.255,
+   "compute_ms_token": 0.00152,
+   "arith_intensity_flopB": 0.594,
+   "bound": "memory",
+   "bound_margin_x": 529.81
+  },
+  "E1.2_state_placement": {
+   "state_MB_layer": 134.2,
+   "whole_model_state_GB": 3.221,
+   "ondie_cap_MB": 33.6,
+   "ondie_is_backing": false,
+   "backing_rmw": {
+    "traffic_MB": 268.4,
+    "time_us": 33.554,
+    "energy_uJ": 1342.177
+   },
+   "ondie_rmw": {
+    "traffic_MB": 268.4,
+    "time_us": 26.844,
+    "energy_uJ": 107.374
+   },
+   "fits_1layer_ondie": false,
+   "fits_whole_ondie": false,
+   "residency_crossover_d_star": 1024,
+   "ondie_vs_backing_energy_x": 12.5,
+   "ondie_vs_backing_time_x": 1.25,
+   "placement_verdict": "streamed from backing (no on-die residency)"
+  },
+  "E1.3_kv_vs_ttt": {
+   "S_star_read_tokens": 65536,
+   "S_star_note": "KV read == TTT RMW crossover; pure workload property (HW-invariant)",
+   "B_max_10ms": 12.42,
+   "B_max_50ms": 62.09,
+   "kv_ms_token_by_ctx": {
+    "2048": 0.0126,
+    "8192": 0.0503,
+    "32768": 0.2013
+   },
+   "ttt_ms_token_const": 0.8053,
+   "kv_write_pct_of_read": 0.003,
+   "ttt_write_pct_of_read": 100.0
+  },
+  "E1.4_frequency_tiers": {
+   "state_MB": 134.2,
+   "budget_us_per_token": 100.0,
+   "cadence_to_tier": {
+    "every_1_tok": "hbm",
+    "every_16_tok": "CXL",
+    "every_256_tok": "CXL",
+    "every_4096_tok": "CXL"
+   },
+   "note": "per-token pins hot (only hot meets budget un-amortised); sub-per-token amortises to cold pool"
+  },
+  "E1.5_kvmgr_gap": {
+   "dirty_writeback_owed_uJ": 805.306,
+   "dirty_writeback_owed_us": 16.777,
+   "kv_manager_prices_it_as": 0,
+   "note": "KVCacheManager _evict_from() del-drops dirty state free; real TTT eviction owes 1 full writeback"
+  },
+  "E3_analytical": {
+   "ridge_flopB": 314.57,
+   "S_star": 65536,
+   "c_star_chunk": 361.8,
+   "B_max_10ms": 12.42
+  },
+  "E4_scaling": [
+   {
+    "scale": "Titans-170M",
+    "d": 768,
+    "L": 12,
+    "rmw_GB_token": 0.453,
+    "rmw_ms_token": 0.0566,
+    "S_star_tokens": 18432,
+    "whole_state_GB": 0.226,
+    "fits_ondie": true
+   },
+   {
+    "scale": "Titans-340M",
+    "d": 1024,
+    "L": 24,
+    "rmw_GB_token": 1.6106,
+    "rmw_ms_token": 0.2013,
+    "S_star_tokens": 32768,
+    "whole_state_GB": 0.805,
+    "fits_ondie": true
+   },
+   {
+    "scale": "Titans-760M",
+    "d": 1536,
+    "L": 24,
+    "rmw_GB_token": 3.6239,
+    "rmw_ms_token": 0.453,
+    "S_star_tokens": 49152,
+    "whole_state_GB": 1.812,
+    "fits_ondie": false
+   },
+   {
+    "scale": "neural-mem-1.3B",
+    "d": 2048,
+    "L": 24,
+    "rmw_GB_token": 6.4425,
+    "rmw_ms_token": 0.8053,
+    "S_star_tokens": 65536,
+    "whole_state_GB": 3.221,
+    "fits_ondie": false
+   },
+   {
+    "scale": "hypo-7B",
+    "d": 4096,
+    "L": 32,
+    "rmw_GB_token": 34.3597,
+    "rmw_ms_token": 4.295,
+    "S_star_tokens": 262144,
+    "whole_state_GB": 17.18,
+    "fits_ondie": false
+   },
+   {
+    "scale": "hypo-70B",
+    "d": 8192,
+    "L": 80,
+    "rmw_GB_token": 343.5974,
+    "rmw_ms_token": 42.9497,
+    "S_star_tokens": 1048576,
+    "whole_state_GB": 171.799,
+    "fits_ondie": false
+   }
+  ]
+ },
+ "mtia2": {
+  "twin": "mtia2.json",
+  "key": "mtia2",
+  "tier": "GOLD",
+  "backing_role": "hbm",
+  "hw_summary": {
+   "bw_TBps": 0.2048,
+   "peak_PFLOPs": 0.177,
+   "cap_GB": 137.44,
+   "ondie_MB": 268.44,
+   "epb_pj_B": 8.0,
+   "matrix_unit": [
+    32,
+    32,
+    1
+   ]
+  },
+  "E1.1_decode_baseline": {
+   "rmw_GB_token": 6.4425,
+   "rmw_ms_token": 31.4573,
+   "rmw_uJ_token": 51539.608,
+   "compute_ms_token": 0.02161,
+   "arith_intensity_flopB": 0.594,
+   "bound": "memory",
+   "bound_margin_x": 1455.79
+  },
+  "E1.2_state_placement": {
+   "state_MB_layer": 134.2,
+   "whole_model_state_GB": 3.221,
+   "ondie_cap_MB": 268.4,
+   "ondie_is_backing": false,
+   "backing_rmw": {
+    "traffic_MB": 268.4,
+    "time_us": 1310.72,
+    "energy_uJ": 2147.484
+   },
+   "ondie_rmw": {
+    "traffic_MB": 268.4,
+    "time_us": 99.421,
+    "energy_uJ": 107.374
+   },
+   "fits_1layer_ondie": true,
+   "fits_whole_ondie": false,
+   "residency_crossover_d_star": 2896,
+   "ondie_vs_backing_energy_x": 20.0,
+   "ondie_vs_backing_time_x": 13.18,
+   "placement_verdict": "per-layer resident on-die"
+  },
+  "E1.3_kv_vs_ttt": {
+   "S_star_read_tokens": 65536,
+   "S_star_note": "KV read == TTT RMW crossover; pure workload property (HW-invariant)",
+   "B_max_10ms": 0.32,
+   "B_max_50ms": 1.59,
+   "kv_ms_token_by_ctx": {
+    "2048": 0.4915,
+    "8192": 1.9661,
+    "32768": 7.8643
+   },
+   "ttt_ms_token_const": 31.4573,
+   "kv_write_pct_of_read": 0.003,
+   "ttt_write_pct_of_read": 100.0
+  },
+  "E1.4_frequency_tiers": {
+   "state_MB": 134.2,
+   "budget_us_per_token": 100.0,
+   "cadence_to_tier": {
+    "every_1_tok": "on-die",
+    "every_16_tok": "CXL",
+    "every_256_tok": "CXL",
+    "every_4096_tok": "CXL"
+   },
+   "note": "per-token pins hot (only hot meets budget un-amortised); sub-per-token amortises to cold pool"
+  },
+  "E1.5_kvmgr_gap": {
+   "dirty_writeback_owed_uJ": 1342.177,
+   "dirty_writeback_owed_us": 655.36,
+   "kv_manager_prices_it_as": 0,
+   "note": "KVCacheManager _evict_from() del-drops dirty state free; real TTT eviction owes 1 full writeback"
+  },
+  "E3_analytical": {
+   "ridge_flopB": 864.38,
+   "S_star": 65536,
+   "c_star_chunk": 1180.4,
+   "B_max_10ms": 0.32
+  },
+  "E4_scaling": [
+   {
+    "scale": "Titans-170M",
+    "d": 768,
+    "L": 12,
+    "rmw_GB_token": 0.453,
+    "rmw_ms_token": 2.2118,
+    "S_star_tokens": 18432,
+    "whole_state_GB": 0.226,
+    "fits_ondie": true
+   },
+   {
+    "scale": "Titans-340M",
+    "d": 1024,
+    "L": 24,
+    "rmw_GB_token": 1.6106,
+    "rmw_ms_token": 7.8643,
+    "S_star_tokens": 32768,
+    "whole_state_GB": 0.805,
+    "fits_ondie": true
+   },
+   {
+    "scale": "Titans-760M",
+    "d": 1536,
+    "L": 24,
+    "rmw_GB_token": 3.6239,
+    "rmw_ms_token": 17.6947,
+    "S_star_tokens": 49152,
+    "whole_state_GB": 1.812,
+    "fits_ondie": true
+   },
+   {
+    "scale": "neural-mem-1.3B",
+    "d": 2048,
+    "L": 24,
+    "rmw_GB_token": 6.4425,
+    "rmw_ms_token": 31.4573,
+    "S_star_tokens": 65536,
+    "whole_state_GB": 3.221,
+    "fits_ondie": true
+   },
+   {
+    "scale": "hypo-7B",
+    "d": 4096,
+    "L": 32,
+    "rmw_GB_token": 34.3597,
+    "rmw_ms_token": 167.7722,
+    "S_star_tokens": 262144,
+    "whole_state_GB": 17.18,
+    "fits_ondie": false
+   },
+   {
+    "scale": "hypo-70B",
+    "d": 8192,
+    "L": 80,
+    "rmw_GB_token": 343.5974,
+    "rmw_ms_token": 1677.7216,
+    "S_star_tokens": 1048576,
+    "whole_state_GB": 171.799,
+    "fits_ondie": false
+   }
+  ]
+ },
+ "tpu-v7": {
+  "twin": "tpu-v7.json",
+  "key": "tpu-v7",
+  "tier": "SILVER",
+  "backing_role": "hbm",
+  "hw_summary": {
+   "bw_TBps": 7.38,
+   "peak_PFLOPs": 2.307,
+   "cap_GB": 206.16,
+   "ondie_MB": 268.44,
+   "epb_pj_B": 5.0,
+   "matrix_unit": [
+    256,
+    256,
+    256
+   ]
+  },
+  "E1.1_decode_baseline": {
+   "rmw_GB_token": 6.4425,
+   "rmw_ms_token": 0.873,
+   "rmw_uJ_token": 32212.255,
+   "compute_ms_token": 0.00166,
+   "arith_intensity_flopB": 0.594,
+   "bound": "memory",
+   "bound_margin_x": 526.49
+  },
+  "E1.2_state_placement": {
+   "state_MB_layer": 134.2,
+   "whole_model_state_GB": 3.221,
+   "ondie_cap_MB": 268.4,
+   "ondie_is_backing": false,
+   "backing_rmw": {
+    "traffic_MB": 268.4,
+    "time_us": 36.373,
+    "energy_uJ": 1342.177
+   },
+   "ondie_rmw": {
+    "traffic_MB": 268.4,
+    "time_us": 1.657,
+    "energy_uJ": 53.687
+   },
+   "fits_1layer_ondie": true,
+   "fits_whole_ondie": false,
+   "residency_crossover_d_star": 2896,
+   "ondie_vs_backing_energy_x": 25.0,
+   "ondie_vs_backing_time_x": 21.95,
+   "placement_verdict": "per-layer resident on-die"
+  },
+  "E1.3_kv_vs_ttt": {
+   "S_star_read_tokens": 65536,
+   "S_star_note": "KV read == TTT RMW crossover; pure workload property (HW-invariant)",
+   "B_max_10ms": 11.46,
+   "B_max_50ms": 57.28,
+   "kv_ms_token_by_ctx": {
+    "2048": 0.0136,
+    "8192": 0.0546,
+    "32768": 0.2182
+   },
+   "ttt_ms_token_const": 0.873,
+   "kv_write_pct_of_read": 0.003,
+   "ttt_write_pct_of_read": 100.0
+  },
+  "E1.4_frequency_tiers": {
+   "state_MB": 134.2,
+   "budget_us_per_token": 100.0,
+   "cadence_to_tier": {
+    "every_1_tok": "hbm",
+    "every_16_tok": "CXL",
+    "every_256_tok": "CXL",
+    "every_4096_tok": "CXL"
+   },
+   "note": "per-token pins hot (only hot meets budget un-amortised); sub-per-token amortises to cold pool"
+  },
+  "E1.5_kvmgr_gap": {
+   "dirty_writeback_owed_uJ": 738.198,
+   "dirty_writeback_owed_us": 18.187,
+   "kv_manager_prices_it_as": 0,
+   "note": "KVCacheManager _evict_from() del-drops dirty state free; real TTT eviction owes 1 full writeback"
+  },
+  "E3_analytical": {
+   "ridge_flopB": 312.6,
+   "S_star": 65536,
+   "c_star_chunk": 359.3,
+   "B_max_10ms": 11.46
+  },
+  "E4_scaling": [
+   {
+    "scale": "Titans-170M",
+    "d": 768,
+    "L": 12,
+    "rmw_GB_token": 0.453,
+    "rmw_ms_token": 0.0614,
+    "S_star_tokens": 18432,
+    "whole_state_GB": 0.226,
+    "fits_ondie": true
+   },
+   {
+    "scale": "Titans-340M",
+    "d": 1024,
+    "L": 24,
+    "rmw_GB_token": 1.6106,
+    "rmw_ms_token": 0.2182,
+    "S_star_tokens": 32768,
+    "whole_state_GB": 0.805,
+    "fits_ondie": true
+   },
+   {
+    "scale": "Titans-760M",
+    "d": 1536,
+    "L": 24,
+    "rmw_GB_token": 3.6239,
+    "rmw_ms_token": 0.491,
+    "S_star_tokens": 49152,
+    "whole_state_GB": 1.812,
+    "fits_ondie": true
+   },
+   {
+    "scale": "neural-mem-1.3B",
+    "d": 2048,
+    "L": 24,
+    "rmw_GB_token": 6.4425,
+    "rmw_ms_token": 0.873,
+    "S_star_tokens": 65536,
+    "whole_state_GB": 3.221,
+    "fits_ondie": true
+   },
+   {
+    "scale": "hypo-7B",
+    "d": 4096,
+    "L": 32,
+    "rmw_GB_token": 34.3597,
+    "rmw_ms_token": 4.6558,
+    "S_star_tokens": 262144,
+    "whole_state_GB": 17.18,
+    "fits_ondie": false
+   },
+   {
+    "scale": "hypo-70B",
+    "d": 8192,
+    "L": 80,
+    "rmw_GB_token": 343.5974,
+    "rmw_ms_token": 46.5579,
+    "S_star_tokens": 1048576,
+    "whole_state_GB": 171.799,
+    "fits_ondie": false
+   }
+  ]
+ },
+ "vr100": {
+  "twin": "vr100.json",
+  "key": "vr100",
+  "tier": "BRONZE",
+  "backing_role": "hbm",
+  "hw_summary": {
+   "bw_TBps": 22.0,
+   "peak_PFLOPs": 6.2496,
+   "cap_GB": 309.24,
+   "ondie_MB": 104.86,
+   "epb_pj_B": 5.5,
+   "matrix_unit": [
+    16,
+    8,
+    16
+   ]
+  },
+  "E1.1_decode_baseline": {
+   "rmw_GB_token": 6.4425,
+   "rmw_ms_token": 0.2928,
+   "rmw_uJ_token": 35433.48,
+   "compute_ms_token": 0.00061,
+   "arith_intensity_flopB": 0.594,
+   "bound": "memory",
+   "bound_margin_x": 478.44
+  },
+  "E1.2_state_placement": {
+   "state_MB_layer": 134.2,
+   "whole_model_state_GB": 3.221,
+   "ondie_cap_MB": 104.9,
+   "ondie_is_backing": false,
+   "backing_rmw": {
+    "traffic_MB": 268.4,
+    "time_us": 12.202,
+    "energy_uJ": 1476.395
+   },
+   "ondie_rmw": {
+    "traffic_MB": 268.4,
+    "time_us": 17.896,
+    "energy_uJ": 107.374
+   },
+   "fits_1layer_ondie": false,
+   "fits_whole_ondie": false,
+   "residency_crossover_d_star": 1810,
+   "ondie_vs_backing_energy_x": 13.75,
+   "ondie_vs_backing_time_x": 0.68,
+   "placement_verdict": "streamed from backing (no on-die residency)"
+  },
+  "E1.3_kv_vs_ttt": {
+   "S_star_read_tokens": 65536,
+   "S_star_note": "KV read == TTT RMW crossover; pure workload property (HW-invariant)",
+   "B_max_10ms": 34.15,
+   "B_max_50ms": 170.74,
+   "kv_ms_token_by_ctx": {
+    "2048": 0.0046,
+    "8192": 0.0183,
+    "32768": 0.0732
+   },
+   "ttt_ms_token_const": 0.2928,
+   "kv_write_pct_of_read": 0.003,
+   "ttt_write_pct_of_read": 100.0
+  },
+  "E1.4_frequency_tiers": {
+   "state_MB": 134.2,
+   "budget_us_per_token": 100.0,
+   "cadence_to_tier": {
+    "every_1_tok": "hbm",
+    "every_16_tok": "CXL",
+    "every_256_tok": "CXL",
+    "every_4096_tok": "CXL"
+   },
+   "note": "per-token pins hot (only hot meets budget un-amortised); sub-per-token amortises to cold pool"
+  },
+  "E1.5_kvmgr_gap": {
+   "dirty_writeback_owed_uJ": 872.415,
+   "dirty_writeback_owed_us": 6.101,
+   "kv_manager_prices_it_as": 0,
+   "note": "KVCacheManager _evict_from() del-drops dirty state free; real TTT eviction owes 1 full writeback"
+  },
+  "E3_analytical": {
+   "ridge_flopB": 284.07,
+   "S_star": 65536,
+   "c_star_chunk": 322.7,
+   "B_max_10ms": 34.15
+  },
+  "E4_scaling": [
+   {
+    "scale": "Titans-170M",
+    "d": 768,
+    "L": 12,
+    "rmw_GB_token": 0.453,
+    "rmw_ms_token": 0.0206,
+    "S_star_tokens": 18432,
+    "whole_state_GB": 0.226,
+    "fits_ondie": true
+   },
+   {
+    "scale": "Titans-340M",
+    "d": 1024,
+    "L": 24,
+    "rmw_GB_token": 1.6106,
+    "rmw_ms_token": 0.0732,
+    "S_star_tokens": 32768,
+    "whole_state_GB": 0.805,
+    "fits_ondie": true
+   },
+   {
+    "scale": "Titans-760M",
+    "d": 1536,
+    "L": 24,
+    "rmw_GB_token": 3.6239,
+    "rmw_ms_token": 0.1647,
+    "S_star_tokens": 49152,
+    "whole_state_GB": 1.812,
+    "fits_ondie": true
+   },
+   {
+    "scale": "neural-mem-1.3B",
+    "d": 2048,
+    "L": 24,
+    "rmw_GB_token": 6.4425,
+    "rmw_ms_token": 0.2928,
+    "S_star_tokens": 65536,
+    "whole_state_GB": 3.221,
+    "fits_ondie": false
+   },
+   {
+    "scale": "hypo-7B",
+    "d": 4096,
+    "L": 32,
+    "rmw_GB_token": 34.3597,
+    "rmw_ms_token": 1.5618,
+    "S_star_tokens": 262144,
+    "whole_state_GB": 17.18,
+    "fits_ondie": false
+   },
+   {
+    "scale": "hypo-70B",
+    "d": 8192,
+    "L": 80,
+    "rmw_GB_token": 343.5974,
+    "rmw_ms_token": 15.6181,
+    "S_star_tokens": 1048576,
+    "whole_state_GB": 171.799,
+    "fits_ondie": false
+   }
+  ]
+ },
+ "wse3": {
+  "twin": "wse3.json",
+  "key": "wse3",
+  "tier": "SILVER",
+  "backing_role": "sram",
+  "hw_summary": {
+   "bw_TBps": 21000.0,
+   "peak_PFLOPs": 12.4992,
+   "cap_GB": 44.0,
+   "ondie_MB": 44000.0,
+   "epb_pj_B": 1.0,
+   "matrix_unit": [
+    1,
+    1,
+    8
+   ]
+  },
+  "E1.1_decode_baseline": {
+   "rmw_GB_token": 6.4425,
+   "rmw_ms_token": 0.0003,
+   "rmw_uJ_token": 6442.451,
+   "compute_ms_token": 0.00031,
+   "arith_intensity_flopB": 0.594,
+   "bound": "memory",
+   "bound_margin_x": 1.0
+  },
+  "E1.2_state_placement": {
+   "state_MB_layer": 134.2,
+   "whole_model_state_GB": 3.221,
+   "ondie_cap_MB": 44000.0,
+   "ondie_is_backing": true,
+   "backing_rmw": {
+    "traffic_MB": 268.4,
+    "time_us": 0.013,
+    "energy_uJ": 268.435
+   },
+   "ondie_rmw": {
+    "traffic_MB": 268.4,
+    "time_us": 0.013,
+    "energy_uJ": 268.435
+   },
+   "fits_1layer_ondie": true,
+   "fits_whole_ondie": true,
+   "residency_crossover_d_star": 37081,
+   "ondie_vs_backing_energy_x": 1.0,
+   "ondie_vs_backing_time_x": 1.0,
+   "placement_verdict": "whole-model resident on-die"
+  },
+  "E1.3_kv_vs_ttt": {
+   "S_star_read_tokens": 65536,
+   "S_star_note": "KV read == TTT RMW crossover; pure workload property (HW-invariant)",
+   "B_max_10ms": 32596.29,
+   "B_max_50ms": 162981.45,
+   "kv_ms_token_by_ctx": {
+    "2048": 0.0,
+    "8192": 0.0,
+    "32768": 0.0001
+   },
+   "ttt_ms_token_const": 0.0003,
+   "kv_write_pct_of_read": 0.003,
+   "ttt_write_pct_of_read": 100.0
+  },
+  "E1.4_frequency_tiers": {
+   "state_MB": 134.2,
+   "budget_us_per_token": 100.0,
+   "cadence_to_tier": {
+    "every_1_tok": "sram",
+    "every_16_tok": "CXL",
+    "every_256_tok": "CXL",
+    "every_4096_tok": "CXL"
+   },
+   "note": "per-token pins hot (only hot meets budget un-amortised); sub-per-token amortises to cold pool"
+  },
+  "E1.5_kvmgr_gap": {
+   "dirty_writeback_owed_uJ": 134.218,
+   "dirty_writeback_owed_us": 0.006,
+   "kv_manager_prices_it_as": 0,
+   "note": "KVCacheManager _evict_from() del-drops dirty state free; real TTT eviction owes 1 full writeback"
+  },
+  "E3_analytical": {
+   "ridge_flopB": 0.6,
+   "S_star": 65536,
+   "c_star_chunk": 0.6,
+   "B_max_10ms": 32596.29
+  },
+  "E4_scaling": [
+   {
+    "scale": "Titans-170M",
+    "d": 768,
+    "L": 12,
+    "rmw_GB_token": 0.453,
+    "rmw_ms_token": 0.0,
+    "S_star_tokens": 18432,
+    "whole_state_GB": 0.226,
+    "fits_ondie": true
+   },
+   {
+    "scale": "Titans-340M",
+    "d": 1024,
+    "L": 24,
+    "rmw_GB_token": 1.6106,
+    "rmw_ms_token": 0.0001,
+    "S_star_tokens": 32768,
+    "whole_state_GB": 0.805,
+    "fits_ondie": true
+   },
+   {
+    "scale": "Titans-760M",
+    "d": 1536,
+    "L": 24,
+    "rmw_GB_token": 3.6239,
+    "rmw_ms_token": 0.0002,
+    "S_star_tokens": 49152,
+    "whole_state_GB": 1.812,
+    "fits_ondie": true
+   },
+   {
+    "scale": "neural-mem-1.3B",
+    "d": 2048,
+    "L": 24,
+    "rmw_GB_token": 6.4425,
+    "rmw_ms_token": 0.0003,
+    "S_star_tokens": 65536,
+    "whole_state_GB": 3.221,
+    "fits_ondie": true
+   },
+   {
+    "scale": "hypo-7B",
+    "d": 4096,
+    "L": 32,
+    "rmw_GB_token": 34.3597,
+    "rmw_ms_token": 0.0016,
+    "S_star_tokens": 262144,
+    "whole_state_GB": 17.18,
+    "fits_ondie": true
+   },
+   {
+    "scale": "hypo-70B",
+    "d": 8192,
+    "L": 80,
+    "rmw_GB_token": 343.5974,
+    "rmw_ms_token": 0.0164,
+    "S_star_tokens": 1048576,
+    "whole_state_GB": 171.799,
+    "fits_ondie": true
+   }
+  ]
+ }
+}
