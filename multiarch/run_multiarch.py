@@ -121,8 +121,19 @@ def b_max_bw(hw, d, m, L, t_target_s, dt=2):
     return hw["bw_bps"] * t_target_s / ttt_rmw_per_token(d, m, L, dt)
 
 
+def read_tier(twin_path):
+    """confidence tier lives in the sibling spec report (specs/<key>.json), authored by the
+    research+verify pipeline — not in the twin JSON itself."""
+    key = os.path.splitext(os.path.basename(twin_path))[0]
+    sp = os.path.join(HERE, "specs", f"{key}.json")
+    if os.path.exists(sp):
+        return json.load(open(sp)).get("final_tier")
+    return "GOLD" if key == "h100" else None
+
+
 def eval_twin(twin_path):
     hw = load_hw(twin_path)
+    hw["tier"] = read_tier(twin_path)
     ridge = hw["peak_flops_s"] / hw["bw_bps"]
     a = ANCHOR
     dec = ttt_decode(hw, a["d"], a["m"], a["L"])

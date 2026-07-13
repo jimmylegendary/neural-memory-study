@@ -1,0 +1,158 @@
+{
+ "_comment": "AMD Instinct MI355X (CDNA4) single-accelerator HAT twin, backing HBM -> Infinity Cache -> L2 -> LDS(reuse SRAM) -> compute leaf (MFMA). Single-device (minimal-device convention): no fabric/multi-GPU. Sources: AMD CDNA4 whitepaper + MI355X datasheet + Chips&Cheese CDNA4 + ROCm occupancy-math MI355X blog. Reconciled from 1 authoring pass + 2 adversarial verifications.",
+ "level_id": "hbm",
+ "role": "hbm",
+ "scope": "package",
+ "residency": "sw_managed",
+ "capacity_bytes": 309237645312,
+ "bandwidth_bps": 8000000000000.0,
+ "energy_pj_per_byte": 5.0,
+ "energy_pj_per_byte_wr": 6.0,
+ "line_bytes": 32,
+ "mem_standard": "hbm3e",
+ "num_stacks": 8,
+ "dies_per_stack": 12,
+ "die_density_gbit": 24,
+ "bus_width_bits": 8192,
+ "pin_rate_gbps": 8.0,
+ "energy_note": "5.0/6.0 pJ/B (read/write) are BRONZE estimates; AMD does not publish per-byte HBM energy. Scaled from H100 HBM3 7 pJ/B anchor by ~30% HBM3e efficiency gain. Directional only, not load-bearing.",
+ "provenance": {
+  "value": "vendor_whitepaper",
+  "confidence": "GOLD",
+  "source": "AMD MI355X datasheet + CDNA4 whitepaper (288 GiB = 309,237,645,312 B; 8 TB/s HBM3e), cross-checked Chips&Cheese CDNA4 + ROCm occupancy blog + Oracle OCI brief"
+ },
+ "children": [
+  {
+   "level_id": "infinity_cache",
+   "role": "llc",
+   "scope": "package",
+   "residency": "hw_cache",
+   "capacity_bytes": 268435456,
+   "bandwidth_bps": 17000000000000.0,
+   "line_bytes": 128,
+   "note": "256 MB memory-side last-level Infinity Cache (128 MB per IOD x 2 IODs). Capacity GOLD (whitepaper); bandwidth 1.7e13 is a BRONZE estimate (unpublished, extrapolated from MI300-gen LLC peak). Auxiliary cache annotation, NOT the primary reuse tier -> its BRONZE bandwidth is non-load-bearing for the experiment.",
+   "provenance": {
+    "value": "vendor_whitepaper",
+    "confidence": "BRONZE",
+    "source": "capacity: AMD CDNA4 whitepaper + ROCm blog (256 MB, GOLD); bandwidth: estimate from CDNA3/MI300 Infinity Cache order (BRONZE, disputed by both verifiers)"
+   },
+   "children": [
+    {
+     "level_id": "l2",
+     "role": "l2",
+     "scope": "die",
+     "residency": "hw_cache",
+     "capacity_bytes": 33554432,
+     "bandwidth_bps": 10000000000000.0,
+     "line_bytes": 128,
+     "note": "32 MB total = 4 MB per XCD x 8 XCDs (16-way, writeback). Per-XCD figure from whitepaper mirror; total derived. Bandwidth 1e13 is order-of-magnitude anchor (H100-class L2), not separately published.",
+     "provenance": {
+      "value": "third_party",
+      "confidence": "SILVER",
+      "source": "whitepaper mirror + aiwiki MI355X per-XCD 4 MB x 8 XCD; total derived (SILVER)"
+     },
+     "children": [
+      {
+       "level_id": "lds",
+       "role": "sram",
+       "scope": "die",
+       "residency": "sw_managed",
+       "capacity_bytes": 41943040,
+       "bandwidth_bps": 157000000000000.0,
+       "line_bytes": 128,
+       "instances": 256,
+       "spatial_axis": "cu",
+       "per_cu_bytes": 163840,
+       "note": "Primary reuse tier. LDS (Local Data Share) = 160 KB/CU x 256 CU = 40 MiB (2.5x CDNA3). Capacity GOLD (whitepaper 160 KB/CU cross-checked Chips&Cheese '40 MB total LDS'). Aggregate BW = 256 B/clk/CU x 2.4e9 Hz x 256 CU = 1.573e14 B/s, DERIVED from published 256 B/clk read -> SILVER. L1 vector cache is separately 32 KB/CU.",
+       "provenance": {
+        "value": "vendor_whitepaper",
+        "confidence": "SILVER",
+        "source": "capacity GOLD (AMD 160 KB LDS/CU + Chips&Cheese 40 MB); aggregate BW derived from 256 B/clk/CU x clock (SILVER)"
+       },
+       "children": [
+        {
+         "level_id": "mxu",
+         "role": "compute",
+         "scope": "die",
+         "instances": 256,
+         "spatial_axis": "cu",
+         "peak_macs_per_s": 4915200000000.0,
+         "matrix_unit": [
+          16,
+          16,
+          32
+         ],
+         "dtype_bytes": 2,
+         "acc_dtype_bytes": 4,
+         "clock_hz": 2400000000.0,
+         "matrix_cores_per_cu": 4,
+         "stream_procs_per_cu": 64,
+         "note": "CDNA4 Matrix Core (MFMA). per-CU BF16 = 4096 FLOP/clk/CU -> 2048 MAC/clk x 2.4e9 = 4.9152e12 MAC/s; x256 CU x2 = 2.516e15 FLOP/s ~ 2.5 PFLOPS dense BF16 (datasheet GOLD). Device peaks (GOLD, whitepaper): BF16 2.5 PF dense / 5.0 PF sparse; MXFP8 5.0 PF dense / 10 PF sparse; FP6/FP4 10 PF dense; FP64 78.6 TF. matrix_unit [16,16,32] = CDNA4 v_mfma_*_16x16x32 BF16/FP16 tile (K doubled vs CDNA3); representative shape -> SILVER (CDNA4 also has 32x32x64 and scaled FP8 variants). dtype_bytes=2 for the BF16 path this peak_macs_per_s describes.",
+         "peaks": {
+          "bf16_dense_flops": 2500000000000000.0,
+          "fp8_dense_flops": 5000000000000000.0,
+          "fp64_flops": 78600000000000.0
+         },
+         "provenance": {
+          "value": "vendor_whitepaper",
+          "confidence": "SILVER",
+          "source": "device peaks GOLD (AMD MI355X datasheet/whitepaper); per-instance MAC derived from GOLD device peak / 256 CU (SILVER); matrix_unit representative CDNA4 MFMA shape (SILVER, ROCm matrix-cores-cdna blog)"
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "meta": {
+  "tdp_w": 1400,
+  "cooling_class": "liquid_or_air",
+  "package_type": "3d_chiplet_cowos",
+  "process_node": {
+   "xcd": "N3P",
+   "iod": "N6"
+  },
+  "topology": {
+   "xcds": 8,
+   "cu_per_xcd": 32,
+   "cu_total": 256,
+   "iods": 2,
+   "stream_procs": 16384,
+   "matrix_cores": 1024
+  },
+  "clock_hz": 2400000000.0,
+  "arch": "CDNA4",
+  "variant_note": "MI350X = 2.2 GHz/1000 W bin (~2.3 PF BF16); this twin = MI355X 2.4 GHz/1400 W bin"
+ },
+ "trace": {
+  "event_format": "hatir_isa_v1",
+  "default_granularity": "isa",
+  "compute_from": "matrix_unit",
+  "fields": [
+   "seq",
+   "kind",
+   "opcode",
+   "tier",
+   "target",
+   "bytes",
+   "macs",
+   "coord"
+  ],
+  "opcodes": {
+   "load": {
+    "hbm": "GLOBAL_LOAD",
+    "l2": "GLOBAL_LOAD",
+    "sram": "DS_READ",
+    "reg": "V_MOV"
+   },
+   "store": {
+    "hbm": "GLOBAL_STORE",
+    "l2": "GLOBAL_STORE",
+    "sram": "DS_WRITE",
+    "reg": "V_MOV"
+   }
+  }
+ }
+}

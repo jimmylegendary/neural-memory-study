@@ -1,0 +1,93 @@
+{
+ "_comment": "Meta MTIA v2 (2024) single-chip HAT twin. RB-05 nested: backing LPDDR5 DRAM -> on-chip shared SRAM -> per-PE local mem -> compute leaf (8x8 PE grid). NOTE: backing tier is LPDDR5 (NOT HBM) - 128 GB @ 204.8 GB/s, ~16x lower BW than an H100 HBM3 stack at comparable/higher capacity, deliberate for capacity-bound DLRM/recommendation inference. Field named 'hbm_bandwidth_bps' etc. retained for experiment-schema compatibility; mem_standard records actual LPDDR5. Sources: Meta AI blog, Hot Chips 2024, MTIA ISCA'25 paper, ServeTheHome/DCD.",
+ "arch_note": "Standard backing-DRAM accelerator layout but backing tier is LPDDR5, not HBM: 128 GB @ 204.8 GB/s (16 channels x 16-bit x 6400 MT/s). Bandwidth is ~16x lower than an H100 HBM3 stack while capacity is comparable/higher - deliberate for capacity-bound recommendation inference rather than BW-bound training. Large 256 MB on-chip SRAM (2.7 TB/s) is the primary reuse buffer; 384 KB local memory per PE (1 TB/s) sits closest to compute. Single-chip twin; the production accelerator module packs 2 chips at 220 W.",
+ "level_id": "lpddr5",
+ "role": "hbm",
+ "scope": "package",
+ "residency": "sw_managed",
+ "capacity_bytes": 137438953472,
+ "bandwidth_bps": 204800000000.0,
+ "line_bytes": 32,
+ "mem_standard": "lpddr5",
+ "num_channels": 16,
+ "pin_rate_mts": 6400,
+ "energy_pj_per_byte": 8.0,
+ "energy_pj_per_byte_wr": 10.0,
+ "provenance": {
+  "value": "vendor_whitepaper",
+  "confidence": "GOLD",
+  "source": "Meta AI blog (next-gen MTIA); Hot Chips 2024; ServeTheHome MTIA2 teardown (LPDDR5 128 GB @ 204.8 GB/s). Energy + line_bytes are BRONZE LPDDR5 JEDEC estimates (unpublished)."
+ },
+ "children": [
+  {
+   "level_id": "sram",
+   "role": "sram",
+   "scope": "die",
+   "residency": "sw_managed",
+   "capacity_bytes": 268435456,
+   "bandwidth_bps": 2700000000000.0,
+   "line_bytes": 64,
+   "provenance": {
+    "value": "vendor_whitepaper",
+    "confidence": "GOLD",
+    "source": "Meta AI blog; MTIA ISCA'25 (256 MB shared on-chip SRAM @ 2.7 TB/s, 3.5x MTIA v1); ServeTheHome. (ServeTheHome '256 GB' is a typo.)"
+   },
+   "children": [
+    {
+     "level_id": "pe_local",
+     "role": "shared",
+     "scope": "soc",
+     "residency": "sw_managed",
+     "capacity_bytes": 393216,
+     "bandwidth_bps": 1000000000000.0,
+     "line_bytes": 64,
+     "instances": 64,
+     "spatial_axis": "pe",
+     "provenance": {
+      "value": "press",
+      "confidence": "SILVER",
+      "source": "Hot Chips 2024; ServeTheHome (384 KB local memory per PE, 1 TB/s). BW per-PE vs aggregate slightly ambiguous -> SILVER."
+     },
+     "children": [
+      {
+       "level_id": "dpe",
+       "role": "compute",
+       "scope": "soc",
+       "instances": 64,
+       "spatial_axis": "pe",
+       "peak_macs_per_s": 1383000000000.0,
+       "matrix_unit": [
+        32,
+        32,
+        1
+       ],
+       "dtype_bytes": 2,
+       "acc_dtype_bytes": 4,
+       "clock_hz": 1350000000.0,
+       "energy_pj_per_mac": 0.5,
+       "dataflow": "output_stationary",
+       "process_node": "N5",
+       "provenance": {
+        "value": "third_party",
+        "confidence": "GOLD",
+        "source": "Meta AI blog (177 TFLOPS dense BF16, 64 PE = 8x8 grid, 1.35 GHz); MTIA ISCA'25 (2.76 TFLOPS/PE = 1.383e12 MAC/s; Dot-Product Engine = 32x32 MAC tiles, output-stationary, BF16 in / FP32 acc). Device peak = 64 x 1.383e12 x 2 = 1.77e14 FLOP/s (177 TFLOPS). matrix_unit SILVER (cross-validated, not vendor-stated); energy_pj_per_mac BRONZE estimate."
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "meta": {
+  "tdp_w": 90,
+  "die_area_mm2": 421,
+  "process_node": "N5",
+  "cooling_class": "air",
+  "module": {
+   "chips_per_module": 2,
+   "module_tdp_w": 220
+  },
+  "device_peak_flops_bf16": 177000000000000.0,
+  "device_peak_tops_int8": 354
+ }
+}

@@ -1,0 +1,71 @@
+{
+ "_comment": "Groq LPU / TSP (GroqChip1) single-accelerator HAT twin. NO HBM: 220 MiB (230 MB) on-chip globally-shared SRAM is the ONLY device memory and serves as the backing tier (role:sram). Weights resident on-chip; deterministic dataflow, no caches/arbiters -> no HBM spill cliff. Numbers: Groq GroqChip Product Spec Sheet v1.5 + Think Fast ISCA 2020 TSP paper + third-party teardowns (codingconfessions/aiwiki).",
+ "arch_note": "no HBM; on-chip resident state -- 220 MiB (230,686,720 B) global SRAM is the sole device memory (backing role:sram); weights resident on-chip; deterministic streaming dataflow.",
+ "level_id": "sram",
+ "role": "sram",
+ "scope": "die",
+ "residency": "sw_managed",
+ "capacity_bytes": 230686720,
+ "bandwidth_bps": 80000000000000.0,
+ "energy_pj_per_byte": 1.0,
+ "energy_pj_per_byte_wr": 1.2,
+ "line_bytes": 320,
+ "provenance": {
+  "value": "vendor_whitepaper",
+  "confidence": "SILVER",
+  "source": "Capacity GOLD: Groq Spec Sheet v1.5 + ISCA 2020 (220 MiB = 230,686,720 B), both verifiers agree, sole device memory. Bandwidth downgraded GOLD->SILVER: vendor 80 TB/s aggregates all concurrent stream lanes; ISCA 2020 paper cites ~27.5 TiB/s internal SRAM BW -- definitional discrepancy. energy_pj_per_byte / line_bytes are BRONZE estimates (see meta.notes)."
+ },
+ "children": [
+  {
+   "level_id": "sxr",
+   "role": "sram",
+   "scope": "die",
+   "residency": "sw_managed",
+   "capacity_bytes": 262144,
+   "bandwidth_bps": 80000000000000.0,
+   "line_bytes": 320,
+   "energy_pj_per_byte": 1.0,
+   "provenance": {
+    "value": "estimate",
+    "confidence": "BRONZE",
+    "source": "Stream/vector register staging (SXR) feeding the MXM in the weight-stationary stream; capacity NOT published -- estimated register-file order (~256 KB). ISCA 2020 stream-register description. Present to satisfy backing->reuse->compute 3-level schema; do not treat as a measured C-block cap."
+   },
+   "children": [
+    {
+     "level_id": "mxm",
+     "role": "compute",
+     "scope": "die",
+     "instances": 1,
+     "spatial_axis": "mxm",
+     "peak_macs_per_s": 94000000000000.0,
+     "matrix_unit": [
+      320,
+      320,
+      1
+     ],
+     "dtype_bytes": 2,
+     "acc_dtype_bytes": 4,
+     "clock_hz": 900000000.0,
+     "process_node": "14nm",
+     "peak_int8_ops_per_s": 750000000000000.0,
+     "vector_alus": 5120,
+     "dataflow": "weight_stationary_streaming",
+     "provenance": {
+      "value": "vendor_whitepaper",
+      "confidence": "SILVER",
+      "source": "Groq Spec Sheet v1.5 (188 TFLOPS FP16 => device peak 1.88e14 FLOP/s = 9.4e13 MAC/s x1x2; 750 TOPS INT8; 900 MHz) + ISCA 2020 (320x320 MXM, weight-stationary). SILVER: 188 TFLOPS is labeled FP16 not native BF16 (MXM accumulates FP32); per_instance_mac_s 9.4e13 sits ~2% above the 320x320x900MHz=9.216e13 derivation (2 E/W MXM slices aggregate). instances=1 (single effective matrix engine) modeling choice. vector_alus 5120 upgraded to GOLD via ISCA corroboration but non-load-bearing."
+     }
+    }
+   ]
+  }
+ ],
+ "meta": {
+  "tdp_w": 215,
+  "tdp_confidence": "BRONZE",
+  "process_node": "14nm",
+  "die_mm": "25x29",
+  "host_bw_bps": 31500000000.0,
+  "arch_note": "no HBM; 220 MiB on-chip SRAM sole device memory; no spill cliff",
+  "notes": "tdp_w DISPUTED: authored 215W = Groq Spec Sheet v1.5 chip-level (TDP 215W / Max 300W / Avg 185W); adversarial re-search found GroqCard board ~240W avg / 375W peak and ~300W TDP elsewhere and could not reproduce 215W -> downgraded GOLD->BRONZE, kept as chip-level figure. tdp is non-load-bearing (does not affect twin tier)."
+ }
+}

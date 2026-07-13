@@ -1,0 +1,143 @@
+{
+ "_comment": "NVIDIA B100 (Blackwell, 2x GB100 die, 700W air-cooled SXM) single-accelerator HAT twin. RB-05: backing HBM3e -> L2 -> shared -> reg -> compute leaf. Dual-die presented as one logical GPU (10 TB/s NV-HBI). Load-bearing memory/compute/capacity = GOLD (multi-source); PE-internal (SM cut, clock, L2, matrix tile, HBM energy) = SILVER/BRONZE (no B100-specific NVIDIA die breakdown).",
+ "chip_key": "b100",
+ "level_id": "hbm",
+ "role": "hbm",
+ "scope": "package",
+ "residency": "sw_managed",
+ "capacity_bytes": 206158430208,
+ "bandwidth_bps": 8000000000000.0,
+ "line_bytes": 32,
+ "energy_pj_per_byte": 5.0,
+ "energy_pj_per_byte_wr": 6.5,
+ "mem_standard": "hbm3e",
+ "bus_width_bits": 8192,
+ "pin_rate_gbps": 8.0,
+ "stacks": 8,
+ "dies_per_stack": 8,
+ "die_density_gbit": 24,
+ "provenance": {
+  "value": "vendor_whitepaper",
+  "confidence": "GOLD",
+  "source": "cudocompute Blackwell breakdown; wccftech; Wikipedia Blackwell; Spheron -- 192GB HBM3e, 8TB/s over 8192-bit bus. energy 5.0/6.5 pJ/B and line 32B are BRONZE estimates (NVIDIA does not publish HBM3e access energy or B100 burst granularity; anchored to H100 HBM3 7 pJ/B / 32B)."
+ },
+ "children": [
+  {
+   "level_id": "l2",
+   "role": "l2",
+   "scope": "die",
+   "residency": "hw_cache",
+   "capacity_bytes": 100663296,
+   "bandwidth_bps": 10000000000000.0,
+   "line_bytes": 128,
+   "num_channels": 2,
+   "provenance": {
+    "value": "third_party",
+    "confidence": "BRONZE",
+    "source": "DISPUTED: chipsandcheese/emergentmind cluster around 96MB (8x8MB slices, 4 partitions/die) or 126MB; authored 100MB not corroborated. Adopted 96MB (=100663296) as best-corroborated. Bandwidth 1.0e13 inherited from H100 (Blackwell likely higher; estimate)."
+   },
+   "children": [
+    {
+     "level_id": "smem",
+     "role": "shared",
+     "scope": "die",
+     "residency": "hw_cache",
+     "capacity_bytes": 233472,
+     "bandwidth_bps": 33400000000000.0,
+     "line_bytes": 128,
+     "instances": 148,
+     "spatial_axis": "sm",
+     "provenance": {
+      "value": "vendor_whitepaper",
+      "confidence": "SILVER",
+      "source": "228 KB shared/L1 per SM (NVIDIA Blackwell architecture docs; up from Hopper 192KB config). Blackwell adds a separate 256KB Tensor Memory (TMEM) NOT modeled as the reuse tier here. Per-SM BW 3.34e13 scaled from H100 (estimate). x148 SMs."
+     },
+     "children": [
+      {
+       "level_id": "reg",
+       "role": "reg",
+       "scope": "sm",
+       "residency": "hw_cache",
+       "capacity_bytes": 262144,
+       "bandwidth_bps": 200000000000000.0,
+       "provenance": {
+        "value": "estimate",
+        "confidence": "BRONZE",
+        "source": "256KB register file / 2.0e14 bps inherited from H100 GH100 SM; B100-specific not published."
+       },
+       "children": [
+        {
+         "level_id": "mxu",
+         "role": "compute",
+         "scope": "sm",
+         "instances": 148,
+         "spatial_axis": "sm",
+         "peak_macs_per_s": 6081000000000.0,
+         "matrix_unit": [
+          16,
+          8,
+          16
+         ],
+         "dtype_bytes": 2,
+         "acc_dtype_bytes": 4,
+         "clock_hz": 1837000000.0,
+         "dataflow": "output_stationary",
+         "process_node": "N4P",
+         "device_peak_flops_bf16": 1800000000000000.0,
+         "provenance": {
+          "value": "estimate",
+          "confidence": "SILVER",
+          "source": "Device dense BF16 = 1.8 PFLOP/s is GOLD (cudocompute; exxact; semianalysis; sits below B200 measured ~1.93 PFLOP/s exactly as the 700W bin implies). per_instance_mac_s = 1.8e15/2/148 = 6.081e12 (derived, SILVER). instances=148 (74 enabled/die x2; B100 shares B200 SM config per chipsandcheese/arXiv:2512.02189; a 132-SM figure also circulates -> SILVER). clock 1.837e9 = third-party B100 boost (axiomgaming DB); authored derived 1.43GHz rejected in favor of measured, BRONZE (NVIDIA publishes no official B100 clock). matrix_unit [16,8,16] = legacy warp-level PTX mma.sync tile used as systolic proxy for comparability with the H100 baseline; Blackwell 5th/6th-gen tcgen05.mma uses far larger native tiles (up to 256x256x16, 2-SM) -> BRONZE, understates true tile.",
+          "sanity": "6.081e12 x 148 x 2 = 1.7998e15 ~ 1.8 PFLOP/s; 1.8x H100 0.99 PFLOP/s, same order."
+         },
+         "mma_isa": [
+          {
+           "name": "mma.sync.aligned.m16n8k16",
+           "sass": "HMMA",
+           "scope": "warp",
+           "mnk": [
+            16,
+            8,
+            16
+           ],
+           "in_dtype": "bf16",
+           "acc_dtype": "f32",
+           "threads": 32
+          },
+          {
+           "name": "tcgen05.mma (native, not modeled as systolic shape)",
+           "scope": "2sm",
+           "mnk": [
+            256,
+            256,
+            16
+           ],
+           "in_dtype": "bf16",
+           "acc_dtype": "f32"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "meta": {
+  "tdp_w": 700,
+  "cooling_class": "air_cooled_sxm",
+  "package_type": "cowos_l_dual_die",
+  "transistors": 208000000000,
+  "nv_hbi_bps": 10000000000000.0,
+  "dies": 2,
+  "die_name": "GB100",
+  "sms_per_die_enabled": 74,
+  "provenance": {
+   "value": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "source": "700W air-cooled B100 bin (Viperatech; cudocompute); 208B transistors (104B/die x2); NV-HBI 10 TB/s die-to-die. NVLink5 1.8 TB/s omitted (single-accelerator convention: no fabric level)."
+  }
+ },
+ "arch_note": "Standard dual-die HBM GPU presented as one logical accelerator. 700W B100 bin shares GB100 silicon with 1000W B200; hits 1.8 PFLOP/s dense BF16 (vs B200 ~2.25/measured ~1.93) at a lower clock/same SM config. Load-bearing capacity/BW/device-peak are GOLD; SM-cut, clock, L2, matrix tile, and HBM access energy are SILVER/BRONZE (no NVIDIA B100-specific die breakdown)."
+}

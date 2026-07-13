@@ -1,0 +1,158 @@
+{
+ "chip_key": "groq-lpu",
+ "chip_name": "Groq LPU / TSP (GroqChip1, Tensor Streaming Processor)",
+ "final_tier": "SILVER",
+ "field_provenance": [
+  {
+   "name": "onchip_sram_capacity_bytes",
+   "value": "230686720",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "Groq GroqChip Product Spec Sheet v1.5",
+    "Think Fast: A Tensor Streaming Processor, ISCA 2020 (220 MiB)",
+    "blog.codingconfessions.com/p/groq-lpu-design"
+   ]
+  },
+  {
+   "name": "onchip_sram_bw_bps",
+   "value": "8.0e13",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "SILVER",
+   "sources": [
+    "Groq Spec Sheet v1.5 (80 TB/s on-die)",
+    "ISCA 2020 TSP paper (~27.5 TiB/s internal SRAM BW -- definitional discrepancy, 80 TB/s aggregates all stream lanes)",
+    "01.me/en/2024/02/groq/"
+   ]
+  },
+  {
+   "name": "device_peak_flops_bf16",
+   "value": "1.88e14",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "SILVER",
+   "sources": [
+    "Groq Spec Sheet v1.5 (188 TFLOPS @900MHz -- labeled FP16, not native BF16)",
+    "aiwiki.ai/wiki/groq_lpu",
+    "cryptoslate"
+   ]
+  },
+  {
+   "name": "peak_int8_tops",
+   "value": "7.5e14",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "Groq Spec Sheet v1.5 (750 TOPS INT8)",
+    "aiwiki.ai/wiki/groq_lpu",
+    "cryptoslate/voiceflow"
+   ]
+  },
+  {
+   "name": "per_instance_mac_s",
+   "value": "9.4e13",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "SILVER",
+   "sources": [
+    "Groq Spec Sheet v1.5 (188 TFLOPS/2)",
+    "ISCA 2020 (320x320@900MHz=9.216e13, ~2% under authored)"
+   ]
+  },
+  {
+   "name": "compute_instances",
+   "value": "1",
+   "provenance_type": "third_party",
+   "confidence": "SILVER",
+   "sources": [
+    "Think Fast ISCA 2020 TSP paper (single functionally-sliced chip)",
+    "blog.codingconfessions.com"
+   ]
+  },
+  {
+   "name": "matrix_unit",
+   "value": "[320,320,1]",
+   "provenance_type": "third_party",
+   "confidence": "GOLD",
+   "sources": [
+    "ISCA 2020 TSP paper (320x320 MXM)",
+    "aiwiki.ai/wiki/groq_lpu",
+    "blog.codingconfessions.com"
+   ]
+  },
+  {
+   "name": "clock_hz",
+   "value": "9.0e8",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "Groq Spec Sheet v1.5 (@900 MHz)",
+    "Think Fast ISCA 2020 TSP paper"
+   ]
+  },
+  {
+   "name": "process_node",
+   "value": "14",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "Groq Spec Sheet v1.5 (14nm)",
+    "ISCA 2020 (25x29mm 14nm GlobalFoundries)",
+    "Wikipedia"
+   ]
+  },
+  {
+   "name": "vector_alus",
+   "value": "5120",
+   "provenance_type": "third_party",
+   "confidence": "GOLD",
+   "sources": [
+    "aiwiki.ai/wiki/groq_lpu",
+    "ISCA 2020 (16 lanes x 320)"
+   ]
+  },
+  {
+   "name": "host_bw_bps",
+   "value": "3.15e10",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "SILVER",
+   "sources": [
+    "GroqCard datasheet (PCIe Gen4 x16 ~31.5 GB/s/dir -- link-standard inference, not directly quoted)"
+   ]
+  },
+  {
+   "name": "tdp_w",
+   "value": "215",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "BRONZE",
+   "sources": [
+    "Groq Spec Sheet v1.5 (TDP 215W / Max 300W / Avg 185W, chip-level)",
+    "DISPUTED: GroqCard board ~240W avg / 375W max (spheron/introl); ~300W TDP elsewhere"
+   ]
+  },
+  {
+   "name": "onchip_sram_energy_pj_per_byte",
+   "value": "1.0",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "estimate: 14nm global on-die SRAM access energy ~0.5-2 pJ/B; not published by Groq (both verifiers concur unverifiable)"
+   ]
+  },
+  {
+   "name": "line_bytes",
+   "value": "320",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "ISCA 2020 documents 32 B/lane stream width; 320 ties to 320-element matrix row -- modeling assumption, not a published burst size"
+   ]
+  }
+ ],
+ "reconciliation_notes": "Both verifiers recommend GOLD-trust with the load-bearing values confirmed, but reconciliation rules force one-step downgrades on the disputed load-bearing fields, so the twin lands at SILVER (= lowest load-bearing tier). Field decisions: (1) onchip_sram_capacity_bytes = 230,686,720 B (220 MiB) held at GOLD -- both verifiers + vendor + ISCA agree, sole device memory / no HBM confirmed. (2) onchip_sram_bw_bps kept at 8.0e13 (vendor 80 TB/s) but downgraded GOLD->SILVER: verifier-2 surfaced the ISCA paper's ~27.5 TiB/s internal-SRAM figure; 80 TB/s is the aggregate across all concurrent stream lanes -- value retained (vendor headline the experiments expect) with the definitional caveat recorded. (3) device_peak_flops_bf16 = 1.88e14 value confirmed by both, downgraded to SILVER because the 188 TFLOPS is published as FP16 (no native BF16 path; FP32 accumulate) -- a datatype-label nuance, not a numeric dispute. (4) per_instance_mac_s = 9.4e13 (=188 TFLOPS/2) kept SILVER; sits ~2% above the self-consistent 320x320x900MHz = 9.216e13 derivation. instances=1, matrix_unit [320,320,1] retained. peak_int8_tops (7.5e14), clock_hz (9.0e8), process_node (14nm), vector_alus (5120) all confirmed GOLD. host_bw_bps 3.15e10 kept SILVER (PCIe Gen4 x16 link-standard inference). (5) tdp_w: DISPUTED -- authored 215W (vendor spec-sheet chip-level TDP) could not be reproduced by adversarial re-search, which found GroqCard board ~240W avg / 375W max and ~300W TDP elsewhere; kept 215W as the chip-level figure but downgraded to BRONZE and annotated. tdp is non-load-bearing so it does not drop the twin tier. (6) onchip_sram_energy_pj_per_byte (1.0) and line_bytes (320) remain BRONZE estimates (Groq publishes neither; ISCA documents 32 B/lane stream width) -- both are non-load-bearing per the grading rule (only BW/peak/capacity gate the tier), so they do not force twin=BRONZE. Final twin: SRAM-only RB-05 chain backing sram (220 MiB @ 80 TB/s, role:sram) -> reuse sram (SXR stream-register staging, estimate) -> compute leaf (mxm, instances=1, 9.4e13 MAC/s, [320,320,1], dtype 2 / acc 4, 900 MHz). Device-peak sanity: 9.4e13 x 1 x 2 = 1.88e14 FLOP/s = 188 TFLOPS, order 1e14 (~1/5 of H100 dense BF16 0.99 PFLOP/s) -- passes anchor.",
+ "unresolved": [
+  "reuse tier (SXR stream/vector register staging) capacity_bytes is an estimate (~256 KB) -- Groq does not publish the per-MXM operand-staging capacity; the 3-level schema is satisfied but the reuse C-block cap is not a measured number.",
+  "onchip_sram_bw_bps definitional gap: vendor 80 TB/s (aggregate stream lanes) vs ISCA ~27.5 TiB/s internal SRAM BW; kept vendor figure but true single-stream effective BW is bounded lower.",
+  "tdp_w = 215W (chip-level spec sheet) vs adversarial finds of ~240W avg / 375W max (GroqCard board) and ~300W TDP; unresolved whether 215W is bare-die or an outdated/erroneous figure.",
+  "onchip_sram_energy_pj_per_byte (1.0 read / 1.2 write) is an unpublished 14nm estimate -- directional only.",
+  "line_bytes = 320 is a modeling assumption (320-element matrix row); vendor documents 32 B/lane stream width, so the true ISA burst granularity may be 32 B."
+ ]
+}

@@ -1,0 +1,93 @@
+{
+ "_comment": "Google TPU v7 'Ironwood' (2025), single-accelerator = 1 chip (2 compute dies/TensorCores). Backing HBM3e -> on-chip VMEM (SRAM, estimated) -> compute leaf (TensorCore). ICI/superpod fabric omitted per single-accelerator convention. Vendor headline (HBM BW/cap, BF16/FP8 peak, ICI, TensorCore count) = GOLD from Google Cloud tpu7x docs; MXU 256x256 + 1.1GHz clock = third-party/derived (SILVER); VMEM size/BW + HBM energy = estimate (BRONZE).",
+ "level_id": "hbm",
+ "role": "hbm",
+ "scope": "package",
+ "residency": "sw_managed",
+ "capacity_bytes": 206158430208,
+ "bandwidth_bps": 7380000000000.0,
+ "energy_pj_per_byte": 5.0,
+ "energy_pj_per_byte_wr": 5.5,
+ "line_bytes": 32,
+ "mem_standard": "hbm3e",
+ "stacks": 8,
+ "provenance": {
+  "value": "vendor_whitepaper",
+  "confidence": "GOLD",
+  "source": "docs.cloud.google.com/tpu/docs/tpu7x (HBM 192 GiB = 206158430208 B; 7380 GBps = 7.38e12 B/s); cloud.google.com inside-Ironwood blog; ServeTheHome Hot Chips 2025. energy 5.0/5.5 pJ/B = BRONZE estimate (HBM3e; H100 HBM3 7 pJ/B baseline, undisclosed by Google)."
+ },
+ "children": [
+  {
+   "level_id": "vmem",
+   "role": "sram",
+   "scope": "die",
+   "residency": "sw_managed",
+   "capacity_bytes": 268435456,
+   "bandwidth_bps": 162000000000000.0,
+   "energy_pj_per_byte": 0.2,
+   "line_bytes": 128,
+   "provenance": {
+    "value": "estimate",
+    "confidence": "BRONZE",
+    "source": "VMEM per-TensorCore software scratchpad UNDISCLOSED by Google. 128 MiB/TensorCore x2 = 256 MiB/chip (268435456 B) estimated from jax-ml scaling-book + generational trend; BW ~22x HBM (scaling-book v5p/v6e VMEM:HBM ratio) = 1.62e14. DIRECTIONAL ONLY; both verifiers flag unverifiable."
+   },
+   "children": [
+    {
+     "level_id": "mxu",
+     "role": "compute",
+     "scope": "soc",
+     "instances": 2,
+     "spatial_axis": "tensorcore",
+     "peak_macs_per_s": 576750000000000.0,
+     "matrix_unit": [
+      256,
+      256,
+      256
+     ],
+     "dtype_bytes": 2,
+     "acc_dtype_bytes": 4,
+     "clock_hz": 1100000000.0,
+     "mxus_per_instance": 8,
+     "dataflow": "systolic",
+     "provenance": {
+      "value": "vendor_whitepaper",
+      "confidence": "SILVER",
+      "source": "peak_macs_per_s derived from GOLD vendor BF16 peak 2307 TFLOPs (docs tpu7x): /2 FLOP-per-MAC /2 TensorCores = 5.7675e14 MAC/s each; instances=2 TensorCores GOLD (docs tpu7x). matrix_unit 256x256 third-party (Hot Chips 2025/SemiAnalysis, up from 128x128 in v5p), k=256 representative tile depth. clock 1.1 GHz third-party (The Register); self-consistent: 2*65536 MAC/cyc *16 MXU *1.1e9 = 2.307e15 FLOP/s = official BF16 peak."
+     }
+    }
+   ]
+  }
+ ],
+ "meta": {
+  "chip_name": "Google TPU v7 Ironwood",
+  "tdp_w": 600,
+  "cooling_class": "liquid",
+  "process_node": "disputed_N3E_or_N5",
+  "device_peak_flops_bf16": 2307000000000000.0,
+  "device_peak_flops_fp8": 4614000000000000.0,
+  "compute_instances": 2,
+  "sparsecores_per_chip": 4,
+  "fabric_omitted": {
+   "ici_bandwidth_bps": 1200000000000.0,
+   "topology": "3d_torus",
+   "superpod_chips": 9216,
+   "note": "GOLD vendor value but omitted per single-accelerator convention"
+  },
+  "field_confidence": {
+   "hbm_capacity_bytes": "GOLD",
+   "hbm_bandwidth_bps": "GOLD",
+   "device_peak_flops_bf16": "GOLD",
+   "device_peak_flops_fp8": "GOLD",
+   "compute_instances": "GOLD",
+   "per_instance_mac_s": "GOLD",
+   "ici_bandwidth_bps": "GOLD",
+   "matrix_unit": "SILVER",
+   "clock_hz": "SILVER",
+   "tdp_w": "BRONZE",
+   "process_node": "BRONZE",
+   "onchip_sram_capacity_bytes": "BRONZE",
+   "onchip_sram_bw_bps": "BRONZE",
+   "hbm_energy_pj_per_byte": "BRONZE"
+  }
+ }
+}

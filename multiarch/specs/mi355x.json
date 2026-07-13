@@ -1,0 +1,190 @@
+{
+ "chip_key": "mi355x",
+ "chip_name": "AMD Instinct MI355X (CDNA4)",
+ "final_tier": "SILVER",
+ "field_provenance": [
+  {
+   "name": "hbm_capacity_bytes",
+   "value": "309237645312",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "AMD MI355X datasheet (288 GiB HBM3e)",
+    "AMD CDNA4 whitepaper",
+    "Chips&Cheese CDNA4"
+   ]
+  },
+  {
+   "name": "hbm_bandwidth_bps",
+   "value": "8.0e12",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "AMD MI355X datasheet (8 TB/s)",
+    "ROCm occupancy-math MI355X blog",
+    "Oracle OCI tech brief"
+   ]
+  },
+  {
+   "name": "hbm_energy_pj_per_byte",
+   "value": "5.0 read / 6.0 write",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "Micron HBM3e product brief (~30% gain)",
+    "AUTHORING-SPEC H100 HBM3 7 pJ/B anchor"
+   ]
+  },
+  {
+   "name": "infinity_cache_capacity_bytes",
+   "value": "268435456",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "AMD CDNA4 whitepaper (256 MB LLC)",
+    "ROCm occupancy blog"
+   ]
+  },
+  {
+   "name": "infinity_cache_bw_bps",
+   "value": "1.7e13",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "estimate from MI300/CDNA3 Infinity Cache peak order (both verifiers dispute: unpublished)"
+   ]
+  },
+  {
+   "name": "l2_capacity_bytes",
+   "value": "33554432",
+   "provenance_type": "third_party",
+   "confidence": "SILVER",
+   "sources": [
+    "CDNA4 whitepaper mirror (4 MB/XCD)",
+    "aiwiki MI355X; total = 4MB x 8 XCD derived"
+   ]
+  },
+  {
+   "name": "onchip_sram_capacity_bytes",
+   "value": "41943040",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "AMD 160 KB LDS/CU",
+    "Chips&Cheese '40 MB total LDS'",
+    "ROCm blog"
+   ]
+  },
+  {
+   "name": "onchip_sram_bw_bps",
+   "value": "1.57e14",
+   "provenance_type": "third_party",
+   "confidence": "SILVER",
+   "sources": [
+    "derived: 256 B/clk/CU (whitepaper) x 2.4 GHz x 256 CU"
+   ]
+  },
+  {
+   "name": "device_peak_flops_bf16",
+   "value": "2.5e15",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "AMD MI355X datasheet (2.5 PFLOPS dense BF16)",
+    "Chips&Cheese"
+   ]
+  },
+  {
+   "name": "device_peak_flops_fp8",
+   "value": "5.0e15",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "AMD MI355X datasheet (5.0 PFLOPS dense MXFP8)"
+   ]
+  },
+  {
+   "name": "device_peak_flops_fp64",
+   "value": "7.86e13",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "AMD MI355X datasheet (78.6 TFLOPS FP64)"
+   ]
+  },
+  {
+   "name": "compute_instances",
+   "value": "256",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "AMD whitepaper (8 XCD x 32 CU)",
+    "ROCm blog",
+    "TechPowerUp"
+   ]
+  },
+  {
+   "name": "per_instance_mac_s",
+   "value": "4.9152e12",
+   "provenance_type": "third_party",
+   "confidence": "SILVER",
+   "sources": [
+    "derived: 2048 MAC/clk/CU x 2.4 GHz; consistent with GOLD device BF16 peak / 256 CU"
+   ]
+  },
+  {
+   "name": "matrix_unit",
+   "value": "[16,16,32]",
+   "provenance_type": "third_party",
+   "confidence": "SILVER",
+   "sources": [
+    "ROCm matrix-cores-cdna blog; CDNA4 16x16x32 BF16/FP16 MFMA (K doubled vs CDNA3); representative shape"
+   ]
+  },
+  {
+   "name": "dtype_bytes",
+   "value": "2",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "BF16 = 2 bytes; matches peak_macs_per_s BF16 path"
+   ]
+  },
+  {
+   "name": "clock_hz",
+   "value": "2.4e9",
+   "provenance_type": "third_party",
+   "confidence": "GOLD",
+   "sources": [
+    "ROCm occupancy-math MI355X blog",
+    "TechPowerUp (up to 2.4 GHz)"
+   ]
+  },
+  {
+   "name": "tdp_w",
+   "value": "1400",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "AMD MI355X (1400 W)",
+    "guru3d MI350 announcement"
+   ]
+  },
+  {
+   "name": "process_node",
+   "value": "N3P (XCD) / N6 (IOD)",
+   "provenance_type": "third_party",
+   "confidence": "GOLD",
+   "sources": [
+    "TechPowerUp MI350X silicon detail"
+   ]
+  }
+ ],
+ "reconciliation_notes": "Both verifiers returned trust=high and recommended GOLD, but I set the twin to SILVER per the AUTHORING-SPEC tiering rule (twin grade = lowest load-bearing BW/peak/capacity field). Reasoning:\n\nAGREED / KEPT (both verifiers confirm): hbm_capacity_bytes (288 GiB = 309,237,645,312 B exact, GiB convention), hbm_bandwidth_bps (8 TB/s), infinity_cache_capacity (256 MB), onchip_sram_capacity (40 MiB LDS = 160 KB/CU x 256), device peaks BF16 2.5 PF dense / FP8 5.0 PF dense / FP64 78.6 TF, compute_instances 256 CU, clock 2.4 GHz, TDP 1400 W, process node N3P(XCD)/N6(IOD). These are all GOLD directly from AMD datasheet/whitepaper with third-party cross-checks.\n\nDISPUTED -> downgraded + documented:\n1. hbm_energy_pj_per_byte (5.0/6.0): both verifiers flag AMD publishes no per-byte HBM energy. Kept the estimate (H100 7 pJ/B anchor x ~30% HBM3e gain) but BRONZE. Energy is NOT in the spec's load-bearing set (BW/peak/capacity), so it does not by itself force a lower twin tier; marked directional-only in the twin's energy_note.\n2. infinity_cache_bw_bps (1.7e13): both verifiers dispute (unpublished, extrapolated from MI300 LLC). Kept as BRONZE estimate. To avoid a single unpublished cache bandwidth dragging the whole twin to BRONZE, the Infinity Cache is annotated as an AUXILIARY cache tier, NOT the primary reuse tier — the experiment blocks GEMM into LDS. This is documented in the level note.\n3. onchip_sram_bw_bps (1.57e14): verifier-1 agrees SILVER, verifier-2 disputes (derived). Reconciled as SILVER (derived from published 256 B/clk/CU) — this IS the primary reuse-tier bandwidth and IS load-bearing.\n\nWHY SILVER (not GOLD): the primary load-bearing chain the experiment uses is HBM (backing) -> LDS (reuse) -> MXU (compute). HBM BW/cap = GOLD, device peak = GOLD, but the reuse-tier bandwidth (LDS 1.57e14) and per-instance MAC (4.9152e12) are DERIVED (SILVER), and matrix_unit is a representative CDNA4 shape (SILVER). Lowest load-bearing = SILVER, so twin = SILVER. No load-bearing field is BRONZE (the two BRONZE fields — HBM energy and Infinity Cache BW — are auxiliary), so the twin does not fall to BRONZE.\n\nmatrix_unit resolution: verifier called [16,16,32] an FP8 MFMA tile, but it is equally the CDNA4 BF16/FP16 MFMA shape (K doubled from CDNA3's 16x16x16). Since peak_macs_per_s describes the BF16 path, dtype_bytes=2 is internally consistent with matrix_unit [16,16,32].\n\nSanity: per_instance_mac_s (4.9152e12) x 256 CU x 2 = 2.516e15 FLOP/s ~ 2.5 PFLOPS dense BF16, matches datasheet. Order-of-magnitude vs H100 anchor: HBM BW 2.4x, device peak 2.5x, LDS >> H100 SMEM aggregate — all same order or expected generational uplift. JSON validated (single-accelerator nested chain, RB-05).",
+ "unresolved": [
+  "hbm_energy_pj_per_byte: AMD publishes no per-byte HBM energy; 5.0 read / 6.0 write remain unverifiable BRONZE estimates (H100 anchor x HBM3e efficiency gain).",
+  "infinity_cache_bw_bps: 1.7e13 unpublished by AMD; BRONZE estimate from MI300-gen LLC order. Disputed by both verifiers; treated as non-load-bearing auxiliary tier.",
+  "l2_bandwidth_bps (1.0e13) and infinity_cache line_bytes: not separately published; used H100-class order-of-magnitude anchors.",
+  "matrix_unit shape: [16,16,32] is a representative CDNA4 MFMA tile; CDNA4 also exposes 32x32x64 and scaled FP8 variants — the single canonical shape for this twin's BF16 path is a modeling choice (SILVER)."
+ ]
+}

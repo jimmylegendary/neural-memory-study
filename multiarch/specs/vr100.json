@@ -1,0 +1,182 @@
+{
+ "chip_key": "vr100",
+ "chip_name": "NVIDIA Vera Rubin (Rubin R100 GPU)",
+ "final_tier": "BRONZE",
+ "field_provenance": [
+  {
+   "name": "hbm_capacity_bytes",
+   "value": "309237645312",
+   "provenance_type": "press",
+   "confidence": "BRONZE",
+   "sources": [
+    "NVIDIA GTC (288GB HBM4)",
+    "Spheron",
+    "Toms Hardware"
+   ]
+  },
+  {
+   "name": "hbm_bandwidth_bps",
+   "value": "2.2e13",
+   "provenance_type": "third_party",
+   "confidence": "BRONZE",
+   "sources": [
+    "Thunder Compute",
+    "Spheron",
+    "Barrack AI",
+    "VRLA Tech (GTC2026 consensus 22 TB/s)"
+   ]
+  },
+  {
+   "name": "hbm_energy_pj_per_byte",
+   "value": "5.5 (wr 6.5)",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "HBM3=7pJ/B (H100 GOLD) + HBM4 node/IO improvement estimate"
+   ]
+  },
+  {
+   "name": "hbm_line_bytes",
+   "value": "32",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "carried from HBM3 burst"
+   ]
+  },
+  {
+   "name": "onchip_l2_capacity_bytes",
+   "value": "104857600",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "~2x Blackwell B200 L2 estimate; unpublished"
+   ]
+  },
+  {
+   "name": "onchip_l2_bw_bps",
+   "value": "1.5e13",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "order-of-magnitude from Hopper L2"
+   ]
+  },
+  {
+   "name": "onchip_sram_capacity_bytes",
+   "value": "262144",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "Hopper/Blackwell per-SM shared-mem lineage"
+   ]
+  },
+  {
+   "name": "onchip_sram_bw_bps",
+   "value": "4.0e13",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "order-of-magnitude from Hopper SMEM"
+   ]
+  },
+  {
+   "name": "device_peak_flops_bf16",
+   "value": "6.25e15",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "derived from 50 PF NVFP4/package (GTC2025) /4 /2-sparsity; honest range 5-13 PF"
+   ]
+  },
+  {
+   "name": "compute_instances",
+   "value": "224",
+   "provenance_type": "third_party",
+   "confidence": "BRONZE",
+   "sources": [
+    "Barrack AI GTC2026 breakdown",
+    "NVIDIA dev-blog refs (224 SM, not vendor datasheet)"
+   ]
+  },
+  {
+   "name": "per_instance_mac_s",
+   "value": "1.395e13",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "=6.25e15/2/224 SM"
+   ]
+  },
+  {
+   "name": "matrix_unit",
+   "value": "[16,8,16]",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "Hopper HMMA placeholder; 6th-gen tensor-core shape undisclosed"
+   ]
+  },
+  {
+   "name": "clock_hz",
+   "value": "2.0e9",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "~2.0 GHz Hopper/Blackwell-class placeholder"
+   ]
+  },
+  {
+   "name": "tdp_w",
+   "value": "1800",
+   "provenance_type": "press",
+   "confidence": "BRONZE",
+   "sources": [
+    "tonecooling.com",
+    "spheron.network (1800W Max-Q; Max-P 2300W)"
+   ]
+  },
+  {
+   "name": "transistors_billion",
+   "value": "336",
+   "provenance_type": "press",
+   "confidence": "SILVER",
+   "sources": [
+    "tech-insider.org",
+    "Toms Hardware",
+    "Thunder Compute (336B, 1.6x Blackwell 208B)"
+   ]
+  },
+  {
+   "name": "process_node",
+   "value": "N3P",
+   "provenance_type": "press",
+   "confidence": "SILVER",
+   "sources": [
+    "Toms Hardware",
+    "tech-insider.org (TSMC N3/N3P, CoWoS-L)"
+   ]
+  },
+  {
+   "name": "nvlink6_tbps",
+   "value": "3.6",
+   "provenance_type": "press",
+   "confidence": "SILVER",
+   "sources": [
+    "Spheron",
+    "VRLA Tech",
+    "tech-insider.org (omitted from single-device leaf)"
+   ]
+  }
+ ],
+ "reconciliation_notes": "CORRECTED one load-bearing field vs authored: hbm_bandwidth_bps 1.31e13 (13.1 TB/s) -> 2.2e13 (22 TB/s). Both verifiers flag the authored 13 TB/s as a superseded pre-announcement estimate; the GTC2026 third-party consensus (Thunder Compute/Spheron/Barrack AI/VRLA Tech, 288GB HBM4 @ 22 TB/s, 10.8 GT/s/pin) is the current published figure. Adopted the higher-trust consensus value; confidence stays BRONZE (third_party only, no vendor datasheet PDF located). hbm_capacity_bytes kept at 3.09e11 (288 GiB binary, matching H100 twin binary convention) — verifier agrees on 288GB; flagged binary(3.09e11)/decimal(2.88e11) ambiguity, immaterial to experiments. compute_instances=224 SM kept (both verifiers: 3rd-party consensus, BRONZE not vendor). device_peak_flops_bf16 6.25e15 kept as directional estimate (honest range 5-13 PF; if 50PF NVFP4 is dense, BF16~12.5PF); per_instance_mac_s 1.395e13 = 6.25e15/2/224 recomputes exactly (verified 1.395e13*224*2=6.25e15). tdp_w kept at 1800 (Max-Q) with explicit Max-P 2300W range in meta. transistors_billion(336), process_node(N3P), nvlink6(3.6) are the only SILVER fields (multi-source press agreement); nvlink6 omitted from twin leaf per single-device convention. Twin structure = RB-05 backing HBM4 -> L2 -> per-SM shared(sram) -> compute mxu, single accelerator (1 Rubin package). OVERALL TIER = BRONZE: all three load-bearing fields (bandwidth_bps, capacity_bytes, device peak) are BRONZE, per spec twin=min(load-bearing). All estimate/SRAM/compute-leaf fields remain BRONZE directional-only per do-not-package-guesses-as-fact rule.",
+ "unresolved": [
+  "hbm_bandwidth_bps: 13 vs 22 TB/s across sources; adopted 22 TB/s (GTC2026 consensus) but no NVIDIA datasheet PDF confirms — remains BRONZE, range 13-22 TB/s",
+  "device_peak_flops_bf16: BF16 dense never published; 50 PF NVFP4 sparsity/dtype interpretation unresolved -> honest range 5-13 PF",
+  "onchip_l2_capacity_bytes, onchip_l2_bw_bps, onchip_sram_bw_bps, clock_hz, matrix_unit: Rubin internal microarchitecture undisclosed mid-2026 — pure estimates, no source to confirm",
+  "onchip_sram_capacity_bytes 256KB/SM plausible by architectural inertia but unconfirmed for Rubin",
+  "hbm_energy_pj_per_byte 5.5/6.5: HBM4 read/write energy not published; generic physics-class estimate",
+  "tdp_w: 1800 Max-Q vs 2300 Max-P — device power state ambiguous; used 1800 for envelope",
+  "compute_instances 224 SM: 3rd-party consensus only, not on vendor spec sheet"
+ ]
+}

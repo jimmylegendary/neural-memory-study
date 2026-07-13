@@ -1,0 +1,145 @@
+{
+ "chip_key": "b100",
+ "chip_name": "NVIDIA B100 (Blackwell, 2x GB100 die, 700W air-cooled SXM)",
+ "final_tier": "SILVER",
+ "field_provenance": [
+  {
+   "name": "hbm_bandwidth_bps",
+   "value": "8.0e12",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "cudocompute Blackwell breakdown",
+    "wccftech",
+    "Wikipedia Blackwell"
+   ]
+  },
+  {
+   "name": "hbm_capacity_bytes",
+   "value": "206158430208",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "cudocompute",
+    "Wikipedia Blackwell",
+    "Spheron"
+   ]
+  },
+  {
+   "name": "hbm_energy_pj_per_byte",
+   "value": "5.0 (wr 6.5)",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "H100 HBM3 7 pJ/B anchor (AUTHORING-SPEC)",
+    "no vendor HBM3e energy source"
+   ]
+  },
+  {
+   "name": "hbm_line_bytes",
+   "value": "32",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "H100 HBM3 baseline; not documented for B100"
+   ]
+  },
+  {
+   "name": "onchip_l2_capacity_bytes",
+   "value": "100663296 (96 MB)",
+   "provenance_type": "third_party",
+   "confidence": "BRONZE",
+   "sources": [
+    "chipsandcheese",
+    "emergentmind"
+   ]
+  },
+  {
+   "name": "onchip_sram_capacity_bytes",
+   "value": "233472 (228 KB/SM)",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "SILVER",
+   "sources": [
+    "NVIDIA Blackwell architecture docs"
+   ]
+  },
+  {
+   "name": "device_peak_flops_bf16",
+   "value": "1.8e15",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "cudocompute",
+    "exxact",
+    "semianalysis"
+   ]
+  },
+  {
+   "name": "instances",
+   "value": "148",
+   "provenance_type": "third_party",
+   "confidence": "SILVER",
+   "sources": [
+    "chipsandcheese",
+    "arXiv:2512.02189"
+   ]
+  },
+  {
+   "name": "per_instance_mac_s",
+   "value": "6.081e12",
+   "provenance_type": "estimate",
+   "confidence": "SILVER",
+   "sources": [
+    "derived = 1.8e15 / 2 / 148"
+   ]
+  },
+  {
+   "name": "clock_hz",
+   "value": "1.837e9",
+   "provenance_type": "third_party",
+   "confidence": "BRONZE",
+   "sources": [
+    "axiomgaming GPU DB (B100 boost 1837 MHz)"
+   ]
+  },
+  {
+   "name": "matrix_unit",
+   "value": "[16,8,16]",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "H100 baseline warp-level mma.sync proxy",
+    "semianalysis (native tcgen05 256x256x16)"
+   ]
+  },
+  {
+   "name": "tdp_w",
+   "value": "700",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "Viperatech",
+    "cudocompute"
+   ]
+  },
+  {
+   "name": "transistors",
+   "value": "208000000000",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "Viperatech",
+    "Wikipedia Blackwell (104B/die x2)"
+   ]
+  }
+ ],
+ "reconciliation_notes": "Both verifiers recommend SILVER and agree on all load-bearing memory/compute values; five disputed fields resolved as follows.\n\nAGREED (kept as authored): hbm_bandwidth_bps 8.0e12 (GOLD), hbm_capacity_bytes 206158430208 = 192 GiB (GOLD), device_peak_flops_bf16 1.8e15 dense BF16 (GOLD), instances 148 SM = 74 enabled/die x2 (SILVER), per_instance_mac_s 6.081e12 = 1.8e15/2/148 (SILVER, internally consistent), tdp_w 700 (GOLD), transistors 208B (GOLD). onchip_sram_capacity_bytes UPGRADED BRONZE->SILVER per verifier 1: 228 KB/SM is vendor-documented, not an estimate.\n\nDISPUTED / resolved:\n1. onchip_l2_capacity_bytes: authored 100MB (2x50MB) not corroborated. Both verifiers cluster on 96MB (8x8MB slices, 4 partitions/die) or 126MB. Adopted 96MB (100663296), kept BRONZE.\n2. clock_hz: authored 1.43e9 was a FLOPS-derived estimate; verifier 1 found third-party B100 boost 1.837 GHz (axiomgaming DB). Adopted measured 1.837e9 over the derived value, BRONZE (NVIDIA publishes no official B100 clock). Note: clock is descriptive only -- per_instance_mac_s stays 6.081e12 because it is derived from GOLD device peak / 2 / 148, independent of clock.\n3. matrix_unit: authored [16,8,16] is the legacy warp-level PTX mma.sync shape, valid but not representative of Blackwell tcgen05 (native tile up to 256x256x16, 2-SM). Kept [16,8,16] as the systolic-shape proxy for comparability with the H100 GOLD baseline; recorded the true native tile in mma_isa; BRONZE with an explicit \"understates true tile\" note.\n4. hbm_energy_pj_per_byte 5.0/6.5 and hbm_line_bytes 32: unverifiable estimates, no vendor source. Kept BRONZE.\n\nTIER: load-bearing capacity/BW/device-peak are all GOLD, but the per-instance decomposition the experiments actually read (peak_macs_per_s x instances) is SILVER because NVIDIA publishes no B100-specific SM-cut/clock breakdown. Both verifiers recommend SILVER -> final SILVER.\n\nSTRUCTURE: single-accelerator per AUTHORING-SPEC minimal-device convention; NVLink5 1.8 TB/s and IB/nvlink fabric levels intentionally omitted (recorded in meta only). Dual GB100 dies presented as one logical GPU (NV-HBI 10 TB/s in meta). RB-05 chain hbm -> l2 -> smem -> reg -> mxu, each level carries a provenance object. JSON validated with json.loads; device-peak sanity 6.081e12 x 148 x 2 = 1.7998e15 ~ 1.8 PFLOP/s.",
+ "unresolved": [
+  "B100-specific enabled SM count vs clock trade-off: adopted B200's 148 SM + measured 1.837 GHz boost. If B100 instead cuts SMs rather than clock, per-instance MAC/s shifts (device peak 1.8 PFLOP/s unchanged). A 132-SM figure also circulates.",
+  "Dense BF16 cited as 1750-1800 TFLOPS across tables (~3% spread); used 1.8e15.",
+  "HBM3e read/write access energy (5.0/6.5 pJ/B) not published by NVIDIA -- BRONZE estimate anchored to HBM3 ~7 pJ/B.",
+  "L2 capacity genuinely disputed (96MB vs 126MB across third-party sources); adopted 96MB, BRONZE.",
+  "matrix_unit modeled as warp-level [16,8,16] proxy; true Blackwell tcgen05 native tile (up to 256x256x16, 2-SM async MMA) not used as the systolic shape -> understates real tile.",
+  "Blackwell 256KB Tensor Memory (TMEM) is a real distinct reuse tier not modeled here (shared/L1 228KB/SM used as the reuse tier instead)."
+ ]
+}

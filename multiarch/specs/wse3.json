@@ -1,0 +1,165 @@
+{
+ "chip_key": "wse3",
+ "chip_name": "Cerebras WSE-3 (wafer-scale engine, CS-3)",
+ "final_tier": "SILVER",
+ "field_provenance": [
+  {
+   "name": "onchip_sram_capacity_bytes",
+   "value": "4.4e10",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "cerebras.ai press release",
+    "cerebras.ai/chip",
+    "arxiv 2503.11698",
+    "Tom's Hardware"
+   ]
+  },
+  {
+   "name": "onchip_sram_bw_bps",
+   "value": "2.1e16",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "cerebras.ai/chip",
+    "Introl",
+    "ServeTheHome",
+    "NextPlatform"
+   ]
+  },
+  {
+   "name": "hbm_bandwidth_bps",
+   "value": "0",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "cerebras.ai architecture; no HBM in compute path"
+   ]
+  },
+  {
+   "name": "hbm_capacity_bytes",
+   "value": "0",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "cerebras.ai; die HBM=0, external MemoryX is separate off-wafer store"
+   ]
+  },
+  {
+   "name": "device_peak_flops (fp16)",
+   "value": "1.25e17",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "cerebras.ai press release",
+    "Tom's Hardware"
+   ]
+  },
+  {
+   "name": "compute_instances",
+   "value": "900000",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "cerebras.ai/chip",
+    "Tom's Hardware",
+    "all sources"
+   ]
+  },
+  {
+   "name": "peak_macs_per_s (per_instance)",
+   "value": "6.944e10",
+   "provenance_type": "estimate",
+   "confidence": "SILVER",
+   "sources": [
+    "derived: 1.25e17 / 900000 / 2; arithmetically exact from two GOLD values"
+   ]
+  },
+  {
+   "name": "onchip_sram_capacity_per_core_bytes",
+   "value": "48896",
+   "provenance_type": "estimate",
+   "confidence": "SILVER",
+   "sources": [
+    "Cerebras deep-dive 48KB/core",
+    "44GB/900k even-division"
+   ]
+  },
+  {
+   "name": "onchip_sram_bw_per_core_bps",
+   "value": "2.333e10",
+   "provenance_type": "estimate",
+   "confidence": "SILVER",
+   "sources": [
+    "derived: 2.1e16 / 900000; consistent with 2R+1W 64-bit @1.1GHz"
+   ]
+  },
+  {
+   "name": "matrix_unit",
+   "value": "[1,1,8]",
+   "provenance_type": "third_party",
+   "confidence": "BRONZE",
+   "sources": [
+    "both verifiers: 8-wide FP16 SIMD FMAC (2x WSE-2)",
+    "XPU.pub WSE-3 deep dive"
+   ]
+  },
+  {
+   "name": "clock_hz",
+   "value": "1.1e9",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "Cerebras architecture deep-dive (WSE-2-era); WSE-3 clock NOT officially published - community estimate"
+   ]
+  },
+  {
+   "name": "process_node",
+   "value": "N5",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "cerebras.ai",
+    "Tom's Hardware",
+    "XPU.pub; TSMC 5nm"
+   ]
+  },
+  {
+   "name": "fabric_aggregate_bps",
+   "value": "2.675e16",
+   "provenance_type": "third_party",
+   "confidence": "BRONZE",
+   "sources": [
+    "Hot Chips 2024",
+    "Cerebras deep-dive; ~214 Pb/s, partly WSE-2-era, non-load-bearing"
+   ]
+  },
+  {
+   "name": "tdp_w",
+   "value": "23000",
+   "provenance_type": "press",
+   "confidence": "BRONZE",
+   "sources": [
+    "cerebras.ai/system",
+    "Futurum; CS-3 SYSTEM power not wafer die"
+   ]
+  },
+  {
+   "name": "energy_pj_per_byte",
+   "value": "1.0",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "generic on-chip SRAM order-of-magnitude; not published by Cerebras"
+   ]
+  }
+ ],
+ "reconciliation_notes": "Both verifiers recommended GOLD/high-trust and independently confirmed the two load-bearing memory numbers (44GB on-wafer SRAM, 21 PB/s aggregate BW) and the 125 PFLOPS device peak plus 900k cores. I set the final twin to SILVER rather than GOLD because the compute-peak field the experiment actually reads is per-instance peak_macs_per_s (6.944e10), which is back-derived (SILVER), and the per-core microarchitecture (matrix_unit, clock) is BRONZE and does not reconcile with the device top-line. Memory tiers are genuinely GOLD, so this is a conservative, honest floor between the researcher's SILVER and the verifiers' GOLD.\n\nDisputed fields resolved: (1) matrix_unit - adopted the two verifiers' higher-trust WSE-3 finding of an 8-wide FP16 SIMD FMAC lane, encoded as [1,1,8], correcting the researcher's WSE-2-era [1,1,4]; kept BRONZE because it is a dataflow SIMD lane, not a systolic [m,n,k] tile. (2) clock_hz - both verifiers showed Cerebras does not publish a WSE-3 clock and the 'vendor_whitepaper' label was wrong; kept 1.1 GHz as a directional value but downgraded to BRONZE/estimate. (3) device_peak label - value 1.25e17 is correct but Cerebras quotes it as FP16, not BF16; recorded compute_dtype='fp16' (dtype_bytes=2 unaffected). (4) tdp_w and per_core_power - 23 kW is CS-3 system power (cooling/IO/host), not the wafer die; marked BRONZE and annotated; did not emit a per-core power field since it would be a naive system/core division. (5) energy_pj_per_byte and line_bytes - not published; kept as explicit BRONZE modeling estimates (1.0 pJ/B, 4 B word).\n\nRB-05 structure: HBM-less chip, so backing role='sram' (44GB @ 21PB/s, hbm_bandwidth_bps/hbm_capacity_bytes=0) -> reuse role='sram' (48KB/core local, instances=900000) -> compute leaf (dataflow FMAC, instances=900000). Experiment-read fields all present: bandwidth_bps, capacity_bytes, energy_pj_per_byte, peak_macs_per_s, instances, matrix_unit, dtype_bytes. arch_note flags 'no HBM; on-wafer resident; no spill cliff' as the intended contrast result.",
+ "unresolved": [
+  "Per-core datapath vs device peak: 125 PFLOPS FP16 over 900k cores at 1.1 GHz implies ~63 MAC/cycle/core, which contradicts BOTH the public 4-wide (WSE-2) and 8-wide (WSE-3) FP16 FMAC descriptions. per_instance_mac_s is back-derived from the GOLD device peak for twin self-consistency; the true WSE-3 per-core width/clock is not publicly reconciled. matrix_unit [1,1,8] and clock 1.1 GHz are therefore nominal BRONZE placeholders.",
+  "WSE-3 core clock frequency is not officially published by Cerebras (1.1 GHz is a WSE-2-era/community estimate).",
+  "Wafer-only (die) power is undisclosed; only the ~23 kW full CS-3 system figure exists, so tdp_w conflates system vs device.",
+  "On-chip SRAM energy (pJ/byte) and memory line/burst size are not published; 1.0 pJ/B and 4 B are generic modeling assumptions (BRONZE).",
+  "device peak is quoted by Cerebras as FP16, not BF16 - numerically identical 2-byte path but a semantic dtype note, not a verified BF16 spec."
+ ]
+}

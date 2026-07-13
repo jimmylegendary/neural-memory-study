@@ -1,0 +1,90 @@
+{
+ "level_id": "hbm",
+ "role": "hbm",
+ "scope": "package",
+ "residency": "sw_managed",
+ "capacity_bytes": 309237645312,
+ "bandwidth_bps": 22000000000000.0,
+ "line_bytes": 32,
+ "energy_pj_per_byte": 5.5,
+ "energy_pj_per_byte_wr": 6.5,
+ "mem_standard": "hbm4",
+ "stacks": 8,
+ "provenance": {
+  "value": "press",
+  "confidence": "BRONZE",
+  "source": "288GB HBM4 press-announced (Spheron/Toms Hardware/NVIDIA GTC); bandwidth 22 TB/s per GTC2026 consensus (Thunder Compute/Spheron/Barrack AI/VRLA Tech) supersedes 13 TB/s pre-launch estimate; no vendor datasheet PDF"
+ },
+ "children": [
+  {
+   "level_id": "l2",
+   "role": "l2",
+   "scope": "die",
+   "residency": "hw_cache",
+   "capacity_bytes": 104857600,
+   "bandwidth_bps": 15000000000000.0,
+   "line_bytes": 128,
+   "provenance": {
+    "value": "estimate",
+    "confidence": "BRONZE",
+    "source": "UNPUBLISHED; ~100MB (~2x B200 L2, ~50MB/die x2); BW o.o.m from Hopper L2 1.0e13"
+   },
+   "children": [
+    {
+     "level_id": "sram",
+     "role": "sram",
+     "scope": "die",
+     "residency": "hw_cache",
+     "capacity_bytes": 262144,
+     "bandwidth_bps": 40000000000000.0,
+     "line_bytes": 128,
+     "instances": 224,
+     "spatial_axis": "sm",
+     "provenance": {
+      "value": "estimate",
+      "confidence": "BRONZE",
+      "source": "per-SM shared mem 256KB from Hopper/Blackwell lineage; BW o.o.m from Hopper SMEM 3.34e13; not disclosed for Rubin"
+     },
+     "children": [
+      {
+       "level_id": "mxu",
+       "role": "compute",
+       "scope": "soc",
+       "instances": 224,
+       "spatial_axis": "sm",
+       "peak_macs_per_s": 13950000000000.0,
+       "matrix_unit": [
+        16,
+        8,
+        16
+       ],
+       "dtype_bytes": 2,
+       "acc_dtype_bytes": 4,
+       "clock_hz": 2000000000.0,
+       "provenance": {
+        "value": "estimate",
+        "confidence": "BRONZE",
+        "source": "DERIVED: device dense-BF16 ~6.25 PFLOP/s (50 PF NVFP4/pkg /4 /2-sparsity; range 5-13 PF); per_instance=6.25e15/2/224; 224 SM 3rd-party consensus; matrix_unit/clock Hopper placeholders, 6th-gen shape undisclosed"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "meta": {
+  "chip_key": "vr100",
+  "chip_name": "NVIDIA Vera Rubin (Rubin R100 GPU)",
+  "arch_note": "Single-accelerator=1 Rubin package (2 dies + 8 HBM4 stacks). NVLink6 omitted per single-device convention. Internals undisclosed mid-2026; compute/SRAM leaves are BRONZE estimates.",
+  "tdp_w": 1800,
+  "tdp_w_note": "1800W Max-Q; Max-P reported 2300W; range 1800-2300W",
+  "transistors_billion": 336,
+  "process_node": "N3P",
+  "package_type": "cowos_l_4reticle",
+  "omitted_fabric": {
+   "level": "nvlink6",
+   "bandwidth_tbps": 3.6,
+   "note": "omitted per single-device convention; SILVER-confirmed 3.6 TB/s per GPU"
+  }
+ }
+}

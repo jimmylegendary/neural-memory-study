@@ -1,0 +1,196 @@
+{
+ "chip_key": "mtia2",
+ "chip_name": "Meta MTIA v2 (2nd-gen Training & Inference Accelerator, 2024)",
+ "final_tier": "GOLD",
+ "field_provenance": [
+  {
+   "name": "hbm_bandwidth_bps",
+   "value": "2.048e11",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "https://ai.meta.com/blog/next-generation-meta-training-inference-accelerator-AI-MTIA/",
+    "https://www.servethehome.com/meta-ai-acceleration-in-the-next-gen-meta-mtia-for-recommendation-inference-risc-v/"
+   ]
+  },
+  {
+   "name": "hbm_capacity_bytes",
+   "value": "137438953472",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "https://ai.meta.com/blog/next-generation-meta-training-inference-accelerator-AI-MTIA/",
+    "https://www.servethehome.com/meta-ai-acceleration-in-the-next-gen-meta-mtia-for-recommendation-inference-risc-v/"
+   ]
+  },
+  {
+   "name": "hbm_line_bytes",
+   "value": "32",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "LPDDR5 JEDEC BL16 x16-bit channel burst convention (unpublished)"
+   ]
+  },
+  {
+   "name": "hbm_energy_pj_per_byte",
+   "value": "8.0",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "LPDDR5 off-package read-energy estimate (~1 pJ/bit; unpublished)"
+   ]
+  },
+  {
+   "name": "hbm_energy_pj_per_byte_wr",
+   "value": "10.0",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "LPDDR5 write-asymmetry estimate (unpublished)"
+   ]
+  },
+  {
+   "name": "onchip_sram_capacity_bytes",
+   "value": "268435456",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "https://ai.meta.com/blog/next-generation-meta-training-inference-accelerator-AI-MTIA/",
+    "https://aisystemcodesign.github.io/papers/MTIA-ISCA25.pdf"
+   ]
+  },
+  {
+   "name": "onchip_sram_bw_bps",
+   "value": "2.7e12",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "https://ai.meta.com/blog/next-generation-meta-training-inference-accelerator-AI-MTIA/",
+    "https://aisystemcodesign.github.io/papers/MTIA-ISCA25.pdf"
+   ]
+  },
+  {
+   "name": "pe_local_mem_capacity_bytes",
+   "value": "393216",
+   "provenance_type": "press",
+   "confidence": "GOLD",
+   "sources": [
+    "https://hc2024.hotchips.org/assets/program/conference/day2/82_HC2024.Meta.MadduryKansal.final.pdf",
+    "https://www.servethehome.com/meta-ai-acceleration-in-the-next-gen-meta-mtia-for-recommendation-inference-risc-v/"
+   ]
+  },
+  {
+   "name": "pe_local_mem_bw_bps",
+   "value": "1.0e12",
+   "provenance_type": "press",
+   "confidence": "SILVER",
+   "sources": [
+    "https://hc2024.hotchips.org/assets/program/conference/day2/82_HC2024.Meta.MadduryKansal.final.pdf"
+   ]
+  },
+  {
+   "name": "device_peak_flops_bf16",
+   "value": "1.77e14",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "https://ai.meta.com/blog/next-generation-meta-training-inference-accelerator-AI-MTIA/",
+    "https://aisystemcodesign.github.io/papers/MTIA-ISCA25.pdf"
+   ]
+  },
+  {
+   "name": "compute_instances",
+   "value": "64",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "https://ai.meta.com/blog/next-generation-meta-training-inference-accelerator-AI-MTIA/",
+    "https://aisystemcodesign.github.io/papers/MTIA-ISCA25.pdf"
+   ]
+  },
+  {
+   "name": "per_instance_mac_s",
+   "value": "1.383e12",
+   "provenance_type": "third_party",
+   "confidence": "GOLD",
+   "sources": [
+    "https://aisystemcodesign.github.io/papers/MTIA-ISCA25.pdf"
+   ]
+  },
+  {
+   "name": "matrix_unit",
+   "value": "[32,32,1]",
+   "provenance_type": "third_party",
+   "confidence": "SILVER",
+   "sources": [
+    "https://aisystemcodesign.github.io/papers/MTIA-ISCA25.pdf",
+    "https://dl.acm.org/doi/full/10.1145/3695053.3731409"
+   ]
+  },
+  {
+   "name": "clock_hz",
+   "value": "1.35e9",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "https://ai.meta.com/blog/next-generation-meta-training-inference-accelerator-AI-MTIA/",
+    "https://www.datacenterdynamics.com/en/news/metas-upgraded-mtia-chips-offer-35x-performance-boost/"
+   ]
+  },
+  {
+   "name": "tdp_w",
+   "value": "90",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "https://ai.meta.com/blog/next-generation-meta-training-inference-accelerator-AI-MTIA/",
+    "https://www.servethehome.com/meta-ai-acceleration-in-the-next-gen-meta-mtia-for-recommendation-inference-risc-v/"
+   ]
+  },
+  {
+   "name": "process_node",
+   "value": "N5",
+   "provenance_type": "vendor_whitepaper",
+   "confidence": "GOLD",
+   "sources": [
+    "https://ai.meta.com/blog/next-generation-meta-training-inference-accelerator-AI-MTIA/"
+   ]
+  },
+  {
+   "name": "die_area_mm2",
+   "value": "421",
+   "provenance_type": "press",
+   "confidence": "SILVER",
+   "sources": [
+    "https://www.datacenterdynamics.com/en/news/metas-upgraded-mtia-chips-offer-35x-performance-boost/"
+   ]
+  },
+  {
+   "name": "energy_pj_per_mac",
+   "value": "0.5",
+   "provenance_type": "estimate",
+   "confidence": "BRONZE",
+   "sources": [
+    "Not vendor-published; N5 BF16 MAC energy estimate"
+   ]
+  },
+  {
+   "name": "dtype_bytes",
+   "value": "2",
+   "provenance_type": "third_party",
+   "confidence": "GOLD",
+   "sources": [
+    "MTIA ISCA'25: BF16/FP16 in, FP32 acc"
+   ]
+  }
+ ],
+ "reconciliation_notes": "Both verifiers independently recommend GOLD with high trust and dispute only the four non-load-bearing estimate fields (hbm_line_bytes, hbm_energy_pj_per_byte, hbm_energy_pj_per_byte_wr, energy_pj_per_mac). All load-bearing fields per the spec (bandwidth, capacity, device peak / per-instance MAC, instances, clock) are GOLD with two independent sources each, so by the tie-break rule (twin = lowest load-bearing field) the twin is GOLD.\n\nLoad-bearing GOLD, retained as authored: hbm_bandwidth_bps=2.048e11 (Meta blog + ServeTheHome/Hot Chips), hbm_capacity_bytes=137438953472 (128 GiB LPDDR5), onchip_sram_capacity_bytes=268435456 (256 MB; ServeTheHome '256 GB' is a confirmed typo), onchip_sram_bw_bps=2.7e12, device_peak_flops_bf16=1.77e14, compute_instances=64, per_instance_mac_s=1.383e12, clock_hz=1.35e9, tdp_w=90. Internal consistency holds: 64 PE x 1.383e12 MAC/s x 2 FLOP = 1.77e14 = 177 TFLOPS dense BF16.\n\nKey caveat carried into arch_note and mem_standard: the backing tier is LPDDR5, NOT HBM. The field is kept named/role='hbm' only for experiment-schema compatibility (experiment reads bandwidth_bps/capacity_bytes); mem_standard='lpddr5' records the truth. This is the architecturally load-bearing distinction for MTIA v2 — ~16x lower backing BW than an H100 HBM3 stack at comparable capacity means the 256 MB on-chip SRAM (2.7 TB/s) carries reuse and there is no HBM-style spill cliff of the same magnitude; this is a deliberate capacity-bound recommendation-inference design, not a defect.\n\nDisputed fields kept but held at BRONZE (both verifiers agree 'not disclosed'): hbm_line_bytes=32, hbm_energy_pj_per_byte=8.0, _wr=10.0, energy_pj_per_mac=0.5 — all labeled provenance_type=estimate. matrix_unit=[32,32,1] downgraded to SILVER: it reproduces per_instance_mac_s and device peak exactly (1024 MAC/cyc x 1.35 GHz = 1.382e12) but is cross-validated, not vendor-stated; note the DPE physically has two 32x32 MAC tiles per PE (that second tile maps to the INT8 2x / sparse path, not the dense-BF16 rate used here). die_area_mm2=421 and pe_local_mem_bw_bps=1.0e12 kept at SILVER per verifier.",
+ "unresolved": [
+  "hbm_line_bytes (32 B) — LPDDR5 burst granularity not vendor-published; JEDEC-convention estimate, BRONZE",
+  "hbm_energy_pj_per_byte rd=8.0 / wr=10.0 — LPDDR5 access energy not disclosed by Meta; generic estimates, BRONZE (write>read asymmetry assumed)",
+  "energy_pj_per_mac=0.5 — not vendor-published; N5 estimate, BRONZE",
+  "pe_local_mem_bw_bps=1.0e12 — source ambiguous whether 1 TB/s is per-PE or aggregate; modeled per-PE (x64), SILVER",
+  "matrix_unit geometry — DPE has two 32x32 MAC tiles per PE; [32,32,1] reproduces the dense-BF16 rate but exact per-cycle tile utilization for BF16 vs INT8/sparse not vendor-specified, SILVER"
+ ]
+}

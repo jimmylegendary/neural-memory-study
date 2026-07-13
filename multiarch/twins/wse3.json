@@ -1,0 +1,101 @@
+{
+ "_comment": "Cerebras WSE-3 (CS-3) single-wafer HAT twin. NO HBM - wafer-scale on-chip SRAM is the backing tier. RB-05: backing(44GB on-wafer SRAM)->reuse(48KB per-core local SRAM)->compute(dataflow-triggered FMAC PE). Single accelerator = 1 wafer = 900,000 cores. Sources: Cerebras WSE-3 press release + chip page + architecture deep-dive + Hot Chips 2024 + Tom's Hardware + arXiv 2503.11698. Reconciled from 1 authoring pass + 2 adversarial verifiers.",
+ "arch_note": "no HBM; wafer-scale SRAM backing tier; all model state on-wafer resident. There is NO HBM spill cliff - state stays on-chip. This is the core contrast result, not a defect.",
+ "level_id": "wafer_sram",
+ "role": "sram",
+ "scope": "wafer",
+ "residency": "sw_managed",
+ "capacity_bytes": 44000000000,
+ "bandwidth_bps": 2.1e+16,
+ "line_bytes": 4,
+ "energy_pj_per_byte": 1.0,
+ "hbm_bandwidth_bps": 0,
+ "hbm_capacity_bytes": 0,
+ "provenance": {
+  "value": "vendor_whitepaper",
+  "confidence": "GOLD",
+  "source": "cerebras.ai press release + chip page + arXiv 2503.11698 + Tom's Hardware; 44GB @ 21PB/s confirmed by both verifiers. energy_pj_per_byte=1.0 is a generic on-chip-SRAM estimate (BRONZE, not published)."
+ },
+ "children": [
+  {
+   "level_id": "core_sram",
+   "role": "sram",
+   "scope": "core",
+   "residency": "sw_managed",
+   "capacity_bytes": 48896,
+   "bandwidth_bps": 23330000000.0,
+   "line_bytes": 4,
+   "instances": 900000,
+   "spatial_axis": "pe",
+   "energy_pj_per_byte": 1.0,
+   "provenance": {
+    "value": "estimate",
+    "confidence": "SILVER",
+    "source": "Cerebras deep-dive: 48KB/core over 8 single-ported 32-bit banks; 44GB/900k=48.9KB (even-division). per-core BW = 21PB/s / 900k = 23.3 GB/s, consistent with two 64-bit reads + one 64-bit write @1.1GHz."
+   },
+   "children": [
+    {
+     "level_id": "pe_fmac",
+     "role": "compute",
+     "scope": "core",
+     "instances": 900000,
+     "spatial_axis": "pe",
+     "peak_macs_per_s": 69440000000.0,
+     "matrix_unit": [
+      1,
+      1,
+      8
+     ],
+     "dtype_bytes": 2,
+     "acc_dtype_bytes": 4,
+     "clock_hz": 1100000000.0,
+     "energy_pj_per_mac": null,
+     "dataflow": "dataflow_triggered",
+     "process_node": "N5",
+     "device_peak_flops": 1.25e+17,
+     "compute_dtype": "fp16",
+     "provenance": {
+      "value": "estimate",
+      "confidence": "SILVER",
+      "source": "device peak = 125 PFLOPS FP16 (GOLD; Cerebras press + Tom's Hardware) / 900k cores / 2 = 6.944e10 MAC/s per core, back-derived for twin self-consistency. matrix_unit [1,1,8] = 8-wide FP16 SIMD FMAC lane per both verifiers (WSE-3 = 2x WSE-2's 4-wide; researcher's [1,1,4] was WSE-2-era) - BRONZE, a dataflow SIMD lane not a systolic tile. clock 1.1GHz is BRONZE (Cerebras does not publish WSE-3 clock). NOTE: neither 4- nor 8-wide @1.1GHz reconciles with the 125 PFLOPS top-line (implies ~63 MAC/cycle/core) - see unresolved."
+     }
+    }
+   ]
+  }
+ ],
+ "meta": {
+  "tdp_w": 23000,
+  "tdp_note": "~23kW is full CS-3 15U SYSTEM power incl cooling/IO/host, NOT wafer die alone (BRONZE; wafer-only power undisclosed)",
+  "cooling_class": "liquid",
+  "package_type": "wafer_scale_300mm",
+  "cores_total": 900000,
+  "dense_fp16_pflops": 125,
+  "fabric_aggregate_bps": 2.675e+16,
+  "fabric_note": "~214 Pb/s = 26.75 PB/s on-wafer 2D-mesh fabric (partly WSE-2-era); not a load-bearing tier for the single-device twin"
+ },
+ "trace": {
+  "event_format": "hatir_isa_v1",
+  "default_granularity": "isa",
+  "compute_from": "matrix_unit",
+  "fields": [
+   "seq",
+   "kind",
+   "opcode",
+   "tier",
+   "target",
+   "bytes",
+   "macs",
+   "coord"
+  ],
+  "opcodes": {
+   "load": {
+    "sram": "LDS",
+    "reg": "MOV"
+   },
+   "store": {
+    "sram": "STS",
+    "reg": "MOV"
+   }
+  }
+ }
+}
