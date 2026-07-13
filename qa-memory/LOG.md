@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 5건.
+총 6건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -65,4 +65,17 @@
 - 생각할 것: outer loop가 unrolled 사슬을 backprop할 때 메모리가 rank-1(선형) 아니면 무거워짐 → chunkwise 병렬(Q003/Q004 순차성 실과 연결, TNT); gate가 scalar per head인지 per channel인지 정확히(원문 v1 미명세) — Atlas/Miras에서 더 정교해짐; θ/η/α의 데이터 의존성이 '문맥 전환' 감지에 쓰이는 방식(η→0=context switch); Core의 attention이 full causal(MAC) vs sliding-window(MAG)인 차이가 비용/능력에 주는 영향
 - storyline seed: Titans 학습의 핵심 구분: inner loop(추론, 매 토큰 M·S만 갱신, gate는 값만 계산) vs outer loop(사전학습, unrolled 사슬 backprop=optimizer 미분=meta-learning으로 gate 생성기·투영·P·M_0 학습). MAC은 write-then-read라 이번 write가 이번 출력에 반영. 세 부품: Core=attention(q,k,v), Contextual=neural memory MLP(memory q,k,v), Persistent=고정 벡터(q,k,v 아님).
 - 연상: Q001, Q002, Q004
+
+## Q006 · 2026-07-14 · Titans MAC details (persistent memory, NM projections, augmented seq shapes, chunking)
+
+**Q.** 1)gate 3개 weight=d 벡터? 2)Persistent memory 정체·논문 위치·학습·정보·shape? 3)MAC 3부품 의존없이 동시에? 시퀀스에 붙임=input? 이걸로 Wqkv 구해 softmax? 3-1)검색은 k만? NM도 q,k,v 별도? k→v MLP만? 3-2)contextual·persistent에서 가져오는 벡터 row 길이(토큰수)? 3-3)sequence=일부 chunk? sliding? EOS까지 고정크기?
+
+**A.** 1)yes 각 gate=linear head w∈R^d→스칼라(+softplus/sigmoid), 3d 파라미터(head별이면 R^{d×H}, v1 미명세). 2)Persistent=학습된 입력무관 벡터 N_p개 P=[p_1..p_Np], x_new=P||x. 논문 Sec 3.3. outer-loop 사전학습으로 backprop(추론 고정, 모든 입력 동일). 정보=과제 지식(task knowledge). 근거3: 메모리시스템/FFN=W_V softmax(W_K x)=고정KV attention/attention-sink 흡수. shape P∈R^{Np×d}. 3)완전병렬 아님: P·segment 즉시, contextual h_t=M*(q)는 이전 메모리 의존→검색먼저. 증강시퀀스 S̃=[P||h_t||S]가 attention 입력, attention 자기 Wq/k/v로 softmax(QK^T/√d)V. 3-1)정정: NM=MLP 하나+투영 3개(W_K/V/W_Q). MLP는 k→v 함수 하나뿐, q/k/v별 네트워크 없음. 쓰기=k,v로 M(k)≈v, 검색=q로 M*(q) — 검색은 k가 아니라 q. q,k,v 두 세트=①메모리 투영(같은 MLP에 넣을 k,v,q)+②attention 투영. 3-2)Persistent=N_p 토큰(고정)×d. Contextual h_t=segment 각 토큰이 query→C개×d. 증강 총 N_p+2C 토큰×d. 3-3)MAC=고정크기 C 비중첩 chunk(sliding 아님), 메모리는 chunk 넘어 상태 이어감, EOS까지 순서대로(마지막만 짧음). sliding은 MAG의 것.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_unknown: NM=MLP 하나+투영 3개; 검색은 k가 아니라 q로(M*(q)); MLP는 k→v 함수 하나뿐(q/k/v별 네트워크 없음); unknown_unknown: 증강 시퀀스=[P(N_p) || h_t(C) || segment(C)]=N_p+2C 토큰, 이게 attention의 실제 입력; unknown_unknown: MAC=고정 비중첩 chunk(sliding 아님), 메모리가 chunk 넘어 이어짐; sliding은 MAG; unknown_known: Persistent memory=Sec 3.3, 입력무관 학습 벡터 N_p×d=과제지식, FFN=고정KV attention 역할+attention-sink 완화
+- 개념 key: gate weight shape, persistent memory, Sec 3.3, input-independent, task knowledge, attention sink, FFN as fixed-KV attention, augmented sequence, softmax attention input, NM projections W_K/V/Q, retrieval uses q not k, one MLP, chunk segment fixed non-overlapping, sliding window MAG, retrieved vector C×d, N_p tokens
+- 생각할 것: N_p(persistent 토큰 수)·C(chunk 크기)의 전형값과 증강 시퀀스 N_p+2C가 attention 비용에 주는 영향; 검색 h_t가 segment 토큰당 1개(C×d)인지 요약 1개인지 원문 Fig/식으로 재확인; gate가 head별인지(shape R^{d×H}) 원문 v1 미명세 — Atlas/Miras에서 정교화; chunk 경계에서 메모리 상태 이어짐 = inter-chunk recurrence = 순차성(Q003/Q005 실, TNT가 손대는 지점)
+- storyline seed: MAC 해부: NM=MLP 하나+투영 3개(쓰기 k,v / 읽기 q, 검색은 q!). 증강 시퀀스=[P(N_p,과제지식,Sec3.3) || 검색 h_t(C) || segment(C)]=N_p+2C 토큰이 softmax attention 입력. chunk=고정 비중첩(sliding 아님, 그건 MAG), 메모리는 chunk 넘어 이어짐(inter-chunk recurrence=순차성 실).
+- 연상: Q002, Q004, Q005
 
