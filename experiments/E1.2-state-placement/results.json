@@ -253,35 +253,35 @@
         "L": 24,
         "whole_model_state_MB": 805.3,
         "peak_live_MB": 268.4,
-        "spill_MB_per_token": 570.4,
+        "spill_MB_per_token": 536.9,
         "whole_model_fits_268MB": false
       },
       "Titans-760M": {
         "L": 24,
         "whole_model_state_MB": 1811.9,
         "peak_live_MB": 226.5,
-        "spill_MB_per_token": 2566.9,
+        "spill_MB_per_token": 1962.9,
         "whole_model_fits_268MB": false
       },
       "neural-mem-1.3B": {
         "L": 24,
         "whole_model_state_MB": 3221.2,
         "peak_live_MB": 268.4,
-        "spill_MB_per_token": 3221.2,
+        "spill_MB_per_token": 4429.2,
         "whole_model_fits_268MB": false
       },
       "hypo-7B": {
         "L": 32,
         "whole_model_state_MB": 17179.9,
         "peak_live_MB": 536.9,
-        "spill_MB_per_token": 29527.9,
+        "spill_MB_per_token": 22548.6,
         "whole_model_fits_268MB": false
       },
       "hypo-70B": {
         "L": 80,
         "whole_model_state_MB": 171798.7,
         "peak_live_MB": 2147.5,
-        "spill_MB_per_token": 221190.8,
+        "spill_MB_per_token": 193273.5,
         "whole_model_fits_268MB": false
       }
     },

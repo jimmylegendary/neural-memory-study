@@ -2,7 +2,7 @@
   "meta": {
     "title": "Part III consolidated experimental warrant source (TTT/neural-memory decode = memory-centric)",
     "thesis": "D4 workload-split pair thesis: decode/serving state management is a memory-centric opportunity (per-token RMW of the whole fast-weight state; unshared, write-heavy, not content-addressable -> qualitatively unlike append-once/read-many KV cache); training/prefill is the accelerator regime (chunk C is the roofline x-axis).",
-    "generated": "2026-07-12",
+    "generated": "2026-07-14",
     "grade": "EXPLORATION-GRADE. Load-bearing claims = ratios, crossover positions, tier orderings, bound classifications. Absolute wall-clock deferred to in-house A100 runbook (Part III-a).",
     "anchor_config": "neural-mem-1.3B (d=2048, m=16, L=24, GQA-8 kv_dim=1024, bf16)",
     "hw_twin": {
@@ -194,13 +194,6 @@
   },
   "claim3_batch_scaling_Bmax": {
     "supports": "pair thesis: serving economics of decode-state (BW binds, opposite of capacity-bound KV cache)",
-    "batching_feasibility_gloss": {
-      "source": "E3/E1.3",
-      "caveat_tags": [
-        "REL"
-      ],
-      "note": "batching stays FEASIBLE via grouped-GEMM/BMM over the batch axis (per user analysis + ch24 proposal G); what dies is shared-weight AMORTIZATION: each request carries its own fast-weight state so arithmetic intensity is independent of B, and BW closes the batch early at B_max. Read the B_max limit as 'batch amortization vanishes', NOT 'batching is mathematically impossible'."
-    },
     "binding_resource": {
       "value": "BW",
       "unit": "class",

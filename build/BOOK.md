@@ -45,7 +45,7 @@ Part III 전체는 하나의 명제를 검증한다. 완성형이 만드는 배�
 
 이 책은 논문에 불리한 사실의 완곡화·누락을 결함으로 취급한다. 여섯 편의 실증 상한은 **1.3B params / 100B tokens**이며([TNT]는 150M), decode wall-clock 수치는 여섯 편 어디에도 없다 — 이 두 사실은 Part II·III 전반에서 반복 명시된다. Atlas의 Muon 제거가 perplexity를 오히려 개선한 점, attention과의 in-context retrieval 격차(53.55 vs 43.70)가 측정된 채 닫히지 않은 점, TNT가 momentum·gating을 제거한 단순화 Titans로 검증한 점, Sleep이 pre-trained backbone 위의 graft라 라인 최초로 end-to-end meta-learn되지 않은 점 — 이런 유보는 감추지 않고 해당 장 본문에 담는다.
 
-Part III의 실측도 같은 계약을 따른다. **이 책이 돌린 8개 실험은 exploration-grade다** — 순수 analytic cost model(hatir + hat-schema twin)과 CPU micro-benchmark에서 나온 값이다. 본문으로 승격되는 것은 **비율, crossover 위치, tier 순서, bound 분류**이지 silicon 정확 절대치가 아니다. 여섯 논문이 H100 decode wall-clock을 하나도 공개하지 않았으므로, µs/token·mJ/token 같은 절대치는 roofline **하한**일 뿐이며 **사내 A100 runbook(Part III-a)으로 이월**한다. novel device twin(scratchpad, PIM)은 `simulation_ready=False`로 directional DSE에만 인용한다. 세 독립 방법이 anchor 설정에서 1% 이내로 일치한다는 교차검증이, 절대치가 아니라 구조(비율·순서·crossover)를 본문에 올리는 근거다.
+Part III의 실측도 같은 계약을 따른다. **이 책이 돌린 8개 실험은 exploration-grade다** — 순수 analytic cost model(hatir + hat-schema twin)과 CPU micro-benchmark에서 나온 값이다. 본문으로 승격되는 것은 **비율, crossover 위치, tier 순서, bound 분류**이지 silicon 정확 절대치가 아니다. 여섯 논문이 H100 decode wall-clock을 하나도 공개하지 않았으므로, µs/token·mJ/token 같은 절대치는 roofline **하한**일 뿐이며 **사내 A100 runbook(Part III-a)으로 이월**한다. novel device twin(scratchpad, PIM)은 `simulation_ready=False`로 directional DSE에만 인용한다. 세 독립 방법이 anchor 설정에서 1% 이내로 일치한다는 교차검증이, 절대치가 아니라 구조(비율·순서·crossover)를 본문에 올리는 근거다. 이 실험들의 **정확한 실행 환경·재현 절차·결정론 증명·교차검증 표·반증 목록**은 책 끝의 **부록 E**(및 저장소 `experiments/REPRODUCE.md`)에 못 박아 두었다 — "왜 믿을 수 있는가"의 답이 그곳에 운영 수준으로 적혀 있다.
 
 ## 표기와 3층 구분
 
@@ -6584,3 +6584,95 @@ Part III(ch21·ch22·ch24)의 hardware-lottery / player-strategy / proposals 논
 
 > **inference 어휘 Rosetta**(재수록): $W_t$≈per-session cache state, $\nabla_W\ell$의 outer-product≈rank-$C$ GEMM, $S_t$ associative scan≈prefix-sum kernel, retention gate $\alpha_t$≈학습된 cache eviction, chunk $C$≈arithmetic-intensity knob(≠bit-exact tiling). 상세는 §1.
 
+
+---
+
+# 부록 E. 실험 환경·재현·신뢰성 증명
+
+> **이 부록의 목적** — Part III의 "저자 자체 실험" 8개가 **무엇으로 어디서 어떻게** 나왔는지를 남이 그대로 재현할 수 있게 못 박고, 각 숫자가 **어느 등급의 증거인지**를 숨김없이 등급화한다. 정직성 계약(§18.6, §25.2)이 *무엇을* 주장하는지를 말했다면, 이 부록은 그 계약을 *어떻게 검증*하는지를 운영 수준으로 적는다. 기계가 읽는 판본은 저장소 `experiments/REPRODUCE.md` + `experiments/results.json`(per-number provenance)이다.
+
+**먼저 결론.** 이 실험들은 **silicon 측정이 아니다.** 실제 GPU wall-clock은 한 줄도 없다 — 실행 host에 NVIDIA GPU가 없다. 신뢰성의 근거는 "쟀다"가 아니라 네 가지다: **(1) 결정론적 재현, (2) 3중 교차검증(<1%), (3) host CPU 실측으로 roofline *모양* 확인, (4) 모든 숫자의 정직한 등급화 + 반증 목록.** 아래가 그 넷을 각각 증명한다.
+
+## E.1 무엇을 신뢰하고 무엇을 신뢰하지 말 것인가
+
+| 신뢰해도 되는 것 (load-bearing, 본문 승격) | 신뢰하면 안 되는 것 (이월/directional) |
+|---|---|
+| 비율 (write/read %, traffic 대 compute 배수) | 절대 µs/token·mJ/token (= roofline **하한**) |
+| crossover 위치 (S\*, C\*, d\*, B_max) | novel twin(scratchpad/PIM) 절대치 (`simulation_ready=False`) |
+| tier 순서 (cadence → HBM/CXL/scratchpad 배정) | E1.2 whole-model `spill` 절대 MB (directional sim) |
+| bound 분류 (memory-bound / compute-bound) | E2.x host GB/s·GFLOPS 절대치 (**모양만** 이송) |
+
+본서 본문은 왼쪽 열만 단정문으로 쓰고, 오른쪽 열은 전부 "하한/방향성/사내 A100 runbook 이월"로 표기한다.
+
+## E.2 실행 환경 지문
+
+| 항목 | 값 |
+|---|---|
+| repo commit | `neural-memory-study` @ `d709014` |
+| Python | 3.14.3 (venv `./.venv`) |
+| numpy / scipy / matplotlib | 2.5.1 / 1.18.0 / 3.11.0 |
+| `hatir` (cost model) | editable `~/repos/hatir` @ `10aa2a2` |
+| `hat_schema` (device twin SoT) | editable `~/repos/hat-schema` @ `c8b8913` |
+| device twin | `hat-schema/twins/dgx_h100_x4.json` (sha256 `5cb5fe1e…`) |
+| host | AMD Ryzen 7 255, 16 core, 27 GiB RAM, **GPU 없음** |
+
+**device twin이 무엇인가.** `dgx_h100_x4.json`은 hat-schema가 SoT로 관리하는 **pre-silicon 장치 모델**이다 — DGX-H100(×4)의 HBM3 대역폭·용량·에너지 계수와 compute roofline(ridge 295 FLOP/B)을 기술한 JSON. E1.x는 이 twin 위에서 `hatir`로 roofline을 계산하고, E3는 같은 twin의 상수를 닫힌 형태 공식에 넣는다. 즉 **"H100에서 쟀다"가 아니라 "H100 twin의 물리로 roofline 하한을 계산했다"**가 정확한 표현이다.
+
+## E.3 재현 절차
+
+```
+cd ~/repos/neural-memory-study
+PY=.venv/bin/python
+export PYTHONHASHSEED=0      # analytical 실험 bit-deterministic 고정 (E.4)
+
+# 8개 실험 실행 (각 experiments/<exp>/run.py)
+for d in E1.1-decode-baseline E1.2-state-placement E1.3-kv-vs-ttt \
+         E1.4-frequency-tiers E1.5-kvmgr-gap E2.1-chunk-intensity \
+         E2.2-rmw-cliff E3-analytical E4-scaling ; do
+  ( cd experiments/$d && $PY run.py )
+done
+
+# 통합 warrant + 그림 재생성
+( cd experiments && $PY consolidate.py )   # -> results.json
+$PY figures/render_experiments.py          # -> figures/exp-*.png
+```
+
+## E.4 결정론·재현성 증명 (실측)
+
+8개를 재실행하고 저장본과 bit-diff한 결과 — 재현성의 패턴이 정확히 실험의 성격과 일치한다:
+
+| 실험 | 종류 | 재실행 시 |
+|---|---|---|
+| E1.1, E1.3, E1.4, E1.5, E3, E4 | HATIR / closed-form (analytical) | **bit-identical** |
+| E1.2 (crossover d\*, energy/time) | HATIR analytical | **bit-identical** |
+| E1.2 (whole-model `spill`) | HATIR spill **sim** | seed 고정으로 bit-identical (아래) |
+| E2.1, E2.2 | **host CPU 실측** | run마다 변동 (정상) |
+
+E2.x가 흔들리는 건 결함이 아니라 정직성의 증거다 — host CPU에서 실제 시간을 재므로 당연히 jitter가 있다. 그래서 본서는 이들의 절대 GB/s·GFLOPS를 이송하지 않고 "곡선 *모양*"(AI(C) 상승, RMW 대역폭 절벽)만 본문에 올린다.
+
+**유일하게 손봐야 했던 비결정성.** E1.2의 whole-model spill sim은 `hatir.live_set_spill_bytes(policy="largest")`를 쓰는데, 그 함수의 eviction 대상 선택이 `set` 순회 순서(문자열 hash 랜덤화 `PYTHONHASHSEED` 의존)로 tie-break되어 run마다 spill이 요동친다. `PYTHONHASHSEED=0` 고정으로 2회 재실행이 완전히 동일해짐을 확인했다. 이 필드는 load-bearing이 아니며(본서는 crossover d\*와 이득 배율만 인용, spill 절대 MB는 인용 안 함), 그럼에도 재현 절차에 seed를 못 박아 bit-deterministic으로 고정했다.
+
+## E.5 교차검증 — 신뢰성의 중심 기둥 (3중 <1% 일치)
+
+silicon 측정이 없으므로, 신뢰성은 "서로 독립인 계산 경로가 같은 답에 수렴하는가"로 세운다. Anchor `neural-mem-1.3B (d=2048, m=16, L=24, GQA-8, bf16)`에서 세 방법이 1% 이내로 일치:
+
+| 양 | E3 (closed-form) | hatir (E1.1/E1.3) | plan (hand-calc) |
+|---|---|---|---|
+| RMW GB/token | 6.442 | 6.4425 | 6.4 |
+| RMW ms/token | 1.923 | 1.9231 | 1.9 |
+| S\*_read (tokens) | 65536 | 65471 | 65000 |
+| state MB/layer | 134.2 | 134.218 | 134 |
+| B_max @10ms | 5.2 | 5.2 | — |
+
+**이 교차검증이 증명하는 것과 못 하는 것.** 증명함 — 세 코드 경로 어디에도 구현 버그가 없다(같은 roofline 물리를 서로 다른 방식으로 계산해 같은 값). 못 함 — twin의 HBM BW·에너지 계수가 실제 H100 silicon과 얼마나 맞는지는 이 일치로 증명되지 않는다(E3와 hatir는 같은 twin BW를 *입력*으로 공유). 그 fidelity gap이 바로 절대치를 "roofline 하한 → A100 runbook 이월"로 미루는 이유다. 즉 교차검증은 **"우리 계산이 옳다"**를 증명하고, twin fidelity는 별도로 A100 실측으로 메운다. (C\*는 ridge 의존이라 값이 아니라 **모양**만 이송: host CPU C\*≈32 vs H100 twin C\*≈337, ridge ~9× 차이.)
+
+## E.6 명시적으로 주장하지 않는 것 — A100 runbook 이월(=반증 목록)
+
+`runbook/hope-reproduction-a100.md`로 넘긴 6가지. 이 목록이 있다는 것 자체가 신뢰성의 일부다 — 무엇이 아직 증명 안 됐는지를 본서가 먼저 밝힌다.
+
+1. 절대 per-token decode wall-clock(ms/token, tok/s) — 원 논문 6편도 하나도 안 냄.
+2. RMW step의 achieved-vs-roofline 효율(kernel-launch/scheduling/tail).
+3. 실제 r/w 비대칭 DRAM 에너지/token (twin은 대칭 7 pJ/B 가정).
+4. S\* 검증 — 진짜 KV 커널 vs 진짜 TTT-state 커널 head-to-head.
+5. novel twin(scratchpad/PIM) 절대치 — silicon 전까지 directional.
+6. 전체 serving 스택(weights+activations+KV 공존) 하의 B_max — E3 값은 상한.
