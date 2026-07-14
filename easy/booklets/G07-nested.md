@@ -130,6 +130,8 @@ $$
 
 > **시스템 모델링 관점.** 이 프레임의 실전 가치: 모델을 "layer 리스트"가 아니라 **"(state, 갱신 빈도, 데이터 의존성)"의 리스트**로 모델링하게 해준다. 각 부품에 대해 물어야 할 것 — 이 state는 몇 바이트인가? 몇 token마다 갱신되나(그게 곧 write 트래픽 상환율)? 갱신할 때 어떤 다른 state를 읽어야 하나(그게 곧 batching/pipelining 제약)? level 번호는 곧 "얼마나 hot한 메모리 계층에 둘지"의 힌트가 된다(§13).
 
+> **왜 ICL은 "우연한 창발"이 아니라 당연한가.** 논문 명시: *"ICL is not emergent but structural — a consequence of having ≥2 levels."* 쉽게 — 모델을 중첩 메모리 레벨로 보면, **레벨이 2개 이상이면 안쪽 레벨이 바깥 레벨의 데이터를 "문맥으로 압축"하는 게 정의상 ICL**이다. Transformer는 non-parametric ICL(문맥을 KV에 원본으로 두는 Nadaraya–Watson 닫힌 해), TTT/recurrent는 parametric ICL(문맥을 weight로 압축). 심지어 **pre-training 자체가 "코퍼스를 문맥으로 하는 ICL"** (AdamW도 Appendix B에서 2-레벨 중첩 메모리). 그래서 ICL은 큰 모델에서 튀어나온 마법이 아니라 **≥2 레벨을 세우면 자동으로 따라오는 성질**이고, 레벨을 더 쌓자는 게 [NL]의 처방("higher-order ICL")이다.
+
 ---
 
 ## 6. AdaTransformer: hybrid 아키텍처는 착시
@@ -199,6 +201,36 @@ $$
 
 > **주의.** M3는 품질은 좋지만(ImageNet-21K ViT에서 AdamW·Muon 대비 최저 loss) 공짜가 아니다. momentum이 여럿이고 NS pipeline이 추가돼서 Muon보다 느리다. 품질 이득이 계산 비용과 함께 온다.
 
+### DGD 수식 전개 — "dot-product 규칙 → L2 회귀"
+
+> **기호 풀이.** 여기서 "dot-product 규칙"이란 linear attention/Hebbian의 attentional bias가 내적 $\tilde\ell(\mathcal{M};k,v)=-\langle \mathcal{M}k, v\rangle$라는 뜻(Miras 용어). 이걸 한 스텝 GD하면 delta 규칙 $\mathcal{M}\leftarrow \mathcal{M}+\eta(v-\mathcal{M}k)k^\top$이 나온다 — retrieval $\mathcal{M}k$가 내적, update가 rank-1 outer product.
+
+**DGD**는 그 **학습 규칙 자체를 L2 회귀로 승격**한다(한 스텝 gradient가 아니라 회귀):
+
+$$
+\mathcal{M}_{t} = \arg\min_{\mathcal{M}}\ \tfrac12\|\mathcal{M} k_t - \hat v_t\|_2^2 \;+\; \text{retention}(\mathcal{M},\mathcal{M}_{t-1})
+$$
+
+weight decay($\alpha$)를 붙이면 배포된 형태인 **일반화된 delta 규칙**이 된다:
+
+$$
+\mathcal{M}_{t} = \mathcal{M}_{t-1}\big(\alpha_t I - \eta_t k_t k_t^\top\big) \;-\; \eta_t\,\nabla \mathcal{L}\big(\mathcal{M}_{t-1};k_t,\hat v_t\big)
+$$
+
+> **이 식은 이런 뜻.** $(\alpha_t I - \eta_t k_t k_t^\top)$ = "옛 기억 흐리기($\alpha$) + $k$에서 옛값 지우기($\eta k k^\top$)", 뒤 항 $-\eta\nabla\mathcal{L}$ = 자기목표 $\hat v$ 쪽으로 한 걸음(L2 loss의 gradient). 즉 DGD = 내적 규칙을 L2 회귀(delta)로 바꾸고 retention을 얹은 것.
+
+### 세 optimizer의 계보·shape·state (한눈에)
+
+이 셋은 무에서 나온 게 아니라 **Miras·Atlas 개념을 gradient 공간에 이식**한 것이다:
+
+| optimizer | 계보 (어디서 왔나) | 유지 state (weight 대비) |
+|---|---|---|
+| **DGD** | **Miras**의 L2 attentional bias + retention 게이트 $\alpha$ | ~**1×** (weight만; 작은 precond) |
+| **Delta Momentum** | momentum을 delta 규칙으로 학습 | ~**2×** (weight + momentum 1개) |
+| **M3** | **Atlas의 Muon**(Newton–Schulz 직교화) + CMS 다주기 + Adam 2차 | ~**3.5×** (weight + fast/slow momentum + $V$) |
+
+> **핵심 (헷갈리기 쉬운 것).** 이 3개는 프레임이 "만들어낸 예시 optimizer"다. **Hope 아키텍처가 test-time에 쓰는 inner 규칙은 DGD 하나뿐**이고(§10·§11), **M3는 별도의 "더 좋은 훈련(outer) optimizer" 제안**이다. 즉 "Hope가 3개를 다 쓴다"가 아니라 — DGD는 self-mod의 inner 규칙, M3는 훈련 optimizer 후보. (내 Part III의 hope-DGD/DeltaMom/M3 비교는 "만약 inner를 각 규칙으로 바꾸면"의 상한/하한 스윕이고, 배포판은 DGD 기준이다.)
+
 ---
 
 ## 9. 프레임이 만드는 것 ②: CMS — 연속적인 기억 스펙트럼
@@ -249,13 +281,43 @@ $$
 
 > **이 식은 이런 뜻.** 모델이 자기 훈련 데이터를 스스로 만들어, 자기 update 알고리즘을 학습한다. Schmidhuber의 self-referential weight matrix(1993) 계보를 잇는 아이디어인데, 결정적으로 **chunk 병렬화가 가능한 형태**로 만든 게 [NL]의 공학이다.
 
-> **한계.** 정직한 각주 하나: query projection $q$까지 적응형으로 만들면 오히려 성능이 **나빠진다**(ablation에서 ppl 12.24 → 12.19로, 동결이 더 좋음). "level을 더 붙이면 항상 이득"이 아니라는, 논문 자신의 프레임에 대한 내부 반례다. level 배치는 아직 경험적이다.
+### 정확한 메커니즘 — 한 토큰 t (식 83–89)
+
+여섯 부품 $\square\in\{k,v,q,\eta,\alpha,\mathrm{mem}\}$ 각각이 2-layer residual MLP $\mathcal{M}_\square(\cdot)=(\cdot)+W_{\square,1}\sigma(W_{\square,2}\cdot)$다. **단 $q$는 유일한 non-adaptive projection**(원문 line 2116: $q_t=x_tW_q$). 나머지 다섯이 test-time에 자기수정된다.
+
+$$
+\begin{aligned}
+\text{재료:}\quad & q_t = x_t W_q\ (\text{static}),\quad k_t=\mathcal{M}_{k}(x_t),\ v_t=\mathcal{M}_{v}(x_t),\ \eta_t=\mathcal{M}_{\eta}(x_t),\ \alpha_t=\mathcal{M}_{\alpha}(x_t)\\
+\text{출력:}\quad & o_t = \mathcal{M}_{\mathrm{mem},\,\text{chunk시작}}(q_t)\qquad(\text{갱신 \emph{전} 상태를 읽음})\\
+\text{자가목표:}\quad & \hat v_{\square,t}=\mathcal{M}_{\square,t-1}(v_t),\quad \square\in\{k,v,\eta,\alpha,\mathrm{mem}\}\\
+\text{갱신(DGD):}\quad & \mathcal{M}_{\square,t}=\mathcal{M}_{\square,t-1}(\alpha_t I-\eta_t k_tk_t^\top)-\eta_t\nabla\mathcal{L}(\mathcal{M}_{\square,t-1};k_t,\hat v_{\square,t})\\
+\text{후단:}\quad & y_t=\mathrm{CMS\_chain}(o_t)=\mathrm{MLP}^{(f_k)}(\cdots\mathrm{MLP}^{(f_1)}(o_t))
+\end{aligned}
+$$
+
+> **꼭 짚을 것 (자주 틀리는 지점).**
+> - **$v_t$의 정체**: 보통 Transformer는 $v_t=x_tW_v$(고정)인데, 여기선 **value 투영을 메모리로 승격**해 $v_t=\mathcal{M}_v(x_t)$. 그 $v_t$를 다시 각 메모리에 통과시켜 목표 $\hat v_\square=\mathcal{M}_\square(v_t)$를 만든다.
+> - **$\alpha,\eta$도 "그냥 함수"가 아니라 학습되는 메모리**: $\mathcal{M}_\alpha,\mathcal{M}_\eta$의 **초기상태는 backprop으로 메타러닝(outer)** 되고, test-time엔 DGD로 갱신(inner)된다. 그 출력 $\alpha_t,\eta_t$가 남들의 update 규칙에 들어간다.
+> - **미분값은 diff가 아니라 full backprop**: $\nabla\mathcal{L}$은 L2 loss를 2-layer MLP 전체에 대해 역전파한 gradient다. 오차 $(\mathcal{M}(k)-\hat v)$는 backward의 *시작점*일 뿐 — 선형 메모리면 $(\mathcal{M}k-\hat v)k^\top$로 줄지만 MLP면 두 층 관통.
+> - **출력은 갱신 \emph{전}(chunk-start) 메모리를 읽는다**: $o_t$는 이번 토큰의 update를 반영하기 전 상태. 활성함수 $\sigma$는 메모리 MLP **내부**에 있고, 별도 출력 게이트는 없다. $\alpha$는 갱신에 쓰이지 출력에 쓰이지 않는다.
+
+> **$q$가 왜 헷갈리나.** 갱신식(식 88)은 집합을 $\{k,v,q,\eta,\alpha,\mathrm{mem}\}$로 **균일하게** 쓰지만, line 2116이 "$q$는 유일한 non-adaptive"라고 **명시적으로 카브아웃**한다. 그래서 $q$는 test-time 자기수정을 **안 하고**, 초기값 $W_q$만 메타러닝된다.
+
+> **한계.** 정직한 각주 하나: query projection $q$까지 적응형으로 만들면 오히려 성능이 **나빠진다**(ablation에서 ppl 12.24 → 12.19로, 동결이 더 좋음). "level을 더 붙이면 항상 이득"이 아니라는, 논문 자신의 프레임에 대한 내부 반례다 — 그래서 최종 설계가 $q$를 static으로 둔다.
 
 ### 서빙에서의 batchability (쉽게)
 
 > **시스템 모델링 관점.** 이게 서빙에 던지는 문제가 크다. self-modifying Titans에서는 **request마다 memory 상태(weights)가 달라진다.** 보통 LLM 서빙은 "모든 request가 같은 weight를 공유"한다는 전제로 batch를 묶어 큰 GEMM 하나로 돌린다. 그런데 여기선 그 전제가 깨진다.
 >
 > request들을 batch로 묶을 수는 있다 — 다만 shared-weight matmul이 아니라 **request별로 다른 weight를 쓰는 grouped/batched GEMM**이 된다. 문제는 연산량이 아니라 **대역폭**이다: request마다 다른 weight 텐서를 HBM에서 읽어와야 하니, 묶어봐야 weight read 트래픽이 request 수에 비례해 그대로 늘어난다. 그래서 **batching으로 얻는 이득이 제한적**이다. (KV cache는 request별로 다르지만 read-only라 이 문제가 덜하다. 여기 state는 mutable weights라 성질이 다르다.)
+
+### 추론 실행: update와 CMS(FFN)의 순서 — 논문이 안 다루는 부분
+
+토큰당·layer당 실제로 도는 일: 재료 생성($k,v,\eta,\alpha$ 작은 MLP forward 4번) + $o_t$ 읽기 + **다섯 메모리 update**(각각 예측 forward + $\nabla\mathcal{L}$ backward + DGD) + CMS chain forward(fast 레벨 update 포함). **수십 개의 작은 GEMV/GEMM + backward + 의존성** — kernel 1개로는 불가하고(순서·gradient), decode(chunk=1)에선 전부 tiny op라 memory-bound + kernel-launch 오버헤드 지배.
+
+> **핵심 (순서가 실은 안 걸린다).** 출력 경로($o_t$ 읽기 + CMS forward)는 **갱신 전(chunk-start) 상태**를 읽으므로 **이번 토큰의 update와 의존성이 없다** — 둘은 겹쳐 돌릴 수 있다. "이번 layer의 CMS(FFN)가 끝나기 전에 titans update가 끝나야 하나?"의 답은 **아니오**(둘 다 같은 chunk-start에서 갈라져 나옴). 진짜 순차 의존은 **토큰 사이**다: 다음 토큰의 읽기가 이번 토큰의 update 결과 $\mathcal{M}_t$를 필요로 한다 → **메모리 update가 토큰 간 임계경로**이고 CMS forward는 그 밑에 파이프라인된다.
+
+> **시스템 모델링 관점 — 논문이 한 것 vs 안 한 것.** 논문의 §8.2 "Fast and Parallelizable Training"은 오직 **훈련 병렬화**다: chunk-start snapshot으로 value-generator를 고정해 한 chunk의 모든 gradient를 병렬 계산(dual form). 님이 말한 "update는 병렬로"는 **훈련/prefill에선 성립**한다(전체 시퀀스가 있으니 chunk 병렬). 하지만 **decode(chunk=1, 순차)에 대한 kernel·스케줄·latency·throughput·wall-clock은 원문에 전혀 없다**("inference"는 line 458에서 "보통 test-time엔 weight가 frozen"이라는 대조로만 등장). 즉 **훈련은 chunkwise로 풀었고, decode 실행은 안 풀었다.** 이 공백이 정확히 Part III(§13·본서 Part III)가 계량하는 지점 — decode = 순차 per-token RMW = memory-bound(E1.1b: HOPE-M3 ≈ titans의 4.2×).
 
 ---
 
