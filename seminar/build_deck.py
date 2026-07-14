@@ -860,6 +860,20 @@ claim_slide("B5 · Nested Learning / HOPE (2512.24695)", "HOPE — 모든 부품
     "다른 레벨 → 레벨을 더 쌓자(higher-order ICL) → self-mod + CMS = HOPE. ICL은 창발이 아니라 ≥2레벨의 structural 결과",
     "760M/1.3B 벤치(Transformer++·RWKV7·DeltaNet·Titans 대비), BABILong, 메모리 레벨 ablation, M3 optimizer(ViT)")
 
+# B5.0 문제 + 핵심 통찰
+s = slide(p, "B5 · Nested Learning — 문제와 통찰", "지금까지 'layer 하나'만 바꿔 왔다 — 그것을 훈련시키는 '배경'을 설계 대상으로", GOLD)
+pbox(s, 0.55, 1.4, 6.0, 1.85, "문제 1 — layer 하나만 바꿔 왔다",
+     [("Titans/Miras/Atlas/TNT는 전부 'sequence layer 하나'의 성분(objective·retention·optimizer·훈련경제학)을 바꾼 것.", {}),
+      ("그런데 그 layer를 바깥에서 훈련시키는 AdamW·momentum·backpropagation은 한 번도 설계 공간에 안 들어온 '고정 배경'이었다.", {"bold": True, "color": RED})], ec=RED)
+pbox(s, 6.78, 1.4, 6.0, 1.85, "문제 2 — LLM은 정적이다 (anterograde amnesia)",
+     [("배포 후 지식이 사는 곳은 딱 둘: 지금의 context window(KV cache)와 pre-training 때 얼어붙은 MLP weights.", {}),
+      ("context 정보가 장기저장소(FFN)까지 못 가고 window가 밀려나면 사라진다 = 새 장기기억을 못 만드는 기억상실.", {"bold": True, "color": RED})], ec=RED)
+pbox(s, 0.55, 3.45, 12.23, 1.5, "핵심 통찰 — backprop도 memory다 (이 슬라이드만 가져가도 됨)",
+     [("'모델과 그것을 학습시키는 절차는 서로 다른 두 물건이 아니라, 하나의 중첩된 다층 최적화 시스템이다.'", {"bold": True, "color": GOLD, "space_after": 3}),
+      ("그 안에서 backpropagation·momentum·Adam·Muon이 전부 gradient에 대한 associative memory다. 특히 backprop은 자기 target을 스스로 만드는 self-referential memory라 병렬화가 안 된다.", {})], ec=GOLD)
+pbox(s, 0.55, 5.1, 12.23, 0.9, "그래서 질문의 단위가 바뀐다",
+     "'layer'가 아니라 '모델 전체 + 훈련 절차 전체'가 하나의 설계 대상. 각 level은 자기 context flow를 자기 주기로 압축하는 associative memory. (TNT가 남긴 '서로 다른 주기의 계층' 힌트를 조직 원리로 승격.)", ec=BLUE)
+
 # B5.1 Nested Learning paradigm + expressive optimizers
 s = slide(p, "B5 · Nested Learning — 관점", "학습 자체를 '중첩된 최적화(=메모리)의 층'으로 본다", GOLD)
 fig_with_caption(s, "2512.24695", 2, 0.55, 1.5, 6.0, 3.5,
@@ -974,6 +988,22 @@ box(s, 0.55, 5.2, 12.2, 1.0,
      ("왼쪽=중첩 레벨을 늘릴수록 in-context 성능이 오른다(ICL=structural 주장의 증거). 가운데=초장문 추론에서 경쟁력. "
       "오른쪽=optimizer를 메모리로 보는 관점이 실제 학습(ViT)에서도 이득.", {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})],
     fc=GREYB, ec=GREY, align=PP_ALIGN.LEFT)
+
+# B5.6 한계 + Sleep bridge
+s = slide(p, "B5 · HOPE — 한계 & Sleep으로", "이 라인의 문제는 풀리기는커녕 커졌다 — 남은 절반을 Sleep이 채운다", GOLD)
+pbox(s, 0.55, 1.4, 6.0, 3.55, "논문이 스스로 그은 한계 4가지",
+     [("① catastrophic forgetting 미해결 — forgetting은 압축의 필연(용량 유한). CMS는 '어디서·얼마나 빨리 잊을지'를 주파수 축에 재배치했을 뿐, 원리적으로 푼 게 아니다.", {}),
+      ("② level 설계가 경험적 — level 몇 개·주파수 얼마·무엇을 어디 놓을지 이론 없음. query projection을 memory화하면 오히려 나빠지는 반례도(잘못 놓인 level은 해).", {}),
+      ("③ 이론이 재해석까지만 — optimizer 역공학은 존재 논증이지 유일성 증명 아님, level 표현력 정리 없음.", {}),
+      ("④ 서빙 경제학·스케일 미검증 — from-scratch 1.3B/100B, retrofit도 Llama3-8B까지. decode wall-clock 전무.", {})], ec=RED, bsize=10)
+pbox(s, 6.78, 1.4, 6.0, 1.7, "systems — batching이 깨진다 (Part C 예고)",
+     [("self-modifying Titans state = per-request mutable weights. KV cache(read-only, weight 공유 batch)와 달리 shared-weight batching이 깨진다.", {}),
+      ("배칭은 가능하나 각 요청의 arithmetic intensity가 batch 크기 B와 무관 → 대역폭이 배치를 조기에 닫는다(never-average).", {"bold": True, "color": BLUE})], ec=BLUE, bsize=10)
+pbox(s, 6.78, 3.25, 6.0, 1.7, "다음으로의 연결 — Sleep",
+     [("신경생리학의 consolidation은 2단계. NL은 그중 online consolidation(입력 흐르는 동안 CMS 갱신)만 구현했다.", {}),
+      ("수면 replay로 기억을 재조직하는 offline consolidation은 명시적으로 범위 밖. 남는 질문: 빠른 level 지식이 예정된 갱신으로 덮이기 전에 어디로 옮길 것인가?", {"bold": True, "color": GOLD})], ec=GOLD, bsize=10)
+pbox(s, 0.55, 5.1, 12.23, 0.9, "한 줄",
+     "HOPE = expressive optimizer(Delta Momentum·DMGD·M3) + CMS(주파수 스펙트럼 memory) + self-modifying Titans를 직렬 결합. '더 많은 layer가 아니라 더 많은 level'을 실증 — 단 짧은 recall gap과 서빙 경제학은 미해소, 그리고 offline consolidation을 Sleep에 넘긴다.", ec=GREEN)
 
 # ------------------------------ B6. Sleep ------------------------------
 claim_slide("B6 · Sleep (2606.03979)", "Sleep — 자는 동안 지식을 '위로' 옮겨 파라미터를 키운다", GREEN,
