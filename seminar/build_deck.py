@@ -987,54 +987,100 @@ claim_slide("B6 · Sleep (2606.03979)", "Sleep — 자는 동안 지식을 '위�
     "GKD(on-policy)+LTI(RL) → 새 low-rank expert만 학습(나머지 freeze) → synaptic pruning → Dreaming 자기개선",
     "class-incremental(CLINC/Banking/DBpedia) 지속학습, 메모리 레벨 효과, BABILong 등으로 통합 효과 입증")
 
-# B6.1 lifecycle + consolidation
-s = slide(p, "B6 · Sleep — 통합 메커니즘", "느린 블록에 새 저차원 expert를 키워 지식을 위로 옮긴다", GREEN)
-fig_with_caption(s, "2606.03979", 2, 0.55, 1.5, 6.0, 3.5,
-                 "Memory Consolidation: 모델이 스스로 파라미터 수를 늘려 용량을 확장")
-fig_with_caption(s, "2606.03979", 8, 6.85, 1.5, 5.9, 3.5,
-                 "Sleep cycle마다 router가 새 expert를 선택·갱신(왼→오른쪽)")
-box(s, 0.55, 5.15, 12.2, 1.05,
-    [("B5(HOPE)와의 연결 — 빠진 조각", {"size": 12.5, "bold": True, "color": BLUE, "align": PP_ALIGN.LEFT, "space_after": 2}),
-     ("HOPE의 CMS는 '느린 블록이 빠른 블록의 리셋 초기값'을 줄 뿐(런타임 diff 전달 아님). Sleep는 오프라인에서 "
-      "빠른(고주파) 메모리가 배운 것을 새 low-rank expert로 만들어 느린 블록에 '실제로' 얹는다 = 위쪽 전달.",
-      {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=BLUEB, ec=BLUE, align=PP_ALIGN.LEFT)
+# B6.1 문제 — NL이 남긴 절반
+s = slide(p, "B6 · Sleep — 문제", "NL은 online consolidation 절반만 했다 — 잊히기 전에 옮길 곳이 없다", GREEN)
+pbox(s, 0.55, 1.4, 6.0, 3.05, "NL이 남긴 숙제 4가지",
+     [("① catastrophic forgetting 미해결 — 여러 주기로 덮어쓰기를 지연해도, 모든 층의 갱신 시점이 겹치면 결국 덮어쓴다.", {}),
+      ("② NL 저자 스스로 'offline consolidation(자면서 정리)은 범위 밖'이라 명시 — 온라인 절반만.", {}),
+      ("③ capacity 고정 — 유한 파라미터에 계속 압축해 넣으면 언젠가 옛 지식을 덮어쓴다.", {}),
+      ("④ 입력을 끊고 자기 내부를 정리할 시간이 설계에 없다.", {})], ec=RED, bsize=11)
+pbox(s, 6.78, 1.4, 6.0, 3.05, "anterograde amnesia (기억상실증)",
+     [("배포된 LLM의 지식은 두 곳에만 산다:", {"space_after": 3}),
+      ("• 세션 끝나면 사라지는 context window", {}),
+      ("• pre-training 때 얼어붙은 weight", {}),
+      ("이 둘을 잇는 다리가 없다 = 새 장기기억을 못 만드는 '영원한 현재'.", {"bold": True, "color": RED, "space_after": 3}),
+      ("남는 질문: 빠른 level의 지식이 예정된 갱신으로 덮어써지기 전에, 그걸 어디로 옮길 것인가?", {"bold": True, "color": BLUE})], ec=BLUE, bsize=11)
+pbox(s, 0.55, 4.6, 12.23, 1.25, "Sleep의 답 (미리보기)",
+     "wake/sleep lifecycle을 세워, 잠자는 동안 그 지식을 더 느린 블록에 '새 expert로 위쪽 distillation'하고, forgetting을 regularization이 아니라 'capacity 성장'으로 재정의한다. 그 발화 시점이 정확히 CMS의 chunk 경계.", ec=GREEN)
 
-# B6.2 offline data generation (self-generated)
-s = slide(p, "B6 · Sleep — 데이터는 어떻게 만드나", "전부 오프라인·자기생성: teacher→student, GKD + RL", GREEN)
-# flow: teacher -> (samples) -> student(new expert) ; GKD + LTI
-box(s, 0.55, 1.6, 2.7, 1.2, [("Teacher", {"size": 14, "bold": True, "color": GREEN, "space_after": 3}),
-    ("현재 모델 LM_θ", {"size": 11, "color": INK}), ("샘플·'꿈' 생성", {"size": 11, "color": MUTE})], fc=GREENB, ec=GREEN)
-arrow(s, 3.3, 2.2, 4.25, 2.2, color=INK, lw=1.8)
-box(s, 4.35, 1.6, 2.7, 1.2, [("Student", {"size": 14, "bold": True, "color": GOLD, "space_after": 3}),
-    ("새 low-rank expert", {"size": 11, "color": INK}), ("{A: d×r, B: r×d}", {"size": 11, "mono": True, "color": MUTE})], fc=GOLDB, ec=GOLD)
-arrow(s, 7.1, 2.2, 8.05, 2.2, color=INK, lw=1.8)
-box(s, 8.15, 1.6, 4.6, 1.2, [("학습 신호", {"size": 14, "bold": True, "color": RED, "space_after": 3}),
-    ("GKD(on-policy rollout) + RL(LTI)", {"size": 11, "color": INK}), ("보상=Levenshtein·의미 유사도", {"size": 11, "color": MUTE})], fc=REDB, ec=RED)
-rows = [
-    ("Knowledge Seeding (통합)", "teacher가 만든 on-policy 데이터로 student를 GKD. 새 expert만 backward(나머지 freeze). router가 새 expert를 활성화."),
-    ("LTI — RL 파트", "정답 시퀀스와의 Levenshtein/의미 보상으로 policy-gradient. 미분 불가한 목표를 RL로."),
-    ("Dreaming (자기개선)", "teacher가 자기 생성한 '꿈'으로 SEAL식 편집·강화 — 외부 라벨 없이 능력을 끌어올림."),
-    ("reset = (de)activation", "새 주기 시작 시 빠른 블록의 이전 expert들을 비활성화(pruning)해 간섭을 막는다."),
-]
-ry = 3.15
-for t, b in rows:
-    box(s, 0.55, ry, 12.2, 0.82, [(t + "  ", {"size": 12.5, "bold": True, "color": GREEN, "align": PP_ALIGN.LEFT}),
-        (b, {"size": 11.5, "color": INK, "align": PP_ALIGN.LEFT})], fc=WHITE, ec=GREY, align=PP_ALIGN.LEFT, lw=1.0, anchor=MSO_ANCHOR.MIDDLE)
-    ry += 0.9
-text(s, 0.55, 6.85, 12.2, 0.3, "핵심: 학습 데이터가 전부 모델 자신에게서 나온다(self-generated) — 외부 코퍼스 추가 없이 지속 학습.",
-     size=11.5, color=MUTE, italic=True, space_after=0)
+# B6.2 가설 — wake/sleep lifecycle
+s = slide(p, "B6 · Sleep — 가설: wake/sleep lifecycle", "축을 하나 더 — 수식의 축이 아니라 '시간'의 축", GREEN)
+fig_with_caption(s, "2606.03979", 1, 0.55, 1.5, 5.7, 3.5,
+                 "Figure 1 — conventional(train/test 분리) vs continual(Active↔Sleep 주기 교대)")
+pbox(s, 6.4, 1.5, 6.35, 1.5, "lifecycle + inference 번역",
+     [("sleep = 수동적 멈춤이 아니라 능동적 내부 처리(외부 입력 끊고, 고주파 모듈 기억을 느리고 안정적인 성분으로 굳힘).", {}),
+      ("= 서빙 fleet에 붙는 주기적 백그라운드 job. 낮=요청 처리하며 fast memory에 write, 밤=트래픽 끊고 compaction·GC. 단 대상이 로그/cache가 아니라 파라미터.", {"bold": True, "color": BLUE})], ec=GREEN, bsize=10)
+pbox(s, 6.4, 3.1, 6.35, 1.05, "online-only의 3결함",
+     "① 추상화 수준 그대로(추가 압축 없이 옮겨 capacity 또 씀) ② 선택적·retrieval 의존(자주 부르는 것만 강화) ③ context에 갇힘(상위 통합 안 됨).", ec=GOLD, bsize=10)
+pbox(s, 0.55, 5.2, 12.23, 0.95, "세 가지 핵심 주장",
+     "① continual learner엔 train time도 test time도 없다('test time'이란 단어의 마지막 잔재를 지움). ② catastrophic forgetting은 근본적으로 capacity 문제 → '덮어쓰지 말고 키워라'. ③ sleep은 2단계: Memory Consolidation(NREM) + Dreaming(REM).", ec=BLUE)
 
-# B6.3 proof
-s = slide(p, "B6 · Sleep — 증명", "지속 학습에서 망각을 줄이고 성능을 유지한다", GREEN)
-fig_with_caption(s, "2606.03979", 3, 0.55, 1.5, 6.05, 3.6,
-                 "class-incremental(CLINC 등): sleep 통합이 이전 클래스 망각을 완화")
-fig_with_caption(s, "2606.03979", 6, 6.85, 1.5, 5.9, 3.6,
-                 "BABILong: 오프라인 통합 후에도 장문 추론 능력 유지·향상")
-box(s, 0.55, 5.25, 12.2, 0.95,
-    [("읽는 법 · 6편의 도착점", {"size": 12.5, "bold": True, "color": INK, "align": PP_ALIGN.LEFT, "space_after": 2}),
-     ("Titans가 연 'test-time 학습'은 → Sleep에서 'wake=빠른 학습 / sleep=느린 통합'의 완결된 생애주기가 된다. "
-      "고정 용량의 한계를 파라미터 성장으로 넘은 것이 이 논문의 마지막 퍼즐.", {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})],
-    fc=GREYB, ec=GREY, align=PP_ALIGN.LEFT)
+# B6.3 wake 기반 — CMS 스케줄
+s = slide(p, "B6 · Sleep — wake 기반: CMS 갱신 스케줄", "sleep은 학습되지 않고 chunk 경계에 고정된다", GREEN)
+fig_with_caption(s, "2606.03979", 7, 0.55, 1.5, 5.7, 3.55,
+                 "Figure 7 — High/Mid/Low FFN이 1k/5k/10k 토큰 주기로 배열된 CMS 사슬")
+pbox(s, 6.4, 1.5, 6.35, 1.5, "구조 (NL의 CMS를 그대로 수입)",
+     [("sequence-mixing layer(attention/Titans) + 여러 주기의 MLP 블록 사슬.", {}),
+      ("각 블록은 토큰마다 error 기여분을 누적하고, 자기 chunk 경계에서만 그 누적을 파라미터에 한 번 적용.", {})], ec=GREEN, bsize=10.5)
+pbox(s, 6.4, 3.1, 6.35, 1.05, "sleep 발화 시점",
+     "어떤 블록이 자기 갱신 경계에 도달하면, 갱신하기 직전에 그 블록의 지식을 '한 단계 느린 블록'으로 먼저 옮긴다.", ec=BLUE, bsize=10.5)
+pbox(s, 0.55, 5.25, 12.23, 0.95, "왜 여기가 catastrophic forgetting이 터질 자리인가",
+     "주기가 중첩 → 다대일(빠른 블록 10번 갱신 동안 느린 블록 1번). 같은 크기의 느린 메모리에 10번을 반복해 써 넣게 됨 → 바로 그 지점이 CF가 터질 자리 → 다음의 parameter expansion이 필요.", ec=RED)
+
+# B6.4 Stage 1 Consolidation 개관
+s = slide(p, "B6 · Sleep — Stage 1: Memory Consolidation", "덮어쓰지 말고 키워라 + 지식을 '위로' 증류(upward)", GREEN)
+fig_with_caption(s, "2606.03979", 2, 0.55, 1.5, 5.7, 3.5,
+                 "Figure 2 — 파라미터를 늘리고(capacity), 사라질 지식을 새 공간에 증류")
+pbox(s, 6.4, 1.5, 6.35, 1.15, "① parameter expansion",
+     "consolidation 받는 블록에 새 파라미터를 연다(새 MLP/Linear expert 하나). '자기 전에 파라미터를 키운다'.", ec=GREEN, bsize=10.5)
+pbox(s, 6.4, 2.72, 6.35, 1.15, "② Knowledge Seeding",
+     "지식 추상을 고주파→저주파 메모리로 이전. GKD distillation(teacher 데이터 + student rollout) + Imitation Learning(RL).", ec=GOLD, bsize=10.5)
+pbox(s, 6.4, 3.94, 6.35, 1.15, "반전 — upward distillation",
+     "보통 distillation은 큰 teacher→작은 student로 내려보내는데, 여기선 방향이 반대(작은 것 → 큰 것). 그래서 upward distillation.", ec=BLUE, bsize=10.5)
+pbox(s, 0.55, 5.2, 12.23, 0.95, "B5(HOPE)와의 연결 — 빠진 조각을 채운다",
+     "HOPE의 CMS는 '느린 블록이 빠른 블록의 리셋 초기값'을 줄 뿐(런타임 diff 전달 아님). Sleep는 오프라인에서 빠른 메모리가 배운 것을 새 expert로 만들어 느린 블록에 '실제로' 얹는다 = 위쪽 전달.", ec=GREY)
+
+# B6.5 Consolidation 상세 (1a/1b/1c)
+s = slide(p, "B6 · Sleep — Consolidation 상세", "새 low-rank expert에만 쓰고 · self-generated로 배우고 · 옮긴 뒤에만 지운다", GREEN)
+pbox(s, 0.55, 1.4, 12.23, 1.35, "1a. parameter expansion — '덮어쓸 수 없게' 만든다",
+     [("각 MLP = 여러 expert를 가진 sparse MoE. 빠른 블록 지식을 옮길 때 새 low-rank expert 하나 추가(A d×r, B r×d). 옮겨지는 지식은 오직 이 새 파라미터에만 → 옛 지식 물리 자리를 안 건드림(정규화로 '잊지마' 부탁이 아니라 애초에 덮어쓸 수 없게).", {}),
+      ("[구현] 미래 expert 전부를 초기화 시점에 사전할당하고 mask만 씌운다 → 'expert 추가'는 실제론 mask 하나 여는 것. shape가 정적으로 유지(컴파일 그래프·kernel·checkpoint 안 흔들림).", {"bold": True, "color": BLUE})], ec=GREEN, bsize=10)
+pbox(s, 0.55, 2.9, 6.0, 2.05, "1b. Knowledge Seeding — teacher/student가 누구인가",
+     [("teacher = expansion 전 모델(빠른 블록이 아직 안 덮인, 그 지식을 든 자기 자신).", {}),
+      ("student = 확장 + 빠른 블록 갱신 후(빠른 블록 지식은 잃고, 느린 블록에 빈 expert 하나 받은 상태).", {}),
+      ("distillation이 student 출력을 teacher로 당김 — 움직일 수 있는 건 새 expert뿐. GKD = teacher 데이터 + student on-policy rollout. student 전부 freeze, 새 expert만 학습.", {"bold": True, "color": GOLD})], ec=GOLD, bsize=9.5)
+pbox(s, 6.78, 2.9, 6.0, 2.05, "1c. LTI + synaptic-pruning reset",
+     [("distillation만으론 '아는 것 ≠ 쓰는 것' — teacher를 약하게만 흉내. LTI(RL): teacher 데이터 앞부분 주고 이어쓰게 해, 잘 쓰면 보상.", {}),
+      ("보상 = semantic(frozen reward model, 의미 같으면 1) + absolute(편집거리 토큰 유사도).", {}),
+      ("끝나면 reset: 빠른 블록의 과거 expert들을 지워 capacity 회수 = 'eviction 전 write-back' cache 정책.", {"bold": True, "color": RED})], ec=RED, bsize=9.5)
+pbox(s, 0.55, 5.1, 12.23, 0.75, "순 효과 — 하나의 불변식",
+     "빠른 메모리는 작고 유연하게, 느린 메모리는 단조 성장하며 '신선한 expert로만' 쓰인다.", ec=GREEN)
+
+# B6.6 Stage 2 Dreaming + 정직성
+s = slide(p, "B6 · Sleep — Stage 2: Dreaming + 정직성", "자기 생성 데이터로 자신을 고쳐 쓴다 (REM) — 단 knob은 meta-learn 안 됨", GREEN)
+fig_with_caption(s, "2606.03979", 8, 0.55, 1.5, 5.7, 3.5,
+                 "Figure 8 — sleep 사이클마다 router가 expert를 골라 갱신, random expert로 novelty 주입")
+pbox(s, 6.4, 1.5, 6.35, 1.85, "Dreaming (SEAL 위에 시연, plug-in)",
+     [("모델이 성능을 올려 줄 합성 데이터(dream)를 스스로 생성하는 self-modification. 5단계:", {}),
+      ("생성(모든 MoE router가 random expert 추가로 켬=novelty 주입) → 선별(gradient importance) → 적용(격리 복사본 LoRA fine-tune) → 보상(실제 task 개선되면 1) → 강화(ReST^EM, value network 없는 EM RL).", {}),
+      ("consolidation 먼저·dreaming 나중: 취약 지식을 새 expert에 격리한 뒤 반복 self-training.", {"bold": True, "color": GOLD})], ec=GREEN, bsize=9.5)
+pbox(s, 6.4, 3.5, 6.35, 1.6, "세 번째 regime + 정직한 이음새",
+     [("regime 1 pre-training · 2 wake(CMS 갱신) · 3 sleep(배포 중 주기적 '진짜 gradient 훈련', 신세계).", {}),
+      ("caveat: sleep 기제(혼합계수·reward model·ReST^EM)는 pre-training에서 end-to-end meta-learn 안 됨 — 이 라인 최초로 핵심이 미분되는 inner loop가 아니라 알고리즘 wrapper. 실험 대부분이 Llama/Qwen에 graft.", {"bold": True, "color": RED})], ec=RED, bsize=9.5)
+pbox(s, 0.55, 5.2, 12.23, 0.72, "왜 이 순서(consolidate→dream)인가",
+     "갓 배운 취약한 지식을 새 expert에 격리해 둔 다음 dreaming의 반복 self-training을 돌려야, 그 지식이 덜 잊힌다.", ec=GREY)
+
+# B6.7 결과 + 완성형
+s = slide(p, "B6 · Sleep — 결과 & 6편의 완성형", "방향은 일관 · 서빙 형태가 바뀐다 · 단 실증은 1.3B에 멈춤", GREEN)
+fig_with_caption(s, "2606.03979", 3, 0.55, 1.5, 5.7, 3.5,
+                 "Figure 3 — class-incremental(CLINC 등): consolidation 얹은 Hope가 ICL·EWC·순정 Hope 상회")
+pbox(s, 6.4, 1.5, 6.35, 1.65, "결과 (방향·비율)",
+     [("sleep 단계 늘릴수록 단조 개선. SQuAD SEAL 프로토콜에서 Sleep>SEAL(Dreaming 제거하면 폭락). few-shot ARC: Llama-1B ICL 0%→SEAL 72.5%→Sleep 80%. 수학 Qwen3-8B AIME-24 Sleep 79.2 > GRPO 76.4.", {}),
+      ("효율: step당 SFT의 4배지만, 목표 성능 wall-clock은 SFT가 3.6~4.8배 더 걸림 → 사는 건 싼 step이 아니라 step·sample 효율.", {"bold": True, "color": GOLD})], ec=GREEN, bsize=9.5)
+pbox(s, 6.4, 3.25, 6.35, 1.05, "Systems 함의 (Part C 예고)",
+     "inference가 forward-only가 아님(RMW 트래픽=cost model 새 항). session state = KV cache가 아니라 per-user weight-delta(=multi-tenant LoRA 서빙). sleep = 서빙에 붙는 스케줄 훈련 job, 매번 새 버전.", ec=BLUE, bsize=9.5)
+pbox(s, 0.55, 5.15, 12.23, 1.0, "6편의 완성형 (개념적)",
+     "state는 모든 시간규모에서 weight · 모든 블록은 같은 associative memory · inner optimizer는 아키텍처와 대등한 설계면 · 훈련은 어디서나 chunk-anchored · lifecycle은 wake/sleep. Titans가 연 'test-time 학습'이 여섯 편째에 train/test 경계 자체를 지운다. (단 from-scratch 실증은 아직 1.3B.)", ec=GREEN)
 
 # ==================================================================================
 # ============================== PART C — System modeling ==============================
