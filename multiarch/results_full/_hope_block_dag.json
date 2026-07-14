@@ -1,0 +1,798 @@
+{
+ "d": 2048,
+ "twin": {
+  "BW": 3350000000000.0,
+  "PEAK": 989400000000000.0,
+  "RIDGE": 295.34328358208955
+ },
+ "C": {
+  "1": {
+   "baseline": {
+    "t_us": 202.83881074626862,
+    "flop": 1082187776,
+    "bytes": 679510016,
+    "ops": [
+     {
+      "name": "q=X·Wq (static)",
+      "kind": "gemm",
+      "t_us": 2.5040620895522387,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 8388608,
+      "bytes": 8388608
+     },
+     {
+      "name": "k/v: M_k(X)",
+      "kind": "gemm",
+      "t_us": 5.0081241791044775,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 16777216,
+      "bytes": 16777216
+     },
+     {
+      "name": "k/v: M_v(X)",
+      "kind": "gemm",
+      "t_us": 5.0081241791044775,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 16777216,
+      "bytes": 16777216
+     },
+     {
+      "name": "gate: M_eta(X)",
+      "kind": "gemm",
+      "t_us": 2.505284776119403,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 8392704,
+      "bytes": 8392704
+     },
+     {
+      "name": "gate: M_alpha(X)",
+      "kind": "gemm",
+      "t_us": 2.505284776119403,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 8392704,
+      "bytes": 8392704
+     },
+     {
+      "name": "o=M_mem(q) [pre-update read]",
+      "kind": "gemm",
+      "t_us": 5.0081241791044775,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 16777216,
+      "bytes": 16777216
+     },
+     {
+      "name": "update-compute M_k (tgt+pred+bwd ~4x fwd)",
+      "kind": "gemm",
+      "t_us": 5.0081241791044775,
+      "bound": "memory",
+      "ai": 4.0,
+      "flop": 67108864,
+      "bytes": 16777216
+     },
+     {
+      "name": "DGD-apply M_k (state RMW, low-AI)",
+      "kind": "update",
+      "t_us": 10.016248358208955,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 33554432,
+      "bytes": 33554432
+     },
+     {
+      "name": "update-compute M_v (tgt+pred+bwd ~4x fwd)",
+      "kind": "gemm",
+      "t_us": 5.0081241791044775,
+      "bound": "memory",
+      "ai": 4.0,
+      "flop": 67108864,
+      "bytes": 16777216
+     },
+     {
+      "name": "DGD-apply M_v (state RMW, low-AI)",
+      "kind": "update",
+      "t_us": 10.016248358208955,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 33554432,
+      "bytes": 33554432
+     },
+     {
+      "name": "update-compute M_mem (tgt+pred+bwd ~4x fwd)",
+      "kind": "gemm",
+      "t_us": 5.0081241791044775,
+      "bound": "memory",
+      "ai": 4.0,
+      "flop": 67108864,
+      "bytes": 16777216
+     },
+     {
+      "name": "DGD-apply M_mem (state RMW, low-AI)",
+      "kind": "update",
+      "t_us": 10.016248358208955,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 33554432,
+      "bytes": 33554432
+     },
+     {
+      "name": "update-compute M_eta (tgt+pred+bwd ~4x fwd)",
+      "kind": "gemm",
+      "t_us": 2.505284776119403,
+      "bound": "memory",
+      "ai": 4.0,
+      "flop": 33570816,
+      "bytes": 8392704
+     },
+     {
+      "name": "DGD-apply M_eta (state RMW, low-AI)",
+      "kind": "update",
+      "t_us": 5.010569552238806,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 16785408,
+      "bytes": 16785408
+     },
+     {
+      "name": "update-compute M_alpha (tgt+pred+bwd ~4x fwd)",
+      "kind": "gemm",
+      "t_us": 2.505284776119403,
+      "bound": "memory",
+      "ai": 4.0,
+      "flop": 33570816,
+      "bytes": 8392704
+     },
+     {
+      "name": "DGD-apply M_alpha (state RMW, low-AI)",
+      "kind": "update",
+      "t_us": 5.010569552238806,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 16785408,
+      "bytes": 16785408
+     },
+     {
+      "name": "CMS L1 fwd (d->4d->d)",
+      "kind": "gemm",
+      "t_us": 20.03249671641791,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 67108864,
+      "bytes": 67108864
+     },
+     {
+      "name": "CMS L2 fwd (d->4d->d)",
+      "kind": "gemm",
+      "t_us": 20.03249671641791,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 67108864,
+      "bytes": 67108864
+     },
+     {
+      "name": "CMS L3 fwd (d->4d->d)",
+      "kind": "gemm",
+      "t_us": 20.03249671641791,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 67108864,
+      "bytes": 67108864
+     },
+     {
+      "name": "CMS L1 update-compute (~4x fwd)",
+      "kind": "gemm",
+      "t_us": 20.03249671641791,
+      "bound": "memory",
+      "ai": 4.0,
+      "flop": 268435456,
+      "bytes": 67108864
+     },
+     {
+      "name": "CMS L1 DGD-apply (state RMW)",
+      "kind": "update",
+      "t_us": 40.06499343283582,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 134217728,
+      "bytes": 134217728
+     }
+    ]
+   },
+   "pim": {
+    "t_us": 234.55886646766163,
+    "flop": 1082187776,
+    "bytes": 411058176,
+    "ops": [
+     {
+      "name": "q=X·Wq (static)",
+      "kind": "gemm",
+      "t_us": 2.5040620895522387,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 8388608,
+      "bytes": 8388608
+     },
+     {
+      "name": "k/v: M_k(X)",
+      "kind": "gemm",
+      "t_us": 5.0081241791044775,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 16777216,
+      "bytes": 16777216
+     },
+     {
+      "name": "k/v: M_v(X)",
+      "kind": "gemm",
+      "t_us": 5.0081241791044775,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 16777216,
+      "bytes": 16777216
+     },
+     {
+      "name": "gate: M_eta(X)",
+      "kind": "gemm",
+      "t_us": 2.505284776119403,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 8392704,
+      "bytes": 8392704
+     },
+     {
+      "name": "gate: M_alpha(X)",
+      "kind": "gemm",
+      "t_us": 2.505284776119403,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 8392704,
+      "bytes": 8392704
+     },
+     {
+      "name": "o=M_mem(q) [pre-update read]",
+      "kind": "gemm",
+      "t_us": 5.0081241791044775,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 16777216,
+      "bytes": 16777216
+     },
+     {
+      "name": "update-compute M_k (tgt+pred+bwd ~4x fwd)",
+      "kind": "gemm",
+      "t_us": 5.0081241791044775,
+      "bound": "memory",
+      "ai": 4.0,
+      "flop": 67108864,
+      "bytes": 16777216
+     },
+     {
+      "name": "DGD-apply M_k (state RMW, low-AI)",
+      "kind": "update",
+      "t_us": 13.981013333333333,
+      "bound": "compute",
+      "ai": Infinity,
+      "flop": 33554432,
+      "bytes": 0
+     },
+     {
+      "name": "update-compute M_v (tgt+pred+bwd ~4x fwd)",
+      "kind": "gemm",
+      "t_us": 5.0081241791044775,
+      "bound": "memory",
+      "ai": 4.0,
+      "flop": 67108864,
+      "bytes": 16777216
+     },
+     {
+      "name": "DGD-apply M_v (state RMW, low-AI)",
+      "kind": "update",
+      "t_us": 13.981013333333333,
+      "bound": "compute",
+      "ai": Infinity,
+      "flop": 33554432,
+      "bytes": 0
+     },
+     {
+      "name": "update-compute M_mem (tgt+pred+bwd ~4x fwd)",
+      "kind": "gemm",
+      "t_us": 5.0081241791044775,
+      "bound": "memory",
+      "ai": 4.0,
+      "flop": 67108864,
+      "bytes": 16777216
+     },
+     {
+      "name": "DGD-apply M_mem (state RMW, low-AI)",
+      "kind": "update",
+      "t_us": 13.981013333333333,
+      "bound": "compute",
+      "ai": Infinity,
+      "flop": 33554432,
+      "bytes": 0
+     },
+     {
+      "name": "update-compute M_eta (tgt+pred+bwd ~4x fwd)",
+      "kind": "gemm",
+      "t_us": 2.505284776119403,
+      "bound": "memory",
+      "ai": 4.0,
+      "flop": 33570816,
+      "bytes": 8392704
+     },
+     {
+      "name": "DGD-apply M_eta (state RMW, low-AI)",
+      "kind": "update",
+      "t_us": 6.99392,
+      "bound": "compute",
+      "ai": Infinity,
+      "flop": 16785408,
+      "bytes": 0
+     },
+     {
+      "name": "update-compute M_alpha (tgt+pred+bwd ~4x fwd)",
+      "kind": "gemm",
+      "t_us": 2.505284776119403,
+      "bound": "memory",
+      "ai": 4.0,
+      "flop": 33570816,
+      "bytes": 8392704
+     },
+     {
+      "name": "DGD-apply M_alpha (state RMW, low-AI)",
+      "kind": "update",
+      "t_us": 6.99392,
+      "bound": "compute",
+      "ai": Infinity,
+      "flop": 16785408,
+      "bytes": 0
+     },
+     {
+      "name": "CMS L1 fwd (d->4d->d)",
+      "kind": "gemm",
+      "t_us": 20.03249671641791,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 67108864,
+      "bytes": 67108864
+     },
+     {
+      "name": "CMS L2 fwd (d->4d->d)",
+      "kind": "gemm",
+      "t_us": 20.03249671641791,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 67108864,
+      "bytes": 67108864
+     },
+     {
+      "name": "CMS L3 fwd (d->4d->d)",
+      "kind": "gemm",
+      "t_us": 20.03249671641791,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 67108864,
+      "bytes": 67108864
+     },
+     {
+      "name": "CMS L1 update-compute (~4x fwd)",
+      "kind": "gemm",
+      "t_us": 20.03249671641791,
+      "bound": "memory",
+      "ai": 4.0,
+      "flop": 268435456,
+      "bytes": 67108864
+     },
+     {
+      "name": "CMS L1 DGD-apply (state RMW)",
+      "kind": "update",
+      "t_us": 55.92405333333333,
+      "bound": "compute",
+      "ai": Infinity,
+      "flop": 134217728,
+      "bytes": 0
+     }
+    ]
+   }
+  },
+  "512": {
+   "baseline": {
+    "t_us": 501.2312989096965,
+    "flop": 416901251072,
+    "bytes": 679510016,
+    "ops": [
+     {
+      "name": "q=X·Wq (static)",
+      "kind": "gemm",
+      "t_us": 4.340981702041641,
+      "bound": "compute",
+      "ai": 512.0,
+      "flop": 4294967296,
+      "bytes": 8388608
+     },
+     {
+      "name": "k/v: M_k(X)",
+      "kind": "gemm",
+      "t_us": 8.681963404083282,
+      "bound": "compute",
+      "ai": 512.0,
+      "flop": 8589934592,
+      "bytes": 16777216
+     },
+     {
+      "name": "k/v: M_v(X)",
+      "kind": "gemm",
+      "t_us": 8.681963404083282,
+      "bound": "compute",
+      "ai": 512.0,
+      "flop": 8589934592,
+      "bytes": 16777216
+     },
+     {
+      "name": "gate: M_eta(X)",
+      "kind": "gemm",
+      "t_us": 4.343101322013341,
+      "bound": "compute",
+      "ai": 512.0,
+      "flop": 4297064448,
+      "bytes": 8392704
+     },
+     {
+      "name": "gate: M_alpha(X)",
+      "kind": "gemm",
+      "t_us": 4.343101322013341,
+      "bound": "compute",
+      "ai": 512.0,
+      "flop": 4297064448,
+      "bytes": 8392704
+     },
+     {
+      "name": "o=M_mem(q) [pre-update read]",
+      "kind": "gemm",
+      "t_us": 8.681963404083282,
+      "bound": "compute",
+      "ai": 512.0,
+      "flop": 8589934592,
+      "bytes": 16777216
+     },
+     {
+      "name": "update-compute M_k (tgt+pred+bwd ~4x fwd)",
+      "kind": "gemm",
+      "t_us": 34.72785361633313,
+      "bound": "compute",
+      "ai": 2048.0,
+      "flop": 34359738368,
+      "bytes": 16777216
+     },
+     {
+      "name": "DGD-apply M_k (state RMW, low-AI)",
+      "kind": "update",
+      "t_us": 10.016248358208955,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 33554432,
+      "bytes": 33554432
+     },
+     {
+      "name": "update-compute M_v (tgt+pred+bwd ~4x fwd)",
+      "kind": "gemm",
+      "t_us": 34.72785361633313,
+      "bound": "compute",
+      "ai": 2048.0,
+      "flop": 34359738368,
+      "bytes": 16777216
+     },
+     {
+      "name": "DGD-apply M_v (state RMW, low-AI)",
+      "kind": "update",
+      "t_us": 10.016248358208955,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 33554432,
+      "bytes": 33554432
+     },
+     {
+      "name": "update-compute M_mem (tgt+pred+bwd ~4x fwd)",
+      "kind": "gemm",
+      "t_us": 34.72785361633313,
+      "bound": "compute",
+      "ai": 2048.0,
+      "flop": 34359738368,
+      "bytes": 16777216
+     },
+     {
+      "name": "DGD-apply M_mem (state RMW, low-AI)",
+      "kind": "update",
+      "t_us": 10.016248358208955,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 33554432,
+      "bytes": 33554432
+     },
+     {
+      "name": "update-compute M_eta (tgt+pred+bwd ~4x fwd)",
+      "kind": "gemm",
+      "t_us": 17.372405288053365,
+      "bound": "compute",
+      "ai": 2048.0,
+      "flop": 17188257792,
+      "bytes": 8392704
+     },
+     {
+      "name": "DGD-apply M_eta (state RMW, low-AI)",
+      "kind": "update",
+      "t_us": 5.010569552238806,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 16785408,
+      "bytes": 16785408
+     },
+     {
+      "name": "update-compute M_alpha (tgt+pred+bwd ~4x fwd)",
+      "kind": "gemm",
+      "t_us": 17.372405288053365,
+      "bound": "compute",
+      "ai": 2048.0,
+      "flop": 17188257792,
+      "bytes": 8392704
+     },
+     {
+      "name": "DGD-apply M_alpha (state RMW, low-AI)",
+      "kind": "update",
+      "t_us": 5.010569552238806,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 16785408,
+      "bytes": 16785408
+     },
+     {
+      "name": "CMS L1 fwd (d->4d->d)",
+      "kind": "gemm",
+      "t_us": 34.72785361633313,
+      "bound": "compute",
+      "ai": 512.0,
+      "flop": 34359738368,
+      "bytes": 67108864
+     },
+     {
+      "name": "CMS L2 fwd (d->4d->d)",
+      "kind": "gemm",
+      "t_us": 34.72785361633313,
+      "bound": "compute",
+      "ai": 512.0,
+      "flop": 34359738368,
+      "bytes": 67108864
+     },
+     {
+      "name": "CMS L3 fwd (d->4d->d)",
+      "kind": "gemm",
+      "t_us": 34.72785361633313,
+      "bound": "compute",
+      "ai": 512.0,
+      "flop": 34359738368,
+      "bytes": 67108864
+     },
+     {
+      "name": "CMS L1 update-compute (~4x fwd)",
+      "kind": "gemm",
+      "t_us": 138.9114144653325,
+      "bound": "compute",
+      "ai": 2048.0,
+      "flop": 137438953472,
+      "bytes": 67108864
+     },
+     {
+      "name": "CMS L1 DGD-apply (state RMW)",
+      "kind": "update",
+      "t_us": 40.06499343283582,
+      "bound": "memory",
+      "ai": 1.0,
+      "flop": 134217728,
+      "bytes": 134217728
+     }
+    ]
+   },
+   "pim": {
+    "t_us": 532.9513546310895,
+    "flop": 416901251072,
+    "bytes": 411058176,
+    "ops": [
+     {
+      "name": "q=X·Wq (static)",
+      "kind": "gemm",
+      "t_us": 4.340981702041641,
+      "bound": "compute",
+      "ai": 512.0,
+      "flop": 4294967296,
+      "bytes": 8388608
+     },
+     {
+      "name": "k/v: M_k(X)",
+      "kind": "gemm",
+      "t_us": 8.681963404083282,
+      "bound": "compute",
+      "ai": 512.0,
+      "flop": 8589934592,
+      "bytes": 16777216
+     },
+     {
+      "name": "k/v: M_v(X)",
+      "kind": "gemm",
+      "t_us": 8.681963404083282,
+      "bound": "compute",
+      "ai": 512.0,
+      "flop": 8589934592,
+      "bytes": 16777216
+     },
+     {
+      "name": "gate: M_eta(X)",
+      "kind": "gemm",
+      "t_us": 4.343101322013341,
+      "bound": "compute",
+      "ai": 512.0,
+      "flop": 4297064448,
+      "bytes": 8392704
+     },
+     {
+      "name": "gate: M_alpha(X)",
+      "kind": "gemm",
+      "t_us": 4.343101322013341,
+      "bound": "compute",
+      "ai": 512.0,
+      "flop": 4297064448,
+      "bytes": 8392704
+     },
+     {
+      "name": "o=M_mem(q) [pre-update read]",
+      "kind": "gemm",
+      "t_us": 8.681963404083282,
+      "bound": "compute",
+      "ai": 512.0,
+      "flop": 8589934592,
+      "bytes": 16777216
+     },
+     {
+      "name": "update-compute M_k (tgt+pred+bwd ~4x fwd)",
+      "kind": "gemm",
+      "t_us": 34.72785361633313,
+      "bound": "compute",
+      "ai": 2048.0,
+      "flop": 34359738368,
+      "bytes": 16777216
+     },
+     {
+      "name": "DGD-apply M_k (state RMW, low-AI)",
+      "kind": "update",
+      "t_us": 13.981013333333333,
+      "bound": "compute",
+      "ai": Infinity,
+      "flop": 33554432,
+      "bytes": 0
+     },
+     {
+      "name": "update-compute M_v (tgt+pred+bwd ~4x fwd)",
+      "kind": "gemm",
+      "t_us": 34.72785361633313,
+      "bound": "compute",
+      "ai": 2048.0,
+      "flop": 34359738368,
+      "bytes": 16777216
+     },
+     {
+      "name": "DGD-apply M_v (state RMW, low-AI)",
+      "kind": "update",
+      "t_us": 13.981013333333333,
+      "bound": "compute",
+      "ai": Infinity,
+      "flop": 33554432,
+      "bytes": 0
+     },
+     {
+      "name": "update-compute M_mem (tgt+pred+bwd ~4x fwd)",
+      "kind": "gemm",
+      "t_us": 34.72785361633313,
+      "bound": "compute",
+      "ai": 2048.0,
+      "flop": 34359738368,
+      "bytes": 16777216
+     },
+     {
+      "name": "DGD-apply M_mem (state RMW, low-AI)",
+      "kind": "update",
+      "t_us": 13.981013333333333,
+      "bound": "compute",
+      "ai": Infinity,
+      "flop": 33554432,
+      "bytes": 0
+     },
+     {
+      "name": "update-compute M_eta (tgt+pred+bwd ~4x fwd)",
+      "kind": "gemm",
+      "t_us": 17.372405288053365,
+      "bound": "compute",
+      "ai": 2048.0,
+      "flop": 17188257792,
+      "bytes": 8392704
+     },
+     {
+      "name": "DGD-apply M_eta (state RMW, low-AI)",
+      "kind": "update",
+      "t_us": 6.99392,
+      "bound": "compute",
+      "ai": Infinity,
+      "flop": 16785408,
+      "bytes": 0
+     },
+     {
+      "name": "update-compute M_alpha (tgt+pred+bwd ~4x fwd)",
+      "kind": "gemm",
+      "t_us": 17.372405288053365,
+      "bound": "compute",
+      "ai": 2048.0,
+      "flop": 17188257792,
+      "bytes": 8392704
+     },
+     {
+      "name": "DGD-apply M_alpha (state RMW, low-AI)",
+      "kind": "update",
+      "t_us": 6.99392,
+      "bound": "compute",
+      "ai": Infinity,
+      "flop": 16785408,
+      "bytes": 0
+     },
+     {
+      "name": "CMS L1 fwd (d->4d->d)",
+      "kind": "gemm",
+      "t_us": 34.72785361633313,
+      "bound": "compute",
+      "ai": 512.0,
+      "flop": 34359738368,
+      "bytes": 67108864
+     },
+     {
+      "name": "CMS L2 fwd (d->4d->d)",
+      "kind": "gemm",
+      "t_us": 34.72785361633313,
+      "bound": "compute",
+      "ai": 512.0,
+      "flop": 34359738368,
+      "bytes": 67108864
+     },
+     {
+      "name": "CMS L3 fwd (d->4d->d)",
+      "kind": "gemm",
+      "t_us": 34.72785361633313,
+      "bound": "compute",
+      "ai": 512.0,
+      "flop": 34359738368,
+      "bytes": 67108864
+     },
+     {
+      "name": "CMS L1 update-compute (~4x fwd)",
+      "kind": "gemm",
+      "t_us": 138.9114144653325,
+      "bound": "compute",
+      "ai": 2048.0,
+      "flop": 137438953472,
+      "bytes": 67108864
+     },
+     {
+      "name": "CMS L1 DGD-apply (state RMW)",
+      "kind": "update",
+      "t_us": 55.92405333333333,
+      "bound": "compute",
+      "ai": Infinity,
+      "flop": 134217728,
+      "bytes": 0
+     }
+    ]
+   }
+  }
+ }
+}
