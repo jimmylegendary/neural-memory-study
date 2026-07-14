@@ -171,7 +171,55 @@ E2.1(chunk-intensity)·E2.2(rmw-cliff)는 **이 host CPU 에서 실제 시간을
 
 ---
 
-## 5. 종합 insight · 분석
+## 5. HOPE / Sleep 적용 모델 심층 분석 — 1T 스케일링
+
+앞 실험들은 추상 anchor(neural-mem-1.3B)였다. 여기서는 **실제 적용 모델 — HOPE(Nested Learning)와 Sleep — 의 구조를 그대로 모델링**해 total 파라미터를 **1T 까지** 올리며 decode 비용을 잰다. (근거: `notes/2512.24695`, `notes/2606.03979`; 코드 `hope_sleep_scaling.py`.)
+
+**구조 (grounded).** HOPE block = **self-modifying Titans**(6개 test-time memory: k,v,q,η,α,+ — 투영 자체가 갱신) + **CMS chain**(MLP^(f_1..f_k), fast level 은 매 토큰 RMW, slow level 은 chunk C^l 마다). **Sleep** = wake/sleep lifecycle: wake=HOPE, **sleep(offline)** 에서 fast block 지식을 느린 block 에 **low-rank expert 로 append**(expert pool 이 sleep 마다 증가)하고 dreaming. **핵심: slow-level 갱신·expert 성장이 전부 offline** — decode critical path 밖.
+
+**모델링.** decode 는 memory-bound per-token RMW traffic 이 지배(Part III). "매 토큰 RMW 되는 state"를 세 regime 으로:
+
+- `dense-ttt` — 전체 모델이 test-time-learned (strawman 상한): RMW ∝ P_total.
+- `hope` — self-mod + **모든** CMS level 이 inference 중 갱신(fast C=1 + slow 1/C amortized).
+- `sleep` — self-mod + **fast level 만**(slow-level consolidation·expert 성장은 offline).
+
+두 스케일링 recipe 를 비교한다: **WIDTH**(d,L 성장 — dense backbone) vs **EXPERT**(backbone 고정, total 을 Sleep-appended expert pool 로만, MoE top-2 routing).
+
+![fig8 · HOPE/Sleep decode 1T 스케일링. (a) WIDTH: Sleep 도 상승(fast level ∝ d²L). (b) EXPERT: Sleep 평탄 — 1T 도 7B 처럼 decode.](/home/jimmy/repos/neural-memory-study/multiarch/figures/fig8-hope-sleep-scaling.png){width=15.5cm}
+
+**결과 A — WIDTH (d,L 성장).** fast-level state 가 d²L 로 자라 **Sleep decode 도 증가**한다.
+
+| total | active | S_sleep | sleep ms/tok※ | dense ms/tok | dense/sleep |
+|---|---|---|---|---|---|
+| 6B | 5.5B | 2.21 GB | 1.32 | 6.6 | 5× |
+| 70B | 57B | 17.7 GB | 10.6 | 83.7 | 8× |
+| 405B | 381B | 118 GB | 70.5 | 506 | 7× |
+| 1T | 457B | 142 GB | 84.6 | 1223 | 14× |
+
+**결과 B — EXPERT (backbone 고정 d=2048,L=24, expert 만 offline 성장).** **active·S_sleep·decode 가 상수.**
+
+| total | #exp | active | S_sleep | sleep ms/tok※ | dense ms/tok | dense/sleep |
+|---|---|---|---|---|---|---|
+| 6B | 0 | 5.5B | 2.21 GB | **1.32** | 6.6 | 5× |
+| 70B | 80 | 7.1B | 2.21 GB | **1.32** | 83.5 | 63× |
+| 405B | 496 | 7.1B | 2.21 GB | **1.32** | 483 | 366× |
+| **1T** | **1235** | **7.1B** | **2.21 GB** | **1.32** | 1194 | **903×** |
+
+※ H100, ideal roofline 하한. 절대치 단정 안 함 — 비율·평탄성이 load-bearing.
+
+**고찰·insight (님 가설 검증).** 님의 직관 — "Sleep 은 scaling 가능"— 은 **맞고**, 정확한 메커니즘·recipe 가 드러난다:
+
+1. **Sleep 의 offline consolidation 이 total 파라미터를 decode 에서 분리한다.** EXPERT family 에서 total 이 6B→1T(167×)로 커져도 **per-token RMW state 는 2.21 GB 로 상수**, decode 1.32 ms 로 **완전 평탄**. 1235 개 expert(1T 의 대부분)가 decode RMW 에 **0** 기여 — offline 갱신 + MoE top-2 routing 때문. **1T Sleep 모델이 7B 처럼 decode(active 7.1B).** 1T 에서 dense-all-TTT 대비 **903× 저렴**.
+
+2. **단, "무엇을 키우느냐"가 관건이다.** WIDTH family(d,L 성장)에선 Sleep 도 커진다 — fast-level RMW state 가 d²L 에 비례하기 때문(1T 에서 84 ms). 님이 말한 "**ffn·self-modifying Titans 를 scaling**"은 두 갈래다: **FFN 을 expert 로 늘리면(offline) decode 무료**, 그러나 **self-mod·fast-level width 를 늘리면 decode 가 값을 치른다**. 따라서 1T 로 가는 승리 recipe = **fast backbone(self-mod + fast CMS) 은 decode 예산에 맞춰 고정, capacity 는 offline expert pool 로 확장**.
+
+3. **이것이 Sleep 의 진짜 systems 기여다.** Titans/HOPE 는 test-time 갱신을 decode 에 넣어 memory-bound RMW 를 만들었다(Part III 의 부담). **Sleep 은 그 부담의 대부분을 offline(수면)으로 옮겨** — 성장하는 memory(expert)를 critical path 에서 뺀다. 즉 continual-learning capacity 를 무한히 키우면서 serving decode 는 fast level 로 묶는다. **Part III 의 decode-state 병목에 대한 알고리즘적 해답**이 Sleep 이고, 이 스케일링이 그 증거다.
+
+**정직한 한계.** (a) 이건 decode **비용** 모델이지 **품질**이 아니다 — 논문은 ≤1.3B 만 실측했고, 1T 에서 품질이 유지되는지는 미검증(1235-expert 스케일은 저자 미보고, 본 분석의 투영). (b) 절대 ms 는 ideal 하한. (c) m_fast=8·self-mod 6개·top-2 는 논문 구조에 근거한 합리적 파라미터화이나 정확한 폭은 미공개. 그럼에도 **load-bearing 결론(EXPERT family 에서 decode 평탄, expert 는 decode 에 무료)은 구조에서 직접 따라오며 파라미터 선택에 robust** 하다.
+
+---
+
+## 6. 종합 insight · 분석
 
 1. **pair thesis 의 load-bearing 결론은 하드웨어 공간 전체에서 보편적이다.** S\* 불변(§4.3), decode memory-bound(§4.1/4.6, 7/8), tier 순서(§4.2), 스케일링 형태(§4.7) — 전부 HBM GPU·LPDDR NPU·wafer SRAM 을 가로질러 성립. 이 스터디가 준 새 증거: 이 명제들은 특정 칩이 아니라 **update rule 의 구조(고정크기·RMW 대칭)** 에 걸려 있다.
 
@@ -183,7 +231,7 @@ E2.1(chunk-intensity)·E2.2(rmw-cliff)는 **이 host CPU 에서 실제 시간을
 
 ---
 
-## 6. 신뢰성 — per-quantity + 리뷰 감사
+## 7. 신뢰성 — per-quantity + 리뷰 감사
 
 | 결과 | 의존 | 단정? |
 |---|---|---|
@@ -199,13 +247,15 @@ E2.1(chunk-intensity)·E2.2(rmw-cliff)는 **이 host CPU 에서 실제 시간을
 
 ---
 
-## 7. 재현
+## 8. 재현
 
 ```
 cd ~/repos/neural-memory-study ; PY=.venv/bin/python
 $PY multiarch/run_all_experiments.py --validate   # H100==확정 anchor 게이트
 $PY multiarch/run_all_experiments.py --all         # 8 twin x 7 실험 -> results_full/*.json
-$PY multiarch/make_figures.py                       # figures/*.png
+$PY multiarch/hope_sleep_scaling.py    # HOPE/Sleep 1T 스케일링 (§5)
+$PY multiarch/make_figures.py          # figures/fig1-7
+$PY multiarch/make_scaling_fig.py      # figures/fig8
 ```
 
 twin: `multiarch/twins/*.json` (validate_twin PASS). 출처·등급: `multiarch/specs/*.json`. 실험 상세: `results_full/*.json`. driver 는 E3/E1.x 공식 verbatim — H100 재현 게이트가 충실성 보증.
