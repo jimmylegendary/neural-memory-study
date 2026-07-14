@@ -47,33 +47,11 @@ def _set_font(run, size, color=INK, bold=False, italic=False, mono=False):
 
 
 def text(slide, x, y, w, h, lines, size=12, color=INK, bold=False, align=PP_ALIGN.LEFT,
-         anchor=MSO_ANCHOR.TOP, italic=False, mono=False, wrap=True):
-    """lines: str or list of (str, opts) where opts overrides size/color/bold/italic/mono/align."""
+         anchor=MSO_ANCHOR.TOP, italic=False, mono=False, wrap=True, line_spacing=1.2, space_after=4):
+    """lines: str or list of (str, opts) where opts overrides size/color/bold/italic/mono/align/
+    line_spacing/space_after. line_spacing is a multiple (1.2 = 120%)."""
     tb = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
     tf = tb.text_frame; tf.word_wrap = wrap; tf.vertical_anchor = anchor
-    tf.margin_left = Pt(2); tf.margin_right = Pt(2); tf.margin_top = Pt(1); tf.margin_bottom = Pt(1)
-    if isinstance(lines, str):
-        lines = [lines]
-    for i, ln in enumerate(lines):
-        opts = {}
-        if isinstance(ln, tuple):
-            ln, opts = ln
-        para = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
-        para.alignment = opts.get("align", align)
-        r = para.add_run(); r.text = ln
-        _set_font(r, opts.get("size", size), opts.get("color", color),
-                  opts.get("bold", bold), opts.get("italic", italic), opts.get("mono", mono))
-    return tb
-
-
-def box(slide, x, y, w, h, lines, fc=BLUEB, ec=BLUE, size=11, tcolor=INK, bold=False,
-        rounded=True, align=PP_ALIGN.CENTER, mono=False, lw=1.0):
-    shp = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE if rounded else MSO_SHAPE.RECTANGLE,
-                                 Inches(x), Inches(y), Inches(w), Inches(h))
-    shp.fill.solid(); shp.fill.fore_color.rgb = fc
-    shp.line.color.rgb = ec; shp.line.width = Pt(lw)
-    shp.shadow.inherit = False
-    tf = shp.text_frame; tf.word_wrap = True; tf.vertical_anchor = MSO_ANCHOR.MIDDLE
     tf.margin_left = Pt(3); tf.margin_right = Pt(3); tf.margin_top = Pt(2); tf.margin_bottom = Pt(2)
     if isinstance(lines, str):
         lines = [lines]
@@ -83,6 +61,46 @@ def box(slide, x, y, w, h, lines, fc=BLUEB, ec=BLUE, size=11, tcolor=INK, bold=F
             ln, opts = ln
         para = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
         para.alignment = opts.get("align", align)
+        ls = opts.get("line_spacing", line_spacing)
+        if ls: para.line_spacing = ls
+        sa = opts.get("space_after", space_after)
+        if sa is not None: para.space_after = Pt(sa); para.space_before = Pt(0)
+        r = para.add_run(); r.text = ln
+        _set_font(r, opts.get("size", size), opts.get("color", color),
+                  opts.get("bold", bold), opts.get("italic", italic), opts.get("mono", mono))
+    return tb
+
+
+def picture(slide, path, x, y, w=None, h=None):
+    """Embed an image AS-IS. Give w or h (inches); the other is inferred to keep aspect ratio."""
+    kw = {}
+    if w is not None: kw["width"] = Inches(w)
+    if h is not None: kw["height"] = Inches(h)
+    return slide.shapes.add_picture(path, Inches(x), Inches(y), **kw)
+
+
+def box(slide, x, y, w, h, lines, fc=BLUEB, ec=BLUE, size=11, tcolor=INK, bold=False,
+        rounded=True, align=PP_ALIGN.CENTER, mono=False, lw=1.0, line_spacing=1.18,
+        space_after=3, anchor=MSO_ANCHOR.MIDDLE):
+    shp = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE if rounded else MSO_SHAPE.RECTANGLE,
+                                 Inches(x), Inches(y), Inches(w), Inches(h))
+    shp.fill.solid(); shp.fill.fore_color.rgb = fc
+    shp.line.color.rgb = ec; shp.line.width = Pt(lw)
+    shp.shadow.inherit = False
+    tf = shp.text_frame; tf.word_wrap = True; tf.vertical_anchor = anchor
+    tf.margin_left = Pt(6); tf.margin_right = Pt(6); tf.margin_top = Pt(3); tf.margin_bottom = Pt(3)
+    if isinstance(lines, str):
+        lines = [lines]
+    for i, ln in enumerate(lines):
+        opts = {}
+        if isinstance(ln, tuple):
+            ln, opts = ln
+        para = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+        para.alignment = opts.get("align", align)
+        ls = opts.get("line_spacing", line_spacing)
+        if ls: para.line_spacing = ls
+        sa = opts.get("space_after", space_after)
+        if sa is not None: para.space_after = Pt(sa); para.space_before = Pt(0)
         r = para.add_run(); r.text = ln
         _set_font(r, opts.get("size", size), opts.get("color", tcolor), opts.get("bold", bold),
                   opts.get("italic", False), opts.get("mono", mono))
@@ -104,8 +122,8 @@ def arrow(slide, x1, y1, x2, y2, color=MUTE, lw=1.5, dashed=False):
 def title_bar(slide, kicker, title, section_color=BLUE):
     """top title band: small kicker + big title."""
     box(slide, 0.0, 0.0, SW, 0.06, "", fc=section_color, ec=section_color, rounded=False)
-    text(slide, 0.55, 0.18, SW - 1.1, 0.35, kicker, size=12, color=section_color, bold=True)
-    text(slide, 0.55, 0.5, SW - 1.1, 0.6, title, size=22, color=INK, bold=True)
+    text(slide, 0.55, 0.16, SW - 1.1, 0.35, kicker, size=13.5, color=section_color, bold=True, space_after=0)
+    text(slide, 0.55, 0.5, SW - 1.1, 0.62, title, size=24, color=INK, bold=True, space_after=0)
 
 
 def section_divider(p, label, title, color=BLUE):
