@@ -9,6 +9,7 @@ from pptx.util import Inches, Pt, Emu
 from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE, MSO_CONNECTOR
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
+from PIL import Image
 
 EMU = 914400
 SW, SH = 13.333, 7.5
@@ -77,6 +78,24 @@ def picture(slide, path, x, y, w=None, h=None):
     if w is not None: kw["width"] = Inches(w)
     if h is not None: kw["height"] = Inches(h)
     return slide.shapes.add_picture(path, Inches(x), Inches(y), **kw)
+
+
+def fit_image(slide, path, x, y, maxw, maxh, frame=False):
+    """Place an image fit (aspect-preserving) inside the box (x,y,maxw,maxh), centered.
+    Returns (px, py, w, h) actual placement in inches. If frame, draw a thin grey border box."""
+    iw, ih = Image.open(path).size
+    ar = iw / ih
+    if maxw / maxh > ar:
+        h = maxh; w = h * ar
+    else:
+        w = maxw; h = w / ar
+    px = x + (maxw - w) / 2; py = y + (maxh - h) / 2
+    if frame:
+        fr = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(px - 0.04), Inches(py - 0.04),
+                                    Inches(w + 0.08), Inches(h + 0.08))
+        fr.fill.background(); fr.line.color.rgb = GREY; fr.line.width = Pt(0.75); fr.shadow.inherit = False
+    slide.shapes.add_picture(path, Inches(px), Inches(py), Inches(w), Inches(h))
+    return px, py, w, h
 
 
 def box(slide, x, y, w, h, lines, fc=BLUEB, ec=BLUE, size=11, tcolor=INK, bold=False,
