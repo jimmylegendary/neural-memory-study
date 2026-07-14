@@ -4,7 +4,7 @@
 function Math(el)
   if el.mathtype == "DisplayMath" then
     return pandoc.RawInline("latex",
-      "\\[\\adjustbox{max width=\\linewidth}{$\\displaystyle " .. el.text .. "$}\\]")
+      "\\[\\adjustbox{max width=\\linewidth,scale=0.8}{$\\displaystyle " .. el.text .. "$}\\]")
   end
   return nil
 end
