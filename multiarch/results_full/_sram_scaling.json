@@ -1,0 +1,82 @@
+{
+ "d": 2048,
+ "assumptions": {
+  "SRAM_BW": 10000000000000.0,
+  "HBM_BW": 3350000000000.0,
+  "baseline_L2_MB": 50
+ },
+ "rows": [
+  {
+   "C": 1,
+   "cap_MB": 50,
+   "mult": "1x",
+   "state_MB": 134.2,
+   "weights_MB": 276.8,
+   "mode": "all-HBM",
+   "decode_us": 202.8
+  },
+  {
+   "C": 1,
+   "cap_MB": 100,
+   "mult": "2x",
+   "state_MB": 134.2,
+   "weights_MB": 276.8,
+   "mode": "all-HBM",
+   "decode_us": 202.8
+  },
+  {
+   "C": 1,
+   "cap_MB": 250,
+   "mult": "5x",
+   "state_MB": 134.2,
+   "weights_MB": 276.8,
+   "mode": "state-on-chip",
+   "decode_us": 149.5
+  },
+  {
+   "C": 1,
+   "cap_MB": 500,
+   "mult": "10x",
+   "state_MB": 134.2,
+   "weights_MB": 276.8,
+   "mode": "all-on-chip",
+   "decode_us": 68.0
+  },
+  {
+   "C": 64,
+   "cap_MB": 50,
+   "mult": "1x",
+   "state_MB": 134.2,
+   "weights_MB": 276.8,
+   "mode": "all-HBM",
+   "decode_us": 202.8
+  },
+  {
+   "C": 64,
+   "cap_MB": 100,
+   "mult": "2x",
+   "state_MB": 134.2,
+   "weights_MB": 276.8,
+   "mode": "all-HBM",
+   "decode_us": 202.8
+  },
+  {
+   "C": 64,
+   "cap_MB": 250,
+   "mult": "5x",
+   "state_MB": 134.2,
+   "weights_MB": 276.8,
+   "mode": "state-on-chip",
+   "decode_us": 149.5
+  },
+  {
+   "C": 64,
+   "cap_MB": 500,
+   "mult": "10x",
+   "state_MB": 134.2,
+   "weights_MB": 276.8,
+   "mode": "all-on-chip",
+   "decode_us": 89.3
+  }
+ ]
+}
