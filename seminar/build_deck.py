@@ -12,8 +12,14 @@ import mathpng as mp
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REF = os.path.join(os.path.dirname(HERE), "reffigs")   # repo-root reffigs/<id>/figures/figN.png
+MFIG = os.path.join(os.path.dirname(HERE), "multiarch", "figures")   # our own system-modeling figures
 def rf(pid, fig):
     return os.path.join(REF, pid, "figures", f"fig{fig}.png")
+
+def our_fig(s, fname, x, y, w, h, caption, ec=GOLD):
+    """Embed one of OUR system-modeling figures (multiarch/figures) with a caption (no external source)."""
+    fit_image(s, os.path.join(MFIG, fname), x, y, w, h - 0.42, frame=True)
+    text(s, x, y + h - 0.4, w, 0.4, caption, size=10.5, color=INK, align=PP_ALIGN.CENTER, space_after=0)
 
 def claim_row(s, x, y, w, n, title, body, ec=GREEN):
     """A numbered core-claim card (used on each paper's '핵심 발명' slide)."""
@@ -649,6 +655,169 @@ box(s, 0.55, 5.2, 12.2, 1.0,
      ("왼쪽=중첩 레벨을 늘릴수록 in-context 성능이 오른다(ICL=structural 주장의 증거). 가운데=초장문 추론에서 경쟁력. "
       "오른쪽=optimizer를 메모리로 보는 관점이 실제 학습(ViT)에서도 이득.", {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})],
     fc=GREYB, ec=GREY, align=PP_ALIGN.LEFT)
+
+# ------------------------------ B6. Sleep ------------------------------
+claim_slide("B6 · Sleep (2606.03979)", "Sleep — 자는 동안 지식을 '위로' 옮겨 파라미터를 키운다", GREEN,
+    [("wake/sleep lifecycle: 추론(wake)과 오프라인 통합(sleep)을 분리",
+      "sleep은 별도 오프라인 단계 — 이때는 서빙하지 않고 그동안 배운 것을 정리·통합한다"),
+     ("Memory Consolidation = Knowledge Seeding: 배운 지식을 상위로 distill해 low-rank expert를 '성장'",
+      "NL의 online consolidation은 초기상태(reset)만 meta-learn — '학습된 diff의 위쪽 전달'은 못 했다. Sleep가 그것을 함"),
+     ("Dreaming: 스스로 만든 데이터로 자기개선(SEAL식 RL)",
+      "teacher가 '꿈'(자기 생성 시퀀스)을 만들고 RL로 강화 — 외부 데이터 없이 능력 향상")],
+    "NL online consolidation(초기상태 meta-learn + circle-back)은 고정 용량 한계 → 오프라인으로 파라미터 성장 → "
+    "GKD(on-policy)+LTI(RL) → 새 low-rank expert만 학습(나머지 freeze) → synaptic pruning → Dreaming 자기개선",
+    "class-incremental(CLINC/Banking/DBpedia) 지속학습, 메모리 레벨 효과, BABILong 등으로 통합 효과 입증")
+
+# B6.1 lifecycle + consolidation
+s = slide(p, "B6 · Sleep — 통합 메커니즘", "느린 블록에 새 저차원 expert를 키워 지식을 위로 옮긴다", GREEN)
+fig_with_caption(s, "2606.03979", 2, 0.55, 1.5, 6.0, 3.5,
+                 "Memory Consolidation: 모델이 스스로 파라미터 수를 늘려 용량을 확장")
+fig_with_caption(s, "2606.03979", 8, 6.85, 1.5, 5.9, 3.5,
+                 "Sleep cycle마다 router가 새 expert를 선택·갱신(왼→오른쪽)")
+box(s, 0.55, 5.15, 12.2, 1.05,
+    [("B5(HOPE)와의 연결 — 빠진 조각", {"size": 12.5, "bold": True, "color": BLUE, "align": PP_ALIGN.LEFT, "space_after": 2}),
+     ("HOPE의 CMS는 '느린 블록이 빠른 블록의 리셋 초기값'을 줄 뿐(런타임 diff 전달 아님). Sleep는 오프라인에서 "
+      "빠른(고주파) 메모리가 배운 것을 새 low-rank expert로 만들어 느린 블록에 '실제로' 얹는다 = 위쪽 전달.",
+      {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=BLUEB, ec=BLUE, align=PP_ALIGN.LEFT)
+
+# B6.2 offline data generation (self-generated)
+s = slide(p, "B6 · Sleep — 데이터는 어떻게 만드나", "전부 오프라인·자기생성: teacher→student, GKD + RL", GREEN)
+# flow: teacher -> (samples) -> student(new expert) ; GKD + LTI
+box(s, 0.55, 1.6, 2.7, 1.2, [("Teacher", {"size": 14, "bold": True, "color": GREEN, "space_after": 3}),
+    ("현재 모델 LM_θ", {"size": 11, "color": INK}), ("샘플·'꿈' 생성", {"size": 11, "color": MUTE})], fc=GREENB, ec=GREEN)
+arrow(s, 3.3, 2.2, 4.25, 2.2, color=INK, lw=1.8)
+box(s, 4.35, 1.6, 2.7, 1.2, [("Student", {"size": 14, "bold": True, "color": GOLD, "space_after": 3}),
+    ("새 low-rank expert", {"size": 11, "color": INK}), ("{A: d×r, B: r×d}", {"size": 11, "mono": True, "color": MUTE})], fc=GOLDB, ec=GOLD)
+arrow(s, 7.1, 2.2, 8.05, 2.2, color=INK, lw=1.8)
+box(s, 8.15, 1.6, 4.6, 1.2, [("학습 신호", {"size": 14, "bold": True, "color": RED, "space_after": 3}),
+    ("GKD(on-policy rollout) + RL(LTI)", {"size": 11, "color": INK}), ("보상=Levenshtein·의미 유사도", {"size": 11, "color": MUTE})], fc=REDB, ec=RED)
+rows = [
+    ("Knowledge Seeding (통합)", "teacher가 만든 on-policy 데이터로 student를 GKD. 새 expert만 backward(나머지 freeze). router가 새 expert를 활성화."),
+    ("LTI — RL 파트", "정답 시퀀스와의 Levenshtein/의미 보상으로 policy-gradient. 미분 불가한 목표를 RL로."),
+    ("Dreaming (자기개선)", "teacher가 자기 생성한 '꿈'으로 SEAL식 편집·강화 — 외부 라벨 없이 능력을 끌어올림."),
+    ("reset = (de)activation", "새 주기 시작 시 빠른 블록의 이전 expert들을 비활성화(pruning)해 간섭을 막는다."),
+]
+ry = 3.15
+for t, b in rows:
+    box(s, 0.55, ry, 12.2, 0.82, [(t + "  ", {"size": 12.5, "bold": True, "color": GREEN, "align": PP_ALIGN.LEFT}),
+        (b, {"size": 11.5, "color": INK, "align": PP_ALIGN.LEFT})], fc=WHITE, ec=GREY, align=PP_ALIGN.LEFT, lw=1.0, anchor=MSO_ANCHOR.MIDDLE)
+    ry += 0.9
+text(s, 0.55, 6.85, 12.2, 0.3, "핵심: 학습 데이터가 전부 모델 자신에게서 나온다(self-generated) — 외부 코퍼스 추가 없이 지속 학습.",
+     size=11.5, color=MUTE, italic=True, space_after=0)
+
+# B6.3 proof
+s = slide(p, "B6 · Sleep — 증명", "지속 학습에서 망각을 줄이고 성능을 유지한다", GREEN)
+fig_with_caption(s, "2606.03979", 3, 0.55, 1.5, 6.05, 3.6,
+                 "class-incremental(CLINC 등): sleep 통합이 이전 클래스 망각을 완화")
+fig_with_caption(s, "2606.03979", 6, 6.85, 1.5, 5.9, 3.6,
+                 "BABILong: 오프라인 통합 후에도 장문 추론 능력 유지·향상")
+box(s, 0.55, 5.25, 12.2, 0.95,
+    [("읽는 법 · 6편의 도착점", {"size": 12.5, "bold": True, "color": INK, "align": PP_ALIGN.LEFT, "space_after": 2}),
+     ("Titans가 연 'test-time 학습'은 → Sleep에서 'wake=빠른 학습 / sleep=느린 통합'의 완결된 생애주기가 된다. "
+      "고정 용량의 한계를 파라미터 성장으로 넘은 것이 이 논문의 마지막 퍼즐.", {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})],
+    fc=GREYB, ec=GREY, align=PP_ALIGN.LEFT)
+
+# ==================================================================================
+# ============================== PART C — System modeling ==============================
+# ==================================================================================
+section_divider(p, "PART C", "System modeling (우리 기여) — 이 배포는 서빙에서 얼마나 드나", GOLD)
+
+# C1 pair thesis
+s = slide(p, "C1 · pair thesis", "학습은 compute-bound, 디코드는 memory-bound", GOLD)
+box(s, 0.55, 1.5, 6.0, 2.0,
+    [("학습(training) — compute-bound", {"size": 14, "bold": True, "color": BLUE, "align": PP_ALIGN.LEFT, "space_after": 5}),
+     ("chunk C를 크게 잡아 병렬 → 연산/바이트(arithmetic intensity)가 높다.", {"size": 12.5, "color": INK, "align": PP_ALIGN.LEFT}),
+     ("roofline의 오른쪽(연산 한계) → 더 빠른 연산기가 이득.", {"size": 12.5, "color": INK, "align": PP_ALIGN.LEFT})],
+    fc=BLUEB, ec=BLUE, align=PP_ALIGN.LEFT)
+box(s, 6.75, 1.5, 6.0, 2.0,
+    [("디코드(decode) — memory-bound", {"size": 14, "bold": True, "color": RED, "align": PP_ALIGN.LEFT, "space_after": 5}),
+     ("chunk=1, 토큰마다 '전체 상태(state+weights)'를 read-modify-write.", {"size": 12.5, "color": INK, "align": PP_ALIGN.LEFT}),
+     ("arithmetic intensity가 낮다 → roofline의 왼쪽(대역폭 한계).", {"size": 12.5, "color": INK, "align": PP_ALIGN.LEFT})],
+    fc=REDB, ec=RED, align=PP_ALIGN.LEFT)
+our_fig(s, "fig4-sstar-invariance.png", 0.55, 3.75, 6.05, 2.55,
+        "S*(KV↔TTT 교차점)=65536 tokens — 8개 가속기 전부 동일 = 하드웨어가 아니라 workload의 성질")
+box(s, 6.75, 3.75, 6.0, 2.3,
+    [("왜 중요한가", {"size": 13, "bold": True, "color": GOLD, "align": PP_ALIGN.LEFT, "space_after": 5}),
+     ("메모리 상태를 갱신하는 이 계열은 디코드에서 구조적으로 memory-bound다. 그리고 그 경계(S*)는 "
+      "하드웨어를 바꿔도 변하지 않는다(invariant). 즉 '어느 칩을 써도' 디코드 비용은 메모리 대역폭이 지배한다.",
+      {"size": 12.5, "color": INK, "align": PP_ALIGN.LEFT}),
+     ("→ 이후 슬라이드: 실제 8칩 측정 · HOPE block roofline · 메모리 기술(zHBM/PIM/SRAM) · 청사진.",
+      {"size": 12, "bold": True, "color": BLUE, "align": PP_ALIGN.LEFT})],
+    fc=GOLDB, ec=GOLD, align=PP_ALIGN.LEFT)
+
+# C2 cross-arch
+s = slide(p, "C2 · 8개 가속기 크로스 측정", "5자릿수 스프레드, 그러나 대부분 memory-bound", GOLD)
+our_fig(s, "fig1-decode-ms.png", 0.55, 1.5, 6.05, 3.6,
+        "토큰당 decode 시간(ideal 하한, log) — MTIA v2 ~31ms에서 WSE-3 ~0.0003ms까지")
+our_fig(s, "fig4-sstar-invariance.png", 6.85, 1.5, 5.9, 3.6,
+        "S* 불변: 8개 아키텍처가 같은 교차점 — workload 고유 성질")
+box(s, 0.55, 5.25, 12.2, 1.0,
+    [("읽는 법", {"size": 12.5, "bold": True, "color": INK, "align": PP_ALIGN.LEFT, "space_after": 2}),
+     ("8칩 중 7개가 memory-bound(대역폭이 결정). 예외는 WSE-3(Cerebras) — 거대한 on-chip SRAM으로 상태를 상주시켜 "
+      "compute 쪽으로 넘어가는 'knee'가 생긴다. 각 칩 spec은 HAT hw twin으로 검증(die/PE 구조까지).",
+      {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=GREYB, ec=GREY, align=PP_ALIGN.LEFT)
+
+# C3 HOPE-block roofline
+s = slide(p, "C3 · HOPE block roofline (H100 트윈)", "1개 HOPE block을 실제 수치로 — 어디가 병목인가", GOLD)
+our_fig(s, "fig-hope-dag.png", 0.55, 1.5, 6.05, 3.5,
+        "1 HOPE block(self-mod Titans→CMS)의 전 연산 DAG (B=1, chunk C, d=2048)")
+our_fig(s, "fig-hope-roofline.png", 6.85, 1.5, 5.9, 3.5,
+        "roofline·op별 시간·PIM 비교 (BW 3.35TB/s, peak 0.99PF, ridge 295)")
+box(s, 0.55, 5.15, 12.2, 1.05,
+    [("병목", {"size": 12.5, "bold": True, "color": RED, "align": PP_ALIGN.LEFT, "space_after": 2}),
+     ("C=1 디코드는 roofline 왼쪽(memory-bound). op별로 보면 CMS/DGD-apply의 state read-modify-write가 지배적. "
+      "state(≈134MB) + weights를 매 토큰 HBM(3.35TB/s)에서 읽어야 해 block당 ~203µs(ideal 하한).",
+      {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=REDB, ec=RED, align=PP_ALIGN.LEFT)
+
+# C4 memory tech
+s = slide(p, "C4 · 메모리 기술 — zHBM · HBM-PIM · SRAM", "memory-bound라면 답은 '대역폭'과 '상주'", GOLD)
+our_fig(s, "fig-zhbm-pim.png", 0.55, 1.5, 6.05, 3.6,
+        "HBM/zHBM/HBM-PIM/zHBM-PIM decode 비용 + zHBM 내부 연산 추가 면적")
+our_fig(s, "fig-sram-scaling.png", 6.85, 1.5, 5.9, 3.6,
+        "on-chip SRAM 1x→10x: state가 상주하는 순간(5x~) HBM 대신 SRAM")
+box(s, 0.55, 5.25, 12.2, 1.0,
+    [("결론", {"size": 12.5, "bold": True, "color": GOLD, "align": PP_ALIGN.LEFT, "space_after": 2}),
+     ("zHBM(대역폭↑)이 HBM-PIM(in-bank 연산이 너무 느림)보다 유리. SRAM은 '문턱' 구조 — state(≈134MB)가 "
+      "on-chip에 들어가는 5x(250MB)부터 이득(203→150µs), 10x(500MB)면 weights까지 전부 상주.",
+      {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=GOLDB, ec=GOLD, align=PP_ALIGN.LEFT)
+
+# C5 blueprint
+s = slide(p, "C5 · scaling 청사진", "논문의 방향 × 모델링 결과 = 어디로 가야 하나", GOLD)
+our_fig(s, "fig8-hope-sleep-scaling.png", 0.55, 1.5, 6.05, 3.6,
+        "HOPE(메모리 확장)+Sleep(파라미터 성장) 스케일링 — 상태·파라미터가 함께 자란다")
+bl = [
+    ("① 논문 방향이 memory 압력을 키운다", "HOPE(self-mod+CMS)로 state↑, Sleep(expert 성장)로 파라미터↑ → 디코드 memory-bound가 구조적으로 심해진다."),
+    ("② 대역폭 우선", "zHBM류 고대역폭 메모리가 1순위 지렛대(PIM보다 유리)."),
+    ("③ state 상주 설계", "on-chip 용량을 state가 들어갈 문턱 이상으로 — Cerebras의 knee가 그 증거."),
+    ("④ 소프트웨어 효율이 프론티어", "cross-vendor 소프트웨어 효율(HATIR)이 남은 최대 변수."),
+]
+by = 1.55
+for t, b in bl:
+    box(s, 6.75, by, 6.0, 1.15, [(t, {"size": 12.5, "bold": True, "color": GOLD, "align": PP_ALIGN.LEFT, "space_after": 3}),
+        (b, {"size": 11.5, "color": INK, "align": PP_ALIGN.LEFT})], fc=GOLDB, ec=GOLD, align=PP_ALIGN.LEFT)
+    by += 1.22
+box(s, 0.55, 5.25, 6.05, 1.05,
+    [("한 줄", {"size": 12.5, "bold": True, "color": BLUE, "align": PP_ALIGN.LEFT, "space_after": 2}),
+     ("이 계열을 키울수록 서빙은 '메모리 문제'가 된다 — 대역폭·상주·소프트웨어가 스케일의 열쇠.",
+      {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=BLUEB, ec=BLUE, align=PP_ALIGN.LEFT)
+
+# ============================== 마무리 ==============================
+s = slide(p, "마무리", "6편을 한 흐름으로, 그리고 서빙 비용까지", GREEN)
+closing = [
+    ("Titans", "test-time에 학습되는 신경망 메모리(surprise+momentum+forget)를 연다.", GREEN),
+    ("Miras", "그 설계를 4축 공간으로 조직화 — 무엇을·무엇을 잊고·어떤 구조로·어떤 알고리즘으로.", GREEN),
+    ("Atlas", "문맥 단위 기억(Omega)과 용량 확장(feature map)+Muon으로 표현력을 키운다.", GREEN),
+    ("TNT", "train/serve chunk 정렬과 global/local 계층으로 '어떻게 배포하나'를 답한다.", GREEN),
+    ("HOPE", "optimizer=memory·self-mod·CMS로 앞 4편을 하나의 중첩 시스템으로 통합.", GOLD),
+    ("Sleep", "wake/sleep 생애주기로 지식을 오프라인에서 위로 옮겨 파라미터를 키운다.", GREEN),
+    ("우리 기여", "이 배포는 디코드에서 memory-bound — 8칩 측정+HOPE roofline+zHBM/SRAM로 비용과 청사진을 냈다.", GOLD),
+]
+cy = 1.5
+for name, desc, c in closing:
+    box(s, 0.55, cy, 1.7, 0.68, name, fc=c, ec=c, size=12.5, tcolor=WHITE, bold=True)
+    box(s, 2.35, cy, 10.4, 0.68, desc, fc=WHITE, ec=GREY, size=12, tcolor=INK, align=PP_ALIGN.LEFT, lw=1.0)
+    cy += 0.76
+text(s, 0.55, 6.95, 12, 0.3, "감사합니다 · Q&A", size=13, color=INK, bold=True, align=PP_ALIGN.CENTER, space_after=0)
 
 # save
 out = os.path.join(HERE, "TTT-seminar.pptx")
