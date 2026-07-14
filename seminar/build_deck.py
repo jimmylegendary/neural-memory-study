@@ -672,34 +672,82 @@ claim_slide("B3 · Atlas (2505.23735)", "Atlas — 토큰이 아니라 '문맥'�
     "문맥 단위 목적(Omega) → 최적화도 Muon으로 → DeepTransformers/Dot 변형",
     "BABILong에서 Titans 초과(Fig.4), associative recall 용량 실험(Fig.7), 문맥·FLOPs 스케일링(Fig.8)")
 
-s = slide(p, "B3 · Atlas — 메커니즘", "문맥 단위 기억(Omega) + 용량 확장(feature map)", GREEN)
-fig_with_caption(s, "2505.23735", 2, 0.55, 1.5, 6.0, 3.5,
-                 "SWA vs Atlas/Omega: 문맥 내 토큰 의존성을 더 넓게 연결")
-box(s, 6.75, 1.5, 6.0, 1.35,
-    [("Omega rule (문맥 단위 목적)", {"size": 12.5, "bold": True, "color": GREEN, "align": PP_ALIGN.LEFT, "space_after": 4}),
-     ("최근 c개 토큰을 γ 가중으로 한 번에 적합:", {"size": 11.5, "color": INK, "align": PP_ALIGN.LEFT})],
-    fc=GREENB, ec=GREEN, align=PP_ALIGN.LEFT)
-fit_image(s, mp.eq(r"\min_{M}\ \sum_{i=t-c+1}^{t} \gamma_{t,i}\,\big\|M(k_i)-v_i\big\|^2", pt=15)[0], 6.95, 2.85, 5.6, 0.75)
-box(s, 6.75, 3.75, 6.0, 1.25,
-    [("용량 확장 + Muon", {"size": 12.5, "bold": True, "color": GREEN, "align": PP_ALIGN.LEFT, "space_after": 4}),
-     ("φ_p(k)로 차원을 d→d^p로 올려 저장 용량↑. 학습은 Muon(근사 2차)로 곡률을 활용.",
-      {"size": 11.5, "color": INK, "align": PP_ALIGN.LEFT})], fc=GREENB, ec=GREEN, align=PP_ALIGN.LEFT)
-box(s, 0.55, 5.15, 12.2, 1.05,
-    [("한 줄 요지", {"size": 12.5, "bold": True, "color": BLUE, "align": PP_ALIGN.LEFT, "space_after": 2}),
-     ("Titans가 '무엇을 기억하나(연상)'를 열었다면, Atlas는 '얼마나 많이·문맥 단위로 기억하나(용량)'를 키운다. "
-      "Miras의 architecture·algorithm 축을 밀어붙인 결과.", {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})],
-    fc=BLUEB, ec=BLUE, align=PP_ALIGN.LEFT)
+# B3.1 문제 세 가지
+s = slide(p, "B3 · Atlas — 문제 세 가지", "목표 자체를 바꾼다: '이 token 하나' → '최근 문맥 전체를 함께'", GREEN)
+pbox(s, 0.55, 1.42, 12.23, 0.72, "관점 — Miras가 비워둔 optimizer 축 포함, 세 구멍을 한 논문에서 메운다",
+     "무엇을 목표로 삼는가(objective) · 얼마나 담을 수 있는가(capacity) · 얼마나 잘 채우는가(optimizer).", ec=GREEN)
+pbox(s, 0.55, 2.28, 4.0, 2.5, "① online 갱신 (근시안)",
+     [("memory가 매 step 현재 token 하나만 보고 최적화, 과거는 retention gate로 흐릿하게 유지될 뿐.", {}),
+      ("→ token 단위 greedy 암기. '문맥 전체가 잘 저장됐나'는 아무도 안 묻는다.", {"bold": True, "color": RED})], ec=RED, bsize=11)
+pbox(s, 4.68, 2.28, 4.0, 2.5, "② 용량 한계",
+     [("단순 행렬 memory는 파라미터를 아무리 많이 줘도, 저장 가능한 연상(k→v) 수가 key 차원 d_k 수준에서 막힌다.", {}),
+      ("→ state를 키워 파라미터를 더 쓰는 것 ≠ 용량을 늘리는 것.", {"bold": True, "color": RED})], ec=RED, bsize=11)
+pbox(s, 8.78, 2.28, 4.0, 2.5, "③ 관리 빈약",
+     [("inner optimizer가 거의 전부 1차 gradient descent.", {}),
+      ("→ loss 표면의 나쁜 local minimum에 앉으면 질 낮은 k→v 매핑을 그대로 저장.", {"bold": True, "color": RED})], ec=RED, bsize=11)
+pbox(s, 0.55, 4.95, 12.23, 0.9, "세 처방 = 부제의 세 단어",
+     "Omega rule(목표를 window로 넓힘) · feature map(용량 상한을 옮김) · Muon(그 상한 안에서 도달 품질을 올림). 이 셋의 조합이 이 섹션 전체.", ec=BLUE)
 
-s = slide(p, "B3 · Atlas — 증명", "Titans를 넘어서고, 용량이 실제로 커진다", GREEN)
-fig_with_caption(s, "2505.23735", 4, 0.55, 1.5, 6.05, 3.6,
-                 "BABILong: Atlas가 Titans 성능을 초과, 초장문에서 효과적")
-fig_with_caption(s, "2505.23735", 7, 6.85, 1.5, 5.9, 3.6,
-                 "associative memory recall: feature map으로 저장 용량이 늘어남을 확인")
-box(s, 0.55, 5.25, 12.2, 0.95,
-    [("읽는 법", {"size": 12.5, "bold": True, "color": INK, "align": PP_ALIGN.LEFT, "space_after": 2}),
-     ("왼쪽=같은 벤치에서 Titans 대비 향상(용량·Omega의 효과). 오른쪽=저장할 연상 쌍이 많아져도 회상 유지 → "
-      "'용량 확장'이 말뿐이 아님을 직접 보여줌.", {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})],
-    fc=GREYB, ec=GREY, align=PP_ALIGN.LEFT)
+# B3.2 아이디어 + 용량 이론
+s = slide(p, "B3 · Atlas — 목표 전환 + 용량 이론", "context를 기억한다, 그리고 용량을 정리로 정의한다", GREEN)
+fig_with_caption(s, "2505.23735", 1, 0.55, 1.5, 5.7, 3.5,
+                 "Figure 1 — token 하나(왼) vs 최근 c개 함께(오, Omega). 오른쪽 끝 = attention도 windowed regression")
+pbox(s, 6.4, 1.5, 6.35, 1.35, "핵심 전환",
+     "여러 token에 걸친 사건은 어느 하나도 개별로는 놀랍지 않지만 묶음으로는 중요할 수 있다('어제 김대리가 예산 승인'). token 단위 loss는 이를 구조적으로 놓친다 → 최근 c개를 함께 최적화.", ec=GREEN, bsize=10.5)
+pbox(s, 6.4, 2.95, 6.35, 1.55, "용량 이론 (이 계보 최초)",
+     [("Prop 1: 행렬 memory W는 GD로 최적화해도 최대 O(d_k)개만 정확 저장(순수 rank 논증).", {}),
+      ("Prop 2: polynomial feature map φ_p로 차원을 Θ(d_kᵖ)로 → 용량 O(d_kᵖ), 어떤 optimizer로도 이 상한을 못 넘는다.", {"bold": True, "color": GOLD})], ec=GOLD, bsize=10)
+pbox(s, 0.55, 5.15, 12.23, 1.05, "함의 — attention이 이기는 이유가 정리로 설명된다",
+     "무한 차원 feature(Kronecker self-tensoring)를 만들면 exp(q·k)=φ*(q)·φ*(k) → softmax attention = 무한 차원 위 associative memory = 용량 무한. attention이 긴 문맥 recall에서 고정 state를 이기는 건 신비가 아니라 '용량 상한의 차이'. (선형독립 key 정확 보간이라는 이상화 기준 → 근사 대리지표로 읽기.)", ec=BLUE)
+
+# B3.3 Omega rule
+s = slide(p, "B3 · Atlas — Omega rule", "delta rule을 window 크기만큼 rank로 일반화 (c=1이면 Titans)", GREEN)
+fig_with_caption(s, "2505.23735", 2, 0.55, 1.5, 6.05, 3.5,
+                 "Figure 2 — SWA(비모수) vs Atlas: window c=1,4,7로 키우면 의존이 하삼각 전체로 번짐")
+fit_image(s, mp.eq(r"\min_{M}\ \sum_{i=t-c+1}^{t} \gamma_{t,i}\,\big\|M(k_i)-v_i\big\|^2", pt=15)[0], 6.9, 1.55, 5.85, 0.7)
+pbox(s, 6.78, 2.35, 6.0, 1.35, "기호",
+     [("γ_{t,i} = window gate. 0이면 그 token을 최적화에서 hard pruning(admission control), 1이면 온전히 포함.", {}),
+      ("c = window 길이. sliding window라 step당 gate 수가 c개로 상수 → recurrent 장점 유지.", {})], ec=GREEN, bsize=10.5)
+pbox(s, 6.78, 3.78, 6.0, 1.22, "대수적 정체",
+     [("DeltaNet 전이 = key 1개짜리 rank-1 수정. Omega rule = c개 key 합 = rank-c 수정.", {}),
+      ("c=1로 두면 정확히 Titans (Titans = Omega의 window-1 특수 사례).", {"bold": True, "color": BLUE})], ec=BLUE, bsize=10.5)
+pbox(s, 0.55, 5.15, 12.23, 1.05, "왜 global이 아니라 window인가",
+     "문맥 전체 global 최적화는 (i) 매 step 모든 과거 key/value를 들고 있어야 해 고정 state 존재 이유가 사라지고 (ii) 무관 구간을 잘라낼 gate가 없다. Omega는 sliding window로 둘 다 해결(γ가 pruning gate).", ec=GREY)
+
+# B3.4 Muon + Transformer 가족
+s = slide(p, "B3 · Atlas — Muon optimizer + Transformer 가족", "근사 2차 관리, 그리고 같은 기계로 Transformer 재유도", GREEN)
+fig_with_caption(s, "2505.23735", 3, 0.55, 1.5, 5.7, 3.6,
+                 "Figure 3 — Atlas Layer 배선 + hybrid(MAG/MAL). Atlas/Atlas++/OmegaNet, DeepTransformers·Dot")
+pbox(s, 6.4, 1.5, 6.35, 1.85, "Muon inner optimizer (③ 관리)",
+     [("momentum buffer S에 windowed gradient를 쌓고 Newton-Schulz 반복을 κ번 → semi-orthogonal(UVᵀ)로 수렴 → update singular value 균등화 = 2차 정보 근사.", {}),
+      ("κ = NS 반복수 = 'internal test-time compute' dial. 더 돌리면 품질↑·inference FLOPs↑ (state 안 건드리고 연산↔품질 교환). 실전 κ=5.", {"bold": True, "color": GOLD})], ec=GOLD, bsize=10)
+pbox(s, 6.4, 3.5, 6.35, 1.6, "부산물 — Transformer 두 일반화 가족",
+     [("attention = Nadaraya-Watson kernel regression의 비모수해로 재서술.", {}),
+      ("feature map을 정확한 exp φ*로 → DeepTransformers(unnormalized softmax의 strict 일반화). 거기에 Omega rule → Dot = 'error-correcting attention'.", {})], ec=BLUE, bsize=10)
+pbox(s, 0.55, 5.25, 12.23, 0.95, "병렬화 유지",
+     "window는 banded mask 하나로 처리(각 token gradient 1회 계산 + mask 합산) → window는 훈련 비용 거의 안 바꾸는 품질 knob. Muon도 chunk 경계 상태에서 gradient를 평가하면 momentum이 linear scan으로 분리되고 NS-5는 batched matmul.", ec=GREY)
+
+# B3.5 결과 + 한계
+s = slide(p, "B3 · Atlas — 결과 & 한계", "초장문 외삽은 정점 — 그러나 Muon의 실증 가치는 논쟁적", GREEN)
+fig_with_caption(s, "2505.23735", 4, 0.55, 1.5, 6.05, 3.5,
+                 "Figure 4 — BABILong: 4K 훈련으로 10M까지 외삽, Titans 붕괴 지점에서도 유지")
+pbox(s, 6.85, 1.5, 5.9, 1.35, "결과 (방향)",
+     "BABILong: 1M까지 Titans 동급, 10M(Titans 붕괴)에서도 높은 정확도 — 훈련 문맥의 수천 배 외삽. LM·commonsense에서 Atlas/Atlas++가 Titans·GDN·Transformer++ 상회(순수 recurrent 최고 그룹).", ec=GREEN, bsize=10.5)
+pbox(s, 6.85, 2.95, 5.9, 2.15, "불편한 진실 (한계)",
+     [("① in-context retrieval은 여전히 Transformer 우위 — gap 좁혔으나 못 닫음(용량 이론이 예측한 방향).", {}),
+      ("② ablation: window·feature map·deep memory는 명확히 기여하나 Muon 제거 시 perplexity가 오히려 개선. Muon이 산 건 reasoning 0.21점뿐 → 'optimally'는 대부분 window·capacity의 공.", {}),
+      ("③ κ 품질 곡선 측정 없음. ④ wall-clock 수치 전무(전부 구조 논증).", {"bold": True, "color": RED})], ec=RED, bsize=9.5)
+
+# B3.6 정리 + 다음
+s = slide(p, "B3 · Atlas — 정리 & 다음", "'무엇을 얼마나 잘 기억하는가'의 정점 → 이제 '얼마가 드는가'(TNT)", GREEN)
+pbox(s, 0.55, 1.42, 12.23, 1.1, "정리",
+     "세 구멍을 세 손잡이로: Omega(목표)·feature map(용량)·Muon(관리). 부산물로 softmax를 무한용량 associative memory로 정식화하고 Transformer 두 일반화 가족(DeepTransformers·Dot)을 파생. objective·capacity·optimizer·이론까지 다 갖춘 정점.", ec=GREEN)
+pbox(s, 0.55, 2.65, 12.23, 2.2, "다음으로의 연결 — TNT",
+     [("Atlas의 모든 것은 chunkwise 트릭 위에 서 있다 — gradient를 'chunk 시작 상태'라는 stale snapshot에서 평가하는 근사.", {}),
+      ("그 근사의 오차는 정량화된 적이 없고, chunk 크기 C는 그냥 throughput knob으로만 취급됐다 (사실 C는 '계산되는 함수 자체'를 바꾸는 semantic knob).", {}),
+      ("특히 치명적 mismatch가 방치: 훈련은 큰 C에서, decode는 C=1의 세계. → TNT가 정확히 여기서 시작해 chunk 경제학 전체를 재설계한다.", {"bold": True, "color": GOLD})], ec=GOLD)
+pbox(s, 0.55, 5.05, 12.23, 0.85, "조용한 복선",
+     "Atlas가 'test-time training'을 'test-time memorization'으로 개명하며 'in-context 적응은 학습이 아니다'라고 선을 그은 순간, '그럼 진짜 continual learning은 어디서?'가 미결로 남는다 → Nested Learning·Sleep.", ec=BLUE)
 
 # ------------------------------ B4. TNT ------------------------------
 claim_slide("B4 · TNT (2511.07343)", "TNT — 학습 레시피와 serving 구조를 함께 설계", GREEN,
