@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 29건.
+총 30건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -377,4 +377,17 @@
 - 생각할 것: dreaming task(C,τ) 출처 미명시—재현 시 target downstream task 분포로 가정 필요; NL 초기상태 meta-learning은 outer backprop이라 online consolidation이 inference 실시간 학습은 아님—명명 주의
 - storyline seed: 두 consolidation의 대비: NL online=초기상태 meta-learning+context 경계 reset(고정용량, deep memory만), Sleep offline=self-generated distillation으로 low-rank expert 성장(용량 확장). 데이터는 둘 다 self-generated(외부 없음), 유일 앵커는 dreaming task(C,τ)인데 출처 덜 특정. 세미나: wake=online(reset), sleep=offline(성장).
 - 연상: Q027, Q028, Q025
+
+## Q030 · 2026-07-15 · CMS multi-frequency update + inter-level transfer (Eq 70-72)
+
+**Q.** CMS low/mid/high 3레벨(low=1K, mid=5K)에서 0~1K 구간 메커니즘과 1K 경계 학습이 어케 되나. 내 추측: low가 0~1K stacking→한번에 학습? 또는 token/chunk별 gradient 구해 1K에 위로 넘기고 mid가 학습? 근데 'low weight 초기상태를 mid로 넘긴다'는 건 초기상태잖아—학습된 변화/diff를 줘야 하는 거 아냐?
+
+**A.** Eq71: 레벨 ℓ은 chunk C^(ℓ) 동안 weight 고정, chunk-시작 weight로 매 토큰 gradient f(θ;x_t) 누적, 경계에서 한 번 θ←θ−η·Σ 업데이트(chunkwise stale-snapshot). low(1K): 0~1K 동안 gradient 누적만(학습X), t=1K에 한 번 자기 weight에 압축. mid(5K): 1~4K 안 건드리고 t=5K에 한번, 그동안 자기 입력(=low 출력)에 대한 gradient 누적. 레벨 간 지식전달=forward 직렬(Eq70 y=MLP^fk(…MLP^f1(x)))로 low의 '출력(activation)'이 mid 입력이 됨 — weight/diff 복사 아님. 사용자 반박 정확: meta-learned initial state(Eq72 θ_0^{s+1}=argmin_Φ, pre-training)는 '리셋할 좋은 출발점'이지 런타임 학습된 diff 전달 아님; 리셋되면 그 레벨 학습변화는 버려짐(이미 forward로 전달됨). 즉 '학습된 diff를 위로 넘김'은 NL online이 안 하는 것=Sleep offline consolidation이 추가(distill→low-rank expert). 사용자가 NL 공백을 스스로 재발견.
+
+- 축: `unknown_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known: 레벨은 chunk 동안 gradient 누적만 하고 경계에서 1스텝(구간 내내 안 배움); unknown_known: 레벨 간 지식은 forward 출력(activation)으로 흐르지 weight/diff 복사 아님; known_unknown: meta-learned initial state=리셋점(pre-train), 런타임 diff 전달 아님 → 그 diff 전달이 정확히 Sleep이 추가하는 것
+- 개념 key: Eq71 accumulate-then-step, chunk boundary update, stale snapshot, Eq70 series forward, activation transfer not weight, Eq72 meta-learned initial state, reset point not diff, Nested CMS, online vs offline consolidation, Sleep fills the gap
+- 생각할 것: 사용자가 기대한 'diff 위로 전달'=Sleep distillation의 동기—세미나에서 NL 공백→Sleep 필연으로 연결; Eq72 인덱스 방향(어느 레벨이 어느 θ_0로 리셋) 추출텍스트 모호(b)—원 PDF 대조 필요
+- storyline seed: CMS 오해 해소 슬라이드: 레벨은 chunk 동안 gradient 누적→경계 1스텝(자기 context 압축), 레벨 간은 forward activation으로 흐름(weight 복사 아님), 초기상태 meta-learn은 리셋점(diff 아님). 그래서 '학습된 변화를 위로 넘기기'는 NL online에 없고 Sleep offline(low-rank expert distill)이 메움. 청중 직관='diff 줘야지'가 곧 Sleep의 동기.
+- 연상: Q029, Q027, Q025
 
