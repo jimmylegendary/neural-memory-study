@@ -946,7 +946,7 @@ concept_wrap("B4 · TNT — 개념 wrap-up", "여기서 얻을 핵심 개념", G
 # ------------------------------ B5. Nested Learning / HOPE ------------------------------
 claim_slide("B5 · Nested Learning / HOPE (2512.24695)", "HOPE — 모든 부품이 '어떤 주파수의 메모리'인 아키텍처", GOLD,
     [("Expressive Optimizers: optimizer는 gradient를 압축하는 associative memory다",
-      "momentum·Adam·Muon = 메모리의 특수형 → 더 표현력 큰 optimizer(Delta Momentum·DMGD·M3)로 승격"),
+      "momentum·Adam·Muon = 메모리의 특수형 → 더 표현력 큰 optimizer(DGD·Delta Momentum·M3)로 승격"),
      ("Self-Modifying Titans: 투영·게이트까지 메모리로 만들어 자기 갱신 규칙을 스스로 수정",
       "6개 메모리 {k,v,q,η,α,mem} 중 q만 static, 나머지는 test-time에 갱신"),
      ("CMS(Continuum Memory System): long/short를 '연속 주파수' 스펙트럼으로 일반화",
@@ -981,7 +981,7 @@ box(s, 6.75, 1.5, 6.0, 1.6,
 fit_image(s, mp.eq(r"\text{optimizer}\ \equiv\ \text{associative memory over gradients}", pt=14)[0], 6.95, 3.2, 5.6, 0.5)
 box(s, 6.75, 3.85, 6.0, 1.15,
     [("그래서 무엇이 열리나", {"size": 13, "bold": True, "color": GOLD, "align": PP_ALIGN.LEFT, "space_after": 4}),
-     ("optimizer를 '더 표현력 있는 메모리'(Delta Momentum · Deep Momentum GD · M3 — 다음 3장)로 바꿀 수 있고, 이 최적화 층을 "
+     ("optimizer를 '더 표현력 있는 메모리'(DGD · Delta Momentum · M3 — 다음 3장)로 바꿀 수 있고, 이 최적화 층을 "
       "여러 개 쌓으면 higher-order in-context learning이 된다.", {"size": 11.5, "color": INK, "align": PP_ALIGN.LEFT})],
     fc=GOLDB, ec=GOLD, align=PP_ALIGN.LEFT)
 box(s, 0.55, 5.2, 12.2, 1.0,
@@ -1001,26 +1001,27 @@ def opt_deriv(tag, name, sub, motive, rows, meaning):
         y += 0.83
     pbox(s, 0.55, y + 0.03, 12.23, 6.95 - (y + 0.03), "최종 형태의 의미", meaning, ec=BLUE, bsize=12)
 
-opt_deriv("B5 · Expressive Optimizer (1/3)", "Delta Momentum", "momentum에 delta rule을 — 데이터 의존 감쇠",
-    "표준 momentum은 gradient를 '그냥 더해' 저장(덧쓰기) → 곡률이 바뀌면 오래된 방향이 남아 느리다. momentum buffer를 연상 메모리로 보고 내부 목적을 L2 regression으로 바꾼다.",
-    [("① 표준 momentum (덧쓰기)", r"m_t=\mu\,m_{t-1}+g_t\qquad(\text{dot-product memory})"),
-     ("② 내부목적을 L2로 (delta rule)", r"\ell_t=\tfrac12\|m_{t-1}-g_t\|^2;\quad m_t=m_{t-1}-\beta_t\,\nabla_{m}\ell_t"),
-     ("③ 최종 형태", r"m_t=(1-\beta_t)\,m_{t-1}+\beta_t\,g_t,\qquad \beta_t=\beta_t(g_t)\ \text{(data-dependent)}")],
-    "고정 μ 감쇠 → gradient에 따라 변하는 '데이터 의존 감쇠'. linear attention→DeltaNet 전환의 optimizer 버전이며, 진동하는 곡률(Fig.4)에서 표준 momentum보다 빨리 수렴. (형태는 논문 서술 기반, β_t 산출식은 추론.)")
+opt_deriv("B5 · Expressive Optimizer (1/3)", "DGD (Delta Gradient Descent)", "상태 의존 adaptive decay",
+    "표준 GD는 내부목적이 dot-product라 각 gradient를 '상태와 무관하게' 처리 → 이전 가중치 상태가 갱신에 반영 안 됨(token처럼 상관된 데이터엔 제약). 내부목적을 L2 regression으로 바꾼다.",
+    [("① 표준 GD (dot-product)", r"W_{t+1}=W_t-\eta_{t+1}\nabla_W L(W_t;x_t)=W_t-\eta\,\nabla_{y}L\otimes x_t"),
+     ("② 내부목적을 L2로 (Eq 56)", r"W_{t+1}=\arg\min_{W}\tfrac12\|Wx_t-u_t\|_2^2+\tfrac{1}{2\eta_t}\|W-W_t\|_2^2,\ \ u_t=-\nabla_{y}L"),
+     ("③ 최종 (Eq 57)", r"W_{t+1}=W_t\big(I-\eta'_t\,x_t x_t^{\top}\big)-\eta'_t\,\nabla_{W}L(W_t;x_t),\quad \eta'_t=\tfrac{\eta_t}{1+\eta_t}")],
+    "delta rule로 유도된 GD. 현재 입력뿐 아니라 '이전 가중치 상태'를 반영 → (I − η′ x xᵀ)의 데이터 의존 adaptive decay. token처럼 상관 높은 데이터에 유리. self-modifying Titans의 안쪽 optimizer가 바로 이 DGD(+weight decay). [원문 Eq 54–57]")
 
-opt_deriv("B5 · Expressive Optimizer (2/3)", "Deep Momentum GD (DMGD)", "momentum을 MLP로 승격",
-    "표준 momentum은 과거 gradient의 '선형' 요약만 저장. deep memory가 token에 했던 것처럼, momentum을 MLP로 올려 gradient의 '비선형' 사상까지 저장한다.",
-    [("① 표준 momentum (선형)", r"m_t=\mu\,m_{t-1}+g_t;\quad \Delta\theta_t=-\eta\,m_t\qquad(\text{linear buffer})"),
-     ("② momentum→MLP (deep)", r"m_t=\mathrm{MLP}_{\phi}(g_{\le t});\quad \phi_t=\phi_{t-1}-\rho\,\nabla_{\phi}\tfrac12\|\mathrm{MLP}_{\phi}(g_t)-\hat g_t\|^2"),
-     ("③ 따름정리 → Muon", r"\text{output}\to\text{Newton-Schulz}\ \Rightarrow\ \text{Muon (special case)}")],
-    "optimizer의 기억 표현력을 키움(Atlas의 feature-map·deep-memory를 gradient에 적용). Muon = '비선형 출력을 단 Hebbian momentum'이 여기서 특수 사례로 튀어나온다. (Muon 특수사례는 논문 명시, MLP 학습식은 추론.)")
+opt_deriv("B5 · Expressive Optimizer (2/3)", "Delta Momentum", "gradient 의존 weight decay",
+    "표준 momentum은 내부목적이 dot-product(Hebbian)라 상태와 무관해 용량이 제한되고 loss landscape 추적이 약하다. 내부목적을 L2 regression ‖m∇Lᵀ−P‖²로 바꿔 delta rule을 적용한다.",
+    [("① 표준 momentum (Hebbian)", r"W_{i+1}=W_i+m_{i+1},\quad m_{i+1}=\alpha_{i+1}m_i-\eta_t\,P_i\,\nabla L_i^{\top}"),
+     ("② 내부목적을 L2로 (Eq 48)", r"\min_{m}\ \|\,m\,\nabla L_i^{\top}-P_i\,\|_2^2\ \ \Rightarrow\ \ \text{delta rule}"),
+     ("③ 최종 (Eq 49)", r"m_{i+1}=m_i\big(\alpha_{i+1}I-\eta_t\,\nabla L_i\,\nabla L_i^{\top}\big)+\eta_t\,P_i\,\nabla L_i^{\top}")],
+    "decay가 α·I가 아니라 (α·I − η·∇L∇Lᵀ) = gradient에 의존. '필요할 때 momentum을 감쇠·정지'시켜 진동하는 곡률(Fig.4)에서 표준 momentum보다 빨리 수렴. linear attention→delta rule 전환의 momentum 버전. [원문 Eq 48–49] (P_i = momentum이 gradient를 매핑하는 target.)")
 
-opt_deriv("B5 · Expressive Optimizer (3/3)", "M3", "CMS 원리를 gradient에 — 여러 주기의 momentum",
-    "표준 momentum은 '단일 시간 주기' 하나로 과거를 요약. CMS 원리(여러 주파수)를 gradient에 적용해 momentum을 서로 다른 주기 여러 개로 나눈다.",
-    [("① 표준 momentum (단일 주기)", r"m_t=\mu\,m_{t-1}+g_t\qquad(\text{single time-scale})"),
-     ("② CMS = 여러 주파수", r"m^{(j)}_t=\mu_j\,m^{(j)}_{t-1}+g_t\ \ (j=1..L),\quad \mu_1<\mu_2<\cdots<\mu_L"),
-     ("③ 결합", r"\Delta\theta_t=-\eta\sum_{j=1}^{L} w_j\,m^{(j)}_t\qquad(\text{CMS of momentum})")],
-    "여러 시간 스케일의 momentum을 결합 = 'momentum의 CMS'. ViT 학습(Fig.11/12)에서 AdamW·Muon 대비 개선. (개념은 논문 명시, 정확한 결합식은 추론.)")
+opt_deriv("B5 · Expressive Optimizer (3/3)", "M3 (Multi-scale Momentum Muon)", "Adam + Muon + CMS의 결합",
+    "M3 = 세 가지의 결합: Adam(2차 모멘텀 √V 정규화) + Muon(Newton-Schulz 직교화) + CMS(서로 다른 주파수의 momentum 여러 개). 느린 momentum을 '지연 갱신'해 long-context 정보를 담는다.",
+    [("① 두 주파수 momentum (CMS)", r"M^{(1)}_t=M^{(1)}_{t-1}+\beta_1 g_t\ (\text{fast});\quad M^{(2)}_t=M^{(2)}_{t-1}+\beta_3\!\sum_i g_i\ (\text{slow, every }f)"),
+     ("② 2차 모멘텀 (Adam)", r"V_t=V_{t-1}+\beta_2\,g_t^2"),
+     ("③ 직교화 (Muon)", r"O^{(j)}_t=\mathrm{NewtonSchulz}_T\big(M^{(j)}_t\big),\quad j\in\{1,2\}"),
+     ("④ 최종 갱신", r"\Theta_t=\Theta_{t-1}-\eta\,\dfrac{O^{(1)}_t+\alpha\,O^{(2)}_t}{\sqrt{V_t}+\epsilon}")],
+    "빠른/느린 두 momentum(CMS)을 Newton-Schulz로 직교화(Muon)한 뒤 √V로 정규화(Adam)해 결합. CMS 설계를 뒷받침하는 proof-of-concept. Fig.11/12에서 AdamW·Muon 대비 train/test loss 우수 — 단 momentum 여러 개라 계산 오버헤드로 대형 스케일엔 도전. [원문 Algorithm 1]")
 
 # B5.1d ICL은 왜 structural인가 (fig7)
 s = slide(p, "B5 · ICL은 왜 '구조적'인가", "≥2 레벨 중첩 최적화를 가지면 in-context learning이 저절로 따라 나온다", GOLD)
@@ -1037,7 +1038,7 @@ pbox(s, 0.55, 5.25, 12.23, 1.0, "증거 + 정직성",
 
 # B5.2 Self-Modifying Titans
 s = slide(p, "B5 · Self-Modifying Titans", "투영·게이트까지 메모리 — 자기 갱신 규칙을 스스로 수정", GOLD)
-mems = [("M_k", "key 투영", GOLDB), ("M_v", "value 투영", GOLDB), ("M_q", "query 투영 (static)", GREYB),
+mems = [("M_k", "key MLP", GOLDB), ("M_v", "value MLP", GOLDB), ("q=X·W_q", "static 선형(비메모리)", GREYB),
         ("M_η", "momentum 게이트", GOLDB), ("M_α", "forget 게이트", GOLDB), ("M_mem", "본체 메모리", GOLDB)]
 mx = 0.55
 for name, role, fc in mems:
@@ -1046,7 +1047,7 @@ for name, role, fc in mems:
         [(name, {"size": 15, "bold": True, "color": ec, "space_after": 3}), (role, {"size": 10.5, "color": INK})],
         fc=fc, ec=ec, lw=1.4)
     mx += 2.05
-text(s, 0.55, 2.75, 12.2, 0.3, "↑ 6개 메모리 중 q만 static(고정), 나머지 5개는 추론 중 갱신됨", size=12, color=MUTE, italic=True, space_after=0)
+text(s, 0.55, 2.75, 12.2, 0.3, "↑ 갱신 메모리 5개 {M_k,M_v,M_η,M_α,M_mem}=2-layer MLP · q=X·W_q만 static 선형(메모리 아님)", size=12, color=MUTE, italic=True, space_after=0)
 box(s, 0.55, 3.25, 6.0, 1.7,
     [("무엇이 새로운가", {"size": 13, "bold": True, "color": GOLD, "align": PP_ALIGN.LEFT, "space_after": 4}),
      ("Titans는 본체 메모리 M_mem만 갱신했다. HOPE는 '무엇을 key/value로 삼을지(투영)'와 "
@@ -1055,7 +1056,7 @@ box(s, 0.55, 3.25, 6.0, 1.7,
 box(s, 6.75, 3.25, 6.0, 1.7,
     [("어떻게 갱신하나", {"size": 13, "bold": True, "color": GOLD, "align": PP_ALIGN.LEFT, "space_after": 4}),
      ("target을 스스로 만든다(self-target: v̂_□ = M_□(v_t)). 갱신은 DGD(Delta GD)-with-weight-decay, "
-      "gradient는 full backprop. 출력은 갱신 전(chunk 시작) 메모리로 읽는다. (다음 장에 연산 과정 전개.)",
+      "gradient는 full backprop. 출력은 갱신 전(chunk 시작) 메모리를 MLP forward. (다음 장에 연산 과정 전개.)",
       {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=GOLDB, ec=GOLD, align=PP_ALIGN.LEFT)
 box(s, 0.55, 5.1, 12.2, 1.1,
     [("의미", {"size": 12.5, "bold": True, "color": BLUE, "align": PP_ALIGN.LEFT, "space_after": 2}),
@@ -1066,15 +1067,15 @@ box(s, 0.55, 5.1, 12.2, 1.1,
 # B5.2b Self-Modifying Titans — 연산 과정 (chunk-C, shape·시점)
 s = slide(p, "B5 · Self-Modifying Titans — 연산 과정", "input(C,d) → output · forward+backward를 t−1 가중치에서 동시에", GOLD)
 text(s, 0.55, 1.12, 12.23, 0.44,
-     "6 memory {M_k,M_v,M_q(static),M_η,M_α,M_mem} · 청크 시작 가중치=시점 (t−1), 갱신 후=(t) · q만 static(모든 청크 동일) · □∈{k,v,η,α,mem}",
-     size=10.3, color=MUTE, italic=True, align=PP_ALIGN.LEFT, space_after=0)
+     "갱신 메모리 5개 {M_k,M_v,M_η,M_α,M_mem} = 2-layer MLP  M_□(·)=(·)+W_{□,1}σ(W_{□,2}·) · q=X·W_q는 유일한 static 선형 투영 · 청크 시작 가중치=(t−1), 갱신 후=(t)",
+     size=10.0, color=MUTE, italic=True, align=PP_ALIGN.LEFT, space_after=0)
 sm_steps = [
-    (r"k=M_k^{(t-1)}(X),\ v=M_v^{(t-1)}(X),\ q=M_q(X)\in\mathbb{R}^{C\times d};\ \ \eta,\alpha=M_\eta^{(t-1)}(X),M_\alpha^{(t-1)}(X)\in\mathbb{R}^{C\times 1}", "병렬 — 투영·게이트", BLUE),
-    (r"o_{\mathrm{read}}=M_{\mathrm{mem}}^{(t-1)}(q)\in\mathbb{R}^{C\times d}\quad(\text{pre-update read})", "병렬 (t−1로 읽음)", BLUE),
-    (r"\hat v_{\square}=M_{\square}^{(t-1)}(v)\quad(\text{self-target})", "병렬 — self-target", GREEN),
-    (r"\ell_{\square}=\tfrac12\big\|M_{\square}^{(t-1)}(k)-\hat v_{\square}\big\|^2;\quad G_{\square}=\nabla_{W_{\square}}\ell_{\square}", "= backward (t−1서 동시)", RED),
-    (r"W_{\square}^{(t)}=(1-\alpha)\odot W_{\square}^{(t-1)}-\eta\odot G_{\square}\quad(\text{DGD (Delta GD)}+\text{decay})", "순차 임계경로 (scan)", GOLD),
-    (r"\text{output}=o_{\mathrm{read}};\qquad W_{\square}^{(t)}\ \longrightarrow\ \text{next chunk (t) start}", "다음 청크로", BLUE),
+    (r"k=M_k^{(t-1)}(X),\ v=M_v^{(t-1)}(X)\in\mathbb{R}^{C\times d};\ \ q=X W_q\ (\text{static});\ \ \eta,\alpha=M_\eta^{(t-1)}(X),M_\alpha^{(t-1)}(X)\in\mathbb{R}^{C\times 1}", "병렬 — MLP forward", BLUE),
+    (r"y=M_{\mathrm{mem}}^{(t-1)}(q)\in\mathbb{R}^{C\times d}\quad(\text{2-layer MLP forward, pre-update})", "병렬 — MLP forward (출력)", BLUE),
+    (r"\hat v_{\square}=M_{\square}^{(t-1)}(v)\quad(\text{self-target, forward } v)", "병렬 — MLP forward", GREEN),
+    (r"L_{\square}=\big\|M_{\square}^{(t-1)}(k)-\hat v_{\square}\big\|_2^2;\quad \nabla L_{\square}\ \text{via backprop}", "= backward (t−1서 동시)", RED),
+    (r"M_{\square}^{(t)}=M_{\square}^{(t-1)}\big(\alpha_t I-\eta_t\,k_t k_t^{\top}\big)-\eta_t\,\nabla L\big(M_{\square}^{(t-1)};k_t,\hat v_{\square}\big)", "순차 — DGD+decay (Eq 88)", GOLD),
+    (r"\text{output}=y;\qquad M_{\square}^{(t)}\ \longrightarrow\ \text{next chunk (t) start}", "다음 청크로", BLUE),
 ]
 cy = 1.62
 for i, (ltx, tag, tc) in enumerate(sm_steps, 1):
@@ -1085,9 +1086,9 @@ for i, (ltx, tag, tc) in enumerate(sm_steps, 1):
          align=PP_ALIGN.LEFT, anchor=MSO_ANCHOR.MIDDLE, space_after=0)
     cy += 0.62
 box(s, 0.55, 5.5, 12.23, 1.35,
-    [("핵심 — 시점과 병렬성", {"size": 11.5, "bold": True, "color": RED, "align": PP_ALIGN.LEFT, "space_after": 2}),
-     ("forward(①②③)와 backward(④)를 모두 '같은 청크 시작 t−1 가중치'에서 평가 → 동시(병렬). 출력은 갱신 '전'(t−1) 메모리로 읽고(②), 갱신된 W^{(t)}는 다음 청크에서 쓰인다 → 인과 유지. 유일한 순차 경로는 ⑤ momentum scan. Titans와의 차이: 본체 M_mem만이 아니라 투영·게이트(k,v,η,α)까지 모두 갱신되는 memory. q만 static. deep(MLP) 메모리면 층별 backprop을 batched로. (선형/얕은 메모리 기준 shape — 일부 추론.)",
-      {"size": 10.3, "color": INK, "align": PP_ALIGN.LEFT})], fc=REDB, ec=RED, align=PP_ALIGN.LEFT)
+    [("핵심 — MLP forward · 시점 · 병렬성", {"size": 11.5, "bold": True, "color": RED, "align": PP_ALIGN.LEFT, "space_after": 2}),
+     ("①②③은 모두 memory MLP의 forward다(단순 matrix read가 아님 — 각 memory가 2-layer MLP). forward(①②③)와 backward(④)를 모두 청크 시작(t−1) 가중치에서 평가 → 동시(병렬; 원문의 chunk-wise dual form). 출력은 갱신 '전'(t−1) 메모리 forward로 내고(②), 갱신된 M^{(t)}는 다음 청크에서 쓰인다 → 인과 유지. 안쪽 optimizer = DGD(Delta GD)+weight decay(Eq 88, decay = α_t I − η_t k_t k_tᵀ), 손실 = ‖M_□(k)−v̂_□‖². q=X·W_q만 static. [원문 Eq 86–91]",
+      {"size": 10.0, "color": INK, "align": PP_ALIGN.LEFT})], fc=REDB, ec=RED, align=PP_ALIGN.LEFT)
 
 # B5.3 CMS
 s = slide(p, "B5 · CMS — Continuum Memory System", "long/short를 '연속 주파수'의 메모리 블록들로", GOLD)
@@ -1199,13 +1200,13 @@ pbox(s, 6.78, 3.25, 6.0, 1.7, "다음으로의 연결 — Sleep",
      [("신경생리학의 consolidation은 2단계. NL은 그중 online consolidation(입력 흐르는 동안 CMS 갱신)만 구현했다.", {}),
       ("수면 replay로 기억을 재조직하는 offline consolidation은 명시적으로 범위 밖. 남는 질문: 빠른 level 지식이 예정된 갱신으로 덮이기 전에 어디로 옮길 것인가?", {"bold": True, "color": GOLD})], ec=GOLD, bsize=10)
 pbox(s, 0.55, 5.1, 12.23, 0.9, "한 줄",
-     "HOPE = expressive optimizer(Delta Momentum·DMGD·M3) + CMS(주파수 스펙트럼 memory) + self-modifying Titans를 직렬 결합. '더 많은 layer가 아니라 더 많은 level'을 실증 — 단 짧은 recall gap과 서빙 경제학은 미해소, 그리고 offline consolidation을 Sleep에 넘긴다.", ec=GREEN)
+     "HOPE = expressive optimizer(DGD·Delta Momentum·M3) + CMS(주파수 스펙트럼 memory) + self-modifying Titans를 직렬 결합. '더 많은 layer가 아니라 더 많은 level'을 실증 — 단 짧은 recall gap과 서빙 경제학은 미해소, 그리고 offline consolidation을 Sleep에 넘긴다.", ec=GREEN)
 
 # B5 개념 wrap-up
 concept_wrap("B5 · HOPE — 개념 wrap-up", "여기서 얻을 핵심 개념", GOLD, [
     ("Nested Learning", "모델 + 훈련 절차 = 하나의 중첩 다층 최적화 시스템."),
     ("backprop도 memory다", "backprop·momentum·Adam·Muon = gradient에 대한 associative memory(핵심 통찰)."),
-    ("expressive optimizer", "optimizer도 memory이므로 표현력을 키움: Delta Momentum·DMGD·M3."),
+    ("expressive optimizer", "optimizer도 memory이므로 표현력을 키움: DGD·Delta Momentum·M3."),
     ("CMS (연속 주파수)", "여러 주기의 MLP 사슬 = long/short의 주파수 스펙트럼. Transformer MLP는 특수 사례."),
     ("self-modifying Titans", "투영·게이트·lr까지 memory화(q만 static). 자기 갱신 규칙을 스스로 수정."),
     ("ICL = structural", "in-context learning은 창발이 아니라 ≥2레벨 중첩 최적화의 구조적 결과."),
@@ -1365,7 +1366,7 @@ text(s, 4.85, 5.05, 4.0, 1.7,
 text(s, 8.95, 5.05, 3.8, 1.7,
      [("가정 (assumptions)", {"size": 11.5, "bold": True, "color": GOLD, "space_after": 3}),
       ("decode C=1 (토큰당)", {"size": 10.5}), ("kernel launch time = 0", {"size": 10.5}),
-      ("gradient는 chunk 시작 상태에서 평가", {"size": 10.5}), ("출력은 갱신 전(pre-update) read", {"size": 10.5}),
+      ("gradient는 chunk 시작 상태에서 평가", {"size": 10.5}), ("출력은 갱신 전(pre-update) MLP forward", {"size": 10.5}),
       ("수치 = max(FLOP/peak, bytes/BW)", {"size": 10, "mono": True})], align=PP_ALIGN.LEFT, line_spacing=1.15, space_after=2)
 
 # C1 pair thesis
@@ -1413,8 +1414,8 @@ def band(y, h, title, body, ec, fc):
         (body, {"size": 10, "color": INK, "align": PP_ALIGN.LEFT})], fc=fc, ec=ec, align=PP_ALIGN.LEFT)
 band(2.05, 0.74, "① 투영 (self-mod Titans) · GEMM · 17.5µs",
      "q=X·Wq(static) · k=M_k(X) · v=M_v(X) · η=M_η(X) · α=M_α(X)", BLUE, BLUEB)
-band(2.92, 0.6, "② read (pre-update) · 5µs",
-     "o = M_mem(q) — 갱신 '전' 메모리에서 읽는다", BLUE, BLUEB)
+band(2.92, 0.6, "② M_mem MLP forward (pre-update) · 5µs",
+     "o = M_mem(q) — 갱신 '전' 메모리 MLP forward", BLUE, BLUEB)
 band(3.65, 0.86, "③ update 5 memory · 60µs  (RMW 40µs 지배)",
      "각 memory: compute(GEMM 20µs) + DGD-apply(state RMW 40µs). RMW = memory-bound", RED, REDB)
 band(4.64, 0.95, "④ CMS 사슬 · 120µs  (RMW 40µs 지배)",
@@ -1423,7 +1424,7 @@ band(4.64, 0.95, "④ CMS 사슬 · 120µs  (RMW 40µs 지배)",
 box(s, 7.15, 1.45, 5.65, 4.15, "", fc=WHITE, ec=GREY)
 text(s, 7.35, 1.55, 5, 0.3, "op-time 분해 (합계 202.8µs, ideal 하한)", size=11.5, color=INK, bold=True, space_after=0, align=PP_ALIGN.LEFT)
 opb = [
-    ("① 투영 GEMM (q·k·v·η·α)", "17.5", False), ("② read o=M_mem(q) [pre-update]", "5.0", False),
+    ("① 투영 GEMM (q·k·v·η·α)", "17.5", False), ("② M_mem forward o=M_mem(q) [pre-update]", "5.0", False),
     ("③ update-compute (5 memory, GEMM)", "20.0", False), ("③ DGD-apply (5 memory, state RMW)", "40.0", True),
     ("④ CMS L1/L2/L3 fwd (d→4d→d)", "60.0", False), ("④ CMS L1 update-compute (GEMM)", "20.0", False),
     ("④ CMS L1 DGD-apply (state RMW)", "40.0", True),
