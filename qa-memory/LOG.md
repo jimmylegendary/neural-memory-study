@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 30건.
+총 31건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -390,4 +390,17 @@
 - 생각할 것: 사용자가 기대한 'diff 위로 전달'=Sleep distillation의 동기—세미나에서 NL 공백→Sleep 필연으로 연결; Eq72 인덱스 방향(어느 레벨이 어느 θ_0로 리셋) 추출텍스트 모호(b)—원 PDF 대조 필요
 - storyline seed: CMS 오해 해소 슬라이드: 레벨은 chunk 동안 gradient 누적→경계 1스텝(자기 context 압축), 레벨 간은 forward activation으로 흐름(weight 복사 아님), 초기상태 meta-learn은 리셋점(diff 아님). 그래서 '학습된 변화를 위로 넘기기'는 NL online에 없고 Sleep offline(low-rank expert distill)이 메움. 청중 직관='diff 줘야지'가 곧 Sleep의 동기.
 - 연상: Q029, Q027, Q025
+
+## Q031 · 2026-07-15 · CMS Eq72 direction + optimizer
+
+**Q.** (Eq72 방향 확정) + NL에서 CMS 학습 시 optimizer 뭐 쓰는지 설명.
+
+**A.** Eq72 원PDF 확정: C^(ℓ)=max f_i/f_ℓ·C라 인덱스 낮을수록 느림(C큼,안정). 'level s+1 초기상태가 level s에서 meta-learn'—s+1=빠름(low), s=느림(mid)→느린 mid가 빠른 low의 리셋 초기상태 θ_0 제공(사용자가 말한 low→mid의 반대). low는 mid chunk 끝(=low 5회 갱신)마다 θ_0로 리셋. 지식보존(page28 'CMS Design Helps'): 블록 갱신으로 잊혀도 더 느린 블록 MLP^(f_s'),s'<s에 남고 초기상태 backprop이 circle back→시간축 루프로 안 잊음. 런타임 weight-diff 복사 아님(그게 Sleep이 추가). CMS optimizer 2층: (a)레벨 in-context 갱신 Eq71 f=arbitrary optimizer의 error component, 기본 예시 gradient descent; Hope에선 CMS='simple rule'(GD급), self-mod Titans만 expressive DGD. (b)전체 pre-training(초기상태 θ_0·router·embedding)=outer backprop, 표준 AdamW 또는 제안 M3(Hope 훈련 optimizer 명시는 이 절에 없음, c). page27: learned optimizer 파라미터=최저주파수 레벨(pre-train), vanilla=자기 레벨 자기 gradient flow.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known: 느린 블록이 빠른 블록의 리셋 초기상태 제공(사용자 방향 반대), 리셋은 느린 chunk 경계; unknown_known: 지식보존=느린 블록 보유+초기상태 backprop circle back(런타임 diff 복사 아님); known_unknown: CMS inner=arbitrary/GD(simple), self-mod=DGD; 전체훈련 AdamW/M3(Hope 명시 c)
+- 개념 key: Eq72 nested init, C^(l) frequency ordering, slow provides fast reset init, circle back backprop, continual learning preservation, Eq71 arbitrary optimizer, CMS simple rule GD, DGD only self-mod Titans, outer AdamW/M3, optimizer per level design axis
+- 생각할 것: Hope 실제 훈련 optimizer(AdamW vs M3) 명시 확인 필요(c)—재현 runbook 가정; 'circle back' 루프가 online consolidation의 실체—Sleep offline diff전달과 대비해 세미나에 명확히
+- storyline seed: CMS optimizer: 레벨 갱신은 simple GD(arbitrary), self-mod Titans만 expressive DGD, 전체훈련 AdamW/M3. 지식보존은 초기상태 backprop circle-back(고정용량)—런타임 diff 복사 없음→Sleep이 그 diff전달 추가. Eq72: 느린 블록이 빠른 블록 리셋 초기상태 제공.
+- 연상: Q030, Q025
 
