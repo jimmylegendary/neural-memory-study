@@ -46,26 +46,38 @@ title_slide(p,
     "이승호 (SAIT) · 2시간 발표 + 30분 Q&A")
 
 # ============================== 목차 (TOC) ==============================
-s = slide(p, "목차", "오늘 다룰 것")
-def toc_col(x, w, head, hc, items):
-    box(s, x, 1.5, w, 0.62, head, fc=WHITE, ec=hc, size=15.5, tcolor=hc, bold=True)
-    text(s, x + 0.1, 2.4, w - 0.15, 4.7, [(it, {"size": 12, "color": INK}) for it in items],
-         size=12, line_spacing=1.3, space_after=2)
-toc_col(0.55, 4.0, "A. Background (학습 입문)", BLUE, [
-    "A1. 학습 한 바퀴 — 2-layer MLP:", "     forward→loss→backward→optimizer→update",
-    "A2. Optimizer의 역사 (수식과 함께)", "     계보 지도(제공 이미지) →",
-    "     GD · SGD · Momentum", "     Adagrad · RMSProp · Adam · AdamW",
-    "A3. 대안 계열", "     linear attention", "     DeltaNet → Gated DeltaNet", "     SSM · Mamba-2"])
-toc_col(4.7, 4.0, "B. 논문 6편 (발명→구현→증명)", GREEN, [
-    "B1. Titans — deep neural memory", "     surprise·momentum·forget, MAC/MAG/MAL",
-    "B2. Miras — 4축 설계공간", "     메모리 = online 최적화",
-    "B3. Atlas — Omega rule·용량·Muon", "B4. TNT — chunk·2-stage·global/local·Q-K",
-    "B5. Nested Learning / HOPE", "     optimizer=memory · self-mod · CMS",
-    "B6. Sleep — offline consolidation", "     Knowledge Seeding · Dreaming"])
-toc_col(8.85, 3.9, "C. System modeling (우리 기여)", GOLD, [
-    "C1. pair thesis — decode=memory-bound", "C2. 8개 가속기 크로스 측정",
-    "C3. HOPE-block roofline", "     + zHBM · HBM-PIM · SRAM scaling",
-    "C4. scaling 청사진", "", "부록. QA 모음 (교차·논문별)"])
+s = slide(p, "목차", "오늘 다룰 것 — 세 파트")
+def toc_card(x, w, head, sub, hc, items):
+    box(s, x, 1.42, w, 5.5, "", fc=WHITE, ec=hc, lw=1.7)                 # 컨테이너(객체)
+    box(s, x, 1.42, w, 0.82, [(head, {"size": 14.5, "bold": True, "color": WHITE, "space_after": 2}),
+        (sub, {"size": 10, "color": WHITE})], fc=hc, ec=hc)              # 헤더 밴드
+    lines = []
+    for txt, lvl in items:
+        if lvl == 0:
+            lines.append((txt, {"size": 12.5, "bold": True, "color": hc, "align": PP_ALIGN.LEFT, "space_after": 2}))
+        else:
+            lines.append(("    · " + txt, {"size": 10.5, "color": MUTE, "align": PP_ALIGN.LEFT, "space_after": 1}))
+    text(s, x + 0.28, 2.48, w - 0.52, 4.3, lines, line_spacing=1.22, space_after=2, align=PP_ALIGN.LEFT)
+toc_card(0.55, 4.0, "A. Background", "학습이 처음이라면", BLUE, [
+    ("A1. 학습 한 바퀴 (2-layer MLP)", 0), ("forward→loss→backward→optimizer→update", 1),
+    ("A2. Optimizer의 역사 (수식)", 0), ("계보 지도 → GD·SGD·Momentum", 1),
+    ("Adagrad·RMSProp·Adam·AdamW", 1),
+    ("A3. 대안 계열 (개념별 1장)", 0), ("linear attention · DeltaNet · Gated DeltaNet", 1),
+    ("SSM · Mamba · Mamba-2", 1)])
+toc_card(4.7, 4.0, "B. 논문 6편", "핵심 발명 → 논거 → 증명", GREEN, [
+    ("B1. Titans", 0), ("test-time 신경망 메모리 · MAC/MAG/MAL", 1),
+    ("B2. Miras", 0), ("4축 설계공간 (메모리=online 최적화)", 1),
+    ("B3. Atlas", 0), ("Omega rule · 용량 확장 · Muon", 1),
+    ("B4. TNT", 0), ("chunk 정렬 · global/local · serving", 1),
+    ("B5. Nested Learning / HOPE", 0), ("optimizer=memory · self-mod · CMS", 1),
+    ("B6. Sleep", 0), ("offline consolidation · Dreaming", 1)])
+toc_card(8.85, 3.9, "C. System modeling", "우리 기여 — 서빙 비용", GOLD, [
+    ("C0. 방법론 (HATIR · HAT schema)", 0), ("무엇으로 뽑았고 왜 신뢰할 수 있나", 1),
+    ("C1. pair thesis — decode=memory-bound", 0),
+    ("C2. 8개 가속기 크로스 측정", 0),
+    ("C3. HOPE-block roofline (H100 트윈)", 0),
+    ("C4. zHBM · HBM-PIM · SRAM scaling", 0),
+    ("C5. scaling 청사진", 0)])
 
 # ============================== 들어가기 (scope) ==============================
 s = slide(p, "들어가기", "이 세미나의 목적 · 범위 · 주의")
@@ -118,33 +130,38 @@ text(s, 0.55, 1.0, 1.9, 0.3, "① forward", size=12, color=BLUE, bold=True)
 text(s, 7.0, 2.55, 6.0, 0.4, "batch B개 샘플 동시 처리 · loss는 B개 평균(또는 합)으로 누적", size=10.5, color=MUTE, italic=True)
 
 # --- backward (middle) ---
-by = 3.55
-box(s, 0.55, by, 12.2, 0.72,
-    [("② loss.backward() — autograd 역전파", {"size": 12.5, "bold": True, "color": RED, "align": PP_ALIGN.LEFT}),
-     ("∂L/∂z → ∂L/∂W₂, ∂L/∂a → ∂L/∂h → ∂L/∂W₁, ∂L/∂head.  각 파라미터 W의 gradient g = ∂L/∂W 를 구해 W.grad 에 채운다(순전파의 역순, 체인 룰).",
+by = 3.5
+box(s, 0.55, by, 12.23, 0.9,
+    [("② loss.backward() — autograd 역전파", {"size": 12.5, "bold": True, "color": RED, "align": PP_ALIGN.LEFT, "space_after": 3}),
+     ("출력 쪽 ∂L/∂z 부터 체인 룰로 거슬러 ∂L/∂W₂ → ∂L/∂a → ∂L/∂h → ∂L/∂W₁ 까지. 각 파라미터 W의 gradient g=∂L/∂W 를 구해 W.grad 에 채운다(순전파의 역순).",
       {"size": 11, "color": INK, "align": PP_ALIGN.LEFT})],
     fc=REDB, ec=RED, align=PP_ALIGN.LEFT)
-arrow(s, 11.9, fy + fh + 0.15, 0.9, by - 0.02, color=RED, lw=1.4, dashed=True)  # loss -> back
+arrow(s, 11.9, fy + fh + 0.12, 0.9, by - 0.02, color=RED, lw=1.4, dashed=True)  # loss -> back
 
 # --- optimizer + update (bottom) ---
-oy = 4.62
-box(s, 0.55, oy, 7.7, 1.55,
-    [("③ optimizer.step()  — AdamW (gradient g를 받아 '얼마나·어느 방향' 결정)", {"size": 12.5, "bold": True, "color": GOLD, "align": PP_ALIGN.LEFT}),
-     ("m ← β₁·m + (1−β₁)·g          (1차 모멘텀: 방향의 관성)", {"size": 11, "mono": True, "align": PP_ALIGN.LEFT}),
-     ("v ← β₂·v + (1−β₂)·g²         (2차 모멘텀: 좌표별 스케일)", {"size": 11, "mono": True, "align": PP_ALIGN.LEFT}),
-     ("m̂,v̂ = 편향보정 ;  ΔW = −η·m̂/(√v̂+ε)   −  η·λ·W  ← decoupled decay", {"size": 11, "mono": True, "align": PP_ALIGN.LEFT})],
-    fc=GOLDB, ec=GOLD, align=PP_ALIGN.LEFT)
-box(s, 8.5, oy, 4.25, 1.55,
-    [("④ W ← W + ΔW", {"size": 13, "bold": True, "color": GOLD}),
-     ("W₁, W₂, head 를 갱신.", {"size": 11, "color": INK}),
-     ("optimizer.zero_grad()로 g 비우고", {"size": 10.5, "color": MUTE}),
+oy = 4.58
+box(s, 0.55, oy, 7.7, 1.72, "", fc=GOLDB, ec=GOLD)
+text(s, 0.72, oy + 0.08, 7.4, 0.3, "③ optimizer.step() — AdamW (g를 받아 '얼마나·어느 방향' 결정)",
+     size=12, color=GOLD, bold=True, space_after=0, align=PP_ALIGN.LEFT)
+_ap, _aw, _ah = mp.eq(r"\begin{aligned}"
+                      r"m &\leftarrow \beta_1 m + (1-\beta_1)\,g\\[2pt]"
+                      r"v &\leftarrow \beta_2 v + (1-\beta_2)\,g^2\\[2pt]"
+                      r"\Delta W &= -\,\eta\,\frac{\hat m}{\sqrt{\hat v}+\epsilon}\;-\;\eta\lambda W"
+                      r"\end{aligned}", pt=13)
+fit_image(s, _ap, 0.8, oy + 0.45, 4.9, 1.15)
+for i, nt in enumerate(["1차 모멘텀 = 방향", "2차 모멘텀 = 보폭", "decoupled weight decay"]):
+    text(s, 5.75, oy + 0.5 + i * 0.38, 2.4, 0.3, "← " + nt, size=9.5, color=MUTE, space_after=0, align=PP_ALIGN.LEFT)
+box(s, 8.5, oy, 4.25, 1.72,
+    [("④ W ← W + ΔW", {"size": 13, "bold": True, "color": GOLD, "space_after": 4}),
+     ("W₁, W₂, head 를 갱신.", {"size": 11, "color": INK, "space_after": 2}),
+     ("optimizer.zero_grad()로 g 비우고", {"size": 10.5, "color": MUTE, "space_after": 1}),
      ("다음 batch로 → 반복.", {"size": 10.5, "color": MUTE})],
     fc=GOLDB, ec=GOLD)
 
-box(s, 0.55, 6.45, 12.2, 0.62,
-    [("핵심 한 문장.", {"size": 11.5, "bold": True, "color": GREEN, "align": PP_ALIGN.LEFT}),
-     ("학습 = ①forward로 예측 → ②backward로 'gradient(어디가 틀렸나)' → ③optimizer로 'gradient를 기억·가공(m,v)해 갱신량' → ④weight 이동. 이 계열은 ②③④를 추론 중에도 돌린다.",
-      {"size": 11, "color": INK, "align": PP_ALIGN.LEFT})],
+box(s, 0.55, 6.5, 12.23, 0.82,
+    [("핵심 한 문장", {"size": 11.5, "bold": True, "color": GREEN, "align": PP_ALIGN.LEFT, "space_after": 3}),
+     ("학습 = ①forward 예측 → ②backward로 gradient(어디가 틀렸나) → ③optimizer로 가공(m,v)해 갱신량 → ④weight 이동. 이 계열은 ②③④를 '추론 중에도' 돌린다.",
+      {"size": 10.5, "color": INK, "align": PP_ALIGN.LEFT})],
     fc=GREENB, ec=GREEN, align=PP_ALIGN.LEFT)
 
 # ============================== A2.0  OPTIMIZER 계보도 (제공 이미지 그대로) ==============================
@@ -229,18 +246,18 @@ opt_slide("A2 · RMSProp", "RMSProp", "Root Mean Square Propagation", "초록 �
 
 opt_slide("A2 · Adam", "Adam", "Adaptive Moment Estimation", "두 줄기의 합류 ★",
     "\"RMSProp(보폭) + Momentum(방향)을 합치자 — 방향도 스텝 사이즈도 적절하게!\"",
-    [(r"m_t = \beta_1 m_{t-1} + (1-\beta_1)\,g_t", "1차 모멘텀: 방향"),
-     (r"v_t = \beta_2 v_{t-1} + (1-\beta_2)\,g_t^{2}", "2차 모멘텀: 좌표별 보폭"),
-     (r"\hat{m}=\frac{m_t}{1-\beta_1^{t}},\quad \hat{v}=\frac{v_t}{1-\beta_2^{t}}", "초기 0-편향 보정"),
-     (r"\theta_{t+1} = \theta_t - \eta\,\frac{\hat{m}}{\sqrt{\hat{v}}+\epsilon}", "")],
-    "방향(m) + 좌표별 보폭(v) + 편향 보정을 한 번에. 튜닝 거의 없이 잘 동작 → 사실상 표준.",
-    "L2 weight decay를 gradient에 더하면 1/√v̂로 나뉘어 좌표별로 왜곡된다.  → AdamW", ec=GOLD)
+    [(r"g_t = \nabla L(\theta_t) + \lambda\,\theta_t", "weight decay = L2 정규화를 gradient에 더함"),
+     (r"m_t = \beta_1 m_{t-1} + (1-\beta_1) g_t,\ \ v_t = \beta_2 v_{t-1} + (1-\beta_2) g_t^{2}", "방향 m · 보폭 v"),
+     (r"\hat{m}=\frac{m_t}{1-\beta_1^{t}},\ \ \hat{v}=\frac{v_t}{1-\beta_2^{t}}", "초기 0-편향 보정"),
+     (r"\theta_{t+1} = \theta_t - \eta\,\frac{\hat{m}}{\sqrt{\hat{v}}+\epsilon}", "λθ가 m̂ 안에 섞여 1/√v̂로 스케일됨")],
+    "방향(m) + 좌표별 보폭(v) + 편향 보정을 한 번에. 튜닝 거의 없이 잘 동작 → 사실상 표준. weight decay는 보통 L2로 적용(위 g_t).",
+    "그런데 λθ가 √v̂로 나뉘어 좌표마다 다르게 적용 = 왜곡. 이 항을 밖으로 빼면? → AdamW", ec=GOLD)
 
 opt_slide("A2 · AdamW", "AdamW ★", "Adam with decoupled Weight decay", "종착점 — 오늘의 표준",
     "\"weight decay(정규화)를 gradient에 섞지 말고, weight에서 '직접' 빼자 — 그래야 좌표마다 똑같이 적용된다.\"",
-    [(r"m_t,\ v_t,\ \hat{m},\ \hat{v}\ \ \text{(as in Adam)}", "decay를 gradient에 넣지 않음"),
-     (r"\theta_{t+1} = \theta_t - \eta\!\left(\frac{\hat{m}}{\sqrt{\hat{v}}+\epsilon} + \lambda\,\theta_t\right)", "λθ 항을 분리 (decoupled)")],
-    "decay가 adaptive 스케일(1/√v̂)에 섞이지 않아 정규화가 일관 → 일반화↑. 오늘날 LLM 학습의 표준.",
+    [(r"\text{(Adam+L2)}\quad \theta_{t+1} = \theta_t - \eta\,\frac{\hat{m}}{\sqrt{\hat{v}}+\epsilon}", "g=∇L+λθ → λθ가 √v̂에 얽힘 (왜곡)"),
+     (r"\text{(AdamW)}\quad \theta_{t+1} = \theta_t - \eta\,\frac{\hat{m}}{\sqrt{\hat{v}}+\epsilon}\ -\ \eta\lambda\theta_t", "−ηλθ를 분리 → √v̂와 무관하게 일정")],
+    "위 두 식의 차이 = 맨 끝 −ηλθ 항. AdamW는 decay를 adaptive 스케일(1/√v̂) 밖으로 빼 정규화가 좌표마다 일관 → 일반화↑. 오늘 LLM 표준.",
     "여기까지가 '표준 optimizer'. 이 계열 논문은 이 optimizer 자체를 memory로 재해석한다(HOPE).  → Part B", ec=GOLD)
 
 # ============================== A3.  대안 계열 ==============================
@@ -270,54 +287,94 @@ for name, c, l1, l2 in fams:
          (l1, {"size": 12.5, "color": INK}), (l2, {"size": 12, "color": MUTE})],
         fc=WHITE, ec=c, lw=1.5)
     fx += 4.15
-box(s, 0.55, 5.35, 12.2, 1.5,
-    [("공통 렌즈 — 다음 3계열을 관통하는 한 문장", {"size": 13.5, "bold": True, "color": INK, "align": PP_ALIGN.LEFT, "space_after": 5}),
-     ("모두 \"상태 S를 토큰마다 갱신하는 선형 recurrence\"다. 갱신 규칙의 차이일 뿐 — 더하기(linear), 덮어쓰기(delta), 잊기(gated), 구조화(SSM).",
-      {"size": 13, "color": INK, "align": PP_ALIGN.LEFT}),
-     ("→ Titans는 이 갱신을 아예 '작은 신경망 메모리를 gradient로 학습'하는 것으로 승격시킨다(Part B).",
-      {"size": 13, "bold": True, "color": BLUE, "align": PP_ALIGN.LEFT})],
+box(s, 0.55, 5.3, 12.23, 1.18,
+    [("공통 렌즈 — 다음 6개를 관통하는 한 문장", {"size": 13, "bold": True, "color": INK, "align": PP_ALIGN.LEFT, "space_after": 4}),
+     ("모두 \"상태 S를 토큰마다 갱신하는 선형 recurrence\"다. 규칙의 차이일 뿐 — 더하기(linear), 덮어쓰기(delta), 잊기(gated), 구조화(SSM). "
+      "→ Titans는 이 갱신을 '작은 신경망 메모리를 gradient로 학습'하는 것으로 승격시킨다(Part B).",
+      {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})],
     fc=GREYB, ec=GREY, align=PP_ALIGN.LEFT)
+text(s, 0.55, 6.62, 12.23, 0.5,
+     "* delta rule: 현재 상태가 key로 조회했을 때 내놓는 값과 목표 value의 '예측오차'만큼만 상태를 고치는 규칙. 손실 ½‖S·k − v‖²에 대한 gradient step 한 번과 같다.",
+     size=10, color=MUTE, italic=True, align=PP_ALIGN.LEFT, space_after=0)
 
-# --- A3b linear attention + DeltaNet ---
-s = slide(p, "A3 · 대안 (1) — 선형 어텐션 → DeltaNet", "상태 S에 '쓰는 규칙'을 바꿔 온 역사", BLUE)
-def state_eq(y, name, c, latex, note1, note2):
-    box(s, 0.55, y, 3.1, 1.15, [(name, {"size": 13.5, "bold": True, "color": c, "space_after": 3}),
-        (note1, {"size": 11, "color": INK}), (note2, {"size": 11, "color": MUTE})], fc=WHITE, ec=c, lw=1.4)
-    path, _w, _h = mp.eq(latex, pt=17)
-    fit_image(s, path, 3.95, y, 8.8, 1.15)
-state_eq(1.55, "Linear Attention", GREEN,
+# --- A3 개념별 상세 (1개념 = 1페이지) ---
+def concept_slide(tag, name, full, ec, problem, latex, symbols, meaning, benefit, limit):
+    s = slide(p, tag, f"{name}  ·  {full}", ec)
+    bgb = {id(BLUE): BLUEB, id(GREEN): GREENB, id(GOLD): GOLDB}.get(id(ec), BLUEB)
+    box(s, 0.55, 1.38, 12.23, 0.9,
+        [("이게 푸는 문제", {"size": 13, "bold": True, "color": ec, "align": PP_ALIGN.LEFT, "space_after": 3}),
+         (problem, {"size": 12.5, "color": INK, "align": PP_ALIGN.LEFT})], fc=bgb, ec=ec, align=PP_ALIGN.LEFT)
+    box(s, 0.55, 2.4, 12.23, 1.74, "", fc=WHITE, ec=GREY)
+    text(s, 0.75, 2.5, 5, 0.3, "갱신식", size=12.5, color=INK, bold=True, space_after=0, align=PP_ALIGN.LEFT)
+    _p, _w, _h = mp.eq(latex, pt=18)
+    fit_image(s, _p, 0.8, 2.92, 6.0, 1.05)
+    sym_lines = [("기호의 의미", {"size": 12, "bold": True, "color": INK, "align": PP_ALIGN.LEFT, "space_after": 3})]
+    for sy in symbols:
+        sym_lines.append((sy, {"size": 11, "color": INK, "align": PP_ALIGN.LEFT, "space_after": 2}))
+    text(s, 7.05, 2.52, 5.6, 1.6, sym_lines, align=PP_ALIGN.LEFT, line_spacing=1.12, space_after=2)
+    box(s, 0.55, 4.26, 12.23, 0.92,
+        [("물리적 의미", {"size": 13, "bold": True, "color": INK, "align": PP_ALIGN.LEFT, "space_after": 3}),
+         (meaning, {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=GREYB, ec=GREY, align=PP_ALIGN.LEFT)
+    box(s, 0.55, 5.3, 6.0, 1.8,
+        [("이득", {"size": 13, "bold": True, "color": GREEN, "align": PP_ALIGN.LEFT, "space_after": 3}),
+         (benefit, {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=GREENB, ec=GREEN, align=PP_ALIGN.LEFT)
+    box(s, 6.78, 5.3, 6.0, 1.8,
+        [("한계 → 뒤에서 HOPE가 해결", {"size": 13, "bold": True, "color": RED, "align": PP_ALIGN.LEFT, "space_after": 3}),
+         (limit, {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=REDB, ec=RED, align=PP_ALIGN.LEFT)
+
+concept_slide("A3 · 대안 (1/6)", "Linear Attention", "선형 어텐션 (Katharopoulos 2020)", GREEN,
+    "softmax attention은 계산 O(n²)이고 KV 캐시가 문맥 길이에 비례해 커진다. 이를 고정 크기 상태의 O(n) 순환식으로 바꾸고 싶다.",
     r"S_t = S_{t-1} + \phi(k_t)\, v_t^{\top}, \qquad o_t = \phi(q_t)^{\top} S_t",
-    "φ(k)v™를 계속 더함", "= fast weights (외적 누적)")
-state_eq(2.95, "DeltaNet", GOLD,
-    r"S_t = S_{t-1} - \beta_t\,\big(S_{t-1}k_t - v_t\big)\,k_t^{\top}",
-    "delta rule: 예측오차만큼", "기존 기억을 '수정/덮어쓰기'")
-state_eq(4.35, "Gated DeltaNet", RED,
-    r"S_t = \alpha_t\, S_{t-1} - \beta_t\,\big(S_{t-1}k_t - v_t\big)\,k_t^{\top}",
-    "+ forget gate α_t (0~1)", "오래된 기억을 잊어 용량 확보")
-box(s, 0.55, 5.75, 12.2, 1.05,
-    [("연결", {"size": 13, "bold": True, "color": BLUE, "align": PP_ALIGN.LEFT, "space_after": 4}),
-     ("\"예측오차(S k − v)만큼 상태를 고친다\"는 delta rule은 사실 손실 ‖Sk − v‖²에 대한 gradient step 한 번과 같다. "
-      "여기에 forget(α)·momentum을 얹으면 → 바로 Titans의 memory 갱신식이 된다.",
-      {"size": 12.5, "color": INK, "align": PP_ALIGN.LEFT})],
-    fc=BLUEB, ec=BLUE, align=PP_ALIGN.LEFT)
+    ["S_t : 상태 행렬 (d×d) = fast weights", "φ(·) : 양수 feature map (커널)",
+     "k_t, v_t : key·value 벡터", "q_t : query,  o_t : 출력"],
+    "softmax의 '유사도 합'을 외적 φ(k)vᵀ의 누적으로 대체한다. 상태 S에 (key→value) 연상을 계속 더해, 고정 크기 상태로 무한 문맥을 요약.",
+    "시간 O(n)·메모리 O(1)(문맥 무관). 순환 형태라 디코드가 토큰당 상수 비용.",
+    "그냥 '더하기'만 한다 → 오래된·충돌하는 연상이 누적 간섭(crosstalk)하고 용량이 포화. (덮어쓰기가 없음)")
 
-# --- A3c SSM / Mamba-2 ---
-s = slide(p, "A3 · 대안 (2) — SSM · Mamba-2", "구조화된 선형 recurrence, 그리고 attention과의 이중성", BLUE)
-state_eq(1.55, "SSM (S4)", GREEN,
+concept_slide("A3 · 대안 (2/6)", "DeltaNet", "델타넷 (Schlag/Yang, delta rule)", BLUE,
+    "linear attention의 '무한 누적 간섭'을 줄이자. 이미 저장된 연상을 덮어쓰거나 오차만큼 고치자.",
+    r"S_t = S_{t-1} - \beta_t\,\big(S_{t-1}k_t - v_t\big)\,k_t^{\top}",
+    ["S_{t-1}k_t : 지금 상태가 k_t에 내놓는 값", "(S_{t-1}k_t − v_t) : 예측오차",
+     "β_t : 쓰기 강도(0~1) = learning rate", "k_t kᵀ : 그 key 방향에만 갱신"],
+    "key k_t로 조회한 값을 목표 v_t에 가깝게 '오차만큼' 수정. 이는 손실 ½‖S·k_t − v_t‖²에 대한 gradient step 한 번(β=학습률)과 정확히 같다.",
+    "기존 연상을 덮어써 간섭↓ → 같은 용량으로 더 정확한 회상.",
+    "오래된 기억을 '잊는' 장치가 없어 용량이 결국 포화한다. (forget이 없음)")
+
+concept_slide("A3 · 대안 (3/6)", "Gated DeltaNet", "게이트 델타넷 (+forget)", GOLD,
+    "DeltaNet엔 망각이 없어 용량이 포화한다. 오래된 기억을 서서히 감쇠(잊기)하자.",
+    r"S_t = \alpha_t\, S_{t-1} - \beta_t\,\big(S_{t-1}k_t - v_t\big)\,k_t^{\top}",
+    ["α_t : forget gate (0~1, 데이터 의존)", "α_t·S_{t-1} : 상태 전체를 감쇠",
+     "β_t, k_t : DeltaNet과 동일", "(S k − v) : 예측오차"],
+    "매 스텝 상태를 α_t배로 감쇠(오래된 기억 소거)한 뒤 delta rule로 새 정보를 기입. = decay(정규화)가 붙은 online gradient step.",
+    "유한 용량을 재활용 → 긴 문맥에서도 안정, 최신 정보 반영.",
+    "갱신 규칙(무엇을·얼마나·잊을지)이 여전히 '고정된 손실·고정 학습률'. 규칙 자체를 학습하지는 못한다.")
+
+concept_slide("A3 · 대안 (4/6)", "SSM (S4)", "상태공간 모델 (Structured State Space)", GREEN,
+    "RNN은 순차적·불안정하고 attention은 O(n²). 긴 의존성을 '구조화된 선형 recurrence'로 안정적·병렬적으로 다루자.",
     r"h_t = A\, h_{t-1} + B\, x_t, \qquad y_t = C\, h_t",
-    "고정된 A,B,C (시간 불변)", "긴 의존성을 구조화된 A로")
-state_eq(2.95, "Mamba (S6)", GOLD,
-    r"(A_t, B_t, C_t) = f(x_t)\ \ \text{— input-dependent}",
-    "선택적(selective): 입력에 따라", "무엇을 상태에 넣을지 결정")
-state_eq(4.35, "Mamba-2 (SSD)", BLUE,
-    r"Y = (L \circ (C B^{\top}))\, X \;\Longleftrightarrow\; \text{linear SSM recurrence}",
-    "state-space duality:", "attention ↔ SSM은 같은 것의 두 형태")
-box(s, 0.55, 5.75, 12.2, 1.05,
-    [("요지", {"size": 13, "bold": True, "color": BLUE, "align": PP_ALIGN.LEFT, "space_after": 4}),
-     ("SSM은 '상태 갱신 규칙을 구조화된 선형식'으로 본다. Mamba-2의 duality는 attention과 recurrence가 등가임을 보여, "
-      "\"sequence layer = 상태를 갱신하는 하나의 규칙\"이라는 이번 세미나의 렌즈를 뒷받침한다.",
-      {"size": 12.5, "color": INK, "align": PP_ALIGN.LEFT})],
-    fc=BLUEB, ec=BLUE, align=PP_ALIGN.LEFT)
+    ["h_t : 은닉 상태 (N차원)", "A : 상태전이 (HiPPO 등으로 구조화)",
+     "B : 입력→상태,  C : 상태→출력", "x_t 입력,  y_t 출력"],
+    "입력을 구조화된 선형 시스템의 상태에 누적. A의 구조(HiPPO)가 과거를 잘 요약하도록 설계돼, convolution으로 병렬 학습·recurrence로 O(1) 디코드.",
+    "긴 의존성을 안정적으로 포착, 선형 시간, 병렬 학습 가능.",
+    "A,B,C가 입력과 무관(시간 불변) → 내용에 따라 '무엇을 기억할지' 선택하지 못한다.")
+
+concept_slide("A3 · 대안 (5/6)", "Mamba (S6)", "선택적 SSM (Selective State Space)", BLUE,
+    "SSM의 A,B,C가 고정이라 내용 선택이 안 된다. 상태 갱신을 입력에 따라 '선택적'으로 만들자.",
+    r"(B_t, C_t, \Delta_t) = f(x_t), \qquad \bar{A}_t = \exp(\Delta_t A)",
+    ["Δ_t : 입력 의존 시간간격 = 게이트", "B_t, C_t : 입력 의존 투영",
+     "Ā_t : 이산화된 상태전이", "f(·) : 작은 투영망"],
+    "토큰마다 '얼마나 상태를 갱신·유지할지'를 입력이 정한다(selective). 중요한 토큰은 크게 반영, 무의미하면 건너뜀. hardware-aware 스캔으로 병렬.",
+    "내용 기반 선택 → Transformer급 품질 + 선형 시간, 초장문 처리.",
+    "여전히 상태 갱신이 '고정된 선형식 + 선택 게이트'. 메모리를 gradient로 '학습'하지는 않는다.")
+
+concept_slide("A3 · 대안 (6/6)", "Mamba-2 (SSD)", "State-Space Duality", GOLD,
+    "attention과 SSM이 따로 논다. 둘을 이론으로 잇고(duality), 텐서코어로 더 빠르게 만들자.",
+    r"Y = \big(L \circ (C B^{\top})\big)\, X \;\;\Longleftrightarrow\;\; \text{linear SSM recurrence}",
+    ["L : 하삼각 마스크 (decay 구조)", "C Bᵀ : attention 유사 행렬",
+     "∘ : 원소곱(Hadamard)", "X 입력,  Y 출력"],
+    "SSM의 순환식이 '마스킹된 attention'과 수학적으로 등가(duality)임을 보인다 → 훨씬 큰 상태를 텐서코어 친화적으로 빠르게 구현.",
+    "attention의 표현력 + SSM의 선형성. 큰 상태를 고속 처리.",
+    "여전히 '고정 규칙'의 선형 recurrence. \"sequence layer = 상태 갱신 규칙\" 관점만 확립 — 규칙을 학습으로 승격하는 건 Titans~HOPE의 몫.")
 
 # ==================================================================================
 # ============================== PART B — 논문 6편 ==============================
