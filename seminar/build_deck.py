@@ -535,6 +535,34 @@ pbox(s, 0.55, 5.2, 6.0, 1.05, "세 갈래 (공통)",
 pbox(s, 6.78, 5.2, 6.0, 1.05, "test-time 역할 분담",
      "memory = 여전히 학습 중 · attention = in-context learning · persistent = 고정. (그림의 눈송이 = 동결.)", ec=GREY, bsize=11)
 
+# B1.6b MAC 블록 chunk-C 병렬 계산 (forward+backward, shape 명시)
+s = slide(p, "B1 · Titans — MAC 블록의 chunk-C 병렬 계산", "forward+backward를 gate out까지 · shape 명시 (선형 메모리 기준)", GREEN)
+text(s, 0.55, 1.12, 12.23, 0.44,
+     "shape: X∈ℝ^{C×d}(청크 C토큰) · W_Q,W_K,W_V∈ℝ^{d×d} · 메모리 M^{(t)}∈ℝ^{d×d}(청크 시작, frozen) · persistent P∈ℝ^{N_p×d} · gate w_η,w_α,w_θ∈ℝ^{d}",
+     size=10.5, color=MUTE, italic=True, align=PP_ALIGN.LEFT, space_after=0)
+mac_steps = [
+    (r"Q,K,V=XW_Q,\,XW_K,\,XW_V\in\mathbb{R}^{C\times d};\ \ [\eta,\alpha,\theta]=\sigma(X[w_\eta,w_\alpha,w_\theta])\in\mathbb{R}^{C\times 3}", "병렬 GEMM — gate 산출", BLUE),
+    (r"H=Q\,(M^{(t)})^{\top}\in\mathbb{R}^{C\times d}\quad(\text{pre-update read})", "병렬 (read)", BLUE),
+    (r"\tilde X=[P;\,H;\,X]\in\mathbb{R}^{(N_p+2C)\times d};\ \ y=\mathrm{Attn}(\tilde X)_{[-C:]}\in\mathbb{R}^{C\times d}", "병렬 (attention)", BLUE),
+    (r"\hat K=yW_K,\ \hat V=yW_V\in\mathbb{R}^{C\times d};\ \ E=\hat K(M^{(t)})^{\top}-\hat V\in\mathbb{R}^{C\times d}", "병렬 — 예측오차 E", GREEN),
+    (r"g_i=\nabla_{\!M}\tfrac12\|M^{(t)}\hat k_i-\hat v_i\|^2=e_i\hat k_i^{\top};\quad G=(\theta\odot E)^{\top}\hat K\in\mathbb{R}^{d\times d}", "= backward, GEMM 1회", RED),
+    (r"S_i=\eta_i S_{i-1}-\theta_i\,g_i\ \Rightarrow\ \text{associative scan, depth }\log C,\ \ S\in\mathbb{R}^{d\times d}", "순차 임계경로 (scan)", GOLD),
+    (r"M^{(t+1)}=\Big(\textstyle\prod_{i=1}^{C}(1-\alpha_i)\Big)M^{(t)}+S_C\in\mathbb{R}^{d\times d}\quad(\text{decay}+\text{update})", "cumprod→matmul", GREEN),
+    (r"o=y\odot\big(y\,(M^{(t+1)})^{\top}\big)\in\mathbb{R}^{C\times d}\quad(\text{gate out})", "병렬 — 최종 출력", BLUE),
+]
+cy = 1.62
+for i, (ltx, tag, tc) in enumerate(mac_steps, 1):
+    box(s, 0.55, cy, 0.42, 0.42, "①②③④⑤⑥⑦⑧"[i - 1], fc=tc, ec=tc, size=12, tcolor=WHITE, bold=True)
+    _pp, _w, _h = mp.eq(ltx, pt=13)
+    fit_image(s, _pp, 1.15, cy - 0.02, min(_w, 8.5), 0.44)
+    text(s, 9.95, cy - 0.02, 2.85, 0.46, tag, size=9.5, color=tc, bold=(tc in (RED, GOLD)),
+         align=PP_ALIGN.LEFT, anchor=MSO_ANCHOR.MIDDLE, space_after=0)
+    cy += 0.52
+box(s, 0.55, 5.86, 12.23, 1.02,
+    [("핵심 — 왜 '동시에' 되나 (backward의 병렬화)", {"size": 11.5, "bold": True, "color": RED, "align": PP_ALIGN.LEFT, "space_after": 2}),
+     ("C개 토큰의 gradient(⑤)를 모두 '같은 chunk-start 메모리 M^{(t)}'에서 평가하므로 순차 backprop이 아니라 GEMM 1회(G=(θ⊙E)ᵀK̂)로 병렬화. 유일한 순차 임계경로는 ⑥ momentum scan(깊이 log C). deep(MLP) 메모리도 골격 동일 — 각 층 gradient를 chunk 시작 가중치에서 batched backprop. (선형 메모리 기준 shape 전개 — 원논문 Fig.1 chunkwise 병렬화의 shape화, 일부 추론.)",
+      {"size": 10.5, "color": INK, "align": PP_ALIGN.LEFT})], fc=REDB, ec=RED, align=PP_ALIGN.LEFT)
+
 # B1.7 결과
 s = slide(p, "B1 · Titans — 결과", "state가 길이에 무관하게 일정 → 초장문에서 훨씬 큰 모델을 이긴다", GREEN)
 fig_with_caption(s, "2501.00663", 6, 0.55, 1.5, 6.05, 3.5,
