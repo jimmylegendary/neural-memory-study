@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 24건.
+총 26건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -312,4 +312,30 @@
 - 생각할 것: 발표 핵심: '동일 실험 8칩'으로 pair thesis의 견고성(S* 불변·bound 견고)과 한계(Cerebras knee)를 동시에 — 견고+경계를 같이 보여야 정직; state 배치 축: SRAM-heavy(Cerebras/Groq)가 decode-state 병목을 구조적으로 해소 = memory-centric 논증의 하드웨어 증거; vr100(BRONZE)은 발표에서 '예비'로만. GOLD/SILVER 7칩으로 결론 서고 Rubin은 미래 참조; 절대치는 여전히 ideal 하한(부록 E) — 8칩에서도 단정 안 함, 비율/crossover/bound만
 - storyline seed: 세미나 '신뢰성' 파트의 정점: 성능 수치를 8개 아키텍처에서 뽑아, 우리가 단정하는 양(S* 불변·bound 견고)이 하드웨어 전체에서 성립함을 보이고, 동시에 그 경계(Cerebras knee)와 절대치 유보를 정직히 드러낸다. 2라운드 적대검증(spec 저작+결과)이 신뢰성의 증거. multiarch/REPORT.md + REVIEW-LOG.md가 근거.
 - 연상: Q023, Q022
+
+## Q025 · 2026-07-14 · Nested Learning (HOPE) — optimizers + self-mod mechanism
+
+**Q.** NL(G07) 심층: gradient/momentum/M3가 Miras·Atlas(omega)를 참조해 전개되는 쉬운 설명+shape+state / ICL이 우연 아닌 당연? / M3 retention·다주기 조합? / DGD의 dot-product→L2 전개? / HOPE는 3개 다 씀? / self-mod Titans의 k,v,q,η,α 중 α 적용범위·optimizer / self-mod 연산·학습 목표값 메커니즘
+
+**A.** 3 optimizer 계보: DGD←Miras(L2 attentional bias+retention α), DeltaMom, M3←Atlas Muon(NewtonSchulz)+CMS 다주기+Adam2차. state 배수 DGD 1×/DeltaMom 2×/M3 3.5×. M3는 fast(매스텝)+slow(f스텝마다) momentum 조합(님 추측 맞음), theta retention은 M3에 없고 DGD update에 있음. DGD: 내적규칙 ℓ=-⟨Mk,v⟩→L2회귀 ‖Mk-v̂‖², weight decay 붙이면 M_t=M_{t-1}(αI-η kkᵀ)-η∇L. HOPE는 3개 다 쓰는 게 아니라 inner=DGD 하나, M3는 별도 훈련 optimizer 제안. self-mod 메모리 6개 {k,v,q,η,α,mem} 각 2-layer residual MLP, q만 static(line 2116). α·η는 '함수'가 아니라 학습되는 메모리(메타러닝 init+test-time DGD), 출력이 하이퍼파라미터. ICL은 창발 아니라 structural(≥2 레벨의 결과, 논문 명시).
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known: HOPE inner=DGD 하나, M3는 별도 optimizer 산출물(3개 다 쓴다 아님); unknown_unknown: M3=fast+slow momentum 다주기 조합, retention은 DGD에만; known_unknown: α·η도 완전히 학습되는 메모리(메타러닝+test-time), '함수'라 한 건 부정확
+- 개념 key: DGD, Delta Momentum, M3, Muon, NewtonSchulz, Miras attentional bias, retention gate, self-modifying Titans, 6 memories, q static, ICL structural, meta-learned init, associative memory optimizer
+- 생각할 것: multiarch attention-side를 Wqkv(3d²)로 잡았는데 q static이라 Wk,Wv(2d²)로 정정 여지; optimizer별 decode state 배수(DGD 1/M3 3.5)가 hope-* 실험의 근거
+- storyline seed: NL 세미나: optimizer=memory 프레임이 DGD/DeltaMom/M3를 낳고(Miras/Atlas 이식), self-mod Titans는 투영·게이트까지 메모리화(q만 static). ICL은 ≥2레벨의 structural 결과. G07 §5·§8·§10 반영됨.
+- 연상: Q024, Q021
+
+## Q026 · 2026-07-14 · self-mod Titans mechanism + inference execution
+
+**Q.** self-mod Titans 연산 재검토: v_t가 M_v로 얻은 값? 각 기호 정체·shape / 자가목표 각 5개 어떻게 / gradient g는 autograd인가 diff vector인가 / q는 M_q로 self-update 아닌가 / 추론시 forward+update 스케줄: FFN(CMS) 끝나기 전 update 완료 가능? 논문이 어케 했나
+
+**A.** v_t=M_v,t-1(x_t) 맞음(식 83; 보통 x_tW_v를 메모리로 승격). q_t=x_tW_q static(line 2116, 유일 non-adaptive; 식 88 집합에 q 있지만 카브아웃). 자가목표 v̂_□=M_□,t-1(v_t) 각 5개 자기 MLP 통과. gradient=L2 loss를 2-layer MLP 전체에 대해 autograd/backprop(diff 아님; 오차는 backward 시작점, 선형이면 (Mk-v̂)kᵀ로 줄지만 MLP면 두층 관통)+retention 항 동반. 출력 o_t=M_mem,chunk시작(q_t)=pre-update 읽기, 활성 σ는 메모리 MLP 내부, 뒤에 CMS chain. 추론 실행: 출력경로(read+CMS)는 pre-update라 이번 토큰 update와 의존성 없음→겹침 가능(순서 안 걸림). 진짜 임계경로는 토큰 간 update(다음 토큰 read가 M_t 필요). 논문 §8.2는 훈련 chunkwise 병렬화만; decode kernel/latency/wall-clock 전무(inference는 line 458 대조로만)=Part III 공백. 부하: 토큰·layer당 수십 작은 GEMV+backward+의존성, kernel 1개 불가.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known: 출력은 pre-update(chunk-start) memory를 읽어 update와 순서 안 걸림; 임계경로는 토큰 간 update; unknown_unknown: 논문은 훈련 병렬화만 풀고 decode 실행은 안 풂 = Part III가 메우는 지점; unknown_known: gradient는 diff가 아니라 MLP full backprop + retention 항
+- 개념 key: v_t=M_v(x_t), self-target, full backprop gradient, pre-update read, chunk-start snapshot, training chunkwise parallel, decode sequential, update-CMS overlap, memory-bound RMW, Part III gap, grouped-GEMM batchability
+- 생각할 것: decode 임계경로=토큰간 순차 update가 E1.1b memory-bound와 정합; update↔CMS overlap을 pipelining으로 잡으면 decode latency 모델에 반영
+- storyline seed: 세미나 핵심 슬라이드: '논문은 훈련 chunkwise 병렬화만, decode 실행은 미해결'. 출력이 pre-update read라 update↔CMS는 겹치지만 토큰 간 update가 순차 임계경로=memory-bound. 이게 내 Part III(decode 비용 계량)가 메우는 지점. G07 §10 '추론 실행' 절 반영.
+- 연상: Q025, Q021
 

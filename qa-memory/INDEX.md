@@ -1,10 +1,10 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-24건. story line 짤 때 여기서 꺼낸다.
+26건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
-### 모른다는 걸 안다 (known_unknown → decomposition) — 23건
+### 모른다는 걸 안다 (known_unknown → decomposition) — 26건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q003: 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1
@@ -28,8 +28,11 @@
 - Q023: 핵심은 HATIR이 믿을만하냐, 거기서 쓴 HAT hw spec이 실제 hw를 얼마나 정교하게 표현하고 얼마나 정확한 spec data이냐일 것
 - Q023: 핵심은 HATIR이 믿을만하냐, 거기서 쓴 HAT hw spec이 실제 hw를 얼마나 정교하게 표현하고 얼마나 정확한 spec data이냐일 것
 - Q024: 더 다양한 hw twin에서 결과를 뽑자 — 동일 실험을 8개 아키텍처(H100/B100/VeraRubin/최신TPU/Meta/AMD/Groq/
+- Q025: NL(G07) 심층: gradient/momentum/M3가 Miras·Atlas(omega)를 참조해 전개되는 쉬운 설명+shape+state
+- Q025: NL(G07) 심층: gradient/momentum/M3가 Miras·Atlas(omega)를 참조해 전개되는 쉬운 설명+shape+state
+- Q026: self-mod Titans 연산 재검토: v_t가 M_v로 얻은 값? 각 기호 정체·shape / 자가목표 각 5개 어떻게 / gradient
 
-### 모른다는 것도 모른다 (unknown_unknown → exploration) — 49건
+### 모른다는 것도 모른다 (unknown_unknown → exploration) — 51건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
@@ -79,8 +82,10 @@
 - Q024: 더 다양한 hw twin에서 결과를 뽑자 — 동일 실험을 8개 아키텍처(H100/B100/VeraRubin/최신TPU/Meta/AMD/Groq/
 - Q024: 더 다양한 hw twin에서 결과를 뽑자 — 동일 실험을 8개 아키텍처(H100/B100/VeraRubin/최신TPU/Meta/AMD/Groq/
 - Q024: 더 다양한 hw twin에서 결과를 뽑자 — 동일 실험을 8개 아키텍처(H100/B100/VeraRubin/최신TPU/Meta/AMD/Groq/
+- Q025: NL(G07) 심층: gradient/momentum/M3가 Miras·Atlas(omega)를 참조해 전개되는 쉬운 설명+shape+state
+- Q026: self-mod Titans 연산 재검토: v_t가 M_v로 얻은 값? 각 기호 정체·shape / 자가목표 각 5개 어떻게 / gradient
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 32건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 35건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
@@ -113,6 +118,9 @@
 - Q023: 핵심은 HATIR이 믿을만하냐, 거기서 쓴 HAT hw spec이 실제 hw를 얼마나 정교하게 표현하고 얼마나 정확한 spec data이냐일 것
 - Q023: 핵심은 HATIR이 믿을만하냐, 거기서 쓴 HAT hw spec이 실제 hw를 얼마나 정교하게 표현하고 얼마나 정확한 spec data이냐일 것
 - Q024: 더 다양한 hw twin에서 결과를 뽑자 — 동일 실험을 8개 아키텍처(H100/B100/VeraRubin/최신TPU/Meta/AMD/Groq/
+- Q025: NL(G07) 심층: gradient/momentum/M3가 Miras·Atlas(omega)를 참조해 전개되는 쉬운 설명+shape+state
+- Q026: self-mod Titans 연산 재검토: v_t가 M_v로 얻은 값? 각 기호 정체·shape / 자가목표 각 5개 어떻게 / gradient
+- Q026: self-mod Titans 연산 재검토: v_t가 M_v로 얻은 값? 각 기호 정체·shape / 자가목표 각 5개 어떻게 / gradient
 
 ### 안다는 걸 안다 (known) — 3건
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
@@ -130,6 +138,7 @@
 - **deep memory** (2): Q003, Q004
 - **associative scan** (2): Q008, Q009
 - **parallel prefix scan** (2): Q008, Q009
+- **retention gate** (2): Q013, Q025
 - **omega rule** (2): Q016, Q020
 - **associative memory** (1): Q001
 - **key-value** (1): Q001
@@ -289,7 +298,6 @@
 - **autoencoder-shaped gate** (1): Q013
 - **scalar vs vector gate** (1): Q013
 - **titans vs miras gate** (1): Q013
-- **retention gate** (1): Q013
 - **memora softmax** (1): Q013
 - **ftrl** (1): Q014
 - **follow-the-regularized-leader** (1): Q014
@@ -429,6 +437,29 @@
 - **state placement** (1): Q024
 - **provenance** (1): Q024
 - **hatir parameterized** (1): Q024
+- **dgd** (1): Q025
+- **delta momentum** (1): Q025
+- **m3** (1): Q025
+- **muon** (1): Q025
+- **newtonschulz** (1): Q025
+- **miras attentional bias** (1): Q025
+- **self-modifying titans** (1): Q025
+- **6 memories** (1): Q025
+- **q static** (1): Q025
+- **icl structural** (1): Q025
+- **meta-learned init** (1): Q025
+- **associative memory optimizer** (1): Q025
+- **v_t=m_v(x_t)** (1): Q026
+- **self-target** (1): Q026
+- **full backprop gradient** (1): Q026
+- **pre-update read** (1): Q026
+- **chunk-start snapshot** (1): Q026
+- **training chunkwise parallel** (1): Q026
+- **decode sequential** (1): Q026
+- **update-cms overlap** (1): Q026
+- **memory-bound rmw** (1): Q026
+- **part iii gap** (1): Q026
+- **grouped-gemm batchability** (1): Q026
 
 ## 3. 열린 실 (think_about)
 
@@ -525,6 +556,10 @@
 - [Q024] state 배치 축: SRAM-heavy(Cerebras/Groq)가 decode-state 병목을 구조적으로 해소 = memory-centric 논증의 하드웨어 증거
 - [Q024] vr100(BRONZE)은 발표에서 '예비'로만. GOLD/SILVER 7칩으로 결론 서고 Rubin은 미래 참조
 - [Q024] 절대치는 여전히 ideal 하한(부록 E) — 8칩에서도 단정 안 함, 비율/crossover/bound만
+- [Q025] multiarch attention-side를 Wqkv(3d²)로 잡았는데 q static이라 Wk,Wv(2d²)로 정정 여지
+- [Q025] optimizer별 decode state 배수(DGD 1/M3 3.5)가 hope-* 실험의 근거
+- [Q026] decode 임계경로=토큰간 순차 update가 E1.1b memory-bound와 정합
+- [Q026] update↔CMS overlap을 pipelining으로 잡으면 decode latency 모델에 반영
 
 ## 4. Storyline seeds
 
@@ -552,3 +587,5 @@
 - [Q022] (Part III credibility / experiments) Part III(저자 기여)의 신뢰성 서사: '측정했다'가 아니라 '결정론적으로 재현되고, 3개 독립 경로가 <1% 수렴하며, 무엇이 아직 증명 안 됐는지를 먼저 밝힌 exploration-grade warrant'. 부록 E/REPRODUCE.md가 그 증거. 세미나에선 '왜 GPU 없이도 이 숫자를 믿나'를 이 4기둥으로 답한다.
 - [Q023] (Part III credibility / HATIR + HAT spec fidelity) 세미나에서 성능 수치 신뢰성 파트: (1) 두 질문 분리 — 계산이 맞나(HATIR/ZigZag byte-exact O) vs 스펙이 실물이냐(datasheet peak, 미측정). (2) ideal-vs-실측 34% gap을 정직 공개. (3) 그럼에도 결론이 서는 이유 = 우리가 단정하는 양(crossover/bound/tier)은 모델 오차가 상쇄되는 양뿐이고, 상쇄 안 되는 절대 성능은 유보. 이 절제가 곧 신뢰성. G07 §14 + 부록 E가 근거.
 - [Q024] (multiarch cross-architecture study) 세미나 '신뢰성' 파트의 정점: 성능 수치를 8개 아키텍처에서 뽑아, 우리가 단정하는 양(S* 불변·bound 견고)이 하드웨어 전체에서 성립함을 보이고, 동시에 그 경계(Cerebras knee)와 절대치 유보를 정직히 드러낸다. 2라운드 적대검증(spec 저작+결과)이 신뢰성의 증거. multiarch/REPORT.md + REVIEW-LOG.md가 근거.
+- [Q025] (Nested Learning (HOPE) — optimizers + self-mod mechanism) NL 세미나: optimizer=memory 프레임이 DGD/DeltaMom/M3를 낳고(Miras/Atlas 이식), self-mod Titans는 투영·게이트까지 메모리화(q만 static). ICL은 ≥2레벨의 structural 결과. G07 §5·§8·§10 반영됨.
+- [Q026] (self-mod Titans mechanism + inference execution) 세미나 핵심 슬라이드: '논문은 훈련 chunkwise 병렬화만, decode 실행은 미해결'. 출력이 pre-update read라 update↔CMS는 겹치지만 토큰 간 update가 순차 임계경로=memory-bound. 이게 내 Part III(decode 비용 계량)가 메우는 지점. G07 §10 '추론 실행' 절 반영.
