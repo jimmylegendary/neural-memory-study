@@ -1117,6 +1117,37 @@ pbox(s, 0.55, 5.15, 12.23, 1.0, "6편의 완성형 (개념적)",
 # ==================================================================================
 section_divider(p, "PART C", "System modeling (우리 기여) — 이 배포는 서빙에서 얼마나 드나", GOLD)
 
+# C0 방법론 — HATIR / HAT schema / 신뢰성 / 실험 조건
+s = slide(p, "C0 · 방법론", "무엇으로 뽑았고, 왜 신뢰할 수 있나 — HAT HW schema + HATIR", GOLD)
+pbox(s, 0.55, 1.35, 6.0, 1.95, "HAT HW schema — 가속기의 '디지털 트윈'",
+     [("무엇: 가속기를 기술하는 정식 스키마(SoT). die/PE 내부(SM→ALU→ISA), 메모리 계층(HBM/L2/SRAM의 대역폭·용량), peak FLOPS를 담는다.", {}),
+      ("input: 벤더 spec(여러 번 교차검색해 신뢰).  output: .hw JSON '트윈'.", {}),
+      ("검증: schema의 verify(committee). — 증거: 수정 안 한 vLLM이 이 트윈(가짜 device)을 진짜로 믿고 구동.", {"bold": True, "color": BLUE})], ec=GOLD, bsize=10.5)
+pbox(s, 6.78, 1.35, 6.0, 1.95, "HATIR — 순수 비용(cost) 모델",
+     [("무엇: HAT IR 기반 비용 모델. 트윈과 workload를 받아 roofline 기반 시간·에너지를 낸다.", {}),
+      ("input: HW twin(.hw) + workload trace(연산 DAG).  output: 시간·에너지의 ideal 하한.", {}),
+      ("특징: magic derate·regression fitting 없이 독립 물리 요소로 분해(냉정한 하한).", {"bold": True, "color": BLUE})], ec=GOLD, bsize=10.5)
+pbox(s, 0.55, 3.45, 12.23, 0.92, "신뢰성 원칙 — 절대값이 아니라 'trend 정합'",
+     "정합 = 여러 시나리오에서 trend 일관성(절대 수치 매칭 아님). ZigZag 등 기존 도구와 7/7 일치, 42 curves / 7 아키텍처 / 12 families에서 97.6% trend 일치, fitting 없음. → 이 파트의 모든 수치는 'ideal roofline 하한'(달성 가능한 최선)으로 읽어야 한다.", ec=GREEN)
+box(s, 0.55, 4.55, 12.23, 2.25, "", fc=WHITE, ec=GREY)
+text(s, 0.75, 4.64, 8, 0.3, "실험 조건 (전 Part C 공통) — 모두 명시", size=12.5, color=INK, bold=True, space_after=0, align=PP_ALIGN.LEFT)
+text(s, 0.8, 5.05, 4.0, 1.7,
+     [("HW twin — H100", {"size": 11.5, "bold": True, "color": GOLD, "space_after": 3}),
+      ("HBM3 대역폭 3.35 TB/s", {"size": 10.5}), ("peak 0.99 PF (989 TFLOPS, bf16)", {"size": 10.5}),
+      ("ridge 295 FLOP/byte", {"size": 10.5}), ("on-chip SRAM 10 TB/s", {"size": 10.5}),
+      ("baseline L2 50 MB", {"size": 10.5})], align=PP_ALIGN.LEFT, line_spacing=1.15, space_after=2)
+text(s, 4.85, 5.05, 4.0, 1.7,
+     [("model — 1 HOPE block (B=1)", {"size": 11.5, "bold": True, "color": GOLD, "space_after": 3}),
+      ("d = 2048", {"size": 10.5}), ("self-mod Titans 5 memory:", {"size": 10.5}),
+      ("  {M_k,M_v,M_η,M_α: d², M_mem: 2d²}", {"size": 10, "mono": True}),
+      ("CMS 3 레벨 (각 d→4d→d MLP)", {"size": 10.5}),
+      ("state(RMW) 134 MB · weights 277 MB", {"size": 10.5})], align=PP_ALIGN.LEFT, line_spacing=1.15, space_after=2)
+text(s, 8.95, 5.05, 3.8, 1.7,
+     [("가정 (assumptions)", {"size": 11.5, "bold": True, "color": GOLD, "space_after": 3}),
+      ("decode C=1 (토큰당)", {"size": 10.5}), ("kernel launch time = 0", {"size": 10.5}),
+      ("gradient는 chunk 시작 상태에서 평가", {"size": 10.5}), ("출력은 갱신 전(pre-update) read", {"size": 10.5}),
+      ("수치 = max(FLOP/peak, bytes/BW)", {"size": 10, "mono": True})], align=PP_ALIGN.LEFT, line_spacing=1.15, space_after=2)
+
 # C1 pair thesis
 s = slide(p, "C1 · pair thesis", "학습은 compute-bound, 디코드는 memory-bound", GOLD)
 box(s, 0.55, 1.5, 6.0, 2.0,
@@ -1152,17 +1183,57 @@ box(s, 0.55, 5.25, 12.2, 1.0,
       "compute 쪽으로 넘어가는 'knee'가 생긴다. 각 칩 spec은 HAT hw twin으로 검증(die/PE 구조까지).",
       {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=GREYB, ec=GREY, align=PP_ALIGN.LEFT)
 
-# C3 HOPE-block roofline
-s = slide(p, "C3 · HOPE block roofline (H100 트윈)", "1개 HOPE block을 실제 수치로 — 어디가 병목인가", GOLD)
-our_fig(s, "fig-hope-dag.png", 0.55, 1.5, 6.05, 3.5,
-        "1 HOPE block(self-mod Titans→CMS)의 전 연산 DAG (B=1, chunk C, d=2048)")
-our_fig(s, "fig-hope-roofline.png", 6.85, 1.5, 5.9, 3.5,
-        "roofline·op별 시간·PIM 비교 (BW 3.35TB/s, peak 0.99PF, ridge 295)")
-box(s, 0.55, 5.15, 12.2, 1.05,
-    [("병목", {"size": 12.5, "bold": True, "color": RED, "align": PP_ALIGN.LEFT, "space_after": 2}),
-     ("C=1 디코드는 roofline 왼쪽(memory-bound). op별로 보면 CMS/DGD-apply의 state read-modify-write가 지배적. "
-      "state(≈134MB) + weights를 매 토큰 HBM(3.35TB/s)에서 읽어야 해 block당 ~203µs(ideal 하한).",
-      {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=REDB, ec=RED, align=PP_ALIGN.LEFT)
+# C3a HOPE block 구조 — 깔끔히 재작도한 DAG + op별 시간
+s = slide(p, "C3 · HOPE block 구조", "1개 block의 전 연산 (H100 트윈, d=2048, C=1) — 21개 op을 4단계로", GOLD)
+# --- 좌: stage DAG (pptx로 직접, 겹침 없이) ---
+box(s, 1.65, 1.45, 4.1, 0.44, "입력 X  [1, d]", fc=GREYB, ec=GREY, size=11.5, bold=True)
+def band(y, h, title, body, ec, fc):
+    arrow(s, 3.7, y - 0.14, 3.7, y + 0.01, color=INK, lw=1.6)
+    box(s, 0.55, y, 6.3, h, [(title, {"size": 11.5, "bold": True, "color": ec, "align": PP_ALIGN.LEFT, "space_after": 2}),
+        (body, {"size": 10, "color": INK, "align": PP_ALIGN.LEFT})], fc=fc, ec=ec, align=PP_ALIGN.LEFT)
+band(2.05, 0.74, "① 투영 (self-mod Titans) · GEMM · 17.5µs",
+     "q=X·Wq(static) · k=M_k(X) · v=M_v(X) · η=M_η(X) · α=M_α(X)", BLUE, BLUEB)
+band(2.92, 0.6, "② read (pre-update) · 5µs",
+     "o = M_mem(q) — 갱신 '전' 메모리에서 읽는다", BLUE, BLUEB)
+band(3.65, 0.86, "③ update 5 memory · 60µs  (RMW 40µs 지배)",
+     "각 memory: compute(GEMM 20µs) + DGD-apply(state RMW 40µs). RMW = memory-bound", RED, REDB)
+band(4.64, 0.95, "④ CMS 사슬 · 120µs  (RMW 40µs 지배)",
+     "L1→L2→L3 fwd (20×3=60µs) + L1 update(compute 20 + DGD-apply RMW 40µs)", RED, REDB)
+# --- 우: op-time 분해 표 ---
+box(s, 7.15, 1.45, 5.65, 4.15, "", fc=WHITE, ec=GREY)
+text(s, 7.35, 1.55, 5, 0.3, "op-time 분해 (합계 202.8µs, ideal 하한)", size=11.5, color=INK, bold=True, space_after=0, align=PP_ALIGN.LEFT)
+opb = [
+    ("① 투영 GEMM (q·k·v·η·α)", "17.5", False), ("② read o=M_mem(q) [pre-update]", "5.0", False),
+    ("③ update-compute (5 memory, GEMM)", "20.0", False), ("③ DGD-apply (5 memory, state RMW)", "40.0", True),
+    ("④ CMS L1/L2/L3 fwd (d→4d→d)", "60.0", False), ("④ CMS L1 update-compute (GEMM)", "20.0", False),
+    ("④ CMS L1 DGD-apply (state RMW)", "40.0", True),
+]
+oy = 2.05
+for name, t, mb in opb:
+    text(s, 7.35, oy, 4.4, 0.32, name, size=9.8, color=(RED if mb else INK), bold=mb, align=PP_ALIGN.LEFT, space_after=0)
+    text(s, 11.75, oy, 0.95, 0.32, t + "µs", size=9.8, color=(RED if mb else INK), bold=mb, align=PP_ALIGN.RIGHT, space_after=0)
+    oy += 0.4
+box(s, 7.35, 5.02, 5.25, 0.42, [("memory-bound RMW 합 = 80µs (전체의 40%)", {"size": 10.5, "bold": True, "color": RED})], fc=REDB, ec=RED)
+box(s, 0.55, 5.75, 12.23, 0.62,
+    [("정리", {"size": 11.5, "bold": True, "color": INK, "align": PP_ALIGN.LEFT, "space_after": 2}),
+     ("compute(GEMM)는 텐서코어로 싸지만, state RMW(빨강) 80µs가 단일 최대 비용 덩어리 — 이게 decode를 memory-bound로 만든다.",
+      {"size": 10.5, "color": INK, "align": PP_ALIGN.LEFT})], fc=GREYB, ec=GREY, align=PP_ALIGN.LEFT)
+
+# C3b roofline & 병목
+s = slide(p, "C3 · roofline & 병목", "decode C=1은 roofline 왼쪽(memory-bound) — state를 매 토큰 HBM에서 RMW", GOLD)
+our_fig(s, "fig-hope-roofline.png", 0.55, 1.5, 6.4, 4.0,
+        "(a) block AI vs chunk C — ridge 295 아래 = memory-bound  (b) op별 시간  (c) baseline vs HBM-PIM")
+pbox(s, 7.15, 1.5, 5.65, 1.55, "왜 memory-bound인가",
+     [("block의 arithmetic intensity = FLOP/bytes = 1.08e9 / 6.80e8 ≈ 1.6 FLOP/byte.", {"mono": False}),
+      ("H100 ridge = 295 FLOP/byte보다 한참 낮다 → 대역폭이 병목(roofline 왼쪽).", {"bold": True, "color": RED})], ec=RED, bsize=10.5)
+pbox(s, 7.15, 3.15, 5.65, 1.35, "병목의 정체",
+     "state(134MB, RMW되는 부분) + weights(277MB)를 매 토큰 HBM(3.35TB/s)에서 읽어야 한다. 이상적으로도 411MB / 3.35TB/s ≈ 123µs는 대역폭에 묶인다 → block당 ~203µs.", ec=GOLD, bsize=10.5)
+pbox(s, 7.15, 4.6, 5.65, 0.95, "그래서 다음(C4)",
+     "compute를 키워도 소용없다. 답은 '대역폭↑'(zHBM) 또는 'state를 on-chip에 상주'(SRAM). PIM은 in-bank 연산이 이 RMW엔 너무 느리다.", ec=BLUE, bsize=10.5)
+box(s, 0.55, 5.7, 6.4, 0.65,
+    [("H100 트윈 spec", {"size": 10.5, "bold": True, "color": GOLD, "align": PP_ALIGN.LEFT, "space_after": 1}),
+     ("HBM3 3.35 TB/s · peak 0.99 PF · ridge 295 FLOP/B · SRAM 10 TB/s · L2 50 MB", {"size": 10, "color": INK, "align": PP_ALIGN.LEFT})],
+    fc=GOLDB, ec=GOLD, align=PP_ALIGN.LEFT)
 
 # C4 memory tech
 s = slide(p, "C4 · 메모리 기술 — zHBM · HBM-PIM · SRAM", "memory-bound라면 답은 '대역폭'과 '상주'", GOLD)
