@@ -413,59 +413,155 @@ claim_slide("B1 · Titans (2501.00663)", "Titans — test-time에 학습되는 �
     "얼마나=surprise+momentum+forget → 병렬화=momentum을 associative scan으로 → 어디에 꽂나=MAC/MAG/MAL",
     "언어모델링 perplexity · NIAH(needle) · BABILong(초장문 추론)에서 baseline 상회, 메모리 깊을수록 개선")
 
-# B1.1 메커니즘 — 무엇을 어떻게 학습하나 (수식)
-s = slide(p, "B1 · Titans — 메커니즘", "메모리 = 작은 MLP를 test-time에 gradient로 갱신", GREEN)
-box(s, 0.55, 1.45, 5.7, 1.0,
-    [("무엇을 배우나 — key→value 연상", {"size": 13, "bold": True, "color": GREEN, "align": PP_ALIGN.LEFT, "space_after": 3}),
-     ("토큰 x_t → k_t=x_tW_K, v_t=x_tW_V. 메모리 M이 k_t를 넣으면 v_t가 나오도록 학습.",
-      {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=GREENB, ec=GREEN, align=PP_ALIGN.LEFT)
-fit_image(s, mp.eq(r"\ell(M_{t-1};x_t) = \big\| M_{t-1}(k_t) - v_t \big\|^2", pt=17)[0], 6.5, 1.5, 6.2, 0.9)
-eqs_titans = [
-    (r"u_t = \nabla_M\, \ell(M_{t-1}; x_t)", "momentary surprise = gradient"),
-    (r"S_t = \eta_t\, S_{t-1} - \theta_t\, u_t", "surprise memory (momentum, η=관성)"),
-    (r"M_t = (1-\alpha_t)\, M_{t-1} + S_t", "forgetting gate α로 오래된 기억 감쇠"),
-    (r"y_t = M_t(q_t)", "읽기: query q_t를 갱신된 메모리에 통과"),
+def pbox(s, x, y, w, h, header, body, ec=GREEN, fc=None, hsize=12.5, bsize=11.5):
+    """라벨 붙은 설명 박스 (Part B 논거 흐름용)."""
+    if fc is None:
+        fc = {id(BLUE): BLUEB, id(GREEN): GREENB, id(GOLD): GOLDB, id(RED): REDB, id(GREY): GREYB}.get(id(ec), GREENB)
+    body_lines = body if isinstance(body, list) else [(body, {})]
+    lines = [(header, {"size": hsize, "bold": True, "color": ec, "align": PP_ALIGN.LEFT, "space_after": 3})]
+    for it in body_lines:
+        t, o = it if isinstance(it, tuple) else (it, {})
+        d = {"size": bsize, "color": INK, "align": PP_ALIGN.LEFT, "space_after": 2}; d.update(o)
+        lines.append((t, d))
+    box(s, x, y, w, h, lines, fc=fc, ec=ec, align=PP_ALIGN.LEFT)
+
+# B1.1 문제 — 비어 있던 가운데
+s = slide(p, "B1 · Titans — 문제", "효율이 절실한 바로 그 자리(긴 문맥)에서 품질이 무너진다", GREEN)
+pbox(s, 0.55, 1.4, 6.0, 1.15, "attention (정확하지만 비쌈)",
+     "토큰마다 과거 전체를 다시 본다 → 계산 O(n²), KV 캐시가 길이에 비례해 증가. 무한정 길게는 불가능.", ec=RED)
+pbox(s, 6.78, 1.4, 6.0, 1.15, "linear recurrent (싸지만 압축)",
+     "Mamba·DeltaNet: 길이에 비례하는 싼 비용. 그러나 과거 전체를 '고정 크기 state 하나'에 눌러 담는다.", ec=BLUE)
+pbox(s, 0.55, 2.68, 12.23, 0.72, "근본 모순",
+     "싼 비용이 가장 절실한 구간 = 아주 긴 문맥. 그런데 긴 문맥일수록 작은 state에 제대로 안 담긴다 → 효율이 필요한 자리에서 품질이 무너지도록 설계돼 있다.", ec=RED)
+pbox(s, 0.55, 3.55, 6.0, 2.25, "직전 시도 TTT의 3가지 결핍",
+     [("state를 작은 모델 weights로 보고 gradient로 갱신 — LM 스케일에서 처음 작동. 그러나:", {"space_after": 4}),
+      ("① 지우기가 없다 (순수 SGD → write만 무한 누적 → 포화)", {}),
+      ("② optimizer가 기억을 못 한다 (토큰마다 자기 gradient 하나만 반영)", {}),
+      ("③ deep memory의 이득을 실험으로 답하지 않았다", {})], ec=GOLD)
+pbox(s, 6.78, 3.55, 6.0, 2.25, "다른 한쪽 — DeltaNet 계열",
+     [("memory를 matrix로 묶어 '정확한 병렬 학습 공식'을 얻음. Gated DeltaNet은 forget gate까지 추가.", {"space_after": 4}),
+      ("그러나 딜레마: '표현력 있는 갱신 규칙 + 깊은 비선형 memory'와 '병렬 학습 가능성'이 양립 불가처럼 보였다.", {}),
+      ("→ 그 가운데가 비어 있었다.", {"bold": True, "color": RED})], ec=BLUE)
+pbox(s, 0.55, 5.95, 12.23, 0.85, "Titans의 자리",
+     "표현력(깊은 비선형 memory + 똑똑한 갱신 규칙)과 병렬 학습 가능성을 동시에 — 그 '빈 가운데'를 채운다.", ec=GREEN)
+
+# B1.2 아이디어 — memory는 weights다
+s = slide(p, "B1 · Titans — 아이디어", "memory = 작은 신경망의 weights, 그 weights가 recurrent state", GREEN)
+pbox(s, 0.55, 1.4, 12.23, 0.82, "관점: 모든 sequence 모델을 세 요소로 분해",
+     "memory 구조 · write(갱신) 연산 · read(검색) 연산. 질문: test-time에 memory를 gradient로 갱신하고 그 규칙을 잘 설계하면 고정 state의 한계를 넘을 수 있지 않을까?", ec=GREEN)
+pbox(s, 0.55, 2.34, 6.0, 1.5, "memory가 푸는 문제 = associative memory regression",
+     [("작은 MLP(long-term memory module, LMM)의 weights = state.", {}),
+      ("토큰을 key/value로 투영하고, memory가 key를 넣으면 value를 재생하도록 학습:", {})], ec=GREEN)
+fit_image(s, mp.eq(r"\ell(M_{t-1};x_t) = \big\| M_{t-1}(k_t) - v_t \big\|^2", pt=17)[0], 7.0, 2.55, 5.6, 0.9)
+pbox(s, 0.55, 3.96, 6.0, 1.75, "결정적 구분 — 두 층위",
+     [("key/value/query 투영 weights = inner 문제의 hyperparameter.", {}),
+      ("→ inference 중엔 절대 안 움직이고 pre-training 값으로 고정.", {"bold": True, "color": BLUE}),
+      ("실제로 매 토큰 움직이는 건 memory의 weights뿐이다.", {"bold": True, "color": GREEN})], ec=BLUE)
+pbox(s, 6.78, 3.96, 6.0, 1.75, "무엇을 얼마나 세게 외울까 = surprise",
+     [("지금 토큰이 이미 저장된 내용을 얼마나 '위반'하는가.", {}),
+      ("= 손실의 gradient 크기.", {"bold": True}),
+      ("gradient가 클수록 새롭고 예상 밖 → 더 세게 외운다.", {})], ec=GOLD)
+pbox(s, 0.55, 5.83, 12.23, 0.95, "왜 이게 새로운가",
+     "고정 state(벡터/행렬)를 '학습되는 신경망'으로 바꾸고, 무엇을 기억할지를 '손실의 gradient'가 정하게 했다. 뒤 논문들이 이 손실·규칙·구조를 각각 일반화한다.", ec=GREY)
+
+# B1.3 방법 — 세 성분 update
+s = slide(p, "B1 · Titans — 방법", "write 연산 = 'momentum + weight decay가 붙은 gradient descent 한 스텝'", GREEN)
+tt_eqs = [
+    (r"u_t = \nabla_M\, \ell(M_{t-1}; x_t)", "① surprise = 지금 토큰의 gradient (놀라움)"),
+    (r"S_t = \eta_t\, S_{t-1} - \theta_t\, u_t", "② momentum = 과거 surprise 누적(놀란 직후도 기억)"),
+    (r"M_t = (1-\alpha_t)\, M_{t-1} + S_t", "③ weight decay = α로 오래된 기억 감쇠(잊기)"),
+    (r"y_t = M_t(q_t)", "read = query q_t를 갱신된 memory에 통과"),
 ]
-ey = 2.7
-box(s, 0.55, ey, 12.2, 2.15, "", fc=WHITE, ec=GREY)
-text(s, 0.75, ey + 0.1, 6, 0.3, "갱신 규칙 (η, θ, α는 데이터 의존)", size=12.5, color=INK, bold=True, space_after=0)
-cy = ey + 0.55
-for ltx, note in eqs_titans:
-    _pp, ww, hh = mp.eq(ltx, pt=15)
-    fit_image(s, _pp, 0.95, cy, ww, 0.34)
-    text(s, 0.95 + ww + 0.4, cy - 0.03, 12.2 - (ww + 1.6), 0.4, note, size=12, color=MUTE,
-         align=PP_ALIGN.LEFT, anchor=MSO_ANCHOR.MIDDLE, space_after=0)
-    cy += 0.38
-box(s, 0.55, 5.05, 12.2, 1.05,
-    [("핵심 포인트", {"size": 12.5, "bold": True, "color": BLUE, "align": PP_ALIGN.LEFT, "space_after": 3}),
-     ("이 3식은 A2의 'momentum + weight decay가 붙은 gradient descent'와 정확히 같은 모양이다 — 다만 대상이 "
-      "모델 파라미터가 아니라 '추론 중 메모리 M'이다. 즉 학습(training)의 도구를 추론(inference) 안으로 가져왔다.",
-      {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=BLUEB, ec=BLUE, align=PP_ALIGN.LEFT)
+box(s, 0.55, 1.42, 7.35, 3.05, "", fc=WHITE, ec=GREY)
+text(s, 0.75, 1.5, 6.8, 0.3, "master update (η, θ, α는 상수가 아니라 토큰마다 학습된 gate)", size=11.5, color=INK, bold=True, space_after=0, align=PP_ALIGN.LEFT)
+cy = 1.9
+for ltx, note in tt_eqs:
+    _pp, ww, hh = mp.eq(ltx, pt=14)
+    fit_image(s, _pp, 0.9, cy, min(ww, 6.4), 0.34)
+    text(s, 0.9, cy + 0.36, 6.9, 0.26, note, size=10, color=MUTE, align=PP_ALIGN.LEFT, space_after=0)
+    cy += 0.62
+pbox(s, 8.1, 1.42, 4.68, 1.45, "왜 momentum인가",
+     "큰 surprise 직후엔 손실이 이미 낮아 gradient가 급감 → 이어지는 중요한 토큰이 약하게 저장됨. 과거 surprise를 buffer에 누적해 '놀란 시간대 전체'를 기억.", ec=GOLD, bsize=11)
+pbox(s, 8.1, 2.97, 4.68, 1.5, "왜 weight decay인가",
+     "수백만 토큰을 다루면 깊은 memory도 포화. α_t배만 남겨 잊는다. 이는 Mamba-2·GLA·Gated DeltaNet의 gate를 '임의의 깊은 memory'로 일반화한 것.", ec=GOLD, bsize=11)
+pbox(s, 0.55, 4.6, 12.23, 0.72, "첫 번째 발명",
+     "optimizer의 내부 state(momentum buffer S_t)를 sequence 레이어의 recurrent state로 '승격'시켰다. ablation 기여도: weight decay > momentum.", ec=GREEN)
+pbox(s, 0.55, 5.45, 12.23, 1.33, "A2와의 정확한 대응",
+     [("이 세 식은 A2의 'momentum + weight decay가 붙은 gradient descent'와 글자 그대로 같은 모양이다.", {"space_after": 3}),
+      ("다만 대상이 '모델 파라미터'가 아니라 '추론 중 memory M'이다 — 학습(training)의 도구를 추론(inference) 안으로 가져왔다.", {"bold": True, "color": BLUE})], ec=BLUE)
 
-# B1.2 아키텍처 삽입 — MAC/MAG/MAL (논문 그림)
-s = slide(p, "B1 · Titans — 어디에 꽂나", "MAC · MAG · MAL — 메모리를 아키텍처에 넣는 3가지", GREEN)
-fig_with_caption(s, "2501.00663", 2, 0.55, 1.5, 6.05, 3.4,
-                 "MAC: 메모리를 검색해 attention의 '문맥'으로 넣음 (persistent+core+contextual)")
-fig_with_caption(s, "2501.00663", 4, 6.85, 1.5, 5.9, 3.4,
-                 "MAG: 장기 메모리 분기와 sliding-window attention 분기를 게이트로 결합")
-box(s, 0.55, 5.05, 12.2, 1.15,
-    [("세 방식의 차이", {"size": 12.5, "bold": True, "color": GREEN, "align": PP_ALIGN.LEFT, "space_after": 3}),
-     ("MAC=메모리 출력을 문맥으로 concat(가장 강함, 느림) · MAG=게이트로 혼합 · MAL=메모리를 attention 앞 레이어로. "
-      "공통: persistent memory(입력 독립 작업기억) + core(단기 attention) + long-term memory(위 식으로 학습). "
-      "MAL은 그림 생략(레이어형).", {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})],
-    fc=GREENB, ec=GREEN, align=PP_ALIGN.LEFT)
+# B1.4 outer vs inner loop (이 섹션의 심장)
+s = slide(p, "B1 · Titans — outer vs inner loop", "그 gate들은 대체 누가 학습하나? — 두 개의 loop", GREEN)
+pbox(s, 0.55, 1.4, 6.0, 2.35, "바깥 loop = 평범한 pre-training (딱 한 번, 배포 후 동결)",
+     [("학습 대상: key/value/query 투영, gate를 뱉는 head, persistent token, attention 블록, 그리고 memory의 '초기 상태'.", {}),
+      ("도구: AdamW · 대량 데이터.", {}),
+      ("→ 이 전부가 배포 뒤엔 고정(frozen).", {"bold": True, "color": BLUE})], ec=BLUE)
+pbox(s, 6.78, 1.4, 6.0, 2.35, "안쪽 loop = memory weights 갱신 (매 토큰, inference 중에도)",
+     [("sequence마다 진화하는 텐서는 딱 둘: memory weights W_t 와 momentum buffer S_t.", {}),
+      ("나머지는 전부 동결.", {}),
+      ("→ 매 토큰 memory를 고쳐 쓴다.", {"bold": True, "color": GREEN})], ec=GREEN)
+pbox(s, 0.55, 3.9, 12.23, 1.05, "가장 중요한 사실 — outer gradient가 unroll된 inner update를 '관통'한다",
+     "key 투영을 조금 바꾸면 → 매 토큰 inner gradient가 바뀌고 → memory 궤적 전체가 바뀌어 → 최종 손실이 바뀐다. 그 연쇄 전체의 gradient가 투영을 학습시킨다. (= 'optimizer를 미분한다')", ec=GOLD)
+pbox(s, 0.55, 5.05, 12.23, 0.82, "gate에 대한 답",
+     "η·β·α의 '값'은 inference 중 매 토큰 새로 계산되지만, 그 값을 만드는 '함수'는 pre-training에서만 학습되고 이후 동결. 학습은 함수를 만들고, inference는 그 함수로 memory를 고쳐 쓴다.", ec=GREEN)
+pbox(s, 0.55, 5.95, 12.23, 0.85, "그 결과 — decode의 정의가 바뀐다",
+     "더는 'read-only forward + KV append'가 아니라 forward + backward(gradient) + optimizer step + read. backward가 decode 안으로 들어온다. (→ Part C에서 이 비용을 잰다.)", ec=RED)
 
-# B1.3 증명 — 논문 실험
-s = slide(p, "B1 · Titans — 증명", "초장문에서 baseline 상회, 메모리가 깊을수록 좋아진다", GREEN)
+# B1.5 chunkwise 병렬화
+s = slide(p, "B1 · Titans — 병렬화", "매 토큰 순차 gradient는 가속기 최악 → chunkwise로 GEMM화", GREEN)
+fig_with_caption(s, "2501.00663", 1, 0.55, 1.5, 6.05, 3.6,
+                 "Figure 1 — chunk 안은 병렬, chunk 경계만 비선형 재진입")
+pbox(s, 6.78, 1.5, 6.0, 1.5, "핵심 트릭",
+     "sequence를 크기 C의 chunk로 자르고, chunk 안 모든 gradient를 'chunk 시작 시점의 동결된 weights'에서 한꺼번에 평가 → C개를 동시에 = GEMM 2개. C가 write GEMM의 내적 차원 = arithmetic intensity의 손잡이.", ec=GREEN, bsize=11)
+pbox(s, 6.78, 3.1, 6.0, 2.0, "세 조각",
+     [("• chunk 안 갱신은 linear → cumsum, 경계 재진입은 nonlinear → gradient", {}),
+      ("• momentum buffer = 1차 선형 recurrence → Mamba의 selective scan과 같은 모양 → parallel scan(log-depth)", {}),
+      ("• weight decay = 누적 곱을 대각으로 접은 matmul로 흡수", {})], ec=BLUE, bsize=10.5)
+pbox(s, 0.55, 5.25, 12.23, 1.0, "핵심 협상",
+     "chunk 안은 linear라서 병렬, chunk 사이는 nonlinear라서 표현력. 순차 임계경로가 L이 아니라 L/C번의 MLP 적용으로 줄고, 그 비선형 경계가 표현력의 근거. (DeltaNet이 closed-form 위해 전부 linear로 남은 것과 의도적으로 다른 선택.)", ec=GREY)
+
+# B1.6 합성 — MAC/MAG/MAL
+s = slide(p, "B1 · Titans — 합성", "attention(정밀 단기) + LMM(서서히 잊는 장기)을 합치는 3가지", GREEN)
+fig_with_caption(s, "2501.00663", 2, 0.55, 1.5, 6.05, 3.5,
+                 "Figure 2 — MAC: 검색한 과거를 현재 앞에 붙여 attention이 함께 봄")
+pbox(s, 6.78, 1.5, 6.0, 1.35, "MAC (Memory as Context) — 가장 강함",
+     "contextual 갈래가 과거를 검색해 현재 입력 앞에 붙이고, attention이 '검색된 역사 + 현재'를 함께 본다 → 장기 정보 필요 여부를 토큰 단위로 판단. attention이 write filter 역할.", ec=GREEN, bsize=10.5)
+pbox(s, 6.78, 2.95, 6.0, 1.1, "MAG · MAL",
+     "MAG: sliding-window attention과 LMM을 병렬로 돌려 gate로 섞음. MAL: LMM을 attention 앞 레이어로 직렬 — 논문이 '가장 약함'이라 명시(파이프라인 힘이 각 단으로 상한).", ec=BLUE, bsize=10.5)
+pbox(s, 6.78, 4.15, 6.0, 0.95, "숨은 한 방",
+     "H3 이래 대부분의 기존 hybrid(Samba·Griffin)가 사실상 MAL 모양 → 'MAC/MAG > MAL' 결과는 hybrid 설계 관행 자체에 대한 기소장.", ec=GOLD, bsize=10.5)
+pbox(s, 0.55, 5.2, 6.0, 1.05, "세 갈래 (공통)",
+     "persistent(입력 독립·동결 작업기억) + core(단기 attention·ICL) + long-term memory(위 식으로 test-time 학습).", ec=GREY, bsize=11)
+pbox(s, 6.78, 5.2, 6.0, 1.05, "test-time 역할 분담",
+     "memory = 여전히 학습 중 · attention = in-context learning · persistent = 고정. (그림의 눈송이 = 동결.)", ec=GREY, bsize=11)
+
+# B1.7 결과
+s = slide(p, "B1 · Titans — 결과", "state가 길이에 무관하게 일정 → 초장문에서 훨씬 큰 모델을 이긴다", GREEN)
 fig_with_caption(s, "2501.00663", 6, 0.55, 1.5, 6.05, 3.5,
-                 "BABILong: Titans(MAC)가 GPT-4·Mamba·RMT 등보다 긴 문맥에서 우위")
+                 "Figure 6 — BABILong: MAC가 GPT-4·Mamba 2.8B·RWKV 7B를 앞섬(적은 파라미터로)")
 fig_with_caption(s, "2501.00663", 7, 6.85, 1.5, 5.9, 3.5,
-                 "메모리 깊이(MLP 층수)↑ → perplexity↓, 특히 긴 문맥에서 이득")
-box(s, 0.55, 5.15, 12.2, 1.0,
-    [("읽는 법", {"size": 12.5, "bold": True, "color": INK, "align": PP_ALIGN.LEFT, "space_after": 3}),
-     ("왼쪽: 문맥 길이가 늘어도 정확도 유지(=압축이 실제로 기억을 보존). 오른쪽: '메모리를 깊게 = 표현력↑'이 "
-      "실측으로 확인 → 뒤 논문들이 '메모리 용량·표현력'을 키우는 방향으로 나아가는 근거.",
-      {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=GREYB, ec=GREY, align=PP_ALIGN.LEFT)
+                 "Figure 7 — 메모리 깊이(1→4층)↑ → 모든 길이에서 perplexity↓")
+pbox(s, 0.55, 5.15, 12.23, 1.1, "읽는 법 (정직성: 방향·비율 위주)",
+     [("• S-NIAH: Titans는 2K~16K 전 구간 높은 정확도. Mamba-2는 긴 구간 붕괴(얕은 state), DeltaNet은 과제별 붕괴(forget 없음), TTT는 처짐(retention gate 없음) — 세 성분이 각 경쟁자를 이긴 이유와 일치.", {}),
+      ("• fine-tuning BABILong: 작은 MAC가 파라미터 ~70배인 Llama3.1-8B/70B·Qwen2.5-72B를 넘어 2M 토큰 너머까지 유지. (비통제 비교라 인과는 ablation 범위에서만 주장.)", {})], ec=GREY, bsize=10.5)
+
+# B1.8 한계 & 다음
+s = slide(p, "B1 · Titans — 한계 & 다음", "point design이 분해되어 좌표계가 된다 → Miras", GREEN)
+pbox(s, 0.55, 1.4, 6.0, 3.55, "정직한 한계 5가지",
+     [("① point design — 왜 하필 제곱오차 손실? 왜 SGD+momentum+decay? 논거 없음.", {}),
+      ("② 미명시 세부 — gate 함수형·memory 폭·chunk 크기(v1 부재).", {}),
+      ("③ 근사 비용 미측정 — chunk 안 gradient는 stale, chunk sweep 없음. train(chunk)/serve(토큰) 불일치 제기조차 안 됨 (→ TNT의 출발점).", {}),
+      ("④ 표현력 정리에 증명 없음.", {}),
+      ("⑤ 증거가 전부 ≤760M·4K 훈련길이. decode wall-clock 수치는 전무(→ Part C).", {})], ec=RED, bsize=10.5)
+pbox(s, 6.78, 1.4, 6.0, 1.7, "시스템 관점 핵심 교환",
+     [("state가 길이에 무관하게 일정 (memory weights + momentum buffer = 고정 크기).", {"bold": True, "color": GREEN}),
+      ("KV cache는 길이에 비례 → 2M 토큰 능력이 정확히 이 교환 위에 섬. 대가: momentum이 state 2배, decode가 read-modify-write.", {})], ec=GREEN, bsize=11)
+pbox(s, 6.78, 3.2, 6.0, 1.75, "다음으로의 연결 — Miras",
+     [("Appendix C가 Gated DeltaNet·Longhorn·RWKV-7·TTT를 전부 자기 update의 특수 사례로 '회수'.", {}),
+      ("momentum 끄면 Gated DeltaNet, forget+momentum 끄면 TTT …", {}),
+      ("→ 계보 전체가 '하나의 설계 공간의 점들'. 그 좌표축을 명명한 것이 Miras.", {"bold": True, "color": GOLD})], ec=GOLD, bsize=10.5)
+pbox(s, 0.55, 5.1, 12.23, 1.15, "한 줄 요약",
+     "Titans = memory를 weights로 보고, surprise를 gradient로 정의, momentum으로 시간 흐름, weight decay로 잊기, 깊은 MLP에 넣고도 chunkwise로 병렬 학습. 남은 질문(왜 이 손실? 왜 이 규칙?)이 Miras·Atlas·HOPE로 이어진다.", ec=GREEN)
 
 # ------------------------------ B2. Miras ------------------------------
 claim_slide("B2 · Miras (2504.13173)", "Miras — 메모리는 하나의 online 최적화; 4축 설계공간", GREEN,
