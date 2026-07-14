@@ -1,0 +1,59 @@
+{
+ "_comment": "HBM-PIM (1x) (analytical / BRONZE — zHBM is Samsung roadmap, no silicon)",
+ "level_id": "mem",
+ "role": "hbm",
+ "scope": "package",
+ "residency": "sw_managed",
+ "capacity_bytes": 68719476736,
+ "bandwidth_bps": 3350000000000.0,
+ "line_bytes": 32,
+ "mem_standard": "hbm3",
+ "energy_pj_per_byte": 5.0,
+ "provenance": "analytical",
+ "peak_macs_per_s": 1200000000000.0,
+ "matrix_unit": [
+  1,
+  1,
+  1
+ ],
+ "dtype_bytes": 2,
+ "internal_bank_bw_bps": 8200000000000.0,
+ "process_node": "N7",
+ "dataflow": "in_memory_broadcast",
+ "children": [
+  {
+   "level_id": "sram",
+   "role": "sram",
+   "scope": "die",
+   "residency": "hw_cache",
+   "capacity_bytes": 52428800,
+   "bandwidth_bps": 10000000000000.0,
+   "line_bytes": 128,
+   "children": [
+    {
+     "level_id": "mxu",
+     "role": "compute",
+     "scope": "soc",
+     "instances": 132,
+     "peak_macs_per_s": 3748000000000.0,
+     "matrix_unit": [
+      16,
+      8,
+      16
+     ],
+     "dtype_bytes": 2,
+     "acc_dtype_bytes": 4,
+     "clock_hz": 1980000000.0,
+     "process_node": "N4",
+     "provenance": "vendor_whitepaper"
+    }
+   ]
+  }
+ ],
+ "meta": {
+  "class": "dram",
+  "added_compute_mm2": 0.8,
+  "die_area_budget_mm2": 100.0,
+  "note": "HBM-PIM (1x)"
+ }
+}

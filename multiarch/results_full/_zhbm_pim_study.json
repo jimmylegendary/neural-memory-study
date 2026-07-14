@@ -1,0 +1,185 @@
+{
+ "d": 2048,
+ "assumptions": {
+  "HBM3_BW": 3350000000000.0,
+  "ZHBM_BW": 26800000000000.0,
+  "PIM_MACS_BASE": 1200000000000.0,
+  "MAC_DENSITY_N7": 1500000000000.0,
+  "MAC_DENSITY_ZHBM": 2500000000000.0,
+  "apply_mac_per_elem": 2.0
+ },
+ "titans_spec_req_TMACs": {
+  "hbm_pim": 8.2,
+  "zhbm_pim": 53.6
+ },
+ "configs": [
+  {
+   "name": "HBM (H100)",
+   "ext_BW": 3350000000000.0,
+   "macs": 0,
+   "added_area_mm2": 0.0,
+   "internal_BW": 3350000000000.0,
+   "verify_ok": true,
+   "grade": "D-directional",
+   "reasons": [],
+   "roofline": {
+    "1": {
+     "serial_us": 202.83881074626862,
+     "overlap_us": 202.83881074626862
+    },
+    "64": {
+     "serial_us": 202.83881074626862,
+     "overlap_us": 202.83881074626862
+    },
+    "512": {
+     "serial_us": 501.2312989096965,
+     "overlap_us": 501.2312989096965
+    }
+   }
+  },
+  {
+   "name": "zHBM (4x HBM4)",
+   "ext_BW": 26800000000000.0,
+   "macs": 0,
+   "added_area_mm2": 0.0,
+   "internal_BW": 26800000000000.0,
+   "verify_ok": true,
+   "grade": "D-directional",
+   "reasons": [],
+   "roofline": {
+    "1": {
+     "serial_us": 25.354851343283578,
+     "overlap_us": 25.354851343283578
+    },
+    "64": {
+     "serial_us": 62.65391236371206,
+     "overlap_us": 62.65391236371206
+    },
+    "512": {
+     "serial_us": 431.1132809992488,
+     "overlap_us": 431.1132809992488
+    }
+   }
+  },
+  {
+   "name": "HBM-PIM (1x)",
+   "ext_BW": 3350000000000.0,
+   "macs": 1200000000000.0,
+   "added_area_mm2": 0.8,
+   "internal_BW": 8200000000000.0,
+   "verify_ok": true,
+   "grade": "D-directional",
+   "reasons": [],
+   "roofline": {
+    "1": {
+     "serial_us": 346.41379980099504,
+     "overlap_us": 223.70986666666664
+    },
+    "64": {
+     "serial_us": 346.41379980099504,
+     "overlap_us": 223.70986666666664
+    },
+    "512": {
+     "serial_us": 644.8062879644228,
+     "overlap_us": 421.0964212977562
+    }
+   }
+  },
+  {
+   "name": "zHBM-PIM (1x)",
+   "ext_BW": 26800000000000.0,
+   "macs": 1200000000000.0,
+   "added_area_mm2": 0.48,
+   "internal_BW": 53600000000000.0,
+   "verify_ok": true,
+   "grade": "D-directional",
+   "reasons": [],
+   "roofline": {
+    "1": {
+     "serial_us": 239.0478583084577,
+     "overlap_us": 223.70986666666664
+    },
+    "64": {
+     "serial_us": 276.34691932888614,
+     "overlap_us": 223.70986666666664
+    },
+    "512": {
+     "serial_us": 644.8062879644228,
+     "overlap_us": 421.0964212977562
+    }
+   }
+  },
+  {
+   "name": "zHBM-PIM (2x)",
+   "ext_BW": 26800000000000.0,
+   "macs": 2400000000000.0,
+   "added_area_mm2": 0.96,
+   "internal_BW": 53600000000000.0,
+   "verify_ok": true,
+   "grade": "D-directional",
+   "reasons": [],
+   "roofline": {
+    "1": {
+     "serial_us": 127.19292497512437,
+     "overlap_us": 111.85493333333332
+    },
+    "64": {
+     "serial_us": 164.49198599555285,
+     "overlap_us": 111.85493333333332
+    },
+    "512": {
+     "serial_us": 532.9513546310895,
+     "overlap_us": 421.0964212977562
+    }
+   }
+  },
+  {
+   "name": "zHBM-PIM (5x)",
+   "ext_BW": 26800000000000.0,
+   "macs": 6000000000000.0,
+   "added_area_mm2": 2.4,
+   "internal_BW": 53600000000000.0,
+   "verify_ok": true,
+   "grade": "D-directional",
+   "reasons": [],
+   "roofline": {
+    "1": {
+     "serial_us": 60.079964975124376,
+     "overlap_us": 44.741973333333334
+    },
+    "64": {
+     "serial_us": 97.37902599555287,
+     "overlap_us": 52.637052662219524
+    },
+    "512": {
+     "serial_us": 465.83839463108956,
+     "overlap_us": 421.0964212977562
+    }
+   }
+  },
+  {
+   "name": "zHBM-PIM (10x)",
+   "ext_BW": 26800000000000.0,
+   "macs": 12000000000000.0,
+   "added_area_mm2": 4.8,
+   "internal_BW": 53600000000000.0,
+   "verify_ok": true,
+   "grade": "D-directional",
+   "reasons": [],
+   "roofline": {
+    "1": {
+     "serial_us": 37.70897830845771,
+     "overlap_us": 22.370986666666667
+    },
+    "64": {
+     "serial_us": 75.0080393288862,
+     "overlap_us": 52.637052662219524
+    },
+    "512": {
+     "serial_us": 443.4674079644229,
+     "overlap_us": 421.0964212977562
+    }
+   }
+  }
+ ]
+}
