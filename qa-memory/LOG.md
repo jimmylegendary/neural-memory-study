@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 28건.
+총 29건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -364,4 +364,17 @@
 - 생각할 것: consolidation 시 router 강제선택 규칙이 원문에 dreaming만큼 명시 안됨=구현 재현 시 확인 필요; sleep optimizer(Adam?) 미명시—재현 runbook에 가정으로
 - storyline seed: Sleep consolidation 내부: on-policy(student rollout)+RL(policy-grad), router 강제 expert선택으로 새 low-rank expert에 gradient 흘림, 나머지 freeze. reset=(de)activation의 deactivate side. optimizer/momentum은 offline 임시. 세미나: '새 expert만 backward, RL은 policy-gradient, memory는 안 남고 weight만 남는다'.
 - 연상: Q025
+
+## Q029 · 2026-07-15 · Sleep data provenance (offline) + NL online consolidation
+
+**Q.** Sleep는 전부 offline 학습? offline시 각 단계(consolidation, dreaming)별로 어떤 data를 어떻게 만들어 주는지 데이터 확보 방식을 논문 근거에 한정해 확실히. 모르는 부분은 모른다고+추정. 그리고 Hope에 online consolidation 언급—NL 다시 보고 CMS의 online consolidation 어떻게 하는지 확인·설명.
+
+**A.** Sleep=전부 offline, 외부입력 안받음(line325), 외부데이터 접근제한(390), raw replay 아니고 self-generated. Consolidation: 증류D=teacher LM_θ 자샘플(399), on-policy=student LM_θexp rollout(λ항), LTI=teacher dream+random prefix→semantic+Levenshtein reward. Dreaming: sampled task(C,τ)에서 DREAM∼LM_θ(·|C), router가 random expert 강제선택해 novel 지식 주입(479), importance g_DR=∇L_SFT로 top-k+b random 선택, 각 dream을 isolated 인스턴스에 LoRA SFT→성능개선시 reward1(SEAL)→ReST^EM. 미명시(c): consolidation teacher 샘플링 prompt 조건, dreaming task(C,τ) 분포 출처(τ=downstream 측정이라 target task 추정). NL online consolidation=명시(line119 'memory consolidation as online process'). 메커니즘(1724-9): CMS 레벨 간 지식전달=빠른→느린 레벨로 memory 초기상태 meta-learning; 느린 레벨이 W_init 학습, context 경계마다 빠른 레벨 reset→지식 consolidate. deep memory(Titans/Atlas/Miras/TTT)는 함, linear은 없음. 고정용량이라 한계→Sleep offline(param 성장+distill)이 확장. 초기상태 학습 자체는 outer backprop(inference 실시간 아님).
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known: Sleep 데이터는 전부 self-generated(teacher/student 자샘플, dream), 외부 raw 없음; unknown_unknown: consolidation prompt 조건·dreaming task(C,τ) 분포 출처는 원문 미명시(c); unknown_known: NL online consolidation=초기상태 meta-learning+reset(고정용량); Sleep offline=param 성장+distill로 확장
+- 개념 key: offline self-generated data, teacher sampling D, on-policy rollout, LTI dream prefix, dreaming task (C,tau), router random expert, gradient importance selection, LoRA SFT ReSTEM, NL online consolidation, meta-learned initial state, W_init reset, fixed capacity limit
+- 생각할 것: dreaming task(C,τ) 출처 미명시—재현 시 target downstream task 분포로 가정 필요; NL 초기상태 meta-learning은 outer backprop이라 online consolidation이 inference 실시간 학습은 아님—명명 주의
+- storyline seed: 두 consolidation의 대비: NL online=초기상태 meta-learning+context 경계 reset(고정용량, deep memory만), Sleep offline=self-generated distillation으로 low-rank expert 성장(용량 확장). 데이터는 둘 다 self-generated(외부 없음), 유일 앵커는 dreaming task(C,τ)인데 출처 덜 특정. 세미나: wake=online(reset), sleep=offline(성장).
+- 연상: Q027, Q028, Q025
 

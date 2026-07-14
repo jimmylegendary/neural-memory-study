@@ -1,10 +1,10 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-28건. story line 짤 때 여기서 꺼낸다.
+29건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
-### 모른다는 걸 안다 (known_unknown → decomposition) — 29건
+### 모른다는 걸 안다 (known_unknown → decomposition) — 30건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q003: 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1
@@ -34,8 +34,9 @@
 - Q027: Sleep consolidation 기초: figure의 MLP·low-rank MLP 가로줄이 같은 update 주기 FFN? MLP shap
 - Q028: Sleep 심화: step2 on-policy rollout 설명 없음. teacher/student 출력 다 나와야 학습→router는 어케?
 - Q028: Sleep 심화: step2 on-policy rollout 설명 없음. teacher/student 출력 다 나와야 학습→router는 어케?
+- Q029: Sleep는 전부 offline 학습? offline시 각 단계(consolidation, dreaming)별로 어떤 data를 어떻게 만들어 
 
-### 모른다는 것도 모른다 (unknown_unknown → exploration) — 52건
+### 모른다는 것도 모른다 (unknown_unknown → exploration) — 53건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
@@ -88,8 +89,9 @@
 - Q025: NL(G07) 심층: gradient/momentum/M3가 Miras·Atlas(omega)를 참조해 전개되는 쉬운 설명+shape+state
 - Q026: self-mod Titans 연산 재검토: v_t가 M_v로 얻은 값? 각 기호 정체·shape / 자가목표 각 5개 어떻게 / gradient
 - Q027: Sleep consolidation 기초: figure의 MLP·low-rank MLP 가로줄이 같은 update 주기 FFN? MLP shap
+- Q029: Sleep는 전부 offline 학습? offline시 각 단계(consolidation, dreaming)별로 어떤 data를 어떻게 만들어 
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 39건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 41건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
@@ -129,6 +131,8 @@
 - Q027: Sleep consolidation 기초: figure의 MLP·low-rank MLP 가로줄이 같은 update 주기 FFN? MLP shap
 - Q028: Sleep 심화: step2 on-policy rollout 설명 없음. teacher/student 출력 다 나와야 학습→router는 어케?
 - Q028: Sleep 심화: step2 on-policy rollout 설명 없음. teacher/student 출력 다 나와야 학습→router는 어케?
+- Q029: Sleep는 전부 offline 학습? offline시 각 단계(consolidation, dreaming)별로 어떤 data를 어떻게 만들어 
+- Q029: Sleep는 전부 offline 학습? offline시 각 단계(consolidation, dreaming)별로 어떤 data를 어떻게 만들어 
 
 ### 안다는 걸 안다 (known) — 3건
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
@@ -148,6 +152,7 @@
 - **parallel prefix scan** (2): Q008, Q009
 - **retention gate** (2): Q013, Q025
 - **omega rule** (2): Q016, Q020
+- **on-policy rollout** (2): Q028, Q029
 - **associative memory** (1): Q001
 - **key-value** (1): Q001
 - **query** (1): Q001
@@ -481,7 +486,6 @@
 - **masking activation** (1): Q027
 - **wake/sleep offline** (1): Q027
 - **parameter expansion** (1): Q027
-- **on-policy rollout** (1): Q028
 - **gkd lambda** (1): Q028
 - **router forced expert** (1): Q028
 - **masking/unmask** (1): Q028
@@ -491,6 +495,17 @@
 - **policy gradient lti** (1): Q028
 - **low-rank only backward** (1): Q028
 - **transient optimizer state** (1): Q028
+- **offline self-generated data** (1): Q029
+- **teacher sampling d** (1): Q029
+- **lti dream prefix** (1): Q029
+- **dreaming task (c,tau)** (1): Q029
+- **router random expert** (1): Q029
+- **gradient importance selection** (1): Q029
+- **lora sft restem** (1): Q029
+- **nl online consolidation** (1): Q029
+- **meta-learned initial state** (1): Q029
+- **w_init reset** (1): Q029
+- **fixed capacity limit** (1): Q029
 
 ## 3. 열린 실 (think_about)
 
@@ -595,6 +610,8 @@
 - [Q027] expert pool 성장이 곧 total param 성장(§5 scaling과 연결)
 - [Q028] consolidation 시 router 강제선택 규칙이 원문에 dreaming만큼 명시 안됨=구현 재현 시 확인 필요
 - [Q028] sleep optimizer(Adam?) 미명시—재현 runbook에 가정으로
+- [Q029] dreaming task(C,τ) 출처 미명시—재현 시 target downstream task 분포로 가정 필요
+- [Q029] NL 초기상태 meta-learning은 outer backprop이라 online consolidation이 inference 실시간 학습은 아님—명명 주의
 
 ## 4. Storyline seeds
 
@@ -626,3 +643,4 @@
 - [Q026] (self-mod Titans mechanism + inference execution) 세미나 핵심 슬라이드: '논문은 훈련 chunkwise 병렬화만, decode 실행은 미해결'. 출력이 pre-update read라 update↔CMS는 겹치지만 토큰 간 update가 순차 임계경로=memory-bound. 이게 내 Part III(decode 비용 계량)가 메우는 지점. G07 §10 '추론 실행' 절 반영.
 - [Q027] (Sleep — memory consolidation basics) Sleep=wake/sleep lifecycle. sleep offline에서 fast block 지식을 느린 블록에 low-rank expert로 seed(GKD+RL), 새 expert만 학습, fast block reset. decode wall-clock처럼 concurrent serve+consolidate도 논문 미규정=systems 공백.
 - [Q028] (Sleep — consolidation internals (router/on-policy/optimizer)) Sleep consolidation 내부: on-policy(student rollout)+RL(policy-grad), router 강제 expert선택으로 새 low-rank expert에 gradient 흘림, 나머지 freeze. reset=(de)activation의 deactivate side. optimizer/momentum은 offline 임시. 세미나: '새 expert만 backward, RL은 policy-gradient, memory는 안 남고 weight만 남는다'.
+- [Q029] (Sleep data provenance (offline) + NL online consolidation) 두 consolidation의 대비: NL online=초기상태 meta-learning+context 경계 reset(고정용량, deep memory만), Sleep offline=self-generated distillation으로 low-rank expert 성장(용량 확장). 데이터는 둘 다 self-generated(외부 없음), 유일 앵커는 dreaming task(C,τ)인데 출처 덜 특정. 세미나: wake=online(reset), sleep=offline(성장).
