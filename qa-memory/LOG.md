@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 26건.
+총 28건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -338,4 +338,30 @@
 - 생각할 것: decode 임계경로=토큰간 순차 update가 E1.1b memory-bound와 정합; update↔CMS overlap을 pipelining으로 잡으면 decode latency 모델에 반영
 - storyline seed: 세미나 핵심 슬라이드: '논문은 훈련 chunkwise 병렬화만, decode 실행은 미해결'. 출력이 pre-update read라 update↔CMS는 겹치지만 토큰 간 update가 순차 임계경로=memory-bound. 이게 내 Part III(decode 비용 계량)가 메우는 지점. G07 §10 '추론 실행' 절 반영.
 - 연상: Q025, Q021
+
+## Q027 · 2026-07-15 · Sleep — memory consolidation basics
+
+**Q.** Sleep consolidation 기초: figure의 MLP·low-rank MLP 가로줄이 같은 update 주기 FFN? MLP shape(d×d vs d×d_low)·개수? sleep 과정 1,2,3 단계·high/lower freq 영역·teacher/student·복사 여부·lifecycle? consolidation=wake→sleep 전환이라 추론 불가? 아니면 그 FFN만 빼서 동시 distill?
+
+**A.** CMS=MLP블록 사슬, 각 블록=sparse MoE(router R^(f_ℓ)+experts {W,1..s_ℓ}). 한 가로줄=한 블록(같은 주기 f_ℓ). regular expert=full FFN, 추가 expert=low-rank {A∈R^{d×d_low},B∈R^{d_low×d}, d_low≪d}(d×d 아님). 개수 s_ℓ은 consolidation마다 +1(미리 할당+masking, 활성화 시 unmask). 과정: (1)Param Expansion=느린 블록 ℓ*에 low-rank expert 하나 append(FFN 통째 복사 아님). (2)Knowledge Seeding=upward distillation, teacher=LM_θ(확장전), student=LM_θexp(확장후), GKD(on-policy)+RL LTI(dream prefix 이어쓰기, semantic+Levenshtein reward), 새 expert만 학습·나머지 freeze. (3)Synaptic pruning=ℓ*−1의 과거 low-rank expert reset. nested 주기라 fast→slow consolidation 다중(10K/1K면 10회). wake→sleep은 offline 별도 phase(외부입력 제한)=모드전환, concurrent serve+consolidate는 논문 밖 systems 여지(구조상 새 expert만 학습이라 가능성 있음).
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known: 새 expert=low-rank(d×d_low)이고 FFN 통째 복사 아님; 한 줄=한 주기 블록; unknown_known: teacher/student는 전체 모델 지칭하되 학습은 새 low-rank expert만(나머지 freeze); unknown_unknown: concurrent serve-while-consolidate는 논문 미규정 = serving-engineering 공백
+- 개념 key: CMS, MoE expert, low-rank expert, d_low, Knowledge Seeding, upward distillation, GKD, teacher LM_θ, student LM_θexp, synaptic pruning, masking activation, wake/sleep offline, parameter expansion
+- 생각할 것: concurrent serve+consolidate 가능성=새 expert만 학습·한 블록씩이라 구조적으론 백그라운드화 가능, 논문 밖; expert pool 성장이 곧 total param 성장(§5 scaling과 연결)
+- storyline seed: Sleep=wake/sleep lifecycle. sleep offline에서 fast block 지식을 느린 블록에 low-rank expert로 seed(GKD+RL), 새 expert만 학습, fast block reset. decode wall-clock처럼 concurrent serve+consolidate도 논문 미규정=systems 공백.
+- 연상: Q024, Q021
+
+## Q028 · 2026-07-15 · Sleep — consolidation internals (router/on-policy/optimizer)
+
+**Q.** Sleep 심화: step2 on-policy rollout 설명 없음. teacher/student 출력 다 나와야 학습→router는 어케? teacher는 추가expert mask/student는 unmask? router가 학습대상 low-rank expert 안 고를수도 있는데 강제 선택? step3 reset '빠른 블록 ℓ*−1의 과거 low-rank expert'는 언제 추가됐나(step1은 ℓ*에 추가인데)? 3-1 가장 빠른 1K FFN엔 추가 안되나? 4 low-rank만 학습=거기만 backward? gradient/optimizer? memory 유지?
+
+**A.** 1)on-policy: GKD 목적=(1−λ)teacher-forced + λ E_{y∼LM_θexp}[F] = student가 자기 분포로 rollout한 시퀀스 위에서 teacher divergence 최소화(train/serve mismatch 해소), student 샘플링 분포로는 backprop 안 함. 2)router: 새 expert 미리 할당+forward/backward masking, sleep에 unmask; teacher(masked)/student(unmasked). top-k router가 갓 초기화 expert 안 고를 문제→논문은 router가 expert 강제 추가선택(line479, dreaming서 명시; consolidation의 강제규칙은 c등급)+새 expert만 trainable. 3)(De)Activation(line163-6): faster block 파라미터 deactivate+current block 새 파라미터 activate. ℓ*−1의 low-rank expert는 이전 sleep에 ℓ*−1이 target(ℓ*−2→ℓ*−1)일 때 추가된 것=consolidation-추가분을 reset(님 추측 맞음). 3-1)가장 빠른 MLP(1K)도 그 위 더 빠른 memory(attention/ICL)로부터 low-rank expert 받음; 순수 source는 최상단 attention뿐(formalism은 MLP↔MLP 명시, attention→L1 경계는 함축 b/c). 4)backward는 새 expert만; 증류=backprop, RL/LTI=policy-gradient(샘플링 backprop 안함); optimizer 원문 미명시(c, arbitrary optimizer/Adam급 함축); 이 sleep학습 optimizer momentum은 offline outer 임시버퍼(persistent test-time memory 아님), 남는 건 expert weight.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known: on-policy=student 자기 rollout 위 teacher divergence; 샘플링 backprop 없음; unknown_known: router가 새 expert 강제선택해야 gradient 감(dreaming서 명시, consolidation은 c); known_unknown: sleep 학습 optimizer 원문 미명시; momentum은 임시(persistent memory 아님)
+- 개념 key: on-policy rollout, GKD lambda, router forced expert, masking/unmask, (de)activation, reset consolidation experts, fastest block boundary, policy gradient LTI, low-rank only backward, transient optimizer state
+- 생각할 것: consolidation 시 router 강제선택 규칙이 원문에 dreaming만큼 명시 안됨=구현 재현 시 확인 필요; sleep optimizer(Adam?) 미명시—재현 runbook에 가정으로
+- storyline seed: Sleep consolidation 내부: on-policy(student rollout)+RL(policy-grad), router 강제 expert선택으로 새 low-rank expert에 gradient 흘림, 나머지 freeze. reset=(de)activation의 deactivate side. optimizer/momentum은 offline 임시. 세미나: '새 expert만 backward, RL은 policy-gradient, memory는 안 남고 weight만 남는다'.
+- 연상: Q025
 

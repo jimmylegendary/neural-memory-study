@@ -1,10 +1,10 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-26건. story line 짤 때 여기서 꺼낸다.
+28건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
-### 모른다는 걸 안다 (known_unknown → decomposition) — 26건
+### 모른다는 걸 안다 (known_unknown → decomposition) — 29건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q003: 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1
@@ -31,8 +31,11 @@
 - Q025: NL(G07) 심층: gradient/momentum/M3가 Miras·Atlas(omega)를 참조해 전개되는 쉬운 설명+shape+state
 - Q025: NL(G07) 심층: gradient/momentum/M3가 Miras·Atlas(omega)를 참조해 전개되는 쉬운 설명+shape+state
 - Q026: self-mod Titans 연산 재검토: v_t가 M_v로 얻은 값? 각 기호 정체·shape / 자가목표 각 5개 어떻게 / gradient
+- Q027: Sleep consolidation 기초: figure의 MLP·low-rank MLP 가로줄이 같은 update 주기 FFN? MLP shap
+- Q028: Sleep 심화: step2 on-policy rollout 설명 없음. teacher/student 출력 다 나와야 학습→router는 어케?
+- Q028: Sleep 심화: step2 on-policy rollout 설명 없음. teacher/student 출력 다 나와야 학습→router는 어케?
 
-### 모른다는 것도 모른다 (unknown_unknown → exploration) — 51건
+### 모른다는 것도 모른다 (unknown_unknown → exploration) — 52건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
@@ -84,8 +87,9 @@
 - Q024: 더 다양한 hw twin에서 결과를 뽑자 — 동일 실험을 8개 아키텍처(H100/B100/VeraRubin/최신TPU/Meta/AMD/Groq/
 - Q025: NL(G07) 심층: gradient/momentum/M3가 Miras·Atlas(omega)를 참조해 전개되는 쉬운 설명+shape+state
 - Q026: self-mod Titans 연산 재검토: v_t가 M_v로 얻은 값? 각 기호 정체·shape / 자가목표 각 5개 어떻게 / gradient
+- Q027: Sleep consolidation 기초: figure의 MLP·low-rank MLP 가로줄이 같은 update 주기 FFN? MLP shap
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 35건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 39건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
@@ -121,6 +125,10 @@
 - Q025: NL(G07) 심층: gradient/momentum/M3가 Miras·Atlas(omega)를 참조해 전개되는 쉬운 설명+shape+state
 - Q026: self-mod Titans 연산 재검토: v_t가 M_v로 얻은 값? 각 기호 정체·shape / 자가목표 각 5개 어떻게 / gradient
 - Q026: self-mod Titans 연산 재검토: v_t가 M_v로 얻은 값? 각 기호 정체·shape / 자가목표 각 5개 어떻게 / gradient
+- Q027: Sleep consolidation 기초: figure의 MLP·low-rank MLP 가로줄이 같은 update 주기 FFN? MLP shap
+- Q027: Sleep consolidation 기초: figure의 MLP·low-rank MLP 가로줄이 같은 update 주기 FFN? MLP shap
+- Q028: Sleep 심화: step2 on-policy rollout 설명 없음. teacher/student 출력 다 나와야 학습→router는 어케?
+- Q028: Sleep 심화: step2 on-policy rollout 설명 없음. teacher/student 출력 다 나와야 학습→router는 어케?
 
 ### 안다는 걸 안다 (known) — 3건
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
@@ -460,6 +468,29 @@
 - **memory-bound rmw** (1): Q026
 - **part iii gap** (1): Q026
 - **grouped-gemm batchability** (1): Q026
+- **cms** (1): Q027
+- **moe expert** (1): Q027
+- **low-rank expert** (1): Q027
+- **d_low** (1): Q027
+- **knowledge seeding** (1): Q027
+- **upward distillation** (1): Q027
+- **gkd** (1): Q027
+- **teacher lm_θ** (1): Q027
+- **student lm_θexp** (1): Q027
+- **synaptic pruning** (1): Q027
+- **masking activation** (1): Q027
+- **wake/sleep offline** (1): Q027
+- **parameter expansion** (1): Q027
+- **on-policy rollout** (1): Q028
+- **gkd lambda** (1): Q028
+- **router forced expert** (1): Q028
+- **masking/unmask** (1): Q028
+- **(de)activation** (1): Q028
+- **reset consolidation experts** (1): Q028
+- **fastest block boundary** (1): Q028
+- **policy gradient lti** (1): Q028
+- **low-rank only backward** (1): Q028
+- **transient optimizer state** (1): Q028
 
 ## 3. 열린 실 (think_about)
 
@@ -560,6 +591,10 @@
 - [Q025] optimizer별 decode state 배수(DGD 1/M3 3.5)가 hope-* 실험의 근거
 - [Q026] decode 임계경로=토큰간 순차 update가 E1.1b memory-bound와 정합
 - [Q026] update↔CMS overlap을 pipelining으로 잡으면 decode latency 모델에 반영
+- [Q027] concurrent serve+consolidate 가능성=새 expert만 학습·한 블록씩이라 구조적으론 백그라운드화 가능, 논문 밖
+- [Q027] expert pool 성장이 곧 total param 성장(§5 scaling과 연결)
+- [Q028] consolidation 시 router 강제선택 규칙이 원문에 dreaming만큼 명시 안됨=구현 재현 시 확인 필요
+- [Q028] sleep optimizer(Adam?) 미명시—재현 runbook에 가정으로
 
 ## 4. Storyline seeds
 
@@ -589,3 +624,5 @@
 - [Q024] (multiarch cross-architecture study) 세미나 '신뢰성' 파트의 정점: 성능 수치를 8개 아키텍처에서 뽑아, 우리가 단정하는 양(S* 불변·bound 견고)이 하드웨어 전체에서 성립함을 보이고, 동시에 그 경계(Cerebras knee)와 절대치 유보를 정직히 드러낸다. 2라운드 적대검증(spec 저작+결과)이 신뢰성의 증거. multiarch/REPORT.md + REVIEW-LOG.md가 근거.
 - [Q025] (Nested Learning (HOPE) — optimizers + self-mod mechanism) NL 세미나: optimizer=memory 프레임이 DGD/DeltaMom/M3를 낳고(Miras/Atlas 이식), self-mod Titans는 투영·게이트까지 메모리화(q만 static). ICL은 ≥2레벨의 structural 결과. G07 §5·§8·§10 반영됨.
 - [Q026] (self-mod Titans mechanism + inference execution) 세미나 핵심 슬라이드: '논문은 훈련 chunkwise 병렬화만, decode 실행은 미해결'. 출력이 pre-update read라 update↔CMS는 겹치지만 토큰 간 update가 순차 임계경로=memory-bound. 이게 내 Part III(decode 비용 계량)가 메우는 지점. G07 §10 '추론 실행' 절 반영.
+- [Q027] (Sleep — memory consolidation basics) Sleep=wake/sleep lifecycle. sleep offline에서 fast block 지식을 느린 블록에 low-rank expert로 seed(GKD+RL), 새 expert만 학습, fast block reset. decode wall-clock처럼 concurrent serve+consolidate도 논문 미규정=systems 공백.
+- [Q028] (Sleep — consolidation internals (router/on-policy/optimizer)) Sleep consolidation 내부: on-policy(student rollout)+RL(policy-grad), router 강제 expert선택으로 새 low-rank expert에 gradient 흘림, 나머지 freeze. reset=(de)activation의 deactivate side. optimizer/momentum은 offline 임시. 세미나: '새 expert만 backward, RL은 policy-gradient, memory는 안 남고 weight만 남는다'.
