@@ -31,7 +31,7 @@
 | `tpu-v7` | Google TPU v7 Ironwood | SILVER⚠️ | HBM3e | **reuse-tier(VMEM) 용량·BW가 BRONZE 추정 → residency 주장은 BRONZE급**(BW/peak/ridge는 GOLD) |
 | `groq-lpu` | Groq LPU/TSP | SILVER | **SRAM** | **SRAM BW 정의 차: vendor 80 TB/s(aggregate) vs ISCA 27.5 TiB/s(effective)** → 절대치 범위 |
 | `wse3` | Cerebras WSE-3 | SILVER | **SRAM(wafer)** | per-core width/clock는 BRONZE placeholder(device peak·용량·BW는 GOLD/vendor) |
-| `vr100` | NVIDIA Vera Rubin | **BRONZE** | HBM4 | **내부 전면 미공개. BW 13–22 TB/s·BF16 5–13 PF 범위. 전체 directional/예비 — 발표 단정 금지** |
+| `vr200` | NVIDIA Vera Rubin | **BRONZE** | HBM4 | **내부 전면 미공개. BW 13–22 TB/s·BF16 5–13 PF 범위. 전체 directional/예비 — 발표 단정 금지** |
 
 > 등급 규칙: twin tier = 최저 load-bearing 필드 등급. `tpu-v7`은 reconciler가 규칙을 완화해 SILVER로 뒀으나
 > (backing/compute는 GOLD, reuse-tier만 BRONZE), **본 보고서는 tpu-v7의 residency(on-die fit) 결과를 BRONZE로 강등**해 인용한다.
@@ -44,12 +44,12 @@
 | `b100` | SILVER | HBM3e | 8.0 | 1.8 | 225 | 0.805 | 65536 | 249 | 12.4 | memory (379×) |
 | `mi355x` | SILVER | HBM3e | 8.0 | 2.52 | 315 | 0.805 | 65536 | 362 | 12.4 | memory (530×) |
 | `tpu-v7` | SILVER⚠️ | HBM3e | 7.38 | 2.31 | 313 | 0.873 | 65536 | 359 | 11.5 | memory (527×) |
-| `vr100` | BRONZE | HBM4 | 22.0※ | 6.25※ | 284 | 0.293※ | 65536 | 323 | 34.2※ | memory (478×) |
+| `vr200` | BRONZE | HBM4 | 22.0※ | 6.25※ | 284 | 0.293※ | 65536 | 323 | 34.2※ | memory (478×) |
 | `mtia2` | GOLD | LPDDR5 | 0.205 | 0.177 | 864 | 31.457 | 65536 | 1180 | 0.32 | memory (1455×) |
 | `groq-lpu` | SILVER | SRAM | 80.0† | 0.188 | 2.35 | 0.081† | 65536 | 2.4 | 124 | memory (4×) |
 | `wse3` | SILVER | SRAM | 21000 | 12.5‡ | 0.60 | 0.0003 | 65536 | 0.6 | 32596 | **knee (1.01×)** |
 
-※ vr100 절대치는 BRONZE(범위: BW 13–22 TB/s·BF16 5–13 PF 중 한 draw) — directional, 발표 단정 금지.
+※ vr200 절대치는 BRONZE(범위: BW 13–22 TB/s·BF16 5–13 PF 중 한 draw) — directional, 발표 단정 금지.
 † groq BW는 vendor aggregate 80 TB/s; ISCA effective ~27.5 TiB/s면 ridge ~6·ms/tok ~3배 — 절대치는 유보.
 ‡ **wse3 12.5 PF = dense FP16**(결과-리뷰가 잡은 수정: 최초 125 PF는 Cerebras의 **sparse** 마케팅 수치, 10× 낙관. 용량·BW는 GOLD 불변, compute peak만 dense로 교정). 이로써 Cerebras만 knee에 걸림 — 아래 ②.
 
@@ -84,10 +84,10 @@ sparse→dense peak 오류를 교정하면서 드러났다; §3 ‡.)
 | S\* = 65536 (전 아키텍처) | workload config만 (HW 무관) | ✅ 전부 단정 (BRONZE twin 포함) |
 | bound = memory (7/8) | ridge ≫ 0.59 (380~1455× 여유) | ✅ 단정 (HBM/LPDDR/Groq) |
 | Cerebras = knee (예외) | ridge 0.60 ≈ AI 0.59 (~1%) | ✅ 단정하되 "경계(knee)"로 |
-| decode 비용 **순서**(SRAM≪HBM≪LPDDR) | backing BW (GOLD/SILVER) | ✅ vr100 제외 단정 |
+| decode 비용 **순서**(SRAM≪HBM≪LPDDR) | backing BW (GOLD/SILVER) | ✅ vr200 제외 단정 |
 | 절대 ms/tok·µs·mJ | backing BW·energy (일부 BRONZE) + ideal 가정 | ⚠️ 유보 (ideal 하한, 실측 예정) |
 | residency(on-die fit) | reuse-tier 용량 | ✅ 단, **tpu-v7은 BRONZE**(VMEM 미공개) |
-| **vr100 전체** | 미공개 스펙 | ⚠️ **directional/예비 — 발표 단정 금지** |
+| **vr200 전체** | 미공개 스펙 | ⚠️ **directional/예비 — 발표 단정 금지** |
 
 ## 6. 재현
 

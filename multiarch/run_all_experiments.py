@@ -101,6 +101,34 @@ def c_star(d, ridge):
     return (-b + math.sqrt(disc)) / (2 * a) if disc >= 0 else float("nan")
 
 
+# ===================== per-token decode-RMW STATE model, per PAPER =====================
+# What is actually test-time read-modify-written PER TOKEN at decode, decomposed by component and by
+# the paper's inner optimizer. Units = params / layer (×2 bytes ×L for state; ×2 again for RMW traffic).
+#
+# Components / layer:  W_qkv = 3 d^2 (Q,K,V projections) | nm = 8 d^2 (2-layer neural memory MLP d->4d->d)
+#                      qk_proj (TNT Pi) = d^2 | cms_fast = 8 d^2 (fast CMS level MLP) | gates ~ 0
+# Optimizer state multiplier (persistent buffers RMW'd alongside the weights), HOPE's 3 rules:
+#   DGD (Delta Gradient Descent, L2-regression rule)  -> 1.0  (weights only; small precond)
+#   Delta Momentum                                     -> 2.0  (weights + 1 momentum buffer)
+#   M3 (Multi-scale Momentum Muon: fast+slow momentum + Newton-Schulz work) -> 3.5
+OPT_MULT = {"DGD": 1.0, "DeltaMom": 2.0, "M3": 3.5}
+
+def model_state_params(d, model):
+    """per-token RMW state, params/layer, for each applied model (see notes 2501/2511/2512/2606)."""
+    W_qkv, nm, qk_proj, cms_fast = 3 * d * d, 8 * d * d, d * d, 8 * d * d
+    if model == "titans-m16":                 # ORIGINAL ANCHOR (gate): nm + momentum only
+        return 16 * d * d
+    if model == "tnt":                        # decode = LOCAL nm + Q-K projection (global=prefill, excluded)
+        return (nm + qk_proj) * 2             # ×2 = delta+momentum (gated-deltanet class)
+    if model.startswith("hope") or model == "sleep-wake":
+        opt = OPT_MULT[model.split("-", 1)[1]] if model.startswith("hope-") else OPT_MULT["M3"]
+        # self-modifying Titans (Wqkv + nm + gates) + CMS fast level — ALL test-time-updated ×optimizer
+        return (W_qkv + nm + cms_fast) * opt  # gates ~ 0
+    raise ValueError(model)
+
+MODELS = ["titans-m16", "tnt", "hope-DGD", "hope-DeltaMom", "hope-M3"]
+
+
 # ===================== per-experiment computations =====================
 def E1_1_decode_baseline(hw):
     a = ANCHOR
@@ -116,6 +144,20 @@ def E1_1_decode_baseline(hw):
         "bound": "memory" if time_s > compute_s else "compute",
         "bound_margin_x": round((hw["peak_flops"] / hw["bw"]) / ((2 * macs) / traffic), 2),
     }
+
+
+def E1_1b_per_model_decode(hw):
+    """Per-token decode RMW cost for each APPLIED model (titans/tnt/hope-{DGD,DeltaMom,M3}), reflecting
+    the paper-specific component + optimizer structure — not the coarse m=16 anchor."""
+    a, out = ANCHOR, {}
+    for m in MODELS:
+        sp = model_state_params(a["d"], m)              # params/layer
+        traffic = 2 * (sp * 2) * a["L"]                 # RMW traffic/token = 2*(state bytes)*L
+        out[m] = {"state_params_per_layer_over_d2": round(sp / (a["d"] ** 2), 2),
+                  "rmw_GB_token": round(traffic / 1e9, 4),
+                  "rmw_ms_token": round(traffic / hw["bw"] * 1e3, 4),
+                  "rmw_uJ_token": round(traffic * hw["epb"] / 1e6, 2)}
+    return out
 
 
 def E1_2_state_placement(hw):
@@ -234,6 +276,7 @@ def eval_twin(twin_path):
                        "cap_GB": round(hw["cap"] / 1e9, 2), "ondie_MB": round(hw["ondie_cap"] / 1e6, 2),
                        "epb_pj_B": hw["epb"], "matrix_unit": hw["matrix_unit"]},
         "E1.1_decode_baseline": E1_1_decode_baseline(hw),
+        "E1.1b_per_model_decode": E1_1b_per_model_decode(hw),
         "E1.2_state_placement": E1_2_state_placement(hw),
         "E1.3_kv_vs_ttt": E1_3_kv_vs_ttt(hw),
         "E1.4_frequency_tiers": E1_4_frequency_tiers(hw),

@@ -24,6 +24,38 @@
   "bound": "memory",
   "bound_margin_x": 526.49
  },
+ "E1.1b_per_model_decode": {
+  "titans-m16": {
+   "state_params_per_layer_over_d2": 16.0,
+   "rmw_GB_token": 6.4425,
+   "rmw_ms_token": 0.873,
+   "rmw_uJ_token": 32212.25
+  },
+  "tnt": {
+   "state_params_per_layer_over_d2": 18.0,
+   "rmw_GB_token": 7.2478,
+   "rmw_ms_token": 0.9821,
+   "rmw_uJ_token": 36238.79
+  },
+  "hope-DGD": {
+   "state_params_per_layer_over_d2": 19.0,
+   "rmw_GB_token": 7.6504,
+   "rmw_ms_token": 1.0366,
+   "rmw_uJ_token": 38252.05
+  },
+  "hope-DeltaMom": {
+   "state_params_per_layer_over_d2": 38.0,
+   "rmw_GB_token": 15.3008,
+   "rmw_ms_token": 2.0733,
+   "rmw_uJ_token": 76504.1
+  },
+  "hope-M3": {
+   "state_params_per_layer_over_d2": 66.5,
+   "rmw_GB_token": 26.7764,
+   "rmw_ms_token": 3.6282,
+   "rmw_uJ_token": 133882.18
+  }
+ },
  "E1.2_state_placement": {
   "state_MB_layer": 134.2,
   "whole_model_state_GB": 3.221,

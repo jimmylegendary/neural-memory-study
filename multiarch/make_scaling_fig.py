@@ -38,7 +38,7 @@ for ax, fname, title in [(axs[0], FA, "(a) WIDTH — d,L 성장"),
             ax.annotate(l, (x, y), fontsize=7, xytext=(0, -12), textcoords="offset points", ha="center")
 axs[0].set_ylabel("decode ms/token @ H100 (ideal 하한, log)")
 axs[0].legend(fontsize=7, loc="upper left")
-axs[1].annotate("Sleep 평탄:\n1T도 7B처럼 decode\n(dense 대비 903×)", (700, 1.5), fontsize=8,
+axs[1].annotate("Sleep 평탄:\n1T도 6.4B backbone처럼 decode\n(dense 대비 149×; floor=M3)", (600, 20), fontsize=7.5,
                 color="#1a759f", ha="center",
                 bbox=dict(boxstyle="round", fc="#e8f0f2", ec="#1a759f", alpha=0.9))
 fig.suptitle("fig8 · HOPE/Sleep decode 비용 1T 스케일링 — Sleep은 expert 성장을 offline로 밀어 decode를 묶는다", fontsize=10.5)

@@ -17,6 +17,21 @@
 
 anchor: neural-mem-1.3B (d=2048, m=16, L=24, GQA-8, bf16).
 
+### 1.1 실험의 모델 가정 — 무엇을 test-time 갱신(decode RMW)으로 세는가
+
+decode 비용을 지배하는 것은 "매 토큰 test-time 갱신되는 state"의 RMW traffic 이다. 그 state 를 **논문별 실제 구조**로 분해한다(단일 m=16 뭉뚱그림 → 컴포넌트+optimizer 분해). 단위 = params/layer ÷ d². 구성요소: W_qkv(3d², Q·K·V 투영) · nm(8d², 2-layer neural memory MLP) · Q-K projection Π(d², TNT) · cms_fast(8d², 빠른 CMS 레벨) · gate η,α(≈0).
+
+| 모델 | decode 시 RMW 되는 것 | state/d² | 근거 |
+|---|---|---|---|
+| titans-m16 (anchor) | nm + momentum | 16 | Titans; 게이트 baseline |
+| **TNT** | **local** nm + **Q-K projection Π** (per token) — **global 은 prefill 이라 제외** | 18 | 결정=local(chunk-1), prefill=global, Π 읽기마다 |
+| **HOPE-DGD** | **Wqkv + nm + cms_fast 전부 self-modifying** × DGD(1.0) | 19 | self-mod Titans + CMS fast |
+| **HOPE-DeltaMom** | 〃 × Delta Momentum(2.0) | 38 | +momentum 버퍼 |
+| **HOPE-M3** | 〃 × M3=Multi-scale Momentum Muon(3.5) | 66.5 | +fast/slow momentum + NS |
+| **Sleep (wake decode)** | = HOPE attention side | 19–66.5 | **slow CMS·expert 는 offline(§5)** |
+
+**HOPE optimizer 3종**(DGD / Delta Momentum / M3)이 momentum·preconditioner 버퍼 수를 정해 decode state 를 **3.5× 좌우**한다. **HOPE = attention 처리**(Wq,k,v·gate·nm 전부 매 토큰 갱신 — 님 지적대로 다 포함), **Sleep = FFN 처리**(low-rank expert 를 offline consolidation 으로 증설; §5). **Sleep expert = low-rank {A d×r, B r×d}=2dr**(FFN-size 아님). E1.2–E1.4 는 anchor(titans-m16)를 쓰고, **E1.1 은 위 5개 모델 전부**를 잰다(§4.1). 대상 칩 **vr200**(Vera Rubin NVL144; R100 은 초기 die 명) — BRONZE 이라 결론 무관.
+
 ---
 
 ## 2. 대상 8종 + 신뢰도 등급
@@ -30,9 +45,9 @@ anchor: neural-mem-1.3B (d=2048, m=16, L=24, GQA-8, bf16).
 | tpu-v7 | Google TPU v7 Ironwood | SILVER※ | HBM3e |
 | groq-lpu | Groq LPU/TSP | SILVER | SRAM |
 | wse3 | Cerebras WSE-3 | SILVER | SRAM(wafer) |
-| vr100 | NVIDIA Vera Rubin | BRONZE | HBM4 |
+| vr200 | NVIDIA Vera Rubin | BRONZE | HBM4 |
 
-> **주의.** vr100 은 내부 전면 미공개 → 전체 directional, 발표 단정 금지. tpu-v7(※)은 backing/compute 는 GOLD 이나 on-chip VMEM(reuse-tier)이 미공개 추정 → **residency(E1.2) 주장만 BRONZE**. groq/wse3 는 HBM 이 없는 SRAM 기반.
+> **주의.** vr200 은 내부 전면 미공개 → 전체 directional, 발표 단정 금지. tpu-v7(※)은 backing/compute 는 GOLD 이나 on-chip VMEM(reuse-tier)이 미공개 추정 → **residency(E1.2) 주장만 BRONZE**. groq/wse3 는 HBM 이 없는 SRAM 기반.
 
 ---
 
@@ -48,7 +63,7 @@ anchor: neural-mem-1.3B (d=2048, m=16, L=24, GQA-8, bf16).
 | b100 | SILVER | HBM3e | 8.0 | 1.8 | 192 GB | 101 MB |
 | mi355x | SILVER | HBM3e | 8.0 | 2.52 | 288 GB | 34 MB |
 | tpu-v7 | SILVER | HBM3e | 7.38 | 2.31 | 192 GB | 268 MB※ |
-| vr100 | BRONZE | HBM4 | 22.0 | 6.25 | 288 GB | 105 MB |
+| vr200 | BRONZE | HBM4 | 22.0 | 6.25 | 288 GB | 105 MB |
 | mtia2 | GOLD | LPDDR5 | 0.205 | 0.177 | 128 GB | 268 MB |
 | groq-lpu | SILVER | SRAM | 80.0 | 0.188 | 220 MB | (backing) |
 | wse3 | SILVER | SRAM | 21000 | 12.5 | 44 GB | (backing) |
@@ -61,12 +76,12 @@ anchor: neural-mem-1.3B (d=2048, m=16, L=24, GQA-8, bf16).
 | b100 | 0.805 | 225 | 65536 | 249 | 12.4 | memory (379×) |
 | mi355x | 0.805 | 315 | 65536 | 362 | 12.4 | memory (530×) |
 | tpu-v7 | 0.873 | 313 | 65536 | 359 | 11.5 | memory (527×) |
-| vr100 | 0.293※ | 284 | 65536 | 323 | 34.2※ | memory (478×) |
+| vr200 | 0.293※ | 284 | 65536 | 323 | 34.2※ | memory (478×) |
 | mtia2 | 31.457 | 864 | 65536 | 1180 | 0.32 | memory (1455×) |
 | groq-lpu | 0.081† | 2.35 | 65536 | 2.4 | 124 | memory (4×) |
 | wse3 | 0.0003 | 0.60 | 65536 | 0.6 | 32596 | **knee (1.01×)** |
 
-※ vr100/tpu-v7(residency) = BRONZE. † groq BW = vendor aggregate. 절대치는 ideal 하한(단정 안 함).
+※ vr200/tpu-v7(residency) = BRONZE. † groq BW = vendor aggregate. 절대치는 ideal 하한(단정 안 함).
 
 ---
 
@@ -84,6 +99,18 @@ anchor: neural-mem-1.3B (d=2048, m=16, L=24, GQA-8, bf16).
 
 **고찰·insight.** decode 가 memory-bound 라는 성질은 **update rule 의 RMW 대칭성**에서 오는 것이라 모델·HW 와 무관하다(AI 항상 0.594). 그러나 *얼마나 깊이* memory-bound 인지(여유 1×–1455×)와 절대 비용은 순전히 HW 의 BW·epb 문제다. **SRAM 기반 칩의 에너지 우위(7×)** 는 이 write-heavy 부하에서 특히 큰데, epb 가 HBM 의 1/7 이기 때문이다 — memory-centric 부하일수록 low-epb 메모리의 가치가 커진다.
 
+**E1.1b — 논문별 모델 decode (§1.1 구조 반영).** anchor(m=16)가 아니라 각 논문의 실제 갱신 구조로 잰 decode ms/tok:
+
+| 모델 | state/d² | GB/tok | H100 | MTIA v2 | Cerebras |
+|---|---|---|---|---|---|
+| titans-m16 (anchor) | 16 | 6.44 | 1.92 | 31.5 | 0.0003 |
+| TNT (local+Q-K Π) | 18 | 7.25 | 2.16 | 35.4 | 0.0003 |
+| HOPE-DGD | 19 | 7.65 | 2.28 | 37.4 | 0.0004 |
+| HOPE-DeltaMom | 38 | 15.3 | 4.57 | 74.7 | 0.0007 |
+| **HOPE-M3** | **66.5** | **26.8** | **7.99** | **130.7** | **0.0013** |
+
+**insight.** 실제 HOPE 는 anchor 보다 훨씬 무겁다 — **HOPE-M3 는 titans-m16 대비 4.2× decode** (Wq,k,v·nm·cms_fast 를 전부 multi-scale momentum 으로 갱신하니까). **optimizer 선택만으로 DGD↔M3 가 3.5× 차이** — decode 예산이 빡빡하면 DGD(2.28ms), 표현력 필요하면 M3(7.99ms). TNT 는 Q-K projection Π(d²) 한 장 추가라 anchor 와 근사(18d²). 이 순서(titans<TNT<HOPE-DGD≪HOPE-M3)는 **모든 HW 에서 동일 비율**로 유지된다(HW 는 BW 로 세로 스케일만).
+
 ### 4.2 E1.2 — state-placement (tier 잔류)
 
 **설명.** state 가 context-무관 **고정 크기**라 on-chip 상주가 designable 선택이다(context 로 자라는 KV 와 대조). 각 HW 의 자기 계층에서 backing vs on-chip RMW 비용·잔류·residency crossover d\*(1-layer state 가 on-chip 에 들어가는 최대 d)를 잰다.
@@ -100,7 +127,7 @@ anchor: neural-mem-1.3B (d=2048, m=16, L=24, GQA-8, bf16).
 | tpu-v7 | 268 MB※ | per-layer 상주 | 2896 | 25×/22× |
 | mtia2 | 268 MB | per-layer 상주 | 2896 | 20×/13× |
 | groq-lpu | 220 MB | per-layer 상주 | 2685 | 1×/1× (backing=on-chip) |
-| vr100 | 105 MB | backing 스트리밍 | 1810 | — |
+| vr200 | 105 MB | backing 스트리밍 | 1810 | — |
 | b100 | 101 MB | backing 스트리밍 | 1774 | 12.5×/1.25× |
 | h100 | 50 MB | backing 스트리밍 | 1280 | 17.5×/3× |
 | mi355x | 34 MB | backing 스트리밍 | 1024 | 12.5×/1.25× |
@@ -185,37 +212,43 @@ E2.1(chunk-intensity)·E2.2(rmw-cliff)는 **이 host CPU 에서 실제 시간을
 
 두 스케일링 recipe 를 비교한다: **WIDTH**(d,L 성장 — dense backbone) vs **EXPERT**(backbone 고정, total 을 Sleep-appended expert pool 로만, MoE top-2 routing).
 
-![fig8 · HOPE/Sleep decode 1T 스케일링. (a) WIDTH: Sleep 도 상승(fast level ∝ d²L). (b) EXPERT: Sleep 평탄 — 1T 도 7B 처럼 decode.](/home/jimmy/repos/neural-memory-study/multiarch/figures/fig8-hope-sleep-scaling.png){width=15.5cm}
+![fig8 · HOPE/Sleep decode 1T 스케일링(보정 모델: Wqkv+nm 갱신, low-rank expert). (a) WIDTH: Sleep 도 상승, 소규모선 dense 와 동급. (b) EXPERT: Sleep 평탄 — 1T 도 6.4B backbone 처럼 decode(149×).](/home/jimmy/repos/neural-memory-study/multiarch/figures/fig8-hope-sleep-scaling.png){width=15.5cm}
 
-**결과 A — WIDTH (d,L 성장).** fast-level state 가 d²L 로 자라 **Sleep decode 도 증가**한다.
+모델은 §1.1 의 보정 구조를 씀: 매 토큰 RMW = HOPE attention side(Wqkv+nm+cms_fast)×optimizer. optimizer=M3(3.5, 보수적 headline). expert = **low-rank {A d×r, B r×d}=2dr**, MoE top-2, **offline consolidation**.
+
+**결과 A — WIDTH (d,L 성장).** attention-side state 가 d²L 로 자라 **Sleep decode 도 증가**, 소규모에선 dense 와 거의 같음.
 
 | total | active | S_sleep | sleep ms/tok※ | dense ms/tok | dense/sleep |
 |---|---|---|---|---|---|
-| 6B | 5.5B | 2.21 GB | 1.32 | 6.6 | 5× |
-| 70B | 57B | 17.7 GB | 10.6 | 83.7 | 8× |
-| 405B | 381B | 118 GB | 70.5 | 506 | 7× |
-| 1T | 457B | 142 GB | 84.6 | 1223 | 14× |
+| 6B | 6.3B | 13.4 GB | 8.0 | 7.6 | 1× |
+| 70B | 51B | 107 GB | 63.9 | 83.5 | 1× |
+| 405B | 339B | 714 GB | 426 | 484 | 1× |
+| 1T | 407B | 857 GB | 512 | 1194 | 2× |
 
-**결과 B — EXPERT (backbone 고정 d=2048,L=24, expert 만 offline 성장).** **active·S_sleep·decode 가 상수.**
+**결과 B — EXPERT (backbone 고정 d=2048,L=24, low-rank expert 만 offline 성장).** **active·S_sleep·decode 상수.**
 
-| total | #exp | active | S_sleep | sleep ms/tok※ | dense ms/tok | dense/sleep |
+| total | #exp(low-rank) | active | S_sleep | sleep ms/tok※ | dense ms/tok | dense/sleep |
 |---|---|---|---|---|---|---|
-| 6B | 0 | 5.5B | 2.21 GB | **1.32** | 6.6 | 5× |
-| 70B | 80 | 7.1B | 2.21 GB | **1.32** | 83.5 | 63× |
-| 405B | 496 | 7.1B | 2.21 GB | **1.32** | 483 | 366× |
-| **1T** | **1235** | **7.1B** | **2.21 GB** | **1.32** | 1194 | **903×** |
+| 6B | 0 | 6.4B | 13.4 GB | **7.99** | 7.6 | 1× |
+| 70B | 2530 | 6.4B | 13.4 GB | **7.99** | 83.6 | 10× |
+| 405B | 15841 | 6.4B | 13.4 GB | **7.99** | 484 | 60× |
+| **1T** | **39484** | **6.4B** | **13.4 GB** | **7.99** | 1194 | **149×** |
 
-※ H100, ideal roofline 하한. 절대치 단정 안 함 — 비율·평탄성이 load-bearing.
+**Sleep decode FLOOR(EXPERT family, 1.3B→1T 평탄) — HOPE optimizer 별:** DGD **2.28 ms** (3.83 GB) · DeltaMom **4.57 ms** (7.65 GB) · M3 **7.99 ms** (13.4 GB). optimizer 가 floor 를 3.5× 좌우.
 
-**고찰·insight (님 가설 검증).** 님의 직관 — "Sleep 은 scaling 가능"— 은 **맞고**, 정확한 메커니즘·recipe 가 드러난다:
+※ H100, ideal roofline 하한. 절대치 단정 안 함 — **비율·평탄성**이 load-bearing.
 
-1. **Sleep 의 offline consolidation 이 total 파라미터를 decode 에서 분리한다.** EXPERT family 에서 total 이 6B→1T(167×)로 커져도 **per-token RMW state 는 2.21 GB 로 상수**, decode 1.32 ms 로 **완전 평탄**. 1235 개 expert(1T 의 대부분)가 decode RMW 에 **0** 기여 — offline 갱신 + MoE top-2 routing 때문. **1T Sleep 모델이 7B 처럼 decode(active 7.1B).** 1T 에서 dense-all-TTT 대비 **903× 저렴**.
+**고찰·insight (님 가설 검증).** 님의 직관 — "Sleep 은 scaling 가능"— 은 **맞다**. 보정된 모델(Wqkv+nm 전부 갱신, low-rank expert)에서도 핵심이 유지된다:
 
-2. **단, "무엇을 키우느냐"가 관건이다.** WIDTH family(d,L 성장)에선 Sleep 도 커진다 — fast-level RMW state 가 d²L 에 비례하기 때문(1T 에서 84 ms). 님이 말한 "**ffn·self-modifying Titans 를 scaling**"은 두 갈래다: **FFN 을 expert 로 늘리면(offline) decode 무료**, 그러나 **self-mod·fast-level width 를 늘리면 decode 가 값을 치른다**. 따라서 1T 로 가는 승리 recipe = **fast backbone(self-mod + fast CMS) 은 decode 예산에 맞춰 고정, capacity 는 offline expert pool 로 확장**.
+1. **Sleep 의 offline consolidation 이 total 파라미터를 decode 에서 분리한다.** EXPERT family 에서 total 6B→1T(167×)에도 **per-token RMW state 13.4 GB 상수, decode 7.99 ms 완전 평탄**. **39484 개 low-rank expert(1T 의 대부분)가 decode RMW 에 0 기여** — offline 갱신 + MoE top-2 routing. **1T Sleep 모델이 6.4B backbone 처럼 decode.** 1T 에서 dense 대비 **149×**. (보정 전 903× 는 과대였음 — 실제 attention-side floor 가 더 무겁다.)
 
-3. **이것이 Sleep 의 진짜 systems 기여다.** Titans/HOPE 는 test-time 갱신을 decode 에 넣어 memory-bound RMW 를 만들었다(Part III 의 부담). **Sleep 은 그 부담의 대부분을 offline(수면)으로 옮겨** — 성장하는 memory(expert)를 critical path 에서 뺀다. 즉 continual-learning capacity 를 무한히 키우면서 serving decode 는 fast level 로 묶는다. **Part III 의 decode-state 병목에 대한 알고리즘적 해답**이 Sleep 이고, 이 스케일링이 그 증거다.
+2. **"무엇을 키우느냐"가 관건.** WIDTH family(d,L 성장)에선 Sleep 도 커지고 소규모선 dense 와 동급(1×) — attention-side RMW 가 d²L 이라. 즉 **self-mod·fast-level width 를 키우면 decode 가 값을 치르고, FFN 을 low-rank expert 로 offline 증설하면 decode 무료**. 1T 승리 recipe = **HOPE attention backbone(+optimizer 는 DGD 로 가볍게) 고정 + capacity 는 offline low-rank expert pool**.
 
-**정직한 한계.** (a) 이건 decode **비용** 모델이지 **품질**이 아니다 — 논문은 ≤1.3B 만 실측했고, 1T 에서 품질이 유지되는지는 미검증(1235-expert 스케일은 저자 미보고, 본 분석의 투영). (b) 절대 ms 는 ideal 하한. (c) m_fast=8·self-mod 6개·top-2 는 논문 구조에 근거한 합리적 파라미터화이나 정확한 폭은 미공개. 그럼에도 **load-bearing 결론(EXPERT family 에서 decode 평탄, expert 는 decode 에 무료)은 구조에서 직접 따라오며 파라미터 선택에 robust** 하다.
+3. **decode FLOOR 는 HOPE optimizer 가 정한다.** floor 2.28(DGD)–7.99(M3) ms. 표현력이 필요 없으면 DGD 로 floor 를 3.5× 낮춘다. **Sleep 은 성장(expert)을 offline 로, HOPE 는 표현력(optimizer)을 decode 예산으로** — 두 손잡이가 분리된다.
+
+4. **이것이 Sleep 의 진짜 systems 기여.** Titans/HOPE 는 test-time 갱신을 decode 에 넣어 memory-bound RMW 를 만들었다(Part III 부담). **Sleep 은 성장하는 memory(expert)를 offline(수면)으로 빼** continual-learning capacity 를 무한히 키우면서 serving decode 는 attention floor 로 묶는다 — **Part III decode-state 병목의 알고리즘적 해답**.
+
+**정직한 한계.** (a) decode **비용** 모델이지 **품질** 아님 — 논문 ≤1.3B 실측, 39484-expert 스케일은 저자 미보고·본 분석 투영. (b) 절대 ms 는 ideal 하한. (c) optimizer mult(DGD 1/DeltaMom 2/M3 3.5)·rank 256·top-2 는 논문 구조 근거 파라미터화(정확 폭 미공개). 그럼에도 **load-bearing 결론(EXPERT family decode 평탄, expert 는 decode 무료, floor 는 optimizer 가 결정)은 구조에서 직접 따라와 파라미터에 robust**.
 
 ---
 
@@ -238,12 +271,12 @@ E2.1(chunk-intensity)·E2.2(rmw-cliff)는 **이 host CPU 에서 실제 시간을
 | S\* = 65536 (전 아키텍처) | workload 만 (HW 무관) | 예 — 전부 (BRONZE 포함) |
 | bound = memory (7/8) | ridge ≫ 0.59 (380–1455×) | 예 — HBM/LPDDR/Groq |
 | Cerebras = knee | ridge 0.60 ≈ AI 0.59 | 예 — "경계"로 |
-| decode 비용 순서 (SRAM≪HBM≪LPDDR) | backing BW (GOLD/SILVER) | 예 — vr100 제외 |
+| decode 비용 순서 (SRAM≪HBM≪LPDDR) | backing BW (GOLD/SILVER) | 예 — vr200 제외 |
 | tier 잔류 / d\* | on-chip 용량 | 예 — tpu-v7 은 BRONZE |
 | 절대 ms/tok·µJ·mJ | BW·epb + ideal 가정 | 유보 — ideal 하한 |
-| vr100 전체 | 미공개 스펙 | 유보 — directional |
+| vr200 전체 | 미공개 스펙 | 유보 — directional |
 
-**라운드2가 잡아 고친 것 (다중 검증이 작동한 증거).** [MAJOR] wse3 peak 125 PF(sparse 마케팅)→12.5 PF(dense): ridge 5.95→0.60, Cerebras knee 발견. [MINOR] B_max 전사오류 수정, robustness 주장 HBM/LPDDR 로 범위한정, 절대치 vr100 제외. 상세: `REVIEW-LOG.md`. HATIR·HAT spec 자체의 신뢰성(ZigZag byte-exact 검증, ideal-vs-실측 gap): 본서 부록 E.
+**라운드2가 잡아 고친 것 (다중 검증이 작동한 증거).** [MAJOR] wse3 peak 125 PF(sparse 마케팅)→12.5 PF(dense): ridge 5.95→0.60, Cerebras knee 발견. [MINOR] B_max 전사오류 수정, robustness 주장 HBM/LPDDR 로 범위한정, 절대치 vr200 제외. 상세: `REVIEW-LOG.md`. HATIR·HAT spec 자체의 신뢰성(ZigZag byte-exact 검증, ideal-vs-실측 gap): 본서 부록 E.
 
 ---
 

@@ -10,7 +10,7 @@
 |---|---|---|
 | `h100` | NVIDIA H100 SXM5 (GH100) | GOLD 완료 (기준 twin, `twins/h100.json`) |
 | `b100` | NVIDIA B100 (Blackwell, GB100 die, 700W bin) | die는 B200과 공유; B100은 낮은 전력 bin |
-| `vr100` | NVIDIA Vera Rubin (Rubin GPU) | ⚠️ 내부 미공개 — BRONZE 예상, 추정 명시 필수 |
+| `vr200` | NVIDIA Vera Rubin (Rubin GPU) | ⚠️ 내부 미공개 — BRONZE 예상, 추정 명시 필수 |
 | `tpu-v7` | Google TPU v7 "Ironwood" | 최신 TPU (2025 발표); v6e Trillium을 교차참조 |
 | `mtia2` | Meta MTIA v2 (2nd-gen, 2024/25) | PE grid·SRAM 일부 공개, ALU 미상 가능성 |
 | `mi355x` | AMD Instinct MI355X (CDNA4) | 데이터 얇으면 MI300X(CDNA3, 완비)로 보강/대체 |

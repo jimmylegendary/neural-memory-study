@@ -73,8 +73,8 @@
   }
  ],
  "meta": {
-  "chip_key": "vr100",
-  "chip_name": "NVIDIA Vera Rubin (Rubin R100 GPU)",
+  "chip_key": "vr200",
+  "chip_name": "NVIDIA Vera Rubin (VR200 NVL144, R100 die)",
   "arch_note": "Single-accelerator=1 Rubin package (2 dies + 8 HBM4 stacks). NVLink6 omitted per single-device convention. Internals undisclosed mid-2026; compute/SRAM leaves are BRONZE estimates.",
   "tdp_w": 1800,
   "tdp_w_note": "1800W Max-Q; Max-P reported 2300W; range 1800-2300W",

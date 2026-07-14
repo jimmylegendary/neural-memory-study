@@ -1,6 +1,6 @@
 {
- "chip_key": "vr100",
- "chip_name": "NVIDIA Vera Rubin (Rubin R100 GPU)",
+ "chip_key": "vr200",
+ "chip_name": "NVIDIA Vera Rubin (VR200 NVL144, R100 die)",
  "final_tier": "BRONZE",
  "field_provenance": [
   {

@@ -1,6 +1,6 @@
 {
- "twin": "vr100.json",
- "key": "vr100",
+ "twin": "vr200.json",
+ "key": "vr200",
  "tier": "BRONZE",
  "backing_role": "hbm",
  "hw_summary": {
@@ -23,6 +23,38 @@
   "arith_intensity_flopB": 0.594,
   "bound": "memory",
   "bound_margin_x": 478.44
+ },
+ "E1.1b_per_model_decode": {
+  "titans-m16": {
+   "state_params_per_layer_over_d2": 16.0,
+   "rmw_GB_token": 6.4425,
+   "rmw_ms_token": 0.2928,
+   "rmw_uJ_token": 35433.48
+  },
+  "tnt": {
+   "state_params_per_layer_over_d2": 18.0,
+   "rmw_GB_token": 7.2478,
+   "rmw_ms_token": 0.3294,
+   "rmw_uJ_token": 39862.67
+  },
+  "hope-DGD": {
+   "state_params_per_layer_over_d2": 19.0,
+   "rmw_GB_token": 7.6504,
+   "rmw_ms_token": 0.3477,
+   "rmw_uJ_token": 42077.26
+  },
+  "hope-DeltaMom": {
+   "state_params_per_layer_over_d2": 38.0,
+   "rmw_GB_token": 15.3008,
+   "rmw_ms_token": 0.6955,
+   "rmw_uJ_token": 84154.52
+  },
+  "hope-M3": {
+   "state_params_per_layer_over_d2": 66.5,
+   "rmw_GB_token": 26.7764,
+   "rmw_ms_token": 1.2171,
+   "rmw_uJ_token": 147270.4
+  }
  },
  "E1.2_state_placement": {
   "state_MB_layer": 134.2,

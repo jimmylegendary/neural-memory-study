@@ -29,7 +29,7 @@ AI = 0.594  # decode arithmetic intensity (anchor)
 
 TIER_COLOR = {"GOLD": "#c9a227", "SILVER": "#8a8f98", "BRONZE": "#b06a3b", None: "#444"}
 LABEL = {"h100": "H100", "b100": "B100", "mi355x": "MI355X", "tpu-v7": "TPU v7",
-         "vr100": "Rubin*", "mtia2": "MTIA v2", "groq-lpu": "Groq LPU", "wse3": "WSE-3"}
+         "vr200": "Rubin*", "mtia2": "MTIA v2", "groq-lpu": "Groq LPU", "wse3": "WSE-3"}
 
 
 def load():
