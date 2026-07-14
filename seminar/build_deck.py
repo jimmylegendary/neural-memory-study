@@ -6,8 +6,9 @@ Render check: soffice --headless --convert-to pdf ... ; pdftoppm -png (글/그�
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from pptx_lib import (deck, slide, title_slide, section_divider, box, arrow, text, picture,
-                      SW, SH, PP_ALIGN, INK, MUTE, BLUE, BLUEB, RED, REDB, GOLD, GOLDB,
+                      SW, SH, PP_ALIGN, MSO_ANCHOR, INK, MUTE, BLUE, BLUEB, RED, REDB, GOLD, GOLDB,
                       GREEN, GREENB, GREY, GREYB, WHITE)
+import mathpng as mp
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 p = deck()
@@ -139,69 +140,80 @@ def opt_slide(tag, name, full, branch, intuition, eqn, solves, remains, ec=BLUE)
         [("직관 (왜 이렇게?)", {"size": 14, "bold": True, "color": ec, "align": PP_ALIGN.LEFT, "space_after": 4}),
          (intuition, {"size": 16.5, "color": INK, "align": PP_ALIGN.LEFT})],
         fc=bgb, ec=ec, align=PP_ALIGN.LEFT)
-    # 수식
-    eqlines = [("갱신 규칙 (수식)", {"size": 14, "bold": True, "color": INK, "align": PP_ALIGN.LEFT, "space_after": 6})]
-    for e in eqn:
-        eqlines.append((e, {"size": 15.5, "mono": True, "color": INK, "align": PP_ALIGN.LEFT, "space_after": 7}))
-    box(s, 0.55, 2.86, 12.23, 2.12, eqlines, fc=WHITE, ec=GREY, align=PP_ALIGN.LEFT)
+    # 수식 (진짜 LaTeX → 이미지, 옆에 한글 주석)
+    ex, ey, ew, eh = 0.55, 2.84, 12.23, 2.42
+    box(s, ex, ey, ew, eh, "", fc=WHITE, ec=GREY)
+    text(s, ex + 0.22, ey + 0.09, 4, 0.3, "갱신 규칙 (수식)", size=13.5, color=INK, bold=True, space_after=0)
+    imgs = [(mp.eq(ltx, pt=18), note) for ltx, note in eqn]   # render big, then auto-fit to the card
+    gap, avail = 0.16, eh - 0.62
+    raw = sum(h for (_p, _w, h), _n in imgs) + gap * max(0, len(imgs) - 1)
+    scale = min(1.0, avail / raw) if raw > 0 else 1.0         # shrink only if it would overflow
+    cur = ey + 0.56 + max(0.0, (avail - raw * scale) / 2)     # vertically center the block
+    for (path, w, h), note in imgs:
+        pw, ph = w * scale, h * scale
+        picture(s, path, ex + 0.45, cur, h=ph)
+        if note:
+            text(s, ex + 0.45 + pw + 0.42, cur - 0.03, ew - (pw + 1.45), ph + 0.06, note,
+                 size=13, color=MUTE, align=PP_ALIGN.LEFT, anchor=MSO_ANCHOR.MIDDLE, space_after=0)
+        cur += ph + gap
     # 해결 / 남은 문제
-    box(s, 0.55, 5.14, 6.0, 1.96,
+    box(s, 0.55, 5.4, 6.0, 1.83,
         [("이 optimizer가 해결한 것", {"size": 14, "bold": True, "color": GREEN, "align": PP_ALIGN.LEFT, "space_after": 5}),
-         (solves, {"size": 14.5, "color": INK, "align": PP_ALIGN.LEFT})],
+         (solves, {"size": 14, "color": INK, "align": PP_ALIGN.LEFT})],
         fc=GREENB, ec=GREEN, align=PP_ALIGN.LEFT)
-    box(s, 6.78, 5.14, 6.0, 1.96,
+    box(s, 6.78, 5.4, 6.0, 1.83,
         [("남은 문제 → 다음", {"size": 14, "bold": True, "color": RED, "align": PP_ALIGN.LEFT, "space_after": 5}),
-         (remains, {"size": 14.5, "color": INK, "align": PP_ALIGN.LEFT})],
+         (remains, {"size": 14, "color": INK, "align": PP_ALIGN.LEFT})],
         fc=REDB, ec=RED, align=PP_ALIGN.LEFT)
 
 opt_slide("A2 · GD", "GD", "Gradient Descent (batch)", "뿌리 — 가장 정확한 한 걸음",
     "\"모든 자료를 다 검토해서, 내 위치의 산 기울기를 계산해 갈 방향을 찾았다.\"",
-    ["g_t = (1/N) · Σ_{i=1..N} ∇ℓ_i(θ_t)      # 전체 N개 데이터의 평균 gradient",
-     "θ_{t+1} = θ_t − η · g_t                  # η = learning rate(보폭)"],
+    [(r"g_t = \frac{1}{N}\sum_{i=1}^{N}\nabla \ell_i(\theta_t)", "전체 N개 데이터의 평균 gradient"),
+     (r"\theta_{t+1} = \theta_t - \eta\, g_t", "η = learning rate (보폭)")],
     "손실을 가장 빨리 줄이는 방향(가장 가파른 내리막)을 데이터 전체로 정확히 계산한다.",
     "한 스텝마다 데이터 N개를 전부 봐야 함 → 너무 느리다.  → SGD", ec=BLUE)
 
 opt_slide("A2 · SGD", "SGD", "Stochastic Gradient Descent", "파란 줄기 — 속도",
     "\"전부 다 봐야 한 걸음은 너무 오래 걸리니까, 조금만 보고 빨리 판단한다. 같은 시간에 더 많이 간다.\"",
-    ["g_t = ∇ℓ_B(θ_t)          # 미니배치 B개만 사용 (|B| ≪ N)",
-     "θ_{t+1} = θ_t − η · g_t"],
+    [(r"g_t = \nabla \ell_{\mathcal{B}}(\theta_t)", "미니배치 B개만 사용 (|B| ≪ N)"),
+     (r"\theta_{t+1} = \theta_t - \eta\, g_t", "")],
     "스텝당 비용이 급감 → 같은 시간에 훨씬 많은 스텝. gradient noise가 얕은 지역최소 탈출에도 도움.",
     "gradient가 매 스텝 출렁여 지그재그. 방향도 보폭도 여전히 그대로.  → Momentum · Adagrad", ec=BLUE)
 
 opt_slide("A2 · Momentum", "Momentum", "SGD with Momentum", "파란 줄기 — '스텝 방향' 개선",
     "\"스텝을 계산해서 움직인 후, 아까 내려오던 관성 방향으로 또 가자.\"",
-    ["v_t = μ · v_{t-1} + g_t        # μ≈0.9, 과거 방향의 관성(누적)",
-     "θ_{t+1} = θ_t − η · v_t"],
+    [(r"v_t = \mu\, v_{t-1} + g_t", "μ≈0.9, 과거 방향의 관성(누적)"),
+     (r"\theta_{t+1} = \theta_t - \eta\, v_t", "")],
     "일관된 방향은 누적 가속하고 출렁이는 성분은 상쇄 → 지그재그 완화, 좁은 골짜기를 빠르게 통과.",
     "보폭(스케일)은 아직 모든 좌표가 동일. '좌표별 보폭'은 아래 초록 줄기(Adagrad→RMSProp)가 맡고, 뒤에서 Adam이 방향과 합친다.", ec=BLUE)
 
 opt_slide("A2 · Adagrad", "Adagrad", "Adaptive Gradient", "초록 줄기 — '스텝 사이즈' 개선",
     "\"안 가 본 곳은 성큼 빠르게 훑고, 많이 가 본 곳은 잘 가니까 갈수록 보폭을 줄여 세밀히 탐색.\"",
-    ["G_t = G_{t-1} + g_t²                  # 좌표별 gradient² 누적",
-     "θ_{t+1} = θ_t − η · g_t / (√G_t + ε)   # 좌표마다 다른 보폭"],
+    [(r"G_t = G_{t-1} + g_t^{2}", "좌표별 gradient² 누적"),
+     (r"\theta_{t+1} = \theta_t - \eta\,\frac{g_t}{\sqrt{G_t}+\epsilon}", "좌표마다 다른 보폭")],
     "좌표마다 다른 learning rate — 드물게 큰 gradient(희소 feature)는 크게, 자주 큰 좌표는 작게.",
     "G_t가 단조 증가 → 분모가 계속 커져 보폭이 0으로 죽는다(학습 정지).  → RMSProp", ec=GREEN)
 
 opt_slide("A2 · RMSProp", "RMSProp", "Root Mean Square Propagation", "초록 줄기 — EMA로 보완",
     "\"보폭을 줄이는 건 좋은데, (전부 누적하지 말고) 최근 맥락을 봐 가며 하자.\"",
-    ["E[g²]_t = ρ · E[g²]_{t-1} + (1−ρ) · g_t²   # ρ≈0.9, 최근값 지수이동평균",
-     "θ_{t+1} = θ_t − η · g_t / (√E[g²]_t + ε)"],
+    [(r"\mathbb{E}[g^2]_t = \rho\,\mathbb{E}[g^2]_{t-1} + (1-\rho)\,g_t^{2}", "ρ≈0.9, 최근값 지수이동평균(EMA)"),
+     (r"\theta_{t+1} = \theta_t - \eta\,\frac{g_t}{\sqrt{\mathbb{E}[g^2]_t}+\epsilon}", "분모가 무한정 커지지 않음")],
     "합 대신 EMA → 분모가 무한정 커지지 않아 보폭이 죽지 않는다. 비정상(non-stationary) 목표에도 안정.",
     "방향(momentum)은 아직 안 씀. 초기(0에서 시작) 편향 보정도 없다.  → Adam", ec=GREEN)
 
 opt_slide("A2 · Adam", "Adam", "Adaptive Moment Estimation", "두 줄기의 합류 ★",
     "\"RMSProp(보폭) + Momentum(방향)을 합치자 — 방향도 스텝 사이즈도 적절하게!\"",
-    ["m_t = β₁·m_{t-1} + (1−β₁)·g_t          # 1차 모멘텀: 방향",
-     "v_t = β₂·v_{t-1} + (1−β₂)·g_t²         # 2차 모멘텀: 좌표별 보폭",
-     "m̂ = m_t/(1−β₁^t),  v̂ = v_t/(1−β₂^t)     # 초기 0-편향 보정",
-     "θ_{t+1} = θ_t − η · m̂ / (√v̂ + ε)"],
+    [(r"m_t = \beta_1 m_{t-1} + (1-\beta_1)\,g_t", "1차 모멘텀: 방향"),
+     (r"v_t = \beta_2 v_{t-1} + (1-\beta_2)\,g_t^{2}", "2차 모멘텀: 좌표별 보폭"),
+     (r"\hat{m}=\frac{m_t}{1-\beta_1^{t}},\quad \hat{v}=\frac{v_t}{1-\beta_2^{t}}", "초기 0-편향 보정"),
+     (r"\theta_{t+1} = \theta_t - \eta\,\frac{\hat{m}}{\sqrt{\hat{v}}+\epsilon}", "")],
     "방향(m) + 좌표별 보폭(v) + 편향 보정을 한 번에. 튜닝 거의 없이 잘 동작 → 사실상 표준.",
     "L2 weight decay를 gradient에 더하면 1/√v̂로 나뉘어 좌표별로 왜곡된다.  → AdamW", ec=GOLD)
 
 opt_slide("A2 · AdamW", "AdamW ★", "Adam with decoupled Weight decay", "종착점 — 오늘의 표준",
     "\"weight decay(정규화)를 gradient에 섞지 말고, weight에서 '직접' 빼자 — 그래야 좌표마다 똑같이 적용된다.\"",
-    ["m_t, v_t, m̂, v̂ : Adam과 동일 (decay를 g_t에 넣지 않음)",
-     "θ_{t+1} = θ_t − η · ( m̂/(√v̂+ε)  +  λ·θ_t )      # λ·θ 항을 분리(decoupled)"],
+    [(r"m_t,\ v_t,\ \hat{m},\ \hat{v}\ \ \text{(as in Adam)}", "decay를 gradient에 넣지 않음"),
+     (r"\theta_{t+1} = \theta_t - \eta\!\left(\frac{\hat{m}}{\sqrt{\hat{v}}+\epsilon} + \lambda\,\theta_t\right)", "λθ 항을 분리 (decoupled)")],
     "decay가 adaptive 스케일(1/√v̂)에 섞이지 않아 정규화가 일관 → 일반화↑. 오늘날 LLM 학습의 표준.",
     "여기까지가 '표준 optimizer'. 이 계열 논문은 이 optimizer 자체를 memory로 재해석한다(HOPE).  → Part B", ec=GOLD)
 
