@@ -763,27 +763,90 @@ claim_slide("B4 · TNT (2511.07343)", "TNT — 학습 레시피와 serving 구�
     "계층 메모리로 병렬+세밀 → serving 구조 정의",
     "chunk sweep의 V자 곡선(Fig.2), 최대 17배 속도(Fig.4/5), 품질 표로 train/serve 정렬 효과 입증")
 
-s = slide(p, "B4 · TNT — 메커니즘", "메모리 계층(global/local) + 2-stage 정렬", GREEN)
-fig_with_caption(s, "2511.07343", 1, 0.55, 1.5, 6.05, 3.55,
-                 "메모리 계층 다이어그램: 같은 t의 갱신을 계층적으로(global↔local)")
-fig_with_caption(s, "2511.07343", 3, 6.85, 1.5, 5.9, 3.55,
-                 "Stage 1 아키텍처 개요 — 큰 chunk 병렬 학습")
-box(s, 0.55, 5.2, 12.2, 1.0,
-    [("왜 2-stage인가", {"size": 12.5, "bold": True, "color": GREEN, "align": PP_ALIGN.LEFT, "space_after": 2}),
-     ("Stage1: 큰 chunk로 저비용 병렬 학습(throughput 확보). Stage2: serve chunk(작게)에 맞춰 재정렬해 "
-      "train/serve 불일치를 제거. 이렇게 해야 '싸게 학습 + 정확한 서빙'이 동시에 된다.",
-      {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=GREENB, ec=GREEN, align=PP_ALIGN.LEFT)
+# B4.1 문제 — chunk tradeoff + 3 challenges
+s = slide(p, "B4 · TNT — 문제", "chunk 크기 하나가 품질과 속도를 동시에 결정한다 (= 훈련 경제학)", GREEN)
+pbox(s, 0.55, 1.4, 12.23, 1.15, "chunkwise-parallel training의 트레이드오프",
+     [("C개 token을 묶어 'chunk 시작 상태'에서 모든 gradient를 한꺼번에 계산(GPU가 놀지 않게).", {}),
+      ("C↑ → matmul 커져 하드웨어 잘 돎, 그러나 gradient가 stale(낡음) → 근사 품질↓.   C↓ → gradient 신선하나 연산이 잘게 쪼개져 하드웨어가 논다 (작은 chunk = peak 대비 5~10% 미만 = MFU 한 자릿수).", {"bold": True, "color": RED})], ec=GREEN)
+pbox(s, 0.55, 2.68, 6.0, 1.55, "Challenge 1 — 비선형 recurrence는 병렬화가 안 된다",
+     [("deep memory는 fine-grained 위해 작은 chunk를 원하는데 그럼 memory-bound.", {}),
+      ("linear attn는 SRAM 상주 chunk kernel로 회피하나, 그 kernel은 '선형 상태 전이'에 의존. MLP+LayerNorm 비선형 recurrence엔 이식 불가(parallel scan 불가).", {})], ec=GOLD, bsize=10.5)
+pbox(s, 6.78, 2.68, 6.0, 1.55, "Challenge 2 — write/read 도메인 shift",
+     [("write는 k→v로 학습되는데 읽을 땐 query q로 읽는다 → 학습 함수의 입력 domain 밖에서 평가 → retrieval 품질↓.", {}),
+      ("attention엔 이 문제가 구조적으로 없다(q·모든 k 내적을 명시적으로). 압축 memory로 넘어올 때만 생기는 세금.", {})], ec=GOLD, bsize=10.5)
+pbox(s, 0.55, 4.35, 12.23, 0.6, "Challenge 3 — chunk-size mismatch (다음 슬라이드에서 그림으로)",
+     "훈련 chunk와 서빙 chunk가 달라지면 품질이 무너진다.", ec=RED, bsize=11.5)
+pbox(s, 0.55, 5.05, 12.23, 0.82, "핵심 가설 (한 문장)",
+     "훈련 효율과 inference 성능을 '하나의 chunk 크기'가 동시에 결정하게 놔두지 말고, 두 단계로 분리(decouple)하라. TNT = 'Titans iNside Titans' — memory 안에 memory를 중첩.", ec=BLUE)
 
-s = slide(p, "B4 · TNT — 증명", "chunk 정렬이 품질을, 계층이 속도를 만든다", GREEN)
+# B4.2 Challenge 3 — mismatch V자
+s = slide(p, "B4 · TNT — chunk-size mismatch", "새 실증 발견: 비대칭 V자 절벽 (훈련 해상도에 over-specialize)", GREEN)
 fig_with_caption(s, "2511.07343", 2, 0.55, 1.5, 6.05, 3.6,
-                 "serve chunk 민감도(V자): train chunk와 맞을 때 최적, 어긋나면 급락")
-fig_with_caption(s, "2511.07343", 4, 6.85, 1.5, 5.9, 3.6,
-                 "runtime 비교: 시퀀스가 길어질수록 최대 17배 빠른 서빙")
-box(s, 0.55, 5.25, 12.2, 0.95,
-    [("읽는 법", {"size": 12.5, "bold": True, "color": INK, "align": PP_ALIGN.LEFT, "space_after": 2}),
-     ("왼쪽 V자 = 'train/serve chunk mismatch가 진짜 품질을 죽인다'의 직접 증거. 오른쪽 = 계층 메모리로 "
-      "긴 문맥 서빙이 실제로 빨라짐. 이 논문은 '어떻게 배포하나'를 처음으로 정면으로 다룬다.",
-      {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=GREYB, ec=GREY, align=PP_ALIGN.LEFT)
+                 "Figure 2 — 550M Titans(C=64로 pre-train), inference chunk만 바꿔 측정")
+pbox(s, 6.85, 1.5, 5.9, 1.6, "V자 곡선",
+     [("바닥이 정확히 훈련 때 쓴 C=64에 걸림 (ppl 13.78, 최적). 양쪽으로 벗어나면 급격히 악화.", {}),
+      ("충격: 더 작은 chunk = 더 신선한 gradient = 더 좋아야 상식적. 그런데 C=8에서 ppl 36.45로 2.6배 폭발.", {"bold": True, "color": RED})], ec=RED, bsize=10.5)
+pbox(s, 6.85, 3.2, 5.9, 1.5, "왜 치명적인가",
+     [("이상적 서빙 = decode에서 chunk=1(매 token 온라인 갱신).", {}),
+      ("큰 chunk로 싸게 훈련한 모델은 chunk=1 근처에서 품질이 무너진다 → 그 이상적 서빙으로 직행할 수가 없다.", {"bold": True, "color": GOLD})], ec=GOLD, bsize=10.5)
+pbox(s, 0.55, 5.25, 12.23, 0.95, "읽는 법 (정직성)",
+     "이 그림은 TNT 원저자 Figure 2이고 우리 스터디 실측이 아니다. 절대 수치보다 '비대칭 V자 절벽'이라는 방향성을 기억. (Titans가 제기조차 안 했던 train/serve 불일치가 여기서 정면으로 드러난다.)", ec=GREY)
+
+# B4.3 아키텍처 global/local + reset
+s = slide(p, "B4 · TNT — global/local 계층 + reset", "reset이 병렬화 불가능한 비선형 사슬을 끊는다", GREEN)
+fig_with_caption(s, "2511.07343", 3, 0.55, 1.5, 5.7, 3.55,
+                 "Figure 3 — Stage 1: global(위, 큰 chunk 순차) + N개 local(아래, reset·병렬). Q-K는 local에만")
+pbox(s, 6.4, 1.5, 6.35, 1.35, "역할 분담",
+     [("global 1개: 큰 chunk(2048)로 sequence 전체 순차 관통 → long-range 보존, 드물고 큰 dense matmul = compute-bound (16K에 8번 handoff).", {}),
+      ("local N개: 학습된 초기상태에서 주기적 reset → 대량 병렬, fine-grained 담당.", {})], ec=GREEN, bsize=10)
+pbox(s, 6.4, 2.95, 6.35, 1.35, "reset이 핵심인 이유",
+     [("비선형 recurrence는 parallel scan 불가(결합법칙 없음). reset이 그 사슬을 끊어 각 shard가 독립 → 여러 장치·batch 축으로 병렬.", {}),
+      ("대가: local은 shard 경계에서 다 잊음 → global이 보전 (ablation: global 빼면 21→25.6 붕괴).", {"bold": True, "color": RED})], ec=BLUE, bsize=10)
+pbox(s, 6.4, 4.4, 6.35, 0.72, "W_init의 승격",
+     "reset 지점이 0이 아니라 '학습된' 초기상태 W_init(meta-learn된 prior). Titans에서 암묵적이던 초기상태가 reset을 살아남게 하는 핵심 부품으로.", ec=GOLD, bsize=9.5)
+pbox(s, 0.55, 5.25, 12.23, 0.9, "한 줄",
+     "reset = sequence 축을 잘라 '진짜 batch 축'으로 되돌리는 연산. 병렬성을 사기 위해 local의 기억을 주기적으로 태우고, 그 보험을 저해상도 global에 든다.", ec=GREY)
+
+# B4.4 Q-K projection + Stage 2
+s = slide(p, "B4 · TNT — Q-K projection + 2-stage", "train-big / serve-small: chunk를 두 독립 knob으로 분리", GREEN)
+pbox(s, 0.55, 1.4, 12.23, 1.35, "Q-K projection (Challenge 2 처방)",
+     [("query를 그대로 memory에 넣지 말고, 지금까지 관측된 key들이 스팬하는 부분공간으로 사영한 뒤 넣는다.", {}),
+      ("사영 행렬 Π_t = Σ k·kᵀ 를 매 token rank-1로 누적(과거 key 저장 불필요, 상수 크기). = KV cache append의 rank-1 GEMM 대응물, Π·q는 mat-vec 한 번. domain shift에 민감한 local에만 붙고 global은 raw query.", {})], ec=GREEN)
+pbox(s, 0.55, 2.9, 6.0, 1.75, "Stage 2 (Challenge 3 처방)",
+     [("Stage1(큰 chunk)로 싸게 pre-train 끝낸 뒤, 작은 local chunk로 짧게 fine-tune.", {}),
+      ("놀라운 관찰: 이 짧은 fine-tuning이 mismatch를 교정할 뿐 아니라 원래 성능을 넘어선다. 비용은 pre-training의 5~8%뿐.", {"bold": True, "color": GOLD})], ec=GOLD, bsize=11)
+pbox(s, 6.78, 2.9, 6.0, 1.75, "train-big / serve-small 레시피",
+     [("이상 목표 chunk=1 → autoregressive 서빙과 정확히 맞물림.", {}),
+      ("global이 큰 chunk dense 연산으로 prompt 흡수(prefill), Stage2로 적응된 local이 생성 중 token마다 갱신(decode).", {})], ec=BLUE, bsize=11)
+pbox(s, 0.55, 4.8, 12.23, 1.05, "핵심 성취",
+     "chunk 크기가 더 이상 '하나의 타협값'이 아니라, Stage1의 throughput knob과 Stage2의 해상도 knob이라는 서로 독립인 두 knob이 된다. '싸게 학습 + 정확한 서빙'이 동시에 가능.", ec=GREEN)
+
+# B4.5 결과 + 한계
+s = slide(p, "B4 · TNT — 결과 & 한계", "같은 chunk끼리도 7.7배 → 이득의 원천은 구조 자체", GREEN)
+fig_with_caption(s, "2511.07343", 4, 0.55, 1.5, 6.05, 3.5,
+                 "Figure 4 — runtime: 순수 JAX인데 32K에서 FlashAttention을 step당 이김")
+pbox(s, 6.85, 1.5, 5.9, 1.55, "속도 · 품질",
+     [("목표 loss 3.20 도달: Titans(C=8) ~19.5h vs TNT ~1.1h = 17.37배. 같은 chunk 8끼리도 7.7배 → 원천은 chunk 키움이 아니라 구조.", {}),
+      ("150M/10B: Stage1만으로 모든 RNN baseline+vanilla Transformer ppl 이김, Stage2가 더 내림. reasoning은 Gated Transformer까지.", {})], ec=GREEN, bsize=10)
+pbox(s, 6.85, 3.15, 5.9, 1.05, "ablation",
+     "local 1→4개 ppl 단조 개선(20.15). global 빼면 25.6 붕괴. Q-K projection 빼면 ~1 ppl 손해. 역할 분담이 실증됨.", ec=BLUE, bsize=10.5)
+pbox(s, 6.85, 4.28, 5.9, 0.85, "정직한 한계",
+     "모든 검증이 momentum·gating·Muon을 제거한 '단순화 Titans' 위, 150M/10B(이 라인 최소 규모). 본류 모델과의 합성은 미측정.", ec=RED, bsize=10)
+pbox(s, 0.55, 5.15, 6.05, 1.0, "kernel 이전에 구조가 승부를 갈랐다",
+     "custom kernel 최적화된 Gated Transformer는 아직 못 이기지만, TNT는 custom kernel 없는 순수 JAX인데도 32K에서 FlashAttention을 step당 이겼다.", ec=GREY, bsize=10.5)
+
+# B4.6 요약 + NL 연결
+s = slide(p, "B4 · TNT — 요약 & 다음", "이미 세 개의 update frequency로 도는 시스템 → Nested Learning의 씨앗", GREEN)
+pbox(s, 0.55, 1.4, 12.23, 0.85, "TNT가 base 4부작에 남긴 것",
+     "이 계열이 대규모로 갈 수 있도록 '훈련 경제학의 바닥'을 깔았다. TNT는 표현력이 아니라 훈련 경제학을 푼 systems 편.", ec=GREEN)
+pbox(s, 0.55, 2.4, 12.23, 1.35, "결정적 관념 — 이미 세 개의 update frequency",
+     [("global은 2048 token마다, local은 매 token마다, W_init·slow weights는 훈련에서만 갱신된다.", {}),
+      ("그리고 느린 시간 스케일에 주차된 지식(global·W_init)이 빠른 스케일의 reset에서 살아남는다.", {"bold": True, "color": GOLD})], ec=GOLD)
+pbox(s, 0.55, 3.9, 12.23, 1.75, "다음으로의 연결 — Nested Learning",
+     [("다만 TNT에게 이건 그냥 공학적 방편이었다 — '왜 이게 모델 전체의 조직 원리여야 하는지'는 말하지 않았다.", {}),
+      ("다음 논문 Nested Learning이 그 선언을 한다: 모델과 훈련 절차 전체가 '각자의 update frequency로 자기 context를 압축하는 중첩 optimization 문제들의 시스템'.", {"bold": True, "color": BLUE}),
+      ("TNT의 global/local 이분 → CMS의 주파수 연속체로, TNT의 reset → NL의 re-initialization으로, 하중을 받게 된 W_init → 다섯 knowledge-transfer 기제 중 하나로 분류된다.", {})], ec=BLUE)
+pbox(s, 0.55, 5.85, 12.23, 0.5, "여기까지가 base 4부작", "이제 집중해서 볼 두 논문(HOPE·Sleep)으로 들어간다.", ec=GREY, bsize=11)
 
 # ------------------------------ B5. Nested Learning / HOPE ------------------------------
 claim_slide("B5 · Nested Learning / HOPE (2512.24695)", "HOPE — 모든 부품이 '어떤 주파수의 메모리'인 아키텍처", GOLD,
