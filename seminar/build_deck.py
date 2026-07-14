@@ -401,6 +401,25 @@ def claim_slide(tag, title, ec, claims, flow, proof):
          (proof, {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=GREENB, ec=GREEN, align=PP_ALIGN.LEFT)
     return s
 
+def concept_wrap(tag, title, ec, concepts, oneline):
+    """논문 섹션 끝: '여기서 얻을 핵심 개념'을 카드 그리드로. concepts=[(term, def), ...]."""
+    s = slide(p, tag, title, ec)
+    tint = {id(GREEN): GREENB, id(GOLD): GOLDB, id(BLUE): BLUEB}.get(id(ec), GREENB)
+    n = len(concepts); rows = (n + 1) // 2
+    top, avail, gap = 1.45, 5.0, 0.14
+    ch = (avail - (rows - 1) * gap) / rows
+    for i, (term, defn) in enumerate(concepts):
+        col, row = i % 2, i // 2
+        x = 0.55 + col * 6.25
+        y = top + row * (ch + gap)
+        box(s, x, y, 6.0, ch,
+            [(term, {"size": 12.5, "bold": True, "color": ec, "align": PP_ALIGN.LEFT, "space_after": 2}),
+             (defn, {"size": 10.5, "color": INK, "align": PP_ALIGN.LEFT})],
+            fc=tint, ec=ec, align=PP_ALIGN.LEFT)
+    box(s, 0.55, 6.55, 12.23, 0.62,
+        [("한 문장으로", {"size": 11.5, "bold": True, "color": INK, "align": PP_ALIGN.LEFT, "space_after": 2}),
+         (oneline, {"size": 11, "color": INK, "align": PP_ALIGN.LEFT})], fc=GREYB, ec=GREY, align=PP_ALIGN.LEFT)
+
 # ------------------------------ B1. Titans ------------------------------
 claim_slide("B1 · Titans (2501.00663)", "Titans — test-time에 학습되는 신경망 메모리", GREEN,
     [("문맥을 KV에 쌓지 말고, test-time에 '학습되는' deep neural memory(작은 MLP)에 압축한다",
@@ -591,6 +610,18 @@ pbox(s, 6.78, 3.2, 6.0, 1.75, "다음으로의 연결 — Miras",
 pbox(s, 0.55, 5.1, 12.23, 1.15, "한 줄 요약",
      "Titans = memory를 weights로 보고, surprise를 gradient로 정의, momentum으로 시간 흐름, weight decay로 잊기, 깊은 MLP에 넣고도 chunkwise로 병렬 학습. 남은 질문(왜 이 손실? 왜 이 규칙?)이 Miras·Atlas·HOPE로 이어진다.", ec=GREEN)
 
+# B1 개념 wrap-up
+concept_wrap("B1 · Titans — 개념 wrap-up", "여기서 얻을 핵심 개념", GREEN, [
+    ("test-time memorization", "추론 중에도 gradient로 메모리를 계속 학습(학습 도구를 추론 안으로)."),
+    ("neural memory (LMM)", "메모리 = 작은 MLP의 weights, 그 weights가 곧 recurrent state."),
+    ("surprise = gradient", "지금 토큰이 얼마나 놀라운가 = 손실의 gradient 크기 → 클수록 세게 저장."),
+    ("momentum = surprise memory", "과거 surprise 누적. optimizer 내부 state를 sequence의 recurrent state로 승격."),
+    ("forgetting / weight decay", "α로 오래된 기억 감쇠. Mamba-2·GDN의 gate를 깊은 memory로 일반화."),
+    ("outer vs inner loop", "gate '함수'는 pre-training에서 고정, '값'은 추론 중 매 토큰. decode=fwd+bwd+update+read."),
+    ("chunkwise 병렬화", "chunk 안 gradient를 chunk-start 가중치에서 동시 평가 → GEMM/scan. C=arithmetic intensity."),
+    ("MAC/MAG/MAL · 일정 state", "메모리를 아키텍처에 꽂는 3방식. state는 문맥 길이와 무관하게 일정(vs KV cache)."),
+], "메모리를 weights로 보고 surprise(gradient)+momentum+forget으로 test-time에 학습 — 깊은 MLP인데도 chunkwise로 병렬화.")
+
 # ------------------------------ B2. Miras ------------------------------
 claim_slide("B2 · Miras (2504.13173)", "Miras — 메모리는 하나의 online 최적화; 4축 설계공간", GREEN,
     [("sequence layer = 하나의 online 최적화 문제로 통일해 볼 수 있다",
@@ -688,6 +719,18 @@ pbox(s, 0.55, 2.45, 12.23, 2.4, "Miras가 다음 논문에 넘긴 숙제 3가지
 pbox(s, 0.55, 5.0, 12.23, 0.82, "한 줄",
      "Miras가 지도를 그렸다면, Atlas는 그 지도의 '빈 축'을 최적화 이론으로 채우러 간다.", ec=BLUE)
 
+# B2 개념 wrap-up
+concept_wrap("B2 · Miras — 개념 wrap-up", "여기서 얻을 핵심 개념", GREEN, [
+    ("associative memory 관점", "시퀀스 모델 = key→value 연상 = 무언가를 최소화하는 online 최적화."),
+    ("attentional bias", "내부 목적함수 L = '무엇을 우선해 기억하나'. dot-product·L2·Lp·robust."),
+    ("retention (not forgetting)", "'지우기'가 아니라 '유지 vs 학습'의 저울질. long-context를 좌우하는 결정적 레버."),
+    ("4축 설계공간", "architecture · attentional bias · retention · learning algorithm."),
+    ("전부가 이 공간의 점", "덧쓰기(dot-product)·고쳐쓰기(L2)·비압축(softmax)이 bias 축의 세 좌표."),
+    ("softmax = 비압축 극한", "L2를 비모수적으로 푼 극한 → retention 없음 → KV가 길이에 비례 증가."),
+    ("Moneta/Yaad/Memora", "Lp / Huber(robust) / KL(simplex) 인스턴스. optimizer는 일부러 plain GD."),
+    ("retention-as-renormalization", "KL retention(Memora)은 softmax 갱신 → state가 항상 정규화되어 발산 불가."),
+], "시퀀스 모델을 4축으로 분해한 '지도' — 무엇을·무엇을 잊고·어떤 구조로·어떤 알고리즘으로. 이후 모든 논문의 좌표계.")
+
 # ------------------------------ B3. Atlas ------------------------------
 claim_slide("B3 · Atlas (2505.23735)", "Atlas — 토큰이 아니라 '문맥'을 기억하고, 용량을 키운다", GREEN,
     [("Omega rule: 개별 토큰이 아니라 sliding-window '문맥 전체'를 한 번에 기억",
@@ -776,6 +819,18 @@ pbox(s, 0.55, 2.65, 12.23, 2.2, "다음으로의 연결 — TNT",
       ("특히 치명적 mismatch가 방치: 훈련은 큰 C에서, decode는 C=1의 세계. → TNT가 정확히 여기서 시작해 chunk 경제학 전체를 재설계한다.", {"bold": True, "color": GOLD})], ec=GOLD)
 pbox(s, 0.55, 5.05, 12.23, 0.85, "조용한 복선",
      "Atlas가 'test-time training'을 'test-time memorization'으로 개명하며 'in-context 적응은 학습이 아니다'라고 선을 그은 순간, '그럼 진짜 continual learning은 어디서?'가 미결로 남는다 → Nested Learning·Sleep.", ec=BLUE)
+
+# B3 개념 wrap-up
+concept_wrap("B3 · Atlas — 개념 wrap-up", "여기서 얻을 핵심 개념", GREEN, [
+    ("context memorization", "token 하나가 아니라 '최근 문맥 전체'를 함께 기억(목표를 바꿈)."),
+    ("Omega rule", "window c의 gated 합 최소화 = rank-c 수정(delta rule의 window 일반화). c=1이면 Titans."),
+    ("memory capacity 이론", "행렬 memory = O(d_k). state 키움 ≠ 용량 늘림(이 계보 최초의 형식 정의)."),
+    ("feature map φ_p", "차원을 d_kᵖ로 올려 용량 상한을 옮김. optimizer와 직교하는 손잡이."),
+    ("softmax = 무한 용량", "무한 차원 feature의 associative memory. attention이 이기는 이유 = 용량 차이."),
+    ("Muon (근사 2차)", "Newton-Schulz로 update를 semi-orthogonal화 = 2차 정보 근사."),
+    ("κ = test-time compute", "NS 반복수. state 안 건드리고 연산↔품질을 교환하는 dial."),
+    ("Transformer 재유도", "attention=kernel regression → DeepTransformers·Dot(error-correcting attention)."),
+], "'무엇을 얼마나 잘 기억하는가'의 정점 — 목표(Omega)·용량(feature map)·관리(Muon)를 이론까지 갖춰 채움.")
 
 # ------------------------------ B4. TNT ------------------------------
 claim_slide("B4 · TNT (2511.07343)", "TNT — 학습 레시피와 serving 구조를 함께 설계", GREEN,
@@ -875,6 +930,18 @@ pbox(s, 0.55, 3.9, 12.23, 1.75, "다음으로의 연결 — Nested Learning",
       ("다음 논문 Nested Learning이 그 선언을 한다: 모델과 훈련 절차 전체가 '각자의 update frequency로 자기 context를 압축하는 중첩 optimization 문제들의 시스템'.", {"bold": True, "color": BLUE}),
       ("TNT의 global/local 이분 → CMS의 주파수 연속체로, TNT의 reset → NL의 re-initialization으로, 하중을 받게 된 W_init → 다섯 knowledge-transfer 기제 중 하나로 분류된다.", {})], ec=BLUE)
 pbox(s, 0.55, 5.85, 12.23, 0.5, "여기까지가 base 4부작", "이제 집중해서 볼 두 논문(HOPE·Sleep)으로 들어간다.", ec=GREY, bsize=11)
+
+# B4 개념 wrap-up
+concept_wrap("B4 · TNT — 개념 wrap-up", "여기서 얻을 핵심 개념", GREEN, [
+    ("훈련 경제학", "chunk 크기 C가 품질과 속도를 동시에 결정. 작은 chunk = MFU 한 자릿수."),
+    ("chunk-size mismatch", "train/serve chunk가 다르면 품질 붕괴(V자 절벽, C=8에서 2.6배 폭발)."),
+    ("global/local 계층", "global(큰 chunk 순차, long-range) + local(reset, 병렬, fine-grained)."),
+    ("periodic reset", "병렬화 불가한 비선형 사슬을 끊어 batch 축으로. 대가는 global이 보전."),
+    ("W_init 승격", "reset 지점 = meta-learn된 초기상태. reset을 살아남게 하는 핵심 부품."),
+    ("Q-K projection", "query를 관측 key 부분공간으로 사영(Π=Σk kᵀ). write/read domain shift 처방."),
+    ("2-stage: train-big/serve-small", "chunk를 throughput knob과 해상도 knob 두 독립 knob으로 분리."),
+    ("서로 다른 update frequency", "global·local·W_init이 각자 주기로 갱신 = NL의 씨앗."),
+], "표현력이 아니라 '훈련 경제학의 바닥'을 깐 systems 편 — 서로 다른 update frequency 계층이 다음 논문(NL)의 씨앗.")
 
 # ------------------------------ B5. Nested Learning / HOPE ------------------------------
 claim_slide("B5 · Nested Learning / HOPE (2512.24695)", "HOPE — 모든 부품이 '어떤 주파수의 메모리'인 아키텍처", GOLD,
@@ -1033,6 +1100,18 @@ pbox(s, 6.78, 3.25, 6.0, 1.7, "다음으로의 연결 — Sleep",
 pbox(s, 0.55, 5.1, 12.23, 0.9, "한 줄",
      "HOPE = expressive optimizer(Delta Momentum·DMGD·M3) + CMS(주파수 스펙트럼 memory) + self-modifying Titans를 직렬 결합. '더 많은 layer가 아니라 더 많은 level'을 실증 — 단 짧은 recall gap과 서빙 경제학은 미해소, 그리고 offline consolidation을 Sleep에 넘긴다.", ec=GREEN)
 
+# B5 개념 wrap-up
+concept_wrap("B5 · HOPE — 개념 wrap-up", "여기서 얻을 핵심 개념", GOLD, [
+    ("Nested Learning", "모델 + 훈련 절차 = 하나의 중첩 다층 최적화 시스템."),
+    ("backprop도 memory다", "backprop·momentum·Adam·Muon = gradient에 대한 associative memory(핵심 통찰)."),
+    ("expressive optimizer", "optimizer도 memory이므로 표현력을 키움: Delta Momentum·DMGD·M3."),
+    ("CMS (연속 주파수)", "여러 주기의 MLP 사슬 = long/short의 주파수 스펙트럼. Transformer MLP는 특수 사례."),
+    ("self-modifying Titans", "투영·게이트·lr까지 memory화(q만 static). 자기 갱신 규칙을 스스로 수정."),
+    ("ICL = structural", "in-context learning은 창발이 아니라 ≥2레벨 중첩 최적화의 구조적 결과."),
+    ("HOPE = 세 생성물 결합", "self-mod Titans(작고 똑똑) 뒤에 CMS(크고 느림)를 직렬로."),
+    ("더 많은 layer가 아니라 level", "길이 일반화·continual learning은 level 수가 사준다."),
+], "optimizer=memory라는 통찰로 아키텍처와 optimizer를 하나의 중첩 시스템으로 통합 — '모든 부품이 어떤 주파수의 memory'.")
+
 # ------------------------------ B6. Sleep ------------------------------
 claim_slide("B6 · Sleep (2606.03979)", "Sleep — 자는 동안 지식을 '위로' 옮겨 파라미터를 키운다", GREEN,
     [("wake/sleep lifecycle: 추론(wake)과 오프라인 통합(sleep)을 분리",
@@ -1139,6 +1218,18 @@ pbox(s, 6.4, 3.25, 6.35, 1.05, "Systems 함의 (Part C 예고)",
      "inference가 forward-only가 아님(RMW 트래픽=cost model 새 항). session state = KV cache가 아니라 per-user weight-delta(=multi-tenant LoRA 서빙). sleep = 서빙에 붙는 스케줄 훈련 job, 매번 새 버전.", ec=BLUE, bsize=9.5)
 pbox(s, 0.55, 5.15, 12.23, 1.0, "6편의 완성형 (개념적)",
      "state는 모든 시간규모에서 weight · 모든 블록은 같은 associative memory · inner optimizer는 아키텍처와 대등한 설계면 · 훈련은 어디서나 chunk-anchored · lifecycle은 wake/sleep. Titans가 연 'test-time 학습'이 여섯 편째에 train/test 경계 자체를 지운다. (단 from-scratch 실증은 아직 1.3B.)", ec=GREEN)
+
+# B6 개념 wrap-up
+concept_wrap("B6 · Sleep — 개념 wrap-up", "여기서 얻을 핵심 개념", GREEN, [
+    ("wake/sleep lifecycle", "train/test 경계를 지우고 Active(wake)와 Sleep을 주기적으로 교대."),
+    ("CF = capacity 문제", "forgetting은 압축의 필연 → 처방은 '덮어쓰지 말고 키워라'."),
+    ("parameter expansion", "새 low-rank expert만 추가(옛 자리 안 건드림). mask 사전할당으로 shape 정적."),
+    ("Knowledge Seeding", "작은 것→큰 것 upward distillation(GKD on-policy + LTI RL)."),
+    ("upward distillation", "빠른(고주파) 메모리의 지식을 느린 블록의 새 expert로 위쪽 전달."),
+    ("synaptic-pruning reset", "옮긴 뒤에만 지운다 = eviction 전 write-back cache 정책."),
+    ("Dreaming (SEAL)", "자기 생성 데이터로 자신을 고쳐 씀(REM). random expert로 novelty 주입."),
+    ("세 번째 regime", "pre-training·wake에 더해 sleep = 배포 중 주기적 '진짜 gradient 훈련'."),
+], "online consolidation의 나머지 절반(offline)을 채워 6편의 완성형 — 서빙 fleet에 밤마다 붙는 훈련 job.")
 
 # ==================================================================================
 # ============================== PART C — System modeling ==============================
