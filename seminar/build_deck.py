@@ -575,35 +575,90 @@ claim_slide("B2 · Miras (2504.13173)", "Miras — 메모리는 하나의 online
     "retention을 다양하게 → 새 조합 Moneta/Yaad/Memora → 축별 ablation",
     "모델 크기·문맥 길이 스케일링(Fig.3), 손실차수 p·retention q의 효과(Fig.4)로 각 축이 실제로 성능을 가른다")
 
-s = slide(p, "B2 · Miras — 4축 설계공간", "메모리를 4개의 독립적 '선택'으로 분해", GREEN)
+# B2.1 문제 + 두 관찰
+s = slide(p, "B2 · Miras — 문제와 두 관찰", "Titans는 한 점만 찍고 끝났다 — 왜 L2? 왜 momentum? forgetting이 맞나?", GREEN)
+pbox(s, 0.55, 1.4, 12.23, 1.15, "문제 — 특수 사례는 보였는데 '일반형의 좌표축'이 공백",
+     [("Titans는 존재 증명이었지만 3가지에 답하지 않았다: ① 왜 L2 loss(내부 목적함수)?  ② 왜 momentum·weight decay(딥러닝 관행을 그냥 이식)?  ③ forgetting이 옳은 개념인가?", {}),
+      ("Titans 스스로 'L2 너머의 목적함수'와 '더 나은 optimizer'를 open problem으로 남겼다.", {"bold": True, "color": RED})], ec=RED)
+pbox(s, 0.55, 2.7, 6.0, 2.15, "관찰 1 — 전부 associative memory",
+     [("거의 모든 시퀀스 모델 = key를 넣으면 value를 돌려주는 연상 메모리.", {}),
+      ("내부 목적함수는 단 2종뿐이었다: dot-product 유사도 / L2 regression.", {}),
+      ("이 내부 loss를 attentional bias로 명명 = '이 메모리가 무엇을 우선해서 기억하는가'.", {"bold": True, "color": GREEN})], ec=GREEN)
+pbox(s, 6.78, 2.7, 6.0, 2.15, "관찰 2 — forgetting은 없다, retention만 있다",
+     [("기존 forget gate = 전부 L2 정규화의 특수형.", {}),
+      ("하는 일은 '지우기'가 아니라 '새것 배우기 vs 이전 상태 머무르기'의 저울질 — 모델은 유지하지 않기로 결정할 뿐.", {}),
+      ("→ forget gate를 retention gate로 개명.", {"bold": True, "color": GOLD})], ec=GOLD)
+pbox(s, 0.55, 5.0, 12.23, 0.85, "→ 이어지는 결론",
+     "이 두 관찰을 밀고 나가면 시퀀스 모델 설계가 4개의 독립적 축으로 분해된다. '시퀀스 모델 = 무언가를 최소화하는 연상 메모리'.", ec=BLUE)
+
+# B2.2 4축
+s = slide(p, "B2 · Miras — 4축 설계공간", "메모리를 4개의 독립적 '선택'으로 분해 — retention이 결정적 레버", GREEN)
 fig_with_caption(s, "2504.13173", 1, 0.55, 1.5, 5.6, 4.2,
-                 "Miras 프레임워크: 4가지 핵심 선택으로 sequence layer를 구성")
+                 "Figure 1 — 매 token 최소화되는 안쪽 목적 = attentional bias + retention, GD로 푼다")
 axes = [
-    ("① Attentional bias", "무엇을 기억? = 손실 함수. Titans의 ‖M(k)−v‖²는 한 예. Lp·robust로 바꿀 수 있다."),
-    ("② Retention gate", "무엇을 잊나? = 정규화/감쇠. forget gate가 여기 속한다."),
-    ("③ Memory architecture", "메모리의 구조: vector · matrix · deep MLP."),
-    ("④ Learning algorithm", "어떻게 갱신? GD · momentum · FTRL · Learning-Retaining."),
+    ("① Memory architecture", "메모리 구조 — vector · matrix · deep MLP."),
+    ("② Attentional bias", "무엇을 우선해 기억? = 내부 목적함수 L. dot-product·L2·Lp·robust."),
+    ("③ Retention gate", "새것 배우기 vs 옛것 유지의 균형. long-context를 좌우하는 결정적 레버."),
+    ("④ Memory learning algorithm", "그 목적을 어떻게 푸나 — GD·momentum·Newton·closed-form."),
 ]
 ay = 1.55
 for t, b in axes:
-    box(s, 6.5, ay, 6.25, 0.98, [(t, {"size": 13, "bold": True, "color": GREEN, "align": PP_ALIGN.LEFT, "space_after": 3}),
-        (b, {"size": 11.5, "color": INK, "align": PP_ALIGN.LEFT})], fc=GREENB, ec=GREEN, align=PP_ALIGN.LEFT)
+    box(s, 6.5, ay, 6.25, 0.98, [(t, {"size": 12.5, "bold": True, "color": GREEN, "align": PP_ALIGN.LEFT, "space_after": 3}),
+        (b, {"size": 11, "color": INK, "align": PP_ALIGN.LEFT})], fc=GREENB, ec=GREEN, align=PP_ALIGN.LEFT)
     ay += 1.08
-box(s, 0.55, 5.95, 12.2, 0.85,
-    [("의의", {"size": 12.5, "bold": True, "color": BLUE, "align": PP_ALIGN.LEFT, "space_after": 2}),
-     ("Titans를 특수점으로 품는 지도를 그려, '무엇을 바꾸면 무엇이 좋아지나'를 조직적으로 탐색 가능하게 했다. 이후 Atlas·HOPE는 이 축들을 각자 밀어붙인 결과다.",
-      {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=BLUEB, ec=BLUE, align=PP_ALIGN.LEFT)
+pbox(s, 0.55, 5.95, 12.23, 0.85, "의의",
+     "Titans를 특수점으로 품는 지도. '무엇을 바꾸면 무엇이 좋아지나'를 조직적으로 탐색 가능하게 했다. 이후 모든 논문이 이 어휘로 자기 위치를 설명한다.", ec=BLUE)
 
-s = slide(p, "B2 · Miras — 증명", "축을 움직이면 성능이 예측대로 변한다", GREEN)
-fig_with_caption(s, "2504.13173", 3, 0.55, 1.5, 6.05, 3.6,
-                 "모델 크기·문맥 길이에 따른 스케일링 — Miras 변형들이 안정적으로 개선")
-fig_with_caption(s, "2504.13173", 4, 6.85, 1.5, 5.9, 3.6,
-                 "손실 차수 p·retention q의 효과 — 축 선택이 문맥 길이별 성능을 가른다")
-box(s, 0.55, 5.25, 12.2, 0.95,
-    [("읽는 법", {"size": 12.5, "bold": True, "color": INK, "align": PP_ALIGN.LEFT, "space_after": 2}),
-     ("각 축을 독립적으로 흔들었을 때 성능이 단조·예측 가능하게 반응 → '설계 공간'이 실재함을 뒷받침. "
-      "이 관점이 다음 Atlas(용량 축)와 HOPE(알고리즘 축)의 출발점.", {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})],
-    fc=GREYB, ec=GREY, align=PP_ALIGN.LEFT)
+# B2.3 전부가 이 공간의 점
+s = slide(p, "B2 · Miras — 전부가 이 공간의 점", "attentional bias 하나만 바꿔도 기존 모델들이 재유도된다", GREEN)
+pbox(s, 0.55, 1.4, 6.0, 1.7, "bias = dot-product  → '덧쓰기'",
+     [("'비슷한 key에 비례해 크게 써라' → 순수하게 더하기만 하는 write.", {}),
+      ("= linear attention · RetNet · Mamba-2 (옛 Hebbian 덧쓰기).", {"bold": True, "color": GREEN})], ec=GREEN)
+pbox(s, 6.78, 1.4, 6.0, 1.7, "bias = L2 regression  → '고쳐쓰기'",
+     [("'이미 있던 걸 고쳐 써라' → 예측오차만큼 수정.", {}),
+      ("= DeltaNet · Gated DeltaNet · RWKV-7. (A3의 '덧쓰기→고쳐쓰기'가 '목적함수만 바꿨을 뿐'으로 압축.)", {"bold": True, "color": BLUE})], ec=BLUE)
+pbox(s, 0.55, 3.25, 12.23, 1.15, "softmax attention도 이 공간의 한 점",
+     [("L2 regression을 '압축 없이 비모수적'으로 푼 극한 → retention이 없다 → state(KV cache)가 계속 커진다.", {}),
+      ("attention의 메모리가 길이에 선형으로 느는 이유 = '압축하지 않는 연상 메모리이기 때문'으로 설명된다.", {"bold": True, "color": RED})], ec=RED)
+pbox(s, 0.55, 4.55, 12.23, 1.7, "한 문장 정리 + 정직성",
+     [("덧쓰기(linear)·고쳐쓰기(delta)·안 압축(softmax)이 전부 'attentional bias 축의 세 좌표'로 통일된다.", {"bold": True, "color": GREEN, "space_after": 3}),
+      ("다만 이 표의 등호는 '원 설계 방정식' 수준의 동일시다. retention 열의 L2는 세부가 다른 gate들을 뭉뚱그린 것 — 분류학으론 정확하되 구현 완전등가로 읽으면 과독(논문 각주도 이 해상도 한계를 인정).", {})], ec=GREY)
+
+# B2.4 Moneta / Yaad / Memora
+s = slide(p, "B2 · Miras — 빈 칸을 채운 3모델", "bias·retention 축에 새 선택지를 넣다 (optimizer는 일부러 plain GD)", GREEN)
+fig_with_caption(s, "2504.13173", 2, 0.55, 1.5, 5.7, 3.9,
+                 "Figure 2 — Moneta/Yaad/Memora: recurrent · SWA hybrid · layer 설계")
+pbox(s, 6.4, 1.5, 6.35, 1.15, "Moneta — Lp loss",
+     "Lp(p=3)로 잘 안 떠오르는 '놀라운 token'에 L2보다 날카로운 기억 압력 + Lq(q=4) 정규화로 메모리 norm을 통제된 껍질에 붙잡음.", ec=GREEN, bsize=10.5)
+pbox(s, 6.4, 2.72, 6.35, 1.15, "Yaad — Huber loss (robust)",
+     "오차가 학습된 threshold보다 크면(=outlier token) 그 크기를 깎아 기억 → 노이즈·적대 구간이 자기 크기만큼 메모리를 흔들지 못한다.", ec=BLUE, bsize=10.5)
+pbox(s, 6.4, 3.94, 6.35, 1.45, "Memora — KL retention (가장 우아)",
+     [("retention을 KL divergence로 → 메모리를 확률 simplex에 가둠. 갱신이 softmax 형태라 state가 항상 양수·합=1.", {}),
+      ("→ 문맥이 아무리 길어도 state가 발산 불가 (retention-as-renormalization).", {"bold": True, "color": GOLD})], ec=GOLD, bsize=10.5)
+pbox(s, 0.55, 5.55, 12.23, 0.72, "실험 설계 의도",
+     "셋 다 optimizer는 plain GD(momentum 일부러 제거) — expressivity를 optimizer가 아니라 '목적함수와 retention'에 싣고 그 효과만 보려는 통제.", ec=GREY)
+
+# B2.5 결과
+s = slide(p, "B2 · Miras — 결과", "attention 한 layer도 안 쓰고 attention-hybrid를 이긴다", GREEN)
+fig_with_caption(s, "2504.13173", 3, 0.55, 1.5, 6.05, 3.5,
+                 "Figure 3 — scaling: baseline은 16K 넘으면 perplexity 도로 상승, 세 변형은 완만 유지")
+pbox(s, 6.85, 1.5, 5.9, 1.5, "헤드라인",
+     "더 나은 bias+retention이면 attention 없이도 hybrid를 이긴다. 1.3B/100B token에서 순수 recurrent Yaad가 Gated DeltaNet은 물론 hybrid Samba·GDN-H2까지 perplexity에서 이겼다.", ec=GREEN, bsize=11)
+pbox(s, 6.85, 3.1, 5.9, 1.4, "ablation의 교훈",
+     "p(bias)를 바꾸면 성능은 오르내리나 scaling 모양은 불변. q(retention)를 바꾸면 scaling 패턴 자체가 바뀐다 → 기여순위 retention > deep memory > bias.", ec=GOLD, bsize=11)
+pbox(s, 0.55, 5.15, 12.23, 1.1, "'retention이 결정적 레버'의 직접 증거 + 정직한 한계",
+     "위 ablation이 관찰 2(retention이 핵심)의 가장 직접적 증거. 한계: 실증이 1.3B·100B token에서 멈춘다. 7B+·RLHF 후·exact-copy recall 실무에서도 순서가 유지되는지는 미답, 효율 증거도 FLOPs 곡선 하나뿐(wall-clock 없음).", ec=GREY)
+
+# B2.6 요약 + 다음
+s = slide(p, "B2 · Miras — 요약 & 다음", "진짜 기여는 세 모델이 아니라 좌표계 → Atlas가 빈 축을 채우러 간다", GREEN)
+pbox(s, 0.55, 1.4, 12.23, 0.9, "진짜 기여 = 좌표계",
+     "Moneta/Yaad/Memora 수치는 1.3B에서 멈추지만, attentional bias·retention gate·4축이라는 '어휘'는 이후 모든 논문이 무상으로 가져다 쓴다. Titans=존재 증명, Miras=그 move가 연 공간의 좌표계.", ec=GREEN)
+pbox(s, 0.55, 2.45, 12.23, 2.4, "Miras가 다음 논문에 넘긴 숙제 3가지 = Atlas의 목차",
+     [("① 비어 있는 optimizer 축 — 세 모델 다 plain GD(momentum 제거). 더 나은 optimizer(Titans momentum·Newton법)가 새 bias·gate와 합쳐지면? → Atlas는 inner loop에 Muon을 심는다.", {}),
+      ("② token 단위 목적함수 — 목적함수가 여전히 'token 하나'만 본다. 최근 여러 token이 함께 잘 저장됐는지 아무도 안 물음. → Atlas는 Omega rule(최근 여러 token 함께 최적화)을 도입.", {}),
+      ("③ capacity 이론 부재 — online 최적화 도구를 통째로 수입했지만 그 보증이 요구하는 convexity를 2-layer MLP가 깬다. → Atlas는 정식 capacity 이론을 붙인다.", {})], ec=GOLD)
+pbox(s, 0.55, 5.0, 12.23, 0.82, "한 줄",
+     "Miras가 지도를 그렸다면, Atlas는 그 지도의 '빈 축'을 최적화 이론으로 채우러 간다.", ec=BLUE)
 
 # ------------------------------ B3. Atlas ------------------------------
 claim_slide("B3 · Atlas (2505.23735)", "Atlas — 토큰이 아니라 '문맥'을 기억하고, 용량을 키운다", GREEN,
