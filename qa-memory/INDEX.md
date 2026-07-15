@@ -1,10 +1,10 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-31건. story line 짤 때 여기서 꺼낸다.
+32건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
-### 모른다는 걸 안다 (known_unknown → decomposition) — 33건
+### 모른다는 걸 안다 (known_unknown → decomposition) — 35건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q003: 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1
@@ -38,6 +38,8 @@
 - Q030: CMS low/mid/high 3레벨(low=1K, mid=5K)에서 0~1K 구간 메커니즘과 1K 경계 학습이 어케 되나. 내 추측: low가
 - Q031: (Eq72 방향 확정) + NL에서 CMS 학습 시 optimizer 뭐 쓰는지 설명.
 - Q031: (Eq72 방향 확정) + NL에서 CMS 학습 시 optimizer 뭐 쓰는지 설명.
+- Q032: Sleep(2606.03979)에서 (1) 가장 빠른(High-Freq) layer에도 low-rank expert가 생기나, 언제? (2) 가
+- Q032: Sleep(2606.03979)에서 (1) 가장 빠른(High-Freq) layer에도 low-rank expert가 생기나, 언제? (2) 가
 
 ### 모른다는 것도 모른다 (unknown_unknown → exploration) — 54건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
@@ -95,7 +97,7 @@
 - Q029: Sleep는 전부 offline 학습? offline시 각 단계(consolidation, dreaming)별로 어떤 data를 어떻게 만들어 
 - Q030: CMS low/mid/high 3레벨(low=1K, mid=5K)에서 0~1K 구간 메커니즘과 1K 경계 학습이 어케 되나. 내 추측: low가
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 45건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 47건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
@@ -141,6 +143,8 @@
 - Q030: CMS low/mid/high 3레벨(low=1K, mid=5K)에서 0~1K 구간 메커니즘과 1K 경계 학습이 어케 되나. 내 추측: low가
 - Q031: (Eq72 방향 확정) + NL에서 CMS 학습 시 optimizer 뭐 쓰는지 설명.
 - Q031: (Eq72 방향 확정) + NL에서 CMS 학습 시 optimizer 뭐 쓰는지 설명.
+- Q032: Sleep(2606.03979)에서 (1) 가장 빠른(High-Freq) layer에도 low-rank expert가 생기나, 언제? (2) 가
+- Q032: Sleep(2606.03979)에서 (1) 가장 빠른(High-Freq) layer에도 low-rank expert가 생기나, 언제? (2) 가
 
 ### 안다는 걸 안다 (known) — 3건
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
@@ -534,6 +538,16 @@
 - **dgd only self-mod titans** (1): Q031
 - **outer adamw/m3** (1): Q031
 - **optimizer per level design axis** (1): Q031
+- **parameter expansion (low-rank expert a d×d_low, b d_low×d)** (1): Q032
+- **high-freq ffn = repeated parameter expansion (fig7)** (1): Q032
+- **consolidation = iterative upward (high→mid→low, 다대일)** (1): Q032
+- **synaptic-pruning reset (source/faster 블록만, 종착점은 성장)** (1): Q032
+- **pre-allocate+mask, fixed capacity → 슬롯 소진 시 동작 미명시(공백)** (1): Q032
+- **wake=cms eq2 자기 파라미터 갱신+expert 추가** (1): Q032
+- **sleep=backbone freeze, 새 expert만 학습(gkd+lti)** (1): Q032
+- **flush=reset, 소화=upward distillation (사용자 직관=논문 설계)** (1): Q032
+- **cf=limited capacity/params overridden = atlas prop1(o(d)) 포화** (1): Q032
+- **teacher=확장 전 / student=확장+wake갱신 후** (1): Q032
 
 ## 3. 열린 실 (think_about)
 
@@ -644,6 +658,9 @@
 - [Q030] Eq72 인덱스 방향(어느 레벨이 어느 θ_0로 리셋) 추출텍스트 모호(b)—원 PDF 대조 필요
 - [Q031] Hope 실제 훈련 optimizer(AdamW vs M3) 명시 확인 필요(c)—재현 runbook 가정
 - [Q031] 'circle back' 루프가 online consolidation의 실체—Sleep offline diff전달과 대비해 세미나에 명확히
+- [Q032] mask 슬롯 소진 시 실제 대책(확장 중단→덮어쓰기 / 오래된 expert 병합·증류로 슬롯 회수 / 더 느린 레벨 추가) — 전부 논문 밖, 검증 필요
+- [Q032] wake에서 정확히 base MLP가 갱신되는가 vs 새 expert만 갱신되는가 — Eq2 대상과 Fig7 'expansion 유입' 프레이밍 정합성 재확인
+- [Q032] fast 블록 reset이 '추가된 low-rank expert'만인지 base backbone(meta-learn init)은 불변인지 (불변=reset 지점 해석)
 
 ## 4. Storyline seeds
 
@@ -678,3 +695,4 @@
 - [Q029] (Sleep data provenance (offline) + NL online consolidation) 두 consolidation의 대비: NL online=초기상태 meta-learning+context 경계 reset(고정용량, deep memory만), Sleep offline=self-generated distillation으로 low-rank expert 성장(용량 확장). 데이터는 둘 다 self-generated(외부 없음), 유일 앵커는 dreaming task(C,τ)인데 출처 덜 특정. 세미나: wake=online(reset), sleep=offline(성장).
 - [Q030] (CMS multi-frequency update + inter-level transfer (Eq 70-72)) CMS 오해 해소 슬라이드: 레벨은 chunk 동안 gradient 누적→경계 1스텝(자기 context 압축), 레벨 간은 forward activation으로 흐름(weight 복사 아님), 초기상태 meta-learn은 리셋점(diff 아님). 그래서 '학습된 변화를 위로 넘기기'는 NL online에 없고 Sleep offline(low-rank expert distill)이 메움. 청중 직관='diff 줘야지'가 곧 Sleep의 동기.
 - [Q031] (CMS Eq72 direction + optimizer) CMS optimizer: 레벨 갱신은 simple GD(arbitrary), self-mod Titans만 expressive DGD, 전체훈련 AdamW/M3. 지식보존은 초기상태 backprop circle-back(고정용량)—런타임 diff 복사 없음→Sleep이 그 diff전달 추가. Eq72: 느린 블록이 빠른 블록 리셋 초기상태 제공.
+- [Q032] (Sleep — parameter expansion/synaptic-pruning reset/upward distillation & wake(online CMS)↔sleep consolidation & capacity(Atlas Prop1)) Sleep 세미나 섹션 보강: 'high-freq=생성/증류/reset 반복, low-freq=단조 성장(종착점)' 다이어그램 + wake(CMS Eq2)↔sleep(GKD, freeze 새 expert만) update 대상 분리 표 + 'flush=reset, 소화=upward distillation, 유한 슬롯=잔존 한계' 명시. Atlas Prop1(O(d)) 포화를 CF의 정보이론적 근거로 연결.

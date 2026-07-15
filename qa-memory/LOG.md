@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 31건.
+총 32건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -403,4 +403,17 @@
 - 생각할 것: Hope 실제 훈련 optimizer(AdamW vs M3) 명시 확인 필요(c)—재현 runbook 가정; 'circle back' 루프가 online consolidation의 실체—Sleep offline diff전달과 대비해 세미나에 명확히
 - storyline seed: CMS optimizer: 레벨 갱신은 simple GD(arbitrary), self-mod Titans만 expressive DGD, 전체훈련 AdamW/M3. 지식보존은 초기상태 backprop circle-back(고정용량)—런타임 diff 복사 없음→Sleep이 그 diff전달 추가. Eq72: 느린 블록이 빠른 블록 리셋 초기상태 제공.
 - 연상: Q030, Q025
+
+## Q032 · 2026-07-15 · Sleep — parameter expansion/synaptic-pruning reset/upward distillation & wake(online CMS)↔sleep consolidation & capacity(Atlas Prop1)
+
+**Q.** Sleep(2606.03979)에서 (1) 가장 빠른(High-Freq) layer에도 low-rank expert가 생기나, 언제? (2) 가장 느린(Low-Freq) layer는 expert가 쌓이기만 하나, pre-allocated mask가 다 소진되면 어떻게 되나? (3) NL online consolidation(CMS weight update)과 sleep consolidation의 관계 — online에선 무엇이 update되고 언제까지? online에서 얻은 정보를 sleep이 소화해야 하는 것 아닌가? d² MLP는 O(d)만 저장 가능(Atlas Prop1)하니 어느 시점엔 flush/reset 되어야 하는 것 아닌가?
+
+**A.** (1) 생긴다. Fig.7: 'Updates enter the High-Frequency FFN via repeated Parameter Expansion' — wake 동안 새 지식을 덮어쓰지 않으려 high-freq 블록에 low-rank expert{A d×d_low,B d_low×d} 반복 추가; sleep 경계에서 mid→low로 upward consolidate 후 그 fast 블록의 이전 expert들은 전부 reset(synaptic pruning, line447-450). high-freq=생성↔증류↔reset 반복(작고 유연). (2) 가장 느린 블록은 consolidation 체인 종착점이라 reset 대상 아님 → 단조 성장(line364). 단 구현은 pre-allocate+mask이고 'brain has (large but) FIXED capacity'(line453-455)라 슬롯 유한. 그 슬롯 소진 시 동작은 논문 미명시(공백) = 큰 유한용량일 뿐 결국 fixed-capacity 벽 잔존(암묵적 한계). (3) 사용자 직관이 논문 설계와 정확히 일치. WAKE=각 블록이 window 누적 gradient로 자기 chunk 경계 1step 자기 파라미터 갱신(Eq2)+expert 추가. SLEEP=backbone 전부 freeze, 새 확장 expert만 학습(GKD, line410). '언제까지'=다음 consolidation 경계(덮어쓰기 직전, line344-346). 소화=Knowledge Seeding(upward distillation, teacher=확장전/student=확장+wake갱신후). 포화→flush: 논문이 CF를 'limited capacity, parameters overridden'(line352-353)로 규정=Atlas Prop1 포화; 해법=(a)expansion 용량↑ +(b)consolidate 후 fast reset(flush). 즉 flush=synaptic-pruning reset, 소화=upward distillation. 불변식: base backbone(meta-learn init)=reset 지점, wake=fast에 expert 추가로 online 학습, sleep=slower로 증류 후 fast reset.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known: fast(High-Freq) 블록도 wake 중 repeated parameter expansion으로 expert 생성→consolidate→reset 반복(Fig7 caption); reset은 항상 더 빠른 블록만; unknown_known: Q3 직관(정보포화→flush 필요)이 논문 설계와 정확 일치 — flush=synaptic-pruning reset, 소화=upward distillation(Knowledge Seeding); unknown_unknown→known_unknown: pre-allocated mask 슬롯 소진 시 동작 미명시 = 큰 유한용량일 뿐 fixed-capacity 벽 잔존(논문 암묵적 한계); known_unknown: update 대상 분리 — wake=블록 파라미터 CMS 갱신(Eq2), sleep=backbone freeze 새 expert만(line410)
+- 개념 key: parameter expansion (low-rank expert A d×d_low, B d_low×d), high-freq FFN = repeated parameter expansion (Fig7), consolidation = iterative upward (High→Mid→Low, 다대일), synaptic-pruning reset (source/faster 블록만, 종착점은 성장), pre-allocate+mask, FIXED capacity → 슬롯 소진 시 동작 미명시(공백), wake=CMS Eq2 자기 파라미터 갱신+expert 추가, sleep=backbone freeze, 새 expert만 학습(GKD+LTI), flush=reset, 소화=upward distillation (사용자 직관=논문 설계), CF=limited capacity/params overridden = Atlas Prop1(O(d)) 포화, teacher=확장 전 / student=확장+wake갱신 후
+- 생각할 것: mask 슬롯 소진 시 실제 대책(확장 중단→덮어쓰기 / 오래된 expert 병합·증류로 슬롯 회수 / 더 느린 레벨 추가) — 전부 논문 밖, 검증 필요; wake에서 정확히 base MLP가 갱신되는가 vs 새 expert만 갱신되는가 — Eq2 대상과 Fig7 'expansion 유입' 프레이밍 정합성 재확인; fast 블록 reset이 '추가된 low-rank expert'만인지 base backbone(meta-learn init)은 불변인지 (불변=reset 지점 해석)
+- storyline seed: Sleep 세미나 섹션 보강: 'high-freq=생성/증류/reset 반복, low-freq=단조 성장(종착점)' 다이어그램 + wake(CMS Eq2)↔sleep(GKD, freeze 새 expert만) update 대상 분리 표 + 'flush=reset, 소화=upward distillation, 유한 슬롯=잔존 한계' 명시. Atlas Prop1(O(d)) 포화를 CF의 정보이론적 근거로 연결.
+- 연상: Q031, Q030, Q025
 
