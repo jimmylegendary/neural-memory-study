@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 32건.
+총 33건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -416,4 +416,17 @@
 - 생각할 것: mask 슬롯 소진 시 실제 대책(확장 중단→덮어쓰기 / 오래된 expert 병합·증류로 슬롯 회수 / 더 느린 레벨 추가) — 전부 논문 밖, 검증 필요; wake에서 정확히 base MLP가 갱신되는가 vs 새 expert만 갱신되는가 — Eq2 대상과 Fig7 'expansion 유입' 프레이밍 정합성 재확인; fast 블록 reset이 '추가된 low-rank expert'만인지 base backbone(meta-learn init)은 불변인지 (불변=reset 지점 해석)
 - storyline seed: Sleep 세미나 섹션 보강: 'high-freq=생성/증류/reset 반복, low-freq=단조 성장(종착점)' 다이어그램 + wake(CMS Eq2)↔sleep(GKD, freeze 새 expert만) update 대상 분리 표 + 'flush=reset, 소화=upward distillation, 유한 슬롯=잔존 한계' 명시. Atlas Prop1(O(d)) 포화를 CF의 정보이론적 근거로 연결.
 - 연상: Q031, Q030, Q025
+
+## Q033 · 2026-07-15 · Sleep — online(wake) vs offline(sleep) consolidation 종류 구분 & expert 생성=offline 전용 & 유한 슬롯 소진 [Q032 정정]
+
+**Q.** Sleep에서 (1) offline consolidation(self-generated data로 high~low expert 생성·reset·학습)은 online consolidation과 같은 연산의 online/offline 타이밍 차이인가? (2) online에는 상위(느린 MLP)로 올리는 전달이 없나? (3) 100조 token을 하루에 wake로 입력하는 극단 상황에서 online이 이미 low-rank expert를 다 채워버릴 수 있나?
+
+**A.** [Q032 정정: parameter expansion(expert 생성)은 offline(sleep) 전용이지 wake가 아니다]. 원문 §3.1 line314-323이 online/offline을 종류로 구분: (Online, wake) end-to-end 학습으로 fast→slow 지식을 forward chain으로 암묵 전달(Eq2 기존 파라미터 갱신, 고정용량, 실입력, 새 expert 없음). (Offline, sleep) 실입력 끊고 self-generated data로 명시적 distillation(GKD+LTI)+parameter expansion(새 low-rank expert 생성)+reset(용량 성장). (1) 종류가 다름: 데이터(실입력 vs 자기생성)·용량(고정 vs 성장)·전달(암묵 forward chain vs 명시 distillation)·expert(없음 vs 생성/reset) 전부 다름. (2) online에도 상위 전달 있음(line318-320 fast→slow) 단 forward chain 통한 암묵적·고정용량 전달이지 expert 생성 명시 distillation 아님; online만으론 CF 못막음(모든 블록 갱신주기 겹치는 순간 CF, line279-281). (3) 엄밀히 online엔 expert 생성 없어 'online에서 소진'은 불가; wake만이면 고정용량 덮어쓰기 포화(CF)뿐. 그러나 consolidation(offline)은 chunk 경계마다 트리거(line346 {C^k×b} steps)라 100조 token 처리 시 경계를 수없이 넘어 slower 블록 expert 단조 성장 → pre-allocated 유한 슬롯 소진 가능; 소진 시 동작은 논문 미명시(공백, line453-455 fixed capacity). 정확한 그림: 'online이 채운다'가 아니라 '경계 트리거 offline consolidation 반복이 느린 블록 유한 슬롯을 채운다'.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known: online/offline은 타이밍이 아니라 KIND 차이(데이터 실입력 vs 자기생성, 용량 고정 vs 성장, 전달 암묵 vs 명시, expert 없음 vs 생성); known_unknown→known: expert 생성/reset은 offline(sleep) 전용 — Q032의 'wake expert 추가' 주장은 오류였음(정정); unknown_known: online에도 fast→slow 상위 전달 존재(line318-320) 단 forward chain 암묵·고정용량; unknown_known: 'online에서 expert 소진'은 개념적 불가(online엔 생성 없음); 소진은 경계 트리거 offline consolidation 반복의 결과
+- 개념 key: online consolidation = wake end-to-end 학습(Eq2), fast→slow 암묵 전달, 고정용량, offline consolidation = sleep, self-generated data, 명시 distillation+expansion+reset, parameter expansion(expert 생성)=offline 전용 [Q032 wake-expert 주장 정정], online에도 상위 전달 있음(forward chain 암묵)이나 명시 distillation 아님, consolidation은 chunk 경계마다 트리거(line346), wake만 지속 → 고정용량 덮어쓰기 포화(CF), expert 생성 없음, 100조 token → 경계 다수 → slower 블록 expert 단조 성장 → 유한 슬롯 소진 가능, 슬롯 소진 시 동작 미명시(공백), fixed capacity(line453-455), online만으론 CF 못막음(갱신주기 겹치면 CF, line279-281)
+- 생각할 것: consolidation이 chunk 경계마다 트리거(line346)면 wake와 offline sleep이 매 경계에서 교대하는가, 아니면 dedicated 긴 sleep 주기인가 — 스케줄 실제 구현 재확인; online의 fast→slow 암묵 전달(line318-320)과 Q031의 'NL 상위 전달은 초기상태(Eq72)뿐, 런타임 diff는 Sleep이 추가' 정합성 — 암묵 전달(forward chain)과 명시 diff(distillation) 구분 명확화; wake에서 갱신 대상이 base MLP인지(Eq2) — offline seeding은 backbone freeze 새 expert만; 두 update 대상 분리 재확인
+- storyline seed: Sleep 세미나: online vs offline consolidation 비교표(데이터/용량/전달/expert/서빙) 슬라이드 추가. 'expert 생성=offline 전용, online은 forward chain 암묵 전달·고정용량' 명시. 100조-token 사고실험으로 '유한 슬롯 소진=잔존 한계' 강조. Q031(Eq72 초기상태 vs 런타임 diff)과 연결.
+- 연상: Q032, Q031, Q030
 
