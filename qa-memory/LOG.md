@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 34건.
+총 35건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -442,4 +442,17 @@
 - 생각할 것: online Eq2가 MoE 블록에서 실제로 어느 파라미터(base vs active experts vs router)를 갱신하는지—구현/코드로 확인 필요; online-갱신된 base 가중치가 reset(synaptic pruning) 대상인지 보존인지—reset은 'added low-rank experts'만 명시(line447-448), base는 불명; NL from-scratch HOPE(dense)와 Sleep graft(Llama+MoE) 사이 성능/기여 귀속의 혼입—비통제 비교 주의; 이 seam이 논문의 이음새(knobs meta-learn 안됨, graft)와 같은 계열 한계인지 정리
 - storyline seed: 세미나 B5/B6 연결부에 'NL HOPE(dense CMS) vs Sleep 모델(MoE CMS+Llama graft)' 아키텍처 차이 슬라이드 + 'online→offline은 teacher/student 경계 objective로만 연결, dense↔MoE 기계적 interlock은 공백(seam)' 명시. 이 seam을 이 계열의 정직한 한계(graft·knobs 미학습)와 함께 제시.
 - 연상: Q033, Q032, Q031
+
+## Q035 · 2026-07-15 · test-time training sequence-layer 방법 기술 계보(2016-2026.07): 5스트림·Miras 수렴·Titans 라인·변주된 축·2026 프론티어
+
+**Q.** Titans처럼 test-time training으로 sequence layer를 처리하는 방법들은 무엇이 있고, optimizer 역사 지도처럼 기술 계보가 어떻게 흘러왔나? (오늘=2026-07 최신)
+
+**A.** 핵심 관점: sequence layer의 state=고정벡터가 아니라 test-time에 학습되는 메모리. 서사: 씨앗(2016 Fast Weights·2022 ICL=GD von Oswald) → 세 스트림이 갱신규칙 개선 → Miras가 4축으로 수렴 → Titans 라인이 각 축을 밀어붙임. 5스트림: [뿌리] FastWeights2016·Hopfield용량2020·LinearAttn2020·FWP(Schlag)2021·ICL=GD2022★. [write-rule] GLA·RetNet2023→DeltaNet병렬2024→GatedDeltaNet·RWKV7 2025→MDN·OSDN·Parallax2026. [SSM] Mamba2023→Mamba2 SSD2024→Mamba3 2026. [명시적TTT] TTT(Sun)2024★·Longhorn2024·TTT-video2025·MesaNet2026★·TTT≈LinearAttn2026. [Titans라인] Titans2501→Miras2504★수렴→Atlas2505→TNT2511→HOPE2512→Sleep2606★. 변주된 축: objective(Hebbian덧쓰기→delta→Lp/KL→self-target)·update(additive→1차GD1스텝→+momentum/decay→2차Muon→국소최적exact solve=Mesa)·retention·구조(→self-modifying)·scope(token→window)·serving(→2-stage)·lifecycle(→wake/sleep). 프론티어(2026.07): Sleep(생애주기)·MesaNet(국소최적 갱신, CG solver)·Mamba-3·delta정제. 산출물: HTML genealogy 아티팩트.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known: 이 분야 전체가 'state=test-time 학습 메모리' 한 관점의 변주 — optimizer 역사와 동형 구조; unknown_unknown→known: 2026 최신(repo 6편 너머) — MesaNet(국소최적/Mesa layer, ICLR2026)·Mamba-3·delta정제(MDN/OSDN/Parallax)·TTT≈LinearAttn·TitansRevisited; unknown_known: update 축이 additive→1차GD→2차Muon→'국소최적 exact solve(MesaNet)'로 스펙트럼을 이룸; von Oswald mesa-optimization이 그 이론적 씨앗
+- 개념 key: 관점: state=test-time에 학습되는 메모리, 씨앗: Fast Weights(2016)+ICL=GD(von Oswald 2022), write-rule 스트림: linear attn→DeltaNet→GatedDeltaNet→RWKV7, SSM 스트림: Mamba→Mamba2(SSD)→Mamba3, 명시적 TTT: TTT(Sun)·Longhorn·MesaNet, Miras=4축 수렴점, Titans 라인 축별 전진(용량·2차·serving·optimizer=memory·lifecycle), update 축 극단=MesaNet 국소최적 exact solve(CG), 2026 최신: MesaNet·Mamba-3·MDN/OSDN/Parallax·TTT≈LinearAttn·TitansRevisited, Hopfield=용량이론 뿌리(→Atlas)
+- 생각할 것: MesaNet(CG exact solve)의 test-time compute 대 품질 트레이드 — HATIR로 비용 모델링 가능?; 각 스트림이 Miras 4축의 어느 점인지 정확 매핑표; 2026 delta정제(MDN/OSDN/Parallax)가 Titans 라인과 어떻게 합쳐질지
+- storyline seed: 세미나 도입부(또는 A3 뒤)에 이 genealogy 지도를 1슬라이드로 — optimizer 지도와 짝. '이 분야=한 관점의 변주' 프레임으로 6편을 위치시킴. HTML 아티팩트를 PNG로 렌더해 삽입 가능.
+- 연상: Q031, Q025
 
