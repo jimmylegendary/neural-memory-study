@@ -1,10 +1,10 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-33건. story line 짤 때 여기서 꺼낸다.
+34건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
-### 모른다는 걸 안다 (known_unknown → decomposition) — 36건
+### 모른다는 걸 안다 (known_unknown → decomposition) — 38건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q003: 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1
@@ -41,6 +41,8 @@
 - Q032: Sleep(2606.03979)에서 (1) 가장 빠른(High-Freq) layer에도 low-rank expert가 생기나, 언제? (2) 가
 - Q032: Sleep(2606.03979)에서 (1) 가장 빠른(High-Freq) layer에도 low-rank expert가 생기나, 언제? (2) 가
 - Q033: Sleep에서 (1) offline consolidation(self-generated data로 high~low expert 생성·reset·
+- Q034: NL(2512.24695)의 HOPE와 Sleep(2606.03979)의 모델은 사실 다른 모델 아닌가? NL은 dense FFN, Sleep은
+- Q034: NL(2512.24695)의 HOPE와 Sleep(2606.03979)의 모델은 사실 다른 모델 아닌가? NL은 dense FFN, Sleep은
 
 ### 모른다는 것도 모른다 (unknown_unknown → exploration) — 54건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
@@ -98,7 +100,7 @@
 - Q029: Sleep는 전부 offline 학습? offline시 각 단계(consolidation, dreaming)별로 어떤 data를 어떻게 만들어 
 - Q030: CMS low/mid/high 3레벨(low=1K, mid=5K)에서 0~1K 구간 메커니즘과 1K 경계 학습이 어케 되나. 내 추측: low가
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 50건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 52건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
@@ -149,6 +151,8 @@
 - Q033: Sleep에서 (1) offline consolidation(self-generated data로 high~low expert 생성·reset·
 - Q033: Sleep에서 (1) offline consolidation(self-generated data로 high~low expert 생성·reset·
 - Q033: Sleep에서 (1) offline consolidation(self-generated data로 high~low expert 생성·reset·
+- Q034: NL(2512.24695)의 HOPE와 Sleep(2606.03979)의 모델은 사실 다른 모델 아닌가? NL은 dense FFN, Sleep은
+- Q034: NL(2512.24695)의 HOPE와 Sleep(2606.03979)의 모델은 사실 다른 모델 아닌가? NL은 dense FFN, Sleep은
 
 ### 안다는 걸 안다 (known) — 3건
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
@@ -561,6 +565,15 @@
 - **100조 token → 경계 다수 → slower 블록 expert 단조 성장 → 유한 슬롯 소진 가능** (1): Q033
 - **슬롯 소진 시 동작 미명시(공백), fixed capacity(line453-455)** (1): Q033
 - **online만으론 cf 못막음(갱신주기 겹치면 cf, line279-281)** (1): Q033
+- **nl hope cms=dense mlp 체인 (moe 언급 0, transformer mlp 대체)** (1): Q034
+- **sleep cms=sparse moe 가정(line357)—expansion 위해 추가** (1): Q034
+- **sleep 실험=llama/qwen graft(from-scratch hope 아님)** (1): Q034
+- **online eq2(line249)=θ^(f_ℓ) 일반 갱신(dense 상속), moe 세부 없음** (1): Q034
+- **moe는 offline expansion(§3.2)에서만 등장** (1): Q034
+- **fig7(updates via expansion=moe) vs eq2(dense θ 갱신) 미화해** (1): Q034
+- **online→offline 연결=teacher/student 경계 objective만 명시(§3.3)** (1): Q034
+- **dense-online↔moe-offline 기계적 interlock=공백(seam)** (1): Q034
+- **온라인 갱신 expert 선택/base reset·보존/증류 매핑=전부 미명시** (1): Q034
 
 ## 3. 열린 실 (think_about)
 
@@ -677,6 +690,10 @@
 - [Q033] consolidation이 chunk 경계마다 트리거(line346)면 wake와 offline sleep이 매 경계에서 교대하는가, 아니면 dedicated 긴 sleep 주기인가 — 스케줄 실제 구현 재확인
 - [Q033] online의 fast→slow 암묵 전달(line318-320)과 Q031의 'NL 상위 전달은 초기상태(Eq72)뿐, 런타임 diff는 Sleep이 추가' 정합성 — 암묵 전달(forward chain)과 명시 diff(distillation) 구분 명확화
 - [Q033] wake에서 갱신 대상이 base MLP인지(Eq2) — offline seeding은 backbone freeze 새 expert만; 두 update 대상 분리 재확인
+- [Q034] online Eq2가 MoE 블록에서 실제로 어느 파라미터(base vs active experts vs router)를 갱신하는지—구현/코드로 확인 필요
+- [Q034] online-갱신된 base 가중치가 reset(synaptic pruning) 대상인지 보존인지—reset은 'added low-rank experts'만 명시(line447-448), base는 불명
+- [Q034] NL from-scratch HOPE(dense)와 Sleep graft(Llama+MoE) 사이 성능/기여 귀속의 혼입—비통제 비교 주의
+- [Q034] 이 seam이 논문의 이음새(knobs meta-learn 안됨, graft)와 같은 계열 한계인지 정리
 
 ## 4. Storyline seeds
 
@@ -713,3 +730,4 @@
 - [Q031] (CMS Eq72 direction + optimizer) CMS optimizer: 레벨 갱신은 simple GD(arbitrary), self-mod Titans만 expressive DGD, 전체훈련 AdamW/M3. 지식보존은 초기상태 backprop circle-back(고정용량)—런타임 diff 복사 없음→Sleep이 그 diff전달 추가. Eq72: 느린 블록이 빠른 블록 리셋 초기상태 제공.
 - [Q032] (Sleep — parameter expansion/synaptic-pruning reset/upward distillation & wake(online CMS)↔sleep consolidation & capacity(Atlas Prop1)) Sleep 세미나 섹션 보강: 'high-freq=생성/증류/reset 반복, low-freq=단조 성장(종착점)' 다이어그램 + wake(CMS Eq2)↔sleep(GKD, freeze 새 expert만) update 대상 분리 표 + 'flush=reset, 소화=upward distillation, 유한 슬롯=잔존 한계' 명시. Atlas Prop1(O(d)) 포화를 CF의 정보이론적 근거로 연결.
 - [Q033] (Sleep — online(wake) vs offline(sleep) consolidation 종류 구분 & expert 생성=offline 전용 & 유한 슬롯 소진 [Q032 정정]) Sleep 세미나: online vs offline consolidation 비교표(데이터/용량/전달/expert/서빙) 슬라이드 추가. 'expert 생성=offline 전용, online은 forward chain 암묵 전달·고정용량' 명시. 100조-token 사고실험으로 '유한 슬롯 소진=잔존 한계' 강조. Q031(Eq72 초기상태 vs 런타임 diff)과 연결.
+- [Q034] (NL HOPE(dense CMS) vs Sleep 모델(MoE CMS+graft) 아키텍처 차이 & online↔offline consolidation의 dense↔MoE interlock 공백(seam)) 세미나 B5/B6 연결부에 'NL HOPE(dense CMS) vs Sleep 모델(MoE CMS+Llama graft)' 아키텍처 차이 슬라이드 + 'online→offline은 teacher/student 경계 objective로만 연결, dense↔MoE 기계적 interlock은 공백(seam)' 명시. 이 seam을 이 계열의 정직한 한계(graft·knobs 미학습)와 함께 제시.

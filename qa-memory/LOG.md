@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 33건.
+총 34건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -429,4 +429,17 @@
 - 생각할 것: consolidation이 chunk 경계마다 트리거(line346)면 wake와 offline sleep이 매 경계에서 교대하는가, 아니면 dedicated 긴 sleep 주기인가 — 스케줄 실제 구현 재확인; online의 fast→slow 암묵 전달(line318-320)과 Q031의 'NL 상위 전달은 초기상태(Eq72)뿐, 런타임 diff는 Sleep이 추가' 정합성 — 암묵 전달(forward chain)과 명시 diff(distillation) 구분 명확화; wake에서 갱신 대상이 base MLP인지(Eq2) — offline seeding은 backbone freeze 새 expert만; 두 update 대상 분리 재확인
 - storyline seed: Sleep 세미나: online vs offline consolidation 비교표(데이터/용량/전달/expert/서빙) 슬라이드 추가. 'expert 생성=offline 전용, online은 forward chain 암묵 전달·고정용량' 명시. 100조-token 사고실험으로 '유한 슬롯 소진=잔존 한계' 강조. Q031(Eq72 초기상태 vs 런타임 diff)과 연결.
 - 연상: Q032, Q031, Q030
+
+## Q034 · 2026-07-15 · NL HOPE(dense CMS) vs Sleep 모델(MoE CMS+graft) 아키텍처 차이 & online↔offline consolidation의 dense↔MoE interlock 공백(seam)
+
+**Q.** NL(2512.24695)의 HOPE와 Sleep(2606.03979)의 모델은 사실 다른 모델 아닌가? NL은 dense FFN, Sleep은 MoE 구조. 이 차이 때문에 Sleep에서 online consolidation이 offline consolidation으로 어떻게 연결되는지 언급이 없어서(진짜 없음?) online→offline 연결을 알 수 없는 것 아닌가?
+
+**A.** 둘 다 맞음. (1) 아키텍처 다름: NL HOPE=self-mod Titans + CMS(dense MLP 체인; NL 전체에서 MoE/sparse/router/expert 언급 0, CMS='Transformer MLP 대체' dense FFN 일반화, 갱신 Eq70-72). Sleep 모델=CMS를 sparse MoE로 가정(line357 'we assume MLP blocks are sparse MoE with a router')—parameter expansion(사전할당 expert mask/활성화) 가능케 하려고 Sleep이 추가. 게다가 Sleep 실험은 대부분 Llama-3.2-1B/Llama3-8B에 graft(line533/775/1510), from-scratch HOPE 아님. → 같은 이름·계보, 다른 구체 모델. (2) online→offline 연결: objective 수준만 명시(§3.3 teacher=확장 전 상태(빠른 블록 online-갱신 지식 보유), student=확장+Eq2 갱신 후, KS가 teacher를 새 expert로 증류 → online-갱신 지식이 offline 증류 소스). 그러나 dense↔MoE 기계적 연결은 공백: online Eq2(line249)는 θ^(f_ℓ)를 일반적(NL dense 그대로) 갱신, MoE/router/어떤 expert인지 세부 없음; MoE는 offline expansion(§3.2)에서만; Fig7('updates enter High-Freq FFN via repeated Parameter Expansion'=MoE) vs Eq2(dense θ 갱신) 화해 안 됨. → online 어느 expert 갱신? online-갱신 base 가중치 reset/보존? 일반 online 갱신이 MoE expert 증류로 어떻게 매핑? 전부 미명시. 결론: online→offline은 teacher/student 경계에서만 이어지고 dense-online↔MoE-offline 실제 interlock은 공백(seam). Sleep이 online을 NL(dense)에서 수입+MoE-offline만 얹어 interlock 안 품.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known: NL HOPE(dense CMS)와 Sleep 모델(MoE CMS+graft)은 구체 아키텍처가 다른 모델—같은 이름/계보일 뿐; unknown_known: MoE 가정은 Sleep이 parameter expansion 위해 추가한 것(NL엔 MoE 전무); unknown_unknown→known: online→offline은 §3.3 teacher/student 경계에서 objective로만 연결, dense-online↔MoE-offline 기계적 interlock은 공백(seam); known_unknown: Fig7(expansion=updates)와 Eq2(dense θ 갱신)의 불일치—online이 MoE에 어떻게 작용하는지 미명시
+- 개념 key: NL HOPE CMS=dense MLP 체인 (MoE 언급 0, Transformer MLP 대체), Sleep CMS=sparse MoE 가정(line357)—expansion 위해 추가, Sleep 실험=Llama/Qwen graft(from-scratch HOPE 아님), online Eq2(line249)=θ^(f_ℓ) 일반 갱신(dense 상속), MoE 세부 없음, MoE는 offline expansion(§3.2)에서만 등장, Fig7(updates via expansion=MoE) vs Eq2(dense θ 갱신) 미화해, online→offline 연결=teacher/student 경계 objective만 명시(§3.3), dense-online↔MoE-offline 기계적 interlock=공백(seam), 온라인 갱신 expert 선택/base reset·보존/증류 매핑=전부 미명시
+- 생각할 것: online Eq2가 MoE 블록에서 실제로 어느 파라미터(base vs active experts vs router)를 갱신하는지—구현/코드로 확인 필요; online-갱신된 base 가중치가 reset(synaptic pruning) 대상인지 보존인지—reset은 'added low-rank experts'만 명시(line447-448), base는 불명; NL from-scratch HOPE(dense)와 Sleep graft(Llama+MoE) 사이 성능/기여 귀속의 혼입—비통제 비교 주의; 이 seam이 논문의 이음새(knobs meta-learn 안됨, graft)와 같은 계열 한계인지 정리
+- storyline seed: 세미나 B5/B6 연결부에 'NL HOPE(dense CMS) vs Sleep 모델(MoE CMS+Llama graft)' 아키텍처 차이 슬라이드 + 'online→offline은 teacher/student 경계 objective로만 연결, dense↔MoE 기계적 interlock은 공백(seam)' 명시. 이 seam을 이 계열의 정직한 한계(graft·knobs 미학습)와 함께 제시.
+- 연상: Q033, Q032, Q031
 
