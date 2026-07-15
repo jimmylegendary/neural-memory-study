@@ -1488,6 +1488,34 @@ box(s, 0.55, 5.25, 6.05, 1.05,
      ("이 계열을 키울수록 서빙은 '메모리 문제'가 된다 — 대역폭·상주·소프트웨어가 스케일의 열쇠.",
       {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=BLUEB, ec=BLUE, align=PP_ALIGN.LEFT)
 
+# ============================== Open Questions — HOPE model ==============================
+s = slide(p, "Open Questions — HOPE model", "모델 관점에서 논문이 아직 답하지 않은 것들 (향후 방향)", GOLD)
+oq = [
+    ("hybrid · multi-head · depth/dim", "attention hybrid·multi-head를 섞으면? layer depth·dim 스케일은? — Hope-Attention 변형·≤1.3B만, 구성 sweep 미탐색"),
+    ("SMT 각 memory의 depth 확장", "6개 memory는 현재 2-layer MLP. 더 깊게 하면? 어디까지? — Titans는 depth 이득을 보였으나 SMT엔 미적용"),
+    ("SMT optimizer ≠ DGD?", "SMT 안쪽은 DGD(Delta GD)+weight decay 고정. Delta Momentum·M3·Muon을 SMT에 쓰면? — 미탐색"),
+    ("TNT global/local 결합", "TNT의 global(prefill)/local(decode) 계층 메모리를 HOPE 추론에 적용? — 두 논문은 결합되지 않음"),
+    ("TNT Q-K projection 적용", "TNT의 Q-K projection(write/read domain shift 처방)을 SMT의 read에? — 미적용"),
+    ("online → offline 연결", "dense-online(Eq2) ↔ MoE-offline(expansion)의 기계적 interlock은 공백(seam) — teacher/student 경계만 명시"),
+    ("expert slot 소진 대책", "pre-allocated 유한 슬롯이 다 차면? — 논문 미명시 (병합·증류로 회수 / 재초기화 / 더 느린 레벨 추가는 추론)"),
+]
+n = len(oq); rows = (n + 1) // 2
+top, avail, gap = 1.42, 5.05, 0.14
+ch = (avail - (rows - 1) * gap) / rows
+for i, (q, note) in enumerate(oq):
+    col, row = i % 2, i // 2
+    x = 0.55 + col * 6.25
+    y = top + row * (ch + gap)
+    w = 6.0 if (i < n - 1 or n % 2 == 0) else 12.23   # 마지막 홀수 항목은 전폭
+    box(s, x, y, w, ch,
+        [("Q" + str(i + 1) + ". " + q, {"size": 12.5, "bold": True, "color": GOLD, "align": PP_ALIGN.LEFT, "space_after": 2}),
+         ("→ " + note, {"size": 10.5, "color": INK, "align": PP_ALIGN.LEFT})],
+        fc=GOLDB, ec=GOLD, align=PP_ALIGN.LEFT)
+box(s, 0.55, 6.55, 12.23, 0.62,
+    [("정리", {"size": 11.5, "bold": True, "color": BLUE, "align": PP_ALIGN.LEFT, "space_after": 2}),
+     ("Q1–Q5 = '열린 설계 공간'(아직 안 밀어붙인 조합) · Q6–Q7 = '정직한 공백'(논문이 명시 안 한 이음새·한계). 앞으로 이 계열을 키울 때 먼저 부딪힐 지점들.",
+      {"size": 10.5, "color": INK, "align": PP_ALIGN.LEFT})], fc=BLUEB, ec=BLUE, align=PP_ALIGN.LEFT)
+
 # ============================== 마무리 ==============================
 s = slide(p, "마무리", "6편을 한 흐름으로, 그리고 서빙 비용까지", GREEN)
 closing = [
