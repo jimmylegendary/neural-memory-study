@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 36건.
+총 37건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -468,4 +468,17 @@
 - 생각할 것: MesaNet/Atlas의 국소최적 해법(CG/2차)이 test-time compute를 얼마나 쓰는지 → HATIR 비용모델링; sparse/low-rank efficient-attention 곁가지를 계보에 되살릴지(별도 컬럼); 각 계열이 Miras 4축의 어느 점인지 정합 매핑
 - storyline seed: 세미나에서 '이 분야 전체 지형'을 이 4계열 branch graph 1장으로 제시 → 그 다음 우리가 판 TTT-MLP/Titans 라인으로 zoom-in. optimizer 지도(직관)와 이 계보 그래프(지형)를 도입부 한 쌍으로.
 - 연상: Q035
+
+## Q037 · 2026-07-16 · efficient/system-level TTT 93편 코퍼스 + 6축 시스템 분석(표현력↔GPU효율); LaCT 기준점, in-place TTT 포함
+
+**Q.** efficient TTT를 정조준해 관련 논문을 싸그리(의미있는 것만) 모아 TTT의 system-level 분석을 하라 (LaCT 2505.23884, in-place TTT 등 누락분 포함)
+
+**A.** 핵심 축=표현력↔GPU효율. 기준점 LaCT(Test-Time Training Done Right, 2505.23884): 기존 TTT는 16~64토큰마다 갱신하는 작은 online minibatch 탓에 GPU FLOPs util<5% → 2K~1M 극단 large chunk로 util 70%대. 93편(2020~2026.07)을 6개 시스템 전선으로 분류: ①update-rule 품질↔비용(delta→gated→Muon/2차(Atlas)→exact-solve MesaNet/EFLA/Kaczmarz/KalmaNet ridge→momentum/precond MDN/OSDN/Parallax) ②병렬화·chunk(WY/householder DeltaNet, chunk크기 tradeoff, 비선형recurrence 병렬화 DEER/ParaRNN/Predictability/Log-Linear/PaTH) ③메모리·용량·in-place(low-rank/sparse LoLA/Lattice/Trellis/SparseDeltaMemory, growing KV-Means/Hippocampus, In-Place TTT 2604.06169=down-proj를 fast weight로 재활용) ④커널·하드웨어(flash-linear-attn/TiledFLA, ThunderKittens, HipKittens AMD, LightningAttn-2 IO-aware, TTQ 양자화) ⑤서빙·긴문맥(hybrid stack Jamba/Zamba2/Nemotron/KimiLinear/Samba/Griffin/Hymba, prefix caching Marconi/HYPIC/SparsePrefix, KVBuffer, RW-TTT request별 배치서빙, E2E-TTT-LongContext 2512.23675, Impossibility Triangle) ⑥이론·등가(ICL=GD/mesa-opt, test-time regression 2501.12352 통일틀, TTT=KV binding≈linear attn 2602.21204, state-tracking 한계 negative-eigenvalue/parity/diagonal, scaling law, Muon>Adam). 산출: system-analysis 아티팩트 + research/ttt-efficient-corpus.{json,md}. 워크플로 synth만 스키마초과 실패→journal에서 kept 추출해 저자가 직접 합성.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_unknown→known: efficient-TTT 시스템 논문군(LaCT·In-Place TTT·E2E-TTT-LongContext·RW-TTT·TTQ·HipKittens·KVBuffer·Marconi/HYPIC prefix caching) — 이전 계보에서 통째로 빠졌던 층; unknown_known: TTT의 진짜 병목은 '알고리즘'이 아니라 'GPU에서의 순차성/util' — 표현력↔효율이 단일 축; unknown_known: update-rule 강화(exact-solve/precond)와 chunk 병렬화가 정면충돌 — 이 tradeoff가 분야를 조직
+- 개념 key: 핵심 축: 표현력(강한 update·큰 memory) ↔ GPU효율(병렬성·util·throughput), LaCT 2505.23884: TTT FLOPs util<5%→큰 chunk로 극복(기준점), In-Place TTT 2604.06169: 기존 down-proj를 fast weight로 재활용(별도 state 없음), update-rule 스펙트럼: additive→delta→gated→2차 Muon→exact-solve→precondition, 병렬화: WY/householder chunk + 비선형 recurrence 병렬화(DEER/ParaRNN), 커널이 O(n)을 실속도로: flash-linear-attn/ThunderKittens/HipKittens(AMD), 서빙 병목: hybrid recurrent state의 prefix caching 미표준(Marconi/HYPIC), RW-TTT: request별 fast weight라 배치가 깨지는 서빙 문제, 이론 상한: test-time regression 통일틀, TTT=KV binding≈linear attention 등가, Impossibility Triangle: 긴문맥 memory·계산·정확도 동시최적 불가?
+- 생각할 것: 큰 chunk(LaCT)+강한 update(exact-solve)를 chunk 내 순차성 손실 없이 동시에?; hybrid recurrent state prefix caching 표준화가 서빙의 관건; In-place/sparse memory 용량-정확도 한계 이론(d²에 d 정보) 정합; HATIR로 TTT chunk-update의 util·비용을 하드웨어 모델링
+- storyline seed: 세미나에 'TTT의 시스템 층' 파트 신설: 우리가 판 알고리즘 라인(Titans/HOPE) 위에 이 6축 system 분석을 얹어 '왜 아직 프로덕션이 어려운가'(util<5%, prefix caching 미표준, request별 서빙)를 설명. LaCT를 도입 훅으로.
+- 연상: Q036, Q035
 

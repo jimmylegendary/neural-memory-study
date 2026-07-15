@@ -1,10 +1,10 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-36건. story line 짤 때 여기서 꺼낸다.
+37건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
-### 모른다는 걸 안다 (known_unknown → decomposition) — 40건
+### 모른다는 걸 안다 (known_unknown → decomposition) — 41건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q003: 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1
@@ -45,6 +45,7 @@
 - Q034: NL(2512.24695)의 HOPE와 Sleep(2606.03979)의 모델은 사실 다른 모델 아닌가? NL은 dense FFN, Sleep은
 - Q035: Titans처럼 test-time training으로 sequence layer를 처리하는 방법들은 무엇이 있고, optimizer 역사 지도처
 - Q036: TTT 계보를 4대 계열[TTT(MLP)·Linear Attention·DeltaNet·SSM]로 나누고 efficiency 논문까지 포함해 시
+- Q037: efficient TTT를 정조준해 관련 논문을 싸그리(의미있는 것만) 모아 TTT의 system-level 분석을 하라 (LaCT 2505.2
 
 ### 모른다는 것도 모른다 (unknown_unknown → exploration) — 54건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
@@ -102,7 +103,7 @@
 - Q029: Sleep는 전부 offline 학습? offline시 각 단계(consolidation, dreaming)별로 어떤 data를 어떻게 만들어 
 - Q030: CMS low/mid/high 3레벨(low=1K, mid=5K)에서 0~1K 구간 메커니즘과 1K 경계 학습이 어케 되나. 내 추측: low가
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 56건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 58건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
@@ -159,6 +160,8 @@
 - Q035: Titans처럼 test-time training으로 sequence layer를 처리하는 방법들은 무엇이 있고, optimizer 역사 지도처
 - Q036: TTT 계보를 4대 계열[TTT(MLP)·Linear Attention·DeltaNet·SSM]로 나누고 efficiency 논문까지 포함해 시
 - Q036: TTT 계보를 4대 계열[TTT(MLP)·Linear Attention·DeltaNet·SSM]로 나누고 efficiency 논문까지 포함해 시
+- Q037: efficient TTT를 정조준해 관련 논문을 싸그리(의미있는 것만) 모아 TTT의 system-level 분석을 하라 (LaCT 2505.2
+- Q037: efficient TTT를 정조준해 관련 논문을 싸그리(의미있는 것만) 모아 TTT의 system-level 분석을 하라 (LaCT 2505.2
 
 ### 안다는 걸 안다 (known) — 3건
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
@@ -600,6 +603,16 @@
 - **kda/kimi linear=채널별 게이트 delta, 48b 프로덕션·kv절감** (1): Q036
 - **mesanet 경계: ttt이나 memory가 linear→linear-attention과 cross** (1): Q036
 - **제외한 곁가지: sparse/low-rank efficient-attention(reformer·linformer·longformer·bigbird·nyströmformer·cosformer·transnormer), ssm의 dss·zamba** (1): Q036
+- **핵심 축: 표현력(강한 update·큰 memory) ↔ gpu효율(병렬성·util·throughput)** (1): Q037
+- **lact 2505.23884: ttt flops util<5%→큰 chunk로 극복(기준점)** (1): Q037
+- **in-place ttt 2604.06169: 기존 down-proj를 fast weight로 재활용(별도 state 없음)** (1): Q037
+- **update-rule 스펙트럼: additive→delta→gated→2차 muon→exact-solve→precondition** (1): Q037
+- **병렬화: wy/householder chunk + 비선형 recurrence 병렬화(deer/pararnn)** (1): Q037
+- **커널이 o(n)을 실속도로: flash-linear-attn/thunderkittens/hipkittens(amd)** (1): Q037
+- **서빙 병목: hybrid recurrent state의 prefix caching 미표준(marconi/hypic)** (1): Q037
+- **rw-ttt: request별 fast weight라 배치가 깨지는 서빙 문제** (1): Q037
+- **이론 상한: test-time regression 통일틀, ttt=kv binding≈linear attention 등가** (1): Q037
+- **impossibility triangle: 긴문맥 memory·계산·정확도 동시최적 불가?** (1): Q037
 
 ## 3. 열린 실 (think_about)
 
@@ -726,6 +739,10 @@
 - [Q036] MesaNet/Atlas의 국소최적 해법(CG/2차)이 test-time compute를 얼마나 쓰는지 → HATIR 비용모델링
 - [Q036] sparse/low-rank efficient-attention 곁가지를 계보에 되살릴지(별도 컬럼)
 - [Q036] 각 계열이 Miras 4축의 어느 점인지 정합 매핑
+- [Q037] 큰 chunk(LaCT)+강한 update(exact-solve)를 chunk 내 순차성 손실 없이 동시에?
+- [Q037] hybrid recurrent state prefix caching 표준화가 서빙의 관건
+- [Q037] In-place/sparse memory 용량-정확도 한계 이론(d²에 d 정보) 정합
+- [Q037] HATIR로 TTT chunk-update의 util·비용을 하드웨어 모델링
 
 ## 4. Storyline seeds
 
@@ -765,3 +782,4 @@
 - [Q034] (NL HOPE(dense CMS) vs Sleep 모델(MoE CMS+graft) 아키텍처 차이 & online↔offline consolidation의 dense↔MoE interlock 공백(seam)) 세미나 B5/B6 연결부에 'NL HOPE(dense CMS) vs Sleep 모델(MoE CMS+Llama graft)' 아키텍처 차이 슬라이드 + 'online→offline은 teacher/student 경계 objective로만 연결, dense↔MoE 기계적 interlock은 공백(seam)' 명시. 이 seam을 이 계열의 정직한 한계(graft·knobs 미학습)와 함께 제시.
 - [Q035] (test-time training sequence-layer 방법 기술 계보(2016-2026.07): 5스트림·Miras 수렴·Titans 라인·변주된 축·2026 프론티어) 세미나 도입부(또는 A3 뒤)에 이 genealogy 지도를 1슬라이드로 — optimizer 지도와 짝. '이 분야=한 관점의 변주' 프레임으로 6편을 위치시킴. HTML 아티팩트를 PNG로 렌더해 삽입 가능.
 - [Q036] (TTT 계보 4계열 분류(TTT-MLP·LinearAttention·DeltaNet·SSM) + efficiency 포함 + branch graph view; 9-agent 워크플로 검증) 세미나에서 '이 분야 전체 지형'을 이 4계열 branch graph 1장으로 제시 → 그 다음 우리가 판 TTT-MLP/Titans 라인으로 zoom-in. optimizer 지도(직관)와 이 계보 그래프(지형)를 도입부 한 쌍으로.
+- [Q037] (efficient/system-level TTT 93편 코퍼스 + 6축 시스템 분석(표현력↔GPU효율); LaCT 기준점, in-place TTT 포함) 세미나에 'TTT의 시스템 층' 파트 신설: 우리가 판 알고리즘 라인(Titans/HOPE) 위에 이 6축 system 분석을 얹어 '왜 아직 프로덕션이 어려운가'(util<5%, prefix caching 미표준, request별 서빙)를 설명. LaCT를 도입 훅으로.
