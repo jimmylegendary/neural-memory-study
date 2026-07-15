@@ -1,10 +1,10 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-35건. story line 짤 때 여기서 꺼낸다.
+36건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
-### 모른다는 걸 안다 (known_unknown → decomposition) — 39건
+### 모른다는 걸 안다 (known_unknown → decomposition) — 40건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q003: 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1
@@ -44,6 +44,7 @@
 - Q034: NL(2512.24695)의 HOPE와 Sleep(2606.03979)의 모델은 사실 다른 모델 아닌가? NL은 dense FFN, Sleep은
 - Q034: NL(2512.24695)의 HOPE와 Sleep(2606.03979)의 모델은 사실 다른 모델 아닌가? NL은 dense FFN, Sleep은
 - Q035: Titans처럼 test-time training으로 sequence layer를 처리하는 방법들은 무엇이 있고, optimizer 역사 지도처
+- Q036: TTT 계보를 4대 계열[TTT(MLP)·Linear Attention·DeltaNet·SSM]로 나누고 efficiency 논문까지 포함해 시
 
 ### 모른다는 것도 모른다 (unknown_unknown → exploration) — 54건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
@@ -101,7 +102,7 @@
 - Q029: Sleep는 전부 offline 학습? offline시 각 단계(consolidation, dreaming)별로 어떤 data를 어떻게 만들어 
 - Q030: CMS low/mid/high 3레벨(low=1K, mid=5K)에서 0~1K 구간 메커니즘과 1K 경계 학습이 어케 되나. 내 추측: low가
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 54건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 56건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
@@ -156,6 +157,8 @@
 - Q034: NL(2512.24695)의 HOPE와 Sleep(2606.03979)의 모델은 사실 다른 모델 아닌가? NL은 dense FFN, Sleep은
 - Q035: Titans처럼 test-time training으로 sequence layer를 처리하는 방법들은 무엇이 있고, optimizer 역사 지도처
 - Q035: Titans처럼 test-time training으로 sequence layer를 처리하는 방법들은 무엇이 있고, optimizer 역사 지도처
+- Q036: TTT 계보를 4대 계열[TTT(MLP)·Linear Attention·DeltaNet·SSM]로 나누고 efficiency 논문까지 포함해 시
+- Q036: TTT 계보를 4대 계열[TTT(MLP)·Linear Attention·DeltaNet·SSM]로 나누고 efficiency 논문까지 포함해 시
 
 ### 안다는 걸 안다 (known) — 3건
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
@@ -587,6 +590,16 @@
 - **update 축 극단=mesanet 국소최적 exact solve(cg)** (1): Q035
 - **2026 최신: mesanet·mamba-3·mdn/osdn/parallax·ttt≈linearattn·titansrevisited** (1): Q035
 - **hopfield=용량이론 뿌리(→atlas)** (1): Q035
+- **4대 계열 분류: ttt(mlp)/linear attention/deltanet/ssm** (1): Q036
+- **efficiency=sub-quadratic 목적이 계보 전반의 공통 동력(⚡)** (1): Q036
+- **mamba-2 ssd = ssm↔linear attention 이중성(양방향 다리)** (1): Q036
+- **deltanet은 linear attention의 delta-rule 변형(schlag fwp 발원)** (1): Q036
+- **schlag fwp → ttt(계열간 씨앗)** (1): Q036
+- **ssm 뿌리 hippo→lssl→s4; mamba=selective ssm** (1): Q036
+- **deltanet 2026 정제 3종: mdn(momentum)/osdn(online preconditioning)/gateddeltanet-2(채널별 게이트)** (1): Q036
+- **kda/kimi linear=채널별 게이트 delta, 48b 프로덕션·kv절감** (1): Q036
+- **mesanet 경계: ttt이나 memory가 linear→linear-attention과 cross** (1): Q036
+- **제외한 곁가지: sparse/low-rank efficient-attention(reformer·linformer·longformer·bigbird·nyströmformer·cosformer·transnormer), ssm의 dss·zamba** (1): Q036
 
 ## 3. 열린 실 (think_about)
 
@@ -710,6 +723,9 @@
 - [Q035] MesaNet(CG exact solve)의 test-time compute 대 품질 트레이드 — HATIR로 비용 모델링 가능?
 - [Q035] 각 스트림이 Miras 4축의 어느 점인지 정확 매핑표
 - [Q035] 2026 delta정제(MDN/OSDN/Parallax)가 Titans 라인과 어떻게 합쳐질지
+- [Q036] MesaNet/Atlas의 국소최적 해법(CG/2차)이 test-time compute를 얼마나 쓰는지 → HATIR 비용모델링
+- [Q036] sparse/low-rank efficient-attention 곁가지를 계보에 되살릴지(별도 컬럼)
+- [Q036] 각 계열이 Miras 4축의 어느 점인지 정합 매핑
 
 ## 4. Storyline seeds
 
@@ -748,3 +764,4 @@
 - [Q033] (Sleep — online(wake) vs offline(sleep) consolidation 종류 구분 & expert 생성=offline 전용 & 유한 슬롯 소진 [Q032 정정]) Sleep 세미나: online vs offline consolidation 비교표(데이터/용량/전달/expert/서빙) 슬라이드 추가. 'expert 생성=offline 전용, online은 forward chain 암묵 전달·고정용량' 명시. 100조-token 사고실험으로 '유한 슬롯 소진=잔존 한계' 강조. Q031(Eq72 초기상태 vs 런타임 diff)과 연결.
 - [Q034] (NL HOPE(dense CMS) vs Sleep 모델(MoE CMS+graft) 아키텍처 차이 & online↔offline consolidation의 dense↔MoE interlock 공백(seam)) 세미나 B5/B6 연결부에 'NL HOPE(dense CMS) vs Sleep 모델(MoE CMS+Llama graft)' 아키텍처 차이 슬라이드 + 'online→offline은 teacher/student 경계 objective로만 연결, dense↔MoE 기계적 interlock은 공백(seam)' 명시. 이 seam을 이 계열의 정직한 한계(graft·knobs 미학습)와 함께 제시.
 - [Q035] (test-time training sequence-layer 방법 기술 계보(2016-2026.07): 5스트림·Miras 수렴·Titans 라인·변주된 축·2026 프론티어) 세미나 도입부(또는 A3 뒤)에 이 genealogy 지도를 1슬라이드로 — optimizer 지도와 짝. '이 분야=한 관점의 변주' 프레임으로 6편을 위치시킴. HTML 아티팩트를 PNG로 렌더해 삽입 가능.
+- [Q036] (TTT 계보 4계열 분류(TTT-MLP·LinearAttention·DeltaNet·SSM) + efficiency 포함 + branch graph view; 9-agent 워크플로 검증) 세미나에서 '이 분야 전체 지형'을 이 4계열 branch graph 1장으로 제시 → 그 다음 우리가 판 TTT-MLP/Titans 라인으로 zoom-in. optimizer 지도(직관)와 이 계보 그래프(지형)를 도입부 한 쌍으로.

@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 35건.
+총 36건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -455,4 +455,17 @@
 - 생각할 것: MesaNet(CG exact solve)의 test-time compute 대 품질 트레이드 — HATIR로 비용 모델링 가능?; 각 스트림이 Miras 4축의 어느 점인지 정확 매핑표; 2026 delta정제(MDN/OSDN/Parallax)가 Titans 라인과 어떻게 합쳐질지
 - storyline seed: 세미나 도입부(또는 A3 뒤)에 이 genealogy 지도를 1슬라이드로 — optimizer 지도와 짝. '이 분야=한 관점의 변주' 프레임으로 6편을 위치시킴. HTML 아티팩트를 PNG로 렌더해 삽입 가능.
 - 연상: Q031, Q025
+
+## Q036 · 2026-07-16 · TTT 계보 4계열 분류(TTT-MLP·LinearAttention·DeltaNet·SSM) + efficiency 포함 + branch graph view; 9-agent 워크플로 검증
+
+**Q.** TTT 계보를 4대 계열[TTT(MLP)·Linear Attention·DeltaNet·SSM]로 나누고 efficiency 논문까지 포함해 시간순 branch graph로 재정리(2016~2026.07)
+
+**A.** 뿌리=Softmax Attention(2017 O(n²))에서 4계열로 분기. [SSM] HiPPO2020→LSSL→S4(2021)→{S4D·S5·GSS·H3·Hyena}→Mamba(2023)→Mamba-2 SSD(2024)→Mamba-3(2026). [Linear Attention] FastWeights2016→LinearTransformers(2020)→{Performer·RetNet·RWKV4/5/6·GLA·HGRN·LightningAttn}→RWKV-7(2025). [DeltaNet] Schlag FWP(2021)→ParallelDeltaNet(Yang 2024)→GatedDeltaNet(2024)→{KDA/Kimi·DeltaProduct·MDN·OSDN·GatedDeltaNet-2} 2026. [TTT-MLP] TTT(Sun 2024)·Longhorn→Titans(2025.01)→Miras→Atlas·MesaNet→TNT→HOPE/NestedLearning(2512)→Sleep(2606). efficiency(sub-quadratic)=⚡로 대부분 노드 태깅; 순수이론/비판(HiPPO·TitansRevisited·Sleep)만 비효율. 교차영향(cross): Mamba-2 SSD=SSM↔LinearAttn 이중성(양방향), DeltaNet⊂LinearAttn, Schlag FWP→TTT, MesaNet/Miras/Atlas→LinearAttn(메모리가 linear), Mamba→Longhorn(SSM→TTT 다리). 4계열 경계사례: MesaNet(TTT지만 linear memory), RWKV-7(RWKV계열이나 delta-rule 이식)→cross로 표시. 43노드/~84엣지. 산출: branch graph 아티팩트(시간축 위→아래, hover 계보 하이라이트, cross 토글).
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known: 4계열이 별개가 아니라 조밀히 얽힘 — DeltaNet⊂LinearAttn, Mamba-2가 SSM↔LinearAttn을 봉합, TTT가 delta/SSM에서 씨앗을 받음; unknown_unknown→known: DeltaNet 2026 라인(MDN/OSDN/GatedDeltaNet-2)과 KDA/Kimi Linear·DeltaProduct 등 efficiency-delta 최신 클러스터; unknown_known: efficiency(sub-quadratic)가 4계열 전체의 공통 추진력 — 표현력 개선과 계산효율이 같은 논문에서 함께 진행
+- 개념 key: 4대 계열 분류: TTT(MLP)/Linear Attention/DeltaNet/SSM, efficiency=sub-quadratic 목적이 계보 전반의 공통 동력(⚡), Mamba-2 SSD = SSM↔Linear Attention 이중성(양방향 다리), DeltaNet은 Linear Attention의 delta-rule 변형(Schlag FWP 발원), Schlag FWP → TTT(계열간 씨앗), SSM 뿌리 HiPPO→LSSL→S4; Mamba=selective SSM, DeltaNet 2026 정제 3종: MDN(momentum)/OSDN(online preconditioning)/GatedDeltaNet-2(채널별 게이트), KDA/Kimi Linear=채널별 게이트 delta, 48B 프로덕션·KV절감, MesaNet 경계: TTT이나 memory가 linear→linear-attention과 cross, 제외한 곁가지: sparse/low-rank efficient-attention(Reformer·Linformer·Longformer·BigBird·Nyströmformer·cosFormer·TransNormer), SSM의 DSS·Zamba
+- 생각할 것: MesaNet/Atlas의 국소최적 해법(CG/2차)이 test-time compute를 얼마나 쓰는지 → HATIR 비용모델링; sparse/low-rank efficient-attention 곁가지를 계보에 되살릴지(별도 컬럼); 각 계열이 Miras 4축의 어느 점인지 정합 매핑
+- storyline seed: 세미나에서 '이 분야 전체 지형'을 이 4계열 branch graph 1장으로 제시 → 그 다음 우리가 판 TTT-MLP/Titans 라인으로 zoom-in. optimizer 지도(직관)와 이 계보 그래프(지형)를 도입부 한 쌍으로.
+- 연상: Q035
 
