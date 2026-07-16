@@ -4,24 +4,24 @@
   "name": "Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention",
   "arxiv": "2006.16236",
   "date": "2020-06",
-  "claim": "Expresses self-attention as a linear dot-product of kernel feature maps and uses product associativity to reduce O(N^2) to O(N), exposing the exact duality between a parallelizable linear-attention form and an O(1)-state recurrent form (up to ~4000x faster autoregressive inference).",
+  "claim": "self-attention을 kernel feature map의 선형 내적으로 표현하고 곱의 결합법칙으로 O(N²)를 O(N)으로 축소 — 병렬화 가능한 linear-attention 형태와 O(1)-state recurrent 형태의 정확한 이중성을 드러냄(autoregressive 추론 최대 ~4000배 빠름).",
   "axis": "parallelization",
   "family": "linear-attention",
   "efficiency": true,
   "meaningful": true,
-  "why_meaningful": "The origin of the parallel-form/recurrent-form duality that every chunkwise TTT kernel exploits; grounds why chunk size trades GPU parallelism against recurrent-state fidelity."
+  "why_meaningful": "모든 chunkwise TTT 커널이 활용하는 parallel-form ↔ recurrent-form 이중성의 기원; chunk 크기가 GPU 병렬성과 recurrent-state 충실도를 맞바꾸는 이유의 토대."
  },
  {
   "id": "schlag-fast-weight-programmers",
   "name": "Linear Transformers Are Secretly Fast Weight Programmers",
   "arxiv": "2102.11174",
   "date": "2021-02",
-  "claim": "Proves the formal equivalence of linearized self-attention and early-1990s fast-weight controllers, then replaces the purely additive outer-product update with a delta-rule-like programming instruction plus dynamically computed learning rates (and a new linearizing kernel) to overcome the finite memory-capacity limitation of additive linear attention.",
+  "claim": "linear화된 self-attention이 1990년대 초 fast-weight controller와 형식적으로 등가임을 증명하고, 순수 additive outer-product 갱신을 delta-rule식 programming 명령 + 동적 learning rate(및 새 linearizing kernel)로 대체해 additive linear attention의 유한 memory-capacity 한계를 극복.",
   "axis": "update-rule",
   "family": "deltanet",
   "efficiency": false,
   "meaningful": true,
-  "why_meaningful": "The delta-rule/fast-weight origin underpinning DeltaNet, Titans, and TTT-as-linear-attention; defines the update-rule axis (additive vs delta correction) on which efficient-TTT expressivity gains build. Verified: Schlag/Irie/Schmidhuber, Feb 2021."
+  "why_meaningful": "DeltaNet·Titans·TTT-as-linear-attention을 떠받치는 delta-rule/fast-weight의 기원 — efficient-TTT의 표현력 향상이 올라타는 update-rule 축(additive vs delta 교정)을 정의. (Schlag/Irie/Schmidhuber, 2021.02 확인)"
  },
  {
   "id": "mesa-icl-gd-2022",
@@ -40,12 +40,12 @@
   "name": "Retentive Network: A Successor to Transformer for Large Language Models",
   "arxiv": "2307.08621",
   "date": "2023-07",
-  "claim": "Retention mechanism with three equivalent forms — parallel (training), recurrent (O(1) inference), and chunkwise-recurrent (linear-complexity long-sequence) — reporting large decode speedup and memory savings vs KV-cache Transformers at 7B, plus training memory savings.",
+  "claim": "retention을 세 등가 형태 — parallel(학습)·recurrent(O(1) 추론)·chunkwise-recurrent(선형복잡도 긴 시퀀스) — 로 표현; 7B에서 KV-cache Transformer 대비 큰 decode 가속·메모리 절감과 학습 메모리 절감 보고.",
   "axis": "parallelization",
   "family": "linear-attention",
   "efficiency": true,
   "meaningful": true,
-  "why_meaningful": "The canonical chunkwise-parallel formulation that made the parallel/recurrent/chunk duality a first-class systems primitive — direct ancestor of the chunk-size knob LaCT pushes to the extreme. Foundational to system-level TTT analysis."
+  "why_meaningful": "parallel/recurrent/chunk 이중성을 시스템의 1급 primitive로 만든 표준적 chunkwise-parallel 정식화 — LaCT가 극단으로 미는 chunk-size 손잡이의 직계 조상. system-level TTT 분석의 기반."
  },
  {
   "id": "deer-2023",
@@ -148,48 +148,48 @@
   "name": "Gated Slot Attention for Efficient Linear-Time Sequence Modeling",
   "arxiv": "2409.07146",
   "date": "2024-09",
-  "claim": "GSA augments bounded-memory (ABC) attention with GLA-style gating — a two-layer GLA linked via softmax with context-aware memory reading and adaptive forgetting — keeping a compact recurrent state while using GLA's hardware-efficient chunkwise training; strong on recall-intensive tasks and in the T2R (finetune Transformer-to-RNN) setting.",
+  "claim": "GSA는 bounded-memory(ABC) attention에 GLA식 gating을 결합 — softmax로 연결된 2-layer GLA로 문맥 인지 memory read와 적응적 forgetting을 하면서 compact recurrent state 유지, GLA의 하드웨어 효율 chunkwise 학습 사용; recall 집약 과제와 T2R(Transformer→RNN finetune) 설정에서 강함.",
   "axis": "memory",
   "family": "linear-attention",
   "efficiency": true,
   "meaningful": true,
-  "why_meaningful": "Bounded-memory-with-gating plus an efficient T2R conversion path is a distinct system lever — recall quality at a fixed small state, cheaply obtained from pretrained Transformers — filling the bounded-state / distillation-to-recurrent gap on the efficiency axis."
+  "why_meaningful": "gating을 곁들인 bounded-memory + 효율적 T2R 변환 경로는 별개의 시스템 지렛대 — 고정된 작은 state에서의 recall 품질을 사전학습 Transformer로부터 싸게 획득, 효율 축의 bounded-state/distillation 공백을 메움."
  },
  {
   "id": "min-rnn",
   "name": "Were RNNs All We Needed? (minGRU / minLSTM)",
   "arxiv": "2410.01201",
   "date": "2024-10",
-  "claim": "Removing hidden-state dependence from LSTM/GRU gates makes them input-only linear recurrences trainable by parallel prefix (associative) scan, giving minGRU/minLSTM that are ~1300x+ faster than classic GRU/LSTM at length 4096 with competitive quality, at the cost of higher scan-graph training memory.",
+  "claim": "LSTM/GRU gate에서 hidden-state 의존을 제거하면 input-only linear recurrence가 되어 parallel prefix(associative) scan으로 학습 가능 — minGRU/minLSTM는 길이 4096에서 고전 GRU/LSTM 대비 ~1300배+ 빠르고 품질도 경쟁력, 대신 scan-graph 학습 메모리는 증가.",
   "axis": "parallelization",
   "family": "ssm",
   "efficiency": true,
   "meaningful": true,
-  "why_meaningful": "Canonical demonstration that the parallel-scan trick is what makes recurrent/fast-weight memory GPU-parallelizable — the algorithmic core of the parallelization axis and a direct answer to the associative-scan-parallel-nonlinear-RNN question."
+  "why_meaningful": "parallel-scan 트릭이 recurrent/fast-weight 메모리를 GPU 병렬화하는 핵심임을 보인 표준 사례 — 병렬화 축의 알고리즘 핵심이자 '비선형 RNN을 associative scan으로 병렬화'라는 질문의 직접 답."
  },
  {
   "id": "lolcats",
   "name": "LoLCATs: On Low-Rank Linearizing of Large Language Models",
   "arxiv": "2410.10254",
   "date": "2024-10",
-  "claim": "Two-step linearization: train linear attentions to match softmax outputs via an MSE 'attention transfer' loss, then LoRA-recover quality — producing SOTA subquadratic LLMs from Llama-3/Mistral with orders-of-magnitude less memory/compute, and the first linearized 70B/405B models (closing 77.8%/78.1% of the 5-shot MMLU gap to originals).",
+  "claim": "2단계 linearization: MSE 'attention transfer' 손실로 linear attention이 softmax 출력을 모사하게 학습한 뒤 LoRA로 품질 복원 — Llama-3/Mistral에서 메모리·연산을 수십~수백배 줄여 SOTA subquadratic LLM 생성, 최초의 linearized 70B/405B(5-shot MMLU 격차 77.8%/78.1% 회복).",
   "axis": "core",
   "family": "linear-attention",
   "efficiency": true,
   "meaningful": true,
-  "why_meaningful": "Canonical cheap Transformer→linear-attention conversion recipe; makes fast-weight/linear-attention deployment viable at 405B scale without pretraining, the central efficiency lever for the conversion flank. Verified real; efficiency framing accurate."
+  "why_meaningful": "값싼 Transformer→linear-attention 변환 레시피의 표준 — 사전학습 없이 405B 규모에서 fast-weight/linear-attention 배포를 가능케 함, 변환 측면의 핵심 효율 지렛대."
  },
  {
   "id": "mohawk-phimamba",
   "name": "Transformers to SSMs: Distilling Quadratic Knowledge to Subquadratic Models (MOHAWK/Phi-Mamba)",
   "arxiv": "2408.10189",
   "date": "2024-08",
-  "claim": "MOHAWK distills a Transformer into an SSM by progressively matching (1) matrix mixers, (2) per-block hidden states, then (3) end-to-end predictions; distills Phi-Mamba (a Mamba-2 variant) with only 3B tokens (<1% of scratch-training data) to beat all prior open non-Transformer models.",
+  "claim": "MOHAWK는 Transformer를 SSM으로 distill — (1) matrix mixer, (2) block별 hidden state, (3) end-to-end 예측을 점진적으로 정합; Phi-Mamba(Mamba-2 변형)를 단 3B 토큰(scratch 학습의 <1%)으로 distill해 기존 open non-Transformer 모델을 모두 능가.",
   "axis": "core",
   "family": "ssm",
   "efficiency": true,
   "meaningful": true,
-  "why_meaningful": "Foundational matrix-mixing view unifying attention and SSM/linear-recurrence, giving the theoretical and practical basis for cross-architecture distillation into constant-state recurrent memory. Verified: Bick/Li/Xing/Kolter/Gu, NeurIPS 2024."
+  "why_meaningful": "attention과 SSM/linear-recurrence를 통합하는 matrix-mixing 관점의 토대 — 상수-state recurrent 메모리로의 cross-architecture distillation의 이론·실용 기반. (Bick/Li/Xing/Kolter/Gu, NeurIPS 2024 확인)"
  },
  {
   "id": "deltanet-parallel-2024",
@@ -508,48 +508,48 @@
   "name": "Comba: Improving Bilinear RNNs with Closed-loop Control",
   "arxiv": "2506.02475",
   "date": "2025-06",
-  "claim": "Recasts Gated-DeltaNet/TTT/RWKV-7 as bilinear RNNs (state-key interaction) and proposes Comba: a scalar-plus-low-rank state transition with closed-loop state-feedback and output-feedback corrections; a hardware-friendly chunk-wise-parallel Triton kernel gives ~40% faster forward propagation than Gated-DeltaNet at 340M/1.3B scale.",
+  "claim": "Gated-DeltaNet/TTT/RWKV-7을 bilinear RNN(state-key 상호작용)으로 재해석하고 Comba 제안: scalar+low-rank state transition에 closed-loop state-feedback·output-feedback 보정; 하드웨어 친화적 chunkwise-parallel Triton 커널로 340M/1.3B에서 Gated-DeltaNet 대비 forward ~40% 가속.",
   "axis": "kernel-hardware",
   "family": "deltanet",
   "efficiency": true,
   "meaningful": true,
-  "why_meaningful": "An explicit kernel/hardware contribution (chunkwise-parallel Triton, measured speedup vs Gated-DeltaNet) that unifies DeltaNet/TTT/RWKV-7 under bilinear RNNs — squarely the parallelism-efficiency side of the update-rule design space."
+  "why_meaningful": "명시적 커널/하드웨어 기여(chunkwise-parallel Triton, Gated-DeltaNet 대비 실측 가속)로 DeltaNet/TTT/RWKV-7을 bilinear RNN으로 통합 — update-rule 설계공간의 병렬성-효율 측면."
  },
  {
   "id": "conformal-sympow",
   "name": "Conformal Transformations for Symmetric Power Transformers",
   "arxiv": "2503.03269",
   "date": "2025-03",
-  "claim": "The symmetric-power (sympow) linear transformer matches softmax via symmetric tensor embeddings but its finite recurrent-state capacity degrades as context length scales; conformal-sympow adds data-dependent multiplicative gating (free capacity) and data-dependent rotary embeddings (adaptive storage) — unified as a conformal transformation of the state — restoring long-context robustness on LongCrawl64 (ICLR 2025 SCOPE workshop, Manifest AI/Stanford).",
+  "claim": "symmetric-power(sympow) linear transformer는 symmetric tensor embedding으로 softmax를 모사하나 유한 recurrent-state 용량이 문맥 길이에 따라 열화; conformal-sympow는 데이터 의존 곱셈 gating(용량 확보)과 데이터 의존 rotary embedding(적응적 저장)을 state의 conformal 변환으로 통합해 LongCrawl64에서 긴문맥 견고성 회복. (ICLR 2025 SCOPE workshop, Manifest AI/Stanford)",
   "axis": "memory",
   "family": "linear-attention",
   "efficiency": true,
   "meaningful": true,
-  "why_meaningful": "Manifest AI's power-retention line explicitly engineers a chunked fixed-capacity state for high GPU utilization — the same expressivity-vs-utilization tension as LaCT — a key system-flavored linear-attention datapoint on managing finite state capacity."
+  "why_meaningful": "Manifest AI의 power-retention 라인은 높은 GPU 활용률을 위해 chunk 고정용량 state를 명시적으로 설계 — LaCT와 같은 '표현력 vs 활용률' 긴장, 유한 state 용량 관리의 핵심 시스템형 linear-attention 사례."
  },
  {
   "id": "liger",
   "name": "Liger: Linearizing Large Language Models to Gated Recurrent Structures",
   "arxiv": "2503.01496",
   "date": "2025-03",
-  "claim": "Repurposes existing pretrained key-matrix weights to construct gating for gated-recurrent conversion with zero added parameters (replacing softmax attention with a Gated Recurrent Memory module + LoRA), plus an intra-layer 'Liger Attention' hybrid; beats prior linearization with fewer tokens on Mistral-7B/Llama-3-8B.",
+  "claim": "기존 사전학습 key-matrix 가중치를 재활용해 추가 파라미터 0으로 gated-recurrent 변환용 gating 구성(softmax attention을 Gated Recurrent Memory 모듈+LoRA로 대체), 층 내부 'Liger Attention' 하이브리드 추가; Mistral-7B/Llama-3-8B에서 더 적은 토큰으로 기존 linearization 능가.",
   "axis": "core",
   "family": "hybrid",
   "efficiency": true,
   "meaningful": true,
-  "why_meaningful": "Parameter-free reuse of pretrained weights for gating plus an intra-layer hybrid is a distinct, cheaper conversion path; the hybrid design is exactly the expressivity-vs-efficiency knob of the field. Verified real."
+  "why_meaningful": "사전학습 가중치를 파라미터 없이 재활용한 gating + 층 내부 하이브리드는 더 값싼 별개 변환 경로; 하이브리드 설계 자체가 표현력-효율 손잡이. (실재 확인)"
  },
  {
   "id": "llamba",
   "name": "Llamba: Scaling Distilled Recurrent Models for Efficient Language Processing",
   "arxiv": "2502.14458",
   "date": "2025-02",
-  "claim": "MOHAWK-distills Llama-3.x into Mamba (Llamba-1B/3B/8B) with <0.1% of comparable training data, achieving higher inference throughput and much larger batch sizes than Transformers, with an edge/on-device optimized implementation.",
+  "claim": "MOHAWK로 Llama-3.x를 Mamba로 distill(Llamba-1B/3B/8B), 비교 학습 데이터의 <0.1%로 Transformer 대비 높은 추론 throughput과 훨씬 큰 batch size 달성, edge/on-device 최적 구현 포함.",
   "axis": "throughput-serving",
   "family": "ssm",
   "efficiency": true,
   "meaningful": true,
-  "why_meaningful": "Scales cross-architecture distillation into a usable model family and quantifies the throughput/batch-size/memory serving wins of constant-state recurrence, including edge deployment. Verified: Bick/Katsch/Sohoni/Desai/Gu (Cartesia), Feb 2025."
+  "why_meaningful": "cross-architecture distillation을 실사용 모델군으로 확장하고 상수-state recurrence의 throughput/batch/메모리 서빙 이득을 정량화(edge 배포 포함). (Bick/Katsch/Sohoni/Desai/Gu, Cartesia, 2025.02 확인)"
  },
  {
   "id": "mesanet-2025",
@@ -1012,36 +1012,36 @@
   "name": "TTQ: Activation-Aware Test-Time Quantization to Accelerate LLM Inference On The Fly",
   "arxiv": "2603.19296",
   "date": "2026-03",
-  "claim": "A test-time quantization framework (MERL) that runs lightweight activation-aware quantization on the fly at inference via efficient online per-prompt calibration, avoiding offline calibration data / fine-tuning and the domain shift of static calibration, improving quantization quality over SOTA baselines while accelerating LLM inference.",
+  "claim": "test-time quantization 프레임워크(MERL): 추론 중 per-prompt 온라인 calibration으로 activation-aware quantization을 즉석 수행 — offline calibration 데이터/fine-tuning과 static calibration의 domain shift를 피하며, SOTA 대비 quantization 품질을 높이면서 LLM 추론 가속.",
   "axis": "kernel-hardware",
   "family": "efficient-ttt",
   "efficiency": true,
   "meaningful": true,
-  "why_meaningful": "A namespace-adjacent flavor of 'test-time' adaptation (per-prompt online calibration for quantization rather than fast-weight sequence memory), but it genuinely shares the online-compute/efficiency tension and fills the quantization/kernel corner of the system axis otherwise absent from TTT surveys. Weakest topical fit of the batch but substantively novel."
+  "why_meaningful": "fast-weight 시퀀스 메모리가 아닌 'test-time' 적응의 인접형(quantization용 per-prompt 온라인 calibration)이지만 online-compute/효율 긴장을 공유하며 TTT survey에 없던 quantization/kernel 코너를 메움. 이 배치에서 주제 적합도는 가장 낮으나 실질적으로 새로움."
  },
  {
   "id": "rw-ttt",
   "name": "RW-TTT: Batched Serving for Request-Owned Test-Time Training State",
   "arxiv": "2605.28053",
   "date": "2026-05",
-  "claim": "TTT breaks batched serving because each request owns mutable state (fast weights / low-rank deltas / learner state) while batching assumes shared static weights; RW-TTT tags each decode step with owner/version/READ-WRITE effect, batches only compatible phases, and commits writes only to the owner — reaching 274.61 aggregate tok/s on 8 In-Place-TTT streams (9.31x over sequential, 3.44x over per-stream replicas at equal memory) while preserving RULER behavior.",
+  "claim": "TTT는 각 request가 mutable state(fast weight/low-rank delta/learner state)를 소유해 batched serving을 깨뜨림; RW-TTT는 각 decode step에 owner/version/READ-WRITE effect를 태깅해 호환 phase만 batch하고 write는 owner에만 commit — In-Place-TTT 8 스트림에서 274.61 tok/s(순차 대비 9.31배, 동일 메모리 per-stream 복제 대비 3.44배) 달성, RULER 성능 유지.",
   "axis": "throughput-serving",
   "family": "efficient-ttt",
   "efficiency": true,
   "meaningful": true,
-  "why_meaningful": "Directly names and solves the serving-correctness problem that TTT per-request fast weights create — the most system-level TTT paper in this set, an inference-system contribution rather than a modeling variant, exactly the efficient/system angle."
+  "why_meaningful": "TTT의 per-request fast weight가 만드는 서빙 정합성 문제를 직접 명명·해결 — 이 집합에서 가장 system-level한 논문, 모델 변형이 아닌 추론-시스템 기여로 정확히 efficient/system 각도."
  },
  {
   "id": "erase-then-delta",
   "name": "Erase-then-Delta Attention: Decoupling Erase and Write Addresses in Delta-Rule Linear Attention",
   "arxiv": "2606.26560",
   "date": "2026-06",
-  "claim": "Decouples where to erase from where to write: a targeted erase step along a learned erase direction precedes the standard delta corrective write, so stale memory at an independently chosen address can be actively suppressed rather than only correcting the current write address, preserving delta-rule corrective behavior while expanding memory-management capacity.",
+  "claim": "지울 곳과 쓸 곳을 분리: 학습된 erase 방향을 따라 표적 erase를 먼저 하고 표준 delta 보정 write를 수행 — 독립 선택한 주소의 낡은 메모리를 현재 write 주소만 고치는 대신 능동적으로 억제, delta-rule 보정 특성은 유지하며 memory-management 용량 확장.",
   "axis": "update-rule",
   "family": "deltanet",
   "efficiency": false,
   "meaningful": true,
-  "why_meaningful": "Advances the delta-rule update itself (independent erase/write addressing), extending the fast-weight write mechanism underlying TTT-as-linear-attention. Verified real (Xiao Li et al., Jun 2026); note closely related concurrent 'Gated DeltaNet-2' (2605.22791, Hatamizadeh et al.), which separates erase/write with channel-wise gates."
+  "why_meaningful": "delta-rule 갱신 자체를 발전(erase/write 주소 독립화)시켜 TTT-as-linear-attention의 fast-weight write 메커니즘을 확장. (Xiao Li 등, 2026.06 확인; 동시기 'Gated DeltaNet-2' 2605.22791이 채널별 gate로 erase/write 분리하는 것과 밀접)"
  },
  {
   "id": "impossibility-triangle-2026",
