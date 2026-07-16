@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 37건.
+총 38건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -481,4 +481,17 @@
 - 생각할 것: 큰 chunk(LaCT)+강한 update(exact-solve)를 chunk 내 순차성 손실 없이 동시에?; hybrid recurrent state prefix caching 표준화가 서빙의 관건; In-place/sparse memory 용량-정확도 한계 이론(d²에 d 정보) 정합; HATIR로 TTT chunk-update의 util·비용을 하드웨어 모델링
 - storyline seed: 세미나에 'TTT의 시스템 층' 파트 신설: 우리가 판 알고리즘 라인(Titans/HOPE) 위에 이 6축 system 분석을 얹어 '왜 아직 프로덕션이 어려운가'(util<5%, prefix caching 미표준, request별 서빙)를 설명. LaCT를 도입 훅으로.
 - 연상: Q036, Q035
+
+## Q038 · 2026-07-16 · TTT+Titans 효율 study paper: 3 scaling 병목(model-size/training/serving P·D)·해법·memory device 한계·개선; 근거등급+검증
+
+**Q.** TTT 집중조명 + Titans 효율 전반을 놓고, 3 scaling 병목(model-size / training parallel·batch / serving P/D batch)과 각 해법(무엇을·어떻게·왜 working) + memory device 한계·개선을 풍부·상세한 study paper로 작성 (기존 코퍼스 + 대규모 추가 리서치, 우리 세션 방식)
+
+**A.** 12장 study paper 작성. 뿌리: TTT=추론 중 self-supervised gradient로 fast weight 갱신하는 메모리, 그 '순차적 갱신'이 모든 병목의 근원. 병목①model-size: 문맥을 파라미터 아닌 유한 메모리 용량으로 저장(d²에 ~d, associative/Hopfield), chunk mismatch가 규모에서 열화(Titans Revisited), 고정용량 긴문맥 벽. 병목②training: inner-loop 순차 의존→작은 chunk면 FLOPs util<5%(LaCT), backprop-through-inner-loop 메모리, batch×state footprint, 비선형 recurrence 병렬화 조건부. 병목③serving: request마다 mutable state 소유→batching 불변식(공유 static weight)·prefix-cache 붕괴(RW-TTT), prefill(흡수) vs decode(순차·state-bandwidth-bound) 비대칭, hybrid P/D disaggregation 난점. 해법①: distill/linearize로 규모 상속(MOHAWK·Llamba·LoLCATs 405B·Liger), 용량확장(Atlas), 성장(Sleep param expansion+Knowledge Seeding+Dreaming, HOPE nested). 해법②: 큰 chunk(LaCT, util↑·state를 params 40%까지), chunkwise-parallel(DeltaNet WY·TNT), 비선형 recurrence 병렬화(DEER→ParaRNN·Predictability), 커널(Comba Triton·Tiled FLA). 해법③: RW-TTT(owner/version/RW 태깅·호환 phase batch, 274.61 tok/s·9.31×), hybrid prefix caching(Marconi 34.4×·HYPIC TTFT 2.45×·Sparse Prefix), IO-aware(KVBuffer)·In-Place(별도 state 제거)·hybrid stack(Nemotron·Kimi Linear). memory device 한계: (i)신경 메모리 유한용량·interference·retrieval error (ii)physical HBM 점유·decode 대역폭·batch×state. memory device 개선해법: expandable/sparse state(Sparse State Expansion·Sparse Delta Memory), exact memory(Hippocampus·EFLA), growing(KV-Means·Memory Caching), erase-write 분리, 고용량 feature map(Atlas·sympow), 압축(Lattice·Trellis·LoLA), TTQ 양자화·In-Place·KVBuffer. 근거등급 a/b/c, 섹션별 적대적 검증(20 agent). 산출: repo research/ttt-titans-efficiency-study.md + HTML 아티팩트(MathML).
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known: 세 병목(model-size·training·serving)이 별개가 아니라 '순차 갱신+유한 메모리'라는 한 뿌리의 세 그림자; unknown_unknown→known: serving P/D 층위 논문군(RW-TTT·Marconi·HYPIC·Sparse Prefix·KVBuffer)과 In-Place TTT — TTT 서빙 정합성 문제를 명명·해결; unknown_known: 모든 효율 이득이 결국 memory device의 유한 용량·대역폭과 거래된다는 관통 원리; frontier=세 꼭짓점 동시 달성
+- 개념 key: 순차적 test-time 갱신 = 모든 scaling 병목의 공통 뿌리, model-size 병목 = 유한 메모리 용량(d²에 ~d), chunk mismatch 규모 열화(Titans Revisited), training 병목 = inner-loop 순차 의존→FLOPs util<5%(LaCT), backprop-through-inner-loop, serving 병목 = request-owned mutable state→batching·prefix-cache 불변식 붕괴, prefill vs decode 비대칭, 해법 = distill로 규모 상속 / 큰 chunk·병렬화로 순차성 접기 / 배치·캐시 프리미티브 재설계, LaCT: 큰 chunk로 util 개선(orders-of-mag) + nonlinear state를 params 40%까지[a]; 하드웨어 A100/H100 표기 상충[b], RW-TTT: request-owned state 배치 서빙(owner/version/RW 태깅), hybrid recurrent state는 KV처럼 prefix-cache 안 됨 → Marconi/HYPIC, memory device 두 얼굴: 신경 메모리 용량 + physical HBM/대역폭, memory device 개선 3축: 더 크게(sparse/expandable)·더 정확히(exact)·더 싸게(quantize/in-place), TTT≈linear attention 등가(2602.21204)가 '진짜 meta-learning인가' 의문 제기
+- 생각할 것: 큰 chunk(util)와 세밀한 순차 적응(정확도) 동시 달성의 이론 상한; TTT≈linear attention 등가면 test-time 학습의 표현력 우위는 어디서? 진짜 meta-learning 여부; d²→d 용량 벽을 sparse/expandable이 상수 개선인지 지수 변경인지; memory device 물리(HBM 대역폭)×알고리즘(state 용량) co-design을 HATIR류 비용모델로 예측
+- storyline seed: 세미나에 'TTT/Titans는 왜 아직 프로덕션이 어려운가' 파트로 이 3병목×해법×memory device 지도를 그대로 사용. Part I(집중조명)→II(병목)→III(해법)→IV(memory device) 흐름이 곧 강의 흐름. LaCT의 util<5%를 도입 훅.
+- 연상: Q037, Q036, Q034, Q033, Q032
 

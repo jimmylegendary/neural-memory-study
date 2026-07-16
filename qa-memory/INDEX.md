@@ -1,10 +1,10 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-37건. story line 짤 때 여기서 꺼낸다.
+38건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
-### 모른다는 걸 안다 (known_unknown → decomposition) — 41건
+### 모른다는 걸 안다 (known_unknown → decomposition) — 42건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q003: 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1
@@ -46,6 +46,7 @@
 - Q035: Titans처럼 test-time training으로 sequence layer를 처리하는 방법들은 무엇이 있고, optimizer 역사 지도처
 - Q036: TTT 계보를 4대 계열[TTT(MLP)·Linear Attention·DeltaNet·SSM]로 나누고 efficiency 논문까지 포함해 시
 - Q037: efficient TTT를 정조준해 관련 논문을 싸그리(의미있는 것만) 모아 TTT의 system-level 분석을 하라 (LaCT 2505.2
+- Q038: TTT 집중조명 + Titans 효율 전반을 놓고, 3 scaling 병목(model-size / training parallel·batch /
 
 ### 모른다는 것도 모른다 (unknown_unknown → exploration) — 54건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
@@ -103,7 +104,7 @@
 - Q029: Sleep는 전부 offline 학습? offline시 각 단계(consolidation, dreaming)별로 어떤 data를 어떻게 만들어 
 - Q030: CMS low/mid/high 3레벨(low=1K, mid=5K)에서 0~1K 구간 메커니즘과 1K 경계 학습이 어케 되나. 내 추측: low가
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 58건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 60건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
@@ -162,6 +163,8 @@
 - Q036: TTT 계보를 4대 계열[TTT(MLP)·Linear Attention·DeltaNet·SSM]로 나누고 efficiency 논문까지 포함해 시
 - Q037: efficient TTT를 정조준해 관련 논문을 싸그리(의미있는 것만) 모아 TTT의 system-level 분석을 하라 (LaCT 2505.2
 - Q037: efficient TTT를 정조준해 관련 논문을 싸그리(의미있는 것만) 모아 TTT의 system-level 분석을 하라 (LaCT 2505.2
+- Q038: TTT 집중조명 + Titans 효율 전반을 놓고, 3 scaling 병목(model-size / training parallel·batch /
+- Q038: TTT 집중조명 + Titans 효율 전반을 놓고, 3 scaling 병목(model-size / training parallel·batch /
 
 ### 안다는 걸 안다 (known) — 3건
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
@@ -613,6 +616,17 @@
 - **rw-ttt: request별 fast weight라 배치가 깨지는 서빙 문제** (1): Q037
 - **이론 상한: test-time regression 통일틀, ttt=kv binding≈linear attention 등가** (1): Q037
 - **impossibility triangle: 긴문맥 memory·계산·정확도 동시최적 불가?** (1): Q037
+- **순차적 test-time 갱신 = 모든 scaling 병목의 공통 뿌리** (1): Q038
+- **model-size 병목 = 유한 메모리 용량(d²에 ~d), chunk mismatch 규모 열화(titans revisited)** (1): Q038
+- **training 병목 = inner-loop 순차 의존→flops util<5%(lact), backprop-through-inner-loop** (1): Q038
+- **serving 병목 = request-owned mutable state→batching·prefix-cache 불변식 붕괴, prefill vs decode 비대칭** (1): Q038
+- **해법 = distill로 규모 상속 / 큰 chunk·병렬화로 순차성 접기 / 배치·캐시 프리미티브 재설계** (1): Q038
+- **lact: 큰 chunk로 util 개선(orders-of-mag) + nonlinear state를 params 40%까지[a]; 하드웨어 a100/h100 표기 상충[b]** (1): Q038
+- **rw-ttt: request-owned state 배치 서빙(owner/version/rw 태깅)** (1): Q038
+- **hybrid recurrent state는 kv처럼 prefix-cache 안 됨 → marconi/hypic** (1): Q038
+- **memory device 두 얼굴: 신경 메모리 용량 + physical hbm/대역폭** (1): Q038
+- **memory device 개선 3축: 더 크게(sparse/expandable)·더 정확히(exact)·더 싸게(quantize/in-place)** (1): Q038
+- **ttt≈linear attention 등가(2602.21204)가 '진짜 meta-learning인가' 의문 제기** (1): Q038
 
 ## 3. 열린 실 (think_about)
 
@@ -743,6 +757,10 @@
 - [Q037] hybrid recurrent state prefix caching 표준화가 서빙의 관건
 - [Q037] In-place/sparse memory 용량-정확도 한계 이론(d²에 d 정보) 정합
 - [Q037] HATIR로 TTT chunk-update의 util·비용을 하드웨어 모델링
+- [Q038] 큰 chunk(util)와 세밀한 순차 적응(정확도) 동시 달성의 이론 상한
+- [Q038] TTT≈linear attention 등가면 test-time 학습의 표현력 우위는 어디서? 진짜 meta-learning 여부
+- [Q038] d²→d 용량 벽을 sparse/expandable이 상수 개선인지 지수 변경인지
+- [Q038] memory device 물리(HBM 대역폭)×알고리즘(state 용량) co-design을 HATIR류 비용모델로 예측
 
 ## 4. Storyline seeds
 
@@ -783,3 +801,4 @@
 - [Q035] (test-time training sequence-layer 방법 기술 계보(2016-2026.07): 5스트림·Miras 수렴·Titans 라인·변주된 축·2026 프론티어) 세미나 도입부(또는 A3 뒤)에 이 genealogy 지도를 1슬라이드로 — optimizer 지도와 짝. '이 분야=한 관점의 변주' 프레임으로 6편을 위치시킴. HTML 아티팩트를 PNG로 렌더해 삽입 가능.
 - [Q036] (TTT 계보 4계열 분류(TTT-MLP·LinearAttention·DeltaNet·SSM) + efficiency 포함 + branch graph view; 9-agent 워크플로 검증) 세미나에서 '이 분야 전체 지형'을 이 4계열 branch graph 1장으로 제시 → 그 다음 우리가 판 TTT-MLP/Titans 라인으로 zoom-in. optimizer 지도(직관)와 이 계보 그래프(지형)를 도입부 한 쌍으로.
 - [Q037] (efficient/system-level TTT 93편 코퍼스 + 6축 시스템 분석(표현력↔GPU효율); LaCT 기준점, in-place TTT 포함) 세미나에 'TTT의 시스템 층' 파트 신설: 우리가 판 알고리즘 라인(Titans/HOPE) 위에 이 6축 system 분석을 얹어 '왜 아직 프로덕션이 어려운가'(util<5%, prefix caching 미표준, request별 서빙)를 설명. LaCT를 도입 훅으로.
+- [Q038] (TTT+Titans 효율 study paper: 3 scaling 병목(model-size/training/serving P·D)·해법·memory device 한계·개선; 근거등급+검증) 세미나에 'TTT/Titans는 왜 아직 프로덕션이 어려운가' 파트로 이 3병목×해법×memory device 지도를 그대로 사용. Part I(집중조명)→II(병목)→III(해법)→IV(memory device) 흐름이 곧 강의 흐름. LaCT의 util<5%를 도입 훅.
