@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 38건.
+총 39건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -494,4 +494,17 @@
 - 생각할 것: 큰 chunk(util)와 세밀한 순차 적응(정확도) 동시 달성의 이론 상한; TTT≈linear attention 등가면 test-time 학습의 표현력 우위는 어디서? 진짜 meta-learning 여부; d²→d 용량 벽을 sparse/expandable이 상수 개선인지 지수 변경인지; memory device 물리(HBM 대역폭)×알고리즘(state 용량) co-design을 HATIR류 비용모델로 예측
 - storyline seed: 세미나에 'TTT/Titans는 왜 아직 프로덕션이 어려운가' 파트로 이 3병목×해법×memory device 지도를 그대로 사용. Part I(집중조명)→II(병목)→III(해법)→IV(memory device) 흐름이 곧 강의 흐름. LaCT의 util<5%를 도입 훅.
 - 연상: Q037, Q036, Q034, Q033, Q032
+
+## Q039 · 2026-07-16 · study paper 품질 교훈: 논문 figure 추출·임베드+numbered bibliography+BOOK template로 65p 재작성; 재사용 figure 파이프라인
+
+**Q.** (피드백) study paper 품질 엉망 — 300p BOOK처럼 논문 Figure/Table 적극 활용, reference 깔끔히, 분량 충분히. 제대로 다시 써라
+
+**A.** figure-rich BOOK-style로 전면 재작성. (1) arxiv PDF를 curl로 받고 PyMuPDF figure 추출기(research/extract_figs.py): caption 매칭+column 인지로 'Figure N' 위 그래픽(image+drawing) union clip→reffigs/ext-<id>/figures/+manifest. efficient-TTT 8편 78 figure, 전체 카탈로그 27편·238 figure. (2) figure-aware 심층 집필 워크플로(10장×집필→검증,20 agent): 논문별 figure 메뉴 제공→[FIG:label/figN|cap]로 배치+무엇을보여주고왜중요한지 서술+핵심수치 표 재현+{{id}} 인용. (3) 조립기 assemble_book.py: [FIG:]→includegraphics(출처·Figure번호·[N] 캡션), {{id}}→등장순 numbered[N]+자동References, framing. (4) BOOK template.tex(lualatex+Noto CJK+booktabs+breakable.lua)→65p, 56 figure, [1..53] 참고문헌. 이전 pandoc 22p 무-figure 버전 대체.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known(교정): pandoc 마크다운 요약≠BOOK 수준 study paper — figure/table 인용·numbered ref·충분 분량이 필수; unknown_unknown→known: PyMuPDF caption-anchored clip으로 논문 figure 자동 추출하는 재사용 파이프라인; unknown_known: {{id}}→등장순 numbered 인용+figure 출처 자동 연결로 깔끔한 학술 인용
+- 개념 key: study paper 품질기준: 논문 Figure/Table 적극 인용 필수(NM 300p BOOK 방식), reference=numbered[N]+자동 bibliography(inline arXiv 도배 금지), figure 파이프라인: curl PDF→PyMuPDF caption-anchored clip→reffigs/manifest(research/extract_figs.py 재사용), figure-aware 집필: figure 메뉴+[FIG:] 토큰 배치+서술, 조립: [FIG:]→includegraphics(출처명기),{{id}}→등장순[N]+References, BOOK template.tex=lualatex+Noto CJK+booktabs+breakable.lua, 분량 22p→65p(56 figure)
+- 생각할 것: extract_figs.py를 slidesmith/세미나 엔진에 편입; table도 원문수치를 booktabs로 재현하는 관행 표준화; 이 book을 한국어 의역본/easy booklet로 파생
+- storyline seed: 65p book이 세미나 'TTT 효율' 파트 근거자료; 논문 figure 직접 인용이 신뢰도↑; extract_figs.py=표준 figure 파이프라인.
+- 연상: Q038, Q037
 

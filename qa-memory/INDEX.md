@@ -1,10 +1,10 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-38건. story line 짤 때 여기서 꺼낸다.
+39건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
-### 모른다는 걸 안다 (known_unknown → decomposition) — 42건
+### 모른다는 걸 안다 (known_unknown → decomposition) — 43건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q003: 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1
@@ -47,6 +47,7 @@
 - Q036: TTT 계보를 4대 계열[TTT(MLP)·Linear Attention·DeltaNet·SSM]로 나누고 efficiency 논문까지 포함해 시
 - Q037: efficient TTT를 정조준해 관련 논문을 싸그리(의미있는 것만) 모아 TTT의 system-level 분석을 하라 (LaCT 2505.2
 - Q038: TTT 집중조명 + Titans 효율 전반을 놓고, 3 scaling 병목(model-size / training parallel·batch /
+- Q039: (피드백) study paper 품질 엉망 — 300p BOOK처럼 논문 Figure/Table 적극 활용, reference 깔끔히, 분량 충
 
 ### 모른다는 것도 모른다 (unknown_unknown → exploration) — 54건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
@@ -104,7 +105,7 @@
 - Q029: Sleep는 전부 offline 학습? offline시 각 단계(consolidation, dreaming)별로 어떤 data를 어떻게 만들어 
 - Q030: CMS low/mid/high 3레벨(low=1K, mid=5K)에서 0~1K 구간 메커니즘과 1K 경계 학습이 어케 되나. 내 추측: low가
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 60건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 61건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
@@ -165,6 +166,7 @@
 - Q037: efficient TTT를 정조준해 관련 논문을 싸그리(의미있는 것만) 모아 TTT의 system-level 분석을 하라 (LaCT 2505.2
 - Q038: TTT 집중조명 + Titans 효율 전반을 놓고, 3 scaling 병목(model-size / training parallel·batch /
 - Q038: TTT 집중조명 + Titans 효율 전반을 놓고, 3 scaling 병목(model-size / training parallel·batch /
+- Q039: (피드백) study paper 품질 엉망 — 300p BOOK처럼 논문 Figure/Table 적극 활용, reference 깔끔히, 분량 충
 
 ### 안다는 걸 안다 (known) — 3건
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
@@ -627,6 +629,13 @@
 - **memory device 두 얼굴: 신경 메모리 용량 + physical hbm/대역폭** (1): Q038
 - **memory device 개선 3축: 더 크게(sparse/expandable)·더 정확히(exact)·더 싸게(quantize/in-place)** (1): Q038
 - **ttt≈linear attention 등가(2602.21204)가 '진짜 meta-learning인가' 의문 제기** (1): Q038
+- **study paper 품질기준: 논문 figure/table 적극 인용 필수(nm 300p book 방식)** (1): Q039
+- **reference=numbered[n]+자동 bibliography(inline arxiv 도배 금지)** (1): Q039
+- **figure 파이프라인: curl pdf→pymupdf caption-anchored clip→reffigs/manifest(research/extract_figs.py 재사용)** (1): Q039
+- **figure-aware 집필: figure 메뉴+[fig:] 토큰 배치+서술** (1): Q039
+- **조립: [fig:]→includegraphics(출처명기),{{id}}→등장순[n]+references** (1): Q039
+- **book template.tex=lualatex+noto cjk+booktabs+breakable.lua** (1): Q039
+- **분량 22p→65p(56 figure)** (1): Q039
 
 ## 3. 열린 실 (think_about)
 
@@ -761,6 +770,9 @@
 - [Q038] TTT≈linear attention 등가면 test-time 학습의 표현력 우위는 어디서? 진짜 meta-learning 여부
 - [Q038] d²→d 용량 벽을 sparse/expandable이 상수 개선인지 지수 변경인지
 - [Q038] memory device 물리(HBM 대역폭)×알고리즘(state 용량) co-design을 HATIR류 비용모델로 예측
+- [Q039] extract_figs.py를 slidesmith/세미나 엔진에 편입
+- [Q039] table도 원문수치를 booktabs로 재현하는 관행 표준화
+- [Q039] 이 book을 한국어 의역본/easy booklet로 파생
 
 ## 4. Storyline seeds
 
@@ -802,3 +814,4 @@
 - [Q036] (TTT 계보 4계열 분류(TTT-MLP·LinearAttention·DeltaNet·SSM) + efficiency 포함 + branch graph view; 9-agent 워크플로 검증) 세미나에서 '이 분야 전체 지형'을 이 4계열 branch graph 1장으로 제시 → 그 다음 우리가 판 TTT-MLP/Titans 라인으로 zoom-in. optimizer 지도(직관)와 이 계보 그래프(지형)를 도입부 한 쌍으로.
 - [Q037] (efficient/system-level TTT 93편 코퍼스 + 6축 시스템 분석(표현력↔GPU효율); LaCT 기준점, in-place TTT 포함) 세미나에 'TTT의 시스템 층' 파트 신설: 우리가 판 알고리즘 라인(Titans/HOPE) 위에 이 6축 system 분석을 얹어 '왜 아직 프로덕션이 어려운가'(util<5%, prefix caching 미표준, request별 서빙)를 설명. LaCT를 도입 훅으로.
 - [Q038] (TTT+Titans 효율 study paper: 3 scaling 병목(model-size/training/serving P·D)·해법·memory device 한계·개선; 근거등급+검증) 세미나에 'TTT/Titans는 왜 아직 프로덕션이 어려운가' 파트로 이 3병목×해법×memory device 지도를 그대로 사용. Part I(집중조명)→II(병목)→III(해법)→IV(memory device) 흐름이 곧 강의 흐름. LaCT의 util<5%를 도입 훅.
+- [Q039] (study paper 품질 교훈: 논문 figure 추출·임베드+numbered bibliography+BOOK template로 65p 재작성; 재사용 figure 파이프라인) 65p book이 세미나 'TTT 효율' 파트 근거자료; 논문 figure 직접 인용이 신뢰도↑; extract_figs.py=표준 figure 파이프라인.
