@@ -1,0 +1,85 @@
+{
+ "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/2605.28053.pdf",
+ "engine": "pymupdf-clip",
+ "figure_count": 6,
+ "figures": [
+  {
+   "figure_id": "fig1",
+   "figure_number": "1",
+   "caption": "Figure 1:   Per-request READ/WRITE semantics.   Each decode step evaluates the shared base model with the request-owned TTT state and exposes either a version- preserving READ event or a version-creating WRITE event.",
+   "image": "figures/fig1.png",
+   "page": 4,
+   "clip": [
+    66.9,
+    67.9,
+    294.8,
+    298.9
+   ]
+  },
+  {
+   "figure_id": "fig1_p4",
+   "figure_number": "1",
+   "caption": "Figure  1  shows the per-request transition that the runtime   must   preserve.   At   each   decode   step,   re- quest   r   reads   its   owner-visible   TTT   state   s v",
+   "image": "figures/fig1_p4.png",
+   "page": 4,
+   "clip": [
+    66.9,
+    67.9,
+    294.9,
+    752.4
+   ]
+  },
+  {
+   "figure_id": "fig2",
+   "figure_number": "2",
+   "caption": "Figure 2:   RW-TTT  serving architecture.   Requests carry owner-versioned mutable state alongside ordinary KV cache.   The planner automatically groups compatible READ/WRITE transitions by backend type, operator shape, placement, and valid owner version; batched operators return outputs and updated state through the owner map.   The figure shows serving semantics, not the backend update rule.",
+   "image": "figures/fig2.png",
+   "page": 5,
+   "clip": [
+    66.9,
+    67.9,
+    529.7,
+    382.5
+   ]
+  },
+  {
+   "figure_id": "fig3",
+   "figure_number": "3",
+   "caption": "Figure 3:   Scaling under a 16K prompt.   Left:   feasible runs ordered by peak memory. Right: same runs ordered by   concurrent   units.   RW-TTT   keeps   request-private streams inside one read-write runtime.",
+   "image": "figures/fig3.png",
+   "page": 7,
+   "clip": [
+    66.9,
+    67.9,
+    293.1,
+    236.6
+   ]
+  },
+  {
+   "figure_id": "fig4",
+   "figure_number": "4",
+   "caption": "Figure 4:   WRITE-side operator speedups from Triton kernels over PyTorch eager.   Parentheses show latency before and after kernelization in milliseconds.",
+   "image": "figures/fig4.png",
+   "page": 7,
+   "clip": [
+    302.1,
+    210.7,
+    528.8,
+    355.2
+   ]
+  },
+  {
+   "figure_id": "fig4_p7",
+   "figure_number": "4",
+   "caption": "Figure   4   provides   local   evidence   for   the   read- write   operator   surface   induced   by   mutable   TTT state.   Triton kernels reduce WRITE-side latency for selective commit, dense update, and checkpoint write by  3 . 1 × ,  2 . 5 × , and  1 . 2 × , respectively. These microbenchmarks are not the end-to-end serving denominator; they show that the unusual optimiza- tion   surface   ",
+   "image": "figures/fig4_p7.png",
+   "page": 7,
+   "clip": [
+    301.7,
+    210.7,
+    530.2,
+    779.5
+   ]
+  }
+ ]
+}

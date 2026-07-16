@@ -1,0 +1,228 @@
+{
+ "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/2411.19379.pdf",
+ "engine": "pymupdf-clip",
+ "figure_count": 17,
+ "figures": [
+  {
+   "figure_id": "fig1",
+   "figure_number": "1",
+   "caption": "Figure 1.   Overview of Hybrid models.",
+   "image": "figures/fig1.png",
+   "page": 2,
+   "clip": [
+    54.0,
+    74.3,
+    371.5,
+    214.1
+   ]
+  },
+  {
+   "figure_id": "fig2",
+   "figure_number": "2",
+   "caption": "Figure 2.  Prefix caching reuses model states of common prefixes (green) across requests, accelerating inference. Fine-grained check- pointing results in many sparsely-hit entries (blue).",
+   "image": "figures/fig2.png",
+   "page": 2,
+   "clip": [
+    50.9,
+    74.3,
+    316.6,
+    382.0
+   ]
+  },
+  {
+   "figure_id": "fig3",
+   "figure_number": "3",
+   "caption": "Figure 3.  Fine-grained   caching   of   token   blocks   results   in   many",
+   "image": "figures/fig3.png",
+   "page": 4,
+   "clip": [
+    50.9,
+    64.1,
+    293.8,
+    219.0
+   ]
+  },
+  {
+   "figure_id": "fig4",
+   "figure_number": "4",
+   "caption": "Figure 4.  Marconi performs a speculative insertion to check if in-",
+   "image": "figures/fig4.png",
+   "page": 5,
+   "clip": [
+    50.9,
+    75.3,
+    294.9,
+    212.2
+   ]
+  },
+  {
+   "figure_id": "fig5",
+   "figure_number": "5",
+   "caption": "Figure 5.  FLOP efficiency of the model states of different 7B mod-",
+   "image": "figures/fig5.png",
+   "page": 6,
+   "clip": [
+    302.9,
+    64.1,
+    546.9,
+    231.7
+   ]
+  },
+  {
+   "figure_id": "fig6",
+   "figure_number": "6",
+   "caption": "Figure 6.  Input/output sequence length distributions per workload.",
+   "image": "figures/fig6.png",
+   "page": 7,
+   "clip": [
+    302.9,
+    64.1,
+    547.0,
+    176.8
+   ]
+  },
+  {
+   "figure_id": "fig7",
+   "figure_number": "7",
+   "caption": "Figure 7.  Comparison with vLLM+.   With judicious cache admission, Marconi utilizes the limited cache space to retain states with higher",
+   "image": "figures/fig7.png",
+   "page": 8,
+   "clip": [
+    50.9,
+    64.1,
+    545.6,
+    178.7
+   ]
+  },
+  {
+   "figure_id": "fig7_p8",
+   "figure_number": "7",
+   "caption": "Fig.   7   shows   the   token   hit   rate   of   vLLM+   and   Marconi across different traces.   The boxes show different quartiles of   the   data   while   the   whiskers   on   the   box   plots   show   P5 and   P95,   allowing   us   to   disregard   extreme   data   and   con- centrate on the typical cases.   With its judicious admission strategy,   Marconi   avoids   wasteful   caching  ",
+   "image": "figures/fig7_p8.png",
+   "page": 8,
+   "clip": [
+    249.3,
+    64.1,
+    547.1,
+    585.3
+   ]
+  },
+  {
+   "figure_id": "fig8",
+   "figure_number": "8",
+   "caption": "Fig.   8   compares   Marconi   with   SGLang+   to   highlight   the benefits of FLOP-aware eviction over LRU. The win is the most significant on SWEBench, with a P95 win of 219.7%. The improvements on LMSys and ShareGPT are less pro- nounced, reaching a P95 win of 45.6% and 19.0%.   This can be attributed to the difference in workload characteristics: as shown in Fig.  6 , SWEBench has the wides",
+   "image": "figures/fig8.png",
+   "page": 8,
+   "clip": [
+    249.3,
+    64.1,
+    547.2,
+    710.8
+   ]
+  },
+  {
+   "figure_id": "fig8_p9",
+   "figure_number": "8",
+   "caption": "Figure 8.  Comparison with SGLang+, which uses LRU as its evic-",
+   "image": "figures/fig8_p9.png",
+   "page": 9,
+   "clip": [
+    50.9,
+    64.1,
+    294.9,
+    190.6
+   ]
+  },
+  {
+   "figure_id": "fig9",
+   "figure_number": "9",
+   "caption": "Figure 9.  Distribution of P95 TTFT relative to no prefix caching.",
+   "image": "figures/fig9.png",
+   "page": 9,
+   "clip": [
+    50.9,
+    64.1,
+    293.4,
+    351.4
+   ]
+  },
+  {
+   "figure_id": "fig9_p9",
+   "figure_number": "9",
+   "caption": "Fig.   9   shows   the   distribution   of   P95   TTFT   relative   to   no prefix caching across different traces.   Marconi’s token hit rate translates to TTFT reduction, reducing the P95 TTFT by up   to 36.9%,   73.2%,   and   46.8% (281.4 ms,   106.3 ms, and 617.0 ms) compared to vanilla inference without prefix caching.   Compared   to   vLLM+,   Marconi   delivers   up   to 36.1%, 71.1%, an",
+   "image": "figures/fig9_p9.png",
+   "page": 9,
+   "clip": [
+    50.7,
+    64.1,
+    294.7,
+    564.1
+   ]
+  },
+  {
+   "figure_id": "fig10",
+   "figure_number": "10",
+   "caption": "Figure 10.  Fine-grained analysis of FLOP-aware eviction. Marconi",
+   "image": "figures/fig10.png",
+   "page": 9,
+   "clip": [
+    302.9,
+    64.1,
+    545.4,
+    278.1
+   ]
+  },
+  {
+   "figure_id": "fig11",
+   "figure_number": "11",
+   "caption": "Figure 11.  Impact of contention on FLOP-aware eviction’s benefits.",
+   "image": "figures/fig11.png",
+   "page": 10,
+   "clip": [
+    50.9,
+    64.1,
+    295.0,
+    202.3
+   ]
+  },
+  {
+   "figure_id": "fig12",
+   "figure_number": "12",
+   "caption": "Figure 12.  Impact of model architecture on Marconi’s performance.",
+   "image": "figures/fig12.png",
+   "page": 10,
+   "clip": [
+    50.9,
+    64.1,
+    295.0,
+    345.1
+   ]
+  },
+  {
+   "figure_id": "fig13",
+   "figure_number": "13",
+   "caption": "Figure 13.  Impact of request arrival pattern on Marconi’s perfor-",
+   "image": "figures/fig13.png",
+   "page": 10,
+   "clip": [
+    302.9,
+    64.1,
+    546.9,
+    184.7
+   ]
+  },
+  {
+   "figure_id": "fig14",
+   "figure_number": "14",
+   "caption": "Figure 14.   FLOP breakdown of a 7B Hybrid model.",
+   "image": "figures/fig14.png",
+   "page": 15,
+   "clip": [
+    303.4,
+    223.7,
+    545.4,
+    362.0
+   ]
+  }
+ ]
+}

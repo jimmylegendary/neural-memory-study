@@ -1,0 +1,46 @@
+{
+ "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/2501.12352.pdf",
+ "engine": "pymupdf-clip",
+ "figure_count": 3,
+ "figures": [
+  {
+   "figure_id": "fig1",
+   "figure_number": "1",
+   "caption": "Figure   1:   Our   framework   provides   a   systematic   way   to   derive   sequence   models   that   can   perform   asso- ciative recall, following a two step process of memorization and retrieval.   The memorization step can be formalized as a solving a regression problem at test-time.   Our perspective results in a “recipe” for derv- ing sequence layers by making three choices:   the impo",
+   "image": "figures/fig1.png",
+   "page": 3,
+   "clip": [
+    68.0,
+    69.5,
+    544.0,
+    416.9
+   ]
+  },
+  {
+   "figure_id": "fig2",
+   "figure_number": "2",
+   "caption": "Figure 2: Solving a non-stationary online regression task  without any learnable parameters . The regression- memory correspondence enables us to perform regression via a single forward pass of a test-time regres- sion   layer.   The   inputs   change   more   rapidly   in   initial   T/ 4   timesteps,   making   it   harder   for   regressors   to learn. The latter  3 T/ 4  timesteps are more sta",
+   "image": "figures/fig2.png",
+   "page": 18,
+   "clip": [
+    68.0,
+    69.0,
+    544.0,
+    392.5
+   ]
+  },
+  {
+   "figure_id": "fig3",
+   "figure_number": "3",
+   "caption": "Figure   3:   A   single   test-time   regression   layer   with   one   short   convolution   suffices   to   solve   MQAR   with P   =   64   cue-response   pairs.   When   a   model   has   sufficient   capacity   to   memorize   all   P   pairs,   it   can   solve MQAR   regardless   of   the   sequence   length.   The   regression   problem   is   stationary   (the   cue-response   map doesn’",
+   "image": "figures/fig3.png",
+   "page": 20,
+   "clip": [
+    68.0,
+    69.0,
+    544.0,
+    367.9
+   ]
+  }
+ ]
+}

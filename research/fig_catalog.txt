@@ -1,0 +1,265 @@
+### 1606.01164 (ext-1606.01164)
+  [FIG:ext-1606.01164/fig2] Figure 2: We show 25 randomly selected memories (feature detectors) for four networks, which use recti- ﬁed polynomials of degrees n = 2, 3, 20, 30 as the energy function. The magnitude of a memory el
+  [FIG:ext-1606.01164/fig4] Figure 4: The histograms of overlaps for models with n = 2, 3, 4 with power energy functions (left) and rectiﬁed polynomial energy functions (right). Each histogram has 10000 samples in it.
+  [FIG:ext-1606.01164/fig5] Figure 5: Scaling behavior of the capacity vs. the number of neurons for n = 3 with power and rectiﬁed polynomial energy functions. Solid curve is the theoretical result (6).
+### 2008.02217 (ext-2008.02217)
+  [FIG:ext-2008.02217/fig1] Figure 1: We generalize the energy of binary modern Hopﬁeld networks to continuous states while keeping fast convergence and storage capacity properties. We also propose a new update rule that minimiz
+  [FIG:ext-2008.02217/fig2] Figure 2: Left: A standard deep network with layers (■) propagates either a vector or a set of vectors from the input to the output. Right: A deep network, where layers (■) are equipped with associati
+  [FIG:ext-2008.02217/fig3] Figure 3: The layer Hopfield allows the association of two sets R (■) and Y (■). It can be integrated into deep networks that propagate sets of vectors. The Hopﬁeld memory is ﬁlled with a set from eit
+  [FIG:ext-2008.02217/fig4] Figure 4: The layer HopfieldPooling enables pooling or summarization of sets, which are obtained from the input or from previous layers. The input Y (■) can be either a set or a sequence. The query pa
+  [FIG:ext-2008.02217/fig5] Figure 5: The layer HopfieldLayer enables multiple queries of the training set, a reference set, prototype set, or a learned set (a learned matrix). The queries for each layer are computed from the re
+### 2102.11174 (ext-2102.11174)
+  [FIG:ext-2102.11174/fig1] Figure 1. A visualisation of a DPFP from a 2d space (the xy-plane)
+  [FIG:ext-2102.11174/fig2] Figure 2. Final evaluation loss of the softmax memory and various
+  [FIG:ext-2102.11174/fig3] Figure 3. Learning curves for different update rules. Sequence
+  [FIG:ext-2102.11174/fig4] Figure 4. Training curves for setting 1 with 600 unique keys/values (sampled without replacement) as described in Sec. 6.1.1.
+  [FIG:ext-2102.11174/fig5] Figure 5. Final evaluation loss on synthetic setting 2 (with replace-
+### 2212.07677 (ext-2212.07677)
+  [FIG:ext-2212.07677/fig1] Figure 1. Illustration of our hypothesis: gradient-based optimization and attention-based in-context learning are equivalent. Left:
+  [FIG:ext-2212.07677/fig2] Figure 2. Comparing one step of GD with a trained single linear self-attention layer. Outer left: Trained single LSA layer performance
+  [FIG:ext-2212.07677/fig3] Figure 3. Far left column: The trained TF performance surpasses standard GD but matches GD++, our GD variant with simple iterative
+  [FIG:ext-2212.07677/fig4] Figure 4. Sine wave regression: comparing trained Transformers with meta-learned MLPs for which we adjust the output layer with one step of gradient descent. Left: Plots of the learned initial functio
+  [FIG:ext-2212.07677/fig5] Figure 5. Training a two layer SA-only Transformer using the
+  [FIG:ext-2212.07677/fig6] Figure 6. Left & center left column: Comparing Transformers, GD and their weight interpolation on rescaled training distributions. In
+  [FIG:ext-2212.07677/fig7] Figure 7. Comparing ten steps of gradient descent with trained recurrent ten-layer Transformers. Results comparable to recurrent Transformer with two layers, see Figure 3, but now with 10 repeated lay
+  [FIG:ext-2212.07677/fig8] Figure 8. Comparing twelve steps of GD++ with a trained twelve-layer Transformers with MLPs and 4 headed linear self-attention
+  [FIG:ext-2212.07677/fig9] Figure 9. Visualizing the weight matrices of trained Transformers. Left & outer left: Weight matrix products of a trained single linear
+  [FIG:ext-2212.07677/fig10] Figure 10. Roll-out experiments: applying a trained single linear self-attention layer multiple times. We observe that different
+  [FIG:ext-2212.07677/fig11] Figure 11. Visualizing the correction to the softmax operation when training Transformers on regression tasks. The left and center
+  [FIG:ext-2212.07677/fig12] Figure 12. Comparing trained two-headed and one-headed single-layer softmax self-attention with 1 step of gradient descent on
+  [FIG:ext-2212.07677/fig13] Figure 13. GD++ analyses. Left: We visualize the change of the eigenspectrum induced by the input data transformation of GD++ for
+  [FIG:ext-2212.07677/fig14] Figure 14. Comparing trained 1-layer and 2-layer Transformers with LayerNorm and 1 step or 2 steps of gradient descent resp. Left column: The Transformers is not able to match the gradient descent per
+  [FIG:ext-2212.07677/fig15] Figure 15. Phase transitions during training. Left: Loss based on 10 different random seeds when optimizing a single-headed self-
+### 2307.08621 (ext-2307.08621)
+  [FIG:ext-2307.08621/fig1] Figure 1: Retentive network (RetNet) achieves low-cost inference (i.e., GPU memory, throughput, and latency), training parallelism, and favorable scaling curves compared with Transformer. Results of i
+  [FIG:ext-2307.08621/fig2] Figure 2: RetNet makes the “impossible triangle” possible, which achieves training parallelism, good performance, and low inference cost simultane- ously.
+  [FIG:ext-2307.08621/fig4] Figure 4: Pseudocode for the three computation paradigms of retention.
+  [FIG:ext-2307.08621/fig5] Figure 5: Perplexity decreases along with scaling up the model size. We empirically observe that RetNet tends to outperform Transformer when the model size is larger than 2B.
+  [FIG:ext-2307.08621/fig6] Figure 6: Inference cost of Transformer and RetNet with a model size of 6.7B. RetNet outperforms Transformers in terms of memory consumption, throughput, and latency.
+### 2312.00752 (ext-2312.00752)
+  [FIG:ext-2312.00752/fig1] Figure 1: (Overview.) Structured SSMs independently map each channel (e.g. 𝐷= 5) of an input 𝑥to output 𝑦through a higher dimensional latent state ℎ(e.g. 𝑁= 4). Prior SSMs avoid materializing this lar
+  [FIG:ext-2312.00752/fig2] Figure 2: (Left) The standard version of the Copying task involves constant spacing between input and output elements and is easily solved by time-invariant models such as linear recurrences and globa
+  [FIG:ext-2312.00752/fig4] Figure 4: (Scaling Laws.) Models of size ≈125𝑀to ≈1.3𝐵parameters, trained on the Pile. Mamba scales better than all other attention-free models and is the first to match the performance of a very stro
+  [FIG:ext-2312.00752/fig5] Figure 5: (DNA Scaling Laws.) Pretraining on the HG38 (human genome) dataset. (Left) Fixing short context length 210 = 1024 and increasing size from ≈200𝐾to ≈40𝑀parameters, Mamba scales better than ba
+  [FIG:ext-2312.00752/fig6] Figure 6: (Great Apes DNA Classification.) Accuracy after fine- tuning on sequences of length 210 = 1024 up to 220 = 1048576 using pretrained models of the same context length. Numerical results in Ta
+  [FIG:ext-2312.00752/fig7] Figure 7: (Audio Pretraining.) Mamba improves performance over prior state-of-the-art (Sashimi) in autoregressive audio model- ing, while improving up to minute-long context or million-length sequence
+  [FIG:ext-2312.00752/fig8] Figure 8: (Efficiency Benchmarks.) (Left) Training: our efficient scan is 40× faster than a standard implementation. (Right) Inference: as a recurrent model, Mamba can achieve 5× higher throughput tha
+  [FIG:ext-2312.00752/fig9] Figure 9: (Scaling laws: extra ablations.) (Left) Instead of (Right) Instead of
+  [FIG:ext-2312.00752/fig10] Figure 10: (Audio Pretraining (YouTubeMix) Ablations.) As a uniformly-sampled “continuous” signal modality, audio waveforms actu- ally benefit from LTI models which have matching inductive bias. (Left
+### 2312.06635 (ext-2312.06635)
+  [FIG:ext-2312.06635/fig1] Figure 1: (a) FLASHLINEARATTENTION without materialization. This version is more memory-efficient. (b-c) FLASHLINEARAT- TENTION with materialization. This version enables sequence-level chunkwise para
+  [FIG:ext-2312.06635/fig2] Figure 2: Speed comparison on a single H100 GPU with batch size 32, number of heads 16, head dimension 64, and chunk size 64. Both x- and y-axes are on log scale. w/ m. and w/o m. denotes using FLASHL
+  [FIG:ext-2312.06635/fig3] Figure 3: Attention-style map to illustrate the chunkwise compu- tations in GLA. The inter-chunk dependencies (in gray) are not directly computed in the chunkwise form (only computed in the parallel f
+  [FIG:ext-2312.06635/fig4] Figure 4: Accuracy (%) on the synthetic MQAR task.
+  [FIG:ext-2312.06635/fig5] Figure 5: Length extrapolation on the test set of SlimPajama and PG19. We pretrain 1.3B models from scratch on SlimPajama for 100B tokens with different training length. ∗indicates models using trunca
+  [FIG:ext-2312.06635/fig6] Figure 6: Training throughput and memory footprint on an H100.
+### 2405.21060 (ext-2405.21060)
+  [FIG:ext-2405.21060/fig1] Figure 1: (Structured State-Space Duality.) This paper fleshes out the relationship between state space models and attention through the bridge of structured matrices.
+  [FIG:ext-2405.21060/fig2] Figure 2: (State Space Models are Semiseparable Matrices.) As sequence transformations, state space models can be represented as a matrix transformation 𝑀∈R(T,T) acting on the sequence dimension T, sh
+  [FIG:ext-2405.21060/fig3] Figure 3: (Structured Masked Attention.) SMA constructs a masked attention matrix 𝑀= 𝑄𝐾⊤◦𝐿for any structured matrix 𝐿, which defines a matrix sequence transformation 𝑌= 𝑀𝑉. All instances of SMA have a
+  [FIG:ext-2405.21060/fig4] Figure 4: (Structured State Space Duality.) State space duality describes the close relationship between state space models and masked attention. (Left) General SSMs and SMA both possess linear and qu
+  [FIG:ext-2405.21060/fig5] Figure 5: (SSD Algorithm.) By using the matrix transformation viewpoint of state space models to write them as semiseparable matrices (Section 3), we develop a more hardware-efficient computation of t
+  [FIG:ext-2405.21060/fig9] Figure 9: (Scaling Laws.) Models of size ≈125𝑀to ≈1.3𝐵parameters, trained on the Pile. Mamba-2 matches or exceeds the performance of Mamba as well as a strong “Transformer++” recipe. Compared to our T
+  [FIG:ext-2405.21060/fig10] Figure 10: (Efficiency Benchmarks.) (Left) Our SSD is 2 −8× faster than a Mamba fused scan for large state expansion (𝑁= 64) and faster than FlashAttention-2 for sequence length 2k and above. (Right) 
+### 2406.06484 (ext-2406.06484)
+  [FIG:ext-2406.06484/fig1] Figure 1: Speed-up of the chunkwise parallel form vs. the recurrent form.
+  [FIG:ext-2406.06484/fig2] Figure 2: An illustration of DeltaNet neural architec- ture.
+  [FIG:ext-2406.06484/fig3] Figure 3: Results on the synthetic MAD benchmark. Results other than DeltaNet are directly borrowed from Poli et al. [84]. (Multi-head) Hyena, DeltaNet and Mamba make use of convolutions, whereas GLA 
+  [FIG:ext-2406.06484/fig4] Figure 4: Accuracy (%) on MQAR.
+  [FIG:ext-2406.06484/fig5] Figure 5: Zero-shot model performance across selected benchmarks for 3B models. Llama-3.2-3B and PowerLM-3B are Transformer models, while the others are recurrent models. ARC results are averaged over
+  [FIG:ext-2406.06484/fig6] Figure 6: Training throughput of 1.3B models on a single H100.
+  [FIG:ext-2406.06484/fig7] Figure 7: Accuracy (%) on RegBench.
+  [FIG:ext-2406.06484/fig8] Figure 8: Pytorch-like code snippet of the forward pass of our chunkwise algorithm for training DeltaNet. We omit the dimensions of batch size and number of heads for clarity.
+### 2407.04620 (ext-2407.04620)
+  [FIG:ext-2407.04620/fig1] Figure 1. All sequence modeling layers can be expressed as a hidden state that transitions according to an update rule. Our key idea is to make the hidden state itself a model f with weights W , and t
+  [FIG:ext-2407.04620/fig2] Figure 2. Comparing to Mamba, TTT-Linear and TTT-MLP have similar perplexity in 8k context (left) and better use of long context (right). Evaluations follow Kaplan et al. [43]. Left: Scaling trends on
+  [FIG:ext-2407.04620/fig3] Figure 3. Top: A generic sequence modeling layer expressed as a hidden state that transitions according to an update rule. All sequence modeling layers can be viewed as different instantiations of thr
+  [FIG:ext-2407.04620/fig4] Figure 4. The self-supervised TTT loss ℓaveraged over all test sequences of the form x1,...,xT where T = 2048, for the first three TTT layers in a network with 125M parameters. One step of gradient de
+  [FIG:ext-2407.04620/fig5] Figure 5. Naive implementation of a TTT layer with a linear model and online GD in the style of PyTorch. TTT_Layer can be dropped into a larger network like other sequence modeling layers. Training th
+  [FIG:ext-2407.04620/fig6] Figure 6. High-level computation graph of the first TTT mini-batch, where nodes are variables and edges are computations. The blue nodes are input variables, and yellow are output. Subsection 2.4: Sin
+  [FIG:ext-2407.04620/fig7] Figure 7. Ablations on TTT mini-batch size b, where b = 1 is online GD and b = T is batch GD. We choose b = 16 for all experiments in this paper. Left: Smaller b improves perplexity since more GD step
+  [FIG:ext-2407.04620/fig8] Figure 8. Parametric learners need to define two attributes: model and optimizer (left), and each learner uniquely induces a TTT layer (right). Two of the induced TTT layers: TTT-Linear and TTT-MLP, a
+  [FIG:ext-2407.04620/fig9] Figure 9. RNN layers and TTT layers are both subsets of sequence modeling layers. RNN layers have a hidden state that is fixed in size across time. TTT layers with parametric learners are also RNN lay
+  [FIG:ext-2407.04620/fig10] Figure 10. Evaluations for context lengths 2k and 8k on the Pile. Details in Subsection 3.1. TTT-Linear has comparable performance as Mamba at 2k context, and better performance at 8k.
+  [FIG:ext-2407.04620/fig11] Figure 11. Evaluations for context lengths 2k and 32k on Books. Details in Subsection 3.2. Our complete results for context lengths 1k, 2k, 4k, 8k, 16k, 32k, including Transformer finetuning, are in F
+  [FIG:ext-2407.04620/fig12] Figure 12. Latency on an NVIDIA A100 GPU with 80G HBM and PCIe connections.
+  [FIG:ext-2407.04620/fig13] Figure 13. Left: A residual block, the basic building block for Transformers. The sequence modeling block is instantiated into two variants: the Transformer backbone and Mamba backbone. Middle: TTT la
+  [FIG:ext-2407.04620/fig14] Figure 14. The self-supervised TTT loss ℓaveraged over all test sequences of the form x1,...,xT where T = 2048, for all 12 TTT layers in a network with 125M parameters train on the Pile. The same netw
+  [FIG:ext-2407.04620/fig15] Figure 15. Complete results on Books, presented by context lengths. Figure 11 in Subsection 3.2 presents the subset of results for context lengths 2k and 32k.
+  [FIG:ext-2407.04620/fig16] Figure 16. An alternative view of our complete results on Books, presented by model sizes, with context length as the x-axis. For all methods trained from scratch, perplexity becomes worse once the co
+### 2407.14207 (ext-2407.14207)
+  [FIG:ext-2407.14207/fig1] Figure 1: (left) The average perplexity on eight downstream datasets for GLA, Mamba, and Longhorn (1.3B model) over seen tokens on SlimPajama. Longhorn leads to a 1.8x speed up in sampling efficiency.
+  [FIG:ext-2407.14207/fig2] Figure 2: (left) Most existing sequence models consist of channel and sequence mixing layers. The sequence mixing layers can be viewed as “meta-modules” that compress history into a state St, which is
+  [FIG:ext-2407.14207/fig3] Figure 3: Mamba Block
+  [FIG:ext-2407.14207/fig4] Figure 4: Comparison of Longhorn to state-of-the-art SSMs on the MQAR benchmark. y-axis is the recall rate.
+  [FIG:ext-2407.14207/fig5] Figure 5: Scaling law with 1024 and 4096 context length on OpenWebText with various SSM models and the LLaMA (strong Transformer) baseline.
+### 2411.19379 (ext-2411.19379)
+  [FIG:ext-2411.19379/fig1] Figure 1.   Overview of Hybrid models.
+  [FIG:ext-2411.19379/fig2] Figure 2.  Prefix caching reuses model states of common prefixes (green) across requests, accelerating inference. Fine-grained check- pointing results in many sparsely-hit entries (blue).
+  [FIG:ext-2411.19379/fig3] Figure 3.  Fine-grained   caching   of   token   blocks   results   in   many
+  [FIG:ext-2411.19379/fig4] Figure 4.  Marconi performs a speculative insertion to check if in-
+  [FIG:ext-2411.19379/fig5] Figure 5.  FLOP efficiency of the model states of different 7B mod-
+  [FIG:ext-2411.19379/fig6] Figure 6.  Input/output sequence length distributions per workload.
+  [FIG:ext-2411.19379/fig7] Figure 7.  Comparison with vLLM+.   With judicious cache admission, Marconi utilizes the limited cache space to retain states with higher
+  [FIG:ext-2411.19379/fig7_p8] Fig.   7   shows   the   token   hit   rate   of   vLLM+   and   Marconi across different traces.   The boxes show different quartiles of   the   data   while   the   whiskers   on   the   box   plots
+  [FIG:ext-2411.19379/fig8] Fig.   8   compares   Marconi   with   SGLang+   to   highlight   the benefits of FLOP-aware eviction over LRU. The win is the most significant on SWEBench, with a P95 win of 219.7%. The improvements 
+  [FIG:ext-2411.19379/fig8_p9] Figure 8.  Comparison with SGLang+, which uses LRU as its evic-
+  [FIG:ext-2411.19379/fig9] Figure 9.  Distribution of P95 TTFT relative to no prefix caching.
+  [FIG:ext-2411.19379/fig9_p9] Fig.   9   shows   the   distribution   of   P95   TTFT   relative   to   no prefix caching across different traces.   Marconi’s token hit rate translates to TTFT reduction, reducing the P95 TTFT by u
+  [FIG:ext-2411.19379/fig10] Figure 10.  Fine-grained analysis of FLOP-aware eviction. Marconi
+  [FIG:ext-2411.19379/fig11] Figure 11.  Impact of contention on FLOP-aware eviction’s benefits.
+  [FIG:ext-2411.19379/fig12] Figure 12.  Impact of model architecture on Marconi’s performance.
+  [FIG:ext-2411.19379/fig13] Figure 13.  Impact of request arrival pattern on Marconi’s perfor-
+  [FIG:ext-2411.19379/fig14] Figure 14.   FLOP breakdown of a 7B Hybrid model.
+### 2501.00663 (2501.00663)
+  [FIG:2501.00663/fig1] Figure 1: The illustration of how the training of neural memory can be done in parallel and using matmuls.
+  [FIG:2501.00663/fig2] Figure 2: Memory as a Context (MAC) Architecture. This architecture includes three branches of (1) core, (2) contextual (long-term) memory, and (3) persistent memory. The core branch concatenates the 
+  [FIG:2501.00663/fig3] Figure 3: Attention masks for different variants of Titans.
+  [FIG:2501.00663/fig4] Figure 4: Memory as a Gate (MAG) Architecture. This architecture, similarly, has the three branches of (1) core, (2) contextual memory, and (3) persistent memory. It, however, incorporates only persis
+  [FIG:2501.00663/fig5] Figure 5: Memory as a Layer (MAL) Architecture. In this architecture, the memory layer is responsible to compress the past and current context before the attention module.
+  [FIG:2501.00663/fig6] Figure 6: Performance of Titans and baselines on BABILong benchmark. Titans (MAC) outperforms all baselines, including extremely large models, e.g., GPT4.
+  [FIG:2501.00663/fig7] Figure 7: The effect of memory depth on the perplexity. Deeper long-term memory results in better scaling in longer sequences.
+  [FIG:2501.00663/fig8] Figure 8: The effect of memory depth on training throughput
+  [FIG:2501.00663/fig9] Figure 9: Training throughput compari- son of Titans and baselines.
+### 2501.12352 (ext-2501.12352)
+  [FIG:ext-2501.12352/fig1] Figure   1:   Our   framework   provides   a   systematic   way   to   derive   sequence   models   that   can   perform   asso- ciative recall, following a two step process of memorization and retrie
+  [FIG:ext-2501.12352/fig2] Figure 2: Solving a non-stationary online regression task  without any learnable parameters . The regression- memory correspondence enables us to perform regression via a single forward pass of a test
+  [FIG:ext-2501.12352/fig3] Figure   3:   A   single   test-time   regression   layer   with   one   short   convolution   suffices   to   solve   MQAR   with P   =   64   cue-response   pairs.   When   a   model   has   suffici
+### 2503.14456 (ext-2503.14456)
+  [FIG:ext-2503.14456/fig1] Figure 1: RWKV-7’s overall architecture.
+  [FIG:ext-2503.14456/fig2] Figure 2: A simple illustration of the update mechanism of a single head of RWKV-7’s state. Note that the actual state size is 64×64 per head, not 4×4.
+  [FIG:ext-2503.14456/fig3] Figure 3: Model Comparisons across Multilingual Benchmarks
+  [FIG:ext-2503.14456/fig4] Figure 4: Model Comparisons across English-Language Benchmarks
+  [FIG:ext-2503.14456/fig5] Figure 5: PG19 loss versus sequence position for RWKV and Mamba models trained on The Pile datasets.
+  [FIG:ext-2503.14456/fig6] Figure 6: PG19 loss versus sequence position for RWKV7 models and predecessors trained on the World dataset.
+  [FIG:ext-2503.14456/fig7] Figure 7: RWKV7-World3 pass-key retrieval evaluation
+  [FIG:ext-2503.14456/fig8] Figure 8: Minimum number of layers (lower is better) required to attain > 95% validation accuracy on group multiplication problems by sequence length and group.
+  [FIG:ext-2503.14456/fig9] Figure 9: Time vs. Sequence Length (H100)
+  [FIG:ext-2503.14456/fig10] Figure 10: The architecture of VisualRWKV-7. The input image is processed by three vision encoders, and the obtained features are concatenated. Afterward, they are projected through an MLP with contex
+  [FIG:ext-2503.14456/fig11] Figure 11: The architecture of RWKV-7, drawn in detail.
+  [FIG:ext-2503.14456/fig12] Figure 12: Training loss curve for RWKV-7 World models. Blue line: loss; Red line: smoothed loss; Green line: actual learning rate; Dotted red line: learning rate schedule.
+  [FIG:ext-2503.14456/fig13] Figure 13: Reversi Training loss for different token types
+  [FIG:ext-2503.14456/fig14] Figure 14: Reversi Token consumption and win rates under different search configurations
+  [FIG:ext-2503.14456/fig15] Figure 15: Visualization example of RWKV’s WKV matrices.
+  [FIG:ext-2503.14456/fig16] Figure 16: The global RMS and average stable rank of WKV matrices, plotted over sequence length.
+  [FIG:ext-2503.14456/fig17] Figure 17: Box Plots of ξ and α Across Models
+  [FIG:ext-2503.14456/fig18] Figure 18: Mean ξ and α Across Layers for Different Models
+  [FIG:ext-2503.14456/fig19] Figure 19: Maximum and Minimum of ξ Across Layers in Different Models
+  [FIG:ext-2503.14456/fig20] Figure 20: Maximum and Minimum of α Across Layers in Different Models
+  [FIG:ext-2503.14456/fig21] Figure 21: Box Plots of biases of dt Across Models
+  [FIG:ext-2503.14456/fig22] Figure 22: Mean biases of dt Across Layers for Different Models
+  [FIG:ext-2503.14456/fig23] Figure 23: Maximum and Minimum of biases of dt Across Layers in Different Models
+### 2504.03624 (ext-2504.03624)
+  [FIG:ext-2504.03624/fig1] Figure   1   |   MMLU-Pro   accuracy   ( Wang   et   al. ,   2024a )   versus   per-GPU   inference   throughput   for Nemotron-H-56B/47B-Base   compared   to   existing   similarly-sized   Transforme
+  [FIG:ext-2504.03624/fig2] Figure   2   |   Nemotron-H-8B/56B   model   architectures.   Roughly   8%   of   the   total   layers   in   the   model are   self-attention   layers;   these   layers   are   evenly   dispersed   t
+  [FIG:ext-2504.03624/fig3] Figure   3   |   MMLU   scores   for   8B-parameter   models   trained   for   1   trillion   tokens.   Compared   to   DCLM, our   methods   enable   us   to   either   create   a   4 ×   larger   da
+  [FIG:ext-2504.03624/fig4] Figure   4   |   Data   mixtures   for   each   phase   of   Nemotron-H   pre-training.
+  [FIG:ext-2504.03624/fig5] Figure   5   |   The   relative   training   loss   gap   between   a   pair   of   8B-parameter   Transformer   models   trained for   3   trillion   tokens   in   BF16   and   FP8.   The   gap   is 
+  [FIG:ext-2504.03624/fig6] Figure   6   |   Downstream   task   accuracies   for   a   pair   of   8B-parameter   Transformer   models   trained   on 15   trillion   tokens   with   BF16   and   mixed   precision   FP8.   FP8  
+  [FIG:ext-2504.03624/fig7] Figure   7   |   MMLU-Pro   accuracy   versus   inference   throughput   (normalized   by   number   of   GPUs   used) for   Nemotron-H-8B-Base   compared   to   existing   similarly-sized   Transform
+  [FIG:ext-2504.03624/fig8] Figure 8  |  MiniPuzzle’s optimization process:   a) estimate layer and FFN importance scores, b) search for   the   best   model   candidates   using   the   conditional   Neural   Architecture   Sea
+  [FIG:ext-2504.03624/fig9] Figure   9   plots   average   importance   scores   of   each   layer   in   Nemotron-H-56B-Base.   The   green,   blue and   red   dotted   lines   correspond   to   self-attention,   FFN   and   Ma
+  [FIG:ext-2504.03624/fig9_p16] Figure   9   |   Layer   importance   measured   as   the   MSE   between   the   full   model   and   a   model   with   that layer   removed,   averaged   over   a   small   training   subset.   Ver
+  [FIG:ext-2504.03624/fig10] Figure   10   |   Average   benchmark   score   for   pruned   candidates   with   different   memory   budgets.   Each dot   represents   a   different   candidate,   i.e.,   model   with   different
+  [FIG:ext-2504.03624/fig11] Figure   11   |   Pruned   layers   for   the   top   three   candidates.   Each   row   represents   a   candidate,   with   dots indicating   dropped   layers.   Vertical   dotted   lines   denote  
+  [FIG:ext-2504.03624/fig12] Figure   12   |   After   selecting   a   short   conversation from   the   original   blend,   we   generate   multiple turns   referencing   turns   from   that   conversation. These   turns   are  
+  [FIG:ext-2504.03624/fig13] Figure 13  |  Multiple segments are generated with a   unified   theme   and   scattered   throughout   the context.   Afterwards, we generate turns that that refer   to   one   or   more   of   these
+### 2504.05298 (ext-2504.05298)
+  [FIG:ext-2504.05298/fig1] Figure 1. TTT layers enable a pre-trained Diffusion Transformer to generate one-minute videos from text storyboards. We use Tom and Jerry cartoons as a proof of concept. The videos tell complex storie
+  [FIG:ext-2504.05298/fig2] Figure 2. All RNN layers can be expressed as a hidden state that transitions according to an update rule. The key idea in [43] is to make the hidden state itself a model f with weights W, and the upda
+  [FIG:ext-2504.05298/fig3] Figure 3. Overview of our approach. Left: Our modified architecture adds a TTT layer with a learnable gate after each attention layer. See Subsection 3.1. Right: Our overall pipeline creates input seq
+  [FIG:ext-2504.05298/fig4] Figure 4. On-chip Tensor Parallel, discussed in Subsection 3.5. Left: To reduce the memory required on each SM for TTT-MLP, we shard the hidden state W (1) and W (2) across SMs, transferring them betw
+  [FIG:ext-2504.05298/fig6] Figure 6. For 63-second videos, inference with full attention (over 300k tokens) would have taken 11× longer than local attention, and training 12× longer, as discussed in Sec- tion 1. TTT-MLP takes 2
+  [FIG:ext-2504.05298/fig7] Figure 7. Artifacts in videos generated by TTT-MLP. Temporal consistency: Objects sometimes morph at the boundaries of 3-second segments, potentially because the diffusion model samples from different
+  [FIG:ext-2504.05298/fig8] Figure 8. Illustration of the three prompt formats discussed in Subsection 3.2: (1) a short summary of the plot, (2) sentence-level descrip- tions of the segments, and (3) a detailed storyboard.
+### 2504.13173 (2504.13173)
+  [FIG:2504.13173/fig1] Figure 1: The overview of Miras framework. Miras is based on four critical choices of (1) memory architecture, (2) attentional bias, (3) retention gate, and (4) memory learning algorithm. In this fram
+  [FIG:2504.13173/fig2] Figure 2: Visualization of the Miras’s variant architecture, their hybrid counterpart with SWA, and block design of Miras layer.
+  [FIG:2504.13173/fig3] Figure 3: Scaling patterns when increasing (Left) model size, (Middle) sequence length (model size = 340M) (3) (Right) sequence length (model size = 760M) on C4 dataset.
+  [FIG:2504.13173/fig4] Figure 4: The effect of parameters 𝑝and 𝑞on the performance with different context length.
+### 2505.23735 (2505.23735)
+  [FIG:2505.23735/fig1] Figure 1: Comparison of learning to memorize (Left) individual tokens, and (Right) the context.
+  [FIG:2505.23735/fig2] Figure 2: The illustration of tokens dependencies in SWA and Atlas or OmegaNet with different context length.
+  [FIG:2505.23735/fig3] Figure 3: Visualization of the Atlas’s (and our other variants’) architecture, and its hybrid counterpart with SWA.
+  [FIG:2505.23735/fig4] Figure 4: Performance of Atlas and baselines on BABILong benchmark. Atlas surpasses Titans performance and effec- tively scale to 10M context length in this task.
+  [FIG:2505.23735/fig5] Figure 5: The effect of local context length (i.e. 𝑐) on the performance of OmegaNet with different global context length.
+  [FIG:2505.23735/fig6] Figure 6: Loss curves for different setting with various hyperparameters
+  [FIG:2505.23735/fig7] Figure 7: The results for associative mem- ory recall.
+  [FIG:2505.23735/fig8] Figure 8: Scaling patterns of Atlas, and OmegaNet with respect to (Left) training context length, and (Right) FLOPs.
+### 2505.23884 (ext-2505.23884)
+  [FIG:ext-2505.23884/fig1] Figure 1:   Using larger chunk sizes significantly improves GPU utilization compared to the original test-time training (TTT) method that even uses customized kernels  (a) .   This enhanced utilizatio
+  [FIG:ext-2505.23884/fig2] Figure 2:   The basic diagram for a LaCT block.   The large-chunk TTT layer updates the fast weight  W to store historical context information, while the window attention handles the locality and inte
+  [FIG:ext-2505.23884/fig3] Figure 3:   Different ‘Update’ and ‘Apply’ orders and their equivalent attention mask.   A blue mask in i-th row and j-th column means the i-th token’s output depends on the j-th token.
+  [FIG:ext-2505.23884/fig4] Figure 4:   (a, b)  our method achieves quality comparable to full-attention models with significantly lower   prefill   latency,   and   it   clearly   outperforms   perceiver-attention   baselines. 
+  [FIG:ext-2505.23884/fig5] Figure 5:   Language Model results.   (a, c)  Our model achieves lower per-position loss at larger token indices compared to GLA and DeltaNet at both 760M and 3B scale, indicating stronger long-contex
+  [FIG:ext-2505.23884/fig6] Figure 6:   (a) We achieve comparable validation loss to the full-attention baseline and outperform both Mamba with sliding window and sliding window attention baselines.   This improvement over SWA i
+  [FIG:ext-2505.23884/fig7] Figure 7:   (a)  Scaling up the state size consistently improves performance in both novel view synthesis and language modeling tasks.   Note,   the largest version has state size of   12 d 2   per bl
+  [FIG:ext-2505.23884/fig8] Figure 8:   (a)  Nonlinear fast weights consistently outperform linear fast weights despite using smaller state sizes.   (b)  Our linear large-chunk recurrence approach significantly outperforms linea
+  [FIG:ext-2505.23884/fig9] Figure 9:   Detailed LaCT model for our Novel-View Synthesis.   Dashed line indicates flow of fast weight.   Solid line indicates flow of tokens.   Window attention is bidirectional within a single im
+  [FIG:ext-2505.23884/fig10] Figure 10:   Detailed LaCT model for language models.   Dashed line indicates flow of fast weight. Solid line indicates flow of tokens.   We illustrate with TTT chunk size 4 or 2, and the actual chunk
+  [FIG:ext-2505.23884/fig11] Figure 11:   Detailed LaCT model for autoregressive video generation by diffusion model.   The purple tokens are noisy frame chunk for training the diffusion model.   The green tokens are clean frame 
+### 2506.05233 (ext-2506.05233)
+  [FIG:ext-2506.05233/fig1] Figure   1:   Model   Architecture   of   the   MesaNet.   (A)   We   adopt   the   widespread   decoder-only   transformer architecture ( Touvron et al. ,  2023 ) stacking  N   residual blocks of a c
+  [FIG:ext-2506.05233/fig2] Figure 2:   Train and inference time of a Mesa layer using different number of CG steps .   Left :   Train time of a single Mesa later on a TPUv5:   output the entire sequence, compute the cross entro
+  [FIG:ext-2506.05233/fig3] Figure   3:   NLL   Difference   relative   to   a   Trans- former (1B models, 50B tokens) on SlimPajama. Most recurrent layers show superior language mod- eling performance in terms of NLL up to the 
+  [FIG:ext-2506.05233/fig4] Figure   4:   Avg.   Mean-so-Far   PPL   on   3   Long- Context Benchmarks ( WIKI ,  GOV ,  QASPER ).
+  [FIG:ext-2506.05233/fig5] Figure 5:   Effect of Number of Conjugate Gradient (CG) Steps on SlimPajama Perplexity within and beyond train context length.   We show here the effect of reducing the number of CG steps during infer
+  [FIG:ext-2506.05233/fig6] Figure   6:   1B   model   throughput   (tokens   /   sec)   with   bfloat16   activation   and   float32   weight   precision on   a   H100   GPU   (top   row)   using   the   open   source   framewo
+  [FIG:ext-2506.05233/fig7] Figure 7:   Effect of Number of Conjugate Gradient (CG) Steps on SlimPajama Perplexity within and beyond train context length.   We show here the effect of reducing the number of CG steps during infer
+  [FIG:ext-2506.05233/fig8] Figure   8:   Negative   γ t   and   high   Λ   allow   MesaNets   to   solve   parity :   When   using   γ t   ∈ ( − 1 ,  1)   as   well   as enforce high  Λ , we enforce the MesaNet into functionali
+  [FIG:ext-2506.05233/fig9] Figure 9:   Performance on RegBench ( Aky ¨ urek et al. ,  2024 ).   MesaNet outperforms other linear architectures and closes the gap to transformers.
+  [FIG:ext-2506.05233/fig10] Figure   10:   NLL   Difference   (per   token-position)   ∆ NLL model
+  [FIG:ext-2506.05233/fig11] Figure   11:   NLL   Difference   (per   token-position)   ∆ NLL model
+  [FIG:ext-2506.05233/fig12] Figure 12:   Mean-so-far NLL Difference  ∆ Mean-so-far-NLL model
+  [FIG:ext-2506.05233/fig13] Figure 13:   We compare the validation loss across the sequence of 400 million parameter MesaNets trained on 15B tokens, when varying the number of conjugate gradient steps during training.   We obser
+  [FIG:ext-2506.05233/fig14] Figure 14:   input strength  β , forget strength  γ , regularization strengths  Λ  as well as other internal statistics of a 400M parameter MesaNet trained on 50B tokens - averaged over 500 sequences 
+### 2511.07343 (2511.07343)
+  [FIG:2511.07343/fig1] Figure 1: The basic diagram for illustraing TNT memory hierarchy. In each row, the updates at the same value of 𝑡ran at the same time (run in parrallel). 𝑡= 0 is the initialization of the memory.
+  [FIG:2511.07343/fig2] Figure 2: Sensitivity of inference chunk size on a 550M Titans model pre-trained with 𝐶= 64. Performance is optimal when the inference chunk size matches the training one.
+  [FIG:2511.07343/fig3] Figure 3: Architectural overview of TNT Stage 1.
+  [FIG:2511.07343/fig4] Figure 4: Runtime comparison of different models and imple- mentations across varying sequence lengths, with the number of tokens per batch fixed at 0.5M. Additional results are presented in Figure 5.
+  [FIG:2511.07343/fig5] Figure 5: Runtime comparison of different models and implementations across varying sequence lengths, with the number of tokens per batch fixed at 0.5M.
+### 2512.23675 (ext-2512.23675)
+  [FIG:ext-2512.23675/fig1] Figure 1.   Scaling with context length, in terms of test loss (left) and latency (right).   Left:   Our method (TTT-E2E) turns the worst line (green) into the best (blue) at 128K context length.   Lo
+  [FIG:ext-2512.23675/fig2] Figure 2.   Toy example.   Left:   Given  x 1   and  x 2   as context, we want to predict the unknown  x 3 .   Our toy baseline, a Transformer without self-attention (using only the upward arrows), is
+  [FIG:ext-2512.23675/fig3] Figure 3.   Computation graphs following the setup in Figure  2 :   Given  x 1   and  x 2   as context, we want to predict the unknown  x 3 .   Left:   Our main method with the sliding-window attentio
+  [FIG:ext-2512.23675/fig4] Figure 4.   Ablations on three hyper-parameters:   sliding window size  k , mini-batch size  b , and the number of layers updated during TTT; see details in Subsection  3.2 .   Given the trends in the
+  [FIG:ext-2512.23675/fig5] Figure 5.   Scaling with training compute in two axes:   model size (left) and number of training tokens (right); see details in Subsection  3.3 .   Overall, TTT-E2E exhibits a similar trend to full a
+  [FIG:ext-2512.23675/fig6] Figure 6.   Loss breakdown by token index, for context length 32K (left) and 128K (right), following the same process as when we produced the right panel of Figure  2 ; see details in Subsection  3.4 
+  [FIG:ext-2512.23675/fig6_p13] Figure  6  focuses on two context lengths, 32K and 128K, and breaks down the corresponding results in Figure  1  by token index; we have followed the same process in Subsection  2.1  to produce the ri
+  [FIG:ext-2512.23675/fig8] Figure 8.   Training e ffi ciency, in terms of latency on an H200 (left) and FLOPs (right); see details in Subsection  3.3 . Overall, training latency is still a significant limitation of our current 
+  [FIG:ext-2512.23675/fig9] Figure 9.   Scaling with context length.   We use the same results as in the left panel of Figure  1 , but directly plot the loss values instead of the loss  ∆ s.   Longer context length improves loss
+### 2512.24695 (2512.24695)
+  [FIG:2512.24695/fig1] Figure 1: The uniform and reusable structure as well as multi time scale update in the brain are the key components to unlock the continual learning in humans. Nested Learning (NL) allows for multi ti
+  [FIG:2512.24695/fig2] Figure 2: Nested Learning Paradigm that represent a machine learning model and its training procedure as a set of nested optimization problems. (Left) An example of Hybrid architecture. While deep lea
+  [FIG:2512.24695/fig3] Figure 3: An example of comparing a FFN (e.g., MLP) with linear attention in a Transformer-based backbone, optimizing with gradient descent. The red components are blocks in the first level (with freq
+  [FIG:2512.24695/fig4] Figure 4: Optimization of function 𝝍(𝑟,𝜃) with standard momentum and our delta momentum.
+  [FIG:2512.24695/fig5] Figure 5: A comparison of Hope architectural backbone with Transformers (Normalization and potential data-dependent components are removed for the sake of clarity).
+  [FIG:2512.24695/fig6] Figure 6: Class-incremental learning in the text classification domain on (Left) CLINC dataset (Larson et al. 2019), (Middle) Banking dataset (Casanueva et al. 2020), and (Right) DBpedia dataset (Auer
+  [FIG:2512.24695/fig7] Figure 7: The effect of memory levels on the in-context learning performance of the model in (Left) MK-NIAH of RULER (Hsieh et al. 2024), (Middle) LongHealth (Adams et al. 2025), (Right) QASPER (Dasig
+  [FIG:2512.24695/fig8] Figure 8: Continual Translation of a Novel Language (CTNL) task. Red points are the results with only one language. Blue points are the results in the continual leanring setup.
+  [FIG:2512.24695/fig9] Figure 9: BABILong Benchmark. Red points are the results of fine-tuned models, and Blue points are the large models’ zero-shot results.
+  [FIG:2512.24695/fig10] Figure 10: The effect of context usage on the perplexity of the model. We expect the per- plexity of a model with powerful memory management to decrease with more context.
+  [FIG:2512.24695/fig11] Figure 11: ViT test and train loss on ImageNet-21K (Ridnik et al. 2021), trained with AdamW, Muon, and our M3 optimizers.
+  [FIG:2512.24695/fig12] Figure 12: Training time of models with 140M and 1.3B parameters with Muon, AdaMuon, and M3 optimizers.
+### 2604.06169 (ext-2604.06169)
+  [FIG:ext-2604.06169/fig1] Figure   1   The   overall   framework   of   our   In-Place   Test-Time   Training.   The   module   operates   sequentially   on   input chunks.   For   each   chunk,   the   current   fast   weight
+  [FIG:ext-2604.06169/fig2] Figure 2   Sliding   Window   Perplexity   at   varying   context   lengths   on   the   Pile   dataset   for   500M   (left)   and   1.5B   (right) parameter   models.   Our   In-Place   TTT   consis
+  [FIG:ext-2604.06169/fig3] Figure   3 Ablation   studies   on   the   key   design   choices   of   the   In-Place   TTT   framework,   evaluated   on   the   RULER benchmark   with   a   1.7B   parameter   model.   The   plots
+  [FIG:ext-2604.06169/fig4] Figure   4   Efficiency   analysis   of   In-Place   TTT.   Both   prefill   throughput   (a,   b)   and   peak   memory   (c,   d)   metrics   are presented   for   4B   models   with   Sliding-Windo
+### 2605.28053 (ext-2605.28053)
+  [FIG:ext-2605.28053/fig1] Figure 1:   Per-request READ/WRITE semantics.   Each decode step evaluates the shared base model with the request-owned TTT state and exposes either a version- preserving READ event or a version-creat
+  [FIG:ext-2605.28053/fig1_p4] Figure  1  shows the per-request transition that the runtime   must   preserve.   At   each   decode   step,   re- quest   r   reads   its   owner-visible   TTT   state   s v
+  [FIG:ext-2605.28053/fig2] Figure 2:   RW-TTT  serving architecture.   Requests carry owner-versioned mutable state alongside ordinary KV cache.   The planner automatically groups compatible READ/WRITE transitions by backend ty
+  [FIG:ext-2605.28053/fig3] Figure 3:   Scaling under a 16K prompt.   Left:   feasible runs ordered by peak memory. Right: same runs ordered by   concurrent   units.   RW-TTT   keeps   request-private streams inside one read-wri
+  [FIG:ext-2605.28053/fig4] Figure 4:   WRITE-side operator speedups from Triton kernels over PyTorch eager.   Parentheses show latency before and after kernelization in milliseconds.
+  [FIG:ext-2605.28053/fig4_p7] Figure   4   provides   local   evidence   for   the   read- write   operator   surface   induced   by   mutable   TTT state.   Triton kernels reduce WRITE-side latency for selective commit, dense upd
+### 2606.03979 (2606.03979)
+  [FIG:2606.03979/fig1] Figure 1: (Conventional Machine Learning vs. Continual Learning) While in conventional machine learning often the lifespan of the model is divided to test and training time, continual learning setup d
+  [FIG:2606.03979/fig2] Figure 2: An overview of Memory Consolidation. The model increases its own number of parameters to enhance its capacity (Section 3.2), and then using the knowledge seeding, it transfers the knowledge 
+  [FIG:2606.03979/fig3] Figure 3: Class-incremental learning for text classification is evaluated on the (Left) CLINC dataset (Larson et al. 2019), (Middle) Banking dataset (Casanueva et al. 2020), and (Right) DBpedia datase
+  [FIG:2606.03979/fig4] Figure 4: Effect of memory levels on in-context learning performance for (Left) MK-NIAH from RULER (Hsieh et al. 2024), (Middle) LongHealth (Adams et al. 2025), and (Right) QASPER (Dasigi et al. 2021)
+  [FIG:2606.03979/fig5] Figure 5: Continual Translation of a Novel Language (CTNL) task. Red points show performance when train- ing on a single language, whereas blue points show performance under continual learning.
+  [FIG:2606.03979/fig6] Figure 6: Results on the BABILong benchmark. Red points correspond to fine-tuned models, whereas blue points correspond to zero-shot eval- uations of large-scale models.
+  [FIG:2606.03979/fig7] Figure 7: Multi-frequency memory hierarchy. Updates enter the High-Frequency FFN via repeated Parameter Expansion; when the window 𝑓𝑊expires, knowledge is Consolidated to the Mid- and then Low-Frequen
+  [FIG:2606.03979/fig8] Figure 8: Memory consolidation by routed expert updates. Across Sleep cycles (left→right), a router selects and updates a small set of experts (solid), leaving others inactive (hatched), expanding cap

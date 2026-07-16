@@ -1,0 +1,124 @@
+{
+ "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/2512.23675.pdf",
+ "engine": "pymupdf-clip",
+ "figure_count": 9,
+ "figures": [
+  {
+   "figure_id": "fig1",
+   "figure_number": "1",
+   "caption": "Figure 1.   Scaling with context length, in terms of test loss (left) and latency (right).   Left:   Our method (TTT-E2E) turns the worst line (green) into the best (blue) at 128K context length.   Loss  ∆ ( ↓ ), the  y -value, is computed as (loss of the reported method)  − (loss of Transformer with full attention), so loss  ∆ of full attention itself (orange) is the flat line at  y  = 0.   While",
+   "image": "figures/fig1.png",
+   "page": 1,
+   "clip": [
+    85.7,
+    394.5,
+    527.2,
+    663.2
+   ]
+  },
+  {
+   "figure_id": "fig2",
+   "figure_number": "2",
+   "caption": "Figure 2.   Toy example.   Left:   Given  x 1   and  x 2   as context, we want to predict the unknown  x 3 .   Our toy baseline, a Transformer without self-attention (using only the upward arrows), is e ff ectively a bigram since it has no memory of  x 1 .   TTT (using all the arrows) first tries to predict  x 2   from  x 1   as an exercise:   It computes the loss ℓ 2   between  x 2   and the pred",
+   "image": "figures/fig2.png",
+   "page": 3,
+   "clip": [
+    86.0,
+    60.6,
+    527.2,
+    343.5
+   ]
+  },
+  {
+   "figure_id": "fig3",
+   "figure_number": "3",
+   "caption": "Figure 3.   Computation graphs following the setup in Figure  2 :   Given  x 1   and  x 2   as context, we want to predict the unknown  x 3 .   Left:   Our main method with the sliding-window attention layers and the implementation details discussed in Subsection  2.3 .   For ease of notation, our illustration uses online gradient descent ( b  = 1). The lowest downward arrow is disconnected to the",
+   "image": "figures/fig3.png",
+   "page": 6,
+   "clip": [
+    85.7,
+    73.8,
+    527.6,
+    433.3
+   ]
+  },
+  {
+   "figure_id": "fig4",
+   "figure_number": "4",
+   "caption": "Figure 4.   Ablations on three hyper-parameters:   sliding window size  k , mini-batch size  b , and the number of layers updated during TTT; see details in Subsection  3.2 .   Given the trends in these ablations, we set  k  = 8K, b  = 1K, and we update 1/4 the total number of layers.   Loss  ∆ ( ↓ ), the  y -value in the rightmost panel, is the same as in Figure  1 .   It is computed as (loss of ",
+   "image": "figures/fig4.png",
+   "page": 10,
+   "clip": [
+    86.0,
+    82.6,
+    527.2,
+    260.3
+   ]
+  },
+  {
+   "figure_id": "fig5",
+   "figure_number": "5",
+   "caption": "Figure 5.   Scaling with training compute in two axes:   model size (left) and number of training tokens (right); see details in Subsection  3.3 .   Overall, TTT-E2E exhibits a similar trend to full attention under a large training budget (right of the dotted line).   We report results both on DCLM at 8K context length after pre-training (a, c) and on Books at 32K after fine-tuning with the same c",
+   "image": "figures/fig5.png",
+   "page": 12,
+   "clip": [
+    86.0,
+    69.4,
+    526.7,
+    245.9
+   ]
+  },
+  {
+   "figure_id": "fig6",
+   "figure_number": "6",
+   "caption": "Figure 6.   Loss breakdown by token index, for context length 32K (left) and 128K (right), following the same process as when we produced the right panel of Figure  2 ; see details in Subsection  3.4 .   Overall, TTT-E2E is the only method that always achieves lower losses than full attention throughout the entire context length, and its aggregated advantage mostly comes from the earlier tokens.",
+   "image": "figures/fig6.png",
+   "page": 13,
+   "clip": [
+    86.0,
+    82.6,
+    526.0,
+    311.2
+   ]
+  },
+  {
+   "figure_id": "fig6_p13",
+   "figure_number": "6",
+   "caption": "Figure  6  focuses on two context lengths, 32K and 128K, and breaks down the corresponding results in Figure  1  by token index; we have followed the same process in Subsection  2.1  to produce the right panel of Figure  2 .   Specifically, given a context length  T  , for each  t  = 1 ,...,T  , we plot the test loss of the next-token prediction task that conditions on  x 0 ,...,x t − 1   and trie",
+   "image": "figures/fig6_p13.png",
+   "page": 13,
+   "clip": [
+    86.0,
+    82.6,
+    527.3,
+    669.3
+   ]
+  },
+  {
+   "figure_id": "fig8",
+   "figure_number": "8",
+   "caption": "Figure 8.   Training e ffi ciency, in terms of latency on an H200 (left) and FLOPs (right); see details in Subsection  3.3 . Overall, training latency is still a significant limitation of our current implementation.   The legend is shared across both panels.",
+   "image": "figures/fig8.png",
+   "page": 16,
+   "clip": [
+    86.0,
+    73.8,
+    527.6,
+    294.2
+   ]
+  },
+  {
+   "figure_id": "fig9",
+   "figure_number": "9",
+   "caption": "Figure 9.   Scaling with context length.   We use the same results as in the left panel of Figure  1 , but directly plot the loss values instead of the loss  ∆ s.   Longer context length improves loss for full attention and hybrid SWA and full across all the context lengths.   It also improves loss for every method up to 32K. However, for SWA, Mamba 2, Gated DeltaNet and TTT-KVB, longer context le",
+   "image": "figures/fig9.png",
+   "page": 29,
+   "clip": [
+    86.0,
+    78.2,
+    527.2,
+    357.4
+   ]
+  }
+ ]
+}

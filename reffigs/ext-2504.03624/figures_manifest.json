@@ -1,0 +1,189 @@
+{
+ "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/2504.03624.pdf",
+ "engine": "pymupdf-clip",
+ "figure_count": 14,
+ "figures": [
+  {
+   "figure_id": "fig1",
+   "figure_number": "1",
+   "caption": "Figure   1   |   MMLU-Pro   accuracy   ( Wang   et   al. ,   2024a )   versus   per-GPU   inference   throughput   for Nemotron-H-56B/47B-Base   compared   to   existing   similarly-sized   Transformer   models.   Nemotron-H models   provide   state-of-the-art   accuracy   and   inference   time   speedups.",
+   "image": "figures/fig1.png",
+   "page": 2,
+   "clip": [
+    58.4,
+    82.0,
+    537.3,
+    286.1
+   ]
+  },
+  {
+   "figure_id": "fig2",
+   "figure_number": "2",
+   "caption": "Figure   2   |   Nemotron-H-8B/56B   model   architectures.   Roughly   8%   of   the   total   layers   in   the   model are   self-attention   layers;   these   layers   are   evenly   dispersed   throughout   the   model.   The   rest   of   the model   is   made   up   of   alternating   Mamba-2   and   FFN   layers.",
+   "image": "figures/fig2.png",
+   "page": 3,
+   "clip": [
+    58.4,
+    97.9,
+    537.1,
+    362.1
+   ]
+  },
+  {
+   "figure_id": "fig3",
+   "figure_number": "3",
+   "caption": "Figure   3   |   MMLU   scores   for   8B-parameter   models   trained   for   1   trillion   tokens.   Compared   to   DCLM, our   methods   enable   us   to   either   create   a   4 ×   larger   dataset   of   similar   quality   or   increase   the   MMLU using   a   high   quality   subset   of   the   tokens.   Having   a   larger   dataset   (in   terms   of   unique   tokens),   is crucial",
+   "image": "figures/fig3.png",
+   "page": 5,
+   "clip": [
+    58.4,
+    223.9,
+    538.5,
+    513.8
+   ]
+  },
+  {
+   "figure_id": "fig4",
+   "figure_number": "4",
+   "caption": "Figure   4   |   Data   mixtures   for   each   phase   of   Nemotron-H   pre-training.",
+   "image": "figures/fig4.png",
+   "page": 8,
+   "clip": [
+    129.1,
+    82.0,
+    536.9,
+    423.1
+   ]
+  },
+  {
+   "figure_id": "fig5",
+   "figure_number": "5",
+   "caption": "Figure   5   |   The   relative   training   loss   gap   between   a   pair   of   8B-parameter   Transformer   models   trained for   3   trillion   tokens   in   BF16   and   FP8.   The   gap   is   initially   large,   then   shrinks,   and   then   grows   again in   the   last   stage   of   training.",
+   "image": "figures/fig5.png",
+   "page": 9,
+   "clip": [
+    58.4,
+    81.6,
+    537.1,
+    285.9
+   ]
+  },
+  {
+   "figure_id": "fig6",
+   "figure_number": "6",
+   "caption": "Figure   6   |   Downstream   task   accuracies   for   a   pair   of   8B-parameter   Transformer   models   trained   on 15   trillion   tokens   with   BF16   and   mixed   precision   FP8.   FP8   accuracies   are   consistently   equal   to   or better   than   BF16   ones.   The   jump   in   accuracies   at   9   trillion   tokens   is   a   result   of   switching   data mixtures   from   ",
+   "image": "figures/fig6.png",
+   "page": 10,
+   "clip": [
+    57.8,
+    82.0,
+    537.3,
+    467.1
+   ]
+  },
+  {
+   "figure_id": "fig7",
+   "figure_number": "7",
+   "caption": "Figure   7   |   MMLU-Pro   accuracy   versus   inference   throughput   (normalized   by   number   of   GPUs   used) for   Nemotron-H-8B-Base   compared   to   existing   similarly-sized   Transformer   models.",
+   "image": "figures/fig7.png",
+   "page": 14,
+   "clip": [
+    58.4,
+    82.0,
+    538.4,
+    272.5
+   ]
+  },
+  {
+   "figure_id": "fig8",
+   "figure_number": "8",
+   "caption": "Figure 8  |  MiniPuzzle’s optimization process:   a) estimate layer and FFN importance scores, b) search for   the   best   model   candidates   using   the   conditional   Neural   Architecture   Search   (NAS)   framework, considering   the   32GiB   GPU   memory   constraint,   c)   select   the   best   candidate   with   lightweight distillation   and   recover   the   accuracy   lost   due  ",
+   "image": "figures/fig8.png",
+   "page": 15,
+   "clip": [
+    58.4,
+    38.1,
+    538.7,
+    255.6
+   ]
+  },
+  {
+   "figure_id": "fig9",
+   "figure_number": "9",
+   "caption": "Figure   9   plots   average   importance   scores   of   each   layer   in   Nemotron-H-56B-Base.   The   green,   blue and   red   dotted   lines   correspond   to   self-attention,   FFN   and   Mamba   layers.   We   notice   from   the   figure that   the   56B   model   follows   a   typical   pattern   observed   in   Minitron:   the   most   important   layers   are concentrated   at   the",
+   "image": "figures/fig9.png",
+   "page": 15,
+   "clip": [
+    58.4,
+    0.0,
+    538.6,
+    709.8
+   ]
+  },
+  {
+   "figure_id": "fig9_p16",
+   "figure_number": "9",
+   "caption": "Figure   9   |   Layer   importance   measured   as   the   MSE   between   the   full   model   and   a   model   with   that layer   removed,   averaged   over   a   small   training   subset.   Vertical   dotted   lines   indicate   layer   types: self-attention   (green),   FFN   (blue),   and   Mamba-2   (red).",
+   "image": "figures/fig9_p16.png",
+   "page": 16,
+   "clip": [
+    58.4,
+    81.6,
+    538.6,
+    281.3
+   ]
+  },
+  {
+   "figure_id": "fig10",
+   "figure_number": "10",
+   "caption": "Figure   10   |   Average   benchmark   score   for   pruned   candidates   with   different   memory   budgets.   Each dot   represents   a   different   candidate,   i.e.,   model   with   different   set   of   layers   pruned   with   respect   to how   much   memory   it   consumes.   The   green   dotted   line   marks   the   upper   memory   limit   we   consider and   the   dots   marked ",
+   "image": "figures/fig10.png",
+   "page": 17,
+   "clip": [
+    58.4,
+    82.0,
+    537.3,
+    300.2
+   ]
+  },
+  {
+   "figure_id": "fig11",
+   "figure_number": "11",
+   "caption": "Figure   11   |   Pruned   layers   for   the   top   three   candidates.   Each   row   represents   a   candidate,   with   dots indicating   dropped   layers.   Vertical   dotted   lines   denote   layer   types:   green   for   self-attention,   blue   for FFN,   and   red   for   Mamba.",
+   "image": "figures/fig11.png",
+   "page": 17,
+   "clip": [
+    58.4,
+    82.0,
+    537.4,
+    446.8
+   ]
+  },
+  {
+   "figure_id": "fig12",
+   "figure_number": "12",
+   "caption": "Figure   12   |   After   selecting   a   short   conversation from   the   original   blend,   we   generate   multiple turns   referencing   turns   from   that   conversation. These   turns   are   inserted   at   some   point   later   in the   extended   sample.",
+   "image": "figures/fig12.png",
+   "page": 23,
+   "clip": [
+    58.0,
+    104.8,
+    294.5,
+    291.6
+   ]
+  },
+  {
+   "figure_id": "fig13",
+   "figure_number": "13",
+   "caption": "Figure 13  |  Multiple segments are generated with a   unified   theme   and   scattered   throughout   the context.   Afterwards, we generate turns that that refer   to   one   or   more   of   these   segments   which   are placed   later   in   the   sample.",
+   "image": "figures/fig13.png",
+   "page": 23,
+   "clip": [
+    303.1,
+    82.0,
+    537.3,
+    291.6
+   ]
+  }
+ ]
+}

@@ -1,0 +1,189 @@
+{
+ "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/2506.05233.pdf",
+ "engine": "pymupdf-clip",
+ "figure_count": 14,
+ "figures": [
+  {
+   "figure_id": "fig1",
+   "figure_number": "1",
+   "caption": "Figure   1:   Model   Architecture   of   the   MesaNet.   (A)   We   adopt   the   widespread   decoder-only   transformer architecture ( Touvron et al. ,  2023 ) stacking  N   residual blocks of a channel mixing (B) and sequence mixing (C) components.   (B)  Channel mixing is a vanilla SwiGLU MLP.  (C)  Sequence mixing is performed by the Mesa layer.   From its inputs, it generates keys, queries",
+   "image": "figures/fig1.png",
+   "page": 2,
+   "clip": [
+    104.0,
+    67.5,
+    508.6,
+    277.7
+   ]
+  },
+  {
+   "figure_id": "fig2",
+   "figure_number": "2",
+   "caption": "Figure 2:   Train and inference time of a Mesa layer using different number of CG steps .   Left :   Train time of a single Mesa later on a TPUv5:   output the entire sequence, compute the cross entropy loss, and gradients w.r.t.   layer   parameters.   We   use   batch   size   of   4,   key   size   of   128   and   8   heads.   Right :   Token   throughput   (in thousands) when training 1B para",
+   "image": "figures/fig2.png",
+   "page": 5,
+   "clip": [
+    103.7,
+    543.7,
+    508.6,
+    735.9
+   ]
+  },
+  {
+   "figure_id": "fig3",
+   "figure_number": "3",
+   "caption": "Figure   3:   NLL   Difference   relative   to   a   Trans- former (1B models, 50B tokens) on SlimPajama. Most recurrent layers show superior language mod- eling performance in terms of NLL up to the  64 ’th token.   MesaNet and Hawk-Mesa extend the advan- tage beyond  512  tokens.   The advantage early in the sequence is even more apparent in log-scale (right).",
+   "image": "figures/fig3.png",
+   "page": 7,
+   "clip": [
+    311.4,
+    69.9,
+    507.1,
+    257.8
+   ]
+  },
+  {
+   "figure_id": "fig4",
+   "figure_number": "4",
+   "caption": "Figure   4:   Avg.   Mean-so-Far   PPL   on   3   Long- Context Benchmarks ( WIKI ,  GOV ,  QASPER ).",
+   "image": "figures/fig4.png",
+   "page": 8,
+   "clip": [
+    317.8,
+    99.8,
+    509.5,
+    560.8
+   ]
+  },
+  {
+   "figure_id": "fig5",
+   "figure_number": "5",
+   "caption": "Figure 5:   Effect of Number of Conjugate Gradient (CG) Steps on SlimPajama Perplexity within and beyond train context length.   We show here the effect of reducing the number of CG steps during inference on token perplexity across token position of a 1B MesaNet trained on 50B tokens.   We either use a  fixed number CG steps uniformly across the model  or apply a  dynamic stopping criterion  ϵ >  ",
+   "image": "figures/fig5.png",
+   "page": 10,
+   "clip": [
+    104.0,
+    163.0,
+    508.0,
+    312.0
+   ]
+  },
+  {
+   "figure_id": "fig6",
+   "figure_number": "6",
+   "caption": "Figure   6:   1B   model   throughput   (tokens   /   sec)   with   bfloat16   activation   and   float32   weight   precision on   a   H100   GPU   (top   row)   using   the   open   source   framework   of   https://github.com/fla-org/ flash-linear-attention  or our custom TPUv5 implementation (bottom row).   We show the effect of scaling the batch size (left), while fixing the generation length",
+   "image": "figures/fig6.png",
+   "page": 35,
+   "clip": [
+    103.7,
+    113.8,
+    509.6,
+    453.8
+   ]
+  },
+  {
+   "figure_id": "fig7",
+   "figure_number": "7",
+   "caption": "Figure 7:   Effect of Number of Conjugate Gradient (CG) Steps on SlimPajama Perplexity within and beyond train context length.   We show here the effect of reducing the number of CG steps during inference on token perplexity across token position of a 1B MesaNet trained on 50B tokens.   We either use a  fixed number CG steps uniformly across the model  or apply a  dynamic stopping criterion  ϵ >  ",
+   "image": "figures/fig7.png",
+   "page": 35,
+   "clip": [
+    104.0,
+    113.8,
+    508.0,
+    684.3
+   ]
+  },
+  {
+   "figure_id": "fig8",
+   "figure_number": "8",
+   "caption": "Figure   8:   Negative   γ t   and   high   Λ   allow   MesaNets   to   solve   parity :   When   using   γ t   ∈ ( − 1 ,  1)   as   well   as enforce high  Λ , we enforce the MesaNet into functionality close to GLA as  q ∗",
+   "image": "figures/fig8.png",
+   "page": 36,
+   "clip": [
+    104.0,
+    495.0,
+    508.0,
+    632.0
+   ]
+  },
+  {
+   "figure_id": "fig9",
+   "figure_number": "9",
+   "caption": "Figure 9:   Performance on RegBench ( Aky ¨ urek et al. ,  2024 ).   MesaNet outperforms other linear architectures and closes the gap to transformers.",
+   "image": "figures/fig9.png",
+   "page": 39,
+   "clip": [
+    304.1,
+    297.6,
+    505.8,
+    427.6
+   ]
+  },
+  {
+   "figure_id": "fig10",
+   "figure_number": "10",
+   "caption": "Figure   10:   NLL   Difference   (per   token-position)   ∆ NLL model",
+   "image": "figures/fig10.png",
+   "page": 41,
+   "clip": [
+    104.0,
+    81.5,
+    341.9,
+    266.8
+   ]
+  },
+  {
+   "figure_id": "fig11",
+   "figure_number": "11",
+   "caption": "Figure   11:   NLL   Difference   (per   token-position)   ∆ NLL model",
+   "image": "figures/fig11.png",
+   "page": 41,
+   "clip": [
+    104.0,
+    81.5,
+    479.9,
+    487.6
+   ]
+  },
+  {
+   "figure_id": "fig12",
+   "figure_number": "12",
+   "caption": "Figure 12:   Mean-so-far NLL Difference  ∆ Mean-so-far-NLL model",
+   "image": "figures/fig12.png",
+   "page": 41,
+   "clip": [
+    104.0,
+    81.5,
+    479.9,
+    710.0
+   ]
+  },
+  {
+   "figure_id": "fig13",
+   "figure_number": "13",
+   "caption": "Figure 13:   We compare the validation loss across the sequence of 400 million parameter MesaNets trained on 15B tokens, when varying the number of conjugate gradient steps during training.   We observe a slight uniform increase of validation loss across the sequence length when comparing to a model which is trained on 30 steps. Only when dropping the CG steps drastically to 5 we see a substantial",
+   "image": "figures/fig13.png",
+   "page": 51,
+   "clip": [
+    103.3,
+    429.3,
+    509.6,
+    575.6
+   ]
+  },
+  {
+   "figure_id": "fig14",
+   "figure_number": "14",
+   "caption": "Figure 14:   input strength  β , forget strength  γ , regularization strengths  Λ  as well as other internal statistics of a 400M parameter MesaNet trained on 50B tokens - averaged over 500 sequences from the SlimPajama validation set.   We observe that high  γ t   ≈ 1  values usually lead to the condition number of the to be inverted matrix  K t K T",
+   "image": "figures/fig14.png",
+   "page": 52,
+   "clip": [
+    103.8,
+    163.7,
+    508.0,
+    683.4
+   ]
+  }
+ ]
+}

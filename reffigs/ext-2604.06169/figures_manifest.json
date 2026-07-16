@@ -1,0 +1,59 @@
+{
+ "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/2604.06169.pdf",
+ "engine": "pymupdf-clip",
+ "figure_count": 4,
+ "figures": [
+  {
+   "figure_id": "fig1",
+   "figure_number": "1",
+   "caption": "Figure   1   The   overall   framework   of   our   In-Place   Test-Time   Training.   The   module   operates   sequentially   on   input chunks.   For   each   chunk,   the   current   fast   weights   are   first   applied   to   the   intermediate   activations   Z   to   produce   the output.   Then,   these   weights   are   updated   using   the   activations   Z   and   a   value   V   der",
+   "image": "figures/fig1.png",
+   "page": 6,
+   "clip": [
+    66.5,
+    76.2,
+    547.0,
+    332.3
+   ]
+  },
+  {
+   "figure_id": "fig2",
+   "figure_number": "2",
+   "caption": "Figure 2   Sliding   Window   Perplexity   at   varying   context   lengths   on   the   Pile   dataset   for   500M   (left)   and   1.5B   (right) parameter   models.   Our   In-Place   TTT   consistently   achieves   lower   perplexity   than   all   competitive   baselines.",
+   "image": "figures/fig2.png",
+   "page": 9,
+   "clip": [
+    66.9,
+    91.9,
+    546.3,
+    269.5
+   ]
+  },
+  {
+   "figure_id": "fig3",
+   "figure_number": "3",
+   "caption": "Figure   3 Ablation   studies   on   the   key   design   choices   of   the   In-Place   TTT   framework,   evaluated   on   the   RULER benchmark   with   a   1.7B   parameter   model.   The   plots   illustrate   the   impact   of:   (a)   State   size,   showing   that   performance improves   as   the   state   size   scales;   (b)   Chunk   size,   demonstrating   a   performance   trade-off",
+   "image": "figures/fig3.png",
+   "page": 10,
+   "clip": [
+    66.9,
+    75.0,
+    546.4,
+    249.9
+   ]
+  },
+  {
+   "figure_id": "fig4",
+   "figure_number": "4",
+   "caption": "Figure   4   Efficiency   analysis   of   In-Place   TTT.   Both   prefill   throughput   (a,   b)   and   peak   memory   (c,   d)   metrics   are presented   for   4B   models   with   Sliding-Window   Attention   (SWA)   and   Full   Attention   at   various   context   lengths.   Our In-Place   TTT   introduces   negligible   overhead   in   practical   scenarios.",
+   "image": "figures/fig4.png",
+   "page": 10,
+   "clip": [
+    66.9,
+    75.0,
+    545.4,
+    406.3
+   ]
+  }
+ ]
+}

@@ -1,0 +1,150 @@
+{
+ "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/external/2505.23884.pdf",
+ "engine": "pymupdf-clip",
+ "figure_count": 11,
+ "figures": [
+  {
+   "figure_id": "fig1",
+   "figure_number": "1",
+   "caption": "Figure 1:   Using larger chunk sizes significantly improves GPU utilization compared to the original test-time training (TTT) method that even uses customized kernels  (a) .   This enhanced utilization enables efficient and effective scaling to larger state sizes  (b) ,  (c) , leading to better overall performance in less wall-clock time ( d ).   The dotted line in  (a)  is the theoretical peak BF",
+   "image": "figures/fig1.png",
+   "page": 3,
+   "clip": [
+    104.0,
+    69.0,
+    508.7,
+    292.6
+   ]
+  },
+  {
+   "figure_id": "fig2",
+   "figure_number": "2",
+   "caption": "Figure 2:   The basic diagram for a LaCT block.   The large-chunk TTT layer updates the fast weight  W to store historical context information, while the window attention handles the locality and internal structures within the chunk.   The solid line denotes the information flow over model depth and the dashed line denotes the information flow over time (i.e., the fast weight  W   passing through ",
+   "image": "figures/fig2.png",
+   "page": 4,
+   "clip": [
+    103.6,
+    89.6,
+    509.7,
+    300.3
+   ]
+  },
+  {
+   "figure_id": "fig3",
+   "figure_number": "3",
+   "caption": "Figure 3:   Different ‘Update’ and ‘Apply’ orders and their equivalent attention mask.   A blue mask in i-th row and j-th column means the i-th token’s output depends on the j-th token.",
+   "image": "figures/fig3.png",
+   "page": 5,
+   "clip": [
+    104.0,
+    69.4,
+    508.0,
+    250.0
+   ]
+  },
+  {
+   "figure_id": "fig4",
+   "figure_number": "4",
+   "caption": "Figure 4:   (a, b)  our method achieves quality comparable to full-attention models with significantly lower   prefill   latency,   and   it   clearly   outperforms   perceiver-attention   baselines.   (c)   On   the   high resolution scene dataset, our approach surpasses LongLRM, limited to 32 views, and outperforms 3D Gaussian Splatting with sparse views, remaining competitive up to 128 input vi",
+   "image": "figures/fig4.png",
+   "page": 8,
+   "clip": [
+    104.0,
+    141.1,
+    509.7,
+    316.3
+   ]
+  },
+  {
+   "figure_id": "fig5",
+   "figure_number": "5",
+   "caption": "Figure 5:   Language Model results.   (a, c)  Our model achieves lower per-position loss at larger token indices compared to GLA and DeltaNet at both 760M and 3B scale, indicating stronger long-context modeling   capability.   (b,   d)   Our   model   consistently   outperforms   GLA   and   DeltaNet   in   retrieval accuracy.   Furthermore, our Muon variant consistently outperforms our Momentum v",
+   "image": "figures/fig5.png",
+   "page": 9,
+   "clip": [
+    104.0,
+    220.3,
+    508.0,
+    418.5
+   ]
+  },
+  {
+   "figure_id": "fig6",
+   "figure_number": "6",
+   "caption": "Figure 6:   (a) We achieve comparable validation loss to the full-attention baseline and outperform both Mamba with sliding window and sliding window attention baselines.   This improvement over SWA is consistent across different window sizes (b) and when evaluating on longer videos (c).",
+   "image": "figures/fig6.png",
+   "page": 10,
+   "clip": [
+    104.0,
+    69.0,
+    508.2,
+    237.7
+   ]
+  },
+  {
+   "figure_id": "fig7",
+   "figure_number": "7",
+   "caption": "Figure 7:   (a)  Scaling up the state size consistently improves performance in both novel view synthesis and language modeling tasks.   Note,   the largest version has state size of   12 d 2   per block,   totaling 40% of model weights as fast weights.   (b)  Comparison of test-time optimizers demonstrates Muon’s surprising effectiveness over Vanilla Gradient Descent and Momentum.",
+   "image": "figures/fig7.png",
+   "page": 10,
+   "clip": [
+    103.7,
+    69.0,
+    508.0,
+    619.6
+   ]
+  },
+  {
+   "figure_id": "fig8",
+   "figure_number": "8",
+   "caption": "Figure 8:   (a)  Nonlinear fast weights consistently outperform linear fast weights despite using smaller state sizes.   (b)  Our linear large-chunk recurrence approach significantly outperforms linear per-token recurrence   (bidirectional   Mamba2)   for   view   synthesis   tasks   at   the   same   state   sizes.   In   language tasks,   linear   large-chunk   recurrence   of   the   same   sta",
+   "image": "figures/fig8.png",
+   "page": 11,
+   "clip": [
+    103.6,
+    69.0,
+    508.2,
+    284.4
+   ]
+  },
+  {
+   "figure_id": "fig9",
+   "figure_number": "9",
+   "caption": "Figure 9:   Detailed LaCT model for our Novel-View Synthesis.   Dashed line indicates flow of fast weight.   Solid line indicates flow of tokens.   Window attention is bidirectional within a single image, either the input image or the novel target image.   TTT updates over all input tokens and apply to all tokens.",
+   "image": "figures/fig9.png",
+   "page": 21,
+   "clip": [
+    103.6,
+    117.8,
+    509.2,
+    302.7
+   ]
+  },
+  {
+   "figure_id": "fig10",
+   "figure_number": "10",
+   "caption": "Figure 10:   Detailed LaCT model for language models.   Dashed line indicates flow of fast weight. Solid line indicates flow of tokens.   We illustrate with TTT chunk size 4 or 2, and the actual chunk size is over 2048 in LaCT. We take the parallel design for the window attention and TTT block with shared QKV. The overall mask is the causal mask.",
+   "image": "figures/fig10.png",
+   "page": 22,
+   "clip": [
+    104.0,
+    123.4,
+    509.7,
+    278.4
+   ]
+  },
+  {
+   "figure_id": "fig11",
+   "figure_number": "11",
+   "caption": "Figure 11:   Detailed LaCT model for autoregressive video generation by diffusion model.   The purple tokens are noisy frame chunk for training the diffusion model.   The green tokens are clean frame chunk.   Each token is a large chunk in TTT, e.g.,   3 consecutive frames with 4680 tokens in total. Noise and Noise’ are two noisy frames with independent Gaussian noise and time stamps over the same",
+   "image": "figures/fig11.png",
+   "page": 23,
+   "clip": [
+    104.0,
+    74.3,
+    509.7,
+    348.1
+   ]
+  }
+ ]
+}
