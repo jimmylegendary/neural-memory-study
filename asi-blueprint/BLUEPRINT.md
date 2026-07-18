@@ -138,6 +138,7 @@ provides.
   admission, CF-as-pre-write-regression, consolidated=reproducible, versioned-auditable memory).
 - **`CONCEPT-KG.json`** — 60 nodes / 125 edges / 8 clusters connecting the neural-memory line to the architecture.
 - **`product-graph-memory.md`** — idea-note #2 (Mnemo-Graph: symbolic id + writable latent slot; overcapacity→split).
+  **→ 2026-07-19 전용 private repo `jimmylegendary/melete`로 이관** (graph-memory-v0.md, graph-nm-extension.md 포함 — `MOVED-TO-MELETE.md` 참고; Mnemo-Graph는 Melete의 옛 working name).
 - **`product-right-brain.md`** — idea-note #1 (Intuit: experience-conditioned non-AR proposer + intrinsic-Δ routing; riskiest, defer).
 
 **Triple convergence (the headline):** my synthesis, the neural-memory line's #1 open problem (safe self-modification),
