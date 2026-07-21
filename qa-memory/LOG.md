@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 39건.
+총 40건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -507,4 +507,17 @@
 - 생각할 것: extract_figs.py를 slidesmith/세미나 엔진에 편입; table도 원문수치를 booktabs로 재현하는 관행 표준화; 이 book을 한국어 의역본/easy booklet로 파생
 - storyline seed: 65p book이 세미나 'TTT 효율' 파트 근거자료; 논문 figure 직접 인용이 신뢰도↑; extract_figs.py=표준 figure 파이프라인.
 - 연상: Q038, Q037
+
+## Q040 · 2026-07-22 · MEMOIR webapp: HOPE-with-Sleep×memory-tier analytical DSE — 3가설 정량화+device spec 요구 도출(Google 제안용)
+
+**Q.** HOPE-with-Sleep(seq=self-mod Titans, CMS=Sleep) 기준으로 cHBM/HBM·zHBM(+PIM)/HBF/DRAM/SSD 조합의 device solution을 analytical modeling으로 도출해 Google Research(Vahab Mirrokni)에 제안 — 3가지 가설(①최하단 CMS expert의 KG-tiered eviction ②backward/DGD의 PIM/cHBM 오프로드 ③frozen expert의 HBF 배치로 batch 확대)을 검증하는 webapp을 만들라
+
+**A.** MEMOIR(saw-09) Next.js webapp 구축, simulation-workbench에 커밋(638d234). 구성: Step1·2=심볼릭 op 그래프(lib/model.ts — SMT 5-memory DGD Eq.86-91+TNT chunk /C amortize+CMS 다주파수 f_ℓ, frozen f=0 분리; attention+FFN flash 대조군; per-token/prefill 분리, 수식 문자열 표시), Step3=roofline(Ironwood 공식 2307TF+HBM3E 7.38TB/s), Step4=react-flow 배치 GUI+engine(4-floor max: serial/병렬그룹/링크직렬화/연산기점유; PIM residesIn 내부BW+지원kind 제한; HBF bypass=2-hop PHY 공유; 에너지=pJ/FLOP+endpoint/hop pJ/B), Step5=run 축적+차트+CSV/JSON, committee=hat-schema verify 미러(리서치 144항목 range+relation+1.5× escalate), Step6=Mirrokni persona(조사+적대검증)+litellm 프록시. 리서치 워크플로 14-agent: Ironwood/HBM3E/HBF/PIM/cHBM/tier 스펙+에너지 144항목(출처·a/b/c)+persona. 핵심 결과(B=128,D=4096,C=64,S_in=131k,d_e=64): P0 attention ITL 39.7ms·KV 292GB>206GB infeasible(maxB 83) / P1 HOPE 전부HBM 1.80ms(지배항=M_mem per-user read B·U=8.6GB/tok) / P2 frozen expert→HBF: maxB 171→330(HBM 75%→39%) / P3 bank-PIM(9.6TF)은 DGD 갱신 FLOPs 못 숨겨 4.59ms로 역효과 — 숨기려면 PIM≥25.8TF 필요(발견=spec 요구) / P3b cHBM(50TF, DGD·CMS갱신만, bwd는 TPU 청크GEMM 유지) 1.52ms 최고. sleep 파이프라인(frozen 승격→warm→cold→KG) 정량화. selftest ALL PASS, 전 라우트 200, 모의 litellm e2e 확인, headless 스크린샷 검증(캔버스는 DOM 검증).
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_unknown→known: bank-PIM이 오히려 ITL을 악화(4.59ms)시킨다는 정량 발견 — 갱신은 GEMM성이라 bank ALU로 부족, base-die급 연산이 필요; unknown_known: 세 가설이 서로 다른 축(용량/병렬성/read-only 특성)을 공격하며 하나의 tiered 구조로 합쳐짐; unknown_known: analytical 하한 4-floor 모델로도 spec 요구(PIM TFLOPS 하한, HBF write 예산)가 도출됨
+- 개념 key: SMT decode 지배항=per-user M_mem weight read B·U/token(B amortize 불가), bank-PIM(~10TF)은 DGD 갱신을 못 숨김 — near-mem 연산 ≥26TF(base-die/cHBM급) 필요=제안할 spec, frozen CMS expert(f=0)는 read-only→HBF 적합(write는 sleep 1회/일)→HBM 해방→maxB 2배, attention 대조군은 같은 설정에서 KV 292GB로 infeasible, 시간모델=4 floor의 max(serial/parallel-group/edge-serialization/device-occupancy), HBF bypass=TPU—HBM—HBF 2-hop PHY 공유(edge floor가 경합 포착), committee=hat-schema verify 미러: range(리서치 144항목)+relation+1.5× escalate, prefill은 LaCT식 chunk 배치로 weight 트래픽 /C, Mirrokni=Titans/Miras/Atlas/NL 라인 시니어 저자 — persona 기반 반응 시뮬레이션, sleep eviction 파이프라인: frozen→warm(DRAM)→cold(SSD)→KG export 정량화
+- 생각할 것: multi-layer 확장(현재 1층)과 TP/EP 매핑 추가; HBF endurance·GC, PIM bank 충돌의 상세 모델; P3b에서 gen 4-memory read도 near-mem으로 옮기면 PHY 트래픽 추가 절감 여지; persona 반응을 제안서 초안 작성 루프에 연결
+- storyline seed: Google 제안 스토리: '우리는 당신들의 모델 라인(HOPE/Sleep)을 1층 수준까지 분해해 serving 병목을 정량화했고, bank-PIM으로는 부족하며 base-die 연산+HBF+tiered eviction이 필요함을 도구로 보였다' — MEMOIR 데모+committee 근거+persona 검증까지 한 세트.
+- 연상: Q038, Q037, Q036
 
