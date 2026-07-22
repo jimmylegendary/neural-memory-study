@@ -1,4 +1,4 @@
-# 쉬운 버전 — 개념 booklet 10권
+# 쉬운 버전 — 개념 booklet 12권
 
 수식·증명을 앞세우지 않고 **개념·물리적 직관 먼저**, 모든 기호를 풀어 쓰고, "이 계열을 시스템 모델링에 활용할 수준"을 목표로 한 쉬운 판본. 각 권은 개별 PDF (`pdf/`).
 
@@ -16,5 +16,7 @@
 | **G07** | **Nested Learning** | **전부 다른 속도의 메모리다 (핵심)** |
 | **G08** | **Sleep** | **자고 일어나 정리하기 (핵심)** |
 | G09 | 시스템 모델링 관점 | state 크기·decode 비용·메모리 계층·batching·scaling·HW |
+| G10 | Memory Caching | 고정 메모리 벽을 체크포인트로 — 4 variants(Residual/GRM/Soup/SSC)·O(NL) 보간 |
+| G11 | NSTM | 읽기/쓰기 빈도 분리·memory caching 실전 성패·NL/Sleep에 주는 힌트 |
 
 빌드: `pandoc booklets/<id>.md --template=build/template-easy.tex --lua-filter=build/callouts.lua --lua-filter=build/mathfit.lua --pdf-engine=lualatex`. 검증: `build`의 overflow gate + missing-char 0.

@@ -1,0 +1,124 @@
+{
+ "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/2607.15271.pdf",
+ "engine": "pymupdf-clip",
+ "figure_count": 9,
+ "figures": [
+  {
+   "figure_id": "fig1",
+   "figure_number": "1",
+   "caption": "Figure 1.   Neural Space-Time Memory (NSTM)  synthesizes novel views in amortized real-time from 30 FPS multi-view videos,   while updating   its   memory   at   1   FPS.   Middle:   NSTM   captures   the   back   logo   as   the   subject   rotates   (see   memory   readout),   faithfully   recalling it later from memory given only frontal views.   Right:   While full self-attention in typical fe",
+   "image": "figures/fig1.png",
+   "page": 1,
+   "clip": [
+    54.5,
+    223.0,
+    557.5,
+    439.3
+   ]
+  },
+  {
+   "figure_id": "fig2",
+   "figure_number": "2",
+   "caption": "Figure 2.   NSTM Training Scheme.   Left:   Our alternating training scheme explicitly enforces memorization.   In the  Memory Supervision step,   isolated  memory tokens  (target camera rays) perform strict self-attention —- sharing weights with the  cross-view attention  layer — without   attending   to   input   views.   Once   the   memory   is   updated   by   the   inputs,   these   isolated",
+   "image": "figures/fig2.png",
+   "page": 3,
+   "clip": [
+    54.5,
+    54.6,
+    557.5,
+    327.0
+   ]
+  },
+  {
+   "figure_id": "fig3",
+   "figure_number": "3",
+   "caption": "Figure   3.   Memory   Stress   Test   at   T   =   60 .   Despite   only   observing   the   back   at   T   =   0 ,   NSTM   accurately   recalls   the   hoodie   patterns and hairstyles while fusing with current motion.   LVSM makes its best stateless guess in unseen regions, LaCT-NVS suffers from out-of- distribution memory drift, and Token-Mem fails to recall accurate back views.   See our su",
+   "image": "figures/fig3.png",
+   "page": 4,
+   "clip": [
+    54.5,
+    49.3,
+    557.5,
+    407.3
+   ]
+  },
+  {
+   "figure_id": "fig4",
+   "figure_number": "4",
+   "caption": "Figure   4.   Memory   Stress   Test   Over   Time.   We   show   the   back view   at   T=0.   For   subsequent   timestamps,   we   show   only   frontal views   and   task   the   model   with   synthesizing   the   occluded   back. NSTM   maintains   high-fidelity   recall   over   time   while   baseline models suffer from drift or collapse to stateless prior over time.",
+   "image": "figures/fig4.png",
+   "page": 6,
+   "clip": [
+    54.5,
+    69.8,
+    321.5,
+    494.4
+   ]
+  },
+  {
+   "figure_id": "fig5",
+   "figure_number": "5",
+   "caption": "Figure 5.   Qualitative ablation study.   At  T   = 60 , each model synthesizes the back view that has been occluded after  T   = 0 .   LaCT-NVS demonstrates the instability of the inner dot-product loss.   In contrast,  LaCT-NVS w/  L 2   greatly improves stability through our  L 2   inner loss   choice,   though   it   still   suffers   from   some   drift.   LaCT-NVS   w/   L 2   w/   Caching  ",
+   "image": "figures/fig5.png",
+   "page": 8,
+   "clip": [
+    54.5,
+    49.2,
+    557.5,
+    365.2
+   ]
+  },
+  {
+   "figure_id": "fig6",
+   "figure_number": "6",
+   "caption": "Figure   6.   Memory   from   Natural   Rotations   Qualitative   Results .   We   evaluate   our   method   against   the   baselines   on   sequences   feature natural rotations that reveal the back of the subject, which the models must synthesize.   Left column shows at which timestep the back is revealed.   NSTM recalls the clothing graphics.   The stateless LVSM cannot synthesize the unseen g",
+   "image": "figures/fig6.png",
+   "page": 13,
+   "clip": [
+    54.5,
+    91.5,
+    557.5,
+    349.6
+   ]
+  },
+  {
+   "figure_id": "fig7",
+   "figure_number": "7",
+   "caption": "Figure 7.   Online Inference Pipeline and NSTM Layer Design.   Left :   During inference, we run the memorization step periodically while performing the   synthesis   step   per-frame,   which   enables us   to achieve   amortized real-time speed.   Right :   We introduce the   NSTM   Layer consisting of cross-view attention, a fast-weight block and a feed-forward layer. We also incorporate a lear",
+   "image": "figures/fig7.png",
+   "page": 14,
+   "clip": [
+    54.5,
+    69.0,
+    557.5,
+    314.3
+   ]
+  },
+  {
+   "figure_id": "fig8",
+   "figure_number": "8",
+   "caption": "Figure 8.  Limitations .   Left: Update Frequency and Missed Events.   Our periodic updates may miss events between memorization steps. The pattern shown at  t   =   1  was presented only at this non-update timestep and is therefore not recoverable at  t   =   60 .   Right:   Memory Primacy Bias  Our method favors memorization during early steps.   Here the back is revealed after 21 updates (at  t",
+   "image": "figures/fig8.png",
+   "page": 15,
+   "clip": [
+    54.5,
+    83.0,
+    557.5,
+    220.2
+   ]
+  },
+  {
+   "figure_id": "fig7_p15",
+   "figure_number": "7",
+   "caption": "Fig.   7   shows   our   NSTM   layer   in   more   details.   During   in- ference,   we   run   the   memorization   step   periodically   while performing   the   synthesis   step   per-frame. Different   from training   time,   there   is   no   memory   tokens   and   we   extract the   target   tokens   as   output   for   all   steps.   More   specifically, following   LVSM   [ 22 ],   we  ",
+   "image": "figures/fig7_p15.png",
+   "page": 15,
+   "clip": [
+    54.5,
+    83.0,
+    298.8,
+    717.4
+   ]
+  }
+ ]
+}

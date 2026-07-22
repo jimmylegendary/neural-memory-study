@@ -1,10 +1,10 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-40건. story line 짤 때 여기서 꺼낸다.
+41건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
-### 모른다는 걸 안다 (known_unknown → decomposition) — 44건
+### 모른다는 걸 안다 (known_unknown → decomposition) — 45건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q003: 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1
@@ -49,6 +49,7 @@
 - Q038: TTT 집중조명 + Titans 효율 전반을 놓고, 3 scaling 병목(model-size / training parallel·batch /
 - Q039: (피드백) study paper 품질 엉망 — 300p BOOK처럼 논문 Figure/Table 적극 활용, reference 깔끔히, 분량 충
 - Q040: HOPE-with-Sleep(seq=self-mod Titans, CMS=Sleep) 기준으로 cHBM/HBM·zHBM(+PIM)/HBF/DRA
+- Q041: Memory Caching(2602.24281)과 NSTM(2607.15271)을 NM study의 easy version + 한국어 통번역 형
 
 ### 모른다는 것도 모른다 (unknown_unknown → exploration) — 54건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
@@ -106,7 +107,7 @@
 - Q029: Sleep는 전부 offline 학습? offline시 각 단계(consolidation, dreaming)별로 어떤 data를 어떻게 만들어 
 - Q030: CMS low/mid/high 3레벨(low=1K, mid=5K)에서 0~1K 구간 메커니즘과 1K 경계 학습이 어케 되나. 내 추측: low가
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 63건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 65건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
@@ -170,6 +171,8 @@
 - Q039: (피드백) study paper 품질 엉망 — 300p BOOK처럼 논문 Figure/Table 적극 활용, reference 깔끔히, 분량 충
 - Q040: HOPE-with-Sleep(seq=self-mod Titans, CMS=Sleep) 기준으로 cHBM/HBM·zHBM(+PIM)/HBF/DRA
 - Q040: HOPE-with-Sleep(seq=self-mod Titans, CMS=Sleep) 기준으로 cHBM/HBM·zHBM(+PIM)/HBF/DRA
+- Q041: Memory Caching(2602.24281)과 NSTM(2607.15271)을 NM study의 easy version + 한국어 통번역 형
+- Q041: Memory Caching(2602.24281)과 NSTM(2607.15271)을 NM study의 easy version + 한국어 통번역 형
 
 ### 안다는 걸 안다 (known) — 3건
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
@@ -649,6 +652,17 @@
 - **prefill은 lact식 chunk 배치로 weight 트래픽 /c** (1): Q040
 - **mirrokni=titans/miras/atlas/nl 라인 시니어 저자 — persona 기반 반응 시뮬레이션** (1): Q040
 - **sleep eviction 파이프라인: frozen→warm(dram)→cold(ssd)→kg export 정량화** (1): Q040
+- **mc: 갱신 불변·읽기만 변경(캐시 forward 합산) — o(nl) 보간 다이얼** (1): Q041
+- **4 variants: residual/grm/soup/ssc — soup은 비선형에서만 grm과 갈라짐** (1): Q041
+- **ssc=fast-weight의 paged attention(top-k 로드) → frozen-expert-on-hbf와 동일 배치 패턴** (1): Q041
+- **체크포인트(상관 스냅샷) vs 독립 압축기 — consolidation teacher 선택과 직결** (1): Q041
+- **nstm: memorization 1hz/synthesis 매프레임 분리 = mutable 모델도 매스텝 update kernel 불필요의 실증** (1): Q041
+- **memory caching은 읽기(stable-read)만 — 쓰기는 active, 평균 되쓰기 없음** (1): Q041
+- **결정적 ablation: 분해 없는 fast weight의 평균은 붕괴(lact 20.25), 분해되면 이득(nstm 30.09)** (1): Q041
+- **l2 inner loss가 dot-product의 크기 팽창을 막아 장기 안정** (1): Q041
+- **l_mem(입력 차단 memory-only 복원) = parametric 내재화의 operational criterion** (1): Q041
+- **sleep teacher는 stable-read(스냅샷 앙상블) — 3단 lifecycle active→stable→slow expert** (1): Q041
+- **메모리 다중화 3축: 주파수(cms)/수명(sleep expert)/이력(mc) — 직교** (1): Q041
 
 ## 3. 열린 실 (think_about)
 
@@ -790,6 +804,10 @@
 - [Q040] HBF endurance·GC, PIM bank 충돌의 상세 모델
 - [Q040] P3b에서 gen 4-memory read도 near-mem으로 옮기면 PHY 트래픽 추가 절감 여지
 - [Q040] persona 반응을 제안서 초안 작성 루프에 연결
+- [Q041] 계보 그래프에 MC(2602.24281)·NSTM(2607.15271) 노드 추가(ttt-mlp/efficient-ttt cross)
+- [Q041] MEMOIR에 MC의 SSC top-k 캐시 로드를 배치 옵션으로 모델링(HBF 계층과 결합)
+- [Q041] invariant/contextual 분해를 LLM에서 무엇이 담당하나 — context adapter 설계 연구 가설
+- [Q041] stable-read를 sleep teacher로 쓰는 Sleep 변형 실험 설계
 
 ## 4. Storyline seeds
 
@@ -833,3 +851,4 @@
 - [Q038] (TTT+Titans 효율 study paper: 3 scaling 병목(model-size/training/serving P·D)·해법·memory device 한계·개선; 근거등급+검증) 세미나에 'TTT/Titans는 왜 아직 프로덕션이 어려운가' 파트로 이 3병목×해법×memory device 지도를 그대로 사용. Part I(집중조명)→II(병목)→III(해법)→IV(memory device) 흐름이 곧 강의 흐름. LaCT의 util<5%를 도입 훅.
 - [Q039] (study paper 품질 교훈: 논문 figure 추출·임베드+numbered bibliography+BOOK template로 65p 재작성; 재사용 figure 파이프라인) 65p book이 세미나 'TTT 효율' 파트 근거자료; 논문 figure 직접 인용이 신뢰도↑; extract_figs.py=표준 figure 파이프라인.
 - [Q040] (MEMOIR webapp: HOPE-with-Sleep×memory-tier analytical DSE — 3가설 정량화+device spec 요구 도출(Google 제안용)) Google 제안 스토리: '우리는 당신들의 모델 라인(HOPE/Sleep)을 1층 수준까지 분해해 serving 병목을 정량화했고, bank-PIM으로는 부족하며 base-die 연산+HBF+tiered eviction이 필요함을 도구로 보였다' — MEMOIR 데모+committee 근거+persona 검증까지 한 세트.
+- [Q041] (MC·NSTM 2편을 NM study에 편입(easy G10/G11+의역본): 체크포인트 캐싱 4 variants, active/stable-read 분리, invariant/contextual 분해가 consolidation 성패, memory-only loss) 세미나 G07/G08 뒤에 G10→G11 순서로: '용량 부족→이력 보존(MC)'→'그 평균이 언제 성립하나(NSTM ablation)'→'그래서 Sleep의 teacher는 무엇이어야 하나(3단 lifecycle)'로 잇는 흐름이 자연스러움.

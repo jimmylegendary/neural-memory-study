@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 40건.
+총 41건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -520,4 +520,17 @@
 - 생각할 것: multi-layer 확장(현재 1층)과 TP/EP 매핑 추가; HBF endurance·GC, PIM bank 충돌의 상세 모델; P3b에서 gen 4-memory read도 near-mem으로 옮기면 PHY 트래픽 추가 절감 여지; persona 반응을 제안서 초안 작성 루프에 연결
 - storyline seed: Google 제안 스토리: '우리는 당신들의 모델 라인(HOPE/Sleep)을 1층 수준까지 분해해 serving 병목을 정량화했고, bank-PIM으로는 부족하며 base-die 연산+HBF+tiered eviction이 필요함을 도구로 보였다' — MEMOIR 데모+committee 근거+persona 검증까지 한 세트.
 - 연상: Q038, Q037, Q036
+
+## Q041 · 2026-07-23 · MC·NSTM 2편을 NM study에 편입(easy G10/G11+의역본): 체크포인트 캐싱 4 variants, active/stable-read 분리, invariant/contextual 분해가 consolidation 성패, memory-only loss
+
+**Q.** Memory Caching(2602.24281)과 NSTM(2607.15271)을 NM study의 easy version + 한국어 통번역 형식으로 추가하고, NSTM이 HOPE/NL·Sleep·memory caching 개념에 주는 개선 힌트를 정리하라
+
+**A.** 4문서+4PDF 추가. [MC 2602.24281, Behrouz·Mirrokni 등 NM 라인] 메모리 상태 체크포인트를 세그먼트 끝마다 캐시→읽기 시 온라인+캐시 forward 합산. 갱신은 불변·읽기만 변경. 4 variants: Residual(선형이면 collapse지만 retention 효과)/GRM(문맥 게이트 γ=⟨u_t,MeanPool(S)⟩ — collapse 안 함)/Memory Soup(파라미터 자체 가중평균 — 비선형에서 GRM과 갈라짐)/SSC(MoE router top-k만 로드 — 최선 균형). 체크포인트vs독립압축기 설계 축. O(NL) 보간(N=1 RNN↔N=L attention 유사 복원). recall 격차 좁힘(왕좌는 여전히 Transformer). [NSTM 2607.15271, UW/Google — MC를 명시 채택] 24블록(cross-view attn+TTT SwiGLU 3행렬+FFN), L2 inner loss(dot-product는 크기팽창)+Muon NS+L2 weight norm; memorization 1Hz/synthesis 매프레임(58.14/27.01→amortized 28.1ms/frame H100); L_mem=입력 attention 차단 후 기억만으로 복원(빼면 30.09→28.23); memory caching=스냅샷 running mean을 '읽기'에만 혼합(쓰기는 active에). 결정적 ablation: 같은 caching이 LaCT에선 붕괴(27.77→20.25 — pose·deformation이 fast weight에 섞여 '평균 포즈')·NSTM에선 이득(29.24→30.09 — invariant는 memory, 정렬은 cross-view attn). 힌트 3: ①읽기/쓰기 파라미터·빈도 분리 ②consolidation 전 invariant/contextual 분해가 성패(평균·EMA·merge 공통) ③memory-only supervision이 '내재화' 판정 기준. Sleep 연결: teacher는 active가 아니라 stable-read여야 → W_active→W_stable-read→W_slow-expert 3단 lifecycle. 산출: easy G10/G11 + 의역본 2편 + PDF 4(overfull 0·missing-char 0) + README 갱신 + reffigs 14 figures.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known: consolidation의 관건은 update rule이 아니라 사전의 invariant/contextual 분해 — parameter averaging 계열 전체(EMA·merge·distill)에 적용되는 원리; unknown_unknown→known: MC가 NM 라인 공식 후속(Mirrokni 시니어)이며 NSTM이 이를 명시 채택·실전 검증 — 계보 그래프에 추가할 두 노드; unknown_known: read/write 빈도 분리가 서빙 스케줄(RW-TTT owner/version)과 정확히 합치 — MEMOIR의 P3 시나리오에 실증 사례 제공
+- 개념 key: MC: 갱신 불변·읽기만 변경(캐시 forward 합산) — O(NL) 보간 다이얼, 4 variants: Residual/GRM/Soup/SSC — Soup은 비선형에서만 GRM과 갈라짐, SSC=fast-weight의 paged attention(top-k 로드) → frozen-expert-on-HBF와 동일 배치 패턴, 체크포인트(상관 스냅샷) vs 독립 압축기 — consolidation teacher 선택과 직결, NSTM: memorization 1Hz/synthesis 매프레임 분리 = mutable 모델도 매스텝 update kernel 불필요의 실증, memory caching은 읽기(stable-read)만 — 쓰기는 active, 평균 되쓰기 없음, 결정적 ablation: 분해 없는 fast weight의 평균은 붕괴(LaCT 20.25), 분해되면 이득(NSTM 30.09), L2 inner loss가 dot-product의 크기 팽창을 막아 장기 안정, L_mem(입력 차단 memory-only 복원) = parametric 내재화의 operational criterion, Sleep teacher는 stable-read(스냅샷 앙상블) — 3단 lifecycle active→stable→slow expert, 메모리 다중화 3축: 주파수(CMS)/수명(Sleep expert)/이력(MC) — 직교
+- 생각할 것: 계보 그래프에 MC(2602.24281)·NSTM(2607.15271) 노드 추가(ttt-mlp/efficient-ttt cross); MEMOIR에 MC의 SSC top-k 캐시 로드를 배치 옵션으로 모델링(HBF 계층과 결합); invariant/contextual 분해를 LLM에서 무엇이 담당하나 — context adapter 설계 연구 가설; stable-read를 sleep teacher로 쓰는 Sleep 변형 실험 설계
+- storyline seed: 세미나 G07/G08 뒤에 G10→G11 순서로: '용량 부족→이력 보존(MC)'→'그 평균이 언제 성립하나(NSTM ablation)'→'그래서 Sleep의 teacher는 무엇이어야 하나(3단 lifecycle)'로 잇는 흐름이 자연스러움.
+- 연상: Q040, Q038, Q034, Q033
 

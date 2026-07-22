@@ -1,0 +1,72 @@
+{
+ "source_pdf": "/home/jimmy/repos/neural-memory-study/papers/2602.24281.pdf",
+ "engine": "pymupdf-clip",
+ "figure_count": 5,
+ "figures": [
+  {
+   "figure_id": "fig1",
+   "figure_number": "1",
+   "caption": "Figure 1:   The Overall Memory Caching Method.   Each token attends to its online memory as well as a set of cached memories from the past.",
+   "image": "figures/fig1.png",
+   "page": 2,
+   "clip": [
+    86.0,
+    78.9,
+    533.2,
+    222.3
+   ]
+  },
+  {
+   "figure_id": "fig2",
+   "figure_number": "2",
+   "caption": "Figure   2:   Sparse   Selective   Caching   (SSC)   of   Memories.   A   router   measures   the contextual   similarity   of   each token to its past segments and chooses a subset of past cached memory for better efficiency.",
+   "image": "figures/fig2.png",
+   "page": 5,
+   "clip": [
+    86.0,
+    78.9,
+    533.2,
+    223.5
+   ]
+  },
+  {
+   "figure_id": "fig3",
+   "figure_number": "3",
+   "caption": "Figure 3: An illustrative example of memory caching with constant and logarithmic size segments. Logarithmic segmentation   while   computationally   appealing,   results   in   either   long   subsequences   that   might   cause   memory overflow, and/or short subsequences that prevents the memory to properly optimizes itself in the inner-loop.",
+   "image": "figures/fig3.png",
+   "page": 8,
+   "clip": [
+    86.0,
+    78.9,
+    533.2,
+    269.8
+   ]
+  },
+  {
+   "figure_id": "fig4",
+   "figure_number": "4",
+   "caption": "Figure 4:   Training throughput comparison of memory caching variants and baselines.",
+   "image": "figures/fig4.png",
+   "page": 13,
+   "clip": [
+    135.3,
+    78.9,
+    509.5,
+    236.9
+   ]
+  },
+  {
+   "figure_id": "fig5",
+   "figure_number": "5",
+   "caption": "Figure 5:   Average accuracy on MQAR over 5 seeds.",
+   "image": "figures/fig5.png",
+   "page": 13,
+   "clip": [
+    86.0,
+    78.9,
+    309.0,
+    735.1
+   ]
+  }
+ ]
+}
