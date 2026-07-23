@@ -1,10 +1,10 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-41건. story line 짤 때 여기서 꺼낸다.
+42건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
-### 모른다는 걸 안다 (known_unknown → decomposition) — 45건
+### 모른다는 걸 안다 (known_unknown → decomposition) — 46건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q003: 선형 메모리(W=d×d)면 update가 rank-1 outer-product write((Wk-v)k^T)로 퇴화, 데이터 의존성=W_{t-1
@@ -50,6 +50,7 @@
 - Q039: (피드백) study paper 품질 엉망 — 300p BOOK처럼 논문 Figure/Table 적극 활용, reference 깔끔히, 분량 충
 - Q040: HOPE-with-Sleep(seq=self-mod Titans, CMS=Sleep) 기준으로 cHBM/HBM·zHBM(+PIM)/HBF/DRA
 - Q041: Memory Caching(2602.24281)과 NSTM(2607.15271)을 NM study의 easy version + 한국어 통번역 형
+- Q042: HOPE/NL·Sleep·Memory Caching 논문이 스스로 open question/discussion으로 남긴 지점은?
 
 ### 모른다는 것도 모른다 (unknown_unknown → exploration) — 54건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
@@ -107,7 +108,7 @@
 - Q029: Sleep는 전부 offline 학습? offline시 각 단계(consolidation, dreaming)별로 어떤 data를 어떻게 만들어 
 - Q030: CMS low/mid/high 3레벨(low=1K, mid=5K)에서 0~1K 구간 메커니즘과 1K 경계 학습이 어케 되나. 내 추측: low가
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 65건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 68건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
@@ -173,6 +174,9 @@
 - Q040: HOPE-with-Sleep(seq=self-mod Titans, CMS=Sleep) 기준으로 cHBM/HBM·zHBM(+PIM)/HBF/DRA
 - Q041: Memory Caching(2602.24281)과 NSTM(2607.15271)을 NM study의 easy version + 한국어 통번역 형
 - Q041: Memory Caching(2602.24281)과 NSTM(2607.15271)을 NM study의 easy version + 한국어 통번역 형
+- Q042: HOPE/NL·Sleep·Memory Caching 논문이 스스로 open question/discussion으로 남긴 지점은?
+- Q042: HOPE/NL·Sleep·Memory Caching 논문이 스스로 open question/discussion으로 남긴 지점은?
+- Q042: HOPE/NL·Sleep·Memory Caching 논문이 스스로 open question/discussion으로 남긴 지점은?
 
 ### 안다는 걸 안다 (known) — 3건
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
@@ -663,6 +667,15 @@
 - **l_mem(입력 차단 memory-only 복원) = parametric 내재화의 operational criterion** (1): Q041
 - **sleep teacher는 stable-read(스냅샷 앙상블) — 3단 lifecycle active→stable→slow expert** (1): Q041
 - **메모리 다중화 3축: 주파수(cms)/수명(sleep expert)/이력(mc) — 직교** (1): Q041
+- **nl 공식 선언: catastrophic forgetting 미해결, nl=roadmap, levels 축이 방향** (1): Q042
+- **nl: 같은 objective/search space면 attention 못 넘음 — 한계 축(depth/self-mod) 공략 프레임** (1): Q042
+- **nl 8.2: chunk-size 스펙트럼 미탐색(실험 2값)** (1): Q042
+- **sleep: 반복 self-distillation의 ood 40% 급락·collapse 위험 — 2단 분리는 완화이지 제거 아님** (1): Q042
+- **sleep: 망각=용량 문제 재정의 but slot 소진·성장 지속가능성 무언급(q033 확정)** (1): Q042
+- **sleep 본문에 limitation 절 부재 — teacher 선택·online↔offline seam 무언급(q034)** (1): Q042
+- **mc: pooling/routing 표현력=유일 future work 한 줄** (1): Q042
+- **mc 3.4: 체크포인트 vs 독립 압축기 — 정답 없는 열린 설계 축** (1): Q042
+- **공통 빈칸: 선별·트리거·계층 이동·망각 메커니즘 — nstm 분해+probe가 최고 단서** (1): Q042
 
 ## 3. 열린 실 (think_about)
 
@@ -808,6 +821,9 @@
 - [Q041] MEMOIR에 MC의 SSC top-k 캐시 로드를 배치 옵션으로 모델링(HBF 계층과 결합)
 - [Q041] invariant/contextual 분해를 LLM에서 무엇이 담당하나 — context adapter 설계 연구 가설
 - [Q041] stable-read를 sleep teacher로 쓰는 Sleep 변형 실험 설계
+- [Q042] 제안서 '우리가 풀려는 문제' 절 = 이 정리 + 세미나 HOPE 7문 + NSTM 단서로 조립
+- [Q042] Sleep 반복 사이클 안정성(OOD 급락·collapse)을 MEMOIR sleep 파이프라인에 위험 항목으로 추가
+- [Q042] NL의 한계 축 프레임으로 아이디어①(주파수 축)·②(공간/expert 축) 포지셔닝
 
 ## 4. Storyline seeds
 
@@ -852,3 +868,4 @@
 - [Q039] (study paper 품질 교훈: 논문 figure 추출·임베드+numbered bibliography+BOOK template로 65p 재작성; 재사용 figure 파이프라인) 65p book이 세미나 'TTT 효율' 파트 근거자료; 논문 figure 직접 인용이 신뢰도↑; extract_figs.py=표준 figure 파이프라인.
 - [Q040] (MEMOIR webapp: HOPE-with-Sleep×memory-tier analytical DSE — 3가설 정량화+device spec 요구 도출(Google 제안용)) Google 제안 스토리: '우리는 당신들의 모델 라인(HOPE/Sleep)을 1층 수준까지 분해해 serving 병목을 정량화했고, bank-PIM으로는 부족하며 base-die 연산+HBF+tiered eviction이 필요함을 도구로 보였다' — MEMOIR 데모+committee 근거+persona 검증까지 한 세트.
 - [Q041] (MC·NSTM 2편을 NM study에 편입(easy G10/G11+의역본): 체크포인트 캐싱 4 variants, active/stable-read 분리, invariant/contextual 분해가 consolidation 성패, memory-only loss) 세미나 G07/G08 뒤에 G10→G11 순서로: '용량 부족→이력 보존(MC)'→'그 평균이 언제 성립하나(NSTM ablation)'→'그래서 Sleep의 teacher는 무엇이어야 하나(3단 lifecycle)'로 잇는 흐름이 자연스러움.
+- [Q042] (NL·Sleep·MC의 저자 명시 open point vs 침묵 지점 구분 정리 — 공통 빈칸='무엇·언제·어디로 옮기고 언제 잊는가') 세미나 마지막 open-questions 페이지를 '저자들이 직접 남긴 것 vs 논문이 침묵하는 것' 2단으로 재구성하면 설득력↑ — 침묵 지점이 곧 우리 제안의 자리.

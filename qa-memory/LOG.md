@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 41건.
+총 42건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -533,4 +533,17 @@
 - 생각할 것: 계보 그래프에 MC(2602.24281)·NSTM(2607.15271) 노드 추가(ttt-mlp/efficient-ttt cross); MEMOIR에 MC의 SSC top-k 캐시 로드를 배치 옵션으로 모델링(HBF 계층과 결합); invariant/contextual 분해를 LLM에서 무엇이 담당하나 — context adapter 설계 연구 가설; stable-read를 sleep teacher로 쓰는 Sleep 변형 실험 설계
 - storyline seed: 세미나 G07/G08 뒤에 G10→G11 순서로: '용량 부족→이력 보존(MC)'→'그 평균이 언제 성립하나(NSTM ablation)'→'그래서 Sleep의 teacher는 무엇이어야 하나(3단 lifecycle)'로 잇는 흐름이 자연스러움.
 - 연상: Q040, Q038, Q034, Q033
+
+## Q042 · 2026-07-23 · NL·Sleep·MC의 저자 명시 open point vs 침묵 지점 구분 정리 — 공통 빈칸='무엇·언제·어디로 옮기고 언제 잊는가'
+
+**Q.** HOPE/NL·Sleep·Memory Caching 논문이 스스로 open question/discussion으로 남긴 지점은?
+
+**A.** [NL/HOPE 명시] ①결론부 'Is Catastrophic Forgetting Solved?' 자문자답 — 안 풀림; 망각=압축의 자연 귀결(유한 용량); 'NL은 roadmap이지 destination이 아니다', 진전은 levels 축 활용에서 ②8.2: chunk-size 제한 없다면서 실험은 2값만 — 다주파수 스펙트럼 탐색 열림 ③discussion: 같은 objective·같은 search space면 parametric이 softmax attention 못 이김 — Transformer의 한계 축(계산 깊이/state-tracking, self-modification 부재)을 공략하라는 프레임만. [Sleep 명시] 부록 OPSD discussion — privileged conditioning이 epistemic verbalisation 억압→OOD 최대 40% 급락(Kim 2026), naive 반복 self-distillation은 정보누출+training collapse; Sleep 2단 분리는 위험을 '줄일(reduce)' 뿐 제거 주장 아님 → 장기 반복 sleep 사이클 안정성 열림. 망각=용량 부족 재정의→성장의 지속가능성(slot 소진)은 무언급[b, Q033 확인]. 본문 limitation 절 부재; teacher 선택·online↔offline 연결(Q034 seam)도 무언급. [MC 명시] 결론: 단순화 의도 인정+'더 표현력 있는 pooling/routing'=future work; 'a subset of baselines' 개선·recall 왕좌는 Transformer 인정; 3.4 체크포인트vs독립압축기 '각자 장단'으로 열어둠. 침묵[b]: 캐시 N개의 per-user 서빙 회계, Soup 평균의 성립 조건(NSTM이 사후 답), CMS/Sleep 결합. [종합] 셋을 포개면 같은 빈칸: '무엇을(선별)·언제(트리거)·어디로(계층) 옮기고 언제 잊는가' — NSTM의 invariant/contextual 분해+memory-only probe가 현재 최고 단서, 아이디어①②·MEMOIR tiered eviction이 이 빈칸 겨냥.
+
+- 축: `known_unknown` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known: 세 논문의 open point가 서로 다른 조각(방향/위험/재료)일 뿐 같은 빈칸을 가리킴 — 제안서 '문제 정의' 절의 뼈대; unknown_known: Sleep은 자기 한계 서술이 구조적으로 얇음(본문 limitation 부재) — 우리 Q032~034의 침묵 지점들이 원문 재확인으로 확정; unknown_known: NL의 'parametric은 같은 공간에서 attention 못 이김' 원리가 아이디어①②의 정당화(다른 축=주파수/공간으로 이동)와 정합
+- 개념 key: NL 공식 선언: catastrophic forgetting 미해결, NL=roadmap, levels 축이 방향, NL: 같은 objective/search space면 attention 못 넘음 — 한계 축(depth/self-mod) 공략 프레임, NL 8.2: chunk-size 스펙트럼 미탐색(실험 2값), Sleep: 반복 self-distillation의 OOD 40% 급락·collapse 위험 — 2단 분리는 완화이지 제거 아님, Sleep: 망각=용량 문제 재정의 but slot 소진·성장 지속가능성 무언급(Q033 확정), Sleep 본문에 limitation 절 부재 — teacher 선택·online↔offline seam 무언급(Q034), MC: pooling/routing 표현력=유일 future work 한 줄, MC 3.4: 체크포인트 vs 독립 압축기 — 정답 없는 열린 설계 축, 공통 빈칸: 선별·트리거·계층 이동·망각 메커니즘 — NSTM 분해+probe가 최고 단서
+- 생각할 것: 제안서 '우리가 풀려는 문제' 절 = 이 정리 + 세미나 HOPE 7문 + NSTM 단서로 조립; Sleep 반복 사이클 안정성(OOD 급락·collapse)을 MEMOIR sleep 파이프라인에 위험 항목으로 추가; NL의 한계 축 프레임으로 아이디어①(주파수 축)·②(공간/expert 축) 포지셔닝
+- storyline seed: 세미나 마지막 open-questions 페이지를 '저자들이 직접 남긴 것 vs 논문이 침묵하는 것' 2단으로 재구성하면 설득력↑ — 침묵 지점이 곧 우리 제안의 자리.
+- 연상: Q041, Q034, Q033, Q032, Q038
 
