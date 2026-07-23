@@ -1488,33 +1488,77 @@ box(s, 0.55, 5.25, 6.05, 1.05,
      ("이 계열을 키울수록 서빙은 '메모리 문제'가 된다 — 대역폭·상주·소프트웨어가 스케일의 열쇠.",
       {"size": 12, "color": INK, "align": PP_ALIGN.LEFT})], fc=BLUEB, ec=BLUE, align=PP_ALIGN.LEFT)
 
-# ============================== Open Questions — HOPE model ==============================
-s = slide(p, "Open Questions — HOPE model", "모델 관점에서 논문이 아직 답하지 않은 것들 (향후 방향)", GOLD)
-oq = [
-    ("hybrid · multi-head · depth/dim", "attention hybrid·multi-head를 섞으면? layer depth·dim 스케일은? — Hope-Attention 변형·≤1.3B만, 구성 sweep 미탐색"),
-    ("SMT 각 memory의 depth 확장", "6개 memory는 현재 2-layer MLP. 더 깊게 하면? 어디까지? — Titans는 depth 이득을 보였으나 SMT엔 미적용"),
-    ("SMT optimizer ≠ DGD?", "SMT 안쪽은 DGD(Delta GD)+weight decay 고정. Delta Momentum·M3·Muon을 SMT에 쓰면? — 미탐색"),
-    ("TNT global/local 결합", "TNT의 global(prefill)/local(decode) 계층 메모리를 HOPE 추론에 적용? — 두 논문은 결합되지 않음"),
-    ("TNT Q-K projection 적용", "TNT의 Q-K projection(write/read domain shift 처방)을 SMT의 read에? — 미적용"),
-    ("online → offline 연결", "dense-online(Eq2) ↔ MoE-offline(expansion)의 기계적 interlock은 공백(seam) — teacher/student 경계만 명시"),
-    ("expert slot 소진 대책", "pre-allocated 유한 슬롯이 다 차면? — 논문 미명시 (병합·증류로 회수 / 재초기화 / 더 느린 레벨 추가는 추론)"),
-]
-n = len(oq); rows = (n + 1) // 2
-top, avail, gap = 1.42, 5.05, 0.14
-ch = (avail - (rows - 1) * gap) / rows
-for i, (q, note) in enumerate(oq):
-    col, row = i % 2, i // 2
-    x = 0.55 + col * 6.25
-    y = top + row * (ch + gap)
-    w = 6.0 if (i < n - 1 or n % 2 == 0) else 12.23   # 마지막 홀수 항목은 전폭
-    box(s, x, y, w, ch,
-        [("Q" + str(i + 1) + ". " + q, {"size": 12.5, "bold": True, "color": GOLD, "align": PP_ALIGN.LEFT, "space_after": 2}),
-         ("→ " + note, {"size": 10.5, "color": INK, "align": PP_ALIGN.LEFT})],
-        fc=GOLDB, ec=GOLD, align=PP_ALIGN.LEFT)
-box(s, 0.55, 6.55, 12.23, 0.62,
-    [("정리", {"size": 11.5, "bold": True, "color": BLUE, "align": PP_ALIGN.LEFT, "space_after": 2}),
-     ("Q1–Q5 = '열린 설계 공간'(아직 안 밀어붙인 조합) · Q6–Q7 = '정직한 공백'(논문이 명시 안 한 이음새·한계). 앞으로 이 계열을 키울 때 먼저 부딪힐 지점들.",
-      {"size": 10.5, "color": INK, "align": PP_ALIGN.LEFT})], fc=BLUEB, ec=BLUE, align=PP_ALIGN.LEFT)
+# ============================== Open Questions (1/2) — 저자가 직접 남긴 것 ==============================
+s = slide(p, "Open Questions (1/2) — 저자가 직접 남긴 것",
+          "세 논문이 본문·결론에서 스스로 인정한 미해결점 (명시된 open point)", GOLD)
+
+def oq_hdr(x, y, w, label, color):
+    box(s, x, y, w, 0.34, label, fc=color, ec=color, size=11.5, tcolor=WHITE, bold=True,
+        align=PP_ALIGN.LEFT, space_after=0)
+
+def oq_card(x, y, w, h, head, body, color, cb):
+    box(s, x, y, w, h,
+        [(head, {"size": 11.5, "bold": True, "color": color, "align": PP_ALIGN.LEFT, "space_after": 2}),
+         (body, {"size": 10, "color": INK, "align": PP_ALIGN.LEFT})],
+        fc=cb, ec=color, align=PP_ALIGN.LEFT)
+
+# 왼쪽 열 — NL / HOPE (GOLD)
+LX, LW = 0.55, 6.0
+oq_hdr(LX, 1.45, LW, "NL / HOPE — 2512.24695", GOLD)
+oq_card(LX, 1.83, LW, 1.16, "① \"Catastrophic forgetting은 안 풀렸다\"",
+        "결론 자문자답: 망각은 압축의 자연 귀결(유한 용량의 대가) — \"NL은 destination이 아니라 roadmap.\" 진전은 static 심화가 아니라 levels(주파수) 축 활용에서 온다.", GOLD, GOLDB)
+oq_card(LX, 3.05, LW, 1.16, "② parametric ⊀ attention (동일 objective·space)",
+        "같은 L2 목적·같은 search space(행렬 메모리)라면 modern RNN은 스케일에서 softmax attention을 못 이김 — 이길 축은 계산 깊이·self-modification이라는 프레임만 제시(discussion §).", GOLD, GOLDB)
+oq_card(LX, 4.27, LW, 1.16, "③ 열린 설계공간 (sweep 미탐색)",
+        "attention hybrid·multi-head · SMT memory depth(현 2-layer) · inner-opt DGD→Momentum/M3/Muon · chunk-size 다주파수 — \"제한 없다\"면서 실험은 2값만(§8.2).", GOLD, GOLDB)
+
+# 오른쪽 열 — Sleep (GREEN) + MC (BLUE)
+RX, RW = 6.78, 6.0
+oq_hdr(RX, 1.45, RW, "Sleep — 2606.03979", GREEN)
+oq_card(RX, 1.83, RW, 1.55, "④ 반복 self-improvement의 실패모드 (부록)",
+        "privileged conditioning이 epistemic verbalisation을 억압 → OOD 최대 40%↓(Qwen3-8B 등); naive 반복 self-distillation은 정보누출·training collapse. Sleep의 2단 분리(consolidate→dream)는 위험을 \"줄일(reduce)\" 뿐, 제거를 주장하지 않음.", GREEN, GREENB)
+oq_hdr(RX, 3.47, RW, "Memory Caching — 2602.24281", BLUE)
+oq_card(RX, 3.85, RW, 0.71, "⑤ future work = 표현력 있는 pooling/routing",
+        "결론 한 줄로 인정 — 현재는 MeanPooling·단순 게이트로 단순화. recall 왕좌는 여전히 Transformer(격차를 좁힐 뿐).", BLUE, BLUEB)
+oq_card(RX, 4.63, RW, 0.80, "⑥ 체크포인트 vs 독립 압축기 = \"각자 장단\"",
+        "§3.4: 이어달리는 스냅샷이냐 세그먼트별 독립 메모리냐 — 정답 없이 과제 의존으로 열어 둠(이 선택이 consolidation teacher 선택과 직결).", BLUE, BLUEB)
+
+box(s, 0.55, 5.62, 12.23, 0.62,
+    [("→ 다음 장", {"size": 11, "bold": True, "color": RED, "align": PP_ALIGN.LEFT, "space_after": 2}),
+     ("여기까지는 저자들이 \"봤다\"고 말한 것. 다음 장 = 저자들이 언급조차 하지 않은 이음새 — 그 침묵이 곧 우리가 채울 자리.",
+      {"size": 10.5, "color": INK, "align": PP_ALIGN.LEFT})], fc=REDB, ec=RED, align=PP_ALIGN.LEFT)
+
+# ============================== Open Questions (2/2) — 논문이 침묵하는 것 ==============================
+s = slide(p, "Open Questions (2/2) — 논문이 침묵하는 것 = 우리가 채울 자리",
+          "저자가 명시조차 하지 않은 이음새 — 공동연구의 표적 (하나의 빈칸으로 수렴)", RED)
+
+def gap_card(x, y, w, h, q, silence):
+    box(s, x, y, w, h,
+        [(q, {"size": 11.5, "bold": True, "color": RED, "align": PP_ALIGN.LEFT, "space_after": 2}),
+         (silence, {"size": 10, "color": INK, "align": PP_ALIGN.LEFT})],
+        fc=REDB, ec=RED, align=PP_ALIGN.LEFT)
+
+GX2, GW2 = 6.0, 6.0
+gap_card(0.55, 1.45, GW2, 1.06, "무엇을 옮기나 — 선별(what)",
+         "MC는 침묵; Soup 평균이 '언제' 성립하는지 무답 → NSTM ablation이 사후 답(분해 안 된 fast weight의 평균은 붕괴 27.77→20.25).")
+gap_card(6.78, 1.45, GW2, 1.06, "언제 옮기나 — 트리거(when)",
+         "고정 주기(NSTM 1Hz)·고정 wake/sleep 경계만 — surprise·불일치·memory-only probe 실패 기반 learned trigger는 무탐색(NSTM도 '갱신 사이 사건 놓침'을 한계로 인정).")
+gap_card(0.55, 2.59, GW2, 1.06, "어디로 옮기나 — 계층(where)",
+         "CMS(주파수)×Sleep expert(수명)×MC(이력) 세 축은 직교하지만 동시 사용·상호작용은 어느 논문도 다루지 않음.")
+gap_card(6.78, 2.59, GW2, 1.06, "언제 잊나 / 용량(capacity)",
+         "Sleep expert slot 소진 시 대책 무명시; 망각을 '용량 부족'으로 재정의하고 파라미터 성장으로 대응하나 장기 성장 지속가능성은 침묵.")
+box(s, 0.55, 3.73, 12.23, 0.86,
+    [("얼마나 드나 — 시스템 비용(cost)  ⟵ 논문들이 통째로 비운 축", {"size": 11.5, "bold": True, "color": RED, "align": PP_ALIGN.LEFT, "space_after": 2}),
+     ("MC 캐시 N개의 per-user 서빙 상태 회계, read(매 토큰)/write(주기) 비대칭의 하드웨어 비용, tiered memory 배치 — 전부 알고리즘 논문 밖. \"무엇·언제·어디로 옮기고 언제 잊나\"는 순수 알고리즘 문제가 아니라 memory-tier HW와 얽힌 co-design 문제다.",
+      {"size": 10, "color": INK, "align": PP_ALIGN.LEFT})], fc=REDB, ec=RED, align=PP_ALIGN.LEFT)
+box(s, 0.55, 4.71, 12.23, 0.80,
+    [("최고 단서 — NSTM(2607.15271)", {"size": 11.5, "bold": True, "color": GREEN, "align": PP_ALIGN.LEFT, "space_after": 2}),
+     ("consolidation 전에 기억을 invariant/contextual로 분해하면 단순 산술평균조차 강한 안정화가 된다(29.24→30.09) + memory-only probe로 '내재화' 검증 — 위 다섯 침묵을 관통하는 실마리(단, fast→slow backbone 이전은 미해결).",
+      {"size": 10, "color": INK, "align": PP_ALIGN.LEFT})], fc=GREENB, ec=GREEN, align=PP_ALIGN.LEFT)
+box(s, 0.55, 5.63, 12.23, 0.62,
+    [("→ 우리 자리", {"size": 11, "bold": True, "color": GOLD, "align": PP_ALIGN.LEFT, "space_after": 2}),
+     ("이 침묵 지점들이 곧 제안의 표적 — MEMOIR로 시스템 비용을 정량화하고, NSTM 분해 원리를 서빙 스케줄·tiered eviction으로 옮긴다(→ 공동연구 제안).",
+      {"size": 10.5, "color": INK, "align": PP_ALIGN.LEFT})], fc=GOLDB, ec=GOLD, align=PP_ALIGN.LEFT)
 
 # ============================== 마무리 ==============================
 s = slide(p, "마무리", "6편을 한 흐름으로, 그리고 서빙 비용까지", GREEN)

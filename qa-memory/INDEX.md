@@ -1,6 +1,6 @@
 # QA INDEX — 연상 회상용 색인 (auto-generated)
 
-42건. story line 짤 때 여기서 꺼낸다.
+43건. story line 짤 때 여기서 꺼낸다.
 
 ## 1. 안다-4축별 클러스터
 
@@ -108,7 +108,7 @@
 - Q029: Sleep는 전부 offline 학습? offline시 각 단계(consolidation, dreaming)별로 어떤 data를 어떻게 만들어 
 - Q030: CMS low/mid/high 3레벨(low=1K, mid=5K)에서 0~1K 구간 메커니즘과 1K 경계 학습이 어케 되나. 내 추측: low가
 
-### 아는데 안 드러남 (unknown_known → prototype/react) — 68건
+### 아는데 안 드러남 (unknown_known → prototype/react) — 70건
 - Q001: Titans에는 k,v로 구성된 연상메모리가 있는듯한데 k가 주어졌을때 v가 나오는? 그 weight를 token마다 학습? 그럼 q는 안씀? 
 - Q002: decode 기준 흐름: 토큰1개→Wq,k,v로 q,k,v→k를 M에 흘려 v'→v와 비교해 loss→S,M update? 그 다음은? q,k,
 - Q004: matrix와 mlp 차이? mlp는 weight matrix 2개+중간 activation? ffn이랑 차이? Titans에서 k->v MLP
@@ -177,11 +177,14 @@
 - Q042: HOPE/NL·Sleep·Memory Caching 논문이 스스로 open question/discussion으로 남긴 지점은?
 - Q042: HOPE/NL·Sleep·Memory Caching 논문이 스스로 open question/discussion으로 남긴 지점은?
 - Q042: HOPE/NL·Sleep·Memory Caching 논문이 스스로 open question/discussion으로 남긴 지점은?
+- Q043: 세미나 open-questions를 '저자 명시 vs 침묵' 2단으로 재구성하고, Vahab 제안서 '우리가 풀려는 문제' 절을 조립
+- Q043: 세미나 open-questions를 '저자 명시 vs 침묵' 2단으로 재구성하고, Vahab 제안서 '우리가 풀려는 문제' 절을 조립
 
-### 안다는 걸 안다 (known) — 3건
+### 안다는 걸 안다 (known) — 4건
 - Q011: Titans를 읽고 얻는 것 정리 컨펌: 1)token축 gate·S·g 수식 2)attn-out으로 k,v 구해 NM update 3)MAC 
 - Q015: Miras 핵심이 설계축 4개=일반화 형태+실험인가? 특별한 발명보다 '설계축이 있음을 증명'인가?
 - Q018: 결국 Titans 두 투영 세트는 글 근거 없고 그림+설명 추론? gate 통과나 attn out이 W_k,v로 입력되는 것도 그림에 없는데 설
+- Q043: 세미나 open-questions를 '저자 명시 vs 침묵' 2단으로 재구성하고, Vahab 제안서 '우리가 풀려는 문제' 절을 조립
 
 ## 2. 개념 key별 클러스터 (연상)
 
@@ -676,6 +679,12 @@
 - **mc: pooling/routing 표현력=유일 future work 한 줄** (1): Q042
 - **mc 3.4: 체크포인트 vs 독립 압축기 — 정답 없는 열린 설계 축** (1): Q042
 - **공통 빈칸: 선별·트리거·계층 이동·망각 메커니즘 — nstm 분해+probe가 최고 단서** (1): Q042
+- **세미나 2단 재구성: tier1=저자 명시(gold/green/blue 논문별), tier2=침묵(red)+nstm 단서(green)+우리자리(gold)** (1): Q043
+- **5 하위질문 프레임: 선별(what)/트리거(when)/계층(where)/용량(forget)/비용(hw) — 앞 4는 알고리즘 논의, 5째만 통째 공백** (1): Q043
+- **제안서 핵심 논거: 4질문을 결정하는 건 5째(비용)이고 그건 algorithm×systems co-design이라 단독 해결 불가** (1): Q043
+- **co-design 3근거: per-user state n배(공유 전제 붕괴)/read-write 비대칭(nstm 실측)/분해가 hw 배치 지시** (1): Q043
+- **vahab hook: 그가 nl·mc·titans 시니어저자 — 자기 논문의 open point를 겨눔** (1): Q043
+- **제안서=neural-memory-study 검증 + memoir 정량화 + hat believability 세 자산 결합** (1): Q043
 
 ## 3. 열린 실 (think_about)
 
@@ -824,6 +833,10 @@
 - [Q042] 제안서 '우리가 풀려는 문제' 절 = 이 정리 + 세미나 HOPE 7문 + NSTM 단서로 조립
 - [Q042] Sleep 반복 사이클 안정성(OOD 급락·collapse)을 MEMOIR sleep 파이프라인에 위험 항목으로 추가
 - [Q042] NL의 한계 축 프레임으로 아이디어①(주파수 축)·②(공간/expert 축) 포지셔닝
+- [Q043] §2-5 scaffold를 MEMOIR 실제 run 결과(P0-P3b 5run)로 채워 측정가능 질문에 수치 부여
+- [Q043] 제안서를 MEMOIR persona 페이지에 붙여 Vahab 예상반응 생성→반론 대비 보강
+- [Q043] 계보 그래프에 MC·NSTM 노드 추가(Q041 think_about 연동)
+- [Q043] 제안서 영어판 파생(career/Anthropic 포트폴리오와 별개, Google 대상)
 
 ## 4. Storyline seeds
 
@@ -869,3 +882,4 @@
 - [Q040] (MEMOIR webapp: HOPE-with-Sleep×memory-tier analytical DSE — 3가설 정량화+device spec 요구 도출(Google 제안용)) Google 제안 스토리: '우리는 당신들의 모델 라인(HOPE/Sleep)을 1층 수준까지 분해해 serving 병목을 정량화했고, bank-PIM으로는 부족하며 base-die 연산+HBF+tiered eviction이 필요함을 도구로 보였다' — MEMOIR 데모+committee 근거+persona 검증까지 한 세트.
 - [Q041] (MC·NSTM 2편을 NM study에 편입(easy G10/G11+의역본): 체크포인트 캐싱 4 variants, active/stable-read 분리, invariant/contextual 분해가 consolidation 성패, memory-only loss) 세미나 G07/G08 뒤에 G10→G11 순서로: '용량 부족→이력 보존(MC)'→'그 평균이 언제 성립하나(NSTM ablation)'→'그래서 Sleep의 teacher는 무엇이어야 하나(3단 lifecycle)'로 잇는 흐름이 자연스러움.
 - [Q042] (NL·Sleep·MC의 저자 명시 open point vs 침묵 지점 구분 정리 — 공통 빈칸='무엇·언제·어디로 옮기고 언제 잊는가') 세미나 마지막 open-questions 페이지를 '저자들이 직접 남긴 것 vs 논문이 침묵하는 것' 2단으로 재구성하면 설득력↑ — 침묵 지점이 곧 우리 제안의 자리.
+- [Q043] (open-questions를 저자명시/침묵 2단 재구성 + Vahab 제안서 문제정의 절 조립 — 침묵의 다섯째축(시스템 비용)이 공동연구 논거) 세미나→제안서 이음: 세미나 마지막 2장(명시/침묵)이 그대로 제안서 §1.1-1.2가 되고, 침묵의 비용축이 §1.3 co-design 논거로 이어짐 — 한 서사.

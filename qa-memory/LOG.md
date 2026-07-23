@@ -1,6 +1,6 @@
 # QA LOG — 공부 질문 기록 (chronological)
 
-총 42건.
+총 43건.
 
 ## Q001 · 2026-07-14 · Titans
 
@@ -546,4 +546,17 @@
 - 생각할 것: 제안서 '우리가 풀려는 문제' 절 = 이 정리 + 세미나 HOPE 7문 + NSTM 단서로 조립; Sleep 반복 사이클 안정성(OOD 급락·collapse)을 MEMOIR sleep 파이프라인에 위험 항목으로 추가; NL의 한계 축 프레임으로 아이디어①(주파수 축)·②(공간/expert 축) 포지셔닝
 - storyline seed: 세미나 마지막 open-questions 페이지를 '저자들이 직접 남긴 것 vs 논문이 침묵하는 것' 2단으로 재구성하면 설득력↑ — 침묵 지점이 곧 우리 제안의 자리.
 - 연상: Q041, Q034, Q033, Q032, Q038
+
+## Q043 · 2026-07-23 · open-questions를 저자명시/침묵 2단 재구성 + Vahab 제안서 문제정의 절 조립 — 침묵의 다섯째축(시스템 비용)이 공동연구 논거
+
+**Q.** 세미나 open-questions를 '저자 명시 vs 침묵' 2단으로 재구성하고, Vahab 제안서 '우리가 풀려는 문제' 절을 조립
+
+**A.** [세미나] 기존 단일 'Open Questions—HOPE model' 슬라이드를 2장으로 재구성: (1/2) 저자가 직접 남긴 것 — NL/HOPE(GOLD: forgetting 미해결·roadmap·levels축 / parametric⊀attention / 열린 설계공간 sweep), Sleep(GREEN: self-distill OOD 40%↓·collapse, 2단분리는 완화), MC(BLUE: pooling/routing future work, 체크포인트vs독립압축기, recall 왕좌 Transformer). (2/2) 침묵=우리 자리 — 5 하위질문(선별/트리거/계층/용량/비용) 중 비용축은 어느 논문도 무모델, NSTM(GREEN)이 최고 단서(분해 후 평균 성립+memory-only probe), GOLD bridge=MEMOIR+tiered eviction. build_deck.py 91슬라이드 빌드·PDF 렌더 육안검사 통과(겹침 0). [제안서] dossier/PROPOSAL-VAHAB.md v0.1 신규 — Vahab이 NL/MC/Titans 시니어저자임을 hook으로, §1 문제정의 완성(1.1 세논문 수렴 빈칸→1.2 5하위질문 표→1.3 algorithm×systems co-design 3근거[per-user state N배·read/write 비대칭 58.14/27.01·분해가 배치 지시]→1.4 한문장 formal), §2-5 scaffold, 부록A 주장→원문 대조표. 두 산출물 모두 원문 검증된 수치만 사용.
+
+- 축: `known` → `known` · comprehension: deep
+- 새로 드러난 것: unknown_known: '저자 명시 vs 침묵' 2단 프레임이 제안서 문제정의와 세미나에 동시 재사용되는 골격 — 침묵축이 곧 제안 표적; unknown_known: 비용축(시스템)이 나머지 4 알고리즘 질문의 결정자라는 배열이 co-design 논거의 중심
+- 개념 key: 세미나 2단 재구성: tier1=저자 명시(GOLD/GREEN/BLUE 논문별), tier2=침묵(RED)+NSTM 단서(GREEN)+우리자리(GOLD), 5 하위질문 프레임: 선별(what)/트리거(when)/계층(where)/용량(forget)/비용(HW) — 앞 4는 알고리즘 논의, 5째만 통째 공백, 제안서 핵심 논거: 4질문을 결정하는 건 5째(비용)이고 그건 algorithm×systems co-design이라 단독 해결 불가, co-design 3근거: per-user state N배(공유 전제 붕괴)/read-write 비대칭(NSTM 실측)/분해가 HW 배치 지시, Vahab hook: 그가 NL·MC·Titans 시니어저자 — 자기 논문의 open point를 겨눔, 제안서=neural-memory-study 검증 + MEMOIR 정량화 + HAT believability 세 자산 결합
+- 생각할 것: §2-5 scaffold를 MEMOIR 실제 run 결과(P0-P3b 5run)로 채워 측정가능 질문에 수치 부여; 제안서를 MEMOIR persona 페이지에 붙여 Vahab 예상반응 생성→반론 대비 보강; 계보 그래프에 MC·NSTM 노드 추가(Q041 think_about 연동); 제안서 영어판 파생(career/Anthropic 포트폴리오와 별개, Google 대상)
+- storyline seed: 세미나→제안서 이음: 세미나 마지막 2장(명시/침묵)이 그대로 제안서 §1.1-1.2가 되고, 침묵의 비용축이 §1.3 co-design 논거로 이어짐 — 한 서사.
+- 연상: Q042, Q041, Q034, Q033, Q038
 
