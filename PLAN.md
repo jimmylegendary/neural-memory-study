@@ -10,6 +10,11 @@
 - **P4 Veridraft 게이팅 + 조립** ✅ — `claims/bundle.json` 30 claim gate PASS(P2 18 + P1 12); front/back matter; **309→310pp PDF 빌드** (`build/BOOK.pdf`, `build/template.tex`)
 - **P5 한국어판 마무리 QA** ✅ 2026-07-12 — cross-ref dangling 0, 인용 미해결 0, 그림 라벨 겹침 재생성(exp-b/exp-f), 시각 결함 5건 수정; 최종 빌드 310pp/미해결글리프 0/overfull 0. **사용자 결정: 309(310)pp depth 유지, 한국어판 우선.**
 - **P6 영어 제출판** ⬜ (미착수, D1) — `paper-en/` LaTeX 파생 + 추출 논문 후보 재평가
+- **P7 Sleep-Time Compute** 🟡 2026-07-25 — approved design, chronological
+  evidence Wave 01, and audited execution plans under `docs/superpowers/`;
+  research bundle ID `sleep-time-compute-2026`; 297-cell confirmatory design;
+  evidence-gated English paper, Korean companion, systems/scaling-law program,
+  and a non-blocking editable PPTX release track.
 
 ## 디렉토리
 ```
