@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sleep-time-compute.org/control/source.schema.json",
+  "title": "Canonical source record",
+  "x-stc-owner": "evidence-governance",
+  "x-stc-model": "SourceRecord",
+  "type": "object",
+  "properties": {
+    "source_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sourceId"
+    },
+    "legacy_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+      },
+      "uniqueItems": true
+    },
+    "canonical_key": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "title": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "authors": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+      },
+      "minItems": 1
+    },
+    "earliest_public_date": {
+      "type": "string",
+      "minLength": 4
+    },
+    "date_precision": {
+      "type": "string",
+      "enum": ["YEAR", "MONTH", "DAY"]
+    },
+    "venue_status": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "peer_review_status": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "versions": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/SourceVersion"
+      },
+      "minItems": 1
+    },
+    "source_grade": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sourceGrade"
+    },
+    "review_status": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/reviewStatus"
+    },
+    "urls": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uri",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "local_artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/ArtifactRef"
+      }
+    },
+    "citation_key": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "code_records": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/ArtifactRef"
+      }
+    },
+    "data_records": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/ArtifactRef"
+      }
+    },
+    "rights_summary": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "topics": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+      },
+      "uniqueItems": true
+    },
+    "affiliations": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+      }
+    },
+    "inclusion_reason": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "non_claim": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "last_verified": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/isoDate"
+    }
+  },
+  "required": [
+    "source_id",
+    "legacy_ids",
+    "canonical_key",
+    "title",
+    "authors",
+    "earliest_public_date",
+    "date_precision",
+    "venue_status",
+    "peer_review_status",
+    "versions",
+    "source_grade",
+    "review_status",
+    "urls",
+    "local_artifacts",
+    "citation_key",
+    "code_records",
+    "data_records",
+    "rights_summary",
+    "topics",
+    "affiliations",
+    "inclusion_reason",
+    "non_claim",
+    "last_verified"
+  ],
+  "additionalProperties": false
+}

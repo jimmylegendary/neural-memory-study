@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sleep-time-compute.org/control/candidate.schema.json",
+  "title": "Frozen scientific release candidate",
+  "x-stc-owner": "release-engineering",
+  "x-stc-model": "ReleaseCandidate",
+  "type": "object",
+  "properties": {
+    "candidate_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "commit_sha": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/gitSha1"
+    },
+    "tree_digest": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+    },
+    "artifact_dag_digest": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+    },
+    "release_artifact_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/DigestRef"
+      },
+      "minItems": 1
+    },
+    "gate_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/DigestRef"
+      },
+      "minItems": 1
+    },
+    "frozen_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "candidate_id",
+    "commit_sha",
+    "tree_digest",
+    "artifact_dag_digest",
+    "release_artifact_refs",
+    "gate_refs",
+    "frozen_at"
+  ],
+  "additionalProperties": false
+}

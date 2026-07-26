@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sleep-time-compute.org/control/publication-asset.schema.json",
+  "title": "Publication asset",
+  "x-stc-owner": "publication",
+  "x-stc-model": "PublicationAsset",
+  "type": "object",
+  "properties": {
+    "artifact_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/artifactId"
+    },
+    "path": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/relativePath"
+    },
+    "sha256": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+    },
+    "media_type": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "publication_role": {
+      "type": "string",
+      "enum": ["MANUSCRIPT", "FIGURE", "TABLE", "SLIDE_DECK", "SUPPLEMENT"]
+    },
+    "claim_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/claimId"
+      },
+      "uniqueItems": true
+    },
+    "stale": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "artifact_id",
+    "path",
+    "sha256",
+    "media_type",
+    "publication_role",
+    "claim_ids",
+    "stale"
+  ],
+  "additionalProperties": false
+}

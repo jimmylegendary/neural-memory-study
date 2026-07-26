@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sleep-time-compute.org/control/evidence.schema.json",
+  "title": "Evidence record",
+  "x-stc-owner": "evidence-governance",
+  "x-stc-model": "EvidenceRecord",
+  "type": "object",
+  "properties": {
+    "evidence_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/evidenceId"
+    },
+    "source_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sourceId"
+    },
+    "source_version": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "source_version_digest": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+    },
+    "anchor_kind": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "anchor": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "support_span_digest": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+    },
+    "support_summary": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "relation": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/evidenceRelation"
+    },
+    "claim_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/claimId"
+      },
+      "uniqueItems": true
+    },
+    "question_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/questionId"
+      },
+      "uniqueItems": true
+    },
+    "hypothesis_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/hypothesisId"
+      },
+      "uniqueItems": true
+    },
+    "source_grade": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sourceGrade"
+    },
+    "warrant": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/warrant"
+    },
+    "reproduction_strength": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/reproductionStrength"
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+      }
+    },
+    "scope": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "counterevidence_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/evidenceId"
+      },
+      "uniqueItems": true
+    },
+    "reviewer": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "reviewed_at": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/isoDateOrDateTime"
+    }
+  },
+  "required": [
+    "evidence_id",
+    "source_id",
+    "source_version",
+    "source_version_digest",
+    "anchor_kind",
+    "anchor",
+    "support_span_digest",
+    "support_summary",
+    "relation",
+    "claim_ids",
+    "question_ids",
+    "hypothesis_ids",
+    "source_grade",
+    "warrant",
+    "reproduction_strength",
+    "assumptions",
+    "scope",
+    "counterevidence_ids",
+    "reviewer",
+    "reviewed_at"
+  ],
+  "additionalProperties": false
+}

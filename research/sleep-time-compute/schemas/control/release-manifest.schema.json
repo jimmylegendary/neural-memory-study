@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sleep-time-compute.org/control/release-manifest.schema.json",
+  "title": "Scientific release manifest",
+  "x-stc-owner": "release-engineering",
+  "x-stc-model": "ReleaseManifest",
+  "type": "object",
+  "properties": {
+    "release_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "candidate_ref": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/SubjectRef"
+    },
+    "environment_ref": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/SubjectRef"
+    },
+    "sbom_ref": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/SubjectRef"
+    },
+    "reproduction_manifest_ref": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/SubjectRef"
+    },
+    "artifact_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/DigestRef"
+      },
+      "minItems": 1
+    },
+    "gate_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/DigestRef"
+      },
+      "minItems": 1
+    },
+    "schema_inventory_digest": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+    },
+    "released_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "release_id",
+    "candidate_ref",
+    "environment_ref",
+    "sbom_ref",
+    "reproduction_manifest_ref",
+    "artifact_refs",
+    "gate_refs",
+    "schema_inventory_digest",
+    "released_at"
+  ],
+  "additionalProperties": false
+}

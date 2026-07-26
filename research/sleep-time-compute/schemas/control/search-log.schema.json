@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sleep-time-compute.org/control/search-log.schema.json",
+  "title": "Evidence search result log",
+  "x-stc-owner": "evidence-governance",
+  "x-stc-model": "SearchLog",
+  "type": "object",
+  "properties": {
+    "protocol_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "query": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "result_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "source_id": {
+      "oneOf": [
+        {
+          "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sourceId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["INCLUDE", "EXCLUDE", "DUPLICATE", "PENDING"]
+    },
+    "reason": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "searched_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "protocol_id",
+    "query",
+    "result_url",
+    "source_id",
+    "decision",
+    "reason",
+    "searched_at"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sleep-time-compute.org/control/audit-adjudication.schema.json",
+  "title": "Audit finding adjudication",
+  "x-stc-owner": "independent-audit",
+  "x-stc-model": "AuditAdjudication",
+  "type": "object",
+  "properties": {
+    "adjudication_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "finding_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "disposition": {
+      "type": "string",
+      "enum": ["ACCEPT", "REMEDIATE", "REJECT", "DEFER"]
+    },
+    "rationale": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "remediation_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/SubjectRef"
+      }
+    },
+    "adjudicator_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "adjudicated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "adjudication_id",
+    "finding_id",
+    "disposition",
+    "rationale",
+    "remediation_refs",
+    "adjudicator_id",
+    "adjudicated_at"
+  ],
+  "additionalProperties": false
+}

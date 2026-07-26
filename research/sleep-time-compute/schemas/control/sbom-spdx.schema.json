@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sleep-time-compute.org/control/sbom-spdx.schema.json",
+  "title": "Bounded SPDX software bill of materials",
+  "x-stc-owner": "release-engineering",
+  "x-stc-model": "SpdxDocument",
+  "type": "object",
+  "properties": {
+    "spdxVersion": {
+      "type": "string",
+      "pattern": "^SPDX-2\\.[0-9]+$"
+    },
+    "dataLicense": {
+      "const": "CC0-1.0"
+    },
+    "SPDXID": {
+      "const": "SPDXRef-DOCUMENT"
+    },
+    "name": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "documentNamespace": {
+      "type": "string",
+      "format": "uri"
+    },
+    "creationInfo": {
+      "$ref": "#/$defs/creationInfo"
+    },
+    "packages": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/package"
+      },
+      "minItems": 1
+    },
+    "documentDigest": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+    }
+  },
+  "required": [
+    "spdxVersion",
+    "dataLicense",
+    "SPDXID",
+    "name",
+    "documentNamespace",
+    "creationInfo",
+    "packages",
+    "documentDigest"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "creationInfo": {
+      "type": "object",
+      "properties": {
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "creators": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+          },
+          "minItems": 1
+        }
+      },
+      "required": ["created", "creators"],
+      "additionalProperties": false
+    },
+    "package": {
+      "type": "object",
+      "properties": {
+        "SPDXID": {
+          "type": "string",
+          "pattern": "^SPDXRef-[A-Za-z0-9.-]+$"
+        },
+        "name": {
+          "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+        },
+        "versionInfo": {
+          "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+        },
+        "downloadLocation": {
+          "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+        },
+        "licenseConcluded": {
+          "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+        },
+        "filesAnalyzed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "SPDXID",
+        "name",
+        "versionInfo",
+        "downloadLocation",
+        "licenseConcluded",
+        "filesAnalyzed"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

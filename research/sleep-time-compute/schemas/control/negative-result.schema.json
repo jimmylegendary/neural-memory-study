@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sleep-time-compute.org/control/negative-result.schema.json",
+  "title": "Registered negative result",
+  "x-stc-owner": "research-program",
+  "x-stc-model": "NegativeResult",
+  "type": "object",
+  "properties": {
+    "result_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/resultId"
+    },
+    "experiment_id": {
+      "type": "string",
+      "pattern": "^EXP-STC-(?!0000)[0-9]{4}$"
+    },
+    "hypothesis_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/hypothesisId"
+      },
+      "uniqueItems": true
+    },
+    "result_modality": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/resultModality"
+    },
+    "outcome": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "result_digest": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+    },
+    "artifact_dependencies": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/artifactId"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "registered_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "result_id",
+    "experiment_id",
+    "hypothesis_ids",
+    "result_modality",
+    "outcome",
+    "result_digest",
+    "artifact_dependencies",
+    "registered_at"
+  ],
+  "additionalProperties": false
+}

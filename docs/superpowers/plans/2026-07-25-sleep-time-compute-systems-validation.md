@@ -21,7 +21,12 @@
   that can never support a research claim.
 - Raw archives, lineage, indexes, optimizer state, checkpoints, and active memory are separate storage classes. A reduction in active memory is never described as total-storage reduction.
 - GPU-board, host, and modeled storage/network energy stay separate. They are not summed into an empirical “total energy” without a frozen boundary and calibration.
-- Immediate deny records override already pinned reads. Publication uses compare-and-swap on both parent generation and deletion watermark.
+- Immediate deny records override already pinned content generations. One
+  linearizable `ServingHead` CAS word binds generation, manifest digest,
+  authorization epoch, and deletion epoch; publication, rollback,
+  authorization changes, and deletion all compare-and-swap that exact head.
+  Safe physical reclamation additionally requires reachability closure and
+  acknowledged reader quiescence/hazard release or proven worker fencing.
 - The existing `runbook/hope-reproduction-a100.md` and existing `experiments/` tree are read-only historical inputs.
 
 ## Command-Root Contract
@@ -76,6 +81,8 @@ The shared `src/stc_research/cli.py` exposes exactly:
 ```text
 stc systems dse
 stc systems deletion-audit
+stc systems index-refresh materialize
+stc systems index-refresh run
 stc systems report
 stc runtime lifecycle
 stc runtime run-matrix
@@ -173,7 +180,9 @@ payload, or evidence-class/measurement-status upgrade.
 - Create: `src/stc_research/systems/accounting.py`
 - Create: `src/stc_research/runtime/__init__.py`
 - Create: `src/stc_research/runtime/contracts.py`
+- Create: `configs/systems/storage-accounting.yaml`
 - Create: `tests/systems/test_accounting.py`
+- Create: `tests/systems/test_storage_telemetry.py`
 - Create: `tests/runtime/test_contracts.py`
 
 **Interfaces:**
@@ -193,7 +202,17 @@ Test these exact invariants:
 sum(per_phase.native_resources) == total.native_resources
 gpu_board_j, host_j, storage_network_modeled_j remain separate
 active, durable, index, lineage, latent, optimizer_checkpoint bytes remain separate
-peak_storage_bytes >= final_storage_bytes >= 0
+B_retained == B_r + B_e + B_l + B_p + B_a + B_v
+B_peak_state(t) == B_retained(t) + B_candidate(t) + B_pinned(t)
+             + B_migration(t) + B_workspace(t) + B_replica(t)
+incremental_peak_state_bytes == max_t B_peak_state(t)
+physical_peak_bytes ==
+  max_t [B_base_resident(t) + B_peak_state(t) + B_execution(t)]
+physical_peak_components_at_t_star sum exactly to physical_peak_bytes
+independent base/state/execution component maxima are diagnostics, not summands
+transient_overhead_peak_bytes == max_t(B_peak_state(t) - B_retained(t))
+every physical object has exactly one ownership class, cap, and GC owner
+ledger high-water sampling reconciles with allocator/storage telemetry
 zero future reuse never divides by zero
 JSON round-trip preserves units and phase labels
 raw archive bytes remain charged when active memory is compacted
@@ -237,10 +256,52 @@ network_write_bytes
 WAKE, QUEUE, SLEEP, VERIFY, PUBLISH, ROLLBACK, DELETE
 ```
 
-`LifecycleCostSummary` includes totals, per-phase totals, peak/final storage,
+`StorageBreakdown` is not a bag of overlapping labels. Its retained partition
+has exactly six mutually exclusive ownership classes:
+
+```text
+B_r raw/canonical evidence
+B_e external text/vector/graph payload and index
+B_l latent/KV state
+B_p parametric modules
+B_a auxiliary catalog/router/optimizer state
+B_v version/lineage/recovery state
+```
+
+Each object-level `StorageObjectCharge` binds an opaque physical-object handle,
+exactly one retained or transient ownership class, physical byte count, hard
+cap, named reclamation owner, allocation/retire epochs, and replica identity.
+Content-addressed aliases do not duplicate a physical charge; physical copies
+do. The five disjoint transient additions are `candidate`, `pinned`,
+`migration`, `workspace`, and `replica`; incremental peak state adds them to
+retained state. `hot`, `active`, `warm`, `cold`, and `archive` are
+separate overlapping projection tags and never enter a sum.
+
+`LifecycleCostSummary` includes totals, per-phase totals,
+`retained_storage_bytes`, the typed retained partition,
+`incremental_peak_state_bytes`, all five typed transient additions,
+`transient_overhead_peak_bytes`, `physical_peak_timestamp`,
+`base_model_resident_bytes_at_physical_peak`,
+`incremental_state_bytes_at_physical_peak`,
+`execution_bytes_at_physical_peak`, `physical_peak_bytes`, independent
+component-peak diagnostics, final storage,
 wake latency p50/p95/p99, queue age p50/p95/p99, deadline misses, dropped jobs,
 and the three energy boundaries. Quantiles over empty collections serialize as
 `null`, not zero.
+
+The scalar base/state/execution fields at `physical_peak_timestamp` are aligned
+samples whose sum equals `physical_peak_bytes`; independent component
+high-waters are separately named diagnostics and are never summed as an
+identity. `storage-accounting.yaml` freezes event-driven high-water sampling, periodic
+sampling cadence, allocator/storage telemetry sources, byte rounding, and the
+maximum reconciliation error. Before G4,
+`test_storage_telemetry.py` injects allocation/free races, noncoincident
+component maxima, and short-lived
+spikes and requires the ledger high-water plus frozen calibration bound to
+cover allocator/storage high-water while absolute reconciliation error stays
+within `max(4096 bytes, 1%)`. A missing telemetry source, duplicate ownership,
+unowned transient object, cap exceedance, or undercount outside that bound is a
+typed G4 failure, not a null metric.
 
 It also contains typed, non-collapsed outcomes for TTFT; retrieval, queue,
 prefill, decode, writeback, publish, and adapter-swap latency; accepted
@@ -260,7 +321,8 @@ implementations import them rather than redefining them.
 - [ ] **Step 4: Verify, format, and commit**
 
 ```bash
-uv run pytest tests/systems/test_accounting.py tests/runtime/test_contracts.py -q
+uv run pytest tests/systems/test_accounting.py \
+  tests/systems/test_storage_telemetry.py tests/runtime/test_contracts.py -q
 uv run ruff check src/stc_research/systems src/stc_research/runtime/contracts.py \
   tests/systems tests/runtime/test_contracts.py
 git -C ../.. add research/sleep-time-compute
@@ -284,7 +346,8 @@ Expected: all accounting tests pass and Ruff reports no errors.
   from `runtime/contracts.py`; `versioning.py` and `memory_fabric.py` neither
   define nor re-export competing records with those names.
 - Produces: `ArtifactManifest`, `ShadowCandidate`, `ReadyCandidate`,
-  `PublishOutcome`, and `MemoryFabric`.
+  `ServingHead`, `ReadCapability`, `PublishOutcome`, `ReachabilityRootSet`,
+  `ReclamationDecision`, and `MemoryFabric`.
 - Requires: opaque tenant handles and benchmark/method contracts.
 
 - [ ] **Step 1: Write failure-first publication tests**
@@ -292,16 +355,28 @@ Expected: all accounting tests pass and Ruff reports no errors.
 Cover:
 
 ```python
-MemoryFabric.pin_read(auth, tenant_handle) -> PublishedView
+MemoryFabric.load_head(tenant_handle) -> ServingHead
+MemoryFabric.pin_read(auth, tenant_handle) -> ReadCapability
 MemoryFabric.snapshot(tenant_handle, information_cutoff) -> SnapshotRef
 MemoryFabric.stage(snapshot, artifacts) -> ShadowCandidate
 MemoryFabric.mark_ready(candidate, verification) -> ReadyCandidate
 MemoryFabric.publish(
     candidate,
-    expected_parent_generation,
-    expected_deletion_watermark,
+    expected_head: ServingHead,
 ) -> PublishOutcome
-MemoryFabric.rollback(tenant_handle, bad_generation, reason) -> PublishedView
+MemoryFabric.advance_authorization(
+    tenant_handle, expected_head: ServingHead, new_deny_root
+) -> ServingHead
+MemoryFabric.delete(
+    tenant_handle, expected_head: ServingHead, deletion_request
+) -> ServingHead
+MemoryFabric.rollback(
+    tenant_handle, expected_head: ServingHead,
+    authorized_predecessor_memory_roots, reason
+) -> ServingHead
+MemoryFabric.reclaim(
+    object_handle, root_set: ReachabilityRootSet, retire_epoch
+) -> ReclamationDecision
 ```
 
 Assert that:
@@ -309,16 +384,40 @@ Assert that:
 - readers observe one complete immutable generation;
 - a candidate is invisible until every artifact and manifest digest validates;
 - manifest publication happens last;
-- stale parent generation or deletion watermark rejects publication;
+- `ServingHead` atomically binds generation, manifest digest, authorization
+  epoch, deletion epoch, and deny-root digest;
+- any stale field in the exact expected head rejects publication, rollback,
+  authorization change, or deletion;
+- publication revalidates the exact head after candidate verification, so a
+  delete/authorization change before validation, between validation and CAS,
+  or after CAS has one linearizable outcome;
+- immediate deny is checked before every protected artifact read and before
+  answer emission, even when content is pinned to an older generation;
 - retrying the same completed operation is idempotent;
 - base-model or tokenizer mismatch invalidates latent/KV and parametric
   artifacts;
-- rollback can select only an authorized last-known-good generation.
+- rollback can reuse only authorized last-known-good predecessor **memory
+  roots**. It publishes a new manifest/head with monotonically advanced
+  generation/epochs and the current authorization/deletion/deny root; it never
+  reinstalls an old full `ServingHead` or regresses governance state;
+- every read registers a renewable bounded lease and non-bypassable
+  epoch/hazard slot for its exact head;
+- lease timeout requests cancellation but never by itself proves quiescence or
+  permits physical free;
+- GC traverses the reachability closure of current and pinned heads,
+  in-flight candidate/migration roots, rollback roots, backups, legal holds,
+  and deletion-retention roots, including shared objects across versions;
+- an unreachable retired object is reclaimed only after every capable reader
+  acknowledges post-retire quiescence/releases its hazard, or after an
+  isolation boundary proves the old capability fenced and unable to execute;
+- a stalled unacknowledged reader causes backpressure/fencing, and a resumed
+  reader must acquire a current capability before another dereference.
 
 `ArtifactManifest` records opaque tenant-scoped artifact/source/parent handles,
 snapshot version, generation, base-model and tokenizer hashes, compiler
 name/version/config digest, artifact class, privacy scope, deletion epoch,
-encrypted object location, integrity value, byte counts, readiness, and lineage
+authorization epoch, encrypted object location, integrity value, byte counts,
+readiness, and lineage
 edges. Operational metadata never stores a raw-payload or reversible content
 hash. Integrity uses a tenant-keyed MAC or a digest of encrypted/packed artifact
 bytes; the separately encrypted deletable sidecar owns any payload mapping.
@@ -330,20 +429,34 @@ uv run pytest tests/runtime/test_versioning.py -q
 ```
 
 Use temporary directories, atomic rename on one filesystem, tenant-keyed or
-encrypted-object integrity values, and compare-and-swap metadata. Do not claim
-the reference store implements a distributed consensus protocol.
+encrypted-object integrity values, and one compare-and-swap `ServingHead`
+record per tenant. Candidate sub-roots are immutable and are served only
+through the manifest digest in that head. Deny lookup is a separate
+immediate-read path whose digest/epochs advance through the same head CAS.
+Implement explicit `ReadCapability` acquisition, renewal, hazard release,
+quiescence acknowledgement, worker fencing, root-set construction, and
+reachability-aware reclamation. Do not claim the reference store implements a
+distributed consensus protocol.
 
 - [ ] **Step 3: Run property tests**
 
-Generate arbitrary valid stage/ready/publish/rollback sequences. The invariant
-is that a pinned reader sees either the old or new complete generation and
-never a partial mixture.
+Generate arbitrary valid stage/ready/publish/authorization/delete/rollback/read
+/cancel/fence/reclaim sequences. The invariants are that a pinned reader sees
+either the old or new complete content generation, never a partial mixture;
+current deny always precedes further protected reads/emission; and no object
+reachable from any declared root or possibly executable reader is reclaimed.
+The state-machine suite includes deterministic schedules for delete before
+validation, between validation and head CAS, after CAS, and during a pinned
+read; delete immediately before and during rollback; plus shared-object
+reclamation before/after quiescence and worker fencing.
 
 ```bash
 uv run pytest tests/runtime/test_versioning.py -q
 ```
 
-Expected: at least eight tests pass, including randomized operation sequences.
+Expected: all deterministic linearization/reclamation schedules and randomized
+operation sequences pass; a generation-only CAS, lease-timeout free, or
+minimum-generation-only GC mutant is killed.
 
 - [ ] **Step 4: Commit**
 
@@ -364,10 +477,12 @@ git -C ../.. commit -m "research: implement versioned memory publication"
 - Create: `tests/runtime/test_planes.py`
 
 **Interfaces:**
-- Wake path: authorize → pin generation → answer → append observable event →
-  charge latency.
+- Wake path: authorize against current `ServingHead` → acquire
+  `ReadCapability`/hazard → recheck immediate deny before each protected read
+  and emission → answer → acknowledge quiescence/release hazard → append
+  observable event → charge latency.
 - Sleep path: freeze cutoff → snapshot → plan → materialize shadow → verify →
-  canary → publish.
+  canary → exact-`ServingHead` CAS publish.
 - Control path: admission, cadence, deadline, tier movement, overload fallback.
 
 - [ ] **Step 1: Write boundary and cutoff tests**
@@ -380,7 +495,12 @@ Test:
 - inline and deferred differ only in scheduling;
 - identity and consolidating differ only in operator semantics;
 - no oracle record is importable through the runtime input protocol;
-- failed validation leaves the current generation unchanged.
+- failed validation leaves the current head unchanged;
+- a mid-answer authorization/delete advance blocks the next protected
+  dereference or emission while retaining the old object until reader
+  quiescence/fencing;
+- a late sleep worker whose expected head is stale returns
+  `STALE_COMPLETION` and never relabels or publishes its candidate.
 
 - [ ] **Step 2: Implement the four planes**
 
@@ -490,6 +610,7 @@ git -C ../.. commit -m "research: add sleep queue design-space simulator"
 - Modify: `tests/test_cli.py`
 - Create: `configs/systems/deletion-profile.yaml`
 - Create: `tests/runtime/test_deletion.py`
+- Create: `tests/runtime/test_reclamation.py`
 - Create: `tests/runtime/test_deletion_audit.py`
 - Create: `tests/runtime/test_failures.py`
 - Create: `tests/runtime/fixtures/deletion-audit/*`
@@ -520,19 +641,26 @@ Inject:
 ```text
 worker death
 truncated object
-stale generation CAS
-stale deletion-watermark CAS
+stale exact-ServingHead CAS
 corrupt index
 storage-node loss
 poison/canary failure
+deletion before candidate validation
+deletion between candidate validation and head CAS
+deletion after successful publication CAS
 deletion during a pinned read
+reclaim attempt before reader quiescence
+lease expiry without hazard release
+worker fence followed by capability replay
+shared object reachable from another live/rollback/backup root
 duplicate event delivery
 lost event before acknowledgement
 ```
 
 Assert no corrupt/truncated candidate publishes, retries are idempotent,
-rollback does not revive denied material, and RTO/RPO are measured rather than
-assumed.
+rollback does not revive denied material, immediate deny precedes further
+protected reads/emission, no reachable or possibly reader-accessible object is
+freed, and RTO/RPO are measured rather than assumed.
 
 - [ ] **Step 3: Implement deny-first deletion and failure harness**
 
@@ -540,6 +668,16 @@ Lineage traversal must cover raw, abstract, graph/index, latent/KV,
 user-parametric, optimizer, checkpoint, cache, and candidate artifacts.
 Separate cryptographic erasure from physical deletion and behavioral
 unlearning; do not treat one as proof of the others.
+
+Reclamation constructs one `ReachabilityRootSet` from the current head, all
+live pinned heads, in-flight candidates and migrations, rollback roots,
+backups, legal holds, and deletion-retention roots, then traverses immutable
+sub-root sharing. An object outside the closure is still not freeable until
+every reader that could have acquired it acknowledges a post-retire quiescent
+state/releases its hazard, or a tested isolation boundary fences that worker
+and rejects replay of its old capability. Lease expiry only requests
+cancellation. The audit reports roots, closure digest, retire epoch, reader
+acknowledgements/fence proofs, reclaim owner, and outcome for every candidate.
 
 `deletion-profile.yaml` freezes ledger retention, maximum backup retention,
 key-destruction latency, legal-hold states, declared replica/storage classes,
@@ -555,6 +693,7 @@ behavioral-unlearning claims pass or fail independently.
 ```bash
 uv run pytest \
   tests/runtime/test_deletion.py \
+  tests/runtime/test_reclamation.py \
   tests/runtime/test_deletion_audit.py \
   tests/runtime/test_failures.py -q
 uv run stc systems deletion-audit \
@@ -565,9 +704,10 @@ git -C ../.. add research/sleep-time-compute
 git -C ../.. commit -m "research: validate deletion rollback and runtime failures"
 ```
 
-Expected: deletion, deletion-audit, and failure tests pass; the audit reports
-each completion dimension, every named injected-fault outcome, and zero
-undeclared replica or retained linkable key.
+Expected: deletion, reclamation, deletion-audit, and failure tests pass; the
+audit reports each completion dimension, every named injected-fault outcome,
+every root/reader reclamation proof, and zero undeclared replica, unsafe free,
+or retained linkable key.
 
 ---
 
@@ -575,20 +715,28 @@ undeclared replica or retained linkable key.
 
 **Files:**
 - Create: `configs/systems/lifecycle-smoke.yaml`
+- Create: `configs/systems/index-refresh.yaml`
+- Create: `configs/systems/capacity-production-phases.yaml`
+- Create: `schemas/runtime/capacity-production-phases-v1.schema.json`
 - Modify: `src/stc_research/cli.py`
+- Create: `src/stc_research/runtime/index_refresh.py`
 - Modify: `tests/test_cli.py`
 - Create: `tests/runtime/test_lifecycle_integration.py`
+- Create: `tests/runtime/test_index_refresh.py`
 - Create: `tests/runtime/test_manifest_runner.py`
 - Create: `tests/runtime/test_distributed_manifest_runner.py`
 - Create: `tests/runtime/test_matrix_import.py`
+- Create: `tests/runtime/test_capacity_phase_plan.py`
 - Create: `tests/runtime/fixtures/manifest-smoke.jsonl`
 - Create: `manifests/systems/runtime-G2.json`
+- Create: `manifests/systems/index-refresh-G2.json`
 - Modify: `src/stc_research/runtime/coordinator.py`
 
 **Interfaces:**
 - Consumes: benchmark fixture, one frozen destination, accounting, memory
   fabric, queue, and runtime.
-- Produces: four immutable system-run bundles.
+- Produces: four immutable lifecycle bundles plus a G2-bound, five-arm
+  representation-refresh protocol.
 
 - [ ] **Step 1: Freeze the exact 2×2 contract**
 
@@ -627,40 +775,208 @@ bundle_digest_errors=0
 
 At least five integration tests pass.
 
+- [ ] **Step 2A: Freeze and execute the representation-refresh protocol**
+
+This is a `SYSTEMS_CHARACTERIZATION`/conformance track, not a powered
+confirmatory scaling claim. Freeze active-population sizes
+`{1K,2K,4K,8K,16K,32K,64K,128K,256K,512K}`; the first eight may fit
+descriptive curves and the last two are untouched extrapolation stress sizes.
+Run five deterministic paired trace seeds for each of three frozen workload
+traces (uniform change, locality-skewed change, and delete-heavy change) in
+these five arms:
+
+```text
+fixed encoder + local changed-key update
+versioned encoder/index federation
+query-time old→new representation translation
+dual-index background migration
+single-current-encoder full replacement
+```
+
+All arms receive byte-identical payload changes, incompatible-encoder events
+where applicable, query/probe order, delete/correction trace, quality floor,
+freshness deadline, hardware allocation, and failure policy. The manifest
+freezes the declared affected-key set
+\(\mathcal K_c^{\mathrm{aff}}\) before execution. Instrument:
+
+```text
+encoding/publication item operations
+retained and incremental peak-state bytes by disjoint ownership class
+resident frozen-base copies, execution bytes, and physical HBM/fleet peak
+resident encoder/index versions
+query fan-out, translation and calibration work
+migration bytes and completion lag
+delete fan-out and residual checks
+retrieval quality, p50/p95/p99 query latency, freshness misses
+```
+
+The fixed-encoder arm's affected set is only changed payloads. Whole-store
+work is a lower-bound candidate only for the single-current full-replacement
+arm with no federation or translation. Federation, translation, and dual-index
+arms must charge displaced encoder/index residency, query fan-out/calibration,
+migration, peak overlap, and deletion fan-out; hiding any term invalidates that
+arm. Every arm must meet the same retrieval-quality and deletion-residual
+constraints before cost comparison.
+
+```bash
+uv run stc systems index-refresh materialize \
+  --config configs/systems/index-refresh.yaml \
+  --output manifests/systems/index-refresh-G2.json
+uv run stc systems index-refresh run \
+  --manifest manifests/systems/index-refresh-G2.json \
+  --output /tmp/stc-index-refresh
+uv run pytest tests/runtime/test_index_refresh.py -q
+```
+
+Tests recompute \(\sum_c\sum_{i\in\mathcal K_c^{\mathrm{aff}}}e_{ic}\), reject
+an undeclared whole-store affected set, inject an encoder incompatibility,
+exercise deletes during migration, and fail every arm that omits residency,
+fan-out, translation, migration, peak, or delete cost. A held-out size reversal
+or quality/deletion failure is a reported characterization boundary; no
+alternative is declared universally optimal. The manifest/result bundle carry
+`evidence_role=SYSTEMS_CHARACTERIZATION` and
+`claim_admissibility=CONFORMANCE_ONLY`. G4 may use them to establish
+accounting, atomicity, quality-floor, and deletion conformance, but not a
+slope, universal lower bound, scaling law, or comparative superiority.
+Promotion to a scientific claim requires a separate pre-TEST amendment with
+variance pilot, power, exact estimand/model, prediction tolerance,
+multiplicity, held-out decision, and result-analysis contract.
+
 - [ ] **Step 3: Implement the general manifest runner**
 
 `stc runtime run-matrix` reads a frozen logical manifest, resolves the method
 registry, and executes every cell through the same wake/sleep coordinator,
-versioned fabric, accounting hooks, deletion watermark, and bundle writer used
+versioned fabric, accounting hooks, exact-`ServingHead` publication and
+deny/reclamation protocol, and bundle writer used
 by the four-cell smoke. It never invokes a method-only shortcut. Fixture mode
-may consume a standalone test manifest. Every smoke, confirmatory, scaling, or
-public production mode also requires `--preregistration`; the runner verifies
-that the supplied logical manifest and cohort-index/public-replay digest are
-members of that G2 envelope before expanding child `RunSpec` records.
-Confirmatory and scaling modes additionally require a PASS
-`--execution-snapshot` whose G4, G4-input-index, preregistration, logical
-confirmatory manifest/run index, scaling manifest/cohort index/budget,
-scaling design/hardware configurations, analysis-plan, checkout, and
-environment digests all resolve before any child starts. The scaling runner
-also requires `--budget`, `--scaling-config`, and `--hardware-config`, rejects
-any digest other than the ones in the snapshot, and enforces the frozen
-135-RRE hard ceiling before launch and again during resume/merge.
+may consume a standalone test manifest. There are exactly three
+G1-descended, pre-TEST calibration authorizations:
+
+- `scope=core` permits only `--mode training-calibration` and the typed
+  TRAIN-only pilot;
+- `scope=capacity-selection` permits only
+  `--mode capacity-calibration --calibration-role selection`;
+- `scope=capacity-power` permits only
+  `--mode capacity-calibration --calibration-role power`.
+
+Each requires its exact readiness, development budget, TRAIN/CAL manifest and
+cohort index. Scope/role mismatch, any TEST URI/ID/derivative/capability, or
+unit/seed/derivative overlap between capacity selection and power cohorts is a
+prelaunch failure.
+
+Core confirmatory production requires only the core
+`--preregistration`, PASS G2 chain, and
+`--execution-snapshot manifests/stc/g4-confirmatory-execution.json`, plus
+`--budget manifests/stc/confirmatory-budget.json` and the closed
+`--budget-role primary|clean`. The primary role can debit only
+`Q_core,primary`; the clean role can debit only `Q_core,clean`, and neither can
+borrow or reduce the powered cohort. Capacity
+production (`scaling`, `coverage`, `parametric-information`) instead requires
+`--capacity-preregistration`, PASS
+`--capacity-gate manifests/capacity-gates/G2-CAP.json`, and
+`--execution-snapshot manifests/stc/g4-capacity-execution.json`. The capacity
+snapshot binds PASS core G4/G2, G4 inputs, both preregistrations, G2-CAP,
+capacity stakes/configs/powers/manifests/cohort indexes/subbudgets, aggregate
+budget, both core/capacity selection bundles, disjoint power-calibration
+receipt/validation/summary, checkout, target environment, and the exact
+CAL→TEST transport predicate. It contains no confirmatory outcome, analysis,
+primary receipt, or clean-rerun receipt. A core and capacity snapshot are
+separate typed documents; neither may substitute for the other.
+
+Core confirmatory launch order is not manifest row order or a child-key hash.
+The runner consumes the final run index's frozen randomized-complete-block/
+Williams schedule and enforces its node/rank/wave/thermal/cache assignments,
+order seed/digest, and balance tolerances. Core preregistration, G2, the core
+G4 snapshot, every shard manifest, and the distributed receipt bind those same
+bytes. Hybrid-all-last, one method confined to a rank/time block, or an order
+seed drift fails before launch; a file-row permutation with identical frozen
+schedule is invariant.
+
+Every capacity mode requires `--budget`, `--aggregate-budget`,
+`--actual-ledger results/capacity/actual-rre-ledger.jsonl`, and the node-0
+canonical budget coordinator. It computes
+dominant-resource RRE from the frozen native reference vector, rejects a
+missing counter, and enforces both the track quota, sponsor-frozen
+\(Q_{\rm capacity,max}\), and every absolute native/carbon ceiling
+before reservation, launch, resume, verify, and merge. Node 0 durably appends
+one hash-chained reservation to
+`results/capacity/actual-rre-ledger.jsonl` and atomically replaces
+`results/capacity/actual-rre-ledger.head.json` with the new row count and
+terminal digest before
+issuing a cohort token; v1 forbids concurrent track reservations. Admission
+uses `completed_actual + all_unreconciled_reservations + next_reservation`,
+not completed actual alone. An abandoned reservation remains charged until
+typed no-launch reconciliation; actual above reservation is a system-safety
+failure and halts the program. Native cgroup/device/I/O/network caps include a
+frozen counter-latency margin. Track ledgers are deterministic views only.
+Tests crash between reservation and launch, race two stale reservations, delay
+counters, exceed a reservation, omit retry/CPU/I/O work, reuse a token, and
+drift a derived view.
+
+Scaling also requires `--scaling-config` and `--hardware-config`; coverage and
+information require their exact G2-CAP configs. Scaling and coverage expose
+the closed CLI enum `--execution-role fit|holdout`; scaling maps it exactly to
+manifest enum `a100_fit|a100_holdout`. Hyphenated manifest aliases,
+underscored CLI aliases, mixed roles, or a role mismatch fail parsing. A
+holdout role requires the matching immutable provisional artifact and
+one-time digest-bound `--holdout-unlock`; the runner proves no holdout result
+was readable or schedulable before the seal. Post-unlock anchor reruns are
+score/control only and cannot refit. Parametric information has
+`--execution-role all` only and verifies fresh process/base, unique child
+payload sub-seed under its master seed family, frozen decoder, and
+complete-state inventory for every child.
 The `confirmatory-clean-rerun` run ID additionally requires
 `--rerun-request manifests/stc/confirmatory-clean-rerun-request.json`. That
 typed evidence-owned request binds the validated primary receipt/result tree,
 analysis preparation, requested checkout, isolation policy, and exact
 confirmatory inputs. The runner rejects a missing, stale, pre-primary, or
 already-consumed request, and the clean-rerun receipt binds its digest.
-Scaling additionally requires `--primary-receipt`, `--primary-validation`,
-`--clean-receipt`, and `--clean-validation`. Before any scaling worker starts,
-the runner proves that both confirmatory trees passed, cover the same frozen
-\(297n\) logical child references, and have distinct run IDs, child bundles,
-environment/cache identities, and result-tree digests.
+Capacity scheduling order is frozen before outcomes and does not wait for,
+inspect, or bind confirmatory result bytes. Primary/clean confirmatory receipts
+belong only to the PAPER-C independent-reproduction chain; presenting either
+receipt to a capacity runner is rejected as an undeclared dependency.
+
+`capacity-production-phases.yaml` is a preregistered wrapper over this same
+runner, not a second execution path. Its closed ordered phase IDs and mappings
+are:
+
+```text
+scaling-fit:
+  mode=scaling, cli_role=fit, manifest_role=a100_fit
+scaling-holdout:
+  mode=scaling, cli_role=holdout, manifest_role=a100_holdout
+coverage-cardinality-fit:
+  mode=coverage, arm=cardinality, cli_role=fit
+coverage-fixed-bits-fit:
+  mode=coverage, arm=fixed-bits, cli_role=fit
+coverage-cardinality-holdout:
+  mode=coverage, arm=cardinality, cli_role=holdout
+coverage-fixed-bits-holdout:
+  mode=coverage, arm=fixed-bits, cli_role=holdout
+parametric-information-all:
+  mode=parametric-information, cli_role=all
+```
+
+Each row freezes its manifest, cohort index, track/aggregate budget, canonical
+ledger, output/staging path, receipt, validation path, selection/config
+digests, snapshot, required predecessor phase, `schedule_digest`, canonical
+ordered child-key vector, node/rank/wave/thermal/cache assignments, and
+per-block balance tolerances. The same schedule object is bound by G2-CAP,
+the capacity G4 snapshot, every rank shard manifest, and the final receipt;
+workers must launch owned children in the canonical subsequence induced by
+that global order. `stc runtime
+run-capacity-phase --phase-plan ... --phase-id ...` resolves the row and calls
+`run-matrix`; it cannot override a mapped field. Scaling and coverage holdout
+rows additionally require the exact provisional and one-time unlock artifacts.
+Tests mutate every field, reorder phases, mix an arm/role, omit a predecessor,
+alias an output, pass a confirmatory receipt, or attempt a holdout before
+unlock; all fail before worker launch.
 
 The optional `--launcher torchrun` path reuses the accelerator package's tested
 container launcher. The cohort index expands logical rows to unique physical
-child keys; `sha256(child_key) mod world_size` assigns each key to exactly one
-global rank. A rank writes only
+child keys; `sha256(child_key) mod world_size` assigns ownership only and may
+not define or change launch order. A rank executes its owned keys in their
+frozen global-order subsequence and writes only
 `workers/rank-{global_rank:04d}/children/{child_key}/attempt-{attempt_id}/`,
 and each child manifest is atomically renamed last. Global rank zero waits at a
 barrier, verifies the complete expected child/reference incidence map and all
@@ -685,6 +1001,7 @@ last. It refuses an existing output and never invokes a child workload.
 uv run pytest \
   tests/runtime/test_manifest_runner.py \
   tests/runtime/test_distributed_manifest_runner.py \
+  tests/runtime/test_capacity_phase_plan.py \
   tests/runtime/test_matrix_import.py -q
 uv run stc runtime run-matrix \
   --manifest tests/runtime/fixtures/manifest-smoke.jsonl \
@@ -698,15 +1015,23 @@ method returning an uncharged or cutoff-mismatched artifact fails closed.
 fake launcher and rejects overlapping shard ownership, a missing/extra child,
 logical-only placeholders, duplicate physical execution, cross-rank writes,
 snapshot/preregistration drift, unsafe resume, and a top-level manifest written
-before every child manifest verifies. Scaling tests also reject a missing or
-drifted budget and any planned or actual RRE above 135.
+before every child manifest verifies. Capacity-only scheduler fixtures reject
+monotone load or \(M\) order, a substrate isolated in one wave,
+method×rank confounding, thermal/cache imbalance beyond tolerance, and
+order-seed/digest drift. Permuting input file rows while preserving the
+canonical schedule is invariant, whereas using the ownership hash as launch
+order fails. Scaling tests also reject a missing or
+drifted program envelope/reference profile, any planned or actual committed
+RRE above \(Q_{\rm capacity,max}\), or any native-resource/carbon overrun.
 Import tests interrupt the copy, mutate one source byte, inject a symlink, and
 precreate the destination; no case may publish a canonical manifest or execute
 a child. Clean-rerun tests reject a missing/stale/replayed rerun request or one
 that does not bind the imported primary receipt/tree. CLI tests own every
 distributed, receipt, rerun-request, and import option used by Task 8.
-Scaling tests also prove that omitting or mutating either confirmatory receipt
-or validation report prevents worker launch, not merely final merge.
+Capacity tests prove the inverse dependency boundary: supplying any
+confirmatory primary/clean receipt or validation report to scaling, coverage,
+or information prevents worker launch. Mutating a phase predecessor,
+arm/role, manifest, output, receipt, or order byte stales the runtime contract.
 
 - [ ] **Step 4: Freeze the runtime contract and register manifests**
 
@@ -715,6 +1040,8 @@ payloads remain outside Git.
 
 ```bash
 uv run stc runtime freeze-contract \
+  --index-refresh manifests/systems/index-refresh-G2.json \
+  --capacity-phase-plan configs/systems/capacity-production-phases.yaml \
   --output manifests/systems/runtime-G2.json
 uv run stc dag import-bundles \
   --input /tmp/stc-lifecycle-smoke \
@@ -972,7 +1299,13 @@ git -C ../.. commit -m "research: add accelerator lifecycle measurement harness"
 - Create after post-G4 execution:
   `research/sleep-time-compute/manifests/systems/distributed-confirmatory-clean-rerun-receipt.json`
 - Create after post-G4 execution:
-  `research/sleep-time-compute/manifests/systems/distributed-scaling-receipt.json`
+  `research/sleep-time-compute/manifests/systems/distributed-scaling-fit-receipt.json`
+- Create after post-G4 execution:
+  `research/sleep-time-compute/manifests/systems/distributed-scaling-holdout-receipt.json`
+- Create after post-G4 execution:
+  `research/sleep-time-compute/manifests/systems/distributed-coverage-{cardinality,fixed-bits}-{fit,holdout}-receipt.json`
+- Create after post-G4 execution:
+  `research/sleep-time-compute/manifests/systems/distributed-parametric-information-receipt.json`
 
 **Interfaces:**
 - Target: two manually managed nodes, each with four A100 80 GB GPUs, NFS, and
@@ -981,7 +1314,9 @@ git -C ../.. commit -m "research: add accelerator lifecycle measurement harness"
   microbenchmark bundle, and artifact-DAG handoff before G4.
 - Documents but does not pre-authorize: the post-G4 distributed
   `runtime run-matrix` path for every unique physical child behind the 297
-  confirmatory and 112 scaling logical rows.
+  confirmatory rows and the capacity program's 120 scaling, 160 coverage, and
+  48 parametric-information logical rows, with their independently powered
+  child counts.
 - `manifests/a100-runbook-smoke.json` is a schema-validated,
   hardware-free command-surface receipt generated by Task 7's fake backend
   from the final runbook. It records the runbook/config/toolchain digests,
@@ -1394,11 +1729,16 @@ not replace it with synthetic or shape-derived evidence.
 - [ ] **Step 4: Document the post-G4 production matrix path**
 
 This step is part of the runbook but must not execute until Task 9 records PASS
-G4 and the evidence controller produces the combined typed snapshot at
-`manifests/stc/g4-confirmatory-execution.json`. Despite its legacy filename,
-that snapshot explicitly binds both the confirmatory manifest/run index and the
-scaling manifest/cohort index/budget. It also binds the preregistration,
-analysis plan, G4 decision/input index, checkout, and target environment.
+G4. The evidence controller emits two non-substitutable typed snapshots.
+`manifests/stc/g4-confirmatory-execution.json` binds only the core
+preregistration/G2, confirmatory manifest/run index, analysis plan, G4
+decision/input index, checkout, and target environment.
+`manifests/stc/g4-capacity-execution.json` binds PASS core G4/G2 plus the
+capacity preregistration/G2-CAP, pre-G2-CAP configs/stakes, disjoint capacity
+CAL receipts/validations/selections, all capacity powers/manifests/cohort
+indexes/budgets, canonical aggregate-ledger contract, checkout, and exact
+target-A100 CAL→TEST transport predicate. It binds no confirmatory outcomes or
+receipts.
 
 On node 0, freeze the exact control bytes on NFS:
 
@@ -1412,14 +1752,29 @@ uv run stc gate verify-chain --through G4 --root manifests/gates
 uv run stc prereg validate \
   --manifest manifests/stc/preregistration.json \
   --fail-on-upstream-digest-change
+uv run stc prereg validate \
+  --manifest manifests/stc/capacity-preregistration.json \
+  --fail-on-upstream-digest-change
 mkdir -p "$STC_NFS_ROOT/control"
 sha256sum \
   manifests/stc/g4-confirmatory-execution.json \
+  manifests/stc/g4-capacity-execution.json \
   manifests/stc/confirmatory.jsonl \
   manifests/stc/confirmatory-run-index.json \
+  manifests/stc/capacity-preregistration.json \
+  manifests/capacity-gates/G2-CAP.json \
+  manifests/stc/capacity-aggregate-budget.json \
+  configs/systems/capacity-production-phases.yaml \
   manifests/stc/scaling-cells.jsonl \
   manifests/stc/scaling-cohort-index.json \
   manifests/stc/scaling-budget.json \
+  manifests/stc/coverage-cardinality-cells.jsonl \
+  manifests/stc/coverage-fixed-bits-cells.jsonl \
+  manifests/stc/coverage-scaling-cohort-index.json \
+  manifests/stc/coverage-scaling-budget.json \
+  manifests/stc/parametric-information-cells.jsonl \
+  manifests/stc/parametric-information-cohort-index.json \
+  manifests/stc/parametric-information-budget.json \
   configs/stc/design/scaling.yaml \
   configs/stc/design/scaling-hardware.yaml \
   manifests/stc/preregistration.json \
@@ -1443,6 +1798,9 @@ uv run stc gate verify-chain --through G4 --root manifests/gates
 uv run stc prereg validate \
   --manifest manifests/stc/preregistration.json \
   --fail-on-upstream-digest-change
+uv run stc prereg validate \
+  --manifest manifests/stc/capacity-preregistration.json \
+  --fail-on-upstream-digest-change
 ```
 
 Launch the following confirmatory command concurrently on both nodes:
@@ -1461,6 +1819,8 @@ uv run stc runtime run-matrix \
   --cohort-index manifests/stc/confirmatory-run-index.json \
   --preregistration manifests/stc/preregistration.json \
   --execution-snapshot manifests/stc/g4-confirmatory-execution.json \
+  --budget manifests/stc/confirmatory-budget.json \
+  --budget-role primary \
   --gate-chain manifests/gates \
   --mode confirmatory \
   --run-id confirmatory-primary \
@@ -1495,6 +1855,8 @@ uv run stc runtime run-matrix \
   --cohort-index manifests/stc/confirmatory-run-index.json \
   --preregistration manifests/stc/preregistration.json \
   --execution-snapshot manifests/stc/g4-confirmatory-execution.json \
+  --budget manifests/stc/confirmatory-budget.json \
+  --budget-role primary \
   --gate-chain manifests/gates \
   --mode confirmatory \
   --run-id confirmatory-primary \
@@ -1511,21 +1873,6 @@ uv run stc results validate \
   --cohort-index manifests/stc/confirmatory-run-index.json \
   --results results/confirmatory-primary \
   --output manifests/stc/confirmatory-result-validation.json
-mkdir -p "$STC_NFS_ROOT/control/scaling-prereqs"
-STC_CONTROL_FILE="$STC_NFS_ROOT/control/scaling-prereqs/distributed-confirmatory-receipt.json"
-if test -e "$STC_CONTROL_FILE"
-then
-  cmp manifests/systems/distributed-confirmatory-receipt.json "$STC_CONTROL_FILE"
-else
-  cp manifests/systems/distributed-confirmatory-receipt.json "$STC_CONTROL_FILE"
-fi
-STC_CONTROL_FILE="$STC_NFS_ROOT/control/scaling-prereqs/confirmatory-result-validation.json"
-if test -e "$STC_CONTROL_FILE"
-then
-  cmp manifests/stc/confirmatory-result-validation.json "$STC_CONTROL_FILE"
-else
-  cp manifests/stc/confirmatory-result-validation.json "$STC_CONTROL_FILE"
-fi
 uv run stc dag import-bundles \
   --input results/confirmatory-primary \
   --manifest-dir manifests/systems/runs
@@ -1549,6 +1896,8 @@ uv run stc runtime run-matrix \
   --cohort-index manifests/stc/confirmatory-run-index.json \
   --preregistration manifests/stc/preregistration.json \
   --execution-snapshot manifests/stc/g4-confirmatory-execution.json \
+  --budget manifests/stc/confirmatory-budget.json \
+  --budget-role clean \
   --gate-chain manifests/gates \
   --mode confirmatory \
   --run-id confirmatory-clean-rerun \
@@ -1643,6 +1992,8 @@ uv run --no-sync stc runtime run-matrix \
   --cohort-index "$STC_CONTROLLER_ROOT/manifests/stc/confirmatory-run-index.json" \
   --preregistration "$STC_CONTROLLER_ROOT/manifests/stc/preregistration.json" \
   --execution-snapshot "$STC_CONTROLLER_ROOT/manifests/stc/g4-confirmatory-execution.json" \
+  --budget "$STC_CONTROLLER_ROOT/manifests/stc/confirmatory-budget.json" \
+  --budget-role clean \
   --gate-chain "$STC_CONTROLLER_ROOT/manifests/gates" \
   --mode confirmatory \
   --run-id confirmatory-clean-rerun \
@@ -1676,6 +2027,8 @@ uv run stc runtime run-matrix \
   --cohort-index manifests/stc/confirmatory-run-index.json \
   --preregistration manifests/stc/preregistration.json \
   --execution-snapshot manifests/stc/g4-confirmatory-execution.json \
+  --budget manifests/stc/confirmatory-budget.json \
+  --budget-role clean \
   --gate-chain manifests/gates \
   --mode confirmatory \
   --run-id confirmatory-clean-rerun \
@@ -1693,43 +2046,10 @@ uv run stc results validate \
   --cohort-index manifests/stc/confirmatory-run-index.json \
   --results results/confirmatory-clean-rerun \
   --output manifests/stc/confirmatory-clean-rerun-result-validation.json
-STC_CONTROL_FILE="$STC_NFS_ROOT/control/scaling-prereqs/distributed-confirmatory-clean-rerun-receipt.json"
-if test -e "$STC_CONTROL_FILE"
-then
-  cmp manifests/systems/distributed-confirmatory-clean-rerun-receipt.json \
-    "$STC_CONTROL_FILE"
-else
-  cp manifests/systems/distributed-confirmatory-clean-rerun-receipt.json \
-    "$STC_CONTROL_FILE"
-fi
-STC_CONTROL_FILE="$STC_NFS_ROOT/control/scaling-prereqs/confirmatory-clean-rerun-result-validation.json"
-if test -e "$STC_CONTROL_FILE"
-then
-  cmp manifests/stc/confirmatory-clean-rerun-result-validation.json \
-    "$STC_CONTROL_FILE"
-else
-  cp manifests/stc/confirmatory-clean-rerun-result-validation.json \
-    "$STC_CONTROL_FILE"
-fi
 uv run stc dag import-bundles \
   --input results/confirmatory-clean-rerun \
   --manifest-dir manifests/systems/runs
 uv run stc dag check
-sha256sum \
-  "$STC_NFS_ROOT/control/scaling-prereqs/distributed-confirmatory-receipt.json" \
-  "$STC_NFS_ROOT/control/scaling-prereqs/confirmatory-result-validation.json" \
-  "$STC_NFS_ROOT/control/scaling-prereqs/distributed-confirmatory-clean-rerun-receipt.json" \
-  "$STC_NFS_ROOT/control/scaling-prereqs/confirmatory-clean-rerun-result-validation.json" \
-  > "$STC_NFS_ROOT/control/scaling-prereqs/checksums.sha256.tmp"
-if test -e "$STC_NFS_ROOT/control/scaling-prereqs/checksums.sha256"
-then
-  cmp "$STC_NFS_ROOT/control/scaling-prereqs/checksums.sha256.tmp" \
-    "$STC_NFS_ROOT/control/scaling-prereqs/checksums.sha256"
-  rm "$STC_NFS_ROOT/control/scaling-prereqs/checksums.sha256.tmp"
-else
-  mv "$STC_NFS_ROOT/control/scaling-prereqs/checksums.sha256.tmp" \
-    "$STC_NFS_ROOT/control/scaling-prereqs/checksums.sha256"
-fi
 ```
 
 The receipt records the detached checkout and the four initially empty cache
@@ -1738,100 +2058,164 @@ differ from the primary run. Evidence-owned confirmatory and clean-rerun
 controllers consume these receipts and canonical imported trees; a valid
 receipt disables child execution in those wrappers.
 
-After both confirmatory trees validate, launch scaling concurrently on both
-nodes from the reviewed controller checkout with the same `STC_NODE_RANK`
-assignments:
+Capacity production is independent of confirmatory outcomes. Once the
+capacity snapshot exists, execute the seven frozen phases in their
+preregistered global-ledger order. On both nodes, the exact launcher surface is:
 
 ```bash
 : "${STC_BOOTSTRAP_ROOT:?set this to the reviewed shared NFS directory}"
 : "${STC_NODE_RANK:?set to 0 on node 0 and 1 on node 1}"
+: "${STC_CAPACITY_PHASE:?set to one frozen capacity phase ID}"
 case "$STC_NODE_RANK" in 0|1) ;; *) exit 2 ;; esac
 sha256sum -c "$STC_BOOTSTRAP_ROOT/cluster.env.sha256"
 . "$STC_BOOTSTRAP_ROOT/cluster.env"
-sha256sum -c "$STC_NFS_ROOT/control/scaling-prereqs/checksums.sha256"
-unset UV_CACHE_DIR UV_PROJECT_ENVIRONMENT XDG_CACHE_HOME TORCH_HOME HF_HOME
+sha256sum -c "$STC_NFS_ROOT/control/post-g4-inputs.sha256"
 STC_REPO_ROOT="$(git rev-parse --show-toplevel)"
-STC_CONTROLLER_ROOT="$STC_REPO_ROOT/research/sleep-time-compute"
-cd "$STC_CONTROLLER_ROOT"
-uv sync --frozen --extra accelerator
-uv run stc runtime run-matrix \
-  --manifest manifests/stc/scaling-cells.jsonl \
-  --cohort-index manifests/stc/scaling-cohort-index.json \
-  --budget manifests/stc/scaling-budget.json \
-  --scaling-config configs/stc/design/scaling.yaml \
-  --hardware-config configs/stc/design/scaling-hardware.yaml \
-  --primary-receipt "$STC_NFS_ROOT/control/scaling-prereqs/distributed-confirmatory-receipt.json" \
-  --primary-validation "$STC_NFS_ROOT/control/scaling-prereqs/confirmatory-result-validation.json" \
-  --clean-receipt "$STC_NFS_ROOT/control/scaling-prereqs/distributed-confirmatory-clean-rerun-receipt.json" \
-  --clean-validation "$STC_NFS_ROOT/control/scaling-prereqs/confirmatory-clean-rerun-result-validation.json" \
-  --preregistration manifests/stc/preregistration.json \
-  --execution-snapshot manifests/stc/g4-confirmatory-execution.json \
-  --gate-chain manifests/gates \
-  --mode scaling \
-  --run-id scaling \
-  --backend a100 \
-  --launcher torchrun \
+cd "$STC_REPO_ROOT/research/sleep-time-compute"
+uv run stc runtime run-capacity-phase \
+  --phase-plan configs/systems/capacity-production-phases.yaml \
+  --phase-id "$STC_CAPACITY_PHASE" \
+  --capacity-preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --execution-snapshot manifests/stc/g4-capacity-execution.json \
+  --aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --actual-ledger results/capacity/actual-rre-ledger.jsonl \
+  --backend a100 --launcher torchrun \
   --nnodes 2 --nproc-per-node 4 --node-rank "$STC_NODE_RANK" \
   --master-addr "$STC_MASTER_ADDR" --master-port "$STC_MASTER_PORT" \
   --container-ref "$STC_CONTAINER_REF" \
   --probe "$STC_BOOTSTRAP_ROOT/probes/cluster.json" \
   --counter-profile "$STC_COUNTER_PROFILE" \
-  --shard-count 8 \
-  --resume verify-complete \
-  --output "$STC_NFS_ROOT/staging/scaling"
+  --shard-count 8 --resume verify-complete \
+  --staging-root "$STC_NFS_ROOT/staging/capacity"
 ```
 
-The scaling runner resolves exactly the preregistered \(112n\) logical child
-references, preserves the 96-fit/16-holdout roles, executes no H100 child, and
-fails before launch or merge if the planned or actual RRE exceeds the frozen
-135 ceiling. After both launchers exit, node 0 runs:
+Run both-node `scaling-fit`, then node 0 verifies/imports the mapped receipt
+and seals the fit:
 
 ```bash
-: "${STC_BOOTSTRAP_ROOT:?set this to the reviewed shared NFS directory}"
-sha256sum -c "$STC_BOOTSTRAP_ROOT/cluster.env.sha256"
-. "$STC_BOOTSTRAP_ROOT/cluster.env"
-sha256sum -c "$STC_NFS_ROOT/control/scaling-prereqs/checksums.sha256"
-STC_REPO_ROOT="$(git rev-parse --show-toplevel)"
-cd "$STC_REPO_ROOT/research/sleep-time-compute"
-uv run stc runtime run-matrix \
+uv run stc runtime run-capacity-phase \
+  --phase-plan configs/systems/capacity-production-phases.yaml \
+  --phase-id scaling-fit \
+  --capacity-preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --execution-snapshot manifests/stc/g4-capacity-execution.json \
+  --aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --actual-ledger results/capacity/actual-rre-ledger.jsonl \
+  --verify-only --staging-root "$STC_NFS_ROOT/staging/capacity"
+uv run stc runtime import-matrix \
+  --receipt manifests/systems/distributed-scaling-fit-receipt.json \
+  --source "$STC_NFS_ROOT/staging/capacity/scaling-fit" \
+  --output results/scaling/a100-fit
+uv run stc results validate \
+  --capacity-preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --execution-role fit \
   --manifest manifests/stc/scaling-cells.jsonl \
   --cohort-index manifests/stc/scaling-cohort-index.json \
   --budget manifests/stc/scaling-budget.json \
-  --scaling-config configs/stc/design/scaling.yaml \
+  --aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --actual-ledger results/capacity/actual-rre-ledger.jsonl \
+  --results results/scaling/a100-fit \
+  --output manifests/stc/scaling-fit-result-validation.json
+uv run stc scaling fit \
+  --stage provisional \
+  --config configs/stc/design/scaling.yaml \
   --hardware-config configs/stc/design/scaling-hardware.yaml \
-  --primary-receipt "$STC_NFS_ROOT/control/scaling-prereqs/distributed-confirmatory-receipt.json" \
-  --primary-validation "$STC_NFS_ROOT/control/scaling-prereqs/confirmatory-result-validation.json" \
-  --clean-receipt "$STC_NFS_ROOT/control/scaling-prereqs/distributed-confirmatory-clean-rerun-receipt.json" \
-  --clean-validation "$STC_NFS_ROOT/control/scaling-prereqs/confirmatory-clean-rerun-result-validation.json" \
-  --preregistration manifests/stc/preregistration.json \
-  --execution-snapshot manifests/stc/g4-confirmatory-execution.json \
-  --gate-chain manifests/gates \
-  --mode scaling \
-  --run-id scaling \
-  --verify-only \
-  --receipt manifests/systems/distributed-scaling-receipt.json \
-  --output "$STC_NFS_ROOT/staging/scaling"
-uv run stc runtime import-matrix \
-  --receipt manifests/systems/distributed-scaling-receipt.json \
-  --source "$STC_NFS_ROOT/staging/scaling" \
-  --output results/scaling
-uv run stc results validate \
-  --preregistration manifests/stc/preregistration.json \
-  --manifest manifests/stc/scaling-cells.jsonl \
   --cohort-index manifests/stc/scaling-cohort-index.json \
-  --results results/scaling \
-  --output manifests/stc/scaling-result-validation.json
-uv run stc dag import-bundles \
-  --input results/scaling \
-  --manifest-dir manifests/systems/runs
-uv run stc dag check
+  --fit-results results/scaling/a100-fit \
+  --validation-report manifests/stc/scaling-fit-result-validation.json \
+  --output manifests/stc/scaling-provisional.json
+uv run stc scaling holdout-unlock \
+  --capacity-preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --provisional-artifact manifests/stc/scaling-provisional.json \
+  --fit-receipt manifests/systems/distributed-scaling-fit-receipt.json \
+  --fit-validation manifests/stc/scaling-fit-result-validation.json \
+  --output manifests/stc/scaling-holdout-unlock.json
 ```
 
-If a node fails before the top-level manifest is published, both operators
-rerun the same track command with `--resume verify-complete`; no manual shard
-copy or merge is allowed. Rank ownership remains the same, verified complete
-children are reused, invalid/incomplete attempts remain auditable, and global
-rank zero alone publishes the merged index and manifest after the barrier.
+Now run both-node `scaling-holdout`, verify/import it, and validate it without
+refitting:
+
+```bash
+uv run stc runtime run-capacity-phase \
+  --phase-plan configs/systems/capacity-production-phases.yaml \
+  --phase-id scaling-holdout \
+  --capacity-preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --execution-snapshot manifests/stc/g4-capacity-execution.json \
+  --aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --actual-ledger results/capacity/actual-rre-ledger.jsonl \
+  --provisional-artifact manifests/stc/scaling-provisional.json \
+  --holdout-unlock manifests/stc/scaling-holdout-unlock.json \
+  --verify-only --staging-root "$STC_NFS_ROOT/staging/capacity"
+uv run stc runtime import-matrix \
+  --receipt manifests/systems/distributed-scaling-holdout-receipt.json \
+  --source "$STC_NFS_ROOT/staging/capacity/scaling-holdout" \
+  --output results/scaling/a100-holdout
+uv run stc results validate \
+  --capacity-preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --execution-role holdout \
+  --manifest manifests/stc/scaling-cells.jsonl \
+  --cohort-index manifests/stc/scaling-cohort-index.json \
+  --budget manifests/stc/scaling-budget.json \
+  --aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --actual-ledger results/capacity/actual-rre-ledger.jsonl \
+  --provisional-artifact manifests/stc/scaling-provisional.json \
+  --holdout-unlock manifests/stc/scaling-holdout-unlock.json \
+  --results results/scaling/a100-holdout \
+  --output manifests/stc/scaling-holdout-result-validation.json
+```
+
+Coverage follows the same physical launcher exactly, first for
+`coverage-cardinality-fit` and `coverage-fixed-bits-fit`. Node 0 maps each
+phase to its frozen receipt, imports to
+`results/coverage-scaling/{cardinality,fixed-bits}/fit`, and writes the two
+immutable fit validations. It then executes:
+
+```bash
+uv run stc coverage fit \
+  --stage provisional \
+  --capacity-preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --config configs/stc/design/coverage-scaling.yaml \
+  --cohort-index manifests/stc/coverage-scaling-cohort-index.json \
+  --cardinality-fit-results results/coverage-scaling/cardinality/fit \
+  --fixed-bits-fit-results results/coverage-scaling/fixed-bits/fit \
+  --cardinality-fit-validation manifests/stc/coverage-cardinality-fit-result-validation.json \
+  --fixed-bits-fit-validation manifests/stc/coverage-fixed-bits-fit-result-validation.json \
+  --output manifests/stc/coverage-provisional.json
+uv run stc coverage holdout-unlock \
+  --capacity-preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --provisional-artifact manifests/stc/coverage-provisional.json \
+  --cardinality-fit-receipt manifests/systems/distributed-coverage-cardinality-fit-receipt.json \
+  --fixed-bits-fit-receipt manifests/systems/distributed-coverage-fixed-bits-fit-receipt.json \
+  --output manifests/stc/coverage-holdout-unlock.json
+```
+
+Only then run `coverage-cardinality-holdout` and
+`coverage-fixed-bits-holdout`, import to the corresponding `/holdout` roots,
+and write the two holdout validations, each binding the provisional/unlock,
+aggregate ledger, and mapped holdout receipt. A combined arm or combined
+fit+holdout validation is forbidden.
+
+Finally run `parametric-information-all`, verify
+`distributed-parametric-information-receipt.json`, import to
+`results/parametric-information`, and validate against its manifest/cohort,
+track/aggregate budgets, canonical ledger/head, fresh child seeds/base
+restores, frozen decoder, and complete-state inventory.
+
+The executor resolves exactly \(120n_{\rm scaling}\),
+\(160n_{\rm coverage}\), and \(48n_{\rm information}\) logical child
+references plus the four charged post-unlock scaling anchors. The scaling
+split is 96 fit and 24 holdout logical configurations; coverage has four
+immutable arm×stage validations. No H100 child runs. If a node fails before a
+top-level manifest is published, both operators rerun only the same phase with
+`--resume verify-complete`; no manual shard copy/merge or outcome-driven phase
+reordering is allowed.
 
 Authoring the commands above is a pre-G4 documentation action; executing them
 remains post-G4. Before the runbook commit, exercise its exact stage/option
@@ -1851,12 +2235,15 @@ uv run stc validate --root .
 ```
 
 Expected: the receipt resolves the final runbook digest, contains all five
-closed stage names in order, encodes world sizes 1/1/4/8/8 and every
-`--require-gate` edge, and is explicitly `SYNTHETIC`. Mutation tests remove a
-stage, reorder stages, alter a world size, drop a prerequisite, inject an
+closed pre-G4 hardware stage names, both core production stage names, and all
+seven capacity phase IDs in their prerequisite order. It encodes hardware
+world sizes 1/1/4/8/8, production world size 8, both snapshot types, every
+gate edge, and is explicitly `SYNTHETIC`. Mutation tests remove/reorder a
+stage, alter a world size, substitute a snapshot, inject a confirmatory receipt
+into capacity, change a phase-plan mapping, drop a prerequisite, inject an
 unknown CLI option, relabel a fake metric, or change the runbook after receipt
-creation; every case fails. This command does not execute the post-G4
-confirmatory/scaling matrices.
+creation; every case fails. This command validates syntax/lineage only and
+does not execute any post-G4 matrix.
 
 - [ ] **Step 5: Commit the runbook and small manifest**
 
@@ -1895,6 +2282,11 @@ git -C ../.. commit -m "docs: add sleep-time compute A100 runbook"
 - Create: `research/sleep-time-compute/manifests/systems/g4-inputs.json`
 - Create: `research/sleep-time-compute/manifests/gate-inputs/G4.json`
 - Create: `research/sleep-time-compute/manifests/gates/G4.json`
+- Create after PASS G4:
+  `research/sleep-time-compute/manifests/stc/g4-confirmatory-execution.json`
+- Create after PASS G4 and PASS G2-CAP:
+  `research/sleep-time-compute/manifests/stc/g4-capacity-execution.json`
+- Create: `research/sleep-time-compute/schemas/systems/execution-snapshot-v1.schema.json`
 - Create: `research/sleep-time-compute/systems/INFRASTRUCTURE-BLUEPRINT.md`
 - Modify: `research/sleep-time-compute/registry/artifacts.jsonl`
 - Modify: `research/sleep-time-compute/src/stc_research/cli.py`
@@ -1902,13 +2294,14 @@ git -C ../.. commit -m "docs: add sleep-time compute A100 runbook"
 
 **Interfaces:**
 - Consumes: a JUnit test report plus registered lifecycle, DSE,
-  deletion-with-fault-outcomes, fake-accelerator, and optional
+  deletion-with-fault-outcomes, representation-refresh, fake-accelerator, and optional
   measured-accelerator manifests. Selecting `a100-confirmatory` additionally
   requires the four fixed registered prerequisite run IDs and their ordered
   digest chain; a confirmatory manifest alone is inadmissible.
 - Produces: immutable `G4SystemsEvidence`, a rendered Markdown view, a frozen
   systems input index, a generic typed gate-input manifest, a typed G4
-  decision, and explicit hardware-claim blockers.
+  decision, two non-substitutable execution snapshots, and explicit
+  hardware-claim blockers.
 
 - [ ] **Step 1: Run the complete local suite**
 
@@ -1926,6 +2319,9 @@ uv run stc systems deletion-audit \
   --profile configs/systems/deletion-profile.yaml \
   --fixture tests/runtime/fixtures/deletion-audit \
   --output results/system-runs/g4-deletion
+uv run stc systems index-refresh run \
+  --manifest manifests/systems/index-refresh-G2.json \
+  --output results/system-runs/g4-index-refresh
 uv run stc accelerator run \
   --config configs/accelerator/a100-smoke.yaml \
   --backend fake \
@@ -1941,8 +2337,8 @@ uv run stc dag import-bundles \
 uv run stc dag check
 ```
 
-Expected: all tests pass; `g4-lifecycle`, `g4-dse`, and `g4-deletion` exist in
-`manifests/systems/runs/`; `g4-fake` exists in
+Expected: all tests pass; `g4-lifecycle`, `g4-dse`, `g4-deletion`, and
+`g4-index-refresh` exist in `manifests/systems/runs/`; `g4-fake` exists in
 `manifests/accelerator/runs/` with `measurement_status=SYNTHETIC`; and every
 registered manifest resolves to a checksum-valid bundle.
 
@@ -1952,9 +2348,22 @@ The G4 report explicitly verifies:
 
 - no simulator output is labeled hardware measurement;
 - no fake accelerator output is claim-admissible as measurement;
-- storage and energy boundaries remain visible in every table;
+- the retained six-class ownership partition, all five transient additions,
+  incremental peak state, transient overhead, resident base copies,
+  non-state execution bytes, total physical HBM/fleet peak, per-term caps/GC owners, and
+  allocator/storage-telemetry reconciliation remain visible and pass;
+- the `ServingHead` state machine passes every delete-vs-validation/CAS/read
+  interleaving, immediate-deny check, reachability-root closure, reader
+  quiescence/hazard, and worker-fencing test; timeout or generation order alone
+  never authorizes reclamation;
+- energy boundaries remain visible in every table;
 - deletion claims distinguish deny, online removal, backup/key expiry, lineage
   invalidation, and behavioral residual;
+- the five representation-refresh arms share payload/query/delete traces and
+  quality constraints; the report recomputes affected-set work and charges
+  federation/translation/migration/peak/delete fan-out without treating
+  whole-store replacement as universal, and enforces
+  `claim_admissibility=CONFORMANCE_ONLY`;
 - all four factorial cells share the cutoff digest;
 - no runtime method can access oracle-only records.
 
@@ -1963,6 +2372,9 @@ contains the exact `manifests/gates/G3.json` digest, test-report digest and
 counts, selected run IDs and manifest/payload digests, artifact-DAG digest,
 queue stability/SLO results, lifecycle charge conservation, every fault
 outcome, all deletion completion dimensions, tombstone/linkability results,
+the typed retained/peak storage ledger with per-term caps and GC owners,
+telemetry calibration source/error/bound, every `ServingHead` transition and
+reclamation root/reader proof,
 accelerator evidence classes and per-metric provenance for KV read, fast-state
 RMW, batching, adapter load/apply/update, direct-counter HBM bytes,
 direct-counter host-DRAM bytes, GPU-board energy, host energy or its typed
@@ -1997,10 +2409,12 @@ uv run pytest tests/systems/test_g4_report.py tests/test_cli.py -q
 uv run stc systems report \
   --predecessor manifests/gates/G3.json \
   --test-report reports/g4-tests.xml \
+  --storage-accounting-config configs/systems/storage-accounting.yaml \
   --system-manifest-dir manifests/systems/runs \
   --system-run-id g4-lifecycle \
   --system-run-id g4-dse \
   --system-run-id g4-deletion \
+  --system-run-id g4-index-refresh \
   --accelerator-manifest-dir manifests/accelerator/runs \
   --accelerator-run-id g4-fake \
   --input-index manifests/systems/g4-inputs.json \
@@ -2015,6 +2429,35 @@ uv run stc gate inputs assemble G4 \
 uv run stc gate evaluate G4 \
   --inputs manifests/gate-inputs/G4.json \
   --output manifests/gates/G4.json
+uv run stc execution snapshot build-core \
+  --gate manifests/gates/G4.json \
+  --g4-input-index manifests/systems/g4-inputs.json \
+  --preregistration manifests/stc/preregistration.json \
+  --design manifests/stc/confirmatory.jsonl \
+  --cohort-index manifests/stc/confirmatory-run-index.json \
+  --analysis manifests/stc/analysis-plan.json \
+  --confirmatory-budget manifests/stc/confirmatory-budget.json \
+  --program-budget-envelope configs/stc/design/program-budget-envelope.yaml \
+  --rre-reference configs/stc/design/rre-reference-native.yaml \
+  --coarse-feasibility manifests/stc/capacity-coarse-feasibility.json \
+  --environment manifests/accelerator/runs/a100-confirmatory.json \
+  --output manifests/stc/g4-confirmatory-execution.json
+uv run stc execution snapshot build-capacity \
+  --gate manifests/gates/G4.json \
+  --g4-input-index manifests/systems/g4-inputs.json \
+  --core-preregistration manifests/stc/preregistration.json \
+  --capacity-preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --capacity-phase-plan configs/systems/capacity-production-phases.yaml \
+  --capacity-stakes manifests/stc/deployment-stakes-G2-CAP.json \
+  --capacity-calibration-summary manifests/stc/capacity-calibration-summary.json \
+  --aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --program-budget-envelope configs/stc/design/program-budget-envelope.yaml \
+  --rre-reference configs/stc/design/rre-reference-native.yaml \
+  --coarse-feasibility manifests/stc/capacity-coarse-feasibility.json \
+  --target-environment manifests/accelerator/runs/a100-confirmatory.json \
+  --require-exact-calibration-transport \
+  --output manifests/stc/g4-capacity-execution.json
 uv run stc dag check
 ```
 
@@ -2024,6 +2467,12 @@ input. The generic assembler and gate evaluator independently validate the
 predecessor and JSON/schema/systems-index/DAG digests. Tests mutate the G3
 record, systems evidence, systems input index, and assembled G4 input manifest;
 every mutation blocks evaluation with a stable code.
+Snapshot tests swap the core/capacity types, inject a confirmatory result
+receipt into the capacity snapshot, mutate any capacity phase/config/stakes/
+power/manifest/budget/CAL lineage edge, or change A100 container,
+driver/CUDA, clock/power, serving stack, model/tokenizer, or cost-profile
+identity relative to CAL; every mutation prevents snapshot creation or
+prelaunch rederivation.
 Local implementation evidence may pass without cluster access, but every paper
 claim that requires measured A100 HBM, host-DRAM, latency, or energy remains
 explicitly blocked until an `ADMISSIBLE` target manifest exists.
@@ -2036,10 +2485,12 @@ the accelerator manifest directory and silently promotes whatever it finds:
 uv run stc systems report \
   --predecessor manifests/gates/G3.json \
   --test-report reports/g4-tests.xml \
+  --storage-accounting-config configs/systems/storage-accounting.yaml \
   --system-manifest-dir manifests/systems/runs \
   --system-run-id g4-lifecycle \
   --system-run-id g4-dse \
   --system-run-id g4-deletion \
+  --system-run-id g4-index-refresh \
   --accelerator-manifest-dir manifests/accelerator/runs \
   --accelerator-run-id g4-fake \
   --accelerator-run-id a100-confirmatory \
@@ -2089,13 +2540,17 @@ shared schemas
                        └── Task 5 faults ├── Task 6 lifecycle integration
                                         ┘
 all local tasks ───────────────────────────── Task 9 G4
-Task 9 PASS + combined execution snapshot ─── Task 8 post-G4 matrices
+Task 9 PASS + core snapshot ───────────────── Task 8 core production
+Task 9 PASS + G2-CAP + capacity snapshot ──── Task 8 capacity phases
 ```
 
 Tasks 4 and 7 may run in parallel after Task 1. Task 8 is the only task that
 requires the external A100 cluster. Its microbenchmark branch may feed G4; its
-297n primary, 297n clean-rerun, and 112n scaling child branches are forbidden
-until PASS G4 and the combined execution snapshot exist.
+297n primary and 297n clean-rerun branches require PASS G4 plus the core
+snapshot. Its \(120n_{\rm scaling}+4\) anchors,
+\(160n_{\rm coverage}\), and \(48n_{\rm information}\) capacity branches
+require PASS G4, PASS G2-CAP, and the separate capacity snapshot; they never
+depend on confirmatory outcome receipts.
 
 ## Validity Traps
 
@@ -2109,8 +2564,9 @@ until PASS G4 and the combined execution snapshot exist.
 - Wake latency must include contention from sleep jobs and data movement.
 - Manifest-last atomic publication in one reference store is not evidence of a
   distributed transaction across independent stores.
-- A deletion watermark race is a correctness failure even when the artifact
-  content itself validates.
+- Any stale `ServingHead` field, deny-before-emission failure, governance epoch
+  regression, or reclamation before reachability and quiescence/fencing proof
+  is a correctness failure even when artifact content validates.
 - Cryptographic erasure, physical removal, and behavioral unlearning answer
   different questions.
 - H100 projections are separate DSE points; they never inherit A100

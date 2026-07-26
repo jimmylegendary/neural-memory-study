@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sleep-time-compute.org/control/independence-protocol.schema.json",
+  "title": "Independent audit separation protocol",
+  "x-stc-owner": "independent-audit",
+  "x-stc-model": "IndependenceProtocol",
+  "type": "object",
+  "properties": {
+    "protocol_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "author_executor_roster_digest": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+    },
+    "auditor_roster_digest": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+    },
+    "separation_rules": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+      },
+      "minItems": 1
+    },
+    "conflict_check_digest": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+    },
+    "approved_by": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "effective_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "protocol_id",
+    "author_executor_roster_digest",
+    "auditor_roster_digest",
+    "separation_rules",
+    "conflict_check_digest",
+    "approved_by",
+    "effective_at"
+  ],
+  "additionalProperties": false
+}

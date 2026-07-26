@@ -36,7 +36,7 @@
 | W1-024 | 2026-05-25 | [Do Language Models Need Sleep? Offline Recurrence for Improved Online Inference](https://arxiv.org/abs/2605.26099) | A-ABS | Converts recent context into persistent fast weights by repeated offline passes before clearing the KV cache, directly covering a latent/fast-weight sleep operator. |
 | W1-025 | 2026-06-03 | [Scaling Self-Evolving Agents via Parametric Memory](https://arxiv.org/abs/2606.04536) | A-ABS | TMEM combines explicit compressed memory with online fast-LoRA absorption and RL-trained extraction, strongly narrowing external-to-parametric novelty. |
 | W1-026 | 2026-06-03 | [Cartridges at Scale: Training Modular KV Caches over Large Document Collections](https://arxiv.org/abs/2606.04557) | A-ABS | Scales modular latent/KV artifacts with distractor mixing and a GPU/persistent-storage budget manager. |
-| W1-012 | 2026-06-04 | [Agent Memory: Characterization and System Implications of Stateful Long-Horizon Workloads](https://arxiv.org/abs/2606.06448) | A-HTML | Closest systems neighbor: profiles construction, retrieval, generation, freshness, footprint, energy, and scaling for ten external-memory systems. |
+| W1-012 | 2026-06-04 | [Agent Memory: Characterization and System Implications of Stateful Long-Horizon Workloads](https://arxiv.org/abs/2606.06448) | A-HTML | Closest systems neighbor: profiles construction, retrieval, generation, freshness, footprint, energy, and scaling for ten agent-memory systems, including a long-context baseline with no external representation. |
 | W1-011 | 2026-06-07 (CVPR day; earlier public date unresolved) | [Smart Replay: Adaptive Scheduling of Memory Rehearsal for Computational Resource-Aware Incremental Learning](https://openaccess.thecvf.com/content/CVPR2026/papers/Chen_Smart_Replay_Adaptive_Scheduling_of_Memory_Rehearsal_for_Computational_Resource-Aware_CVPR_2026_paper.pdf) | A-ABS | Compute-budgeted replay scheduling via an optimal-control formulation; a direct comparison point for adaptive sleep allocation. |
 | W1-027 | 2026-06-09 | [Learning What to Remember: Observability-Safe Memory Retention via Constrained Optimization for Long-Horizon Language Agents](https://arxiv.org/abs/2606.10616) | A-ABS | OSL-MR models budget feasibility, query-conditioned evidence utility, and delayed miss, reacquisition, and staleness costs under an observable/offline label split. |
 | W1-013 | 2026-06-23 | [TRUSTMEM: Learning Trustworthy Memory Consolidation for LLM Agents with Long-Term Memory](https://arxiv.org/abs/2606.25161) | A-HTML | Transition-level coverage, preservation, and faithfulness verification plus preference-guided RL; direct safety and compiler-training baseline. |
@@ -173,7 +173,8 @@
 
 ### W1-012 — Agent Memory systems characterization
 
-- Domain: external-memory systems.
+- Domain: agent-memory systems, including an external-representation-free
+  long-context baseline.
 - Inspected results:
   - LLM-mediated construction can exceed total query-phase energy over 300
     queries;

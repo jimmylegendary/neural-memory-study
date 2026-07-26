@@ -6,6 +6,11 @@
 
 **Architecture:** A self-contained research package under `research/sleep-time-compute/` owns typed registries, immutable experiment manifests, a content-addressed artifact DAG, theory code, benchmark code, and generated reports. English, Korean, and PPTX artifacts consume the same frozen claim/result graph; none is an independent source of factual truth. Existing repository infrastructure—vendored primary papers, Veridraft, Pandoc/LuaLaTeX, A100 runbooks, and prior audit patterns—is reused without modifying the completed TTT claim bundle.
 
+The separate presentation build follows
+`docs/superpowers/specs/2026-07-25-sleep-time-compute-presentation-design.md`
+and the presentation implementation plan. Its tooling spike may run early, but
+factual slide generation starts only from the frozen presentation handoff.
+
 **Tech Stack:** Python 3.14, uv, Pydantic 2, pytest, Hypothesis, jsonschema, NumPy, SciPy, scikit-learn, statsmodels, PyArrow, Matplotlib, PyYAML, Veridraft 0.3.0, Pandoc 3.1.11, LuaLaTeX, TypeScript, PptxGenJS 4.0.1, LibreOffice, Poppler, Open XML SDK, veraPDF.
 
 ## Global Constraints
@@ -366,7 +371,7 @@ is byte-identical.
   control-plane schemas.
 - Produces: G1-ready primary-source cards and exact evidence anchors.
 
-- [ ] **Step 1: Reconcile the dossier, bootstrap Wave 01, and freeze Wave 02 search**
+- [ ] **Step 1: Reconcile the dossier, bootstrap Wave 01, and freeze formal search reproduction**
 
 Run:
 
@@ -381,18 +386,24 @@ uv run stc validate --root .
 Expected: dossier and Wave 01 canonical keys reconcile without duplicate works;
 the Wave 01 report alone says `wave_sources=27`, `canonical_cards=27`,
 `rendered_cards=27`; every card has a matching source record and no `A-ABS`
-record supports a body-only claim. Then execute Evidence Task 8 to freeze the
-search protocol before Wave 02 discovery and vendor the pinned sources.
+record supports a body-only claim. Then execute Evidence Task 8 to register the
+already completed exploratory seed discovery with its real timestamps, freeze
+the formal search-reproduction protocol before re-running it, and vendor the
+pinned sources.
 
 - [ ] **Step 2: Execute the closest-neighbor full-read wave**
 
-The required first wave contains the founding 2025 Sleep-time Compute paper,
-Auto-Dreamer, OSL-MR, RecMem, TMEM,
+The required high-risk wave contains the founding 2025 Sleep-time Compute
+paper, Auto-Dreamer, OSL-MR, RecMem, TMEM,
 Cartridges at Scale, Offline Recurrence, LatentMem, Doc-to-LoRA, Generative
 Adapter, the OpenReview and arXiv v2 lineage of Language Models Need Sleep,
-Agent Memory, TrustMem, and Retain or Consolidate.
+Agent Memory, TrustMem, Retain or Consolidate, DGDMN, FearNet, Progress &
+Compress, SIESTA, Wake-Sleep Consolidated Learning, PCMC, the Spens et al.
+offline-processing controller, Microsoft Human-Inspired Memory Architecture,
+Useful Memories Become Faulty, the Rate--Distortion View of Memory
+Compaction, and Can a Language Model Learn Facts Continually in Its Weights.
 
-Then execute Evidence Task 9 Step 6 for the explicitly requested chronology:
+Then execute Evidence Task 9 Step 8 for the explicitly requested chronology:
 the 2019→2022 PLOS lineage, PAD and Nature sleep replay, DANN, MemGPT/Letta,
 Mem0/Zep version lineages, and the attributed Google/DeepMind, Meta, and
 Microsoft paper/product portfolios. Papers used for assertions must be FULL;
@@ -404,7 +415,7 @@ cd research/sleep-time-compute
 uv run stc validate --root .
 ```
 
-Expected: all 14 high-risk works and every manuscript-used paper in the
+Expected: all 25 high-risk works and every manuscript-used paper in the
 user-requested lineage are `FULL` and have version, checksum, exact
 method/result/limitation anchors, code/data inspection status, non-claim
 boundary, reviewer, and review date. Corporate attribution and
@@ -418,7 +429,7 @@ Task 11 A.3, Task 12 A.3, including scaffold tests, both placeholder builds,
 snapshot-only offline verification, trace, and parity validation. Only then
 execute Evidence Task 10 Step 4
 exactly to freeze hypotheses/branch ownership and assemble/evaluate G0 and G1.
-Freeze RQ1–RQ12, H-STC-001–005, PAPER-C1–C4 history, the publication-branch
+Freeze RQ1–RQ12, H-STC-001–007, PAPER-C1–C4 history, the publication-branch
 manifest, the non-assertive paper/companion scaffold, and the final
 search-log/stopping audit. After those exact steps, run this non-mutating
 verification block:
@@ -500,16 +511,25 @@ the hardware-free accelerator harness. Freeze
 `manifests/systems/runtime-G2.json`, including code, container, base/tokenizer,
 compiler, accounting, and runtime-contract digests.
 
-- [ ] **Step 3: Run the blinded pilot and freeze G2**
+- [ ] **Step 3: Run two-pass calibration and freeze core G2 plus G2-CAP**
 
-Execute Theory/Benchmark Tasks 11–13 only after the runtime exists. The real
-pilot flows through `runtime.coordinator`; it fixes `B_ref`, user count,
-cost-profile digest, final 297-row manifest, analysis plan, 112 candidate
-scaling cells, their frozen logical-to-physical execution map and complete
-physical-child cohort index, conservative projected and hard actual
-reference-run-equivalent ceilings, the global primary-comparison membership
-table, and the G2 preregistration digest. No production result is read before
-this freeze.
+Execute all Theory/Benchmark Tasks 11–13 code and fixtures first, without
+opening real data. Phase B then runs in this exact order: core and
+capacity-selection TRAIN/CAL; freeze the core/capacity selection bundles; run
+the receipt-validated pilot and freeze `B_ref`; materialize and execute the
+disjoint capacity-power CAL cohort; run search plus independent verification
+Monte Carlo; freeze core G2; then freeze the separate capacity preregistration
+and G2-CAP. No capacity-power cohort exists before the pilot/B_ref barrier, and
+no TEST result is read before either relevant freeze.
+
+The core path fixes the cost profile, powered user count, 297-row manifest,
+analysis plan, `PAPER-C-DEPLOYABILITY-GLOBAL-131`, sponsor-frozen
+`Q_core,primary`/`Q_core,clean`, and core preregistration. The capacity path
+separately fixes 120 scaling configurations (96 fit + 24 holdout), 160
+coverage/codec rows, 48 information rows, their complete child/cohort indexes,
+contrast families, and non-borrowable quotas under
+`Q_capacity,max`. A program-wide joint upper-99 native-resource envelope and
+componentwise sponsor caps replace any arbitrary fixed RRE number.
 
 Run:
 
@@ -524,18 +544,27 @@ uv run stc prereg validate \
   --manifest manifests/stc/preregistration.json \
   --fail-on-upstream-digest-change
 uv run stc gate verify-chain --through G2 --root manifests/gates
+uv run stc prereg validate \
+  --manifest manifests/stc/capacity-preregistration.json \
+  --expected-predecessor manifests/gates/G2.json \
+  --fail-on-upstream-digest-change
+uv run stc capacity gate verify G2-CAP \
+  --record manifests/capacity-gates/G2-CAP.json
 ```
 
 Expected: theory unit/property tests pass; 100 generator seeds conserve events,
 respect supersession/deletion, and leak no oracle field;
 `confirmatory-summary.json` reports exactly 297 logical rows and
 `297 * n` child references, with `n/16` children per workload family per
-logical row. The scaling artifacts report 80 one-axis plus 32 joint-axis rows,
-`96 * n` A100 fit and `16 * n` untouched A100 holdout child references, hence
-`112 * n` total; `missing_B_ref=0`; projected and hard actual scaling budgets
-are frozen. The typed G2 digest includes G1, runtime, model lock, hypotheses,
-theory laws, multiplicity table, both child indexes, and every frozen
-upstream/config revision. Digest-mutation tests must make validation fail.
+logical row. Scaling reports 80 one-axis plus 40 joint-axis rows,
+`96 * n_scaling` A100 fit and `24 * n_scaling` untouched A100 holdout child
+references, hence `120 * n_scaling` total; coverage reports
+`160 * n_coverage`, information reports `48 * n_information`, and
+`missing_B_ref=0`. Core G2 contains no capacity artifact. G2-CAP binds PASS
+G2, the disjoint calibration lineage, capacity stakes/powers/manifests,
+program envelope, coarse-feasibility proof, scalar quotas, componentwise
+upper-99 native vectors, and capacity phase plan. Digest/role/budget mutations
+must fail without changing the core G2 bytes.
 
 - [ ] **Step 4: Generate the frozen G3 benchmark artifacts**
 
@@ -810,31 +839,19 @@ confirmatory, clean-rerun, or scaling payload has been staged.
 - Produces: English paper, Korean companion, parity map, Veridraft bundle, and
   publication-ready PDFs.
 
-- [ ] **Step 1: Freeze the combined post-G4 execution snapshot**
+- [ ] **Step 1: Freeze two non-substitutable post-G4 execution snapshots**
 
-Run the first command block of Evidence Task 13 Step 1:
-
-```bash
-cd research/sleep-time-compute
-uv run stc experiments snapshot-g4 \
-  --confirmatory-manifest manifests/stc/confirmatory.jsonl \
-  --run-index manifests/stc/confirmatory-run-index.json \
-  --analysis-plan manifests/stc/analysis-plan.json \
-  --scaling-manifest manifests/stc/scaling-cells.jsonl \
-  --scaling-cohort-index manifests/stc/scaling-cohort-index.json \
-  --scaling-budget manifests/stc/scaling-budget.json \
-  --scaling-config configs/stc/design/scaling.yaml \
-  --scaling-hardware-config configs/stc/design/scaling-hardware.yaml \
-  --preregistration manifests/stc/preregistration.json \
-  --g4 manifests/gates/G4.json \
-  --g4-input-index manifests/systems/g4-inputs.json \
-  --output manifests/stc/g4-confirmatory-execution.json
-```
-
-Expected: the single legacy-named snapshot binds both the \(297n\)
-confirmatory and \(112n\) scaling execution spaces, hard 135-RRE budget,
-analysis, G2 preregistration, G4 decision/input index, checkout, and target
-environment. Neither mode can substitute a different manifest.
+Run the exact Systems G4 snapshot block: `execution snapshot build-core`
+creates `g4-confirmatory-execution.json` from core preregistration,
+297-row design/run index, analysis, confirmatory budget, program envelope,
+coarse-feasibility proof, G4 inputs, checkout, and target environment.
+`execution snapshot build-capacity` separately creates
+`g4-capacity-execution.json` from PASS G4/G2/G2-CAP, capacity
+preregistration, phase plan, stakes, disjoint CAL summary, all scaling/
+coverage/information manifests and powers, aggregate budget, canonical-ledger
+contract, and exact CAL→TEST transport predicate. The capacity snapshot
+contains no confirmatory outcome/receipt and neither type can substitute for
+the other.
 
 - [ ] **Step 2: Execute and import the distributed primary run**
 
@@ -885,23 +902,34 @@ Expected: primary analysis is derived without relaunching children; the clean
 request binds a different run ID, detached clean checkout, initially empty
 caches, G4 snapshot, and primary receipt.
 
-- [ ] **Step 4: Execute the clean rerun and A100 scaling track**
+- [ ] **Step 4: Execute clean reproduction and the independent capacity phases**
 
-Resume Systems Task 8 Step 4 at its clean-rerun boundary. Both-node clean runs
-must consume the request digest and produce the distinct clean receipt/import/
-validation. Then execute the scaling portion exactly, including the frozen
-96-fit/16-holdout roles, hard 135-RRE prelaunch/resume/merge enforcement,
-receipt, atomic import, validation, and DAG import.
+The clean core rerun consumes the typed request, the core snapshot, and only
+the non-borrowable `Q_core,clean` role; it produces a distinct receipt/import/
+validation. Capacity production does **not** wait for that rerun and consumes
+neither primary nor clean outcome receipts. Through the capacity snapshot and
+phase plan, execute scaling-fit→seal→unlock→scaling-holdout, then
+coverage-cardinality-fit and coverage-fixed-bits-fit→seal→unlock→their two
+holdouts, and finally parametric-information-all. Every launch/resume/import
+debits the canonical actual ledger under `Q_capacity,max` and componentwise
+native/carbon caps.
 
 Expected controller-owned outputs include:
 
 ```text
 results/confirmatory-clean-rerun/
-results/scaling/
+results/scaling/a100-fit/
+results/scaling/a100-holdout/
+results/coverage-scaling/cardinality/{fit,holdout}/
+results/coverage-scaling/fixed-bits/{fit,holdout}/
+results/parametric-information/
 manifests/systems/distributed-confirmatory-clean-rerun-receipt.json
-manifests/systems/distributed-scaling-receipt.json
+manifests/systems/distributed-scaling-{fit,holdout}-receipt.json
 manifests/stc/confirmatory-clean-rerun-result-validation.json
-manifests/stc/scaling-result-validation.json
+manifests/stc/scaling-{fit,holdout}-result-validation.json
+manifests/stc/coverage-{cardinality,fixed-bits}-{fit,holdout}-result-validation.json
+manifests/stc/parametric-information-result-validation.json
+results/capacity/actual-rre-ledger.jsonl
 ```
 
 If target hardware is unavailable, preserve the exact external blocker; do not
@@ -911,8 +939,11 @@ run G5 or use synthetic outputs.
 
 Resume Evidence Task 13 Step 1 after the external-compute pause. Execute its
 exact `clean-rerun finalize`, independent confirmatory calculation, primary
-final scaling fit, independently implemented scaling fit, typed G5 input
-assembly, and G5 evaluation commands.
+final scaling score, independently implemented scaling recomputation,
+independent coverage recomputation, independent bitwise-Fano validation, typed
+G5 input assembly, and G5 evaluation commands. The primary preregistered core
+analysis alone creates PAPER-C statuses; clean/independent work is a
+reproducibility veto and can never pool with or rescue it.
 
 ```bash
 cd research/sleep-time-compute
@@ -920,12 +951,16 @@ uv run stc gate verify-chain --through G5 --root manifests/gates
 uv run stc validate --root . --gate G5
 ```
 
-Expected: G5 binds G4, the combined execution snapshot, raw and analyzed
-primary/clean trees, both receipts and validations, independent confirmatory
-results, raw scaling, primary and independent scaling summaries, cohort, and
-budget. Clean rerun and independent calculations agree within frozen
-tolerances; incomplete children, actual RRE above 135, or disagreement blocks
-headline claims.
+Expected: G5 binds G4, both typed execution snapshots, core/capacity
+preregistrations and G2-CAP, capacity phase plan, raw/analyzed primary and
+clean trees, all receipts/validations, scaling provisional/unlock/final/
+independent summaries, four coverage arm×stage validations plus primary and
+independent summaries, information validation plus independent Fano summary,
+canonical actual ledger/head, aggregate budget, and all contrast families.
+Incomplete children, any scalar/componentwise sponsor-cap overrun, holdout
+firewall drift, or reproducibility disagreement narrows/blocks the affected
+claim. A capacity-track failure yields a typed failed/omitted annex and cannot
+block core PAPER-C or be bypassed into a capacity claim.
 
 - [ ] **Step 6: Adjudicate claims, fill both publications, and pass G6**
 

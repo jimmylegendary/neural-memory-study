@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sleep-time-compute.org/control/search-protocol.schema.json",
+  "title": "Evidence search protocol",
+  "x-stc-owner": "evidence-governance",
+  "x-stc-model": "SearchProtocol",
+  "type": "object",
+  "properties": {
+    "protocol_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "research_question_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/questionId"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "queries": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+      },
+      "minItems": 1
+    },
+    "databases": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "inclusion_criteria": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+      },
+      "minItems": 1
+    },
+    "exclusion_criteria": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+      }
+    },
+    "executed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "owner": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "protocol_digest": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+    }
+  },
+  "required": [
+    "protocol_id",
+    "research_question_ids",
+    "queries",
+    "databases",
+    "inclusion_criteria",
+    "exclusion_criteria",
+    "executed_at",
+    "owner",
+    "protocol_digest"
+  ],
+  "additionalProperties": false
+}

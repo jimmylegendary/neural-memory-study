@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sleep-time-compute.org/control/gate-input.schema.json",
+  "title": "Gate evaluation input",
+  "x-stc-owner": "gate-engine",
+  "x-stc-model": "GateEvaluationInput",
+  "type": "object",
+  "properties": {
+    "gate_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/gateId"
+    },
+    "gate_artifact_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/artifactId"
+    },
+    "schema_version": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "evaluation_commit_sha": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/gitSha1"
+    },
+    "evaluation_tree_digest": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+    },
+    "scientific_candidate_sha": {
+      "oneOf": [
+        {
+          "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/gitSha1"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "scientific_candidate_tree_digest": {
+      "oneOf": [
+        {
+          "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "artifact_dag_digest": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+    },
+    "input_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/DigestRef"
+      }
+    },
+    "evaluator_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "evaluator_role": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "independence_mode": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "evaluator_attestation_ref": {
+      "oneOf": [
+        {
+          "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/DigestRef"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "finding_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+      },
+      "uniqueItems": true
+    },
+    "adjudication_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+      },
+      "uniqueItems": true
+    },
+    "reaudit_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/DigestRef"
+      }
+    },
+    "environment_digest": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+    },
+    "evaluated_at": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/awareDateTime"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PASS", "FAIL", "BLOCKED"]
+    }
+  },
+  "required": [
+    "gate_id",
+    "gate_artifact_id",
+    "schema_version",
+    "evaluation_commit_sha",
+    "evaluation_tree_digest",
+    "scientific_candidate_sha",
+    "scientific_candidate_tree_digest",
+    "artifact_dag_digest",
+    "input_refs",
+    "evaluator_id",
+    "evaluator_role",
+    "independence_mode",
+    "evaluator_attestation_ref",
+    "finding_ids",
+    "adjudication_ids",
+    "reaudit_refs",
+    "environment_digest",
+    "evaluated_at",
+    "status"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "gate_id": {
+            "enum": ["G7", "G8"]
+          }
+        },
+        "required": ["gate_id"]
+      },
+      "then": {
+        "properties": {
+          "scientific_candidate_sha": {
+            "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/gitSha1"
+          },
+          "scientific_candidate_tree_digest": {
+            "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+          },
+          "evaluator_attestation_ref": {
+            "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/DigestRef"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "scientific_candidate_sha": {
+            "type": "null"
+          },
+          "scientific_candidate_tree_digest": {
+            "type": "null"
+          },
+          "evaluator_attestation_ref": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

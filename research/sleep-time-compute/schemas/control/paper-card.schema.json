@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sleep-time-compute.org/control/paper-card.schema.json",
+  "title": "Full-read paper card",
+  "x-stc-owner": "evidence-governance",
+  "x-stc-model": "PaperCard",
+  "type": "object",
+  "properties": {
+    "source_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sourceId"
+    },
+    "reviewed_version_digest": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+    },
+    "reviewer": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "reviewed_at": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/isoDateOrDateTime"
+    },
+    "research_question": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "wake_input": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "trigger": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "operator": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "destination": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "training_data": {
+      "$ref": "#/$defs/stringList"
+    },
+    "objective": {
+      "$ref": "#/$defs/stringList"
+    },
+    "optimizer": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "update_location": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "cadence": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "capacity_policy": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "systems_assumptions": {
+      "$ref": "#/$defs/stringList"
+    },
+    "reported_results": {
+      "$ref": "#/$defs/stringList"
+    },
+    "limitations": {
+      "$ref": "#/$defs/stringList"
+    },
+    "failure_modes": {
+      "$ref": "#/$defs/stringList"
+    },
+    "evidence_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/evidenceId"
+      },
+      "uniqueItems": true
+    },
+    "counterevidence_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/evidenceId"
+      },
+      "uniqueItems": true
+    },
+    "code_review": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "data_review": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "non_claims": {
+      "$ref": "#/$defs/stringList"
+    }
+  },
+  "required": [
+    "source_id",
+    "reviewed_version_digest",
+    "reviewer",
+    "reviewed_at",
+    "research_question",
+    "wake_input",
+    "trigger",
+    "operator",
+    "destination",
+    "training_data",
+    "objective",
+    "optimizer",
+    "update_location",
+    "cadence",
+    "capacity_policy",
+    "systems_assumptions",
+    "reported_results",
+    "limitations",
+    "failure_modes",
+    "evidence_ids",
+    "counterevidence_ids",
+    "code_review",
+    "data_review",
+    "non_claims"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "stringList": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+      }
+    }
+  }
+}

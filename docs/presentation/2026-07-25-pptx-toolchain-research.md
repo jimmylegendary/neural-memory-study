@@ -79,6 +79,24 @@ The observed current registry release is 4.0.1. Evaluate that version in a
 disposable spike first; after approval, the committed `package-lock.json`, not a
 floating registry version, becomes authoritative.
 
+### 2026-07-25 release and compatibility recheck
+
+The npm registry and the upstream release page still identify
+[PptxGenJS 4.0.1](https://www.npmjs.com/package/pptxgenjs) as the current
+release. The production deck therefore pins exactly `4.0.1` and commits the
+resolved lockfile.
+
+LibreOffice rendering is necessary but not sufficient. A documented upstream
+[PowerPoint/LibreOffice compatibility report](https://github.com/gitbrent/PptxGenJS/issues/1449)
+shows that malformed preset strings can render in LibreOffice yet trigger a
+PowerPoint repair dialog. The generator consequently uses exported
+`ShapeType` enum values rather than raw human-readable preset strings, scans
+every generated `<a:prstGeom>` value, rejects dangling OOXML relationships and
+content-type overrides, and keeps the target-PowerPoint open/repair test as a
+non-automatable release gate. This report concerned an earlier major version,
+so it is treated as a regression class to test, not evidence that 4.0.1 has the
+same defect.
+
 ## Editorial system
 
 ### Slide contract

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sleep-time-compute.org/control/publication-visual-review.schema.json",
+  "title": "Machine publication visual review",
+  "x-stc-owner": "publication",
+  "x-stc-model": "PublicationVisualReview",
+  "type": "object",
+  "properties": {
+    "review_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "subject_ref": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/SubjectRef"
+    },
+    "page_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "checked_pages": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "overflow_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PASS", "FAIL"]
+    },
+    "report_digest": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "review_id",
+    "subject_ref",
+    "page_count",
+    "checked_pages",
+    "overflow_count",
+    "status",
+    "report_digest",
+    "reviewed_at"
+  ],
+  "additionalProperties": false
+}

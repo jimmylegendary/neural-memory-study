@@ -16,7 +16,10 @@
 - Direct quotation is minimized; evidence spans store a short anchor and a faithful support summary.
 - Blog, product, vendor, and paper claims use distinct evidence classes.
 - `PAPER-C1` through `PAPER-C4` are the only main paper claims.
-- The approved novelty claim is the matched, versioned lifetime routing of the same items across raw external, abstract external, latent/KV, and user-parametric media—not any component in isolation.
+- The bounded contribution hypothesis is the matched, versioned lifetime
+  routing of the same items across raw external, abstract external, latent/KV,
+  and user-parametric media—not any component in isolation. Novelty and
+  priority remain separately audited and may remain unresolved.
 - Existing `claims/bundle.json` is not modified.
 - Every manuscript claim resolves through `claim_id → evidence/result IDs → source/result artifact digest`.
 - The Korean companion may be broader than the paper but every added assertion receives its own registered claim.
@@ -51,6 +54,11 @@
 ## Record Interfaces
 
 ```python
+SubjectRef(
+    path: str,
+    sha256: str,
+)
+
 ArtifactRef(
     artifact_id: str,
     canonical_url: str | None,
@@ -141,10 +149,17 @@ ClaimEvidenceRequirement(
     minimum_independent_result_paths: int,
 )
 
+ClaimResultProvenance(
+    asserted_modality: str,  # explicit result modality or NOT_APPLICABLE
+    calibration_modalities: list[str],
+)
+
 ClaimRecord(
     claim_id: str,
     statement: str,
+    headline_quantitative: bool,
     claim_class: str,
+    result_provenance: ClaimResultProvenance,
     status: str,
     scope: str,
     assumptions: list[str],
@@ -197,6 +212,7 @@ DigestRef(
 AuditAttestation(
     attestation_id: str,
     subject_sha256: str,
+    subject_refs: list[SubjectRef],
     signer_id: str,
     signer_role: str,
     independence_mode: str,
@@ -211,6 +227,7 @@ GateEvaluationAttestation(
     attestation_id: str,
     gate_id: str,
     subject_sha256: str,
+    subject_refs: list[SubjectRef],
     signer_id: str,
     signer_role: str,
     independence_mode: str,
@@ -261,8 +278,9 @@ GateRecord(
 )
 ```
 
-`SourceVersion` and `ArtifactRef` are immutable nested records defined once in
-`models.py` and exported through `$defs` in `common.schema.json`.
+`SubjectRef`, `SourceVersion`, `ArtifactRef`, and `ClaimResultProvenance` are
+immutable nested records defined once in `models.py` and exported through
+`$defs` in `common.schema.json`.
 `SourceVersion` contains identifier, public date/precision, status, canonical
 URL, local artifact ID, SHA-256, and supersedes/derived-from lineage.
 Rights attach to each immutable `ArtifactRef`, not merely to its source. A
@@ -307,7 +325,10 @@ WITHDRAWN
 ```
 
 The orthogonal warrant vocabulary is `MEAS`, `REPL`, `DERIV`, `SUMM`, `SYNTH`,
-or `PROP`; reproduction strength is `r0`, `r1`, `r2`, or `r3`.
+or `PROP`; reproduction strength is `r0`, `r1`, `r2`, or `r3`. Result modality
+is exactly `NOT_APPLICABLE`, `SOURCE_REPORTED`, `SIMULATED`,
+`MODEL_ESTIMATED`, `ANALYTICAL`, `ACTUAL_MEASUREMENT`, or `ACTUAL_HARDWARE`.
+The first is permitted only when the claim has no result dependency.
 
 ---
 
@@ -467,9 +488,10 @@ git -C ../.. commit -m "research: scaffold sleep-time evidence package"
 
 **Interfaces:**
 - Produces: `parse_stable_id(value: str) -> StableId` and dataclasses
-  `ArtifactRef`, `SourceRecord`, `EvidenceRecord`, `ClaimSupportRef`,
-  `ClaimEvidenceRequirement`, `ClaimRecord`, `QuestionRecord`,
-  `HypothesisRecord`, `ArtifactNode`, `DigestRef`, `AuditAttestation`,
+  `SubjectRef`, `ArtifactRef`, `SourceRecord`, `EvidenceRecord`, `ClaimSupportRef`,
+  `ClaimEvidenceRequirement`, `ClaimResultProvenance`, `ClaimRecord`,
+  `PaperCard`, `QuestionRecord`, `HypothesisRecord`, `ArtifactNode`,
+  `DigestRef`, `AuditAttestation`, `GateEvaluationAttestation`,
   `HumanApproval`, and `GateRecord`.
 
 - [ ] **Step 1: Write ID rejection tests**
@@ -487,6 +509,8 @@ from stc_research.ids import parse_stable_id
         ("EV-STC-00001", "evidence", 1),
         ("CL-STC-0042", "claim", 42),
         ("H-STC-005", "hypothesis", 5),
+        ("H-STC-006", "hypothesis", 6),
+        ("H-STC-007", "hypothesis", 7),
         ("PAPER-C4", "paper_claim", 4),
         ("RQ12", "question", 12),
         ("FIG-STC-042", "figure", 42),
@@ -532,7 +556,7 @@ PATTERNS = {
 
 Return an immutable `StableId(kind: str, number: int, value: str)`.
 `H-STC-000` is rejected; the durable namespace permits `H-STC-001` through
-`H-STC-999`, while the initial registry seeds only 001–005.
+`H-STC-999`, while the initial registry seeds only 001–007.
 
 - [ ] **Step 4: Add record-construction tests**
 
@@ -553,7 +577,9 @@ Test that `ClaimRecord.from_dict()` rejects:
 unknown claim_class
 PAPER-C status UNRESOLVED at release
 headline numeric claim with reproduction_strength below r2
+missing explicit headline_quantitative classification
 TRACE-SIMULATION claiming measured hardware latency
+result-bearing claim using NOT_APPLICABLE result provenance
 raw evidence/source IDs that do not exactly equal typed support refs
 release support that fails its typed ClaimEvidenceRequirement
 two versions of one source counted as two independent sources
@@ -593,10 +619,33 @@ Expected: all tests pass.
 - Create: `research/sleep-time-compute/registry/artifacts.jsonl`
 
 **Interfaces:**
-- Produces: `read_jsonl(path, factory)`, `write_jsonl_atomic(path, records)`,
-  and `append_unique(path, record, id_field)`.
+- Produces: `read_jsonl(path, factory)`,
+  `canonical_jsonl_digest(records)`,
+  `write_jsonl_atomic(path, records, *, expected_current_digest=None,
+  retry_token=None)`, and
+  `append_unique(path, record, id_field, *, retry_token=None)`.
+- `write_jsonl_atomic` creates an absent registry, treats an identical
+  canonical payload as a no-op, and requires a matching
+  `expected_current_digest` for every state-changing replacement of an existing
+  registry. Missing or stale preconditions raise `StaleWriteError` without
+  changing the destination.
+- Both writers use the same persistent sibling `flock` and canonical
+  operation-bound retry tokens. A post-`os.replace` directory-fsync failure
+  raises `CommitOutcomeUnknownError`; only the exact canonical operation may be
+  retried, and an exact retry must never erase a newer append.
+- Writer destinations reserve every basename ending in `.lock` and every
+  basename beginning `.stc-jsonl-`, including parent components the writer
+  would create. Validation occurs before directory creation or input
+  materialization. Existing coordination locks must be zero-byte regular
+  files and are opened with `O_NOFOLLOW`/`O_CLOEXEC`, then revalidated through
+  the opened descriptor before `flock`.
+- Temporary files use a deterministic destination-specific SHA-256 namespace;
+  cleanup never crosses destination namespaces. New registries use mode
+  `0644`; replacements preserve ordinary permission bits, strip special mode
+  bits, and apply the mode before file `fsync`. Symlink and non-regular
+  registry destinations fail closed.
 
-- [ ] **Step 1: Write atomicity and duplicate tests**
+- [ ] **Step 1: Write atomicity, canonical-identity, CAS, and concurrency tests**
 
 ```python
 def test_write_jsonl_is_canonical_and_atomic(tmp_path):
@@ -616,6 +665,29 @@ def test_append_unique_rejects_duplicate(tmp_path):
         append_unique(path, {"source_id": "SRC-STC-0001"}, "source_id")
 ```
 
+Also cover:
+
+- strict JSON reads, including duplicate keys, non-object rows, and non-finite
+  numbers;
+- deep canonical snapshots that reject unsupported values and non-string keys,
+  normalize tuples to arrays, and remain unchanged if the caller mutates the
+  input while waiting for the lock;
+- retry identity for list/tuple equivalence and the distinct JSON scalar
+  identities `true`, `1`, `1.0`, `0.0`, and `-0.0`;
+- exact-record append retries, mismatched-token conflicts, and
+  post-replace/directory-fsync uncertainty;
+- bulk compare-and-swap success, stale-writer preservation, and the reverse
+  race in which a completed append must survive a writer holding an older
+  snapshot;
+- multiprocess unique appends, duplicate races, a killed lock holder, orphan
+  temporary-file cleanup, and absence of torn/corrupt JSONL.
+- cross-destination prefix/glob collisions, data/lock/temp namespace
+  collisions, dangling lock symlinks, nonzero or non-regular lock sidecars,
+  reserved missing-parent paths, permission preservation, and
+  `fchmod -> file fsync -> replace -> directory fsync` ordering;
+- package `.gitignore` coverage for the exact hashed registry temporary
+  namespace so an orphaned full-registry snapshot cannot enter a broad stage.
+
 - [ ] **Step 2: Confirm failure, implement, and rerun**
 
 ```bash
@@ -625,7 +697,9 @@ uv run pytest tests/test_jsonl_store.py -q
 Expected before implementation: FAIL; after implementation: pass.
 
 Use `tempfile.NamedTemporaryFile(dir=path.parent)`, `flush`, `os.fsync`,
-`os.replace`, UTF-8, `sort_keys=True`, and compact JSON separators.
+`os.replace`, parent-directory `fsync`, UTF-8, `sort_keys=True`, compact JSON
+separators, and one POSIX `flock` namespace shared by append and bulk writers.
+The package is explicitly Linux/POSIX-only.
 
 - [ ] **Step 3: Commit**
 
@@ -741,9 +815,10 @@ Expected: import or assertion failures.
 
 - [ ] **Step 3: Implement JSON Schema and semantic validation**
 
-`common.schema.json` is the only definition site for `$defs.SourceVersion`,
-`$defs.ArtifactRef`, stable IDs, digests, source grade, review status, warrant,
-reproduction strength, and evidence relation. Every other control schema
+`common.schema.json` is the only definition site for `$defs.SubjectRef`,
+`$defs.SourceVersion`, `$defs.ArtifactRef`, `$defs.ClaimResultProvenance`,
+stable IDs, digests, source grade, review status, warrant, reproduction
+strength, result modality, and evidence relation. Every other control schema
 references those definitions by canonical `$id`; it may not copy a nested
 shape. Tests round-trip the Python models through exported schemas and mutate
 every nested field to prove the schema and dataclass reject the same invalid
@@ -1063,7 +1138,7 @@ git -C ../.. add research/sleep-time-compute
 git -C ../.. commit -m "research: structure evidence intake wave 01"
 ```
 
-### Task 8: Vendor and checksum 14 high-risk works and their versions
+### Task 8: Vendor and checksum 25 high-risk works and their versions
 
 **Files:**
 - Modify: `research/sleep-time-compute/.gitignore`
@@ -1089,14 +1164,18 @@ git -C ../.. commit -m "research: structure evidence intake wave 01"
   exercises the Task 4 `sources staged-scan` command against real manifests.
   `test_cli.py` pins the exact manifest/cache/release-root options below.
 
-- [ ] **Step 1: Freeze the Wave 02 search protocol before searching**
+- [ ] **Step 1: Freeze the formal search-reproduction protocol**
 
 Record cutoff `2026-07-25`, databases, literal queries, inclusion/exclusion
 criteria, corporate/product-document policy, citation-snowball rule, and the
 stopping condition “two consecutive snowball rounds yield no new direct
-neighbor.” Hash the protocol section. Search rounds append query, timestamp,
-result count, inclusion decision, and snowball parent to `search-log.jsonl`
-without changing the frozen protocol digest.
+neighbor.” The dossier and Wave 01/02 work performed before this protocol are
+labelled exploratory seed discovery with their real timestamps; they are never
+misrepresented as prospectively preregistered. Freeze and hash a separate
+formal reproduction protocol before re-running the canonical searches. Formal
+search rounds append query, timestamp, result count, inclusion decision, and
+snowball parent to `search-log.jsonl` without changing the frozen protocol
+digest.
 
 - [ ] **Step 2: Freeze the source manifest**
 
@@ -1117,6 +1196,17 @@ arxiv:2606.03979
 arxiv:2606.06448
 arxiv:2606.25161
 arxiv:2607.17545
+arxiv:1710.10368
+openreview:SJ1Xmf-Rb
+pmlr:schwarz18a
+arxiv:2303.10725
+arxiv:2401.08623
+arxiv:2409.16391
+neurips2025:d7e5870810331da5a8ac8bd16d42e074
+arxiv:2605.08538
+arxiv:2605.12978
+arxiv:2607.08032
+arxiv:2607.11020
 ```
 
 Each work entry contains immutable version entries, and every downloadable or
@@ -1160,7 +1250,7 @@ uv run stc sources verify \
   --release-root ../../papers/sleep-time-compute
 ```
 
-Expected: 14 primary-work records, every declared version artifact and text
+Expected: 25 primary-work records, every declared version artifact and text
 extract available in the verified cache, title/version lineage matches for all,
 and every committed artifact has `redistribution_allowed=true` with a
 resolvable license-review record. Unknown/false dispositions remain cache-only;
@@ -1302,14 +1392,16 @@ uv run stc sources full-read-order validate \
 - [ ] **Step 3: Audit external consolidation/retention coverage**
 
 Produce audited cards for Auto-Dreamer, OSL-MR, RecMem, Agent Memory, TrustMem,
-and Retain or Consolidate. This and the next topical checkboxes are completeness
-audits after the corresponding chronological read units, not permission to
-read by topic.
+Retain or Consolidate, Useful Memories Become Faulty, and the Microsoft
+Human-Inspired Memory Architecture. This and the next topical checkboxes are
+completeness audits after the corresponding chronological read units, not
+permission to read by topic.
 
 - [ ] **Step 4: Audit parametric and context-to-adapter coverage**
 
-Produce audited cards for TMEM, Doc-to-LoRA, Generative Adapter, and Language
-Models Need Sleep. The latter compares the OpenReview manuscript with arXiv
+Produce audited cards for TMEM, Doc-to-LoRA, Generative Adapter, Language
+Models Need Sleep, and Can a Language Model Learn Facts Continually in Its
+Weights. The Google paper compares the OpenReview manuscript with arXiv
 `2606.03979` version `v2` and records every material method/result change.
 
 - [ ] **Step 5: Audit latent/KV coverage**
@@ -1325,9 +1417,20 @@ semantic memory consolidation and record the exact multi-query amortization
 setup. Its actual reading position is determined by the chronological manifest,
 not by this plan section's placement.
 
-- [ ] **Step 7: Complete the user-requested chronology and product lineage**
+- [ ] **Step 7: Audit strict predecessors and the closest theory collision**
 
-The 14 direct neighbors are the novelty-risk core, not the whole requested
+Produce audited cards for DGDMN, FearNet, Progress & Compress, SIESTA,
+Wake-Sleep Consolidated Learning, PCMC, the Spens--Burgess--Behrens offline
+processing controller, and the Rate--Distortion View of Memory Compaction.
+For each, record the exact wake/sleep boundary, trigger, replay selector,
+destination, finite-capacity behavior, and whether control is learned. These
+works explicitly preempt claims to the first wake/sleep cycle, first learned
+sleep controller, first replay selector, and first cross-layer compaction
+objective.
+
+- [ ] **Step 8: Complete the user-requested chronology and product lineage**
+
+The 25 direct neighbors are the novelty-risk core, not the whole requested
 atlas. Promote every paper in these named lineages to `FULL` when its body
 supports a manuscript/monograph assertion; inspect official product/research
 documentation to `A-HTML` with capture date/version, and keep vendor
@@ -1340,9 +1443,14 @@ biological/early sleep:
   Tadros et al. Nature Communications sleep-like replay (2022)
   2016 synaptic consolidation and 2018 prioritized replay basis
 
+algorithmic wake/sleep predecessors:
+  DGDMN, FearNet, Progress & Compress, CLEAR, SIESTA, WSCL, PCMC
+  Spens et al. offline-processing control with RL
+
 claimed dream line:
   Dream-Augmented Neural Networks SSRN manuscript
-  MyGO and other replay/distillation comparators used in the synthesis
+  MyGO (registered grade `X`/withdrawn and usable only as a non-claim failure
+  warning) and other replay/distillation comparators used in the synthesis
 
 external/product line:
   MemGPT (2023)
@@ -1353,16 +1461,22 @@ external/product line:
 
 Meta line:
   Product-Key Memory, Expire-Span, Memory Layers at Scale,
-  Sparse Memory Finetuning, and any search-discovered direct Meta successor
+  Sparse Memory Finetuning, PAHF, and any search-discovered direct Meta
+  successor
 
 Google/DeepMind line:
   complementary-learning-systems basis, Titans, Miras, Atlas, TNT,
   Nested Learning, Memory Caching, Language Models Need Sleep
-  OpenReview→arXiv lineage, and NSTM as an infrastructure analogue
+  OpenReview→arXiv lineage, ReasoningBank, and NSTM as an infrastructure
+  analogue
 
 Microsoft line:
   LongMem, Generative Adapter, Memora, Human-Inspired Memory Architecture,
-  and official Foundry Agent Memory documentation
+  LEGOMem, ACON, MAGE, and official Foundry Agent Memory documentation
+
+capacity, negative-result, and theory line:
+  Useful Memories Become Faulty, Rate–Distortion View of Memory Compaction,
+  Can a Language Model Learn Facts Continually in Its Weights, MemDefrag
 ```
 
 For each record, distinguish earliest public date from later venue/product
@@ -1388,7 +1502,7 @@ the corrected primary record, disposition
 needed correction. The paper cites primary sources; the Korean companion may
 discuss this audit explicitly.
 
-- [ ] **Step 8: Validate the full-read corpus**
+- [ ] **Step 9: Validate the full-read corpus**
 
 ```bash
 uv run stc sources full-read-order validate \
@@ -1398,7 +1512,7 @@ uv run stc sources full-read-order validate \
 uv run stc validate --root .
 ```
 
-Expected: all 14 high-risk work records and every manuscript-used paper in the
+Expected: all 25 high-risk work records and every manuscript-used paper in the
 named-request lineages have `FULL` status, while versioned official product
 records have at least `A-HTML`; all carry exact
 method/result/limitation/supplement anchors, version/checksum, reviewer,
@@ -1409,7 +1523,7 @@ unresolved PLOS/DANN/MemGPT/Letta/Mem0/Zep/Google/Meta/Microsoft identity.
 The chronological log exactly matches every ordered artifact digest with no
 gap, duplicate, reordering, or topical batch substitution.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
 git -C ../.. add research/sleep-time-compute
@@ -1453,7 +1567,7 @@ git -C ../.. commit -m "research: full-read closest sleep-time compute neighbors
   for their exact positional/options surface plus mutation tests for post-freeze
   hypothesis edits and duplicate publication ownership.
 
-- [ ] **Step 1: Register RQ1–RQ12 and H-STC-001–005**
+- [ ] **Step 1: Register RQ1–RQ12 and H-STC-001–007**
 
 First run a tested, read-only promotion scan over `../../qa-memory/qa.jsonl`.
 `stc qa promote` may propose but never edit qa-memory. It rejects a proposed
@@ -1590,11 +1704,13 @@ implementation exists.
   `research/sleep-time-compute/publication/scaffolds/G0-verification.json`
 - Create at G8: `research/sleep-time-compute/publication/reviews/human-visual-approval.json`
 - Create: `research/sleep-time-compute/src/stc_research/publication_scaffold.py`
+- Create: `research/sleep-time-compute/src/stc_research/publication_fill.py`
 - Create: `research/sleep-time-compute/src/stc_research/publication.py`
 - Create: `research/sleep-time-compute/src/stc_research/publication_visual_qa.py`
 - Modify: `research/sleep-time-compute/src/stc_research/cli.py`
 - Modify: `research/sleep-time-compute/tests/test_cli.py`
 - Create: `research/sleep-time-compute/tests/test_publication_scaffold.py`
+- Create: `research/sleep-time-compute/tests/test_publication_fill.py`
 - Create: `research/sleep-time-compute/tests/test_publication_trace.py`
 - Create: `research/sleep-time-compute/tests/test_publication_visual_qa.py`
 - Create: `research/sleep-time-compute/tests/fixtures/publication-qa/*`
@@ -1622,12 +1738,29 @@ implementation exists.
   checks passed. A malformed manifest, undeclared or missing source, pre/post
   digest drift, output path inside the snapshot, attempted snapshot write, or
   any build/trace/parity error exits nonzero and cannot emit a `PASS` report.
-- Also owns `bibliography render --sources PATH --bib PATH --korean PATH`,
-  `publication trace --source PATH`, and the fixture/real
+- Also owns `bibliography render --sources PATH --bib PATH --korean PATH
+  --output PATH`, `publication inventory --root PATH --entry PATH --output
+  PATH`, `publication trace --source PATH --links PATH --output PATH`, and the
+  fixture/real
   `publication visual-qa` argument surface shown below. `publication.py`,
+  `publication_fill.py`,
   `publication_visual_qa.py`, `test_publication_trace.py`,
-  `test_publication_visual_qa.py`, and `test_cli.py` jointly implement and pin
-  those exact commands.
+  `test_publication_fill.py`, `test_publication_visual_qa.py`, and
+  `test_cli.py` jointly implement and pin those exact commands.
+
+- Post-G5 filling is a separate exact command:
+  `publication fill-results --g5 PATH --claims PATH --history PATH
+  --result-blocks PATH --g0-snapshot PATH --english-root PATH --korean-root
+  PATH --parity PATH --links PATH --output PATH`. The parser accepts each
+  option exactly once and no positional or mutation-only bypass option. The
+  command rehashes G5, every terminal claim revision, every referenced
+  `ResultBlock`, the immutable G0 snapshot, both live source inventories,
+  parity records, and manuscript-link records before and after one atomic
+  paired EN/KO replacement. It writes a machine fill report only after both
+  trees and all link records pass. It cannot write inside the G0 snapshot,
+  cannot mutate it, and cannot leave one language updated without the other.
+  Exit zero requires no `PENDING_G5`, no unregistered numeric assertion, exact
+  status/scope/interval/caveat transfer, and exact G0-lineage retention.
 
 - [ ] **Phase A.1: Write scaffold and trace tests**
 
@@ -1667,6 +1800,24 @@ Pin the G0 immutability contract with these named tests:
   declared snapshot source through a controlled hook after the pre-hash and
   asserts nonzero exit, `status: "FAIL"`, reason
   `SNAPSHOT_MUTATED_DURING_VERIFY`, and unequal before/after inventory digests.
+
+Pin the post-G5 chain with these named tests:
+
+- `test_fill_results_cli_requires_the_exact_closed_argument_surface` rejects a
+  missing or duplicate option, any positional argument, and unknown
+  `--in-place`, `--skip-parity`, `--allow-pending`, or
+  `--allow-unregistered-number` bypass.
+- `test_fill_results_updates_paired_slots_atomically_from_terminal_claims`
+  injects one supported, one falsified, one narrowed, and one null result and
+  requires exact paired EN/KO status, estimate, interval, scope, and material
+  caveat digests in one deterministic fill report.
+- `test_fill_results_refuses_softened_caveat_unregistered_number_or_pending`
+  mutates each failure independently and expects nonzero exit without changing
+  either live tree or the link/parity files.
+- `test_fill_results_rehashes_g5_results_links_live_sources_and_g0_snapshot`
+  mutates each constituent through a controlled pre-commit hook and requires
+  fail-closed rollback; the G0 snapshot byte inventory is unchanged in every
+  branch.
 
 - [ ] **Phase A.2: Create a buildable non-assertive skeleton**
 
@@ -1745,12 +1896,22 @@ uv run stc publication scaffold materialize \
 uv run stc bibliography render \
   --sources registry/sources.jsonl \
   --bib ../../paper-en/sleep-time-compute/references.bib \
-  --korean ../../study-kr/sleep-time-compute/back/99-bibliography.md
+  --korean ../../study-kr/sleep-time-compute/back/99-bibliography.md \
+  --output publication/reports/G0-bibliography-render.json
 make -C ../../paper-en/sleep-time-compute clean all
 uv run stc publication trace \
-  --source ../../paper-en/sleep-time-compute/main.tex
+  --source ../../paper-en/sleep-time-compute/main.tex \
+  --links publication/links/manuscript-links.jsonl \
+  --output publication/reports/G0-english-trace.json
 make -C ../../study-kr/sleep-time-compute clean all
-uv run stc publication validate-parity publication/links/parity.jsonl
+uv run stc publication trace \
+  --source ../../study-kr/sleep-time-compute/BOOK.md \
+  --links publication/links/manuscript-links.jsonl \
+  --output publication/reports/G0-korean-trace.json
+uv run stc publication validate-parity publication/links/parity.jsonl \
+  --english-trace publication/reports/G0-english-trace.json \
+  --korean-trace publication/reports/G0-korean-trace.json \
+  --output publication/reports/G0-parity-validation.json
 uv run stc publication scaffold snapshot \
   --english-root ../../paper-en/sleep-time-compute \
   --korean-root ../../study-kr/sleep-time-compute \
@@ -1782,6 +1943,57 @@ or soften a material caveat. The live manuscripts retain their
 bibliography rendering, both manuscript builds, trace, and parity validation.
 Any remaining `PENDING_G5`, unregistered numeric result, or prose/result digest
 mismatch blocks G6.
+
+The post-G5 fill is executable rather than an editing instruction:
+
+```bash
+uv run pytest tests/test_publication_fill.py \
+  tests/test_publication_trace.py tests/test_parity.py tests/test_cli.py -q
+uv run stc publication fill-results \
+  --g5 manifests/gates/G5.json \
+  --claims registry/claims.jsonl \
+  --history registry/claim-history.jsonl \
+  --result-blocks manifests/stc/adjudicated-result-blocks.jsonl \
+  --g0-snapshot publication/scaffolds/G0 \
+  --english-root ../../paper-en/sleep-time-compute \
+  --korean-root ../../study-kr/sleep-time-compute \
+  --parity publication/links/parity.jsonl \
+  --links publication/links/manuscript-links.jsonl \
+  --output publication/reports/post-G5-fill.json
+uv run stc bibliography render \
+  --sources registry/sources.jsonl \
+  --bib ../../paper-en/sleep-time-compute/references.bib \
+  --korean ../../study-kr/sleep-time-compute/back/99-bibliography.md \
+  --output publication/reports/post-G5-bibliography-render.json
+make -C ../../paper-en/sleep-time-compute clean all
+make -C ../../study-kr/sleep-time-compute clean all
+uv run stc publication inventory \
+  --root ../../paper-en/sleep-time-compute \
+  --entry main.tex \
+  --output publication/reports/post-G5-english-source-inventory.json
+uv run stc publication inventory \
+  --root ../../study-kr/sleep-time-compute \
+  --entry BOOK.md \
+  --output publication/reports/post-G5-korean-source-inventory.json
+uv run stc publication trace \
+  --source ../../paper-en/sleep-time-compute/main.tex \
+  --links publication/links/manuscript-links.jsonl \
+  --output publication/reports/post-G5-english-trace.json
+uv run stc publication trace \
+  --source ../../study-kr/sleep-time-compute/BOOK.md \
+  --links publication/links/manuscript-links.jsonl \
+  --output publication/reports/post-G5-korean-trace.json
+uv run stc publication validate-parity publication/links/parity.jsonl \
+  --english-trace publication/reports/post-G5-english-trace.json \
+  --korean-trace publication/reports/post-G5-korean-trace.json \
+  --output publication/reports/post-G5-parity-validation.json
+```
+
+The inventory command rejects symlinks, generated build/cache trees,
+undeclared extensions, path traversal, and a source graph that escapes its
+root. The trace and parity reports bind the corresponding live inventory,
+result-block set, fill report, and G0 manifest digest. Re-running any report
+against changed source bytes fails rather than silently refreshing lineage.
 
 - [ ] **Shared tooling: Implement all-page publication visual QA**
 
@@ -1844,8 +2056,9 @@ records used by the English paper.
 - Produces: Korean locations and caveats for every paper claim; monograph-only
   claims link to their own evidence.
 - Extends the declared `stc` CLI with the exact positional contract
-  `publication validate-parity PARITY_JSONL`; `parity.py`, `test_parity.py`,
-  and the shared parser tests own this command.
+  `publication validate-parity PARITY_JSONL --english-trace PATH
+  --korean-trace PATH --output PATH`; `parity.py`, `test_parity.py`, and the
+  shared parser tests own this command.
 
 - [ ] **Phase A.1: Write parity tests**
 
@@ -1887,7 +2100,10 @@ parity alone.
 ```bash
 uv run pytest tests/test_parity.py tests/test_cli.py -q
 make -C ../../study-kr/sleep-time-compute clean all
-uv run stc publication validate-parity publication/links/parity.jsonl
+uv run stc publication validate-parity publication/links/parity.jsonl \
+  --english-trace publication/reports/G0-english-trace.json \
+  --korean-trace publication/reports/G0-korean-trace.json \
+  --output publication/reports/G0-parity-validation.json
 ```
 
 Expected: zero parity gaps, missing glyphs, unresolved citations, or claim
@@ -1910,6 +2126,8 @@ is longer.
 - Create: `research/sleep-time-compute/src/stc_research/adjudicate_results.py`
 - Create: `research/sleep-time-compute/src/stc_research/analysis/independent_headline.py`
 - Create: `research/sleep-time-compute/src/stc_research/analysis/independent_scaling.py`
+- Create: `research/sleep-time-compute/src/stc_research/analysis/independent_coverage.py`
+- Create: `research/sleep-time-compute/src/stc_research/analysis/independent_information.py`
 - Modify: `research/sleep-time-compute/src/stc_research/cli.py`
 - Modify: `research/sleep-time-compute/tests/test_cli.py`
 - Create: `research/sleep-time-compute/tests/test_g4_execution_snapshot.py`
@@ -1917,18 +2135,25 @@ is longer.
 - Create: `research/sleep-time-compute/tests/test_clean_rerun_protocol.py`
 - Create: `research/sleep-time-compute/tests/test_independent_headline.py`
 - Create: `research/sleep-time-compute/tests/test_independent_scaling.py`
+- Create: `research/sleep-time-compute/tests/test_independent_coverage.py`
+- Create: `research/sleep-time-compute/tests/test_independent_information.py`
 - Create: `research/sleep-time-compute/tests/test_result_adjudication.py`
 - Create: `research/sleep-time-compute/reports/G5-result-admissibility.md`
 - Create: `research/sleep-time-compute/reports/G6-claim-gate.md`
 - Modify: `research/sleep-time-compute/registry/audit-findings.jsonl`
 - Modify: `research/sleep-time-compute/registry/audit-adjudications.jsonl`
 - Create: `research/sleep-time-compute/manifests/stc/g4-confirmatory-execution.json`
+- Create: `research/sleep-time-compute/manifests/stc/g4-capacity-execution.json`
 - Create: `research/sleep-time-compute/manifests/stc/confirmatory-clean-rerun-request.json`
 - Create after distributed verification:
   `research/sleep-time-compute/manifests/systems/distributed-confirmatory-clean-rerun-receipt.json`
 - Create after distributed validation:
   `research/sleep-time-compute/manifests/stc/confirmatory-clean-rerun-result-validation.json`
 - Create: `research/sleep-time-compute/manifests/stc/scaling-summary-independent.json`
+- Create: `research/sleep-time-compute/manifests/stc/coverage-scaling-summary-independent.json`
+- Create: `research/sleep-time-compute/manifests/stc/parametric-information-summary-independent.json`
+- Create: `research/sleep-time-compute/manifests/stc/adjudicated-result-blocks.jsonl`
+- Create: `research/sleep-time-compute/manifests/stc/result-adjudication-report.json`
 - Create: `research/sleep-time-compute/manifests/gate-inputs/G5.json`
 - Create: `research/sleep-time-compute/manifests/gate-inputs/G6.json`
 - Create: `research/sleep-time-compute/manifests/gates/G5.json`
@@ -1937,19 +2162,21 @@ is longer.
 **Interfaces:**
 - Produces: admissible result blocks, result-backed claim revisions, and a
   zero-blocker G6 manuscript candidate.
-- Extends the declared `stc` CLI with `experiments snapshot-g4`,
+- Extends the declared `stc` CLI with
   `experiments run-confirmatory`, `experiments clean-rerun prepare`, and
   `experiments clean-rerun finalize`,
   `gate inputs assemble G5|G6`, and `claims adjudicate-results`. The independent
   paths are the declared module CLIs
   `python -m stc_research.analysis.independent_headline` and
-  `python -m stc_research.analysis.independent_scaling`.
+  `python -m stc_research.analysis.independent_scaling`,
+  `independent_coverage`, and `independent_information`.
 - Consumes the theory plan's declared `results validate` and `scaling fit`
   CLI commands for the canonical primary scaling calculation.
-- Consumes the systems plan's canonical atomic imports
-  `results/confirmatory-primary` and `results/scaling`, their
-  `distributed-confirmatory-receipt.json` /
-  `distributed-scaling-receipt.json` records, and semantic validation reports.
+- Consumes the systems plan's two non-substitutable G4 snapshots, canonical
+  core and capacity atomic imports, per-phase distributed receipts, four
+  coverage arm×stage validations, scaling fit/holdout validations, information
+  validation, capacity phase plan, aggregate budget, and canonical actual
+  ledger/head.
 
 - [ ] **Step 1: Validate every experiment bundle and pass G5**
 
@@ -1959,25 +2186,18 @@ checkpoint/tokenizer revision, upstream commit/patch, exact command,
 analysis/render digest, immutable stdout/raw metrics, derived result blocks,
 and checksums. Missing any field blocks G5.
 
-Task 13 owns assembly of one combined executable G4 snapshot; neither the
-theory nor systems plan is expected to create a synthetic
-`experiments-G4.json`. The legacy-named but explicitly combined typed
-`g4-confirmatory-execution` record binds the actually produced
-`manifests/stc/confirmatory.jsonl`, confirmatory run index, analysis plan,
-the scaling cells/cohort/budget/config/hardware config, preregistration,
-canonical G4 record, and G4 systems input index by digest. Its track-specific
-sections freeze the ordered confirmatory logical-cell/run IDs and every scaling
-logical/child cohort, config/seed/data-generator digest, producer command ID,
-expected bundle path, analysis entry point, resource/hardware or A100
-fit/holdout role, hard actual-RRE ceiling, and admissibility requirement.
-Both confirmatory and scaling production consume this exact combined snapshot;
-neither may legally start from G4 alone. The assembler rejects a non-PASS or
-stale G4, any G2/G3/G4 chain mismatch, duplicate/missing/extra row or child,
-mutable glob, unpinned command, or mismatch against the G4 systems environment.
-Tests mutate every confirmatory and scaling constituent and ensure either
-production mode rejects the stale combined snapshot. G5 independently rejects
-any confirmatory or scaling result bundle whose recorded execution-snapshot
-digest differs.
+The systems controller supplies two non-substitutable executable snapshots.
+`g4-confirmatory-execution.json` binds only the core preregistration, 297-row
+manifest/run index, analysis, core budget, PASS G2/G4 chain, G4 input index,
+checkout, and target environment. `g4-capacity-execution.json` separately
+binds PASS G2-CAP, capacity preregistration, phase plan, stakes, disjoint CAL
+summary, all scaling/coverage/information configs/powers/manifests/cohort
+indexes, aggregate budget, canonical-ledger contract, checkout/environment,
+and exact CAL→TEST transport. It contains no confirmatory outcome or receipt.
+Tests swap snapshot types, mutate any constituent, inject primary/clean
+receipts into capacity, or bypass the phase plan; every case fails. G5
+independently rehashes both snapshots against each result's recorded snapshot
+digest.
 
 The systems plan owns the distributed primary child execution, receipt, and
 atomic import. Its canonical raw inputs are
@@ -2016,8 +2236,9 @@ all four objects and writes canonical derived output only to
 `results/confirmatory-clean-rerun-analysis`. Missing distributed launcher
 inputs, reused primary cache/environment/run ID, fewer than \(297n\) logical
 child references, a non-A100 backend, absent receipt, or non-atomic import
-blocks G5. `confirmatory-independent` is a second calculation over the clean
-rerun's immutable raw import. Each raw and analysis tree has its own
+blocks G5. `confirmatory-independent` is a second implementation over the
+**primary** immutable raw import; the clean rerun remains a separate
+reproduction dataset. Each raw and analysis tree has its own
 manifest-last top-level inventory and artifact-DAG record; none is committed
 as a large payload or silently aliased to another tree.
 
@@ -2026,25 +2247,45 @@ import-graph/AST test rejects any import of the primary analysis,
 result-rendering, or adjudication module, and golden tests require it to
 calculate decisions/estimates directly from frozen raw fields. Compare exact
 logical-cell coverage, decisions, estimates within frozen tolerance, and
-raw/derived digests across all three trees. A copy, alias, symlink, shared
+raw/derived digests across all three trees. The preregistered primary analysis
+is the sole source of PAPER-C scientific statuses. Primary failure plus clean
+or independent pass cannot create support; primary support plus required
+discordance becomes `NARROWED_REPRODUCTION_DISCORDANT` (with the primary
+estimate still reported). No pooling/OR/meta-estimand is allowed without a
+prospective powered amendment. A swap-pass/fail mutation must prove that only
+the primary can create support. A copy, alias, symlink, shared
 derived-results file, or different CLI flag into the primary function is not
 an independent path.
 
 Scaling-law outputs are headline results too. The separately implemented
 `analysis.independent_scaling` recomputes the preregistered final fit, model
-selection, untouched A100 holdout metrics, child coverage, and actual RRE
-directly from the validated raw scaling bundles. Its AST/import-graph test
+selection from fit data only, immutable provisional digest, untouched
+score-only A100 holdout metrics, child coverage, and scalar/componentwise
+resource predicates directly from the validated fit/holdout bundles. Its AST/import-graph test
 rejects imports from the primary scaling fitter, renderer, or cached
-`scaling-summary.json`; it treats the validation report as a digest-bound
-comparison target and independently recomputes coverage/RRE predicates rather
-than trusting its decisions. G5 binds the primary and independent summaries,
-`scaling-result-validation.json`, `scaling-budget.json`,
-`scaling-cohort-index.json`, and their result-tree digests. A result-backed
-scaling-law claim is blocked unless final measured-hardware fit and holdout
-exist, all required children are covered, actual RRE is within the frozen
-budget, both implementations agree within preregistered tolerance, and both
-classify the result as `scaling_law`. A valid null may be admitted only as
-`FALSIFIED/NARROWED`; it cannot retain scaling-law wording.
+`scaling-summary.json`; it treats both stage validations as digest-bound
+comparison targets and recomputes every predicate. G5 binds the primary and
+independent summaries, provisional/unlock, fit/holdout receipts/validations,
+`SCALING-A100-GLOBAL-{K}`, budget/cohort, canonical ledger/head, and result-tree
+digests. A result-backed claim requires both implementations to classify
+`a100_regime_scaling_law`; `scaling_law` without hardware qualifier is
+inadmissible.
+
+`analysis.independent_coverage` separately reimplements codec accounting,
+cardinality and fixed-bits estimands, the sealed fit, score-only holdout
+evaluation, `COVERAGE-GLOBAL-48` max-stat decisions, and four arm×stage
+validation/ledger predicates. `analysis.independent_information` independently
+reconstructs the complete-state inventory, verifies fresh seeds/base restores
+and decoder orientation, and recomputes the finite-sample bitwise-Fano
+inferential lower bound from association×bit errors; it must return zero on
+shuffled/no-signal fixtures and detect seed/log sidecars. G5 binds their
+primary/independent summaries and all raw roots. Information remains
+`ESTIMATOR_QUALIFICATION_ONLY`/`CHARACTERIZATION`; it cannot be promoted to a
+universal capacity law.
+
+A failed capacity track yields a typed failed/omitted capacity annex and blocks
+only that track's claims. Core G5 can still pass, but no missing/failing
+capacity artifact may be bypassed into a capacity statement.
 
 ```bash
 uv run pytest \
@@ -2053,20 +2294,32 @@ uv run pytest \
   tests/test_clean_rerun_protocol.py \
   tests/test_independent_headline.py \
   tests/test_independent_scaling.py \
+  tests/test_independent_coverage.py \
+  tests/test_independent_information.py \
   tests/test_cli.py -q
-uv run stc experiments snapshot-g4 \
-  --confirmatory-manifest manifests/stc/confirmatory.jsonl \
-  --run-index manifests/stc/confirmatory-run-index.json \
-  --analysis-plan manifests/stc/analysis-plan.json \
-  --scaling-manifest manifests/stc/scaling-cells.jsonl \
-  --scaling-cohort-index manifests/stc/scaling-cohort-index.json \
-  --scaling-budget manifests/stc/scaling-budget.json \
-  --scaling-config configs/stc/design/scaling.yaml \
-  --scaling-hardware-config configs/stc/design/scaling-hardware.yaml \
-  --preregistration manifests/stc/preregistration.json \
-  --g4 manifests/gates/G4.json \
+uv run stc execution snapshot verify \
+  --expected-type core \
+  --snapshot manifests/stc/g4-confirmatory-execution.json \
+  --gate manifests/gates/G4.json \
   --g4-input-index manifests/systems/g4-inputs.json \
-  --output manifests/stc/g4-confirmatory-execution.json
+  --core-preregistration manifests/stc/preregistration.json \
+  --design manifests/stc/confirmatory.jsonl \
+  --cohort-index manifests/stc/confirmatory-run-index.json \
+  --analysis manifests/stc/analysis-plan.json \
+  --budget manifests/stc/confirmatory-budget.json \
+  --program-budget-envelope configs/stc/design/program-budget-envelope.yaml
+uv run stc execution snapshot verify \
+  --expected-type capacity \
+  --snapshot manifests/stc/g4-capacity-execution.json \
+  --gate manifests/gates/G4.json \
+  --g4-input-index manifests/systems/g4-inputs.json \
+  --core-preregistration manifests/stc/preregistration.json \
+  --capacity-preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --capacity-phase-plan configs/systems/capacity-production-phases.yaml \
+  --capacity-stakes manifests/stc/deployment-stakes-G2-CAP.json \
+  --capacity-aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --program-budget-envelope configs/stc/design/program-budget-envelope.yaml
 uv run stc experiments run-confirmatory \
   --mode analyze-imported \
   --hypotheses manifests/hypotheses-G2.json \
@@ -2107,42 +2360,196 @@ uv run stc experiments clean-rerun finalize \
   --output results/confirmatory-clean-rerun-analysis
 uv run python -m stc_research.analysis.independent_headline \
   --hypotheses manifests/hypotheses-G2.json \
-  --raw-bundles results/confirmatory-clean-rerun \
-  --receipt \
-    manifests/systems/distributed-confirmatory-clean-rerun-receipt.json \
-  --validation-report \
-    manifests/stc/confirmatory-clean-rerun-result-validation.json \
+  --raw-bundles results/confirmatory-primary \
+  --receipt manifests/systems/distributed-confirmatory-receipt.json \
+  --validation-report manifests/stc/confirmatory-result-validation.json \
   --output results/confirmatory-independent
 uv run stc results validate \
-  --preregistration manifests/stc/preregistration.json \
+  --preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
   --manifest manifests/stc/scaling-cells.jsonl \
   --cohort-index manifests/stc/scaling-cohort-index.json \
-  --results results/scaling \
-  --output manifests/stc/scaling-result-validation.json
+  --budget manifests/stc/scaling-budget.json \
+  --aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --actual-ledger results/capacity/actual-rre-ledger.jsonl \
+  --execution-role fit \
+  --results results/scaling/a100-fit \
+  --output manifests/stc/scaling-fit-result-validation.json
+uv run stc results validate \
+  --preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --manifest manifests/stc/scaling-cells.jsonl \
+  --cohort-index manifests/stc/scaling-cohort-index.json \
+  --budget manifests/stc/scaling-budget.json \
+  --aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --actual-ledger results/capacity/actual-rre-ledger.jsonl \
+  --execution-role holdout \
+  --provisional-artifact manifests/stc/scaling-provisional.json \
+  --holdout-unlock manifests/stc/scaling-holdout-unlock.json \
+  --results results/scaling/a100-holdout \
+  --output manifests/stc/scaling-holdout-result-validation.json
 uv run stc scaling fit \
   --stage final \
   --config configs/stc/design/scaling.yaml \
   --hardware-config configs/stc/design/scaling-hardware.yaml \
   --cohort-index manifests/stc/scaling-cohort-index.json \
   --budget manifests/stc/scaling-budget.json \
-  --preregistration manifests/stc/preregistration.json \
-  --validation-report manifests/stc/scaling-result-validation.json \
+  --aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --fit-validation-report manifests/stc/scaling-fit-result-validation.json \
+  --holdout-validation-report manifests/stc/scaling-holdout-result-validation.json \
+  --provisional-artifact manifests/stc/scaling-provisional.json \
+  --holdout-unlock manifests/stc/scaling-holdout-unlock.json \
   --fit-results results/scaling/a100-fit \
   --holdout-results results/scaling/a100-holdout \
   --output manifests/stc/scaling-summary.json
 uv run python -m stc_research.analysis.independent_scaling \
-  --preregistration manifests/stc/preregistration.json \
+  --preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
   --scaling-manifest manifests/stc/scaling-cells.jsonl \
   --cohort-index manifests/stc/scaling-cohort-index.json \
+  --contrast-family manifests/stc/scaling-contrast-family-G2-CAP.json \
   --budget manifests/stc/scaling-budget.json \
-  --validation-report manifests/stc/scaling-result-validation.json \
+  --aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --actual-ledger results/capacity/actual-rre-ledger.jsonl \
+  --fit-validation manifests/stc/scaling-fit-result-validation.json \
+  --holdout-validation manifests/stc/scaling-holdout-result-validation.json \
+  --provisional-artifact manifests/stc/scaling-provisional.json \
+  --holdout-unlock manifests/stc/scaling-holdout-unlock.json \
   --fit-results results/scaling/a100-fit \
   --holdout-results results/scaling/a100-holdout \
   --output manifests/stc/scaling-summary-independent.json
+uv run stc results validate \
+  --preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --manifest manifests/stc/coverage-cardinality-cells.jsonl \
+  --cohort-index manifests/stc/coverage-scaling-cohort-index.json \
+  --logical-arm cardinality \
+  --execution-role fit \
+  --budget manifests/stc/coverage-scaling-budget.json \
+  --aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --actual-ledger results/capacity/actual-rre-ledger.jsonl \
+  --results results/coverage-scaling/cardinality/fit \
+  --output manifests/stc/coverage-cardinality-fit-result-validation.json
+uv run stc results validate \
+  --preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --manifest manifests/stc/coverage-fixed-bits-cells.jsonl \
+  --cohort-index manifests/stc/coverage-scaling-cohort-index.json \
+  --logical-arm fixed-bits \
+  --execution-role fit \
+  --budget manifests/stc/coverage-scaling-budget.json \
+  --aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --actual-ledger results/capacity/actual-rre-ledger.jsonl \
+  --results results/coverage-scaling/fixed-bits/fit \
+  --output manifests/stc/coverage-fixed-bits-fit-result-validation.json
+uv run stc results validate \
+  --preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --manifest manifests/stc/coverage-cardinality-cells.jsonl \
+  --cohort-index manifests/stc/coverage-scaling-cohort-index.json \
+  --logical-arm cardinality \
+  --execution-role holdout \
+  --budget manifests/stc/coverage-scaling-budget.json \
+  --aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --actual-ledger results/capacity/actual-rre-ledger.jsonl \
+  --provisional-artifact manifests/stc/coverage-provisional.json \
+  --holdout-unlock manifests/stc/coverage-holdout-unlock.json \
+  --results results/coverage-scaling/cardinality/holdout \
+  --output manifests/stc/coverage-cardinality-holdout-result-validation.json
+uv run stc results validate \
+  --preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --manifest manifests/stc/coverage-fixed-bits-cells.jsonl \
+  --cohort-index manifests/stc/coverage-scaling-cohort-index.json \
+  --logical-arm fixed-bits \
+  --execution-role holdout \
+  --budget manifests/stc/coverage-scaling-budget.json \
+  --aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --actual-ledger results/capacity/actual-rre-ledger.jsonl \
+  --provisional-artifact manifests/stc/coverage-provisional.json \
+  --holdout-unlock manifests/stc/coverage-holdout-unlock.json \
+  --results results/coverage-scaling/fixed-bits/holdout \
+  --output manifests/stc/coverage-fixed-bits-holdout-result-validation.json
+uv run stc coverage fit \
+  --stage final \
+  --preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --config configs/stc/design/coverage-scaling.yaml \
+  --cohort-index manifests/stc/coverage-scaling-cohort-index.json \
+  --contrast-family manifests/stc/coverage-contrast-family-G2-CAP.json \
+  --provisional-artifact manifests/stc/coverage-provisional.json \
+  --holdout-unlock manifests/stc/coverage-holdout-unlock.json \
+  --cardinality-fit-results results/coverage-scaling/cardinality/fit \
+  --cardinality-holdout-results results/coverage-scaling/cardinality/holdout \
+  --fixed-bits-fit-results results/coverage-scaling/fixed-bits/fit \
+  --fixed-bits-holdout-results results/coverage-scaling/fixed-bits/holdout \
+  --cardinality-fit-validation manifests/stc/coverage-cardinality-fit-result-validation.json \
+  --cardinality-holdout-validation manifests/stc/coverage-cardinality-holdout-result-validation.json \
+  --fixed-bits-fit-validation manifests/stc/coverage-fixed-bits-fit-result-validation.json \
+  --fixed-bits-holdout-validation manifests/stc/coverage-fixed-bits-holdout-result-validation.json \
+  --output manifests/stc/coverage-scaling-summary.json
+uv run python -m stc_research.analysis.independent_coverage \
+  --preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --cardinality-manifest manifests/stc/coverage-cardinality-cells.jsonl \
+  --fixed-bits-manifest manifests/stc/coverage-fixed-bits-cells.jsonl \
+  --cohort-index manifests/stc/coverage-scaling-cohort-index.json \
+  --contrast-family manifests/stc/coverage-contrast-family-G2-CAP.json \
+  --budget manifests/stc/coverage-scaling-budget.json \
+  --aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --actual-ledger results/capacity/actual-rre-ledger.jsonl \
+  --provisional-artifact manifests/stc/coverage-provisional.json \
+  --holdout-unlock manifests/stc/coverage-holdout-unlock.json \
+  --cardinality-fit-validation manifests/stc/coverage-cardinality-fit-result-validation.json \
+  --cardinality-holdout-validation manifests/stc/coverage-cardinality-holdout-result-validation.json \
+  --fixed-bits-fit-validation manifests/stc/coverage-fixed-bits-fit-result-validation.json \
+  --fixed-bits-holdout-validation manifests/stc/coverage-fixed-bits-holdout-result-validation.json \
+  --results-root results/coverage-scaling \
+  --output manifests/stc/coverage-scaling-summary-independent.json
+uv run stc results validate \
+  --preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --manifest manifests/stc/parametric-information-cells.jsonl \
+  --cohort-index manifests/stc/parametric-information-cohort-index.json \
+  --budget manifests/stc/parametric-information-budget.json \
+  --aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --actual-ledger results/capacity/actual-rre-ledger.jsonl \
+  --results results/parametric-information \
+  --output manifests/stc/parametric-information-result-validation.json
+uv run stc information estimate \
+  --preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --config configs/stc/design/parametric-information.yaml \
+  --manifest manifests/stc/parametric-information-cells.jsonl \
+  --cohort-index manifests/stc/parametric-information-cohort-index.json \
+  --budget manifests/stc/parametric-information-budget.json \
+  --aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --validation-report manifests/stc/parametric-information-result-validation.json \
+  --results results/parametric-information \
+  --output manifests/stc/parametric-information-summary.json
+uv run python -m stc_research.analysis.independent_information \
+  --preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --config configs/stc/design/parametric-information.yaml \
+  --manifest manifests/stc/parametric-information-cells.jsonl \
+  --cohort-index manifests/stc/parametric-information-cohort-index.json \
+  --budget manifests/stc/parametric-information-budget.json \
+  --aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --actual-ledger results/capacity/actual-rre-ledger.jsonl \
+  --validation-report manifests/stc/parametric-information-result-validation.json \
+  --results results/parametric-information \
+  --output manifests/stc/parametric-information-summary-independent.json
 uv run stc gate inputs assemble G5 \
   --root . \
   --predecessor manifests/gates/G4.json \
-  --execution-snapshot manifests/stc/g4-confirmatory-execution.json \
+  --core-preregistration manifests/stc/preregistration.json \
+  --capacity-preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --core-execution-snapshot manifests/stc/g4-confirmatory-execution.json \
+  --capacity-execution-snapshot manifests/stc/g4-capacity-execution.json \
+  --capacity-phase-plan configs/systems/capacity-production-phases.yaml \
   --primary-raw results/confirmatory-primary \
   --primary-analysis results/confirmatory-primary-analysis \
   --primary-receipt manifests/systems/distributed-confirmatory-receipt.json \
@@ -2154,14 +2561,46 @@ uv run stc gate inputs assemble G5 \
     manifests/systems/distributed-confirmatory-clean-rerun-receipt.json \
   --clean-validation \
     manifests/stc/confirmatory-clean-rerun-result-validation.json \
-  --independent results/confirmatory-independent \
-  --scaling-raw results/scaling \
-  --scaling-receipt manifests/systems/distributed-scaling-receipt.json \
+  --core-independent results/confirmatory-independent \
+  --scaling-fit-raw results/scaling/a100-fit \
+  --scaling-holdout-raw results/scaling/a100-holdout \
+  --scaling-fit-receipt manifests/systems/distributed-scaling-fit-receipt.json \
+  --scaling-holdout-receipt manifests/systems/distributed-scaling-holdout-receipt.json \
+  --scaling-fit-validation manifests/stc/scaling-fit-result-validation.json \
+  --scaling-holdout-validation manifests/stc/scaling-holdout-result-validation.json \
+  --scaling-provisional manifests/stc/scaling-provisional.json \
+  --scaling-holdout-unlock manifests/stc/scaling-holdout-unlock.json \
+  --scaling-contrast-family manifests/stc/scaling-contrast-family-G2-CAP.json \
   --scaling-summary manifests/stc/scaling-summary.json \
   --scaling-independent-summary manifests/stc/scaling-summary-independent.json \
-  --scaling-validation-report manifests/stc/scaling-result-validation.json \
   --scaling-budget manifests/stc/scaling-budget.json \
   --scaling-cohort-index manifests/stc/scaling-cohort-index.json \
+  --coverage-raw-root results/coverage-scaling \
+  --coverage-cardinality-fit-receipt manifests/systems/distributed-coverage-cardinality-fit-receipt.json \
+  --coverage-cardinality-holdout-receipt manifests/systems/distributed-coverage-cardinality-holdout-receipt.json \
+  --coverage-fixed-bits-fit-receipt manifests/systems/distributed-coverage-fixed-bits-fit-receipt.json \
+  --coverage-fixed-bits-holdout-receipt manifests/systems/distributed-coverage-fixed-bits-holdout-receipt.json \
+  --coverage-cardinality-fit-validation manifests/stc/coverage-cardinality-fit-result-validation.json \
+  --coverage-cardinality-holdout-validation manifests/stc/coverage-cardinality-holdout-result-validation.json \
+  --coverage-fixed-bits-fit-validation manifests/stc/coverage-fixed-bits-fit-result-validation.json \
+  --coverage-fixed-bits-holdout-validation manifests/stc/coverage-fixed-bits-holdout-result-validation.json \
+  --coverage-provisional manifests/stc/coverage-provisional.json \
+  --coverage-holdout-unlock manifests/stc/coverage-holdout-unlock.json \
+  --coverage-contrast-family manifests/stc/coverage-contrast-family-G2-CAP.json \
+  --coverage-summary manifests/stc/coverage-scaling-summary.json \
+  --coverage-independent-summary manifests/stc/coverage-scaling-summary-independent.json \
+  --coverage-budget manifests/stc/coverage-scaling-budget.json \
+  --coverage-cohort-index manifests/stc/coverage-scaling-cohort-index.json \
+  --information-raw results/parametric-information \
+  --information-receipt manifests/systems/distributed-parametric-information-receipt.json \
+  --information-validation manifests/stc/parametric-information-result-validation.json \
+  --information-summary manifests/stc/parametric-information-summary.json \
+  --information-independent-summary manifests/stc/parametric-information-summary-independent.json \
+  --information-budget manifests/stc/parametric-information-budget.json \
+  --information-cohort-index manifests/stc/parametric-information-cohort-index.json \
+  --capacity-aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --capacity-actual-ledger results/capacity/actual-rre-ledger.jsonl \
+  --capacity-ledger-head results/capacity/actual-rre-ledger.head.json \
   --output manifests/gate-inputs/G5.json
 uv run stc gate evaluate G5 \
   --inputs manifests/gate-inputs/G5.json \
@@ -2170,14 +2609,17 @@ uv run stc gate evaluate G5 \
 
 Expected: each producer records its exact command, implementation digest,
 environment/container digest, and input/output inventory; both distributed raw
-imports and their disjoint analysis trees plus the independent tree cover the
-same frozen cells. G5 is `PASS` and binds the primary/clean/scaling receipts,
-atomic-import top-level manifests, validation reports, clean-rerun request,
-G4 predecessor and combined execution snapshot, distinct primary/clean/
-independent analysis, primary/independent scaling, budget, cohort, and raw-tree
-digests. A
-hardware/coverage/RRE/independent-fit failure makes every
-result-backed scaling-law claim ineligible.
+imports and their disjoint analysis trees plus each independent tree cover the
+same frozen cells. G5 is `PASS` only after binding both non-substitutable
+core/capacity execution snapshots, core and capacity preregistrations,
+G2-CAP/phase plan, primary/clean requests/receipts/validations, and every
+scaling/coverage/information raw root, stage receipt, stage validation,
+provisional/unlock, contrast family, track/aggregate budget, cohort index,
+canonical ledger/head, and primary/independent summary. Core G5 may remain
+valid when a capacity annex has a typed failed/omitted state, but that state
+must itself be bound and no capacity claim is eligible. Any hardware,
+coverage, information, RRE, or independent-fit discrepancy blocks only its
+corresponding capacity statement and cannot rescue or change PAPER-C.
 
 - [ ] **Step 2: Append result-backed claim revisions**
 
@@ -2191,21 +2633,87 @@ confirmatory hypotheses on the same data.
 ```bash
 uv run pytest tests/test_result_adjudication.py -q
 uv run stc claims adjudicate-results \
+  --core-preregistration manifests/stc/preregistration.json \
+  --capacity-preregistration manifests/stc/capacity-preregistration.json \
+  --capacity-gate manifests/capacity-gates/G2-CAP.json \
+  --core-status-source primary-only \
   --primary-raw results/confirmatory-primary \
   --primary-analysis results/confirmatory-primary-analysis \
   --clean-rerun-raw results/confirmatory-clean-rerun \
   --clean-rerun-analysis results/confirmatory-clean-rerun-analysis \
-  --independent results/confirmatory-independent \
+  --core-independent results/confirmatory-independent \
   --scaling-summary manifests/stc/scaling-summary.json \
   --scaling-independent-summary manifests/stc/scaling-summary-independent.json \
+  --coverage-summary manifests/stc/coverage-scaling-summary.json \
+  --coverage-independent-summary manifests/stc/coverage-scaling-summary-independent.json \
+  --information-summary manifests/stc/parametric-information-summary.json \
+  --information-independent-summary manifests/stc/parametric-information-summary-independent.json \
+  --capacity-aggregate-budget manifests/stc/capacity-aggregate-budget.json \
+  --capacity-actual-ledger results/capacity/actual-rre-ledger.jsonl \
+  --capacity-annex-policy typed-fail-closed \
   --g5 manifests/gates/G5.json \
   --claims registry/claims.jsonl \
-  --history registry/claim-history.jsonl
+  --history registry/claim-history.jsonl \
+  --result-blocks-output manifests/stc/adjudicated-result-blocks.jsonl \
+  --output manifests/stc/result-adjudication-report.json
 ```
+
+Mutation tests swap primary and clean PASS/FAIL states, make clean disagree with
+primary, and make either independent implementation disagree with its primary
+capacity summary. Only validated primary core data may set PAPER-C status;
+clean/independent disagreement narrows reproducibility and can never rescue or
+pool with a failed primary. A failed/missing capacity pair emits a typed
+failed/omitted annex and no capacity claim while leaving eligible PAPER-C
+status unchanged. The command writes the terminal claim revisions,
+`adjudicated-result-blocks.jsonl`, and `result-adjudication-report.json` as one
+compare-and-swap transaction. The report binds G5, the before/after claims and
+history digests, every consumed primary/clean/independent summary, and the
+canonical ordered `ResultBlock` digest. A partial write, stale history, missing
+block, or output block not referenced by a terminal revision fails closed.
 
 - [ ] **Step 3: Export and gate G6**
 
 ```bash
+uv run pytest tests/test_publication_fill.py \
+  tests/test_publication_trace.py tests/test_parity.py tests/test_cli.py -q
+uv run stc publication fill-results \
+  --g5 manifests/gates/G5.json \
+  --claims registry/claims.jsonl \
+  --history registry/claim-history.jsonl \
+  --result-blocks manifests/stc/adjudicated-result-blocks.jsonl \
+  --g0-snapshot publication/scaffolds/G0 \
+  --english-root ../../paper-en/sleep-time-compute \
+  --korean-root ../../study-kr/sleep-time-compute \
+  --parity publication/links/parity.jsonl \
+  --links publication/links/manuscript-links.jsonl \
+  --output publication/reports/post-G5-fill.json
+uv run stc bibliography render \
+  --sources registry/sources.jsonl \
+  --bib ../../paper-en/sleep-time-compute/references.bib \
+  --korean ../../study-kr/sleep-time-compute/back/99-bibliography.md \
+  --output publication/reports/post-G5-bibliography-render.json
+make -C ../../paper-en/sleep-time-compute clean all
+make -C ../../study-kr/sleep-time-compute clean all
+uv run stc publication inventory \
+  --root ../../paper-en/sleep-time-compute \
+  --entry main.tex \
+  --output publication/reports/post-G5-english-source-inventory.json
+uv run stc publication inventory \
+  --root ../../study-kr/sleep-time-compute \
+  --entry BOOK.md \
+  --output publication/reports/post-G5-korean-source-inventory.json
+uv run stc publication trace \
+  --source ../../paper-en/sleep-time-compute/main.tex \
+  --links publication/links/manuscript-links.jsonl \
+  --output publication/reports/post-G5-english-trace.json
+uv run stc publication trace \
+  --source ../../study-kr/sleep-time-compute/BOOK.md \
+  --links publication/links/manuscript-links.jsonl \
+  --output publication/reports/post-G5-korean-trace.json
+uv run stc publication validate-parity publication/links/parity.jsonl \
+  --english-trace publication/reports/post-G5-english-trace.json \
+  --korean-trace publication/reports/post-G5-korean-trace.json \
+  --output publication/reports/post-G5-parity-validation.json
 uv run stc claims export-veridraft \
   --output ../../claims/sleep-time-compute.bundle.json
 uv run --group publication veridraft \
@@ -2223,6 +2731,23 @@ uv run stc gate inputs assemble G6 \
   --predecessor manifests/gates/G5.json \
   --claim-bundle ../../claims/sleep-time-compute.bundle.json \
   --veridraft-data .veridraft-stc \
+  --novelty-audit reports/novelty-audit.md \
+  --systems-claim-chart SYSTEMS-INFRA-PRIMARY-SOURCE-AUDIT.md \
+  --g0-scaffold-manifest publication/scaffolds/G0/manifest.json \
+  --g0-verification publication/scaffolds/G0-verification.json \
+  --post-g5-fill-report publication/reports/post-G5-fill.json \
+  --result-adjudication-report manifests/stc/result-adjudication-report.json \
+  --result-blocks manifests/stc/adjudicated-result-blocks.jsonl \
+  --english-source-root ../../paper-en/sleep-time-compute \
+  --english-source-inventory publication/reports/post-G5-english-source-inventory.json \
+  --korean-source-root ../../study-kr/sleep-time-compute \
+  --korean-source-inventory publication/reports/post-G5-korean-source-inventory.json \
+  --manuscript-links publication/links/manuscript-links.jsonl \
+  --parity-map publication/links/parity.jsonl \
+  --english-trace publication/reports/post-G5-english-trace.json \
+  --korean-trace publication/reports/post-G5-korean-trace.json \
+  --parity-report publication/reports/post-G5-parity-validation.json \
+  --bibliography-render-report publication/reports/post-G5-bibliography-render.json \
   --english-pdf ../../paper-en/sleep-time-compute/main.pdf \
   --korean-pdf ../../study-kr/sleep-time-compute/build/sleep-time-compute.pdf \
   --output manifests/gate-inputs/G6.json
@@ -2231,14 +2756,29 @@ uv run stc gate evaluate G6 \
   --output manifests/gates/G6.json
 ```
 
-Expected: all PAPER-C and headline quantitative claims pass and the typed G6
-record binds the canonical G5 predecessor, claim bundle, both clean PDF builds,
-trace/parity reports, and exact qualifying support refs.
+Expected: every PAPER-C and headline quantitative slot is fully adjudicated and
+gate-valid—whether supported, falsified, narrowed, null, or typed
+inconclusive—and the typed G6 record binds the canonical G5 predecessor, claim
+bundle, both clean PDF builds,
+the immutable G0 scaffold lineage, post-G5 fill and result-adjudication reports,
+canonical result blocks, live English/Korean source inventories and roots,
+manuscript links, trace/parity reports, exact qualifying support refs,
+novelty/priority status, and the digest-bound adjacent-literature claim chart.
+The assembler independently reopens and rehashes every inventory member and
+rejects extra live source bytes, stale report digests, an altered link/parity
+record, a G0 snapshot mutation, or any PDF not built from the supplied live
+inventory. Hashing only the two PDFs is explicitly insufficient.
 
 G6 requires zero blocked main claims, exact result-block references, visible
 material caveats, and no hypothesis/unresolved assertion contributing to the
 abstract or conclusion. A `FALSIFIED/NARROWED` main claim is admissible only
 when the corresponding null/narrowed result and boundary are stated explicitly.
+Every contribution claim carries `novelty_status =
+ESTABLISHED|UNRESOLVED|NOT_CLAIMED` and an optional claim-chart dependency.
+Any “first,” “novel,” exclusivity, or priority language fails when the status
+is unresolved, the asserted element lies outside the chart, or the chart's
+search scope remains bounded. The present systems audit therefore supports
+prior-art-safe integration wording but cannot by itself establish priority.
 
 - [ ] **Step 4: Rebuild and commit the G6 candidate**
 

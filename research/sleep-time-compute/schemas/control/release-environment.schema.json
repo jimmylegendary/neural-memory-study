@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sleep-time-compute.org/control/release-environment.schema.json",
+  "title": "Frozen release environment",
+  "x-stc-owner": "release-engineering",
+  "x-stc-model": "ReleaseEnvironment",
+  "type": "object",
+  "properties": {
+    "environment_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "os_name": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "architecture": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "python_version": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/component"
+      },
+      "minItems": 1
+    },
+    "lockfile_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/SubjectRef"
+      },
+      "minItems": 1
+    },
+    "environment_digest": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+    }
+  },
+  "required": [
+    "environment_id",
+    "os_name",
+    "architecture",
+    "python_version",
+    "components",
+    "lockfile_refs",
+    "environment_digest"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "component": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+        },
+        "version": {
+          "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+        },
+        "digest": {
+          "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+        }
+      },
+      "required": ["name", "version", "digest"],
+      "additionalProperties": false
+    }
+  }
+}

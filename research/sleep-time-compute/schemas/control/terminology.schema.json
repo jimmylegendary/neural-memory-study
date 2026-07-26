@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sleep-time-compute.org/control/terminology.schema.json",
+  "title": "Controlled terminology record",
+  "x-stc-owner": "evidence-governance",
+  "x-stc-model": "TerminologyRecord",
+  "type": "object",
+  "properties": {
+    "term_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "preferred_term": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "definition": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "aliases": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+      },
+      "uniqueItems": true
+    },
+    "source_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sourceId"
+      },
+      "uniqueItems": true
+    },
+    "evidence_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/evidenceId"
+      },
+      "uniqueItems": true
+    },
+    "last_reviewed": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/isoDate"
+    }
+  },
+  "required": [
+    "term_id",
+    "preferred_term",
+    "definition",
+    "aliases",
+    "source_ids",
+    "evidence_ids",
+    "last_reviewed"
+  ],
+  "additionalProperties": false
+}

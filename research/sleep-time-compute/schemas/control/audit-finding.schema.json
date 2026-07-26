@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sleep-time-compute.org/control/audit-finding.schema.json",
+  "title": "Independent audit finding",
+  "x-stc-owner": "independent-audit",
+  "x-stc-model": "AuditFinding",
+  "type": "object",
+  "properties": {
+    "finding_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["BLOCKER", "MAJOR", "MINOR", "INFO"]
+    },
+    "category": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "subject_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/SubjectRef"
+      },
+      "minItems": 1
+    },
+    "description": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["OPEN", "ADJUDICATED", "CLOSED"]
+    },
+    "auditor_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "finding_id",
+    "severity",
+    "category",
+    "subject_refs",
+    "description",
+    "status",
+    "auditor_id",
+    "created_at"
+  ],
+  "additionalProperties": false
+}

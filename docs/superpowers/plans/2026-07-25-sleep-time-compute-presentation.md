@@ -6,7 +6,9 @@
 
 **Architecture:** A separate TypeScript package consumes a read-only G8 `presentation-handoff.json`, converts it into an editorial storyboard and typed scene graph, and renders true masters/placeholders, editable native shapes/charts, and hashed SVG evidence graphics with PptxGenJS. Automated OOXML, geometry, provenance, font, accessibility, and PDF checks precede target-PowerPoint review. The reproducible `generated.pptx` and sealed, allowlisted-postflight `release.pptx` are distinct artifacts.
 
-**Tech Stack:** Node 25.6.1, npm 11.9.0, TypeScript 7.0.2, PptxGenJS 4.0.1, Ajv 8.20.0, Fontkit 2.0.4, JSZip 3.10.1, fast-xml-parser 5.10.1, Vitest 4.1.10, `@types/node` 25.9.5, Python 3.14 with Matplotlib 3.11.1 in `uv.lock`, LibreOffice 24.2.7.2, Poppler 24.02.0, DocumentFormat.OpenXml 3.5.1 in a digest-pinned .NET 10 SDK container, veraPDF 1.30 in a digest-pinned container, and desktop Microsoft PowerPoint for terminal QA.
+**Design target:** `docs/superpowers/specs/2026-07-25-sleep-time-compute-presentation-design.md`.
+
+**Tech Stack:** Node 25.6.1, npm 11.9.0, TypeScript 7.0.2, PptxGenJS 4.0.1, Ajv 8.20.0, Fontkit 2.0.4, JSZip 3.10.1, fast-xml-parser 5.10.1, `@resvg/resvg-js` 2.6.2, Vitest 4.1.10, `@types/node` 25.9.5, Python 3.14 with Matplotlib 3.11.1 in `uv.lock`, LibreOffice 24.2.7.2, Poppler 24.02.0, DocumentFormat.OpenXml 3.5.1 in a digest-pinned .NET 10 SDK container, veraPDF 1.30 in a digest-pinned container, and desktop Microsoft PowerPoint for terminal QA.
 
 ## Independence and Authority
 
@@ -21,6 +23,15 @@
   `INTERNAL — NOT FOR EXPORT` on every slide and is rejected by release mode.
 - Renderer source contains no factual slide copy. Facts, claims, numbers,
   citations, caveats, and chart data come only from the frozen handoff.
+- Raw PptxGenJS output is not claimed byte-reproducible: the library writes
+  current dates into core properties and embedded-chart XLSX metadata, and ZIP
+  timestamps vary. Only the declared canonical OOXML/ZIP postprocessor may
+  produce the reproducible `generated.pptx`; before that step, verification
+  uses normalized part digests.
+- PptxGenJS's Node SVG path cannot be trusted to synthesize a real PNG fallback
+  in every case. Every SVG has a separately rendered, digest-bound
+  `@resvg/resvg-js` PNG fallback; an `IMG_BROKEN` placeholder or missing
+  fallback fails the build.
 - PPTX failure cannot stale or fail the research release. A research handoff
   revision stales the deck, not vice versa.
 - `seminar/build_deck.py`, `seminar/pptx_lib.py`, existing decks, previews, and
@@ -344,6 +355,7 @@ pptxgenjs 4.0.1
 fontkit 2.0.4
 jszip 3.10.1
 fast-xml-parser 5.10.1
+@resvg/resvg-js 2.6.2
 DocumentFormat.OpenXml 3.5.1
 ```
 
@@ -452,6 +464,12 @@ Cover Korean, Latin, Greek, punctuation, superscripts, long titles, four font
 roles, true master placeholders, SVG, native chart, notes, image/chart alt
 text, individually named multi-shape diagram, internal/external links, and
 document metadata.
+
+The SVG slide embeds a nontrivial transparency/gradient fixture plus a PNG
+rendered from the exact SVG bytes with `@resvg/resvg-js`. Inspection fails on
+`IMG_BROKEN`, an empty or single-color placeholder fallback, a missing media
+relationship, a dimension mismatch, or a fallback whose provenance digest does
+not bind the SVG source.
 
 Use only these four redistributable upstream font bytes and the byte-identical
 SIL Open Font License 1.1 text. These values are normative inputs to both the
@@ -948,7 +966,8 @@ npm install --save-exact \
   ajv@8.20.0 \
   fontkit@2.0.4 \
   jszip@3.10.1 \
-  fast-xml-parser@5.10.1
+  fast-xml-parser@5.10.1 \
+  @resvg/resvg-js@2.6.2
 npm install --save-dev --save-exact \
   typescript@7.0.2 \
   vitest@4.1.10 \
@@ -1071,10 +1090,12 @@ git -C ../.. commit -m "presentation: add editorial scene system"
 - Create: `presentation/sleep-time-compute/src/slice.ts`
 - Create: `presentation/sleep-time-compute/src/accessibility.ts`
 - Create: `presentation/sleep-time-compute/src/canonicalize.ts`
+- Create: `presentation/sleep-time-compute/src/svgFallback.ts`
 - Create: `presentation/sleep-time-compute/python/render_evidence.py`
 - Create: `presentation/sleep-time-compute/tests/slice.test.ts`
 - Create: `presentation/sleep-time-compute/tests/canonicalize.test.ts`
 - Create: `presentation/sleep-time-compute/tests/accessibility.test.ts`
+- Create: `presentation/sleep-time-compute/tests/svgFallback.test.ts`
 - Modify: `presentation/sleep-time-compute/src/cli.ts`
 - Modify: `presentation/sleep-time-compute/package.json`
 - Modify: `presentation/sleep-time-compute/tests/cli.test.ts`
@@ -1109,6 +1130,11 @@ bytes unchanged.
 Render text, individually named shapes, eligible native charts, notes, links,
 and SVG evidence graphics. Use source figure preservation in notes/appendix
 when the main slide redraws a relationship. Do not rasterize a whole slide.
+For every SVG, render a real PNG from the same frozen SVG bytes with
+`@resvg/resvg-js`, bind both digests in build provenance, and inject both
+OOXML media paths explicitly. Reject `IMG_BROKEN`, a transparent/empty
+fallback, SVG/PNG dimension disagreement, or an SVG whose PNG fallback was
+generated from different bytes.
 Evidence SVG subprocesses run only as
 `uv run --frozen python python/render_evidence.py`; the build records the
 Python, Matplotlib, `pyproject.toml`, and `uv.lock` digests and rejects a
@@ -1127,8 +1153,11 @@ decorative object with factual text fails.
 - [ ] **Step 3: Canonicalize OOXML**
 
 Normalize ZIP entry order/timestamps and generated volatile metadata without
-changing presentation semantics. Record canonicalization rules and part
-digests.
+changing presentation semantics. This explicitly covers PptxGenJS core
+property dates and the `new Date()` values in embedded-chart XLSX properties.
+Record canonicalization rules, excluded volatile inputs, and pre/post part
+digests. A raw-library digest is diagnostic only; the canonicalized package
+digest is authoritative.
 
 - [ ] **Step 4: Verify byte-for-byte reproducibility**
 
@@ -1137,6 +1166,7 @@ npm run build
 npm test -- \
   canonicalize.test.ts \
   accessibility.test.ts \
+  svgFallback.test.ts \
   slice.test.ts \
   cli.test.ts
 node dist/cli.js build \

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sleep-time-compute.org/control/presentation-handoff.schema.json",
+  "title": "Final presentation handoff",
+  "x-stc-owner": "publication",
+  "x-stc-model": "PresentationHandoff",
+  "type": "object",
+  "properties": {
+    "presentation_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "handoff_index_ref": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/SubjectRef"
+    },
+    "deck_ref": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/SubjectRef"
+    },
+    "pdf_ref": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/SubjectRef"
+    },
+    "claim_link_digest": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+    },
+    "visual_review_ref": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/SubjectRef"
+    },
+    "human_approval_ref": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/SubjectRef"
+    },
+    "g8_gate_ref": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/DigestRef"
+    },
+    "handed_off_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "presentation_id",
+    "handoff_index_ref",
+    "deck_ref",
+    "pdf_ref",
+    "claim_link_digest",
+    "visual_review_ref",
+    "human_approval_ref",
+    "g8_gate_ref",
+    "handed_off_at"
+  ],
+  "additionalProperties": false
+}

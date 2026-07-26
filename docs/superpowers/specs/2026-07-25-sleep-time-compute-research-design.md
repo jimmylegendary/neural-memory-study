@@ -1,8 +1,7 @@
 # Sleep-Time Compute Research Design
 
 - Date: 2026-07-25
-- Status: approved high-level direction; detailed execution design awaiting
-  user review
+- Status: approved; evidence-first execution active
 - Primary language: English paper spine; Korean NM-grade companion
 - Parent evidence map: `dossier/SLEEP-TIME-COMPUTE-PRE-RESEARCH.md`
 
@@ -29,6 +28,13 @@ falsifiable algorithm-and-systems theory for deciding:
 The work succeeds only if it yields a defensible research paper, not merely an
 annotated bibliography, and if every central conclusion is connected to
 evidence, an experiment, a derivation, or an explicit hypothesis label.
+
+For classification, strict sleep-time compute requires all three properties:
+(1) accumulated wake experience is an input, (2) the transformation runs off
+the user-visible critical path or on an asynchronous snapshot, and (3) it
+changes persistent state for reuse in a later wake. Work missing any one of
+these properties remains an essential wake, boundary, or pre-query comparator,
+but is not relabelled as strict sleep.
 
 ## 2. Intended reader and decision
 
@@ -81,6 +87,48 @@ Scale](https://arxiv.org/abs/2606.04557) manages modular reusable KV artifacts
 across GPU and persistent storage. The project therefore cannot claim to invent
 future-use-aware retention, learned consolidation, sleep, external-to-parametric
 transfer, or latent memory individually.
+
+Strict algorithmic wake/sleep cycles also predate LLM agents. FearNet
+(ICLR 2018) periodically transfers recent exemplars into a generative long-term
+network with pseudorehearsal; Progress & Compress (ICML 2018) distils an active
+column into a fixed-size knowledge base; SIESTA (TMLR 2023) separates
+backpropagation-free wake updates from compute-restricted latent replay in
+sleep; and PCMC (CoLLAs 2024) periodically retrains an encoder and prunes
+patch memories offline. Most importantly,
+[Spens et al.](https://papers.nips.cc/paper_files/paper/2025/hash/d7e5870810331da5a8ac8bd16d42e074-Abstract-Conference.html)
+already train a recurrent PPO meta-controller to choose among a
+task-specific set of offline actions during explicit sleep. Episode valuation
+is learned from Shapley-style marginal utility only in the image and maze
+setups, where deterministic MMR then diversifies replay; neither applies to the
+relational setup. Only the relational world model is reset each episode, and
+the image setup assumes a validation set. The project therefore cannot claim
+the first learned sleep scheduler or adaptive offline curriculum, nor the first learned
+replay selector in settings where that selector was demonstrated. Those
+studies do not route the same
+versioned items across external, latent, user-parametric, and shared-parametric
+media or enforce deletion, rollback, and matched lifecycle accounting.
+
+[What to Keep, What to Forget](https://arxiv.org/abs/2607.08032) already gives
+memory compaction a rate--distortion/information-bottleneck objective, a
+cross-layer seven-axis taxonomy, reversible episodic versus lossy semantic
+tiering, and an explicit asynchronous-consolidation agenda. The project
+therefore cannot claim the first cross-layer memory objective, the first
+rate--distortion account, or the first promotion/demotion framing. That paper
+leaves the versioned router, executable state machine, cross-tier consistency,
+revocation, rollback, migration bandwidth, and weight-tier recovery as open
+work; those lifecycle semantics, not the taxonomy alone, define the remaining
+systems contribution.
+
+Two negative results constrain the algorithmic thesis. Repeated natural-language
+rewriting can become worse than retaining raw episodes
+([Useful Memories Become Faulty](https://arxiv.org/abs/2605.12978)), and
+periodically redistilling all accumulated facts into a fresh model protected
+general capability but did not improve 100-write fact retention
+([Can a Language Model Learn Facts Continually in Its
+Weights?](https://arxiv.org/abs/2607.11020)). Consolidation is therefore a
+selective action with a no-op/raw-retention baseline, never an assumed benefit;
+parametric memory is treated as a recoverable serving cache rather than the
+sole system of record.
 
 Continual-learning theory also rules out a casual promise of free, perfect
 lifelong memory. General optimal continual learning can require perfect memory
@@ -151,8 +199,8 @@ use it to rescue a failed central claim.
 The larger hybrid action space makes an oracle's weak dominance uninteresting.
 The study therefore separates three estimands:
 
-1. **oracle heterogeneity value:** whether the workload contains strict
-   cross-medium complementarity at all;
+1. **oracle heterogeneity value:** whether the workload contains cross-medium
+   complementarity above the frozen one-point materiality margin;
 2. **deployable routing value:** held-out lifetime utility of a past-only router
    versus the tuned single-medium envelope and a tuned deterministic mixture,
    after charging policy training, inference, and search;
@@ -303,8 +351,25 @@ scientific null.
 ### RQ7 — What bounds lifetime capacity?
 
 - Answer with: memory growth, retrieval competition, gradient interference,
-  consolidation amplification, and deletion lineage measured over hundreds of
-  wake-sleep cycles.
+  consolidation amplification, loss of plasticity, and deletion lineage
+  measured over hundreds of wake-sleep cycles. Retention and fixed-budget
+  acquisition on held-out new tasks are separate endpoints: preserved old
+  utility does not establish that the system can still learn. A controlled
+  independent opaque-payload family additionally tests the necessary
+  frozen-base conditional finite-state relation, counting every external,
+  latent, parametric, auxiliary, lineage, and recovery carrier. Retained bytes,
+  total incremental peak-state bytes
+  \(B_{\mathrm{peak,state}}=B_{\mathrm{retained}}+\) disjoint candidate, pinned
+  predecessor, migration, workspace, and replica additions, and cumulative
+  work are three separate ledgers. Transient overhead
+  \(B_{\mathrm{peak,state}}-B_{\mathrm{retained}}\) is reported separately but
+  is never substituted for the incremental peak cap. Physical cluster/HBM peak
+  \(B_{\mathrm{peak,physical}}=\max_t[
+  B_{\mathrm{base,resident}}(t)+B_{\mathrm{peak,state}}(t)+
+  B_{\mathrm{execution}}(t)]\) separately charges every frozen-base copy and
+  non-state execution workspace. All three terms are evaluated at the same
+  maximizing timestamp; independent component high-water marks are never
+  summed.
 - Null/rejection: no capacity knee or performance decline is detected within the
   preregistered horizon and precision.
 - Inconclusive: the horizon, scale range, or stream diversity cannot identify
@@ -314,7 +379,11 @@ scientific null.
 
 - Answer with: fitted and derived relations for reuse break-even, optimal sleep
   interval, queue stability, rate-distortion, storage growth, and interference,
-  including uncertainty and regime boundaries.
+  including uncertainty and regime boundaries. Reuse is relationship
+  conditioned: exact acquisition-key replay, held-out paraphrase, composition,
+  correction, and distribution shift are separate curves, then weighted by a
+  frozen deployment-query mixture. Exact-key cache amortization cannot stand
+  in for semantic transfer.
 - Null/rejection: exponents fail out of sample across horizon, model size, and stream
   rate, or reduce to benchmark-specific curve fitting.
 
@@ -322,7 +391,11 @@ scientific null.
 
 - Answer with: an executable or trace-driven wake/sleep/memory architecture that
   measures p99 latency, staleness, throughput, energy, bytes moved, footprint,
-  versioning, and failure recovery.
+  versioning, and failure recovery. A candidate spanning vectors, relational
+  metadata, graph/text files, indexes, and a source staging range publishes
+  through one immutable manifest/root pointer. Per-store transactions are not
+  system atomicity; fault recovery must provide all-new-or-all-old visibility,
+  no lost source event, idempotent replay, and exact rollback.
 - Null/rejection: the proposed split gives no benefit over one shared cluster after
   utilization and transfer overhead are included.
 
@@ -358,12 +431,13 @@ The lifecycle is a constrained semi-Markov control problem. Decision epoch
 \(n\) occurs at physical time \(T_n\):
 
 \[
-s_n=(M_n,V_n,Q_n,\mathcal{B}_n,\hat\lambda_n,\hat\mu_n),
+s_n=(\mathcal{M}_n,V_n,Q_n,\mathcal{B}_n,\hat\lambda_n,\hat\mu_n),
 \qquad
-M_{n+1}\sim P(\cdot\mid s_n,a_n),
+\mathcal{M}_{n+1}\sim P(\cdot\mid s_n,a_n),
 \]
 
-where \(M_n\) is tiered memory, \(V_n\) its versions and deletion watermark,
+where \(\mathcal{M}_n\) is the structured tiered-memory control state,
+\(V_n\) its versions and deletion watermark,
 \(Q_n\) the sleep queues, \(\mathcal{B}_n\) remaining resource budgets, and
 \(\hat\lambda_n,\hat\mu_n\) past-only reuse and invalidation estimates. The
 primary normative problem keeps task distortion and physical resources in
@@ -417,7 +491,18 @@ I(E;Z).
 
 In implementation, the theory is tested through empirical
 artifact-bytes-versus-held-out-task-loss curves. It does not assume that good
-transcript reconstruction is the relevant distortion.
+transcript reconstruction is the relevant distortion. Serialized bytes are an
+operational budget proxy; they are not an estimator of mutual information.
+
+[Colaco and Lahjouji (2026)](https://arxiv.org/abs/2607.08032) already formulate
+LLM and agent-memory compaction as a query-aware rate-distortion problem and
+propose reversible tiering plus asynchronous consolidation. Therefore neither
+rate-distortion framing nor cross-layer compaction taxonomy is claimed as an
+original contribution here. The proposed extension is the constrained
+semi-Markov lifecycle problem above: a versioned memory object moves among
+external, latent, and parametric substrates under learned routing, explicit
+data-motion and freshness costs, and enforceable deletion, revocation, and
+rollback semantics.
 
 Exogenous-query benchmarks estimate this objective under a controlled query
 process. Procedural agent tracks are analyzed separately because memory changes
@@ -436,21 +521,30 @@ memory set \(M\) is:
 
 \[
 \operatorname{Priority}(i,d)=
-\underbrace{\operatorname{Need}_i}_{\text{expected reuse}}
+v_U
+\underbrace{\operatorname{Need}_i}_{\text{expected discounted hit count}}
 \times
-\underbrace{\operatorname{Gain}_{i,d\mid M}}_{\text{per-hit conditional marginal gain}}
+\underbrace{\operatorname{Gain}_{i,d\mid M}}_{\text{utility per hit}}
 -
-\underbrace{\operatorname{Cost}_{i,d\mid M}}_{\text{sleep, storage, movement}}
+\sum_k\lambda_k
+\underbrace{\operatorname{Resource}_{k,i,d\mid M}}_{\text{native resource }k}
 -
-\underbrace{\operatorname{Risk}_{i,d\mid M}}_{\text{interference and staleness}}.
+\underbrace{C^{\mathrm{risk}}_{i,d\mid M}}_{\text{expected risk loss}}.
 \]
 
 The gain-times-need structure generalizes the normative account of prioritized
 replay in [Mattar and Daw](https://doi.org/10.1038/s41593-018-0232-z). Its use
-for LLM memory routing is an original hypothesis, not an established result.
-Gain excludes reuse so need is not counted twice. Redundancy, complementarity,
-graph clusters, and capacity shadow prices require subset selection or a
-constrained knapsack; independent item ranking is only a diagnostic baseline.
+for LLM memory routing is a project hypothesis, not an established result or a
+claim of priority.
+\(v_U\) converts one utility unit into the frozen admission-value unit,
+\(\lambda_k\) converts each native resource into that same unit, and
+\(C^{\mathrm{risk}}\) is already an expected loss in it. Gain excludes reuse so
+need is not counted twice. If any conversion is unavailable, the scalar is
+inadmissible and the policy uses hard constraints plus a Pareto or constrained
+knapsack rule; it may not subtract tokens, bytes, seconds, dollars, and risk
+scores directly. Redundancy, complementarity, graph clusters, and capacity
+shadow prices require subset selection or a constrained knapsack; independent
+item ranking is only a diagnostic baseline.
 
 ### 7.3 Reuse break-even law
 
@@ -535,6 +629,31 @@ future-query distribution. Lower bounds from continual learning define the
 impossibility boundary; rate-distortion and utility define which errors a
 bounded system should accept.
 
+A second boundary is **no free resurrection**. Let the complete retained state
+after wake be
+\(\Omega_t=(\theta_t,\phi_t,B_t,s_t,M_t,\mathrm{metadata}_t)\): model
+parameters, teacher/generator state, episodic buffers, sufficient statistics,
+external memory, and lineage. If a past task-specific target \(T\) has no
+remaining mutual information with \(\Omega_t\), and sleep randomness \(U\) is
+conditionally independent of \(T\) given \(\Omega_t\) (the stronger sufficient
+condition \(U\perp(T,\Omega_t)\) also works), then
+
+\[
+I(T;f(\Omega_t,U))
+\le I(T;\Omega_t,U)
+=I(T;\Omega_t)+I(T;U\mid\Omega_t)
+=0.
+\]
+
+Sleep can make a latent or behaviorally inaccessible trace usable again, but
+cannot reconstruct an erased task-specific mapping without a correlated prior
+or new external observation. This is a standard information-theoretic
+consequence, not a novel theorem. Its STC scheduling implication is a testable
+project hypothesis whose novelty remains unresolved: intervene before the
+retained trace crosses a recoverability boundary, and account for every hidden
+carrier—frozen teacher, generator, activation statistic, optimizer state, raw
+archive, and lineage—as memory.
+
 ### 7.6 Parametric interference hypothesis
 
 Recent teacher-student analysis reports a \(1/d\) forgetting relation under
@@ -557,7 +676,7 @@ into one smooth power law:
 \frac{r_e\bar b\,\tau_{\text{retain}}}{B_{\text{store}}},
 \quad
 \rho_{\text{read}} =
-\frac{b_{\text{relevant,tok}}}{B_{\text{live,tok}}},
+\frac{T_{\text{relevant}}}{T_{\text{live}}},
 \]
 
 \[
@@ -569,13 +688,23 @@ into one smooth power law:
 \quad
 \rho_{\text{gov}} =
 \frac{r_{\text{delete}}\bar u_{\text{ops/delete}}}
-{G_{\text{gov,ops/s}}}.
+{G_{\text{gov,ops/s}}},
+\quad
+\rho_{\text{plastic}} =
+\frac{g_{\text{acq,min}}}
+{\max(g_{\text{acq,current}},\epsilon_g)}.
 \]
 
 \(\kappa_{j,\mathcal T,\epsilon}\) is defined separately for memory medium
 \(j\), task/criterion \(\mathcal T\), and tolerated distortion \(\epsilon\);
 association count is never treated as a universal capacity unit across text,
 graphs, latent state, and parameters.
+
+\(g_{\text{acq,current}}\) is the fixed-budget acquisition gain on a held-out
+new-task probe, normalized to an architecture-matched fresh control;
+\(g_{\text{acq,min}}\) is the minimum admissible normalized gain. Stable rank,
+dormant-unit fraction, gradient statistics, and weight magnitude are secondary
+diagnostics, not substitutes for the behavioral acquisition endpoint.
 
 These are load indicators, not proved phase transitions. Candidate regime
 changes to test near a binding load of one are:
@@ -592,6 +721,8 @@ changes to test near a binding load of one are:
   externalization;
 - \(\rho_{\text{gov}}>1\) can make parametric promotion operationally
   inadmissible.
+- \(\rho_{\text{plastic}}>1\) requires a verified recycle, reset, expansion, or
+  fresh-base reconstruction path even when old-memory retention still passes.
 
 Fits will permit segmented or phase-transition behavior. A relation will be
 called a scaling law only if each fitted scale axis has at least eight points,
@@ -600,30 +731,62 @@ segmented models are compared with nested cross-validation, all resources are
 normalized to stated reference units, and the regime interpretation survives
 across workloads. Otherwise it is an empirical curve.
 
-A capacity knee may be fit as:
+A capacity knee uses the frozen retention threshold directly:
 
 \[
-A(N_{\text{assoc}})=A_0-\Delta
-\sigma\left(
-\frac{\log N_{\text{assoc}}-\log K_{\text{eff}}}{w}
-\right),
+\operatorname{logit}p_{\rm ret}(N_{\text{assoc}})
+=\operatorname{logit}\tau_{\rm ret}
+-\kappa\log(N_{\text{assoc}}/K_{\text{eff}}),
+\qquad\kappa>0,
 \]
 
 \[
 \frac{K_{\text{eff}}}{K_0}\propto
-\left(\frac{M_{\text{store}}}{M_0}\right)^\alpha
-\left(\frac{B_{\text{live,tok}}}{B_0}\right)^\beta
-\left(\frac{F_{\text{sleep,tot}}}{F_0}\right)^\gamma
-\left(\frac{M_{\text{latent}}}{L_0}\right)^\nu.
+\left(\frac{B_{\text{store,cap}}}{B_0}\right)^\alpha
+\left(\frac{T_{\text{live,cap}}}{T_0}\right)^\beta
+\left(\frac{F_{\text{sleep,cap}}}{F_0}\right)^\gamma
+\left(\frac{b_{\text{repr,cap}}}{b_{\text{repr,cap},0}}\right)^\nu.
 \]
 
-The multiplicative expression for \(K_{\text{eff}}\) is only a candidate
+Thus \(p_{\rm ret}(K_{\rm eff})=\tau_{\rm ret}\); \(K_{\rm eff}\) is not an
+unqualified sigmoid midpoint. The multiplicative expression is only a candidate
 empirical surface. A min-bottleneck model, normalized Cobb-Douglas model,
-generalized mean, and interaction model are preregistered competitors.
+generalized mean, interaction model, segmented load-at-one model, and
+four-axis shape-constrained nonparametric monotone lattice are preregistered
+competitors. The four controlled axes are assigned external/store byte cap,
+answer-time token cap, sleep-FLOP cap or prescribed schedule, and serialized
+latent-plus-adapter \(b_{\rm repr,cap}\) in bits. Slot and parameter counts are
+converted by a frozen precision/serialization schema; mixed counts/bytes/bits
+are forbidden. Analysis is intention-to-treat on
+those assignments; realized bytes, tokens, FLOPs, representation bits, and
+physical residency are constraints/outcomes, not substitute regressors or a
+fifth axis. Cross-document equation/schema tests require the design and theory
+agenda to import one canonical threshold-anchored function.
+The same digest freezes \(g(r_0)=0\), a ten-column no-intercept
+four-main-plus-six-interaction D-optimal design over unique physical
+configurations, exact formula/parameter/penalty/optimizer contracts for all
+seven competitors, and one nested-CV selector with numeric hyperparameter
+grids, one-SE rule, complexity/tie order, stability threshold, and typed
+no-winner state. Axis and interaction effects are equal-weight finite-target
+contrasts over predeclared factor-doubling edges and 2×2 faces, never a
+post-fit favorable slice.
+
+The predictive target is
+`future_estimated_knee_fixed_panel_v1`: an independent re-estimated knee under
+the frozen user count, eight-load panel, probe census, and normalization
+anchor. Prediction intervals and power include that first-stage target noise.
+Family-only, resource-only, and double-holdout RMSE/coverage are separate
+conjunctive estimands, each weighted first equally by named family and then by
+unique physical configuration after alias collapse. Fitted surface crossings
+are exploratory phase diagrams; no phase-boundary law is eligible without a
+future powered boundary-location estimand.
 Prediction-error tolerance is fixed from pilot variance, measurement
 calibration, and the target decision tolerance before confirmatory data;
-exponent reversal or prediction-interval failure on workload and hardware
-holdouts blocks a scaling-law claim.
+exponent reversal or prediction-interval failure on workload and held-out
+resource configurations blocks even an `A100-regime scaling law`. The
+unqualified `scaling law`, cross-hardware law, or systems law additionally
+requires a prospectively mandatory, powered second-hardware holdout; an
+optional H100 transport check cannot promote the A100-scoped result.
 
 Bounded capacity also requires byte-flow equilibrium for every store \(j\):
 
@@ -637,6 +800,30 @@ r_{\text{admit},j}\bar b_{\text{in},j}
 An archive with no expiry, deletion, or physical reclamation is unbounded even
 if its active index is compact.
 
+Let \(\Theta_0\) be the frozen public base/protocol and \(M_n\) every
+finite-precision incremental mutable carrier of the evaluated stream. For controlled answers
+\(Y_i\) conditionally independent under the declared \((Q_i,\Theta_0)\)
+source model, separable distortions \(D_i\), and
+\(H(M_n\mid\Theta_0)\le b_{\mathrm{mutable}}\) bits, the conditional
+rate--distortion converse gives:
+
+\[
+\sum_{i=1}^{n} R_{Y_i\mid Q_i,\Theta_0}(D_i)
+\le I(Y_{1:n};M_n\mid Q_{1:n},\Theta_0)
+\le H(M_n\mid\Theta_0)
+\le b_{\mathrm{mutable}}.
+\]
+
+This is a necessary bound for the declared controlled source, not a universal
+natural-language fact-count law. The benchmark uses uniformly sampled opaque
+payloads to make the information rate known. With positive novelty rate and
+positive per-item rate, fixed mutable state cannot maintain constant distortion
+indefinitely; expansion, actual redundancy exploitation, selective admission,
+a bounded horizon, or accepted forgetting is eventually necessary. The frozen
+base is reported separately; if it changes to encode the stream, its delta or
+complete versioned checkpoint is charged to \(M_n\). Offloading only changes
+the physical boundary at which the state is accounted.
+
 The notation is fixed as follows:
 
 | Symbol | Unit | Meaning |
@@ -644,8 +831,8 @@ The notation is fixed as follows:
 | \(F_{\text{sleep,job}}\) | FLOP | compute consumed by one sleep job |
 | \(G_{\text{sleep}}\) | FLOP/s | effective sleep-cluster service rate |
 | \(F_{\text{sleep,tot}}\) | FLOP | total sleep compute over the declared horizon |
-| \(B_{\text{live,tok}}\) | token | answer-time evidence budget |
-| \(B_{\text{live,byte}}\) | byte | live state residency budget |
+| \(T_{\text{live}}\) | token | answer-time evidence budget |
+| \(B_{\text{live}}\) | byte | resident answer-time state budget |
 | \(B_{\text{active}}\) | byte | active memory artifacts |
 | \(B_{\text{durable}}\) | byte | raw/deletable durable payload |
 | \(B_{\text{index}}\) | byte | indices and metadata |
@@ -657,13 +844,19 @@ The notation is fixed as follows:
 | \(p_r\) | currency/resource unit | frozen resource price |
 | \(C_{\cdot},K_{\cdot}\) | declared cost unit | fixed or present-value amortization terms |
 
-### 7.8 Original hypothesis set
+### 7.8 Preregistered hypothesis set
 
-All items in this subsection are hypotheses; G2 freezes each record and digest.
+All items in this subsection are falsifiable hypotheses; G2 freezes each record
+and digest. Stable hypothesis identifiers do not imply that every proposition is
+original. H-STC-001 operationalizes an implication of prior rate-distortion and
+semantic-compression work; the claimed novelty, if supported, lies in the
+lifecycle router, governance semantics, and matched cross-substrate test.
 
-1. **H-STC-001 — Future-relevant rate-distortion.** The best memory code minimizes loss on
-   future tasks, not reconstruction error of the original transcript. Changing
-   the query distribution changes the optimal representation of the same event.
+1. **H-STC-001 — Future-task distortion reversal.** The best memory code minimizes
+   loss on future tasks, not reconstruction error of the original transcript.
+   Changing the query distribution changes the optimal representation of the
+   same event. This is a prior-grounded empirical hypothesis, not an original
+   rate-distortion claim.
 2. **H-STC-002 — Reuse-volatility promotion cone.** General discounted reusable hits are
    \(\int_0^H\lambda_i(t)S_i(t)e^{-\omega t}dt\). Under stationary Poisson hits,
    exponential invalidation, and an infinite horizon, the special case is
@@ -674,14 +867,36 @@ All items in this subsection are hypotheses; G2 freezes each record and digest.
    with promotion and demotion costs predicts separated thresholds under
    derivable sufficient conditions; threshold ordering is not asserted
    universally. A single threshold is tested for tier thrashing.
-4. **H-STC-004 — Multi-capacity bottleneck.** Usable memory is limited by the currently
-   binding storage, application bandwidth, representation, sleep service, hot
-   residency, or governance capacity. Increasing only one resource should
-   eventually stop improving utility.
+4. **H-STC-004 — Multi-capacity bottleneck.** In exactly seven
+   resource-targeted cells, CALIBRATION diagnoses binding versus nonbinding
+   capacity from frozen utilization, cap-hit, queue, and shadow-price rules
+   without TEST utility. One-at-a-time \(+25\%\) interventions test whether a
+   diagnosed binding resource yields at least \(0.01\) utility while a
+   diagnosed nonbinding resource remains inside a \(\pm0.005\) equivalence
+   margin. At least four cells must satisfy the frozen CALIBRATION eligibility
+   rule or the global result is `INCONCLUSIVE_ANTECEDENT`. Labels cannot be
+   changed after TEST.
 5. **H-STC-005 — Reversibility-reserve optimum.** Archive depth is predicted to have a
    non-monotonic optimum: rollback benefit first permits more aggressive
    abstraction, while durable bytes, attack surface, and deletion workload
    eventually dominate.
+6. **H-STC-006 — Recoverability-margin scheduling.** A past-only calibrated proxy
+   combining old-task canary margin, teacher agreement, source availability,
+   retrieval confidence, and representational conflict predicts whether a
+   sleep action can still recover utility. Pressure-triggered intervention
+   before the proxy crosses its preregistered boundary should dominate the same
+   operator invoked after the boundary and should improve on fixed cadence at
+   matched compute. Failure of the proxy to predict recovery falsifies the
+   empirical scheduling hypothesis, not the no-free-resurrection information
+   boundary.
+7. **H-STC-007 — Plasticity-before-retention warning.** Under repeated parametric
+   sleep updates, fixed-budget acquisition gain is predicted to cross its
+   admissible boundary before aggregate old-memory retention in at least one
+   preregistered high-interference regime. Restricted recycling of low-utility
+   fast parameters, trained with the same canonical replay as the incumbent,
+   should recover acquisition without violating protected-slice retention
+   noninferiority. The crossing-order prediction and intervention effect have
+   separate falsifiers.
 
 ## 8. Training design
 
@@ -794,6 +1009,21 @@ reusable procedures, negative feedback, correction and contradiction, privacy
 deletion, poison, and one-off distractors. Reuse count, live-memory pressure,
 volatility, and poison rate must be independently controllable.
 
+Every reused item also receives one frozen query-relationship label:
+
+```text
+ACQUISITION_KEY
+EXACT_REPEAT
+HELDOUT_PARAPHRASE
+HELDOUT_COMPOSITION
+CORRECTION_PROBE
+UNRELATED_CONTROL
+```
+
+The item that caused a write cannot later count as held-out semantic transfer.
+Quality-floor-conditional memory hit, teacher-call avoidance, and false
+merge/split/delete are reported by relationship class.
+
 Before G3, the benchmark specification freezes events per cycle, session-length
 and payload distributions, query-generation grammar, paraphrase difficulty,
 conflict-resolution state machine, deletion ground truth, random-number
@@ -810,6 +1040,11 @@ Existing long-memory suites provide external-validity tracks:
 - LongMemEval for temporal updates, abstention, and delayed recall;
 - HaluMem for writer-to-retriever-to-reader error propagation;
 - ScienceWorld to ALFWorld or WebArena procedural transfer as a stretch track.
+- Evolve as a paper-aligned exact-question cache/lifecycle characterization
+  plus a corrected disjoint-query semantic-transfer track;
+- Memento 2 and the Memento-Skills paper as wake-learning comparators, with
+  the later DreamDaemon evaluated separately as code-level deferred external
+  consolidation rather than retroactively attributed to the paper.
 
 The project needs the controlled generator in addition to these suites so
 crossover laws can be estimated rather than systems only being ranked at one
@@ -836,12 +1071,30 @@ The confirmatory architecture-compatible paper track is limited to:
 6. the deployable hybrid router over those actions;
 7. a clairvoyant oracle router used only to estimate heterogeneity value.
 
-The static mixture is tuned only on validation users. For each resource/workload
-cell it freezes an action-proportion vector and cadence, then maps an opaque
-event ID to an action by a published deterministic hash schedule. It receives no
-event content, inferred reuse, future label, or test-user feedback. This controls
-for the value of merely allocating some traffic to every tier; the learned
-router must add event-conditional value beyond that larger action set.
+The static mixture is tuned only on validation users pooled across validation
+workload families. Its action-proportion vector and cadence may vary with the
+declared resource cap \(\phi\), base/model digest, and hardware envelope, but
+not with generator \(R\), TEST workload-family identity, or any
+future-distribution label. Within one such public resource envelope, its
+configuration digest is invariant across \(R\) and workload family. It maps an
+opaque event ID to an action by a published deterministic hash schedule and
+receives no event content, inferred reuse, future label, or test-user feedback.
+This controls for the value of merely allocating some traffic to every tier;
+the learned router must add event-conditional value beyond that larger action
+set.
+
+Every workload-family×user×payload-seed unit belongs to a disjoint
+TRAIN/CALIBRATION/TEST partition. Router fitting uses TRAIN;
+architecture, thresholds, static proportions/cadence, single-medium
+hyperparameters, early stopping, merge/residency policy, and comparator rules
+use CALIBRATION only. TEST runs once after G2 and cannot tune any of them.
+All deployable method constructors receive a stripped runtime specification
+that omits generator \(R\), workload-family ID, oracle annotations, and
+future-query schema. The analysis `RunSpec` may retain those fields for
+factorial assignment, but the execution boundary rejects them; tests mutate
+\(R\) and workload-family ID while holding the observable stream and public
+resource envelope fixed and require byte-identical method/config digests and
+actions.
 
 No-memory and full-history are non-budgeted lower/upper diagnostics and are
 excluded from matched dominance tests. A second latent/KV implementation, graph
@@ -856,11 +1109,18 @@ Methods operate under the same **upper-bound resource vector**, not forced
 equality:
 
 ```text
-live token cap, active-byte cap, durable-byte cap, sleep-FLOP cap,
-peak accelerator cap, information cutoff, privacy/deletion contract
+live token cap, active-byte cap, durable-byte cap,
+total incremental peak-state byte cap, physical HBM/fleet peak cap,
+sleep-FLOP cap, peak accelerator cap, information cutoff,
+privacy/deletion contract
 ```
 
-Unused budget is reported. Bytes moved, latency, throughput, and energy are
+The incremental peak-state cap applies to retained state plus disjoint candidate/staging,
+reader-pinned predecessor, migration, workspace, and temporary-replica
+additions. Transient overhead is reported as
+\(B_{\mathrm{peak,state}}-B_{\mathrm{retained}}\). The physical cap adds every
+resident frozen-base copy and non-state execution memory. Unused budget is reported. Bytes
+moved, latency, throughput, and energy are
 outcomes rather than matched inputs. Each operating point has a feasibility
 mask; a method requiring sleep cannot run in the zero-sleep cell. Search,
 controller training/inference, auxiliary model calls, embeddings, curation,
@@ -884,8 +1144,6 @@ defined through:
 \[
 \phi =
 \frac{B_{\text{active,cap}}}{B_{\text{ref}}},
-\qquad
-P_{\text{active}}=\phi^{-1},
 \qquad
 \phi\in\{1,\tfrac14,\tfrac1{16}\}.
 \]
@@ -938,23 +1196,58 @@ confounding deferral with extra future information. Information accumulation
 during sleep is a separately labeled exploratory factor.
 
 Each family contains a user count fixed by blinded paired power simulation
-before G2; the final count is the maximum required for the PAPER-C2 paired
-contrast, the PAPER-C3 interaction/crossover, and the PAPER-C4 factorial
-contrasts. All methods see identical user streams. A physical execution whose
+before G2; the final count is the maximum required for the PAPER-C1
+four-component intersection rule, the PAPER-C2 paired contrast, the PAPER-C3
+direct-component crossover rule, and the PAPER-C4 factorial contrasts. All
+methods see identical user streams. A physical execution whose
 complete configuration hash is identical across families may be referenced by
 both estimands, but the 297-cell logical design, contrasts, and multiplicity
 family remain fixed and fully enumerated. The no-reuse \(R=0\) cell is a
 separate break-even diagnostic, not part of amortized inference.
 Full-history/no-memory diagnostics are also outside the matched total.
 
+The crossed 16 named TEST workload families×3 paired-seed families are 48
+fixed equal-weight finite-target blocks. Users/streams are resampled only
+within block; the three seed families are not random superpopulation PSUs, and
+each applicable block has at least four independent physical users. PAPER-C4
+power covers 27 feasible underlying-cell scenarios: 18
+regime×schedule-specific operator-simple-effect locations and nine
+regime-specific operator-main-effect locations. Every scenario first fixes the
+identity/consolidating×inline/deferred 2×2 cell means and then recomputes all
+simple, main, schedule, and interaction contrasts algebraically. A
+simple-effect-only scenario with one operator simple effect `0.03`, the other
+zero, and the implied `O_main=0.015` must attain the same composite-power
+criterion; injecting derived effects independently is invalid.
+
 The dense scaling track varies one axis at a time with at least eight points on
 at most two methods and uses at least two held-out scales. Other axes—512/2K/8K
 live tokens, sleep-to-wake FLOPs, concurrency, volatility, trigger family,
 dream/replay order, graph/shared weights, and cluster placement—use a
-fractional-factorial or successive-halving exploratory design capped at no more
-than the compute-equivalent of another 135 lifetime runs. Pilot, confirmatory,
-and exploratory budgets are separate; unused capacity does not authorize
-post-hoc runs.
+fractional-factorial or successive-halving exploratory design. The dense
+resource surface, coverage/codec study, and parametric-information study share
+one sponsor-frozen pre-data ceiling \(Q_{\rm capacity,max}\), not an arbitrary
+universal RRE number. Before power-CAL or production,
+`program-budget-envelope.yaml` freezes non-borrowable `Q_core,primary`,
+`Q_core,clean`, and `Q_capacity,max` quotas plus absolute GPU-s, CPU-core-s,
+DRAM/HBM byte-s, storage-I/O-byte, network-byte, and carbon/energy caps. A
+coarse-feasibility gate multiplies optimistic lower cost by every mandatory
+physical cohort/panel; exceeding any cap yields `FAIL_DESIGN_INFEASIBLE`
+before expensive calibration. After power-CAL, a program-wide max-stat
+simultaneous upper-99 reservation envelope over every
+track×cohort×native-resource cell must fit its track quota and the global
+ceiling. Seeds, panels, rows, or lags are never silently discarded to fit.
+
+One RRE is a reporting normalization, not GPU time alone. Its denominator is
+the sampling-free engineering profile `RRE-NATIVE-A100-V1`, frozen before
+data—not one noisy child—and
+\(\mathrm{RRE}(x)=\max_r x_r/x_{\mathrm{ref},r}\). Every native resource has a
+strictly positive reference allowance and a separate absolute sponsor cap; a
+missing counter is inadmissible, never zero. One canonical append-only actual
+ledger enforces track/global committed work as measured actual plus
+unreconciled reservations. Retries and failed work remain charged; track views
+are derived and reconciled from that ledger. Pilot, core primary, clean
+reproduction, and capacity budgets are separate and non-borrowable. Core G2
+and G2-CAP remain independent.
 
 Required causal extensions use the same events and frozen contrasts:
 
@@ -966,22 +1259,85 @@ Required causal extensions use the same events and frozen contrasts:
 - sequential per-user LoRA, adapter-grouped batches, per-stream replicas, and
   heterogeneous batched-LoRA serving;
 - exact replay, distillation, and dream augmentation in the extension track;
+- a preregistered repeated-parametric-sleep high-interference stream for
+  H-STC-007, comparing restricted low-utility recycle with identical canonical
+  replay against no recycle, random unrestricted recycle, and a fresh-base
+  diagnostic while measuring retention and acquisition at every cycle;
 - with/without provenance, verification, rollback, and deletion enforcement.
 
 ### 9.4 Metrics
 
 For each preregistered resource tuple, the single primary endpoint is
 **lifetime utility AUC**. The primary comparison is the paired delta between the
-deployable hybrid and the stronger of the tuned single-medium envelope and
-static mixture on held-out users and workload families. Secondary frontier
-hypervolume uses a reference point frozen at G2 and includes policy
+deployable hybrid and the G2-frozen CALIBRATION-selected benefit or efficiency
+comparator map on held-out users and workload families. All five fixed
+single-medium/static-mixture comparisons are also reported; no TEST envelope
+supports the claim. Secondary frontier hypervolume uses a reference point
+frozen at G2 and includes policy
 training/tuning cost. PAPER-C2's positive benefit branch succeeds if either one
 of these preregistered alternatives holds:
 
-- hybrid utility improvement of at least two absolute percentage points with a
-  user/stream hierarchical-bootstrap 95% lower bound above zero;
-- no worse than one percentage point in utility with at least 10% lower
-  preregistered lifecycle cost and a lower confidence bound above zero.
+The AUC contract is equal-cycle/equal-probe. For each user, cell, cycle, and
+three frozen probe blocks, average the G2-frozen query scores in \([0,1]\);
+then average those \(3\times128\) block means. Every block has at least one
+query, so one absolute point is \(0.01\) on a horizon-normalized scale. The
+comparator is selected on CALIBRATION and frozen before G2, never chosen from
+TEST outcomes or inside a TEST bootstrap. For each public resource cap
+\(\phi\), pooled CALIBRATION data with frozen equal family/\(R\) weights select
+(1) the highest-utility baseline for the benefit branch, using canonical method
+ID only for an exact tie, and (2) the lowest-cost member within
+\(\delta_{\mathrm{CAL}}=0.01\) of the CALIBRATION utility maximum for the
+efficiency branch. Both maps are invariant across generator \(R\) and TEST
+workload family. Without an admissible scalar price, the efficiency branch is
+ineligible. All five TEST baseline comparisons and native resource vectors
+remain visible, but a TEST envelope cannot change or rescue the frozen claim.
+
+Every run emits exactly one typed status: `COMPLETE`, `RESOURCE_FAILURE`,
+`SHARED_PROTOCOL_INVALID`, `ADMIN_CENSORED`, or
+`STRUCTURAL_INFEASIBLE`. A protocol-valid method timeout, OOM, deadline/cap
+violation, exception, invalid method artifact, checksum failure, or
+method-produced absent probe is an observed intent-to-treat
+`RESOURCE_FAILURE`: retain the assigned stream, charge all work, and assign
+zero to every affected probe even when intentional abstention would have been
+correct; unaffected pre-failure probes retain their frozen scores. A deliberate
+protocol-valid `ABSTAIN`/`FORGET` under `COMPLETE` is separately scored and can
+receive abstention credit. Only corruption in a shared
+generator/query/target/common-oracle artifact that prevents every paired
+method from being scored may invalidate a block. Publish failure rate by
+method×cell×workload family. Any deployable dominance claim must also pass a
+separately frozen, simultaneous one-sided failure-rate noninferiority test with
+\(\delta_{\mathrm{RF}}=0.01\); this fail-only family may veto support but
+cannot create it. PAPER-C2's two frozen-map branches, all six deployable C3
+components, the C4 operator component that supplies the positive branch, and
+the C4 identity-deferred cost branch each bind a same-weight companion failure
+contrast. A missing or nonpassing companion returns
+`NARROWED_RESOURCE_FAILURE_NONINFERIORITY`; ITT zero scoring alone does not
+satisfy this veto. Type-I calibration uses the boundary
+\(\Delta F=\delta_{\mathrm{RF}}\), while power uses the interior
+\(\Delta F=0\).
+
+The 27 rare paired-Bernoulli RF rows use a constrained paired-discordance score
+with positive least-favorable variance at the 0.01 boundary, not a
+zero-empirical-variance Wald/sandwich interval. They join the 104 continuous
+row statistics under one boundary-calibrated max statistic. All-zero/all-one
+samples yield finite simultaneous UCBs, and zero observed failures can pass
+only when the finite-sample bound clears 0.01. Ordinary/wild-cluster RF
+\(t\)-statistics are diagnostics. A comparator-zero/proposed-0.01 boundary
+mutation must control global type I even when zero events are observed.
+
+Final deployability support uses one ordered
+`PAPER-C-DEPLOYABILITY-GLOBAL-131` max-stat family at \(\alpha=0.05\): 104
+scientific utility/cost/equivalence margins plus 27 same-weight
+resource-failure companions. Operational rows remain veto-only but share the
+critical because operational validity is part of the truth condition. Shared
+invalid/admin censoring is pair-identical and handled by an alpha-free
+integrity/MNAR veto, never a zero-SE studentized row. A mixed-null
+simulation—one claim false on efficacy and another only on failure—must
+control the probability of any false `SUPPORTED` status at 0.05.
+
+- simultaneous 95% LCB of `hybrid utility improvement - 0.02` above zero;
+- simultaneous 95% LCBs of `hybrid utility improvement + 0.01` and
+  `preregistered lifecycle-cost reduction - 0.10` both above zero.
 
 The alternatives are disjunctive, not cumulative. If neither holds,
 PAPER-C2 is FALSIFIED/NARROWED and the null-paper branch reports the regret or
@@ -990,23 +1346,21 @@ PAPER-C4 separately tests the two schedule simple effects, the two operator
 simple effects, and their interaction under its frozen multiplicity correction.
 Its positive branch is `SUPPORTED` only if all three conditions hold:
 
-1. consolidating versus identity produces at least a two-point future-query
-   utility gain with the multiplicity-adjusted 95% lower bound above zero in at
-   least one preregistered reuse-pressure regime;
-2. for the identity operator, the cell-balanced marginal deferred-minus-inline
-   utility contrast passes two one-sided equivalence tests at familywise
-   \(\alpha=0.05\): its multiplicity-adjusted 90% confidence interval lies
-   wholly inside \([-1,+1]\) percentage point. Deferred execution must also
-   reduce cell-balanced marginal lifecycle cost by at least 10%, with the
-   multiplicity-adjusted 95% lower confidence bound exceeding 10%;
-3. the cell-balanced marginal schedule-by-operator utility interaction passes
-   the same familywise-\(\alpha=0.05\) equivalence procedure, with its adjusted
-   90% confidence interval wholly inside \([-1,+1]\) percentage point. This
+1. at least one preregistered operator row has a simultaneous 95% LCB for
+   `future-query utility gain - 0.02` above zero;
+2. for identity, the simultaneous two-sided 95% interval for the cell-balanced
+   deferred-minus-inline utility contrast lies wholly inside \([-1,+1]\)
+   percentage point. Deferred execution must also have a simultaneous 95% LCB
+   for `lifecycle-cost reduction - 0.10` above zero;
+3. the simultaneous two-sided 95% interval for the cell-balanced marginal
+   schedule-by-operator utility interaction lies wholly inside
+   \([-1,+1]\) percentage point. Both signed equivalence boundaries use the
+   same centered global max-stat critical value. This
    supports only a marginal first-order separability claim; every cellwise
    interaction and its interval is still reported.
 
-If no multiplicity-adjusted operator main or conditional simple effect survives,
-PAPER-C4 is `FALSIFIED`. Any other outcome that misses one or more support
+Only when every eligible operator main/conditional simple-effect simultaneous
+UCB is below 0.02 is PAPER-C4 `FALSIFIED_NO_OPERATOR_EFFECT`. Any other outcome that misses one or more support
 conditions is `NARROWED`: a surviving sub-two-point effect is labeled “detectable
 but below the materiality threshold”; failure of condition 2 is “consolidation
 without a demonstrated deferred-cost benefit”; and failure of condition 3 is
@@ -1016,14 +1370,32 @@ that overlaps the equivalence margin and the null is
 interaction is a result, but it cannot be relabeled as support for the
 separability hypothesis.
 
-The exact effect thresholds are recalibrated only from blinded pilot variance
-and deployment tolerance before G2; any later change makes the analysis
+Every materiality, noninferiority, equivalence, prediction-error, and cost
+threshold is frozen from deployment tolerance before pilot execution. Blinded
+pilot covariance may change only powered \(n\), never a scientific margin.
+Multiplying pilot variance by four must leave every threshold byte-identical
+while changing or preserving \(n\); any later margin change makes the analysis
 exploratory.
+
+The pilot covariance contract is itself frozen before pilot data: one
+hierarchy-aware builder retains all 48 fixed blocks, resamples users only
+within block, uses declared `[0,1]` utility/failure supports and
+reservation-derived cost supports, a fixed shrinkage rule, simultaneous
+entrywise bands, and PSD projection only with recorded diagonal inflation that
+does not shrink any registered contrast variance. A disjoint pre-pilot
+verification simulation over `n_pilot_per_block={4,8,12,16}`, correlated
+heteroskedastic and near-singular/near-independent stress cases must certify
+the selected builder/size's full covariance-object 99% coverage. Selecting a
+builder or tuning parameter after pilot dispersion, or validating only
+pointwise variances, fails G2. This 48-block/27-scenario/builder contract and
+the executable `analysis-plan-skeleton.json` share one digest.
 
 #### Learning and memory
 
 - current-task utility;
 - retained utility and forgetting;
+- fixed-budget held-out new-task acquisition gain normalized to an
+  architecture-matched fresh control, reported separately from retention;
 - forward transfer;
 - memory half-life and retention survival by lag;
 - exact, semantic, temporal, relational, and procedural recall;
@@ -1031,12 +1403,16 @@ exploratory.
 - writer, retriever, and reader error decomposition;
 - consolidation coverage, preservation, faithfulness, and detail loss;
 - stale/conflicting hit rate and poison amplification;
+- exact-repeat versus held-out paraphrase/composition/correction transfer gap;
+- false merge/split/delete and orphaned canonical state;
 - access deletion;
 - physical artifact removal;
 - derived-lineage invalidation;
 - behavioral residual-influence removal;
 - rollback success and deletion-propagation latency;
 - interference across users and tasks.
+- dormant-unit fraction, activation/gradient stable rank, and weight magnitude
+  as secondary plasticity diagnostics rather than behavioral substitutes.
 
 #### Systems
 
@@ -1045,6 +1421,7 @@ exploratory.
 - retrieval, queue, prefill, decode, and writeback latency decomposition;
 - effective-batch distribution, MFU, achieved/roofline memory bandwidth;
 - cache and adapter hit/miss, HBM residency, and heterogeneous-LoRA batching;
+- flat-catalog selection tokens/latency versus injected-artifact tokens/latency;
 - sleep job latency, throughput, and deadline miss rate;
 - construction/retrieval/generation energy;
 - tokens and FLOPs by phase;
@@ -1137,21 +1514,37 @@ and selective shared-weight unlearning remain stretch research.
 
 ### 10.3 Queue condition
 
-For normalized-server sleep job classes \(k\), the single-resource diagnostic
+For normalized-server sleep job classes \(k\), let \(a_k\) be the arrival rate
+in jobs/s. This symbol is distinct from every replay-priority shadow price. The
+single-resource diagnostic
 condition is:
 
 \[
-\sum_k \lambda_k \mathbb{E}[S_k] < m,
+\sum_k a_k \mathbb{E}[S_k] < m,
 \]
 
 where \(S_k\) is server-seconds/job and \(m\) is effective parallel servers.
-The actual model uses a resource-demand vector:
+The actual model is dimensionally typed:
 
 \[
-\sum_k\lambda_k\mathbb{E}[c_{k,r}]<C_r
-\quad\text{for each }r\in
-\{\text{GPU, CPU, storage I/O, network}\}.
+\sum_k a_k\mathbb{E}[w_{k,r}]<m_r
+\quad(r\in\{\text{GPU-s, CPU-core-s}\}),
 \]
+\[
+\sum_k a_k\mathbb{E}[b_{k,r}]<\beta_r
+\quad(r\in\{\text{storage-I/O-byte, network-byte}\}),
+\]
+\[
+\sum_k a_k\mathbb{E}[o_{k,r}]<M_r
+\quad(r\in\{\text{DRAM-byte-s, HBM-byte-s}\}),
+\qquad
+\sup_t X_r(t)\le M_r .
+\]
+
+Here \(m_r\) is the number of compute devices/cores, \(\beta_r\) is sustained
+bytes/s, \(M_r\) is resident bytes, \(o_{k,r}\) is occupancy byte-seconds/job,
+and \(X_r(t)\) is sample-path resident stock. Byte-seconds may not be compared
+to bandwidth, and bytes/job may not be compared directly to a byte cap.
 
 Trace simulation includes setup plus per-event service, bulk batching,
 priority/preemption, deadlines, and tenant affinity. Stability alone is
@@ -1166,6 +1559,14 @@ handles, base-model and tokenizer hashes, snapshot version, parent handles,
 checksum, compiler version, privacy scope, and deletion epoch. A
 content-addressed tenant manifest atomically names the ready versions of every
 vector, graph, latent, and adapter artifact.
+
+Publication authority is one linearizable `ServingHead` containing the
+manifest generation/digest and authorization/deletion epochs. Deletion or
+authorization changes advance that same record even before physical
+reclamation. The manifest names the exact authorization/deny root; installing
+that root and the new epochs in `ServingHead` is the denial linearization
+point. Candidate publication compares and swaps the exact complete head; a
+separate pre-CAS watermark check is insufficient.
 
 “Append-only” means tamper-evident while a record is inside its declared
 retention window; it does not mean that identifying metadata is immortal. The
@@ -1203,12 +1604,12 @@ artifact removal.
 
 The minimum failure protocol is:
 
-- a wake request pins one memory version;
+- a wake request pins one complete authorized `ServingHead` and registers a
+  bounded reader lease plus a non-bypassable epoch/hazard reference;
 - sleep reads an immutable snapshot and produces a shadow artifact;
 - verification and canary probes run before publication;
 - per-artifact readiness barriers complete before manifest-last publication;
-- a compare-and-swap checks both parent generation and deletion watermark and
-  then publishes one manifest pointer atomically;
+- one compare-and-swap checks and replaces the complete parent `ServingHead`;
 - worker retries are idempotent and uncommitted candidates are disposable;
 - partial storage writes use temporary objects, synchronization, checksum, and
   manifest-last publication;
@@ -1216,6 +1617,13 @@ The minimum failure protocol is:
 - poison or canary regression quarantines the artifact and rolls the pointer
   back;
 - a deny path for deletion overrides all pinned old versions immediately;
+- a mid-read deny prevents further protected reads or answer emission, while
+  the reader hazard prevents use-after-free until acknowledged quiescence;
+  lease expiry requests cancellation but never proves quiescence by itself;
+  GC reclaims only objects outside the reachability closure of current, pinned,
+  candidate/migration, rollback, backup, legal-hold, and deletion-retention
+  roots, below the applicable retire boundary, and after all pre-retire readers
+  release their hazard or are provably fenced;
 - deletion quarantines in-flight descendants, cryptographically erases or
   expires tenant payloads under declared backup/retention rules, and uses the
   lineage graph to invalidate or rebuild summaries, latent state, and adapters;
@@ -1247,7 +1655,8 @@ Every material claim is assigned one class:
 - **TRACE-SIMULATION:** analytical or simulated systems result, never a hardware
   measurement;
 - **SYNTHESIS:** interpretation supported by multiple sources;
-- **HYPOTHESIS:** novel, falsifiable, and not presented as established.
+- **HYPOTHESIS:** proposed and falsifiable, not presented as established;
+  novelty/priority is a separate audited field and may remain unresolved.
 
 Each claim record includes source, exact support span, evidence tier, assumptions,
 scope, counterevidence, status, artifact dependency, and last audit date.
@@ -1358,7 +1767,7 @@ parallel; factual slide production starts from a frozen evidence tag.
 
 Working title:
 
-> **When Should Models Sleep? Budgeted, Provenance-Linked Memory
+> **What Happens When Models Sleep? Budgeted, Provenance-Linked Memory
 > Compilation Across External, Latent, and Parametric Tiers**
 
 The paper contribution must contain:
@@ -1375,19 +1784,31 @@ The first paper owns RQ1, RQ3, and the controlled part of RQ7/RQ8. RQ4 learned
 cadence/trigger comparison, RQ5/RQ6 training variants, RQ9 cluster architecture,
 RQ11 dream staging, RQ12 shared weights, graph and additional-latent expansion,
 and full safety infrastructure remain companion or extension material unless a
-separate paper is preregistered before its data is inspected. Additional latent
+separate paper is preregistered before its data is inspected. Reserve the headline “When Should
+Models Sleep?” for the prospectively powered cadence/trigger paper; the primary
+factorial tests fixed inline versus fixed cycle-boundary deferral, not learned
+timing optimization.
+Additional latent
 implementations remain extension work; the single frozen latent baseline above
 is part of the first paper.
 
 The provisional pre-data claim spine is:
 
-- **PAPER-C1:** strict oracle heterogeneity value exists in at least one
-  preregistered reuse-pressure regime;
+- **PAPER-C1:** strict oracle heterogeneity value exceeds the frozen
+  one-point materiality margin in at least one of exactly nine preregistered
+  reuse-pressure cells;
 - **PAPER-C2:** a past-only deployable router captures useful oracle value on
   held-out users/workload families, or the null branch quantifies its regret;
 - **PAPER-C3:** reuse and relative memory pressure predict a preregistered
-  external-to-latent and/or latent-to-user-parametric destination crossover
-  under full lifecycle accounting;
+  **matched-cap utility-ranking reversal** between external and latent and/or
+  latent and user-parametric media. It does not identify the economically
+  optimal destination or a full-lifecycle Pareto crossover. Lifecycle
+  cost/bytes/latency/governance are reported and can veto feasibility, but the
+  six decision rows are utility margins only. They use only the tuned deployable
+  `raw_external`, `compressed_external`, `latent_kv`, and `user_lora` methods;
+  every oriented effect is tested as \(g-\delta_{\mathrm{cross}}\) with
+  \(\delta_{\mathrm{cross}}=0.01\). Restricted clairvoyant oracles belong to
+  C1 and cannot enter C3;
 - **PAPER-C4:** over the preregistered reuse-pressure grid with equal cell
   weights and a matched enqueue-time information cutoff, the marginal semantic
   consolidation contrast yields a preregistered future-query utility gain,
@@ -1499,7 +1920,11 @@ list, and all known counterevidence and limitations are visible.
 - **G5 — result admissibility:** immutable raw logs, clean rerun, and an
   independent repeat or second calculation path for headline results;
 - **G6 — claim gate:** zero blocked main claims, exact result-block references,
-  and no omitted material caveat;
+  no omitted material caveat, and an explicit novelty/priority status for every
+  contribution claim; any “first,” “novel,” exclusivity, or priority language
+  requires a frozen adjacent-literature claim-chart dependency that covers the
+  asserted elements, while unresolved or bounded-search status forbids that
+  language;
 - **G7 — independent audit:** evidence, coverage, notation, statistics,
   reproduction, privacy/safety, and claim-to-figure review followed by
   adjudication and re-audit; the auditor did not author or run the artifact, or
@@ -1566,8 +1991,9 @@ is visibly watermarked and cannot be exported.
 - local reproduction plus trace-driven systems analysis;
 - target-accelerator measurement of the KV/read-modify-write, batching,
   adapter-load/update, DRAM-byte, and energy anchors used for absolute claims;
-- either a supported deployable hybrid claim against the stronger of the tuned
-  single-medium envelope and static mixture, or the preregistered null-paper
+- either a supported deployable hybrid claim against the G2-frozen
+  CALIBRATION benefit/efficiency comparator maps, with all five baseline
+  comparisons reported, or the preregistered null-paper
   branch that narrows the title and central thesis;
 - one held-out crossover prediction; otherwise results are called regime curves,
   not scaling laws.

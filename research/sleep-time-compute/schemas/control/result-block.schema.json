@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sleep-time-compute.org/control/result-block.schema.json",
+  "title": "Typed experiment result block",
+  "x-stc-owner": "theory-benchmark",
+  "x-stc-model": "ResultBlock",
+  "type": "object",
+  "properties": {
+    "result_id": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/resultId"
+    },
+    "experiment_id": {
+      "type": "string",
+      "pattern": "^EXP-STC-(?!0000)[0-9]{4}$"
+    },
+    "result_modality": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/resultModality"
+    },
+    "metric": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+    },
+    "estimate": {
+      "type": "number"
+    },
+    "interval": {
+      "$ref": "#/$defs/interval"
+    },
+    "sample_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "raw_result_digest": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/sha256"
+    },
+    "analysis_artifact_ref": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/DigestRef"
+    },
+    "claim_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/claimId"
+      },
+      "uniqueItems": true
+    },
+    "reproduction_strength": {
+      "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/reproductionStrength"
+    }
+  },
+  "required": [
+    "result_id",
+    "experiment_id",
+    "result_modality",
+    "metric",
+    "estimate",
+    "interval",
+    "sample_count",
+    "raw_result_digest",
+    "analysis_artifact_ref",
+    "claim_ids",
+    "reproduction_strength"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "interval": {
+      "type": "object",
+      "properties": {
+        "lower": {
+          "type": "number"
+        },
+        "upper": {
+          "type": "number"
+        },
+        "level": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "exclusiveMaximum": 1
+        },
+        "method": {
+          "$ref": "https://schemas.sleep-time-compute.org/control/common.schema.json#/$defs/nonEmptyString"
+        }
+      },
+      "required": ["lower", "upper", "level", "method"],
+      "additionalProperties": false
+    }
+  }
+}

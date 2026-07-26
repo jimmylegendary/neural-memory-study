@@ -7,3 +7,5 @@ build/*.toc
 build/*.out
 build/BOOK.tex
 build/build_err.txt
+build/publications/*-renders/
+build/publications/*.txt
