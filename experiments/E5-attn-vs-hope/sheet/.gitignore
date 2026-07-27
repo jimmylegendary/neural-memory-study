@@ -1,0 +1,4 @@
+node_modules
+previews/
+inspect*.log
+*.inspect.ndjson
