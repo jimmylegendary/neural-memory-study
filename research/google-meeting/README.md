@@ -5,11 +5,12 @@ This package turns the HOPE / Sleep / Memory Caching / NSTM evidence base into a
 ## Reading and use order
 
 1. Read the [six-axis evidence pre-read](01-SIX-AXIS-PROBLEM-MAP.md).
-2. Facilitate from the [canonical KQ/BQ playbook](02-GOOGLE-KICK-QUESTION-PLAYBOOK.md).
-3. Use the [device and system appendix](03-DEVICE-SOLUTION-BRIDGE.md) only for the branch selected by the answer.
-4. Record KQ/BQ answers in the [live capture template](04-ANSWER-CAPTURE-LIVE.csv).
-5. Normalize each KQ outcome in the [post-meeting template](05-ANSWER-CAPTURE-POSTMEETING.csv).
-6. Keep non-repository dependencies in the [external-artifact register](EXTERNAL-ARTIFACTS.md).
+2. Use the [single English paper-evidence and six-question appendix](06-PAPER-EVIDENCE-AND-KICK-QUESTIONS-EN.md) for the external discussion.
+3. Facilitate from the [canonical KQ/BQ playbook](02-GOOGLE-KICK-QUESTION-PLAYBOOK.md).
+4. Use the [device and system appendix](03-DEVICE-SOLUTION-BRIDGE.md) only for the branch selected by the answer.
+5. Record KQ/BQ answers in the [live capture template](04-ANSWER-CAPTURE-LIVE.csv).
+6. Normalize each KQ outcome in the [post-meeting template](05-ANSWER-CAPTURE-POSTMEETING.csv).
+7. Keep non-repository dependencies in the [external-artifact register](EXTERNAL-ARTIFACTS.md).
 
 The checked-in live and post-meeting CSVs are the compact minimum templates
 with their exact 9-column and 10-column headers. Section 9 of the device bridge
@@ -34,10 +35,10 @@ Stable inventory: six `KQ` IDs (`KQ-01…06`), eight `BQ` IDs (`BQ-01…08`), an
 
 | Evidence ID | Repository evidence | Version rule |
 |---|---|---|
-| HOPE / Nested Learning | [2512.24695 extraction](../../papers/2512.24695.txt) | Repository filename carries no arXiv version suffix; do not infer one. |
+| HOPE / Nested Learning | [2512.24695 extraction](../../papers/2512.24695.txt) | The extraction header identifies arXiv v1 dated 2025-12-31; use v1 locators. |
 | Language Models Need Sleep | [2606.03979v2 extraction](../../papers/2606.03979v2.txt) | Canonical claim and line evidence is arXiv v2 dated 2026-07-10; the v1 Korean translation is reference-only. |
-| Memory Caching | [2602.24281 extraction](../../papers/2602.24281.txt) | Repository filename carries no arXiv version suffix; do not infer one. |
-| NSTM | [2607.15271 extraction](../../papers/2607.15271.txt) | Repository filename carries no arXiv version suffix; do not infer one. |
+| Memory Caching | [2602.24281 extraction](../../papers/2602.24281.txt) | The extraction header identifies arXiv v1 dated 2026-02-27; use v1 locators. |
+| NSTM | [2607.15271 extraction](../../papers/2607.15271.txt) | The extraction header identifies arXiv v1 dated 2026-07-16; use v1 locators. |
 | TTT supporting boundary | [2407.04620 extraction](../../papers/external/2407.04620.txt) | Supporting systems boundary, not one of the four primary meeting papers. |
 
 ## Quantitative artifacts
