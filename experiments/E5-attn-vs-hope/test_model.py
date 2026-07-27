@@ -143,9 +143,9 @@ class BuilderAndSummaryTests(unittest.TestCase):
             memory("M_mem", 16, 16, 16, 8, 1, 4.0, 1.0),
         )
         cms_levels = (
-            level("cms_l1", 16, 8, 16, 1_000, 4, 1, True, 1.0),
-            level("cms_l2", 16, 8, 16, 5_000, 8, 1, True, 1.0),
-            level("cms_l3", 16, 8, 16, 10_000, 16, 1, True, 1.0),
+            level("cms_l1", 16, 16, 64, 64, 1, 1, 1_000, 4, 1, True, 1.0),
+            level("cms_l2", 16, 16, 128, 64, 1, 1, 5_000, 8, 1, True, 1.0),
+            level("cms_l3", 16, 16, 256, 64, 1, 1, 10_000, 16, 1, True, 1.0),
         )
         values: dict[str, object] = {
             "batch": 1,
@@ -323,7 +323,7 @@ class BuilderAndSummaryTests(unittest.TestCase):
             two_total["persistent_state_bytes"],
             2 * one_total["persistent_state_bytes"],
         )
-        self.assertEqual(one_total["persistent_state_bytes"], 17_088)
+        self.assertEqual(one_total["persistent_state_bytes"], 5_560_512)
 
     def test_cms_forward_read_is_independent_of_update_cadence(self) -> None:
         base = self.hope_config()
@@ -333,11 +333,11 @@ class BuilderAndSummaryTests(unittest.TestCase):
         slow_cfg = replace(base, cms_levels=(slow, *base.cms_levels[1:]))
         fast_stage = self.stage(
             analytical_model.build_hope_decode(fast_cfg, self.hardware),
-            "cms_l1_forward",
+            "cms_l1_router",
         )
         slow_stage = self.stage(
             analytical_model.build_hope_decode(slow_cfg, self.hardware),
-            "cms_l1_forward",
+            "cms_l1_router",
         )
         self.assertGreater(fast_stage.hbm_read_bytes, 0)
         self.assertEqual(fast_stage.hbm_read_bytes, slow_stage.hbm_read_bytes)
@@ -375,28 +375,140 @@ class BuilderAndSummaryTests(unittest.TestCase):
         }
         self.assertFalse(any("M_q" in name for name in stage_names))
 
-    def test_all_titans_work_precedes_cms(self) -> None:
+    def test_hope_stages_follow_canonical_forward_loss_update_partition(self) -> None:
         cases = {
             "prefill": analytical_model.build_hope_prefill(
                 self.hope_config(query_tokens=4), self.hardware
             ),
-            "decode_boundary": analytical_model.build_hope_decode(
-                self.hope_config(), self.hardware, timing="boundary"
-            ),
+            **{
+                f"decode_{timing}": analytical_model.build_hope_decode(
+                    self.hope_config(), self.hardware, timing=timing
+                )
+                for timing in ("normal", "boundary", "amortized")
+            },
         }
         for name, stages in cases.items():
             with self.subTest(case=name):
-                last_titans = max(
-                    index
-                    for index, stage in enumerate(stages)
-                    if stage.component in {"titans", "titans_update"}
+                components = [stage.component for stage in stages]
+                self.assertEqual(
+                    components,
+                    sorted(
+                        components,
+                        key={
+                            "titans_forward": 0,
+                            "cms_forward": 1,
+                            "loss": 2,
+                            "backward_update": 3,
+                        }.__getitem__,
+                    ),
                 )
-                first_cms = min(
-                    index
-                    for index, stage in enumerate(stages)
-                    if stage.component == "cms"
+                forward_names = {
+                    stage.stage
+                    for stage in stages
+                    if stage.component == "titans_forward"
+                }
+                self.assertEqual(
+                    forward_names,
+                    {"static_q_projection", "M_mem_forward"},
                 )
-                self.assertLess(last_titans, first_cms)
+                loss_names = {
+                    stage.stage for stage in stages if stage.component == "loss"
+                }
+                for memory_name in ("M_k", "M_v", "M_eta", "M_alpha", "M_mem"):
+                    self.assertIn(f"{memory_name}_target_forward", loss_names)
+                    self.assertIn(f"{memory_name}_prediction_forward", loss_names)
+                self.assertTrue(
+                    all(
+                        "weight_backward" not in stage.stage
+                        and "dgd_extra" not in stage.stage
+                        and "state_apply" not in stage.stage
+                        for stage in stages
+                        if stage.component != "backward_update"
+                    )
+                )
+
+    def test_cms_forward_is_sparse_router_and_top_k_low_rank_experts(self) -> None:
+        cfg = self.hope_config(query_tokens=4)
+        stages = analytical_model.build_hope_prefill(cfg, self.hardware)
+        cms_names = [
+            stage.stage for stage in stages if stage.component == "cms_forward"
+        ]
+        self.assertEqual(
+            cms_names,
+            [
+                "cms_l1_router",
+                "cms_l1_expert_a",
+                "cms_l1_expert_b",
+                "cms_l2_router",
+                "cms_l2_expert_a",
+                "cms_l2_expert_b",
+                "cms_l3_router",
+                "cms_l3_expert_a",
+                "cms_l3_expert_b",
+            ],
+        )
+        self.assertTrue(all(hasattr(level, "capacity") for level in cfg.cms_levels))
+        self.assertEqual([level.capacity for level in cfg.cms_levels], [64, 128, 256])
+        self.assertEqual([level.low_rank_dim for level in cfg.cms_levels], [64, 64, 64])
+        self.assertEqual([level.top_k for level in cfg.cms_levels], [1, 1, 1])
+        self.assertEqual(
+            [level.update_period for level in cfg.cms_levels],
+            [1_000, 5_000, 10_000],
+        )
+        l1 = {stage.stage: stage for stage in stages if stage.stage.startswith("cms_l1_")}
+        self.assertEqual(l1["cms_l1_router"].flops, 8_448)
+        self.assertEqual(l1["cms_l1_router"].hbm_read_bytes, 2_176)
+        self.assertEqual(l1["cms_l1_expert_a"].flops, 8_192)
+        self.assertEqual(l1["cms_l1_expert_a"].hbm_read_bytes, 8_352)
+        self.assertEqual(l1["cms_l1_expert_b"].flops, 8_192)
+        self.assertEqual(l1["cms_l1_expert_b"].hbm_read_bytes, 8_704)
+        self.assertEqual(l1["cms_l1_router"].persistent_state_delta_bytes, 792_576)
+        self.assertFalse(any("cms" in stage.stage and "update" in stage.stage for stage in stages))
+
+    def test_group_summaries_conserve_base_stage_totals(self) -> None:
+        cases = {
+            "prefill": analytical_model.build_hope_prefill(
+                self.hope_config(query_tokens=4), self.hardware
+            ),
+            **{
+                f"decode_{timing}": analytical_model.build_hope_decode(
+                    self.hope_config(), self.hardware, timing=timing
+                )
+                for timing in ("normal", "boundary", "amortized")
+            },
+        }
+        for name, stages in cases.items():
+            with self.subTest(case=name):
+                groups = analytical_model.summarize_by_group(stages, self.hardware)
+                self.assertEqual(
+                    set(groups),
+                    {
+                        "titans_forward",
+                        "cms_forward",
+                        "forward_total",
+                        "loss",
+                        "backward_update",
+                    },
+                )
+                total = analytical_model.summarize(stages, self.hardware)
+                for metric in ("flops", "hbm_read_bytes", "hbm_write_bytes"):
+                    self.assertEqual(
+                        total[metric],
+                        sum(
+                            groups[group][metric]
+                            for group in (
+                                "titans_forward",
+                                "cms_forward",
+                                "loss",
+                                "backward_update",
+                            )
+                        ),
+                    )
+                    self.assertEqual(
+                        groups["forward_total"][metric],
+                        groups["titans_forward"][metric]
+                        + groups["cms_forward"][metric],
+                    )
 
     def test_legacy_anchor(self) -> None:
         got = analytical_model.legacy_hope_proxy(
@@ -530,7 +642,9 @@ class ValidationTests(unittest.TestCase):
 
     def test_cms_level_rejects_zero_period(self) -> None:
         with self.assertRaises(ValueError):
-            analytical_model.CMSLevel("bad", 1, 1, 1, 0, 1, 0, True, 1.0)
+            analytical_model.CMSLevel(
+                "bad", 1, 1, 1, 1, 1, 0, 0, 1, 0, True, 1.0
+            )
 
 
 class DeterministicRunnerTests(unittest.TestCase):
@@ -568,7 +682,7 @@ class DeterministicRunnerTests(unittest.TestCase):
             return [
                 stage["persistent_state_delta_bytes"]
                 for stage in stages
-                if stage["component"] == "cms"
+                if stage["component"] == "cms_forward"
             ]
 
         self.assertEqual(cms_state(shipped), cms_state(paper))
@@ -614,6 +728,26 @@ class DeterministicRunnerTests(unittest.TestCase):
         )
         self.assertNotIn("adaptive_q_hypothetical", payload["default_scenarios"])
         self.assertTrue(all(payload["qa_checks"].values()))
+        self.assertTrue(
+            {
+                "hope_dependency_partition_is_canonical",
+                "shipped_forward_is_static_q_plus_M_mem",
+                "cms_is_router_plus_sparse_low_rank_ab",
+                "cms_online_update_is_excluded",
+                "hope_group_summaries_conserve_totals",
+                "hope_ttft_uses_prefill_chunk_count",
+                "decode_metrics_are_one_token_without_osl",
+                "reference_hardware_matches_live_sheet",
+            }.issubset(payload["qa_checks"])
+        )
+        self.assertEqual(
+            payload["native_sheet_reference"]["artifact_sha256"],
+            "0c04b122a214b9e2543abf6925260f307ddbdda7bc9cedca7e3d1f92bb7b8267",
+        )
+        self.assertIn(
+            "Exact numerical equality is not asserted",
+            payload["native_sheet_reference"]["reconciliation_note"],
+        )
         self.assertIn("stages", payload["attention_moe"]["prefill"])
         self.assertIn(
             "stages",
@@ -624,6 +758,45 @@ class DeterministicRunnerTests(unittest.TestCase):
             self.results_path.read_text(encoding="utf-8"),
             json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True)
             + "\n",
+        )
+
+    def test_runner_exposes_full_sequence_ttft_and_per_token_itl(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_cwd:
+            subprocess.run(
+                [sys.executable, str(self.runner)],
+                cwd=temporary_cwd,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        payload = json.loads(self.results_path.read_text(encoding="utf-8"))
+        inputs = payload["model_inputs"]
+        attention = payload["attention_moe"]
+        shipped = payload["hope_scenarios"]["shipped_credible_momentum"]
+        self.assertEqual(
+            attention["inputs"]["prefill"]["query_tokens"],
+            inputs["input_sequence_tokens"],
+        )
+        self.assertEqual(attention["inputs"]["decode"]["query_tokens"], 1)
+        self.assertEqual(
+            shipped["metrics"]["ttft"]["forward_ms"],
+            shipped["metrics"]["prefill_per_chunk"]["forward_ms"]
+            * inputs["prefill_chunks"],
+        )
+        self.assertEqual(
+            shipped["metrics"]["ttft"]["online_overhead_ms"],
+            shipped["metrics"]["prefill_per_chunk"]["online_overhead_ms"]
+            * inputs["prefill_chunks"],
+        )
+        self.assertEqual(
+            shipped["metrics"]["decode_per_token"]["including_online_itl_ms"],
+            shipped["metrics"]["decode_per_token"]["forward_itl_ms"]
+            + shipped["metrics"]["decode_per_token"]["online_overhead_itl_ms"],
+        )
+        self.assertNotIn("output_sequence_tokens", json.dumps(shipped["metrics"]))
+        self.assertEqual(payload["hardware"]["peak_flops_per_second"], 4.614e15)
+        self.assertEqual(
+            payload["hardware"]["hbm_bandwidth_bytes_per_second"], 7.4e12
         )
 
 

@@ -1,6 +1,8 @@
 Attn-vs-HOPE deterministic analytical reference
-Hardware: NVIDIA H100 SXM5 (repository twin) | peak 989.472 TFLOP/s | HBM 3.350 TB/s
-Attention+MoE stagewise lower bound: prefill-chunk 93.386322 ms | decode 24.051186 ms
-HOPE shipped-credible stagewise lower bound: prefill-chunk 451.376552 ms | decode normal 76.343599 ms | boundary 96.857502 ms | amortized 76.353615 ms
+Hardware: User-reviewed analytical reference (HBM capacity from repository H100 twin) | peak 4614.000 TFLOP/s | HBM 7.400 TB/s
+Attention+MoE end-to-end lower bound: TTFT(full ISL) 3256.329489 ms | ITL(Q=1) 10.888037 ms
+HOPE shipped-credible prefill per 2K chunk: forward 8.423809 ms | online overhead 79.339898 ms | including online 87.763706 ms
+HOPE shipped-credible TTFT: forward 539.123762 ms | online overhead 5077.753451 ms | including online 5616.877213 ms
+HOPE shipped-credible ITL(Q=1): forward 0.619406 ms | online overhead 30.194499 ms | including online 30.813905 ms
 Legacy proxy anchor: 1082187776 FLOPs | 679510016 HBM bytes
-QA: 12/12 PASS | latencies are analytical lower bounds, not wall-clock measurements
+QA: 20/20 PASS | latencies are analytical lower bounds, not wall-clock measurements

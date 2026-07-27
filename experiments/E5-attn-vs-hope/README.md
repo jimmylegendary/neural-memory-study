@@ -18,30 +18,35 @@ effective bytes count traffic that crosses the HBM boundary only.
 - Shipped HOPE has static `q=xW_q` and mutable
   `{M_k,M_v,M_eta,M_alpha,M_mem}`. `M_q` appears only in the explicitly
   hypothetical adaptive-q scenario.
-- HOPE executes all self-modifying Titans forward/loss/backward/update work
-  before entering the sequential CMS chain. CMS read cadence is one token even
-  when a level's update period is long.
+- The shipped dependency chain is `static W_q -> M_mem -> CMS L1/L2/L3`, then
+  all auxiliary target/prediction loss preparation, then all backward/update
+  work. `M_k`, `M_v`, `M_eta`, and `M_alpha` are not direct block-forward
+  outputs. CMS online gradients/state apply remain excluded from the baseline.
 
 ## Implementation choices
 
-- Reference model inputs mirror the user-reviewed live-sheet values. A prefill
-  row is one 2,048-token chunk; the recorded count of 64 chunks belongs in TTFT
-  aggregation and is not multiplied into an operation row.
-- The hardware peak is derived from the H100 twin as
-  `2 FLOP/MAC * 132 instances * 3.748e12 MAC/s`; HBM bandwidth and capacity are
-  read from the twin. The twin has no kernel-launch constant, so the reference
-  lower bound uses zero rather than inventing one.
+- Reference inputs mirror the user-reviewed live Sheet. Full Attention TTFT is
+  one causal `Q=K=131072` invocation. A HOPE prefill operation row is one
+  2,048-token chunk; only the TTFT metrics multiply forward and online groups
+  by 64. Decode/ITL is exactly one `Q=1` token and never multiplies OSL.
+- The reference timing authority is the live-Sheet analytical scenario:
+  `GPU_FLOPS=4.614e15 FLOP/s` and `HBM_BW=7.4e12 B/s`. The repository H100 twin
+  supplies HBM capacity and provenance only; those sources are deliberately
+  mixed and labeled. The lower bound uses zero launch overhead because neither
+  authority supplies a reference launch constant.
 - Static/shared weights are read once per invocation. Request-local HOPE state
   scales with batch. The configured state-weight reload count is independent of
   update-apply RMW traffic.
-- CMS low-rank capacity is flattened into an equivalent aggregate hidden width:
-  `H_level = LRD * capacity`, preserving `P=I*H+H*O`. Capacities are 64, 128,
-  and 256; update periods are 1K, 5K, and 10K tokens.
-- The shipped reference uses eager Titans gradients and reports normal,
-  simultaneous-boundary, and per-memory-period amortized decode. CMS online
-  backward/update is excluded from this baseline, while every CMS forward read
-  remains present. CMS optimizer slots are an independent input and default to
-  zero; they are never inferred from Titans momentum slots.
+- CMS capacity is never flattened into a dense hidden width. Each level has a
+  dense router and top-k=1 active rank-64 expert A/B matrices. FLOPs use active
+  experts; persistent state uses the complete 64/128/256 pool. Prefill HBM
+  reads use the personalized per-request upper bound `min(capacity,Q*top_k)`,
+  while decode reads top-k active experts. Update periods remain 1K/5K/10K.
+- The shipped reference uses eager Titans loss/backward and amortizes state
+  apply by each memory's update chunk for ITL. Group summaries expose Titans
+  forward, CMS forward, forward total, loss, and backward+update separately and
+  conserve the complete stage totals without inserting synthetic stages.
+  CMS optimizer slots are independent and default to zero.
 - Router metadata uses 8 bytes per selected route (index plus score). Dispatch,
   expert up projection, gate projection, SwiGLU activation/intermediate,
   down-projection, combine, Q, and other potentially fusible intermediates stay
@@ -79,6 +84,13 @@ The aggregate diagnostic is:
 The aggregate form permits compute-heavy and memory-heavy stages to overlap
 optimistically, so it cannot exceed the stagewise sum. Neither number models
 distributed collectives or claims measured wall-clock performance.
+
+`results.json` additionally exposes `attention_moe.metrics.ttft_ms/itl_ms` and,
+for each HOPE scenario, per-chunk prefill, chunk-multiplied TTFT, and per-token
+forward/online-overhead/including-online ITL metrics. The reference results do
+not claim exact equality with the native Sheet because the engine keeps the
+sparse-CMS active-weight upper bound, explicit MoE traffic, and stagewise
+roofline assumptions auditable.
 
 ## Reproduce
 

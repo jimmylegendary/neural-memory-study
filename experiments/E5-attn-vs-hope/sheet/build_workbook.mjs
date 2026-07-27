@@ -157,8 +157,10 @@ function writeKeyValueInputs(sheet) {
   const prefill = results.attention_moe.inputs.prefill;
   const rows = [
     ["batch", "Batch", attn.batch, "requests", "attention_moe.inputs.decode.batch", "Baseline request batch"],
-    ["prefill_query_tokens", "Prefill Q", prefill.query_tokens, "tokens/request", "attention_moe.inputs.prefill.query_tokens", "One causal chunk"],
-    ["prefill_context_tokens", "Prefill K", prefill.context_tokens, "tokens/request", "attention_moe.inputs.prefill.context_tokens", "Keys visible in chunk"],
+    ["prefill_query_tokens", "Attention prefill Q", prefill.query_tokens, "tokens/request", "attention_moe.inputs.prefill.query_tokens", "Full ISL in one causal invocation"],
+    ["prefill_context_tokens", "Attention prefill K", prefill.context_tokens, "tokens/request", "attention_moe.inputs.prefill.context_tokens", "Full ISL visible to FlashAttention"],
+    ["hope_prefill_chunk_tokens", "HOPE prefill chunk", hopePrefill.query_tokens, "tokens/request", "hope_scenarios.shipped_credible_momentum.inputs.prefill.query_tokens", "One parallelizable operational chunk"],
+    ["prefill_chunks", "HOPE prefill chunks", results.model_inputs.prefill_chunks, "chunks", "model_inputs.prefill_chunks", "Applied only when forming TTFT"],
     ["decode_query_tokens", "Decode Q", attn.query_tokens, "tokens/request", "attention_moe.inputs.decode.query_tokens", "Exactly one token"],
     ["decode_context_tokens", "Decode K", attn.context_tokens, "tokens/request", "attention_moe.inputs.decode.context_tokens", "Current context"],
     ["model_dim", "Model width D", attn.model_dim, "elements", "model_inputs.model_dim", "Shared model width"],
@@ -246,42 +248,54 @@ function writeKeyValueInputs(sheet) {
 
   const cms = hope.cms_levels;
   const cmsStart = 56;
-  sheet.getRange(`A${cmsStart}:I${cmsStart}`).values = [[
+  sheet.getRange(`A${cmsStart}:M${cmsStart}`).values = [[
     "CMS level",
     "Input dim I",
-    "Hidden H",
     "Output O",
+    "Capacity C",
+    "Low-rank R",
+    "Top-k",
+    "Router FLOPs/token/expert",
     "Update period",
     "BPTT span",
     "Optimizer slots",
     "Personalized (0/1)",
     "Gradient multiplier",
+    "Routing metadata B",
   ]];
-  styleHeader(sheet.getRange(`A${cmsStart}:I${cmsStart}`), COLORS.navy);
-  sheet.getRange(`A${cmsStart + 1}:I${cmsStart + cms.length}`).values = cms.map((level) => [
+  styleHeader(sheet.getRange(`A${cmsStart}:M${cmsStart}`), COLORS.navy);
+  sheet.getRange(`A${cmsStart + 1}:M${cmsStart + cms.length}`).values = cms.map((level) => [
     level.name,
     level.input_dim,
-    level.hidden_dim,
     level.output_dim,
+    level.capacity,
+    level.low_rank_dim,
+    level.top_k,
+    level.router_flops_per_token_expert,
     level.update_period,
     level.bptt_span,
     level.optimizer_slots,
     level.personalized ? 1 : 0,
     level.gradient_multiplier,
+    level.routing_metadata_bytes,
   ]);
-  styleBody(sheet.getRange(`A${cmsStart + 1}:I${cmsStart + cms.length}`));
+  styleBody(sheet.getRange(`A${cmsStart + 1}:M${cmsStart + cms.length}`));
   const cmsRefs = {};
   cms.forEach((level, index) => {
     const row = cmsStart + 1 + index;
     cmsRefs[level.name] = {
       input: qref("01_Inputs", absCell("B", row)),
-      hidden: qref("01_Inputs", absCell("C", row)),
-      output: qref("01_Inputs", absCell("D", row)),
-      period: qref("01_Inputs", absCell("E", row)),
-      bptt: qref("01_Inputs", absCell("F", row)),
-      slots: qref("01_Inputs", absCell("G", row)),
-      personalized: qref("01_Inputs", absCell("H", row)),
-      multiplier: qref("01_Inputs", absCell("I", row)),
+      output: qref("01_Inputs", absCell("C", row)),
+      capacity: qref("01_Inputs", absCell("D", row)),
+      lowRank: qref("01_Inputs", absCell("E", row)),
+      topK: qref("01_Inputs", absCell("F", row)),
+      routerCost: qref("01_Inputs", absCell("G", row)),
+      period: qref("01_Inputs", absCell("H", row)),
+      bptt: qref("01_Inputs", absCell("I", row)),
+      slots: qref("01_Inputs", absCell("J", row)),
+      personalized: qref("01_Inputs", absCell("K", row)),
+      multiplier: qref("01_Inputs", absCell("L", row)),
+      metadata: qref("01_Inputs", absCell("M", row)),
     };
   });
 
@@ -305,7 +319,7 @@ function writeKeyValueInputs(sheet) {
   sheet.getRange("D:D").format.columnWidth = 18;
   sheet.getRange("E:E").format.columnWidth = 48;
   sheet.getRange("F:F").format.columnWidth = 38;
-  sheet.getRange("G:I").format.columnWidth = 17;
+  sheet.getRange("G:M").format.columnWidth = 17;
   return { refs, memoryRefs, cmsRefs, sweepRefs };
 }
 
@@ -314,14 +328,14 @@ function writeHardware(sheet) {
     sheet,
     "F",
     "02 · Hardware anchor",
-    "Repository-twin H100 values and visible unit conversions. Calculation sheets reference these cells; no hardware constants are embedded in formulas.",
+    "User-reviewed live-Sheet peak/BW authority plus repository-twin HBM capacity. Calculation sheets reference these cells; no hardware constants are embedded in formulas.",
   );
   const h = results.hardware;
   const rows = [
-    ["name", "Hardware", h.name, "text", "hardware.name", "Repository twin"],
-    ["peak_flops", "Peak compute", h.peak_flops_per_second, "FLOP/s", "hardware.peak_flops_per_second", results.sources.hardware.peak_derivation],
-    ["hbm_bandwidth", "HBM bandwidth", h.hbm_bandwidth_bytes_per_second, "B/s", "hardware.hbm_bandwidth_bytes_per_second", "Shared read/write interface"],
-    ["hbm_capacity", "HBM capacity", h.hbm_capacity_bytes, "B", "hardware.hbm_capacity_bytes", "Fit threshold"],
+    ["name", "Hardware", h.name, "text", "hardware.name", "Mixed authority is explicit"],
+    ["peak_flops", "Peak compute", h.peak_flops_per_second, "FLOP/s", "hardware.peak_flops_per_second", "User-reviewed live-Sheet analytical input"],
+    ["hbm_bandwidth", "HBM bandwidth", h.hbm_bandwidth_bytes_per_second, "B/s", "hardware.hbm_bandwidth_bytes_per_second", "User-reviewed live-Sheet analytical input"],
+    ["hbm_capacity", "HBM capacity", h.hbm_capacity_bytes, "B", "hardware.hbm_capacity_bytes", "Repository H100 twin capacity only"],
     ["launch_seconds", "Kernel launch overhead", h.kernel_launch_overhead_seconds, "s/execution", "hardware.kernel_launch_overhead_seconds", "Zero: twin publishes no constant"],
     ["ms_per_second", "Milliseconds per second", 1000, "ms/s", "unit conversion", "Visible unit conversion"],
     ["bytes_per_gib", "Bytes per GiB", 1073741824, "B/GiB", "unit conversion", "2^30"],
@@ -398,13 +412,13 @@ function attentionStages(I, mode, overrides = {}) {
 
 function hopeStages(I, memoryRefs, cmsRefs, phase, timing = "amortized") {
   const B = I.batch;
-  const Q = phase === "prefill" ? I.prefill_query_tokens : I.decode_query_tokens;
+  const Q = phase === "prefill" ? I.hope_prefill_chunk_tokens : I.decode_query_tokens;
   const position = phase === "prefill" ? I.prefill_position : I.decode_position;
   const N = `((${B})*(${Q}))`;
   const zero = "0";
   const one = "1";
   const modelAct = `((${N})*(${I.model_dim})*(${I.activation_bytes}))`;
-  const specs = [stage({ phase, component: "titans", name: "static_q_projection", equation: "2ND²", cadence: one, flops: `(2*(${N})*(${I.model_dim})*(${I.model_dim}))`, read: `((${modelAct})+(${I.model_dim})*(${I.model_dim})*(${I.weight_bytes}))`, mandatory: zero, temporary: modelAct, persistent: `((${B})*(${I.chunk_cache_bytes}))`, note: "Static q=xWq; Wq is not mutable state." })];
+  const specs = [stage({ phase, component: "titans_forward", name: "static_q_projection", equation: "2ND²", cadence: one, flops: `(2*(${N})*(${I.model_dim})*(${I.model_dim}))`, read: `((${modelAct})+(${I.model_dim})*(${I.model_dim})*(${I.weight_bytes}))`, mandatory: zero, temporary: modelAct, persistent: `((${B})*(${I.chunk_cache_bytes}))`, note: "Shipped path: static q=xWq; Wq is not mutable state." })];
 
   const memoryDerived = [];
   for (const [name, memory] of Object.entries(memoryRefs)) {
@@ -415,16 +429,41 @@ function hopeStages(I, memoryRefs, cmsRefs, phase, timing = "amortized") {
     const gradient = `((${B})*(${params})*(${I.optimizer_bytes}))`;
     const backward = `(2*(${N})*(${memory.input})*(${memory.hidden})+4*(${N})*(${memory.hidden})*(${memory.output}))`;
     memoryDerived.push({ name, memory, params, fwd, inputBytes, outputBytes, gradient, backward });
-    specs.push(stage({ phase, component: "titans", name: `${name}_forward`, equation: "2NP + nonlinear terms", cadence: one, flops: fwd, read: `((${inputBytes})+(${B})*(${params})*(${I.state_bytes})*(${memory.readCount}))`, mandatory: zero, temporary: outputBytes, persistent: `((${B})*(${params})*((${I.state_bytes})+(${memory.slots})*(${I.optimizer_bytes})))`, note: "Request-local mutable memory forward." }));
+    if (name === "M_mem") {
+      specs.push(stage({ phase, component: "titans_forward", name: `${name}_forward`, equation: "2NP + nonlinear terms", cadence: one, flops: fwd, read: `((${inputBytes})+(${B})*(${params})*(${I.state_bytes})*(${memory.readCount}))`, mandatory: zero, temporary: outputBytes, persistent: `((${B})*(${params})*((${I.state_bytes})+(${memory.slots})*(${I.optimizer_bytes})))`, note: "Actual shipped main-memory forward after static Wq." }));
+    }
   }
 
-  for (const item of memoryDerived) {
-    const { name, memory, params, fwd, inputBytes, outputBytes, gradient, backward } = item;
+  for (const [name, level] of Object.entries(cmsRefs)) {
+    const sharing = `(IF((${level.personalized})=1,(${B}),1))`;
+    const activeUnique = `(MIN((${level.capacity}),IF((${level.personalized})=1,(${Q})*(${level.topK}),(${N})*(${level.topK}))))`;
+    const routerParams = `((${level.input})*(${level.capacity}))`;
+    const expertAParams = `((${level.input})*(${level.lowRank}))`;
+    const expertBParams = `((${level.lowRank})*(${level.output}))`;
+    const poolParams = `((${routerParams})+(${level.capacity})*((${expertAParams})+(${expertBParams})))`;
+    const routing = `((${N})*(${level.topK})*(${level.metadata}))`;
+    const lowRankAct = `((${N})*(${level.topK})*(${level.lowRank})*(${I.activation_bytes}))`;
     specs.push(
-      stage({ phase, component: "titans_update", name: `${name}_target_forward`, equation: "Ffwd(N)", cadence: one, flops: fwd, read: `((${inputBytes})+(${B})*(${params})*(${I.state_bytes})*(${memory.readCount}))`, mandatory: zero, temporary: outputBytes, persistent: zero, note: "Explicit self-target term." }),
-      stage({ phase, component: "titans_update", name: `${name}_prediction_forward`, equation: "Ffwd(N)", cadence: one, flops: fwd, read: inputBytes, mandatory: zero, temporary: outputBytes, persistent: zero, note: "Explicit prediction term." }),
-      stage({ phase, component: "titans_update", name: `${name}_weight_backward`, equation: "2NIH + 4NHO", cadence: one, flops: backward, read: `((${N})*((${memory.input})+(${memory.hidden})+(${memory.output}))*(${I.activation_bytes}))`, mandatory: zero, temporary: gradient, persistent: zero, note: "Weight-gradient backward; no input gradient." }),
-      stage({ phase, component: "titans_update", name: `${name}_dgd_extra`, equation: "μFfwd − (2Ffwd+Fbwd)", cadence: one, flops: `((${memory.multiplier})*(${fwd})-(2*(${fwd})+(${backward})))`, read: gradient, mandatory: zero, temporary: gradient, persistent: zero, note: "Residual DGD calibration." }),
+      stage({ phase, component: "cms_forward", name: `${name}_router`, equation: "2ND·C + crouterN·C", cadence: one, flops: `(2*(${N})*(${level.input})*(${level.capacity})+(${level.routerCost})*(${N})*(${level.capacity}))`, read: `((${N})*(${level.input})*(${I.activation_bytes})+(${sharing})*(${routerParams})*(${I.state_bytes}))`, mandatory: zero, temporary: routing, persistent: `((${sharing})*(${poolParams})*((${I.state_bytes})+(${level.slots})*(${I.optimizer_bytes})))`, note: "Router compute is dense in capacity; capacity remains a residency dimension." }),
+      stage({ phase, component: "cms_forward", name: `${name}_expert_a`, equation: "2N·topk·D·R", cadence: one, flops: `(2*(${N})*(${level.topK})*(${level.input})*(${level.lowRank}))`, read: `((${N})*(${level.input})*(${I.activation_bytes})+(${routing})+(${sharing})*(${activeUnique})*(${expertAParams})*(${I.state_bytes}))`, mandatory: zero, temporary: lowRankAct, persistent: zero, note: "HBM reads use the per-request unique-active upper bound min(C,Q·top-k)." }),
+      stage({ phase, component: "cms_forward", name: `${name}_expert_b`, equation: "2N·topk·R·D", cadence: one, flops: `(2*(${N})*(${level.topK})*(${level.lowRank})*(${level.output}))`, read: `((${lowRankAct})+(${sharing})*(${activeUnique})*(${expertBParams})*(${I.state_bytes}))`, mandatory: zero, temporary: `((${N})*(${level.output})*(${I.activation_bytes}))`, persistent: zero, note: "Only top-k active B matrices are read; no capacity×LRD dense hidden flatten." }),
+    );
+  }
+
+  // Stable partition: every target/prediction loss-preparation stage precedes
+  // every gradient, DGD, and state-apply stage.
+  for (const item of memoryDerived) {
+    const { name, memory, params, fwd, inputBytes, outputBytes } = item;
+    specs.push(
+      stage({ phase, component: "loss", name: `${name}_target_forward`, equation: "Ffwd(N)", cadence: one, flops: fwd, read: `((${inputBytes})+(${B})*(${params})*(${I.state_bytes})*(${memory.readCount}))`, mandatory: zero, temporary: outputBytes, persistent: name === "M_mem" ? zero : `((${B})*(${params})*((${I.state_bytes})+(${memory.slots})*(${I.optimizer_bytes})))`, note: "Auxiliary self-target/loss preparation; not a direct block forward output." }),
+      stage({ phase, component: "loss", name: `${name}_prediction_forward`, equation: "Ffwd(N)", cadence: one, flops: fwd, read: inputBytes, mandatory: zero, temporary: outputBytes, persistent: zero, note: "Prediction term for the inner loss." }),
+    );
+  }
+  for (const item of memoryDerived) {
+    const { name, memory, params, fwd, gradient, backward } = item;
+    specs.push(
+      stage({ phase, component: "backward_update", name: `${name}_weight_backward`, equation: "2NIH + 4NHO", cadence: one, flops: backward, read: `((${N})*((${memory.input})+(${memory.hidden})+(${memory.output}))*(${I.activation_bytes}))`, mandatory: zero, temporary: gradient, persistent: zero, note: "Weight-gradient backward; no input gradient." }),
+      stage({ phase, component: "backward_update", name: `${name}_dgd_extra`, equation: "μFfwd − (2Ffwd+Fbwd)", cadence: one, flops: `((${memory.multiplier})*(${fwd})-(2*(${fwd})+(${backward})))`, read: gradient, mandatory: zero, temporary: gradient, persistent: zero, note: "Residual DGD calibration after all loss terms." }),
     );
     if (phase === "prefill" || timing !== "normal") {
       const cadence = phase === "prefill"
@@ -433,23 +472,23 @@ function hopeStages(I, memoryRefs, cmsRefs, phase, timing = "amortized") {
           ? one
           : `(1/(${memory.chunk}))`;
       const apply = `((${B})*(1+(${memory.slots}))*(${params})*(${I.state_bytes}))`;
-      specs.push(stage({ phase, component: "titans_update", name: `${name}_state_apply`, equation: "B(1+m)Pbs read + write", cadence, flops: zero, read: apply, mandatory: apply, temporary: zero, persistent: zero, note: phase === "prefill" ? "Boundary-count state RMW." : `${timing} decode state RMW.` }));
+      specs.push(stage({ phase, component: "backward_update", name: `${name}_state_apply`, equation: "B(1+m)Pbs read + write", cadence, flops: zero, read: apply, mandatory: apply, temporary: zero, persistent: zero, note: phase === "prefill" ? "Boundary-count state RMW." : `${timing} decode state RMW.` }));
     }
-  }
-
-  for (const [name, level] of Object.entries(cmsRefs)) {
-    const params = `((${level.input})*(${level.hidden})+(${level.hidden})*(${level.output}))`;
-    const sharing = `(IF((${level.personalized})=1,(${B}),1))`;
-    specs.push(stage({ phase, component: "cms", name: `${name}_forward`, equation: "2NPℓ", cadence: one, flops: `(2*(${N})*(${params}))`, read: `((${sharing})*(${params})*(${I.state_bytes})+(${N})*(${level.input})*(${I.activation_bytes}))`, mandatory: zero, temporary: `((${N})*(${level.output})*(${I.activation_bytes}))`, persistent: `((${sharing})*(${params})*((${I.state_bytes})+(${level.slots})*(${I.optimizer_bytes})))`, note: "Read period 1; update period remains separate." }));
   }
   return specs;
 }
 
 function assertStageNames(label, specs, engineStages) {
-  const workbookNames = specs.filter((item) => !item.name.endsWith("flash_decode_reduce") || engineStages.some((stageItem) => stageItem.stage === item.name)).map((item) => item.name);
+  const effectiveSpecs = specs.filter((item) => !item.name.endsWith("flash_decode_reduce") || engineStages.some((stageItem) => stageItem.stage === item.name));
+  const workbookNames = effectiveSpecs.map((item) => item.name);
   const engineNames = engineStages.map((item) => item.stage);
   if (JSON.stringify(workbookNames) !== JSON.stringify(engineNames)) {
     throw new Error(`${label} stage names/order do not match results.json`);
+  }
+  const workbookComponents = effectiveSpecs.map((item) => item.component);
+  const engineComponents = engineStages.map((item) => item.component);
+  if (JSON.stringify(workbookComponents) !== JSON.stringify(engineComponents)) {
+    throw new Error(`${label} stage groups/order do not match results.json`);
   }
 }
 
@@ -530,6 +569,48 @@ function writeStageSheet(sheet, title, subtitle, specs, I, H, headerRow = 5) {
   widths.forEach((width, index) => {
     sheet.getRange(`${colName(index + 1)}:${colName(index + 1)}`).format.columnWidth = width;
   });
+  let groupSummary = null;
+  if (specs.some((spec) => spec.component === "titans_forward")) {
+    const groupHeader = dataEnd + 3;
+    const groupStart = groupHeader + 1;
+    const groupRows = [
+      ["Titans forward", "titans_forward"],
+      ["CMS forward", "cms_forward"],
+      ["Forward total", "forward_total"],
+      ["Loss", "loss"],
+      ["Backward + update", "backward_update"],
+    ];
+    sheet.getRange(`A${groupHeader}:E${groupHeader}`).values = [[
+      "Dependency group",
+      "FLOPs",
+      "HBM read B",
+      "HBM write B",
+      "Stagewise ms",
+    ]];
+    styleHeader(sheet.getRange(`A${groupHeader}:E${groupHeader}`), COLORS.gray);
+    sheet.getRange(`A${groupStart}:A${groupStart + groupRows.length - 1}`).values = groupRows.map(([label]) => [label]);
+    const groupFormula = (group, metricColumn) => group === "forward_total"
+      ? `=SUMIF($C$${dataStart}:$C$${dataEnd},"titans_forward",$${metricColumn}$${dataStart}:$${metricColumn}$${dataEnd})+SUMIF($C$${dataStart}:$C$${dataEnd},"cms_forward",$${metricColumn}$${dataStart}:$${metricColumn}$${dataEnd})`
+      : `=SUMIF($C$${dataStart}:$C$${dataEnd},"${group}",$${metricColumn}$${dataStart}:$${metricColumn}$${dataEnd})`;
+    sheet.getRange(`B${groupStart}:E${groupStart + groupRows.length - 1}`).formulas = groupRows.map(([, group]) => [
+      groupFormula(group, "G"),
+      groupFormula(group, "K"),
+      groupFormula(group, "L"),
+      groupFormula(group, "Q"),
+    ]);
+    styleBody(sheet.getRange(`A${groupStart}:E${groupStart + groupRows.length - 1}`));
+    sheet.getRange(`B${groupStart}:D${groupStart + groupRows.length - 1}`).format.numberFormat = "0.000E+00";
+    sheet.getRange(`E${groupStart}:E${groupStart + groupRows.length - 1}`).format.numberFormat = "0.000000";
+    groupSummary = Object.fromEntries(groupRows.map(([, group], index) => {
+      const row = groupStart + index;
+      return [group, {
+        flops: qref(sheet.name, `$B$${row}`),
+        read: qref(sheet.name, `$C$${row}`),
+        write: qref(sheet.name, `$D$${row}`),
+        stagewiseMs: qref(sheet.name, `$E$${row}`),
+      }];
+    }));
+  }
   return {
     dataStart,
     dataEnd,
@@ -550,6 +631,7 @@ function writeStageSheet(sheet, title, subtitle, specs, I, H, headerRow = 5) {
       ridgeClass: qref(sheet.name, "$N$3"),
     },
     rows: Object.fromEntries(specs.map((spec, index) => [spec.name, dataStart + index])),
+    groups: groupSummary,
   };
 }
 
@@ -561,7 +643,9 @@ function writeGuide(sheet) {
     ["Lineage", "results.json supplies raw assumptions and QA references. Calculation, comparison, and sweep cells are workbook formulas."],
     ["Live Sheet distinction", "This generated 11-tab workbook is separate from the user's native one-tab live Sheet archived under research/attn-vs-hope; that artifact is not modified."],
     ["Primary latency", "Stagewise sequential sum: Σ(max(compute, HBM) + launch). Aggregate roofline is an optimistic diagnostic."],
-    ["HOPE timing", "Decode reports normal token, simultaneous boundary, and per-memory-period amortized timing."],
+    ["HOPE dependency", "Stable order is Titans forward → CMS forward → loss → backward + update. Group summaries contain no synthetic stages."],
+    ["End-to-end timing", "Attention TTFT is one full-ISL invocation; HOPE TTFT multiplies per-chunk groups by 64. ITL is one Q=1 token and never multiplies OSL."],
+    ["CMS sparsity", "Capacity 64/128/256 controls residency; compute uses router plus top-k=1 active rank-64 expert A/B matrices."],
     ["HBM fit", "Persistent request state is compared with device HBM capacity; model weights and runtime workspace are outside this fit flag."],
     ["Charts", "Only three approved native charts: stagewise latency, roofline scatter, and context decode/state sweep."],
     ["Rebuild", "Run build_workbook.mjs with the bundled @oai/artifact-tool runtime. See DESKTOP-HANDOFF.md."],
@@ -577,37 +661,27 @@ function writeGuide(sheet) {
 }
 
 function writeHopeDecodeTiming(sheet, info, I, H, memoryRefs) {
-  sheet.getRange("A5:E5").values = [["Timing", "Stagewise ms", "Effective HBM B", "Persistent state B", "HBM fit"]];
+  sheet.getRange("A5:E5").values = [["Per-token metric", "Stagewise ms", "Effective HBM B", "Persistent state B", "HBM fit"]];
   styleHeader(sheet.getRange("A5:E5"), COLORS.navy);
-  const applyRows = Object.entries(info.rows).filter(([name]) => name.endsWith("_state_apply"));
-  const allRoof = `SUM(Q${info.dataStart}:Q${info.dataEnd})`;
-  const allBytes = `SUM(K${info.dataStart}:L${info.dataEnd})`;
-  const applyRoof = applyRows.map(([, row]) => `Q${row}`).join("+") || "0";
-  const applyBytes = applyRows.map(([, row]) => `(K${row}+L${row})`).join("+") || "0";
-  const boundaryRoof = applyRows.map(([name, row]) => {
-    const memoryName = name.slice(0, -"_state_apply".length);
-    return `Q${row}*(${memoryRefs[memoryName].chunk})`;
-  }).join("+") || "0";
-  const boundaryBytes = applyRows.map(([name, row]) => {
-    const memoryName = name.slice(0, -"_state_apply".length);
-    return `(K${row}+L${row})*(${memoryRefs[memoryName].chunk})`;
-  }).join("+") || "0";
-  sheet.getRange("A6:A8").values = [["normal"], ["boundary"], ["amortized"]];
+  const forward = info.groups.forward_total;
+  const loss = info.groups.loss;
+  const update = info.groups.backward_update;
+  sheet.getRange("A6:A8").values = [["Forward-only ITL"], ["Online-overhead ITL"], ["Including-online ITL"]];
   sheet.getRange("B6:E8").formulas = [
-    [`=${allRoof}-(${applyRoof})`, `=${allBytes}-(${applyBytes})`, `=SUM(M${info.dataStart}:M${info.dataEnd})`, `=IF(SUM(M${info.dataStart}:M${info.dataEnd})<=${H.hbm_capacity},"FIT","EXCEEDS")`],
-    [`=${allRoof}-(${applyRoof})+(${boundaryRoof})`, `=${allBytes}-(${applyBytes})+(${boundaryBytes})`, `=SUM(M${info.dataStart}:M${info.dataEnd})`, `=IF(SUM(M${info.dataStart}:M${info.dataEnd})<=${H.hbm_capacity},"FIT","EXCEEDS")`],
-    [`=${allRoof}`, `=${allBytes}`, `=SUM(M${info.dataStart}:M${info.dataEnd})`, `=IF(SUM(M${info.dataStart}:M${info.dataEnd})<=${H.hbm_capacity},"FIT","EXCEEDS")`],
+    [`=${forward.stagewiseMs}`, `=(${forward.read})+(${forward.write})`, `=SUM(M${info.dataStart}:M${info.dataEnd})`, `=IF(SUM(M${info.dataStart}:M${info.dataEnd})<=${H.hbm_capacity},"FIT","EXCEEDS")`],
+    [`=(${loss.stagewiseMs})+(${update.stagewiseMs})`, `=(${loss.read})+(${loss.write})+(${update.read})+(${update.write})`, `=SUM(M${info.dataStart}:M${info.dataEnd})`, `=IF(SUM(M${info.dataStart}:M${info.dataEnd})<=${H.hbm_capacity},"FIT","EXCEEDS")`],
+    [`=B6+B7`, `=C6+C7`, `=SUM(M${info.dataStart}:M${info.dataEnd})`, `=IF(SUM(M${info.dataStart}:M${info.dataEnd})<=${H.hbm_capacity},"FIT","EXCEEDS")`],
   ];
   styleBody(sheet.getRange("A6:E8"));
   sheet.getRange("B6:B8").format.numberFormat = "0.000000";
   sheet.getRange("C6:D8").format.numberFormat = "0.000E+00";
   return {
-    normalMs: qref(sheet.name, "$B$6"),
-    boundaryMs: qref(sheet.name, "$B$7"),
-    amortizedMs: qref(sheet.name, "$B$8"),
-    normalBytes: qref(sheet.name, "$C$6"),
-    boundaryBytes: qref(sheet.name, "$C$7"),
-    amortizedBytes: qref(sheet.name, "$C$8"),
+    forwardItlMs: qref(sheet.name, "$B$6"),
+    onlineOverheadItlMs: qref(sheet.name, "$B$7"),
+    includingOnlineItlMs: qref(sheet.name, "$B$8"),
+    forwardBytes: qref(sheet.name, "$C$6"),
+    onlineOverheadBytes: qref(sheet.name, "$C$7"),
+    includingOnlineBytes: qref(sheet.name, "$C$8"),
   };
 }
 
@@ -631,10 +705,10 @@ function writeCompare(sheet, refs, I, H) {
   sheet.getRange("A5:M5").values = [headers];
   styleHeader(sheet.getRange("A5:M5"));
   const cases = [
-    ["Attention+MoE · prefill", refs.attnPrefill],
-    ["HOPE shipped · prefill", refs.hopePrefill],
-    ["Attention+MoE · decode", refs.attnDecode],
-    ["HOPE shipped · decode amortized", refs.hopeDecode],
+    ["Attention+MoE · prefill full ISL", refs.attnPrefill],
+    ["HOPE shipped · prefill per 2K chunk", refs.hopePrefill],
+    ["Attention+MoE · decode Q=1", refs.attnDecode],
+    ["HOPE shipped · including-online Q=1", refs.hopeDecode],
   ];
   sheet.getRange("A6:A9").values = cases.map(([label]) => [label]);
   sheet.getRange("B6:M9").formulas = cases.map(([, item]) => [
@@ -677,19 +751,34 @@ function writeCompare(sheet, refs, I, H) {
   ];
   styleBody(sheet.getRange("A13:D14"));
 
-  sheet.getRange("A17:C17").values = [["Ratio / timing", "Value", "Interpretation"]];
+  sheet.getRange("A17:C17").values = [["End-to-end metric", "ms", "Definition"]];
   styleHeader(sheet.getRange("A17:C17"), COLORS.gray);
-  sheet.getRange("A18:A22").values = [["Prefill Attn / HOPE stagewise"], ["Decode Attn / HOPE amortized"], ["HOPE normal decode ms"], ["HOPE boundary decode ms"], ["HOPE amortized decode ms"]];
-  sheet.getRange("B18:B22").formulas = [
-    [`=${refs.attnPrefill.stagewiseMs}/${refs.hopePrefill.stagewiseMs}`],
-    [`=${refs.attnDecode.stagewiseMs}/${refs.hopeTiming.amortizedMs}`],
-    [`=${refs.hopeTiming.normalMs}`],
-    [`=${refs.hopeTiming.boundaryMs}`],
-    [`=${refs.hopeTiming.amortizedMs}`],
+  sheet.getRange("A18:A23").values = [
+    ["Full Attention TTFT"],
+    ["HOPE forward TTFT"],
+    ["HOPE including-online TTFT"],
+    ["Full Attention ITL"],
+    ["HOPE forward ITL"],
+    ["HOPE including-online ITL"],
   ];
-  sheet.getRange("C18:C22").values = [["<1 means Attention is faster"], ["<1 means Attention is faster"], ["No state apply"], ["All memory boundaries simultaneous"], ["Per-memory-period expectation"]];
-  styleBody(sheet.getRange("A18:C22"));
-  sheet.getRange("B18:B22").format.numberFormat = "0.000000";
+  sheet.getRange("B18:B23").formulas = [
+    [`=${refs.attnPrefill.stagewiseMs}`],
+    [`=(${refs.hopePrefill.groups.forward_total.stagewiseMs})*(${I.prefill_chunks})`],
+    [`=(${refs.hopePrefill.stagewiseMs})*(${I.prefill_chunks})`],
+    [`=${refs.attnDecode.stagewiseMs}`],
+    [`=${refs.hopeTiming.forwardItlMs}`],
+    [`=${refs.hopeTiming.includingOnlineItlMs}`],
+  ];
+  sheet.getRange("C18:C23").values = [
+    ["Full ISL causal invocation"],
+    ["64 × (Titans + CMS forward per 2K chunk)"],
+    ["64 × (forward + loss + backward/update per 2K chunk)"],
+    ["One Q=1 Flash-Decode invocation"],
+    ["One Q=1 Titans + CMS forward"],
+    ["One Q=1 forward + amortized online overhead; no OSL multiplier"],
+  ];
+  styleBody(sheet.getRange("A18:C23"));
+  sheet.getRange("B18:B23").format.numberFormat = "0.000000";
 
   sheet.getRange("O5:Q5").values = [["Case", "AI FLOP/B", "Effective TFLOP/s"]];
   styleHeader(sheet.getRange("O5:Q5"), COLORS.gray);
@@ -716,7 +805,7 @@ function writeCompare(sheet, refs, I, H) {
   rooflineChart.setPosition("S19", "AA33");
 
   sheet.freezePanes.freezeRows(5);
-  [22, 14, 14, 18, 15, 15, 15, 14, 13, 16, 14, 12, 12, 3, 32, 16, 20, 3].forEach((width, index) => {
+  [38, 14, 14, 18, 15, 15, 15, 14, 13, 16, 14, 12, 12, 3, 45, 16, 20, 3].forEach((width, index) => {
     sheet.getRange(`${colName(index + 1)}:${colName(index + 1)}`).format.columnWidth = width;
   });
 }
@@ -727,7 +816,7 @@ function writeSweeps(sheet, refs, I, H) {
   const contextHeader = 5;
   const contextStart = 6;
   const contextEnd = contextStart + refs.sweepRefs.contexts.length - 1;
-  sheet.getRange(`A${contextHeader}:G${contextHeader}`).values = [["Context tokens", "Attention decode ms", "HOPE decode ms", "Attention state GiB", "HOPE state GiB", "Attn / HOPE latency", "Attention >= HOPE?"]];
+  sheet.getRange(`A${contextHeader}:G${contextHeader}`).values = [["Context tokens", "Attention ITL ms", "HOPE including-online ITL ms", "Attention state GiB", "HOPE state GiB", "Attn / HOPE ITL", "Attention >= HOPE?"]];
   styleHeader(sheet.getRange(`A${contextHeader}:G${contextHeader}`));
   const helperHeaders = attentionStages(I, "decode").map((item) => item.name);
   sheet.getRange(`${colName(helperStart)}${contextHeader}:${colName(helperStart + helperHeaders.length - 1)}${contextHeader}`).values = [helperHeaders];
@@ -744,7 +833,7 @@ function writeSweeps(sheet, refs, I, H) {
     const helperEnd = colName(helperStart + specs.length - 1);
     sheet.getRange(`B${row}:G${row}`).formulas = [[
       `=SUM(${colName(helperStart)}${row}:${helperEnd}${row})`,
-      `=${refs.hopeTiming.amortizedMs}`,
+      `=${refs.hopeTiming.includingOnlineItlMs}`,
       `=(2*(${I.batch})*(${contextCell})*(${I.kv_heads})*(${I.head_dim})*(${I.kv_bytes}))/${H.bytes_per_gib}`,
       `=${refs.hopeDecode.state}/${H.bytes_per_gib}`,
       `=B${row}/C${row}`,
@@ -758,7 +847,7 @@ function writeSweeps(sheet, refs, I, H) {
   const batchHeader = 16;
   const batchStart = 17;
   const batchEnd = batchStart + refs.sweepRefs.batches.length - 1;
-  sheet.getRange(`A${batchHeader}:G${batchHeader}`).values = [["Batch", "Attention decode ms", "HOPE decode ms", "Attention state GiB", "HOPE state GiB", "Attn / HOPE latency", "Attention >= HOPE?"]];
+  sheet.getRange(`A${batchHeader}:G${batchHeader}`).values = [["Batch", "Attention ITL ms", "HOPE including-online ITL ms", "Attention state GiB", "HOPE state GiB", "Attn / HOPE ITL", "Attention >= HOPE?"]];
   styleHeader(sheet.getRange(`A${batchHeader}:G${batchHeader}`));
   sheet.getRange(`${colName(helperStart)}${batchHeader}:${colName(helperStart + helperHeaders.length - 1)}${batchHeader}`).values = [helperHeaders];
   styleHeader(sheet.getRange(`${colName(helperStart)}${batchHeader}:${colName(helperStart + helperHeaders.length - 1)}${batchHeader}`), COLORS.gray);
@@ -793,7 +882,7 @@ function writeSweeps(sheet, refs, I, H) {
     const staticAtBatchMs = stageTimeFormula(staticSpec, I, H);
     sheet.getRange(`B${row}:G${row}`).formulas = [[
       `=SUM(${colName(helperStart)}${row}:${helperEnd}${row})`,
-      `=((${refs.hopeTiming.amortizedMs})-(${baselineStaticMs})-(${otherLaunchMs}))*(${batchCell})/(${I.batch})+(${otherLaunchMs})+(${staticAtBatchMs})`,
+      `=((${refs.hopeTiming.includingOnlineItlMs})-(${baselineStaticMs})-(${otherLaunchMs}))*(${batchCell})/(${I.batch})+(${otherLaunchMs})+(${staticAtBatchMs})`,
       `=(2*(${batchCell})*(${I.decode_context_tokens})*(${I.kv_heads})*(${I.head_dim})*(${I.kv_bytes}))/${H.bytes_per_gib}`,
       `=(${refs.hopeDecode.state})*(${batchCell})/(${I.batch})/${H.bytes_per_gib}`,
       `=B${row}/C${row}`,
@@ -805,7 +894,7 @@ function writeSweeps(sheet, refs, I, H) {
   sheet.getRange(`B${batchStart}:F${batchEnd}`).format.numberFormat = "0.000000";
 
   const chart = sheet.charts.add("line", sheet.getRange(`A${contextHeader}:E${contextEnd}`));
-  chart.title = "Context sweep: decode ms and persistent state GiB";
+  chart.title = "Context sweep: ITL ms and persistent state GiB";
   chart.hasLegend = true;
   chart.xAxis = { axisType: "textAxis" };
   chart.yAxis = { numberFormatCode: "0.000" };
@@ -819,7 +908,7 @@ function writeSweeps(sheet, refs, I, H) {
 }
 
 function writeQA(sheet, refs, I, H) {
-  writeTitle(sheet, "G", "90 · QA and engine reconciliation", "Only this sheet contains imported numerical engine outputs; workbook formulas are compared against them.");
+  writeTitle(sheet, "G", "90 · QA and engine reconciliation", "Engine QA is exact. Native live-Sheet outputs are shown separately; assumption differences are explicit and are not forced to match.");
   sheet.getRange("A5:G5").values = [["Check", "Workbook formula", "Engine reference (imported)", "Delta", "Tolerance", "Status", "Notes"]];
   styleHeader(sheet.getRange("A5:G5"));
   const shipped = results.hope_scenarios.shipped_credible_momentum;
@@ -833,9 +922,9 @@ function writeQA(sheet, refs, I, H) {
     ["HOPE prefill FLOPs", refs.hopePrefill.flops, shipped.prefill.summary.flops, 0.01, "Shipped-credible momentum"],
     ["HOPE prefill effective HBM B", refs.hopePrefill.totalBytes, shipped.prefill.summary.effective_hbm_bytes, 0.01, "Shipped-credible momentum"],
     ["HOPE prefill stagewise ms", refs.hopePrefill.stagewiseMs, shipped.prefill.summary.stagewise_latency_seconds * 1000, 1e-8, "Primary latency"],
-    ["HOPE normal decode ms", refs.hopeTiming.normalMs, shipped.decode.normal.summary.stagewise_latency_seconds * 1000, 1e-8, "No apply event"],
-    ["HOPE boundary decode ms", refs.hopeTiming.boundaryMs, shipped.decode.boundary.summary.stagewise_latency_seconds * 1000, 1e-8, "Simultaneous boundary"],
-    ["HOPE amortized decode ms", refs.hopeTiming.amortizedMs, shipped.decode.amortized.summary.stagewise_latency_seconds * 1000, 1e-8, "Per-period expectation"],
+    ["HOPE forward-only ITL ms", refs.hopeTiming.forwardItlMs, shipped.metrics.decode_per_token.forward_itl_ms, 1e-8, "Q=1 Titans + sparse CMS forward"],
+    ["HOPE online-overhead ITL ms", refs.hopeTiming.onlineOverheadItlMs, shipped.metrics.decode_per_token.online_overhead_itl_ms, 1e-8, "Loss + backward/amortized update"],
+    ["HOPE including-online ITL ms", refs.hopeTiming.includingOnlineItlMs, shipped.metrics.decode_per_token.including_online_itl_ms, 1e-8, "No OSL multiplier"],
     ["Context sweep 1K Attention decode ms", qref("40_Sweeps", "$B$6"), results.crossovers.context_sweep[0].attention_decode_seconds * 1000, 1e-8, "Formula-driven sweep endpoint"],
     ["Context sweep 256K Attention decode ms", qref("40_Sweeps", "$B$11"), results.crossovers.context_sweep.at(-1).attention_decode_seconds * 1000, 1e-8, "Formula-driven sweep endpoint"],
     ["Batch sweep B=1 HOPE decode ms", qref("40_Sweeps", "$C$17"), results.crossovers.batch_sweep[0].hope_decode_seconds * 1000, 1e-8, "Static-q read is not batch-linear"],
@@ -858,10 +947,40 @@ function writeQA(sheet, refs, I, H) {
   const qaRows = Object.entries(results.qa_checks);
   sheet.getRange(`A${qaStart + 1}:C${qaStart + qaRows.length}`).values = qaRows.map(([name, value]) => [name, value ? "PASS" : "FAIL", "Imported from results.json QA contract"]);
   styleBody(sheet.getRange(`A${qaStart + 1}:C${qaStart + qaRows.length}`));
+
+  const nativeStart = qaStart + qaRows.length + 3;
+  const native = results.native_sheet_reference.key_outputs_ms;
+  const nativeRows = [
+    ["Full Attention TTFT", native.full_attention_ttft.value_ms, refs.attnPrefill.stagewiseMs],
+    ["HOPE forward TTFT", native.hope_forward_ttft.value_ms, `((${refs.hopePrefill.groups.forward_total.stagewiseMs})*(${I.prefill_chunks}))`],
+    ["HOPE including-online TTFT", native.hope_including_online_ttft.value_ms, `((${refs.hopePrefill.stagewiseMs})*(${I.prefill_chunks}))`],
+    ["Full Attention ITL", native.full_attention_itl.value_ms, refs.attnDecode.stagewiseMs],
+    ["HOPE forward ITL", native.hope_forward_itl.value_ms, refs.hopeTiming.forwardItlMs],
+    ["HOPE including-online ITL", native.hope_including_online_itl.value_ms, refs.hopeTiming.includingOnlineItlMs],
+  ];
+  sheet.getRange(`A${nativeStart}:F${nativeStart}`).values = [[
+    "Native operational metric",
+    "Native Sheet ms",
+    "Generated companion ms",
+    "Delta ms",
+    "Reconciliation",
+    "Why exact equality is not asserted",
+  ]];
+  styleHeader(sheet.getRange(`A${nativeStart}:F${nativeStart}`), COLORS.gray);
+  sheet.getRange(`A${nativeStart + 1}:B${nativeStart + nativeRows.length}`).values = nativeRows.map(([label, nativeValue]) => [label, nativeValue]);
+  sheet.getRange(`C${nativeStart + 1}:E${nativeStart + nativeRows.length}`).formulas = nativeRows.map(([, , generated], index) => {
+    const row = nativeStart + 1 + index;
+    return [`=${generated}`, `=C${row}-B${row}`, `=IF(ABS(D${row})<=0.001,"MATCH","ASSUMPTION DIFFERENCE")`];
+  });
+  sheet.getRange(`F${nativeStart + 1}:F${nativeStart + nativeRows.length}`).values = nativeRows.map(() => [results.native_sheet_reference.reconciliation_note]);
+  styleBody(sheet.getRange(`A${nativeStart + 1}:F${nativeStart + nativeRows.length}`));
+  sheet.getRange(`B${nativeStart + 1}:D${nativeStart + nativeRows.length}`).format.numberFormat = "0.000000";
+  sheet.getRange(`F${nativeStart + 1}:F${nativeStart + nativeRows.length}`).format.wrapText = true;
   sheet.freezePanes.freezeRows(5);
   sheet.getRange("A:A").format.columnWidth = 38;
   sheet.getRange("B:F").format.columnWidth = 22;
   sheet.getRange("G:G").format.columnWidth = 34;
+  sheet.getRange("F:F").format.columnWidth = 52;
 }
 
 function writeSources(sheet) {
@@ -869,10 +988,10 @@ function writeSources(sheet) {
   sheet.getRange("A5:E5").values = [["Source", "Kind", "Location / URL", "Used for", "Notes"]];
   styleHeader(sheet.getRange("A5:E5"));
   const rows = [
-    ["Verified engine output", "Repository file", "experiments/E5-attn-vs-hope/results.json", "Raw inputs, QA references, stage-order assertion", "Commit b142693 interface"],
+    ["Verified engine output", "Repository file", "experiments/E5-attn-vs-hope/results.json", "Raw inputs, QA references, stage/group-order assertion", "Schema v2 dependency and TTFT/ITL contract"],
     ["Analytical model", "Repository file", "experiments/E5-attn-vs-hope/model.py", "Equations and stage semantics", "Read-only upstream"],
     ["Approved design", "Repository file", results.sources.design, "Workbook sections and validation contract", "Sections 4–9"],
-    ["Hardware twin", "Repository file", results.sources.hardware.source, "Peak compute, HBM bandwidth/capacity", results.sources.hardware.peak_derivation],
+    ["Hardware authority", "Mixed source", results.sources.hardware.source, "Live-Sheet peak/BW; twin capacity/provenance only", results.sources.hardware.authority],
     ["Legacy HOPE proxy", "Repository file", results.sources.legacy, "Legacy algebra QA anchor", "Not used as primary timing"],
     ["Native live Sheet archive", "Repository file", results.sources.live_sheet_archive, "User-reviewed one-tab artifact", "Kept separate and untouched"],
     ["HOPE / Nested Learning", "Public paper", "https://arxiv.org/abs/2512.24695", "Architecture/equation evidence", "No official GPU kernel or wall-clock trace"],
@@ -937,8 +1056,8 @@ async function buildWorkbook() {
 
   const attnPrefillInfo = writeStageSheet(sheets["10_AttnMoE_Prefill"], "10 · Attention + MoE prefill", "Causal FlashAttention chunk followed by top-k SwiGLU MoE. All numeric calculation cells are formulas.", attnPrefillSpecs, I, H);
   const attnDecodeInfo = writeStageSheet(sheets["11_AttnMoE_Decode"], "11 · Attention + MoE decode", "One next-token Flash-Decode invocation; split-local partial traffic is explicit.", attnDecodeSpecs, I, H);
-  const hopePrefillInfo = writeStageSheet(sheets["20_HOPE_Prefill"], "20 · HOPE prefill", "Shipped-credible static-q scenario with request-local mutable memories and sequential CMS.", hopePrefillSpecs, I, H);
-  const hopeDecodeInfo = writeStageSheet(sheets["21_HOPE_Decode"], "21 · HOPE decode", "Amortized stage table plus normal, simultaneous-boundary, and amortized timing summaries.", hopeDecodeSpecs, I, H, 11);
+  const hopePrefillInfo = writeStageSheet(sheets["20_HOPE_Prefill"], "20 · HOPE prefill", "One 2K chunk in canonical Titans-forward → sparse-CMS-forward → loss → backward/update order.", hopePrefillSpecs, I, H);
+  const hopeDecodeInfo = writeStageSheet(sheets["21_HOPE_Decode"], "21 · HOPE decode", "One Q=1 token; forward-only, online overhead, and including-online ITL remain separate.", hopeDecodeSpecs, I, H, 11);
   const hopeTiming = writeHopeDecodeTiming(sheets["21_HOPE_Decode"], hopeDecodeInfo, I, H, memoryRefs);
 
   const refs = {
@@ -947,8 +1066,8 @@ async function buildWorkbook() {
     sweepRefs,
     attnPrefill: attnPrefillInfo.summary,
     attnDecode: attnDecodeInfo.summary,
-    hopePrefill: hopePrefillInfo.summary,
-    hopeDecode: hopeDecodeInfo.summary,
+    hopePrefill: { ...hopePrefillInfo.summary, groups: hopePrefillInfo.groups },
+    hopeDecode: { ...hopeDecodeInfo.summary, groups: hopeDecodeInfo.groups },
     hopeDecodeInfo,
     hopeTiming,
   };

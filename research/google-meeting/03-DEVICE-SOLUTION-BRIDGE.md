@@ -667,7 +667,13 @@ HBM placement에서는 frozen base weight와 execution workspace도 별도 더�
 
 미팅 중 자유 서술만 남기면 논문 주장, Google 구두 의견, 우리 제안이 섞인다. 현장 기록과 사후 분석을 분리한다.
 
-### 9.1 Live capture — 현장용 9개 column
+체크인된 `04-ANSWER-CAPTURE-LIVE.csv`(9 column)와
+`05-ANSWER-CAPTURE-POSTMEETING.csv`(10 column)는 바로 사용하는 **compact minimum
+template**이다. 아래 9.1·9.2는 필요할 때 필드를 확장하기 위한 optional
+field dictionary이며, 현재 CSV 헤더나 행 schema를 설명하는 것이 아니다.
+ID와 빈 답변 필드를 유지한 채 별도 schema version으로 확장한다.
+
+### 9.1 Optional expanded live field dictionary — 9개 column
 
 | Column | 입력 규칙 |
 |---|---|
@@ -681,7 +687,7 @@ HBM placement에서는 frozen base weight와 execution workspace도 별도 더�
 | `Open_Issue_SAIT_Bridge` | 상대가 인정한 공백과 연결할 SAIT 가설 |
 | `Owner_Next_Action` | Google/SAIT/joint + 자료·계산·prototype·후속 일정 |
 
-### 9.2 Post-meeting enrichment — 분석용 상세 schema
+### 9.2 Optional post-meeting enrichment field dictionary — 분석용 상세 schema
 
 아래 column은 미팅 뒤 recording/minutes와 논문을 대조해 채운다. 현장에서 30개 이상을 동시에 입력하지 않는다.
 

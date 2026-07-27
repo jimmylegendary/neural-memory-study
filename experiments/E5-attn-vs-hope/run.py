@@ -23,12 +23,16 @@ from model import (
     decode_partial_bytes,
     legacy_hope_proxy,
     summarize,
+    summarize_by_group,
 )
 
 
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT_DIR = Path(__file__).resolve().parent
 H100_PATH = ROOT / "multiarch" / "twins" / "h100.json"
+LIVE_MANIFEST_PATH = (
+    ROOT / "research" / "attn-vs-hope" / "EXPORT-MANIFEST.json"
+)
 RESULTS_PATH = OUTPUT_DIR / "results.json"
 STDOUT_PATH = OUTPUT_DIR / "stdout.txt"
 
@@ -73,15 +77,19 @@ def _find_level(node: dict[str, Any], level_id: str) -> dict[str, Any]:
     raise KeyError(level_id)
 
 
-def load_h100() -> tuple[Hardware, dict[str, Any]]:
+def load_reference_hardware() -> tuple[Hardware, dict[str, Any]]:
+    """Load capacity provenance while honoring live-sheet peak/BW authority."""
+
     twin = json.loads(H100_PATH.read_text(encoding="utf-8"))
     hbm = _find_level(twin, "hbm")
     mxu = _find_level(twin, "mxu")
-    peak_flops = 2 * mxu["instances"] * mxu["peak_macs_per_s"]
     hardware = Hardware(
-        name="NVIDIA H100 SXM5 (repository twin)",
-        peak_flops_per_second=peak_flops,
-        hbm_bandwidth_bytes_per_second=hbm["bandwidth_bps"],
+        name=(
+            "User-reviewed analytical reference "
+            "(HBM capacity from repository H100 twin)"
+        ),
+        peak_flops_per_second=4.614e15,
+        hbm_bandwidth_bytes_per_second=7.4e12,
         hbm_capacity_bytes=hbm["capacity_bytes"],
         # The twin does not publish a kernel-launch constant.  Zero preserves
         # an auditable analytical lower bound instead of inventing one.
@@ -89,9 +97,19 @@ def load_h100() -> tuple[Hardware, dict[str, Any]]:
     )
     provenance = {
         "source": str(H100_PATH.relative_to(ROOT)),
+        "authority": (
+            "peak_flops_per_second and hbm_bandwidth_bytes_per_second are "
+            "user-reviewed live-sheet analytical inputs; the repository twin "
+            "supplies capacity/provenance only"
+        ),
+        "reference_peak_flops_per_second": 4.614e15,
+        "reference_hbm_bandwidth_bytes_per_second": 7.4e12,
+        "twin_hbm_capacity_bytes": hbm["capacity_bytes"],
         "hbm_level_id": hbm["level_id"],
         "compute_level_id": mxu["level_id"],
-        "peak_derivation": "2 FLOP/MAC * instances * peak_macs_per_s",
+        "twin_peak_derivation_not_used_for_reference_timing": (
+            "2 FLOP/MAC * instances * peak_macs_per_s"
+        ),
         "peak_macs_per_s_per_instance": mxu["peak_macs_per_s"],
         "instances": mxu["instances"],
     }
@@ -169,10 +187,11 @@ def _cms_levels(cms_optimizer_slots: int) -> tuple[CMSLevel, ...]:
         CMSLevel(
             name=f"cms_l{index}",
             input_dim=d,
-            # Flatten capacity low-rank experts into an equivalent aggregate
-            # hidden width: P=2*D*(LRD*capacity).
-            hidden_dim=low_rank * capacity,
             output_dim=d,
+            capacity=capacity,
+            low_rank_dim=low_rank,
+            top_k=MODEL_INPUTS["top_k"],
+            router_flops_per_token_expert=1,
             update_period=period,
             bptt_span=MODEL_INPUTS["cms_bptt_span"],
             optimizer_slots=cms_optimizer_slots,
@@ -245,12 +264,19 @@ def _stage_record(order: int, stage: Stage) -> dict[str, Any]:
 
 
 def _case(stages: list[Stage], hardware: Hardware) -> dict[str, Any]:
-    return {
+    case = {
         "summary": summarize(stages, hardware),
         "stages": [
             _stage_record(order, stage) for order, stage in enumerate(stages, 1)
         ],
     }
+    if all(
+        stage.component
+        in {"titans_forward", "cms_forward", "loss", "backward_update"}
+        for stage in stages
+    ):
+        case["group_summaries"] = summarize_by_group(stages, hardware)
+    return case
 
 
 def _hope_scenario(
@@ -280,15 +306,57 @@ def _hope_scenario(
         paper_lower_bound=paper_lower_bound,
         cms_optimizer_slots=cms_optimizer_slots,
     )
+    prefill_case = _case(build_hope_prefill(prefill, hardware), hardware)
+    decode_cases = {
+        timing: _case(
+            build_hope_decode(decode, hardware, timing=timing), hardware
+        )
+        for timing in ("normal", "boundary", "amortized")
+    }
+
+    def group_ms(case: dict[str, Any], group: str) -> float:
+        return (
+            case["group_summaries"][group]["stagewise_latency_seconds"]
+            * 1_000
+        )
+
+    prefill_forward_ms = group_ms(prefill_case, "forward_total")
+    prefill_online_ms = (
+        group_ms(prefill_case, "loss")
+        + group_ms(prefill_case, "backward_update")
+    )
+    decode_amortized = decode_cases["amortized"]
+    decode_forward_ms = group_ms(decode_amortized, "forward_total")
+    decode_online_ms = (
+        group_ms(decode_amortized, "loss")
+        + group_ms(decode_amortized, "backward_update")
+    )
+    chunks = MODEL_INPUTS["prefill_chunks"]
     return {
         "included_in_defaults": included_in_defaults,
         "inputs": {"prefill": asdict(prefill), "decode": asdict(decode)},
-        "prefill": _case(build_hope_prefill(prefill, hardware), hardware),
-        "decode": {
-            timing: _case(
-                build_hope_decode(decode, hardware, timing=timing), hardware
-            )
-            for timing in ("normal", "boundary", "amortized")
+        "prefill": prefill_case,
+        "decode": decode_cases,
+        "metrics": {
+            "prefill_per_chunk": {
+                "tokens": MODEL_INPUTS["prefill_chunk_tokens"],
+                "forward_ms": prefill_forward_ms,
+                "online_overhead_ms": prefill_online_ms,
+                "including_online_ms": prefill_forward_ms + prefill_online_ms,
+            },
+            "ttft": {
+                "chunks": chunks,
+                "forward_ms": chunks * prefill_forward_ms,
+                "online_overhead_ms": chunks * prefill_online_ms,
+                "including_online_ms": chunks
+                * (prefill_forward_ms + prefill_online_ms),
+            },
+            "decode_per_token": {
+                "query_tokens": 1,
+                "forward_itl_ms": decode_forward_ms,
+                "online_overhead_itl_ms": decode_online_ms,
+                "including_online_itl_ms": decode_forward_ms + decode_online_ms,
+            },
         },
     }
 
@@ -435,10 +503,10 @@ def _qa_checks(
         hope_short, cms_levels=(cadence_slow, *hope_short.cms_levels[1:])
     )
     cms_fast_read = stage(
-        build_hope_decode(cms_fast_cfg, hardware), "cms_l1_forward"
+        build_hope_decode(cms_fast_cfg, hardware), "cms_l1_router"
     ).hbm_read_bytes
     cms_slow_read = stage(
-        build_hope_decode(cms_slow_cfg, hardware), "cms_l1_forward"
+        build_hope_decode(cms_slow_cfg, hardware), "cms_l1_router"
     ).hbm_read_bytes
 
     all_cases = [
@@ -455,6 +523,52 @@ def _qa_checks(
         record["stage"]
         for record in scenarios["shipped_credible_momentum"]["decode"]
         ["amortized"]["stages"]
+    }
+    shipped_prefill = scenarios["shipped_credible_momentum"]["prefill"]
+    shipped_decode = scenarios["shipped_credible_momentum"]["decode"]["amortized"]
+    canonical_groups = {
+        "titans_forward": 0,
+        "cms_forward": 1,
+        "loss": 2,
+        "backward_update": 3,
+    }
+
+    def has_canonical_partition(case: dict[str, Any]) -> bool:
+        components = [record["component"] for record in case["stages"]]
+        return components == sorted(
+            components, key=canonical_groups.__getitem__
+        )
+
+    def groups_conserve(case: dict[str, Any]) -> bool:
+        groups = case["group_summaries"]
+        for metric in ("flops", "hbm_read_bytes", "hbm_write_bytes"):
+            if case["summary"][metric] != sum(
+                groups[name][metric]
+                for name in (
+                    "titans_forward",
+                    "cms_forward",
+                    "loss",
+                    "backward_update",
+                )
+            ):
+                return False
+            if groups["forward_total"][metric] != (
+                groups["titans_forward"][metric]
+                + groups["cms_forward"][metric]
+            ):
+                return False
+        return True
+
+    shipped_metrics = scenarios["shipped_credible_momentum"]["metrics"]
+    prefill_forward_names = {
+        record["stage"]
+        for record in shipped_prefill["stages"]
+        if record["component"] == "titans_forward"
+    }
+    cms_names = {
+        record["stage"]
+        for record in shipped_prefill["stages"]
+        if record["component"] == "cms_forward"
     }
     prefill_flash = stage(attention_prefill, "flash_attention")
     return {
@@ -493,17 +607,57 @@ def _qa_checks(
                 "included_in_defaults"
             ]
         ),
+        "hope_dependency_partition_is_canonical": (
+            has_canonical_partition(shipped_prefill)
+            and has_canonical_partition(shipped_decode)
+        ),
+        "shipped_forward_is_static_q_plus_M_mem": prefill_forward_names
+        == {"static_q_projection", "M_mem_forward"},
+        "cms_is_router_plus_sparse_low_rank_ab": cms_names
+        == {
+            f"cms_l{level}_{suffix}"
+            for level in (1, 2, 3)
+            for suffix in ("router", "expert_a", "expert_b")
+        },
+        "cms_online_update_is_excluded": not any(
+            record["stage"].startswith("cms_")
+            and record["component"] == "backward_update"
+            for record in shipped_prefill["stages"]
+        ),
+        "hope_group_summaries_conserve_totals": (
+            groups_conserve(shipped_prefill) and groups_conserve(shipped_decode)
+        ),
+        "hope_ttft_uses_prefill_chunk_count": (
+            shipped_metrics["ttft"]["forward_ms"]
+            == shipped_metrics["prefill_per_chunk"]["forward_ms"]
+            * MODEL_INPUTS["prefill_chunks"]
+            and shipped_metrics["ttft"]["online_overhead_ms"]
+            == shipped_metrics["prefill_per_chunk"]["online_overhead_ms"]
+            * MODEL_INPUTS["prefill_chunks"]
+        ),
+        "decode_metrics_are_one_token_without_osl": (
+            shipped_metrics["decode_per_token"]["query_tokens"] == 1
+            and all(
+                "osl" not in key.lower()
+                and "output_sequence" not in key.lower()
+                for key in shipped_metrics["decode_per_token"]
+            )
+        ),
+        "reference_hardware_matches_live_sheet": (
+            hardware.peak_flops_per_second == 4.614e15
+            and hardware.hbm_bandwidth_bytes_per_second == 7.4e12
+        ),
         "legacy_flops_anchor_matches": legacy["flops"] == 1_082_187_776,
         "legacy_hbm_anchor_matches": legacy["hbm_bytes"] == 679_510_016,
     }
 
 
 def build_results() -> dict[str, Any]:
-    hardware, hardware_provenance = load_h100()
+    hardware, hardware_provenance = load_reference_hardware()
     prefill_cfg = attention_config(
         batch=MODEL_INPUTS["batch"],
-        query_tokens=MODEL_INPUTS["prefill_chunk_tokens"],
-        context_tokens=MODEL_INPUTS["prefill_chunk_tokens"],
+        query_tokens=MODEL_INPUTS["input_sequence_tokens"],
+        context_tokens=MODEL_INPUTS["input_sequence_tokens"],
     )
     decode_cfg = attention_config(
         batch=MODEL_INPUTS["batch"],
@@ -555,8 +709,9 @@ def build_results() -> dict[str, Any]:
         scenarios,
         default_scenarios,
     )
+    live_manifest = json.loads(LIVE_MANIFEST_PATH.read_text(encoding="utf-8"))
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "method": (
             "Analytical stagewise roofline lower bounds; one MAC is two FLOPs; "
             "effective bytes cross the HBM boundary only."
@@ -571,6 +726,18 @@ def build_results() -> dict[str, Any]:
             "live_sheet_archive": "research/attn-vs-hope/Attn-vs-HOPE.xlsx",
             "google_meeting_package": "research/google-meeting/",
         },
+        "native_sheet_reference": {
+            "manifest": str(LIVE_MANIFEST_PATH.relative_to(ROOT)),
+            "source_updated_at": live_manifest["source"]["updated_at"],
+            "artifact_sha256": live_manifest["artifact"]["sha256"],
+            "key_outputs_ms": live_manifest["key_outputs_ms"],
+            "reconciliation_note": (
+                "The native Sheet is the user-reviewed operational contract. "
+                "Exact numerical equality is not asserted: the generated engine "
+                "uses an explicit sparse-CMS unique-active HBM upper bound, "
+                "explicit MoE traffic, and its own stagewise roofline partition."
+            ),
+        },
         "hardware": asdict(hardware),
         "model_inputs": MODEL_INPUTS,
         "default_scenarios": default_scenarios,
@@ -581,6 +748,18 @@ def build_results() -> dict[str, Any]:
             },
             "prefill": _case(attention_prefill, hardware),
             "decode": _case(attention_decode, hardware),
+            "metrics": {
+                "ttft_ms": summarize(attention_prefill, hardware)[
+                    "stagewise_latency_seconds"
+                ]
+                * 1_000,
+                "itl_ms": summarize(attention_decode, hardware)[
+                    "stagewise_latency_seconds"
+                ]
+                * 1_000,
+                "prefill_query_tokens": MODEL_INPUTS["input_sequence_tokens"],
+                "decode_query_tokens": 1,
+            },
         },
         "hope_scenarios": scenarios,
         "crossovers": _crossovers(hardware),
@@ -606,16 +785,33 @@ def compact_report(results: dict[str, Any]) -> str:
             f"{hardware['hbm_bandwidth_bytes_per_second'] / 1e12:.3f} TB/s"
         ),
         (
-            "Attention+MoE stagewise lower bound: "
-            f"prefill-chunk {_milliseconds(attention['prefill']):.6f} ms | "
-            f"decode {_milliseconds(attention['decode']):.6f} ms"
+            "Attention+MoE end-to-end lower bound: "
+            f"TTFT(full ISL) {attention['metrics']['ttft_ms']:.6f} ms | "
+            f"ITL(Q=1) {attention['metrics']['itl_ms']:.6f} ms"
         ),
         (
-            "HOPE shipped-credible stagewise lower bound: "
-            f"prefill-chunk {_milliseconds(shipped['prefill']):.6f} ms | "
-            f"decode normal {_milliseconds(shipped['decode']['normal']):.6f} ms | "
-            f"boundary {_milliseconds(shipped['decode']['boundary']):.6f} ms | "
-            f"amortized {_milliseconds(shipped['decode']['amortized']):.6f} ms"
+            "HOPE shipped-credible prefill per 2K chunk: "
+            f"forward {shipped['metrics']['prefill_per_chunk']['forward_ms']:.6f} ms | "
+            "online overhead "
+            f"{shipped['metrics']['prefill_per_chunk']['online_overhead_ms']:.6f} ms | "
+            "including online "
+            f"{shipped['metrics']['prefill_per_chunk']['including_online_ms']:.6f} ms"
+        ),
+        (
+            "HOPE shipped-credible TTFT: "
+            f"forward {shipped['metrics']['ttft']['forward_ms']:.6f} ms | "
+            "online overhead "
+            f"{shipped['metrics']['ttft']['online_overhead_ms']:.6f} ms | "
+            "including online "
+            f"{shipped['metrics']['ttft']['including_online_ms']:.6f} ms"
+        ),
+        (
+            "HOPE shipped-credible ITL(Q=1): "
+            f"forward {shipped['metrics']['decode_per_token']['forward_itl_ms']:.6f} ms | "
+            "online overhead "
+            f"{shipped['metrics']['decode_per_token']['online_overhead_itl_ms']:.6f} ms | "
+            "including online "
+            f"{shipped['metrics']['decode_per_token']['including_online_itl_ms']:.6f} ms"
         ),
         (
             f"Legacy proxy anchor: {legacy['flops']} FLOPs | "

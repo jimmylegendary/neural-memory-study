@@ -562,6 +562,66 @@ class TestWorkbookSource(unittest.TestCase):
                     formula = package.cell_formula("30_Compare", f"{column}{row}") or ""
                     self.assertIn(f"'{source_sheet}'!{source_cell}", formula)
 
+    def test_hope_stage_sheets_expose_canonical_groups_and_sparse_cms(self) -> None:
+        package = self.require_package()
+        required_groups = {
+            "Titans forward",
+            "CMS forward",
+            "Forward total",
+            "Loss",
+            "Backward + update",
+        }
+        required_sparse_stages = {
+            "cms_l1_router",
+            "cms_l1_expert_a",
+            "cms_l1_expert_b",
+            "cms_l2_router",
+            "cms_l2_expert_a",
+            "cms_l2_expert_b",
+            "cms_l3_router",
+            "cms_l3_expert_a",
+            "cms_l3_expert_b",
+        }
+        for sheet_name in ("20_HOPE_Prefill", "21_HOPE_Decode"):
+            with self.subTest(sheet=sheet_name):
+                visible = set(package.visible_text(sheet_name))
+                self.assertTrue(required_groups.issubset(visible))
+                self.assertTrue(required_sparse_stages.issubset(visible))
+                self.assertNotIn("cms_l1_forward", visible)
+                self.assertNotIn("M_k_forward", visible)
+                self.assertIn("M_mem_forward", visible)
+                for label, expected_groups in {
+                    "Titans forward": ("titans_forward",),
+                    "CMS forward": ("cms_forward",),
+                    "Forward total": ("titans_forward", "cms_forward"),
+                    "Loss": ("loss",),
+                    "Backward + update": ("backward_update",),
+                }.items():
+                    row = package.find_row(sheet_name, "A", label)
+                    self.assertIsNotNone(row)
+                    for column in "BCDE":
+                        formula = package.cell_formula(sheet_name, f"{column}{row}") or ""
+                        self.assertIn("SUMIF", formula)
+                        for expected_group in expected_groups:
+                            self.assertIn(f'"{expected_group}"', formula)
+
+    def test_compare_explicitly_reports_ttft_and_itl_contract(self) -> None:
+        package = self.require_package()
+        visible = set(package.visible_text("30_Compare"))
+        self.assertTrue(
+            {
+                "Full Attention TTFT",
+                "HOPE forward TTFT",
+                "HOPE including-online TTFT",
+                "Full Attention ITL",
+                "HOPE forward ITL",
+                "HOPE including-online ITL",
+            }.issubset(visible)
+        )
+        sweep_text = set(package.visible_text("40_Sweeps"))
+        self.assertIn("Attention ITL ms", sweep_text)
+        self.assertIn("HOPE including-online ITL ms", sweep_text)
+
     def test_compare_crossover_summaries_are_formula_linked_to_sweeps(self) -> None:
         package = self.require_package()
         self.assertEqual("Context crossover", package.cell_value("30_Compare", "A13"))
@@ -585,7 +645,7 @@ class TestWorkbookSource(unittest.TestCase):
         by_title = {str(chart["title"]): chart for chart in charts}
         stage = by_title.get("Stagewise vs aggregate latency (ms)")
         roofline = by_title.get("Roofline scatter: AI vs effective TFLOP/s")
-        context = by_title.get("Context sweep: decode ms and persistent state GiB")
+        context = by_title.get("Context sweep: ITL ms and persistent state GiB")
         self.assertIsNotNone(stage)
         self.assertIsNotNone(roofline)
         self.assertIsNotNone(context)
@@ -647,6 +707,37 @@ class TestWorkbookSource(unittest.TestCase):
                 self.assertIsInstance(delta, float)
                 self.assertIsInstance(tolerance, float)
                 self.assertLessEqual(abs(delta), tolerance)
+
+    def test_qa_separates_native_operational_outputs_from_engine_reconciliation(self) -> None:
+        package = self.require_package()
+        header_row = package.find_row(
+            "90_QA", "A", "Native operational metric"
+        )
+        self.assertIsNotNone(header_row)
+        expected = [
+            "Full Attention TTFT",
+            "HOPE forward TTFT",
+            "HOPE including-online TTFT",
+            "Full Attention ITL",
+            "HOPE forward ITL",
+            "HOPE including-online ITL",
+        ]
+        for offset, label in enumerate(expected, 1):
+            row = int(header_row) + offset
+            with self.subTest(metric=label):
+                self.assertEqual(label, package.cell_value("90_QA", f"A{row}"))
+                for column in "CDE":
+                    self.assertIsNotNone(
+                        package.cell_formula("90_QA", f"{column}{row}")
+                    )
+                self.assertIn(
+                    package.cell_value("90_QA", f"E{row}"),
+                    {"MATCH", "ASSUMPTION DIFFERENCE"},
+                )
+                self.assertIn(
+                    "Exact numerical equality is not asserted",
+                    str(package.cell_value("90_QA", f"F{row}")),
+                )
 
     def test_bounded_ooxml_formula_error_scan(self) -> None:
         package = self.require_package()

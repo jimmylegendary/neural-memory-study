@@ -14,9 +14,15 @@ Run commands from the repository root. The only workbook authoring dependency is
 the bundled `@oai/artifact-tool` runtime:
 
 ```bash
-ARTIFACT_NODE_MODULES=/home/jimmy/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules
+ARTIFACT_NODE_MODULES="<node_modules path returned by load_workspace_dependencies>"
+test -d "$ARTIFACT_NODE_MODULES/@oai/artifact-tool"
 ln -sfn "$ARTIFACT_NODE_MODULES" experiments/E5-attn-vs-hope/sheet/node_modules
 ```
+
+In Codex Desktop, call `load_workspace_dependencies` for the spreadsheet
+runtime and copy its returned `node_modules` path into the environment variable.
+The path is host/runtime-version specific; no absolute home-directory path is
+canonical or checked into this handoff.
 
 The symlink is ignored. The builder emits an actionable error if the package
 cannot be imported. Do not install or substitute another spreadsheet library.
@@ -105,7 +111,7 @@ The suite reads the XLSX as OOXML ZIP/XML and verifies exact sheet names/order,
 no external links, substantive/transitive formula lineage (including summary
 row 3), absence of zero-multiplied lineage sentinels, formula-backed numeric
 calculation cells, design-section 8 and comparison headers, complete current
-H100/model-constant coverage, position provenance, 16 formula-backed QA PASS
+reference-HW/model-constant coverage, position provenance, 16 formula-backed QA PASS
 rows, a bounded OOXML formula-error scan, and the exact title/type/data purpose
 of all three native charts.
 
@@ -139,12 +145,16 @@ Expected result: no matches.
 ### Reconciliation and key outputs
 
 - `90_QA!F6:F21`: every cell must display `PASS`.
-- `21_HOPE_Decode!B6:B8`: normal, boundary, and amortized timing must remain
-  populated and ordered consistently with their labels.
+- `90_QA!A48:F54`: native operational outputs remain separate from generated
+  formulas; nonzero deltas must read `ASSUMPTION DIFFERENCE`, not be hidden.
+- `21_HOPE_Decode!B6:B8`: forward-only, online-overhead, and including-online
+  ITL must remain populated and ordered consistently with their labels.
 - `40_Sweeps!A6:G11` and `A17:G22`: context and batch sweeps, including the
   formula-derived crossover flags in column G, must remain populated.
 - `30_Compare!A6:M9`: formulas must remain populated, including separate HBM
   read/write/total and ridge metrics.
+- `30_Compare!A18:C23`: Full Attention and HOPE forward/including-online TTFT
+  and ITL must remain populated; HOPE TTFT alone applies the chunk multiplier.
 - `30_Compare!A13:B14`: context and batch crossover summaries must remain
   formula-linked to `40_Sweeps` (the current verified sweep displays
   `None in sweep` for both).

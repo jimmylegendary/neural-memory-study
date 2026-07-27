@@ -15,9 +15,10 @@
 - Effective bytes count HBM-boundary traffic only. FlashAttention never materializes the quadratic score/probability tensor in HBM, but still reads Q/K/V and writes the final output.
 - Decode is one next-token invocation: KV reads are linear in current context and formulas must not multiply by OSL.
 - Shipped HOPE has static `W_q` and no `M_q`; any adaptive-q case is labeled hypothetical and cannot affect default results.
-- HOPE forward is the dependency chain Titans then CMS. Titans loss/backward/update is a separate group; CMS online backward/update is excluded from the live-sheet baseline.
-- Prefill operation rows are one chunk. Chunk count is applied only in TTFT totals.
-- LRD is used only by CMS. Current CMS capacities are 64, 128, 256 and update periods are 1K, 5K, 10K.
+- HOPE uses the stable partition `Titans forward -> CMS forward -> loss -> backward+update`. Shipped Titans forward is exactly static `W_q` plus `M_mem`; auxiliary target/prediction work is loss preparation. CMS online backward/update is excluded.
+- Full Attention prefill/TTFT is one full-ISL causal invocation. HOPE operation rows are one 2K chunk, and only HOPE TTFT multiplies 64 chunks. Decode/ITL is one `Q=1` token with no OSL multiplier.
+- LRD is used only by CMS. Capacity 64/128/256 controls router/state residency; compute uses top-k=1 active rank-64 A/B experts and HBM reads use a unique-active upper bound. Update periods remain 1K/5K/10K.
+- Reference timing uses user-reviewed `4.614e15 FLOP/s` and `7.4e12 B/s`; the H100 twin supplies capacity/provenance only.
 - Preserve the live Google Sheet's existing named inputs and Korean cell notes. Never replace the reference export with a generated workbook.
 - Do not stage or modify unrelated worktree files. Do not commit or push from a subagent.
 
@@ -37,7 +38,7 @@
 - `Hardware`, `AttentionMoEConfig`, `MemorySpec`, `CMSLevel`, `HopeConfig`, and `Stage` are frozen dataclasses.
 - `Stage` exposes exactly the fields required by design section 3.1 and computed properties `effective_hbm_bytes`, `arithmetic_intensity`, `compute_seconds`, `memory_seconds`, and `roofline_seconds`.
 - Public builders: `build_attention_prefill`, `build_attention_decode`, `build_hope_prefill`, and `build_hope_decode` return ordered `list[Stage]` values.
-- Public summaries: `summarize(stages, hardware)` and `legacy_hope_proxy(d, chunk, element_bytes)` return JSON-serializable dictionaries.
+- Public summaries: `summarize(stages, hardware)`, `summarize_by_group(stages, hardware)`, and `legacy_hope_proxy(d, chunk, element_bytes)` return JSON-serializable dictionaries. Group summaries expose Titans forward, CMS forward, forward total, loss, and backward+update without synthetic stages.
 - `run.py` writes deterministic `results.json` and byte-for-byte stable `stdout.txt` from repository-relative inputs.
 
 - [ ] **Step 1: Write failing tests for primitive invariants**
@@ -105,7 +106,7 @@ Run the same `unittest` command and confirm failures identify missing builders o
 
 - [ ] **Step 7: Implement Attention+MoE and HOPE builders**
 
-Keep stages explicit enough to audit fusion and traffic. Decode returns normal, boundary, and amortized HOPE summaries; CMS reads occur every token while update periods remain metadata. Include four scenarios: `paper_equation_lower_bound`, `shipped_credible_momentum`, `legacy_repo_proxy`, and `adaptive_q_hypothetical`, with the last one excluded from defaults.
+Keep stages explicit enough to audit fusion and traffic. Decode retains normal/boundary/amortized event diagnostics but exposes deployment metrics as forward-only, online-overhead, and including-online ITL; CMS reads occur every token while update periods remain metadata. Include four scenarios: `paper_equation_lower_bound`, `shipped_credible_momentum`, `legacy_repo_proxy`, and `adaptive_q_hypothetical`, with the last one excluded from defaults.
 
 - [ ] **Step 8: Run all E5 tests and verify GREEN**
 
@@ -115,7 +116,7 @@ Expected: all cases pass with no warning or skipped test.
 
 - [ ] **Step 9: Add the deterministic runner and verify its outputs**
 
-`run.py` must use the H100 anchor in `multiarch/twins/h100.json`, write sorted/indented JSON, include all stage records and QA checks, and print the same compact report to stdout and `stdout.txt`.
+`run.py` must use live-Sheet peak/BW authority plus the H100 twin capacity/provenance, write sorted/indented JSON, include all stage records/group summaries/TTFT/ITL metrics and QA checks, and print the same compact report to stdout and `stdout.txt`.
 
 Run twice:
 
@@ -130,7 +131,7 @@ Expected: both checksum pairs match.
 
 - [ ] **Step 10: Document assumptions and reproduction**
 
-The README must separate paper facts, implementation choices, and sensitivity parameters; explain stagewise versus aggregate roofline; link the design, H100 twin, legacy baseline, live-sheet archive, and Google-meeting package; and list the exact commands above.
+The README must separate paper facts, implementation choices, and sensitivity parameters; explain sparse CMS, dependency groups, TTFT/ITL, mixed hardware authority, and stagewise versus aggregate roofline; link the design, H100 twin, legacy baseline, live-sheet archive, and Google-meeting package; and list the exact commands above.
 
 ---
 
@@ -167,7 +168,7 @@ Expected: failure because the builder/output is missing.
 
 - [ ] **Step 3: Implement the builder**
 
-Use only `@oai/artifact-tool`. Build compact input tables, the design section 8 stage columns, formula-driven summaries, HBM-fit checks, normal/boundary/amortized HOPE decode, and context/batch sweeps. Add only the three approved charts: stagewise latency, roofline scatter, and context-length decode/state sweep. Use a restrained navy/blue/gray research style and preserve units in headers.
+Use only `@oai/artifact-tool`. Build compact input tables, the design section 8 stage columns, formula-driven summaries, HBM-fit checks, five formula-only HOPE dependency-group subtotals, explicit full-ISL TTFT and Q=1 ITL comparisons, and context/batch ITL sweeps. Add only the three approved charts: stagewise latency, roofline scatter, and context-length ITL/state sweep. Use a restrained navy/blue/gray research style and preserve units in headers.
 
 - [ ] **Step 4: Generate and render the workbook**
 

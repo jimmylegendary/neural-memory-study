@@ -30,7 +30,7 @@ The four stage sheets use the design-section 8 schema in columns `A:S`:
 | S | Evidence/assumption | Visible interpretation of the stage equation and traffic convention |
 
 Every cross-sheet reference in these formulas is single-quoted. The builder
-contains no literal H100 or model-dimension values in calculation formulas and
+contains no literal reference-hardware or model-dimension values in calculation formulas and
 does not use zero-multiplied source references as lineage sentinels. Summary
 row formulas reach the input/hardware sheets transitively through their stage
 formula dependencies.
@@ -56,29 +56,31 @@ Each stage sheet has the same formula summary in `A2:N3`:
 
 ## `00_Guide`
 
-- `A4:B13` explains the analytical scope, stagewise versus aggregate latency,
+- `A4:B15` explains the analytical scope, dependency groups, TTFT/ITL,
+  sparse CMS, stagewise versus aggregate latency,
   HBM-fit interpretation, the three approved charts, and rebuild workflow.
 - The guide explicitly distinguishes this generated 11-tab workbook from the
   user's native one-tab live Sheet under `research/attn-vs-hope/`.
 
 ## `01_Inputs`
 
-### Shared Attention/MoE and HOPE inputs (`A4:F43`)
+### Shared Attention/MoE and HOPE inputs (`A4:F45`)
 
-The live numeric assumption cells are `C5:C43`:
+The live numeric assumption cells are `C5:C45`:
 
 | Cells | Inputs |
 |---|---|
-| C5:C9 | Batch; prefill Q/K; decode Q/K |
-| C10:C13 | Model width `D`; head width `d_h`; query and KV head counts |
-| C14:C18 | Activation, weight, KV, partial-output, and LSE bytes |
-| C19:C22 | Decode splits, tokens/split, KV reload multiplier, softmax FLOPs/pair |
-| C23:C30 | Expert count, top-k, hidden width, matrix count, router cost, route metadata bytes, active-expert override, expert HBM fraction |
-| C31:C34 | Compute/bandwidth efficiencies, expert activation FLOPs, fusion flag |
-| C35:C39 | Mutable-state/optimizer bytes, sigma/residual FLOPs, chunk-cache bytes |
-| C40:C43 | Prefill/decode positions and main/auxiliary memory chunks |
+| C5:C7 | Batch; full-ISL Attention prefill Q/K |
+| C8:C9 | HOPE chunk tokens and TTFT chunk count |
+| C10:C15 | Decode Q/K; model width `D`; head width `d_h`; query and KV heads |
+| C16:C20 | Activation, weight, KV, partial-output, and LSE bytes |
+| C21:C24 | Decode splits, tokens/split, KV reload multiplier, softmax FLOPs/pair |
+| C25:C32 | Expert count, top-k, hidden width, matrix count, router cost, route metadata bytes, active-expert override, expert HBM fraction |
+| C33:C36 | Compute/bandwidth efficiencies, expert activation FLOPs, fusion flag |
+| C37:C41 | Mutable-state/optimizer bytes, sigma/residual FLOPs, chunk-cache bytes |
+| C42:C45 | Prefill/decode positions and main/auxiliary memory chunks |
 
-`C40:C41` are read directly from the shipped-credible prefill/decode
+`C42:C43` are read directly from the shipped-credible prefill/decode
 `position` fields in `results.json`; they are not workbook-local fallback
 zeros.
 
@@ -88,10 +90,11 @@ Rows `48:52` are `M_k`, `M_v`, `M_eta`, `M_alpha`, and `M_mem`.
 Columns `B:H` hold `I`, `H`, `O`, update chunk, momentum slots, update
 multiplier `μ`, and state-weight read count.
 
-### CMS levels (`A56:I59`)
+### CMS levels (`A56:M59`)
 
-Rows `57:59` are `cms_l1:cms_l3`. Columns `B:I` hold `I`, `H`, `O`, update
-period, BPTT span, optimizer slots, personalized flag, and gradient multiplier.
+Rows `57:59` are `cms_l1:cms_l3`. Columns `B:M` hold input/output dimensions,
+capacity, low-rank dimension, top-k, router selection cost, update period, BPTT
+span, optimizer slots, personalized flag, gradient multiplier, and route bytes.
 
 ### Sweep controls (`A63:G65`)
 
@@ -113,9 +116,10 @@ The hardware and unit-conversion source cells are:
 | C11 | Bytes/GiB |
 | C12 | FLOPs/TFLOP |
 
-`C6:C9` come from `results.json.hardware`, itself derived from
-`multiarch/twins/h100.json`. Unit conversions are visible rather than embedded
-as unexplained constants in formulas.
+`C6:C7` are the user-reviewed live-Sheet timing authority
+(`4.614e15 FLOP/s`, `7.4e12 B/s`). `C8` comes from the repository H100 twin as
+a capacity/provenance aid. This mixed authority is explicit in `results.json`;
+unit conversions remain visible rather than embedded in formulas.
 
 ## `10_AttnMoE_Prefill`
 
@@ -149,33 +153,39 @@ as unexplained constants in formulas.
 
 ## `20_HOPE_Prefill`
 
-- Stage table: `A5:S39`; formula rows `6:39`.
-- Static q: `2ND²`, with shared `W_q` read and temporary q output.
+- Stage table: `A5:S41`; formula rows `6:41`.
+- Forward order is static `W_q`, `M_mem`, then CMS L1/L2/L3. Auxiliary
+  `M_k/M_v/M_eta/M_alpha` first appear in loss preparation, not direct forward.
 - Per-memory parameters: `P = IH + HO` from `01_Inputs!B48:H52`.
 - Forward FLOPs:
   `2NP + N(c_sigma H + c_res O)`.
 - Weight-gradient FLOPs: `2NIH + 4NHO`.
-- Update decomposition: target forward + prediction forward + weight backward
-  + `μF_fwd - (2F_fwd + F_bwd,W)`.
+- Stable dependency partition: all target/prediction loss terms precede all
+  weight backward, DGD, and state apply terms.
 - Boundary count:
   `INT((position+Q)/chunk) - INT(position/chunk)`.
 - State apply read/write per event:
   `B(1+momentum_slots)P b_state` in each direction.
-- CMS forward: `2NP_l`; personalized-state and optimizer-slot state bytes are
-  driven by `01_Inputs!B57:I59`.
+- CMS router: `2ND C + c_router N C`; active expert A/B compute is
+  `2N top_k D R` and `2N top_k R D`. Persistent state counts the full pool,
+  while prefill reads use personalized `min(C,Q*top_k)` unique-active experts.
+- `A44:E49` contains formula-only group subtotals for Titans forward, CMS
+  forward, forward total, loss, and backward+update. `forward total` is a
+  derived `SUMIF` view, not a synthetic stage.
 
 ## `21_HOPE_Decode`
 
-- Timing summary: `A5:E8`.
-  - Row 6: normal token, excluding state-apply rows.
-  - Row 7: simultaneous boundary, converting fractional apply cadence to one
-    event per memory.
-  - Row 8: per-memory-period amortized timing.
-- Amortized stage table: `A11:S45`; formula rows `12:45`.
+- Per-token summary: `A5:E8`.
+  - Row 6: forward-only ITL.
+  - Row 7: online-overhead ITL (loss plus backward/amortized update).
+  - Row 8: including-online ITL; no OSL multiplier.
+- Amortized stage table: `A11:S47`; formula rows `12:47`.
 - Eager-gradient target/prediction/backward work occurs every token.
 - State-apply cadence is `1/update_chunk` for the amortized rows.
 - Persistent state is context-independent and batch-dependent:
   memory/CMS parameter state plus optimizer slots and chunk cache.
+- `A50:E55` repeats the five dependency-group subtotals from the actual stage
+  rows.
 
 ## `30_Compare`
 
@@ -185,8 +195,8 @@ as unexplained constants in formulas.
 - `A12:D14`: explicit context and batch crossover summaries. `B13:B14` are
   formulas that walk the corresponding `40_Sweeps!G` flag rows and return the
   first sweep control from column A, or `None in sweep`.
-- `A17:C22`: Attention/HOPE ratios plus normal, boundary, and amortized HOPE
-  decode timing.
+- `A17:C23`: Full Attention TTFT/ITL and HOPE forward versus including-online
+  TTFT/ITL. Attention prefill is full ISL; only HOPE TTFT multiplies 64 chunks.
 - `O5:Q9`: formula-backed AI/effective-TFLOP helper table.
 - Native chart 1: stagewise versus aggregate latency.
 - Native chart 2: roofline scatter with explicit X-series
@@ -198,8 +208,9 @@ as unexplained constants in formulas.
 - Attention context-stage helpers: `H5:T11`.
 - Batch sweep: `A16:G22`; source controls `01_Inputs!B65:G65`.
 - Attention batch-stage helpers: `H16:T22`.
-- Column G is a formula flag (`YES` when Attention decode ms is greater than
-  or equal to HOPE decode ms); `30_Compare!B13:B14` consumes these flags.
+- Columns B/C are explicitly ITL in milliseconds. Column G is a formula flag
+  (`YES` when Attention ITL is greater than or equal to HOPE including-online
+  ITL); `30_Compare!B13:B14` consumes these flags.
 - Attention state: `2BKD_kv b_kv / bytes_per_GiB`.
 - HOPE context latency/state remain constant because the recurrent state does
   not grow with context.
@@ -207,7 +218,7 @@ as unexplained constants in formulas.
 - HOPE batch latency recomputes the shared static-q projection at each batch;
   only request-local stages are scaled from the baseline. This preserves the
   non-batch-linear shared `W_q` HBM read.
-- Native chart 3 uses `A5:E11`: context-length decode latency and persistent
+- Native chart 3 uses `A5:E11`: context-length ITL and persistent
   state.
 
 ## `90_QA`
@@ -218,10 +229,15 @@ as unexplained constants in formulas.
   - Column D: formula delta.
   - Column E: tolerance.
   - Column F: formula-generated PASS/REVIEW.
-- Checks cover baseline FLOPs/HBM/stagewise latency, all three HOPE decode
-  timing modes, both context-sweep endpoints, and B=1/B=32 HOPE batch points.
-- `A25:C37`: the 12 upstream boolean invariants imported from
+- Checks cover baseline FLOPs/HBM/stagewise latency, HOPE forward/online/
+  including-online ITL, both context-sweep endpoints, and B=1/B=32 HOPE batch
+  points.
+- `A25:C45`: the 20 upstream boolean invariants imported from
   `results.json.qa_checks`.
+- `A48:F54`: native live-Sheet operational outputs beside generated formulas,
+  deltas, and a `MATCH`/`ASSUMPTION DIFFERENCE` classification. This is an
+  explicit reconciliation view, not a tolerance-forced QA gate; sparse-CMS
+  active-weight reads, explicit MoE traffic, and roofline partition differ.
 
 Imported numerical outputs are confined to the clearly labeled engine-reference
 column on this sheet; calculation, comparison, and sweep sheets contain formulas.
@@ -229,5 +245,5 @@ column on this sheet; calculation, comparison, and sweep sheets contain formulas
 ## `99_Sources`
 
 `A5:E13` records repository paths, their role in the workbook, the verified
-E5 interface, the H100 twin derivation, the separate live-Sheet archive, and the
+E5 interface, mixed live-Sheet/twin hardware authority, the separate live-Sheet archive, and the
 plain-text HOPE paper URL.

@@ -11,6 +11,12 @@ This package turns the HOPE / Sleep / Memory Caching / NSTM evidence base into a
 5. Normalize each KQ outcome in the [post-meeting template](05-ANSWER-CAPTURE-POSTMEETING.csv).
 6. Keep non-repository dependencies in the [external-artifact register](EXTERNAL-ARTIFACTS.md).
 
+The checked-in live and post-meeting CSVs are the compact minimum templates
+with their exact 9-column and 10-column headers. Section 9 of the device bridge
+is an optional expansion field dictionary, not a claim that those richer
+fields already exist in the CSVs. Preserve stable IDs and blank response fields
+unless an actual meeting response is being recorded.
+
 Stable inventory: six `KQ` IDs (`KQ-01…06`), eight `BQ` IDs (`BQ-01…08`), and ten `DBQ` IDs (`DBQ-01…10`). Existing question content and these identifiers are canonical.
 
 ## Six-axis coverage

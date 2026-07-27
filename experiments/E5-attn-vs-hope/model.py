@@ -171,29 +171,49 @@ class MemorySpec:
 
 @dataclass(frozen=True)
 class CMSLevel:
-    """One sequential Continuum Memory System level."""
+    """One sparse, low-rank Continuum Memory System expert pool.
+
+    ``capacity`` is a residency/capacity dimension.  It never widens the
+    active hidden dimension: each token routes to ``top_k`` rank-
+    ``low_rank_dim`` experts.  The full pool is counted only for persistent
+    state, while HBM reads count the invocation's auditable unique-active
+    upper bound.
+    """
 
     name: str
     input_dim: int
-    hidden_dim: int
     output_dim: int
+    capacity: int
+    low_rank_dim: int
+    top_k: int
+    router_flops_per_token_expert: int
     update_period: int
     bptt_span: int
     optimizer_slots: int
     personalized: bool
     gradient_multiplier: float
+    routing_metadata_bytes: int = 8
 
     def __post_init__(self) -> None:
         if not self.name.strip():
             raise ValueError("name must not be empty")
         for name in (
             "input_dim",
-            "hidden_dim",
             "output_dim",
+            "capacity",
+            "low_rank_dim",
+            "top_k",
             "update_period",
             "bptt_span",
+            "routing_metadata_bytes",
         ):
             _require_positive(name, getattr(self, name))
+        if self.top_k > self.capacity:
+            raise ValueError("top_k must not exceed capacity")
+        _require_nonnegative(
+            "router_flops_per_token_expert",
+            self.router_flops_per_token_expert,
+        )
         _require_nonnegative("optimizer_slots", self.optimizer_slots)
         if not isinstance(self.personalized, bool):
             raise TypeError("personalized must be bool")
@@ -283,6 +303,30 @@ def memory_parameter_count(spec: MemorySpec) -> int:
     return (
         spec.input_dim * spec.hidden_dim
         + spec.hidden_dim * spec.output_dim
+    )
+
+
+def cms_router_parameter_count(level: CMSLevel) -> int:
+    """Return the dense router parameters ``D * capacity``."""
+
+    return level.input_dim * level.capacity
+
+
+def cms_expert_parameter_count(level: CMSLevel) -> int:
+    """Return both low-rank matrices for one expert, ``D*R + R*O``."""
+
+    return (
+        level.input_dim * level.low_rank_dim
+        + level.low_rank_dim * level.output_dim
+    )
+
+
+def cms_pool_parameter_count(level: CMSLevel) -> int:
+    """Return router plus the complete resident low-rank expert pool."""
+
+    return (
+        cms_router_parameter_count(level)
+        + level.capacity * cms_expert_parameter_count(level)
     )
 
 
@@ -890,7 +934,7 @@ def _titans_forward_stages(
             hardware,
             config,
             phase=phase,
-            component="titans",
+            component="titans_forward",
             stage="static_q_projection",
             flops=2 * n * config.model_dim * config.model_dim,
             hbm_read_bytes=model_activation
@@ -902,7 +946,18 @@ def _titans_forward_stages(
             notes="Shipped HOPE uses static q=xW_q; W_q is not mutable state.",
         )
     ]
-    for memory in config.memories:
+    # The shipped operational path is q=xW_q followed by M_mem(q).  Auxiliary
+    # M_k/M_v/M_eta/M_alpha memories prepare the inner loss later; treating
+    # them as direct forward outputs would violate the live-sheet dependency
+    # contract.  M_q is permitted only in the separately labelled adaptive-q
+    # hypothetical scenario.
+    forward_memories = [
+        memory
+        for memory in config.memories
+        if memory.name == "M_mem"
+        or (config.adaptive_q and memory.name == "M_q")
+    ]
+    for memory in forward_memories:
         params = memory_parameter_count(memory)
         input_bytes = n * memory.input_dim * config.activation_bytes
         output_bytes = n * memory.output_dim * config.activation_bytes
@@ -911,7 +966,7 @@ def _titans_forward_stages(
                 hardware,
                 config,
                 phase=phase,
-                component="titans",
+                component="titans_forward",
                 stage=f"{memory.name}_forward",
                 flops=memory_forward_flops(
                     memory,
@@ -936,8 +991,9 @@ def _titans_forward_stages(
                     )
                 ),
                 notes=(
-                    "Request-local mutable memory forward; state_weight_read_count "
-                    "controls HBM reloads independently of state apply."
+                    "Request-local mutable main-memory forward; "
+                    "state_weight_read_count controls HBM reloads independently "
+                    "of state apply. M_q is hypothetical when present."
                 ),
             )
         )
@@ -951,40 +1007,103 @@ def _cms_forward_stages(
     n = config.processed_tokens
     stages = []
     for level in config.cms_levels:
-        params = (
-            level.input_dim * level.hidden_dim
-            + level.hidden_dim * level.output_dim
-        )
         sharing = config.batch if level.personalized else 1
-        stages.append(
+        active_unique_per_pool = min(
+            level.capacity,
+            (config.query_tokens if level.personalized else n) * level.top_k,
+        )
+        router_params = cms_router_parameter_count(level)
+        expert_params = cms_expert_parameter_count(level)
+        pool_params = cms_pool_parameter_count(level)
+        model_input_bytes = n * level.input_dim * config.activation_bytes
+        routing_bytes = n * level.top_k * level.routing_metadata_bytes
+        low_rank_bytes = (
+            n * level.top_k * level.low_rank_dim * config.activation_bytes
+        )
+        model_output_bytes = n * level.output_dim * config.activation_bytes
+        active_a_weights = (
+            sharing
+            * active_unique_per_pool
+            * level.input_dim
+            * level.low_rank_dim
+            * config.state_bytes
+        )
+        active_b_weights = (
+            sharing
+            * active_unique_per_pool
+            * level.low_rank_dim
+            * level.output_dim
+            * config.state_bytes
+        )
+        active_note = (
+            f"unique-active upper bound={active_unique_per_pool}/{level.capacity} "
+            f"per {'request' if level.personalized else 'shared batch'}; "
+            f"top_k={level.top_k}; update_period={level.update_period}."
+        )
+        stages.extend([
             _hope_stage(
                 hardware,
                 config,
                 phase=phase,
-                component="cms",
-                stage=f"{level.name}_forward",
-                flops=2 * n * params,
+                component="cms_forward",
+                stage=f"{level.name}_router",
+                flops=(
+                    2 * n * level.input_dim * level.capacity
+                    + level.router_flops_per_token_expert * n * level.capacity
+                ),
                 hbm_read_bytes=(
-                    sharing * params * config.state_bytes
-                    + n * level.input_dim * config.activation_bytes
+                    model_input_bytes
+                    + sharing * router_params * config.state_bytes
                 ),
-                temporary_write_bytes=(
-                    n * level.output_dim * config.activation_bytes
-                ),
+                temporary_write_bytes=routing_bytes,
                 persistent_state_delta_bytes=(
                     sharing
-                    * params
+                    * pool_params
                     * (
                         config.state_bytes
                         + level.optimizer_slots * config.optimizer_bytes
                     )
                 ),
                 notes=(
-                    f"read_period=1 token; update_period={level.update_period} "
-                    f"tokens; bptt_span={level.bptt_span}."
+                    "Dense router only; complete capacity is resident state. "
+                    + active_note
                 ),
-            )
-        )
+            ),
+            _hope_stage(
+                hardware,
+                config,
+                phase=phase,
+                component="cms_forward",
+                stage=f"{level.name}_expert_a",
+                flops=(
+                    2
+                    * n
+                    * level.top_k
+                    * level.input_dim
+                    * level.low_rank_dim
+                ),
+                hbm_read_bytes=model_input_bytes + routing_bytes + active_a_weights,
+                temporary_write_bytes=low_rank_bytes,
+                notes="Top-k active low-rank A matrices only; " + active_note,
+            ),
+            _hope_stage(
+                hardware,
+                config,
+                phase=phase,
+                component="cms_forward",
+                stage=f"{level.name}_expert_b",
+                flops=(
+                    2
+                    * n
+                    * level.top_k
+                    * level.low_rank_dim
+                    * level.output_dim
+                ),
+                hbm_read_bytes=low_rank_bytes + active_b_weights,
+                temporary_write_bytes=model_output_bytes,
+                notes="Top-k active low-rank B matrices only; " + active_note,
+            ),
+        ])
     return stages
 
 
@@ -1020,12 +1139,12 @@ def _memory_update_compute_stages(
         "hardware": hardware,
         "config": config,
         "phase": phase,
-        "component": "titans_update",
         "executions": executions,
     }
     return [
         _hope_stage(
             **common,
+            component="loss",
             stage=f"{memory.name}_target_forward",
             flops=forward_flops,
             hbm_read_bytes=input_bytes
@@ -1036,10 +1155,22 @@ def _memory_update_compute_stages(
                 * memory.state_weight_read_count
             ),
             temporary_write_bytes=output_bytes,
+            persistent_state_delta_bytes=(
+                0
+                if memory.name == "M_mem"
+                or (config.adaptive_q and memory.name == "M_q")
+                else config.batch
+                * params
+                * (
+                    config.state_bytes
+                    + memory.momentum_slots * config.optimizer_bytes
+                )
+            ),
             notes="Explicit self-target forward term in the update decomposition.",
         ),
         _hope_stage(
             **common,
+            component="loss",
             stage=f"{memory.name}_prediction_forward",
             flops=forward_flops,
             hbm_read_bytes=input_bytes,
@@ -1048,6 +1179,7 @@ def _memory_update_compute_stages(
         ),
         _hope_stage(
             **common,
+            component="backward_update",
             stage=f"{memory.name}_weight_backward",
             flops=backward_flops,
             hbm_read_bytes=(
@@ -1060,6 +1192,7 @@ def _memory_update_compute_stages(
         ),
         _hope_stage(
             **common,
+            component="backward_update",
             stage=f"{memory.name}_dgd_extra",
             flops=dgd_extra_flops,
             hbm_read_bytes=gradient_bytes,
@@ -1090,7 +1223,7 @@ def _memory_apply_stage(
         hardware,
         config,
         phase=phase,
-        component="titans_update",
+        component="backward_update",
         stage=f"{memory.name}_state_apply",
         executions=executions,
         hbm_read_bytes=apply_bytes,
@@ -1109,10 +1242,7 @@ def _cms_update_stages(
     level: CMSLevel,
     executions: int | float,
 ) -> list[Stage]:
-    params = (
-        level.input_dim * level.hidden_dim
-        + level.hidden_dim * level.output_dim
-    )
+    params = cms_pool_parameter_count(level)
     sharing = config.batch if level.personalized else 1
     gradient_bytes = sharing * params * config.optimizer_bytes
     apply_bytes = (
@@ -1126,7 +1256,7 @@ def _cms_update_stages(
             hardware,
             config,
             phase=phase,
-            component="cms_update",
+            component="backward_update",
             stage=f"{level.name}_gradient",
             executions=executions,
             flops=(
@@ -1152,7 +1282,7 @@ def _cms_update_stages(
             hardware,
             config,
             phase=phase,
-            component="cms_update",
+            component="backward_update",
             stage=f"{level.name}_state_apply",
             executions=executions,
             hbm_read_bytes=apply_bytes,
@@ -1163,54 +1293,64 @@ def _cms_update_stages(
 
 
 def build_hope_prefill(config: HopeConfig, hardware: Hardware) -> list[Stage]:
-    """Build one HOPE prefill chunk with explicit update-boundary events."""
+    """Build one HOPE chunk in canonical forward -> loss -> update order."""
 
     phase = "prefill"
     stages = _titans_forward_stages(config, hardware, phase)
+    stages.extend(_cms_forward_stages(config, hardware, phase))
+    loss_stages: list[Stage] = []
+    backward_update_stages: list[Stage] = []
     for memory in config.memories:
         boundaries = update_boundary_count(
             config.position, config.query_tokens, memory.update_chunk
         )
         if config.schedule == "eager_gradient":
-            stages.extend(
-                _memory_update_compute_stages(
-                    config,
-                    hardware,
-                    phase,
-                    memory,
-                    tokens=config.processed_tokens,
-                    executions=1,
-                )
+            update_compute = _memory_update_compute_stages(
+                config,
+                hardware,
+                phase,
+                memory,
+                tokens=config.processed_tokens,
+                executions=1,
             )
         elif boundaries:
-            stages.extend(
-                _memory_update_compute_stages(
-                    config,
-                    hardware,
-                    phase,
-                    memory,
-                    tokens=config.batch * memory.update_chunk,
-                    executions=boundaries,
-                )
+            update_compute = _memory_update_compute_stages(
+                config,
+                hardware,
+                phase,
+                memory,
+                tokens=config.batch * memory.update_chunk,
+                executions=boundaries,
             )
+        else:
+            update_compute = []
+        loss_stages.extend(
+            stage for stage in update_compute if stage.component == "loss"
+        )
+        backward_update_stages.extend(
+            stage
+            for stage in update_compute
+            if stage.component == "backward_update"
+        )
         if boundaries:
-            stages.append(
+            backward_update_stages.append(
                 _memory_apply_stage(
                     config, hardware, phase, memory, boundaries
                 )
             )
-    stages.extend(_cms_forward_stages(config, hardware, phase))
     if config.include_cms_updates:
         for level in config.cms_levels:
             boundaries = update_boundary_count(
                 config.position, config.query_tokens, level.update_period
             )
             if boundaries:
-                stages.extend(
+                backward_update_stages.extend(
                     _cms_update_stages(
                         config, hardware, phase, level, boundaries
                     )
                 )
+    stages.extend(loss_stages)
+    stages.extend(backward_update_stages)
     return stages
 
 
@@ -1228,33 +1368,42 @@ def build_hope_decode(
         raise ValueError("timing must be normal, boundary, or amortized")
     phase = "decode"
     stages = _titans_forward_stages(config, hardware, phase)
+    stages.extend(_cms_forward_stages(config, hardware, phase))
+    loss_stages: list[Stage] = []
+    backward_update_stages: list[Stage] = []
     for memory in config.memories:
         if config.schedule == "eager_gradient":
-            stages.extend(
-                _memory_update_compute_stages(
-                    config,
-                    hardware,
-                    phase,
-                    memory,
-                    tokens=config.processed_tokens,
-                    executions=1,
-                )
+            update_compute = _memory_update_compute_stages(
+                config,
+                hardware,
+                phase,
+                memory,
+                tokens=config.processed_tokens,
+                executions=1,
             )
         elif timing != "normal":
-            stages.extend(
-                _memory_update_compute_stages(
-                    config,
-                    hardware,
-                    phase,
-                    memory,
-                    tokens=config.batch * memory.update_chunk,
-                    executions=(
-                        1 if timing == "boundary" else 1 / memory.update_chunk
-                    ),
-                )
+            update_compute = _memory_update_compute_stages(
+                config,
+                hardware,
+                phase,
+                memory,
+                tokens=config.batch * memory.update_chunk,
+                executions=(
+                    1 if timing == "boundary" else 1 / memory.update_chunk
+                ),
             )
+        else:
+            update_compute = []
+        loss_stages.extend(
+            stage for stage in update_compute if stage.component == "loss"
+        )
+        backward_update_stages.extend(
+            stage
+            for stage in update_compute
+            if stage.component == "backward_update"
+        )
         if timing != "normal":
-            stages.append(
+            backward_update_stages.append(
                 _memory_apply_stage(
                     config,
                     hardware,
@@ -1263,10 +1412,9 @@ def build_hope_decode(
                     1 if timing == "boundary" else 1 / memory.update_chunk,
                 )
             )
-    stages.extend(_cms_forward_stages(config, hardware, phase))
     if config.include_cms_updates and timing != "normal":
         for level in config.cms_levels:
-            stages.extend(
+            backward_update_stages.extend(
                 _cms_update_stages(
                     config,
                     hardware,
@@ -1275,6 +1423,8 @@ def build_hope_decode(
                     1 if timing == "boundary" else 1 / level.update_period,
                 )
             )
+    stages.extend(loss_stages)
+    stages.extend(backward_update_stages)
     return stages
 
 
@@ -1335,6 +1485,64 @@ def summarize(stages: list[Stage], hardware: Hardware) -> dict[str, object]:
         "stagewise_latency_seconds": stagewise_latency,
         "launch_seconds": launch_seconds,
         "bound": bound,
+    }
+
+
+def _empty_summary() -> dict[str, object]:
+    """Return the zero-valued shape used for an absent analytical group."""
+
+    return {
+        "stage_count": 0,
+        "flops": 0,
+        "hbm_read_bytes": 0,
+        "hbm_write_bytes": 0,
+        "effective_hbm_bytes": 0,
+        "mandatory_write_bytes": 0,
+        "temporary_write_bytes": 0,
+        "persistent_state_bytes": 0,
+        "arithmetic_intensity": None,
+        "aggregate_compute_seconds": 0.0,
+        "aggregate_memory_seconds": 0.0,
+        "aggregate_latency_seconds": 0.0,
+        "stagewise_latency_seconds": 0.0,
+        "launch_seconds": 0.0,
+        "bound": "balanced",
+    }
+
+
+def summarize_by_group(
+    stages: list[Stage], hardware: Hardware
+) -> dict[str, dict[str, object]]:
+    """Summarize the canonical HOPE dependency groups without fake stages.
+
+    ``forward_total`` is a derived view over the two forward groups and is not
+    included when checking conservation against the complete stage list.
+    """
+
+    base_groups = (
+        "titans_forward",
+        "cms_forward",
+        "loss",
+        "backward_update",
+    )
+    unexpected = sorted(
+        {stage.component for stage in stages}.difference(base_groups)
+    )
+    if unexpected:
+        raise ValueError(f"unexpected HOPE stage components: {unexpected}")
+
+    def grouped(names: tuple[str, ...]) -> dict[str, object]:
+        selected = [stage for stage in stages if stage.component in names]
+        return summarize(selected, hardware) if selected else _empty_summary()
+
+    summaries = {name: grouped((name,)) for name in base_groups}
+    summaries["forward_total"] = grouped(("titans_forward", "cms_forward"))
+    return {
+        "titans_forward": summaries["titans_forward"],
+        "cms_forward": summaries["cms_forward"],
+        "forward_total": summaries["forward_total"],
+        "loss": summaries["loss"],
+        "backward_update": summaries["backward_update"],
     }
 
 

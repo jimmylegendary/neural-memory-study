@@ -20,7 +20,7 @@ The model covers inference prefill and autoregressive decode. It reports FLOPs, 
 - FlashAttention removes the quadratic score/probability HBM materialization. It does **not** remove the mandatory attention-output write, KV-cache append, or later consumer traffic.
 - Classical Flash-Decoding uses split-local partial outputs and log-sum-exp values followed by a reduction. Those temporary global-memory writes/reads are modeled when `decode_splits > 1`.
 - HOPE's public paper does not define a paper-exact GPU implementation, deep-MLP DGD primitive, gate output width, complete momentum placement, or decode update schedule. These are explicit inputs or scenarios, never hidden constants.
-- CMS read cadence and update cadence are distinct. The paper's sequential CMS reads every enabled level every token even when a level updates rarely.
+- CMS read cadence and update cadence are distinct. Each enabled level executes a dense router and sparse top-k low-rank experts every token even when the level updates rarely; expert-pool capacity is not a dense hidden width.
 - Distributed communication is outside the baseline roofline. Tensor/expert/context parallelism may scale local FLOPs and bytes, but collectives require a separate network model.
 
 ## 3. Architecture
@@ -46,7 +46,7 @@ The engine returns both:
 - `stdout.txt`, a compact human-readable report; and
 - workbook handoff data consumed by the Desktop builder.
 
-Reference scenarios include prefill and decode on the repository's H100 anchor, plus a legacy HOPE proxy cross-check.
+Reference timing uses the user-reviewed live-Sheet inputs `4.614e15 FLOP/s` and `7.4e12 HBM B/s`. The repository H100 twin contributes capacity/provenance only; the mixed authority is explicit. Scenarios also include a legacy HOPE proxy cross-check.
 
 ### 3.3 Spreadsheet builder
 
@@ -212,6 +212,12 @@ The default follows the paper prose:
 - mutable \(\{M_k,M_v,M_\eta,M_\alpha,M_{\mathrm{mem}}\}\);
 - self-modifying Titans followed by sequential CMS.
 
+The operational dependency contract is more precise: block forward is static
+(W_q), then (M_{mathrm{mem}}), then CMS L1/L2/L3. Auxiliary
+(M_k,M_v,M_eta,M_alpha) target/prediction passes belong to loss preparation,
+not direct block forward. All loss stages precede all weight-backward, DGD, and
+state-apply stages. CMS online backward/update is excluded from the baseline.
+
 The paper's update-set equations and ablation also mention \(M_q\), so `adaptive_q` is an explicit optional variant rather than silently chosen.
 
 ### 6.2 Memory primitive
@@ -269,11 +275,12 @@ U_r=
 
 ### 6.4 Decode timing
 
-HOPE decode reports:
+The engine retains diagnostic normal/boundary/amortized event cases, while the
+deployment-facing contract reports:
 
-- normal-token latency;
-- boundary/update-event latency; and
-- amortized latency.
+- forward-only ITL;
+- online-overhead ITL (loss plus backward/amortized state apply); and
+- including-online ITL.
 
 \[
 t_{\mathrm{avg}}
@@ -285,31 +292,54 @@ Two schedules remain explicit:
 - eager gradient: target/prediction/backward every token, apply at the boundary;
 - deferred replay: retain token/activation data, batch update work at the boundary.
 
-The paper publishes neither an official decode kernel nor wall-clock trace, so neither schedule is labeled canonical.
+All decode quantities are one (Q=1) token and are never multiplied by OSL.
+The paper publishes neither an official decode kernel nor wall-clock trace, so
+neither update schedule is labeled canonical.
 
 ### 6.5 CMS
 
-For level \(\ell\):
+For level \(\ell\), let capacity be (C_ell), low rank be (R_ell), and
+active routing width be (k_ell). The router and one expert contain:
 
 \[
-P_\ell=I_\ell H_\ell+H_\ell O_\ell,
+P^{\mathrm{router}}_\ell=I_\ell C_\ell,
 \qquad
-F^{\mathrm{CMS,fwd}}_\ell=2N P_\ell.
+P^{\mathrm{expert}}_\ell=I_\ell R_\ell+R_\ell O_\ell.
 \]
+
+Forward compute is sparse in experts:
+
+\[
+F^{\mathrm{router}}_\ell
+=2NI_\ell C_\ell+c_{r,\ell}NC_\ell,
+\]
+
+\[
+F^{A}_\ell=2Nk_\ell I_\ell R_\ell,
+\qquad
+F^{B}_\ell=2Nk_\ell R_\ell O_\ell.
+\]
+
+The complete resident pool is
+(P^{\mathrm{pool}}_\ell=P^{\mathrm{router}}_\ell+C_\ell P^{\mathrm{expert}}_\ell).
+For personalized prefill, effective expert-weight reads use the auditable upper
+bound (B\min(C_\ell,Qk_\ell)); decode uses (Bk_\ell). Shared pools instead
+use (min(C_\ell,Nk_\ell)). Thus capacity affects router compute and state
+capacity, but never creates a hidden (D\times(RC)) GEMM.
 
 The default read period is one token. Update period \(C_\ell\), BPTT span \(G_\ell\), and optimizer slots \(m_\ell\) are independent:
 
 \[
 F^{\mathrm{CMS,grad}}_\ell
-=\kappa_\ell 2BG_\ell P_\ell
+=\kappa_\ell 2BG_\ell P^{\mathrm{pool}}_\ell
 \]
 
 \[
 R^{\mathrm{CMS,apply}}_\ell
-=s_\ell(1+m_\ell)P_\ell b_s,
+=s_\ell(1+m_\ell)P^{\mathrm{pool}}_\ell b_s,
 \qquad
 W^{\mathrm{CMS,apply}}_\ell
-=s_\ell(1+m_\ell)P_\ell b_s,
+=s_\ell(1+m_\ell)P^{\mathrm{pool}}_\ell b_s,
 \]
 
 where \(s_\ell=1\) for shared/frozen state and \(s_\ell=B\) for personalized mutable state.
@@ -319,7 +349,7 @@ Persistent HOPE state is context-length independent but batch dependent:
 \[
 S_{\mathrm{HOPE/request}}
 =\sum_r P_r(b_s+m_rb_o)
-+\sum_\ell P_\ell(b_s+m_\ell b_o)
++\sum_\ell P^{\mathrm{pool}}_\ell(b_s+m_\ell b_o)
 +S_{\mathrm{chunk\ cache}}.
 \]
 
@@ -340,22 +370,23 @@ Each stage table includes:
 
 `Order | Phase | Component | Stage | Symbolic equation | Executions/cadence | FLOPs | Required read B | Mandatory write B | Temporary/fusible write B | Effective read B | Effective write B | Persistent state B | AI | Compute ms | HBM ms | Roofline ms | Bound | Evidence/assumption`.
 
-The comparison sheet shows prefill and decode:
+The comparison sheet shows operation-level diagnostics plus end-to-end metrics:
 
 - total FLOPs;
 - HBM read/write/total;
 - stagewise and aggregate latency;
 - arithmetic intensity and ridge classification;
 - KV/state footprint and HBM-fit status;
-- Attention/HOPE ratios;
-- normal vs boundary HOPE decode;
+- Full Attention TTFT from one full-ISL invocation;
+- HOPE forward and including-online TTFT from 64 per-chunk invocations;
+- Full Attention, HOPE forward, and HOPE including-online ITL at (Q=1);
 - context-length and batch crossovers.
 
 Charts are limited to:
 
 1. stagewise latency comparison;
 2. roofline scatter; and
-3. context-length sweep of decode latency and persistent state.
+3. context-length sweep of ITL and persistent state.
 
 ## 9. Validation
 
@@ -368,7 +399,15 @@ Automated tests must prove:
 - decode KV read is linear in context; KV append is context independent;
 - MoE active-weight bytes depend on unique active experts, not token count times full expert weights;
 - HOPE state is independent of context and linear in batch;
-- CMS forward reads are not divided by update cadence;
+- shipped HOPE stage order is Titans forward, CMS forward, loss, backward/update;
+- shipped Titans forward contains only static `W_q` and `M_mem`;
+- every loss stage precedes every backward/update stage;
+- CMS uses router + top-k low-rank A/B compute, full-pool persistent capacity,
+  and unique-active HBM reads; CMS forward reads are not divided by update cadence;
+- the four base group summaries conserve complete stage FLOPs/read/write, while
+  forward-total exactly equals Titans-forward plus CMS-forward;
+- Attention TTFT uses full ISL; HOPE TTFT alone applies the chunk multiplier;
+  decode is (Q=1) with no OSL multiplier;
 - stagewise roofline is no smaller than the aggregate optimistic bound;
 - the legacy HOPE closed form reproduces:
 
