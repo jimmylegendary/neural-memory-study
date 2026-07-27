@@ -7,6 +7,7 @@ LibreOffice, and the JavaScript builder runtime.
 
 from __future__ import annotations
 
+import io
 import json
 import re
 import unittest
@@ -288,6 +289,20 @@ class WorkbookPackage:
                         node.text or ""
                         for node in root.iter()
                         if node.tag.rsplit("}", 1)[-1] == "f"
+                    ],
+                    "x_formulas": [
+                        formula.text or ""
+                        for axis in root.iter()
+                        if axis.tag.rsplit("}", 1)[-1] == "xVal"
+                        for formula in axis.iter()
+                        if formula.tag.rsplit("}", 1)[-1] == "f"
+                    ],
+                    "y_formulas": [
+                        formula.text or ""
+                        for axis in root.iter()
+                        if axis.tag.rsplit("}", 1)[-1] == "yVal"
+                        for formula in axis.iter()
+                        if formula.tag.rsplit("}", 1)[-1] == "f"
                     ],
                 }
             )
@@ -578,11 +593,37 @@ class TestWorkbookSource(unittest.TestCase):
         self.assertIn("'30_Compare'!$B$6:$B$9", stage["formulas"])
         self.assertIn("'30_Compare'!$C$6:$C$9", stage["formulas"])
         self.assertIn("scatterChart", roofline["types"])
-        self.assertIn("'30_Compare'!$P$6:$P$9", roofline["formulas"])
-        self.assertIn("'30_Compare'!$Q$6:$Q$9", roofline["formulas"])
+        self.assertEqual(["'30_Compare'!$P$6:$P$9"], roofline["x_formulas"])
+        self.assertEqual(["'30_Compare'!$Q$6:$Q$9"], roofline["y_formulas"])
         self.assertIn("lineChart", context["types"])
         for column in "ABCDE":
             self.assertIn(f"'40_Sweeps'!${column}$6:${column}$11", context["formulas"])
+
+        swapped_xml = b"""<?xml version="1.0" encoding="utf-8"?>
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart">
+  <c:chart><c:plotArea><c:scatterChart><c:ser>
+    <c:xVal><c:numRef><c:f>'30_Compare'!$Q$6:$Q$9</c:f></c:numRef></c:xVal>
+    <c:yVal><c:numRef><c:f>'30_Compare'!$P$6:$P$9</c:f></c:numRef></c:yVal>
+  </c:ser></c:scatterChart></c:plotArea></c:chart>
+</c:chartSpace>"""
+        fixture_bytes = io.BytesIO()
+        with zipfile.ZipFile(fixture_bytes, "w") as fixture_archive:
+            fixture_archive.writestr("xl/drawings/charts/chart1.xml", swapped_xml)
+        fixture_bytes.seek(0)
+        swapped_package = object.__new__(WorkbookPackage)
+        swapped_package.archive = zipfile.ZipFile(fixture_bytes)
+        try:
+            swapped = swapped_package.chart_specs()[0]
+            x_formulas = swapped.get("x_formulas", swapped["formulas"])
+            y_formulas = swapped.get("y_formulas", swapped["formulas"])
+            self.assertFalse(
+                "'30_Compare'!$P$6:$P$9" in x_formulas
+                and "'30_Compare'!$Q$6:$Q$9" in y_formulas,
+                "flattened formula inspection incorrectly accepts swapped xVal/yVal roles",
+            )
+        finally:
+            swapped_package.close()
+            fixture_bytes.close()
 
     def test_qa_sheet_labels_imported_engine_references(self) -> None:
         package = self.require_package()
