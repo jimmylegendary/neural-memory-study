@@ -151,7 +151,9 @@ function writeKeyValueInputs(sheet) {
     "Editable/raw model assumptions imported from results.json. Derived values live only in formula sheets.",
   );
   const attn = results.attention_moe.inputs.decode;
-  const hope = results.hope_scenarios.shipped_credible_momentum.inputs.decode;
+  const hopeInputs = results.hope_scenarios.shipped_credible_momentum.inputs;
+  const hope = hopeInputs.decode;
+  const hopePrefill = hopeInputs.prefill;
   const prefill = results.attention_moe.inputs.prefill;
   const rows = [
     ["batch", "Batch", attn.batch, "requests", "attention_moe.inputs.decode.batch", "Baseline request batch"],
@@ -189,8 +191,8 @@ function writeKeyValueInputs(sheet) {
     ["sigma_flops", "Sigma FLOPs/hidden", hope.sigma_flops_per_hidden, "FLOP/hidden", "hope_scenarios.shipped_credible_momentum.inputs.decode.sigma_flops_per_hidden", "Shipped-credible scenario"],
     ["residual_flops", "Residual FLOPs/output", hope.residual_flops_per_output, "FLOP/output", "hope_scenarios.shipped_credible_momentum.inputs.decode.residual_flops_per_output", "Shipped-credible scenario"],
     ["chunk_cache_bytes", "Chunk cache/request", hope.chunk_cache_bytes_per_request, "B/request", "hope_scenarios.shipped_credible_momentum.inputs.decode.chunk_cache_bytes_per_request", "Persistent request cache"],
-    ["prefill_position", "Prefill position p", 0, "tokens", "hope_scenarios.shipped_credible_momentum.inputs.prefill.position", "Boundary-count origin"],
-    ["decode_position", "Decode position p", 0, "tokens", "hope_scenarios.shipped_credible_momentum.inputs.decode.position", "Timing sheet uses explicit modes"],
+    ["prefill_position", "Prefill position p", hopePrefill.position, "tokens", "hope_scenarios.shipped_credible_momentum.inputs.prefill.position", "Imported boundary-count origin"],
+    ["decode_position", "Decode position p", hope.position, "tokens", "hope_scenarios.shipped_credible_momentum.inputs.decode.position", "Imported timing origin; timing modes remain explicit"],
     ["main_memory_chunk", "Main-memory chunk", results.model_inputs.main_memory_chunk, "tokens", "model_inputs.main_memory_chunk", "M_mem period"],
     ["aux_memory_chunk", "Aux-memory chunk", results.model_inputs.aux_memory_chunk, "tokens", "model_inputs.aux_memory_chunk", "M_k/v/eta/alpha period"],
   ];
@@ -352,12 +354,12 @@ function attentionStages(I, mode, overrides = {}) {
   const B = overrides.batch ?? I.batch;
   const Q = overrides.query ?? (mode === "prefill" ? I.prefill_query_tokens : I.decode_query_tokens);
   const K = overrides.context ?? (mode === "prefill" ? I.prefill_context_tokens : I.decode_context_tokens);
-  const G = overrides.splits ?? (mode === "prefill" ? `(1+0*${I.batch})` : I.decode_splits);
+  const G = overrides.splits ?? (mode === "prefill" ? "1" : I.decode_splits);
   const N = `((${B})*(${Q}))`;
   const Dq = `((${I.query_heads})*(${I.head_dim}))`;
   const Dkv = `((${I.kv_heads})*(${I.head_dim}))`;
-  const zero = `(0*${I.batch})`;
-  const one = `(1+0*${I.batch})`;
+  const zero = "0";
+  const one = "1";
   const modelAct = `((${N})*(${I.model_dim})*(${I.activation_bytes}))`;
   const qBytes = `((${N})*(${Dq})*(${I.activation_bytes}))`;
   const routed = `((${N})*(${I.top_k})*(${I.model_dim})*(${I.activation_bytes}))`;
@@ -379,7 +381,7 @@ function attentionStages(I, mode, overrides = {}) {
     const pairs = `((${B})*(${I.query_heads})*(${Q})*(${K}))`;
     const partials = `(IF((${G})=1,0,(${B})*(${Q})*(${I.query_heads})*(${G})*((${I.head_dim})*(${I.partial_bytes})+(${I.lse_bytes}))))`;
     specs.push(stage({ phase: mode, component: "attention", name: "flash_decode_partials", equation: "4BHqQKdh + csoftmaxBHqQK", cadence: one, flops: `(4*(${pairs})*(${I.head_dim})+(${I.softmax_flops_per_pair})*(${pairs}))`, read: `(2*(${B})*(${K})*(${Dkv})*(${I.kv_bytes})*(${I.kv_reload_multiplier}))`, mandatory: `(IF((${G})=1,${qBytes},0))`, temporary: partials, persistent: zero, note: "KV traffic is linear in K; split partials only for G>1." }));
-    specs.push(stage({ phase: mode, component: "attention", name: "flash_decode_reduce", equation: "read partials; write O", cadence: `(IF((${G})>1,1,0)+0*${I.batch})`, flops: zero, read: partials, mandatory: qBytes, temporary: zero, persistent: zero, note: "Optional split-local reduction." }));
+    specs.push(stage({ phase: mode, component: "attention", name: "flash_decode_reduce", equation: "read partials; write O", cadence: `(IF((${G})>1,1,0))`, flops: zero, read: partials, mandatory: qBytes, temporary: zero, persistent: zero, note: "Optional split-local reduction." }));
   }
   specs.push(
     stage({ phase: mode, component: "attention", name: "output_projection", equation: "2NDqD", cadence: one, flops: `(2*(${N})*(${Dq})*(${I.model_dim}))`, read: `((${N})*(${Dq})*(${I.activation_bytes})+(${Dq})*(${I.model_dim})*(${I.weight_bytes}))`, mandatory: zero, temporary: modelAct, persistent: zero, note: "Projects attention output to model width." }),
@@ -399,8 +401,8 @@ function hopeStages(I, memoryRefs, cmsRefs, phase, timing = "amortized") {
   const Q = phase === "prefill" ? I.prefill_query_tokens : I.decode_query_tokens;
   const position = phase === "prefill" ? I.prefill_position : I.decode_position;
   const N = `((${B})*(${Q}))`;
-  const zero = `(0*${I.batch})`;
-  const one = `(1+0*${I.batch})`;
+  const zero = "0";
+  const one = "1";
   const modelAct = `((${N})*(${I.model_dim})*(${I.activation_bytes}))`;
   const specs = [stage({ phase, component: "titans", name: "static_q_projection", equation: "2ND²", cadence: one, flops: `(2*(${N})*(${I.model_dim})*(${I.model_dim}))`, read: `((${modelAct})+(${I.model_dim})*(${I.model_dim})*(${I.weight_bytes}))`, mandatory: zero, temporary: modelAct, persistent: `((${B})*(${I.chunk_cache_bytes}))`, note: "Static q=xWq; Wq is not mutable state." })];
 
@@ -426,10 +428,10 @@ function hopeStages(I, memoryRefs, cmsRefs, phase, timing = "amortized") {
     );
     if (phase === "prefill" || timing !== "normal") {
       const cadence = phase === "prefill"
-        ? `(INT(((${position})+(${Q}))/(${memory.chunk}))-INT((${position})/(${memory.chunk}))+0*${I.batch})`
+        ? `(INT(((${position})+(${Q}))/(${memory.chunk}))-INT((${position})/(${memory.chunk})))`
         : timing === "boundary"
           ? one
-          : `(1/(${memory.chunk})+0*${I.batch})`;
+          : `(1/(${memory.chunk}))`;
       const apply = `((${B})*(1+(${memory.slots}))*(${params})*(${I.state_bytes}))`;
       specs.push(stage({ phase, component: "titans_update", name: `${name}_state_apply`, equation: "B(1+m)Pbs read + write", cadence, flops: zero, read: apply, mandatory: apply, temporary: zero, persistent: zero, note: phase === "prefill" ? "Boundary-count state RMW." : `${timing} decode state RMW.` }));
     }
@@ -465,22 +467,21 @@ function writeStageSheet(sheet, title, subtitle, specs, I, H, headerRow = 5) {
   sheet.getRange("A2:N2").unmerge();
   sheet.getRange("A2:N2").values = [summaryHeaders];
   styleHeader(sheet.getRange("A2:N2"), COLORS.gray);
-  const cross = `0*(${I.batch})`;
   sheet.getRange("A3:N3").formulas = [[
-    `=SUM(G${dataStart}:G${dataEnd})+${cross}`,
-    `=SUM(K${dataStart}:K${dataEnd})+${cross}`,
-    `=SUM(L${dataStart}:L${dataEnd})+${cross}`,
-    `=SUM(K${dataStart}:L${dataEnd})+${cross}`,
-    `=SUM(M${dataStart}:M${dataEnd})+${cross}`,
-    `=IF(SUM(K${dataStart}:L${dataEnd})=0,"",SUM(G${dataStart}:G${dataEnd})/SUM(K${dataStart}:L${dataEnd})+${cross})`,
-    `=SUM(O${dataStart}:O${dataEnd})+${cross}`,
-    `=SUM(P${dataStart}:P${dataEnd})+${cross}`,
-    `=MAX(SUM(O${dataStart}:O${dataEnd}),SUM(P${dataStart}:P${dataEnd}))+${cross}`,
-    `=SUM(Q${dataStart}:Q${dataEnd})+${cross}`,
-    `=IF(SUM(O${dataStart}:O${dataEnd})>SUM(P${dataStart}:P${dataEnd}),"compute",IF(SUM(P${dataStart}:P${dataEnd})>SUM(O${dataStart}:O${dataEnd}),"memory","balanced"))&IF(${I.batch}>0,"","")`,
-    `=IF(SUM(M${dataStart}:M${dataEnd})<=${H.hbm_capacity},"FIT","EXCEEDS")&IF(${I.batch}>0,"","")`,
-    `=${H.peak_flops}/${H.hbm_bandwidth}+${cross}`,
-    `=IF(F3>=M3,"compute-side","memory-side")&IF(${I.batch}>0,"","")`,
+    `=SUM(G${dataStart}:G${dataEnd})`,
+    `=SUM(K${dataStart}:K${dataEnd})`,
+    `=SUM(L${dataStart}:L${dataEnd})`,
+    `=SUM(K${dataStart}:L${dataEnd})`,
+    `=SUM(M${dataStart}:M${dataEnd})`,
+    `=IF(SUM(K${dataStart}:L${dataEnd})=0,"",SUM(G${dataStart}:G${dataEnd})/SUM(K${dataStart}:L${dataEnd}))`,
+    `=SUM(O${dataStart}:O${dataEnd})`,
+    `=SUM(P${dataStart}:P${dataEnd})`,
+    `=MAX(SUM(O${dataStart}:O${dataEnd}),SUM(P${dataStart}:P${dataEnd}))`,
+    `=SUM(Q${dataStart}:Q${dataEnd})`,
+    `=IF(SUM(O${dataStart}:O${dataEnd})>SUM(P${dataStart}:P${dataEnd}),"compute",IF(SUM(P${dataStart}:P${dataEnd})>SUM(O${dataStart}:O${dataEnd}),"memory","balanced"))`,
+    `=IF(SUM(M${dataStart}:M${dataEnd})<=${H.hbm_capacity},"FIT","EXCEEDS")`,
+    `=${H.peak_flops}/${H.hbm_bandwidth}`,
+    `=IF(F3>=M3,"compute-side","memory-side")`,
   ]];
   styleBody(sheet.getRange("A3:N3"));
   sheet.getRange("A3:E3").format.numberFormat = "0.000E+00";
@@ -499,20 +500,20 @@ function writeStageSheet(sheet, title, subtitle, specs, I, H, headerRow = 5) {
     values[index][3] = spec.name;
     values[index][4] = spec.equation;
     values[index][18] = spec.note;
-    formulas[index][0] = `=ROW()-${dataStart - 1}+0*(${I.batch})`;
+    formulas[index][0] = `=ROW()-${dataStart - 1}`;
     formulas[index][5] = `=${spec.cadence}`;
     formulas[index][6] = `=${spec.flops}`;
     formulas[index][7] = `=${spec.read}`;
     formulas[index][8] = `=${spec.mandatory}`;
     formulas[index][9] = `=${spec.temporary}`;
-    formulas[index][10] = `=(${spec.cadence})*(${spec.read})+0*(${I.batch})`;
-    formulas[index][11] = `=(${spec.cadence})*((${spec.mandatory})+(${spec.temporary}))+0*(${I.batch})`;
+    formulas[index][10] = `=(${spec.cadence})*(${spec.read})`;
+    formulas[index][11] = `=(${spec.cadence})*((${spec.mandatory})+(${spec.temporary}))`;
     formulas[index][12] = `=${spec.persistent}`;
-    formulas[index][13] = `=IF(((${spec.cadence})*((${spec.read})+(${spec.mandatory})+(${spec.temporary})))=0,"",((${spec.cadence})*(${spec.flops}))/(((${spec.cadence})*((${spec.read})+(${spec.mandatory})+(${spec.temporary}))))+0*(${I.batch}))`;
+    formulas[index][13] = `=IF(((${spec.cadence})*((${spec.read})+(${spec.mandatory})+(${spec.temporary})))=0,"",((${spec.cadence})*(${spec.flops}))/(((${spec.cadence})*((${spec.read})+(${spec.mandatory})+(${spec.temporary})))))`;
     formulas[index][14] = `=((${spec.cadence})*(${spec.flops})/((${I.compute_efficiency})*(${H.peak_flops}))*(${H.ms_per_second}))`;
     formulas[index][15] = `=((${spec.cadence})*((${spec.read})+(${spec.mandatory})+(${spec.temporary}))/((${I.bandwidth_efficiency})*(${H.hbm_bandwidth}))*(${H.ms_per_second}))`;
     formulas[index][16] = `=${stageTimeFormula(spec, I, H)}`;
-    formulas[index][17] = `=IF(O${row}>P${row},"compute",IF(P${row}>O${row},"memory","balanced"))&IF(${I.batch}>0,"","")`;
+    formulas[index][17] = `=IF(O${row}>P${row},"compute",IF(P${row}>O${row},"memory","balanced"))`;
   });
   sheet.getRange(`A${dataStart}:S${dataEnd}`).values = values;
   sheet.getRange(`A${dataStart}:S${dataEnd}`).formulas = formulas;
@@ -545,6 +546,8 @@ function writeStageSheet(sheet, title, subtitle, specs, I, H, headerRow = 5) {
       stagewiseMs: qref(sheet.name, "$J$3"),
       bound: qref(sheet.name, "$K$3"),
       fit: qref(sheet.name, "$L$3"),
+      ridgeAi: qref(sheet.name, "$M$3"),
+      ridgeClass: qref(sheet.name, "$N$3"),
     },
     rows: Object.fromEntries(specs.map((spec, index) => [spec.name, dataStart + index])),
   };
@@ -591,9 +594,9 @@ function writeHopeDecodeTiming(sheet, info, I, H, memoryRefs) {
   }).join("+") || "0";
   sheet.getRange("A6:A8").values = [["normal"], ["boundary"], ["amortized"]];
   sheet.getRange("B6:E8").formulas = [
-    [`=${allRoof}-(${applyRoof})+0*(${I.batch})`, `=${allBytes}-(${applyBytes})+0*(${I.batch})`, `=SUM(M${info.dataStart}:M${info.dataEnd})+0*(${I.batch})`, `=IF(SUM(M${info.dataStart}:M${info.dataEnd})<=${H.hbm_capacity},"FIT","EXCEEDS")&IF(${I.batch}>0,"","")`],
-    [`=${allRoof}-(${applyRoof})+(${boundaryRoof})+0*(${I.batch})`, `=${allBytes}-(${applyBytes})+(${boundaryBytes})+0*(${I.batch})`, `=SUM(M${info.dataStart}:M${info.dataEnd})+0*(${I.batch})`, `=IF(SUM(M${info.dataStart}:M${info.dataEnd})<=${H.hbm_capacity},"FIT","EXCEEDS")&IF(${I.batch}>0,"","")`],
-    [`=${allRoof}+0*(${I.batch})`, `=${allBytes}+0*(${I.batch})`, `=SUM(M${info.dataStart}:M${info.dataEnd})+0*(${I.batch})`, `=IF(SUM(M${info.dataStart}:M${info.dataEnd})<=${H.hbm_capacity},"FIT","EXCEEDS")&IF(${I.batch}>0,"","")`],
+    [`=${allRoof}-(${applyRoof})`, `=${allBytes}-(${applyBytes})`, `=SUM(M${info.dataStart}:M${info.dataEnd})`, `=IF(SUM(M${info.dataStart}:M${info.dataEnd})<=${H.hbm_capacity},"FIT","EXCEEDS")`],
+    [`=${allRoof}-(${applyRoof})+(${boundaryRoof})`, `=${allBytes}-(${applyBytes})+(${boundaryBytes})`, `=SUM(M${info.dataStart}:M${info.dataEnd})`, `=IF(SUM(M${info.dataStart}:M${info.dataEnd})<=${H.hbm_capacity},"FIT","EXCEEDS")`],
+    [`=${allRoof}`, `=${allBytes}`, `=SUM(M${info.dataStart}:M${info.dataEnd})`, `=IF(SUM(M${info.dataStart}:M${info.dataEnd})<=${H.hbm_capacity},"FIT","EXCEEDS")`],
   ];
   styleBody(sheet.getRange("A6:E8"));
   sheet.getRange("B6:B8").format.numberFormat = "0.000000";
@@ -609,10 +612,24 @@ function writeHopeDecodeTiming(sheet, info, I, H, memoryRefs) {
 }
 
 function writeCompare(sheet, refs, I, H) {
-  writeTitle(sheet, "W", "30 · Architecture comparison", "Formula-linked summary, ratios, HBM-fit checks, and the two approved comparison charts.");
-  const headers = ["Architecture / phase", "Stagewise ms", "Aggregate ms", "FLOPs", "HBM GiB", "AI FLOP/B", "State GiB", "HBM fit", "Bound"];
-  sheet.getRange("A5:I5").values = [headers];
-  styleHeader(sheet.getRange("A5:I5"));
+  writeTitle(sheet, "AA", "30 · Architecture comparison", "Formula-linked section-8 metrics, sweep-derived crossover summaries, and the two approved comparison charts.");
+  const headers = [
+    "Architecture / phase",
+    "Stagewise ms",
+    "Aggregate ms",
+    "FLOPs",
+    "HBM read GiB",
+    "HBM write GiB",
+    "HBM total GiB",
+    "AI FLOP/B",
+    "Ridge AI",
+    "Ridge class",
+    "State GiB",
+    "HBM fit",
+    "Bound",
+  ];
+  sheet.getRange("A5:M5").values = [headers];
+  styleHeader(sheet.getRange("A5:M5"));
   const cases = [
     ["Attention+MoE · prefill", refs.attnPrefill],
     ["HOPE shipped · prefill", refs.hopePrefill],
@@ -620,60 +637,86 @@ function writeCompare(sheet, refs, I, H) {
     ["HOPE shipped · decode amortized", refs.hopeDecode],
   ];
   sheet.getRange("A6:A9").values = cases.map(([label]) => [label]);
-  sheet.getRange("B6:I9").formulas = cases.map(([, item]) => [
-    `=${item.stagewiseMs}+0*(${I.batch})`,
-    `=${item.aggregateMs}+0*(${I.batch})`,
-    `=${item.flops}+0*(${I.batch})`,
-    `=${item.totalBytes}/${H.bytes_per_gib}+0*(${I.batch})`,
-    `=${item.ai}+0*(${I.batch})`,
-    `=${item.state}/${H.bytes_per_gib}+0*(${I.batch})`,
-    `=${item.fit}&IF(${I.batch}>0,"","")`,
-    `=${item.bound}&IF(${I.batch}>0,"","")`,
+  sheet.getRange("B6:M9").formulas = cases.map(([, item]) => [
+    `=${item.stagewiseMs}`,
+    `=${item.aggregateMs}`,
+    `=${item.flops}`,
+    `=${item.read}/${H.bytes_per_gib}`,
+    `=${item.write}/${H.bytes_per_gib}`,
+    `=${item.totalBytes}/${H.bytes_per_gib}`,
+    `=${item.ai}`,
+    `=${item.ridgeAi}`,
+    `=${item.ridgeClass}`,
+    `=${item.state}/${H.bytes_per_gib}`,
+    `=${item.fit}`,
+    `=${item.bound}`,
   ]);
-  styleBody(sheet.getRange("A6:I9"));
+  styleBody(sheet.getRange("A6:M9"));
   sheet.getRange("B6:C9").format.numberFormat = "0.000000";
   sheet.getRange("D6:D9").format.numberFormat = "0.00E+00";
-  sheet.getRange("E6:G9").format.numberFormat = "0.000";
+  sheet.getRange("E6:I9").format.numberFormat = "0.000";
+  sheet.getRange("K6:K9").format.numberFormat = "0.000";
 
-  sheet.getRange("A12:C12").values = [["Ratio / timing", "Value", "Interpretation"]];
-  styleHeader(sheet.getRange("A12:C12"), COLORS.gray);
-  sheet.getRange("A13:A17").values = [["Prefill Attn / HOPE stagewise"], ["Decode Attn / HOPE amortized"], ["HOPE normal decode ms"], ["HOPE boundary decode ms"], ["HOPE amortized decode ms"]];
-  sheet.getRange("B13:B17").formulas = [
-    [`=${refs.attnPrefill.stagewiseMs}/${refs.hopePrefill.stagewiseMs}+0*(${I.batch})`],
-    [`=${refs.attnDecode.stagewiseMs}/${refs.hopeTiming.amortizedMs}+0*(${I.batch})`],
-    [`=${refs.hopeTiming.normalMs}+0*(${I.batch})`],
-    [`=${refs.hopeTiming.boundaryMs}+0*(${I.batch})`],
-    [`=${refs.hopeTiming.amortizedMs}+0*(${I.batch})`],
+  const firstCrossoverFormula = (startRow, endRow) => {
+    let expression = '"None in sweep"';
+    for (let row = endRow; row >= startRow; row -= 1) {
+      expression = `IF(${qref("40_Sweeps", `$G$${row}`)}="YES",${qref("40_Sweeps", `$A$${row}`)},${expression})`;
+    }
+    return `=${expression}`;
+  };
+  sheet.getRange("A12:D12").values = [["Crossover summary", "First crossover", "Unit", "Rule"]];
+  styleHeader(sheet.getRange("A12:D12"), COLORS.gray);
+  sheet.getRange("A13:A14").values = [["Context crossover"], ["Batch crossover"]];
+  sheet.getRange("B13:B14").formulas = [
+    [firstCrossoverFormula(6, 11)],
+    [firstCrossoverFormula(17, 22)],
   ];
-  sheet.getRange("C13:C17").values = [["<1 means Attention is faster"], ["<1 means Attention is faster"], ["No state apply"], ["All memory boundaries simultaneous"], ["Per-memory-period expectation"]];
-  styleBody(sheet.getRange("A13:C17"));
-  sheet.getRange("B13:B17").format.numberFormat = "0.000000";
+  sheet.getRange("C13:D14").values = [
+    ["tokens", "First sweep row where Attention decode ms >= HOPE decode ms"],
+    ["requests", "First sweep row where Attention decode ms >= HOPE decode ms"],
+  ];
+  styleBody(sheet.getRange("A13:D14"));
 
-  sheet.getRange("K5:M5").values = [["Case", "AI FLOP/B", "Effective TFLOP/s"]];
-  styleHeader(sheet.getRange("K5:M5"), COLORS.gray);
-  sheet.getRange("K6:K9").values = cases.map(([label]) => [label]);
-  sheet.getRange("L6:M9").formulas = cases.map(([, item]) => [
-    `=${item.ai}+0*(${I.batch})`,
-    `=(${item.flops}/(${item.stagewiseMs}/${H.ms_per_second}))/${H.flops_per_tflop}+0*(${I.batch})`,
+  sheet.getRange("A17:C17").values = [["Ratio / timing", "Value", "Interpretation"]];
+  styleHeader(sheet.getRange("A17:C17"), COLORS.gray);
+  sheet.getRange("A18:A22").values = [["Prefill Attn / HOPE stagewise"], ["Decode Attn / HOPE amortized"], ["HOPE normal decode ms"], ["HOPE boundary decode ms"], ["HOPE amortized decode ms"]];
+  sheet.getRange("B18:B22").formulas = [
+    [`=${refs.attnPrefill.stagewiseMs}/${refs.hopePrefill.stagewiseMs}`],
+    [`=${refs.attnDecode.stagewiseMs}/${refs.hopeTiming.amortizedMs}`],
+    [`=${refs.hopeTiming.normalMs}`],
+    [`=${refs.hopeTiming.boundaryMs}`],
+    [`=${refs.hopeTiming.amortizedMs}`],
+  ];
+  sheet.getRange("C18:C22").values = [["<1 means Attention is faster"], ["<1 means Attention is faster"], ["No state apply"], ["All memory boundaries simultaneous"], ["Per-memory-period expectation"]];
+  styleBody(sheet.getRange("A18:C22"));
+  sheet.getRange("B18:B22").format.numberFormat = "0.000000";
+
+  sheet.getRange("O5:Q5").values = [["Case", "AI FLOP/B", "Effective TFLOP/s"]];
+  styleHeader(sheet.getRange("O5:Q5"), COLORS.gray);
+  sheet.getRange("O6:O9").values = cases.map(([label]) => [label]);
+  sheet.getRange("P6:Q9").formulas = cases.map(([, item]) => [
+    `=${item.ai}`,
+    `=(${item.flops}/(${item.stagewiseMs}/${H.ms_per_second}))/${H.flops_per_tflop}`,
   ]);
-  styleBody(sheet.getRange("K6:M9"));
-  sheet.getRange("L6:M9").format.numberFormat = "0.000";
+  styleBody(sheet.getRange("O6:Q9"));
+  sheet.getRange("P6:Q9").format.numberFormat = "0.000";
 
   const stageChart = sheet.charts.add("bar", sheet.getRange("A5:C9"));
   stageChart.title = "Stagewise vs aggregate latency (ms)";
   stageChart.hasLegend = true;
   stageChart.yAxis = { numberFormatCode: "0.000" };
-  stageChart.setPosition("O4", "W17");
+  stageChart.setPosition("S4", "AA17");
 
-  const rooflineChart = sheet.charts.add("scatter", sheet.getRange("L5:M9"));
+  const rooflineChart = sheet.charts.add("scatter", sheet.getRange("P5:Q9"));
+  rooflineChart.series.getItemAt(0).xFormula = qref("30_Compare", "$P$6:$P$9");
   rooflineChart.title = "Roofline scatter: AI vs effective TFLOP/s";
   rooflineChart.hasLegend = false;
   rooflineChart.xAxis = { numberFormatCode: "0.0" };
   rooflineChart.yAxis = { numberFormatCode: "0.0" };
-  rooflineChart.setPosition("O19", "W33");
+  rooflineChart.setPosition("S19", "AA33");
 
   sheet.freezePanes.freezeRows(5);
-  [22, 16, 16, 18, 14, 14, 14, 14, 14, 3, 32, 16, 20].forEach((width, index) => {
+  [22, 14, 14, 18, 15, 15, 15, 14, 13, 16, 14, 12, 12, 3, 32, 16, 20, 3].forEach((width, index) => {
     sheet.getRange(`${colName(index + 1)}:${colName(index + 1)}`).format.columnWidth = width;
   });
 }
@@ -684,8 +727,8 @@ function writeSweeps(sheet, refs, I, H) {
   const contextHeader = 5;
   const contextStart = 6;
   const contextEnd = contextStart + refs.sweepRefs.contexts.length - 1;
-  sheet.getRange(`A${contextHeader}:F${contextHeader}`).values = [["Context tokens", "Attention decode ms", "HOPE decode ms", "Attention state GiB", "HOPE state GiB", "Attn / HOPE latency"]];
-  styleHeader(sheet.getRange(`A${contextHeader}:F${contextHeader}`));
+  sheet.getRange(`A${contextHeader}:G${contextHeader}`).values = [["Context tokens", "Attention decode ms", "HOPE decode ms", "Attention state GiB", "HOPE state GiB", "Attn / HOPE latency", "Attention >= HOPE?"]];
+  styleHeader(sheet.getRange(`A${contextHeader}:G${contextHeader}`));
   const helperHeaders = attentionStages(I, "decode").map((item) => item.name);
   sheet.getRange(`${colName(helperStart)}${contextHeader}:${colName(helperStart + helperHeaders.length - 1)}${contextHeader}`).values = [helperHeaders];
   styleHeader(sheet.getRange(`${colName(helperStart)}${contextHeader}:${colName(helperStart + helperHeaders.length - 1)}${contextHeader}`), COLORS.gray);
@@ -694,17 +737,18 @@ function writeSweeps(sheet, refs, I, H) {
     const contextCell = `$A$${row}`;
     const splits = `(INT(((${contextCell})+(${I.kv_split_tokens})-1)/(${I.kv_split_tokens})))`;
     const specs = attentionStages(I, "decode", { context: contextCell, splits });
-    sheet.getRange(`A${row}`).formulas = [[`=${contextRef}+0*(${I.batch})`]];
+    sheet.getRange(`A${row}`).formulas = [[`=${contextRef}`]];
     specs.forEach((spec, stageIndex) => {
       sheet.getRange(`${colName(helperStart + stageIndex)}${row}`).formulas = [[`=${stageTimeFormula(spec, I, H)}`]];
     });
     const helperEnd = colName(helperStart + specs.length - 1);
-    sheet.getRange(`B${row}:F${row}`).formulas = [[
-      `=SUM(${colName(helperStart)}${row}:${helperEnd}${row})+0*(${I.batch})`,
-      `=${refs.hopeTiming.amortizedMs}+0*(${contextCell})+0*(${I.batch})`,
+    sheet.getRange(`B${row}:G${row}`).formulas = [[
+      `=SUM(${colName(helperStart)}${row}:${helperEnd}${row})`,
+      `=${refs.hopeTiming.amortizedMs}`,
       `=(2*(${I.batch})*(${contextCell})*(${I.kv_heads})*(${I.head_dim})*(${I.kv_bytes}))/${H.bytes_per_gib}`,
-      `=${refs.hopeDecode.state}/${H.bytes_per_gib}+0*(${contextCell})+0*(${I.batch})`,
-      `=B${row}/C${row}+0*(${I.batch})`,
+      `=${refs.hopeDecode.state}/${H.bytes_per_gib}`,
+      `=B${row}/C${row}`,
+      `=IF(B${row}>=C${row},"YES","NO")`,
     ]];
   });
   styleBody(sheet.getRange(`A${contextStart}:${colName(helperStart + helperHeaders.length - 1)}${contextEnd}`));
@@ -714,15 +758,15 @@ function writeSweeps(sheet, refs, I, H) {
   const batchHeader = 16;
   const batchStart = 17;
   const batchEnd = batchStart + refs.sweepRefs.batches.length - 1;
-  sheet.getRange(`A${batchHeader}:F${batchHeader}`).values = [["Batch", "Attention decode ms", "HOPE decode ms", "Attention state GiB", "HOPE state GiB", "Attn / HOPE latency"]];
-  styleHeader(sheet.getRange(`A${batchHeader}:F${batchHeader}`));
+  sheet.getRange(`A${batchHeader}:G${batchHeader}`).values = [["Batch", "Attention decode ms", "HOPE decode ms", "Attention state GiB", "HOPE state GiB", "Attn / HOPE latency", "Attention >= HOPE?"]];
+  styleHeader(sheet.getRange(`A${batchHeader}:G${batchHeader}`));
   sheet.getRange(`${colName(helperStart)}${batchHeader}:${colName(helperStart + helperHeaders.length - 1)}${batchHeader}`).values = [helperHeaders];
   styleHeader(sheet.getRange(`${colName(helperStart)}${batchHeader}:${colName(helperStart + helperHeaders.length - 1)}${batchHeader}`), COLORS.gray);
   refs.sweepRefs.batches.forEach((batchRef, index) => {
     const row = batchStart + index;
     const batchCell = `$A$${row}`;
     const specs = attentionStages(I, "decode", { batch: batchCell });
-    sheet.getRange(`A${row}`).formulas = [[`=${batchRef}+0*(${I.batch})`]];
+    sheet.getRange(`A${row}`).formulas = [[`=${batchRef}`]];
     specs.forEach((spec, stageIndex) => {
       sheet.getRange(`${colName(helperStart + stageIndex)}${row}`).formulas = [[`=${stageTimeFormula(spec, I, H)}`]];
     });
@@ -738,21 +782,22 @@ function writeSweeps(sheet, refs, I, H) {
       component: "titans",
       name: "static_q_projection",
       equation: "2ND²",
-      cadence: `(1+0*${I.batch})`,
+      cadence: "1",
       flops: `(2*(${staticN})*(${I.model_dim})*(${I.model_dim}))`,
       read: `((${staticModelAct})+(${I.model_dim})*(${I.model_dim})*(${I.weight_bytes}))`,
-      mandatory: `(0*${I.batch})`,
+      mandatory: "0",
       temporary: staticModelAct,
-      persistent: `(0*${I.batch})`,
+      persistent: "0",
       note: "Static-q batch helper",
     });
     const staticAtBatchMs = stageTimeFormula(staticSpec, I, H);
-    sheet.getRange(`B${row}:F${row}`).formulas = [[
-      `=SUM(${colName(helperStart)}${row}:${helperEnd}${row})+0*(${I.batch})`,
+    sheet.getRange(`B${row}:G${row}`).formulas = [[
+      `=SUM(${colName(helperStart)}${row}:${helperEnd}${row})`,
       `=((${refs.hopeTiming.amortizedMs})-(${baselineStaticMs})-(${otherLaunchMs}))*(${batchCell})/(${I.batch})+(${otherLaunchMs})+(${staticAtBatchMs})`,
       `=(2*(${batchCell})*(${I.decode_context_tokens})*(${I.kv_heads})*(${I.head_dim})*(${I.kv_bytes}))/${H.bytes_per_gib}`,
       `=(${refs.hopeDecode.state})*(${batchCell})/(${I.batch})/${H.bytes_per_gib}`,
-      `=B${row}/C${row}+0*(${I.batch})`,
+      `=B${row}/C${row}`,
+      `=IF(B${row}>=C${row},"YES","NO")`,
     ]];
   });
   styleBody(sheet.getRange(`A${batchStart}:${colName(helperStart + helperHeaders.length - 1)}${batchEnd}`));
@@ -769,7 +814,7 @@ function writeSweeps(sheet, refs, I, H) {
   sheet.freezePanes.freezeRows(5);
   sheet.getRange("A:A").format.columnWidth = 18;
   sheet.getRange("B:F").format.columnWidth = 20;
-  sheet.getRange("G:G").format.columnWidth = 3;
+  sheet.getRange("G:G").format.columnWidth = 20;
   sheet.getRange(`${colName(helperStart)}:${colName(helperStart + helperHeaders.length - 1)}`).format.columnWidth = 18;
 }
 
@@ -797,11 +842,11 @@ function writeQA(sheet, refs, I, H) {
     ["Batch sweep B=32 HOPE decode ms", qref("40_Sweeps", "$C$22"), results.crossovers.batch_sweep.at(-1).hope_decode_seconds * 1000, 1e-8, "Formula-driven sweep endpoint"],
   ];
   sheet.getRange(`A6:A${5 + checks.length}`).values = checks.map((item) => [item[0]]);
-  sheet.getRange(`B6:B${5 + checks.length}`).formulas = checks.map((item) => [`=${item[1]}+0*(${I.batch})`]);
+  sheet.getRange(`B6:B${5 + checks.length}`).formulas = checks.map((item) => [`=${item[1]}`]);
   sheet.getRange(`C6:C${5 + checks.length}`).values = checks.map((item) => [item[2]]);
   sheet.getRange(`D6:F${5 + checks.length}`).formulas = checks.map((item, index) => {
     const row = 6 + index;
-    return [`=B${row}-C${row}+0*(${I.batch})`, `=${item[3]}+0*(${I.batch})`, `=IF(ABS(D${row})<=E${row},"PASS","REVIEW")&IF(${H.hbm_capacity}>0,"","")`];
+    return [`=B${row}-C${row}`, `=${item[3]}`, `=IF(ABS(D${row})<=E${row},"PASS","REVIEW")`];
   });
   sheet.getRange(`G6:G${5 + checks.length}`).values = checks.map((item) => [item[4]]);
   styleBody(sheet.getRange(`A6:G${5 + checks.length}`));
@@ -846,13 +891,13 @@ async function inspectWorkbook(workbook) {
   const overview = await workbook.inspect({ kind: "sheet,drawing", include: "id,name,type", maxChars: 5000 });
   console.log("INSPECT_OVERVIEW");
   console.log(overview.ndjson);
-  const compare = await workbook.inspect({ kind: "table", range: "'30_Compare'!A5:M17", include: "values,formulas", tableMaxRows: 20, tableMaxCols: 13, maxChars: 8000 });
+  const compare = await workbook.inspect({ kind: "table", range: "'30_Compare'!A5:Q22", include: "values,formulas", tableMaxRows: 24, tableMaxCols: 17, maxChars: 12000 });
   console.log("INSPECT_COMPARE");
   console.log(compare.ndjson);
   const timing = await workbook.inspect({ kind: "table", range: "'21_HOPE_Decode'!A5:E8", include: "values,formulas", tableMaxRows: 8, tableMaxCols: 5, maxChars: 5000 });
   console.log("INSPECT_HOPE_TIMING");
   console.log(timing.ndjson);
-  const sweeps = await workbook.inspect({ kind: "table", range: "'40_Sweeps'!A5:F22", include: "values,formulas", tableMaxRows: 22, tableMaxCols: 6, maxChars: 7000 });
+  const sweeps = await workbook.inspect({ kind: "table", range: "'40_Sweeps'!A5:G22", include: "values,formulas", tableMaxRows: 22, tableMaxCols: 7, maxChars: 8000 });
   console.log("INSPECT_SWEEPS");
   console.log(sweeps.ndjson);
   const qa = await workbook.inspect({ kind: "table", range: "'90_QA'!A5:G21", include: "values,formulas", tableMaxRows: 24, tableMaxCols: 7, maxChars: 9000 });
@@ -907,8 +952,8 @@ async function buildWorkbook() {
     hopeDecodeInfo,
     hopeTiming,
   };
-  writeCompare(sheets["30_Compare"], refs, I, H);
   writeSweeps(sheets["40_Sweeps"], refs, I, H);
+  writeCompare(sheets["30_Compare"], refs, I, H);
   writeQA(sheets["90_QA"], refs, I, H);
   writeSources(sheets["99_Sources"]);
   return workbook;

@@ -102,9 +102,12 @@ python3 -m unittest -v experiments/E5-attn-vs-hope/sheet/test_workbook_source.py
 ```
 
 The suite reads the XLSX as OOXML ZIP/XML and verifies exact sheet names/order,
-no external links, quoted cross-sheet formula lineage, formula-backed numeric
-calculation cells, design-section 8 headers, absence of embedded H100/model
-constants, QA labels, and exactly three native charts.
+no external links, substantive/transitive formula lineage (including summary
+row 3), absence of zero-multiplied lineage sentinels, formula-backed numeric
+calculation cells, design-section 8 and comparison headers, complete current
+H100/model-constant coverage, position provenance, 16 formula-backed QA PASS
+rows, a bounded OOXML formula-error scan, and the exact title/type/data purpose
+of all three native charts.
 
 ## Google Sheets import
 
@@ -138,9 +141,13 @@ Expected result: no matches.
 - `90_QA!F6:F21`: every cell must display `PASS`.
 - `21_HOPE_Decode!B6:B8`: normal, boundary, and amortized timing must remain
   populated and ordered consistently with their labels.
-- `40_Sweeps!A6:F11` and `A17:F22`: context and batch sweeps must remain
-  formula-populated.
-- `30_Compare!A6:I9`: formulas must remain populated, with HBM-fit labels visible.
+- `40_Sweeps!A6:G11` and `A17:G22`: context and batch sweeps, including the
+  formula-derived crossover flags in column G, must remain populated.
+- `30_Compare!A6:M9`: formulas must remain populated, including separate HBM
+  read/write/total and ridge metrics.
+- `30_Compare!A13:B14`: context and batch crossover summaries must remain
+  formula-linked to `40_Sweeps` (the current verified sweep displays
+  `None in sweep` for both).
 
 If a formula error or non-PASS QA row appears after import, keep the local XLSX
 unchanged, record the exact tab/cell, and diagnose the Google-Sheets conversion

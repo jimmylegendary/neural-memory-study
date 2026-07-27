@@ -30,7 +30,10 @@ The four stage sheets use the design-section 8 schema in columns `A:S`:
 | S | Evidence/assumption | Visible interpretation of the stage equation and traffic convention |
 
 Every cross-sheet reference in these formulas is single-quoted. The builder
-contains no literal H100 or model-dimension values in calculation formulas.
+contains no literal H100 or model-dimension values in calculation formulas and
+does not use zero-multiplied source references as lineage sentinels. Summary
+row formulas reach the input/hardware sheets transitively through their stage
+formula dependencies.
 
 Each stage sheet has the same formula summary in `A2:N3`:
 
@@ -74,6 +77,10 @@ The live numeric assumption cells are `C5:C43`:
 | C31:C34 | Compute/bandwidth efficiencies, expert activation FLOPs, fusion flag |
 | C35:C39 | Mutable-state/optimizer bytes, sigma/residual FLOPs, chunk-cache bytes |
 | C40:C43 | Prefill/decode positions and main/auxiliary memory chunks |
+
+`C40:C41` are read directly from the shipped-credible prefill/decode
+`position` fields in `results.json`; they are not workbook-local fallback
+zeros.
 
 ### Mutable memories (`A47:H52`)
 
@@ -172,20 +179,27 @@ as unexplained constants in formulas.
 
 ## `30_Compare`
 
-- `A5:I9`: formula links to the four stage-sheet summaries for stagewise and
-  aggregate latency, FLOPs, HBM GiB, AI, state GiB, HBM fit, and bound.
-- `A12:C17`: Attention/HOPE ratios plus normal, boundary, and amortized HOPE
+- `A5:M9`: formula links to the four stage-sheet summaries for stagewise and
+  aggregate latency, FLOPs, separate HBM read/write/total GiB, AI, ridge AI,
+  ridge class, state GiB, HBM fit, and bound.
+- `A12:D14`: explicit context and batch crossover summaries. `B13:B14` are
+  formulas that walk the corresponding `40_Sweeps!G` flag rows and return the
+  first sweep control from column A, or `None in sweep`.
+- `A17:C22`: Attention/HOPE ratios plus normal, boundary, and amortized HOPE
   decode timing.
-- `K5:M9`: formula-backed AI/effective-TFLOP helper table.
+- `O5:Q9`: formula-backed AI/effective-TFLOP helper table.
 - Native chart 1: stagewise versus aggregate latency.
-- Native chart 2: roofline scatter, AI versus effective TFLOP/s.
+- Native chart 2: roofline scatter with explicit X-series
+  `P6:P9` (AI) and Y-series `Q6:Q9` (effective TFLOP/s).
 
 ## `40_Sweeps`
 
-- Context sweep: `A5:F11`; source controls `01_Inputs!B64:G64`.
+- Context sweep: `A5:G11`; source controls `01_Inputs!B64:G64`.
 - Attention context-stage helpers: `H5:T11`.
-- Batch sweep: `A16:F22`; source controls `01_Inputs!B65:G65`.
+- Batch sweep: `A16:G22`; source controls `01_Inputs!B65:G65`.
 - Attention batch-stage helpers: `H16:T22`.
+- Column G is a formula flag (`YES` when Attention decode ms is greater than
+  or equal to HOPE decode ms); `30_Compare!B13:B14` consumes these flags.
 - Attention state: `2BKD_kv b_kv / bytes_per_GiB`.
 - HOPE context latency/state remain constant because the recurrent state does
   not grow with context.
