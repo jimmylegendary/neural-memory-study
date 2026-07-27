@@ -445,6 +445,8 @@ weight만 교체하고 router/index가 이전 generation이면 mixed state가 �
 
 종속 변수는 fresh-task acquisition, old-memory retention, long-context recall, latency, energy, delete/rollback completeness다. 단일 headline score 대신 iso-quality 및 iso-lifecycle-cost frontier를 보고한다.
 
+**정량 기준선:** [E5 deterministic results](../../experiments/E5-attn-vs-hope/results.json)와 [user-reviewed native live-Sheet archive](../attn-vs-hope/README.md)를 각각 reproducible companion과 operational reference로 사용한다.
+
 ### DBQ-10. Google 모델팀이 device에 요구하는 최소 primitive는 무엇인가?
 
 **연결 축:** 2, 3, 5, 6
@@ -472,6 +474,8 @@ weight만 교체하고 router/index가 이전 generation이면 mixed state가 �
 3. **Transactional Memory Artifact Registry:** external memory와 adapter/expert의 snapshot, promotion, offload, rollback
 
 Google에는 각 prototype에 필요한 tensor size, access trace, update cadence, acceptable staleness, correctness invariant를 요청한다.
+
+**정량 기준선:** 현재 비교 수치와 formula lineage는 [E5 package](../../experiments/E5-attn-vs-hope/README.md)에서 재현하고, 미팅에서 검토한 native assumptions와 scenario cells는 [live-Sheet archive](../attn-vs-hope/README.md)에서 확인한다.
 
 ## 5. 질문별 빠른 bridge map
 

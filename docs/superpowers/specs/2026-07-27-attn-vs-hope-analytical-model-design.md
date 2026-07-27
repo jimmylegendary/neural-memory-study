@@ -66,6 +66,8 @@ Reference scenarios include prefill and decode on the repository's H100 anchor, 
 
 All derived cells are formulas. The local CLI currently lacks the required artifact-tool runtime, so this source is verified structurally here and executed/rendered in the connected Desktop session. `DESKTOP-HANDOFF.md` gives exact commands, expected paths, inspections, renders, and Google Sheet transfer steps.
 
+The [native one-tab Sheet archive](../../../research/attn-vs-hope/README.md) is the user-reviewed operational model. The [generated 11-tab workbook](../../../experiments/E5-attn-vs-hope/sheet/Attn-vs-HOPE.xlsx) is its reproducible analytical companion and must remain a separate artifact. The [Google meeting package](../../../research/google-meeting/README.md) links questions and device follow-ups to both roles without treating them as interchangeable.
+
 ## 4. Shared Variables and Roofline
 
 Let:

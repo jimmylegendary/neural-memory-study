@@ -253,6 +253,8 @@ Attention의 이차 FLOP와 KV 용량만 비교하면 recurrent/TTT가 유리해
 - NSTM Table 5와 §4.4.
 - 미팅에서 요청할 추가 근거: profiler의 physical DRAM bytes, L2 hit, kernel launch, state RMW bytes, prefill/decode tokens/s, p99.
 
+**정량 기준선:** 저장소의 [E5 deterministic results](../../experiments/E5-attn-vs-hope/results.json)는 phase-separated analytical lower bound를, [user-reviewed native live-Sheet archive](../attn-vs-hope/README.md)는 미팅에서 검토한 운영 모델과 그 검증 계약을 보존한다. 두 artifact의 목적과 provenance를 섞지 않는다.
+
 ---
 
 ## KQ-04. 기억이 계속 늘어날 때, 성장은 필수인가 아니면 bounded policy로 대체 가능한가?

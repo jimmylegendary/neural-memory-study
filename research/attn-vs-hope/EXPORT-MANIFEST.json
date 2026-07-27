@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "source": {
+    "kind": "Google Sheets",
+    "id": "1BZLzsGgdE43GXAMtuhrg7btPRq94crQWjo5mb0VWNWk",
+    "url": "https://docs.google.com/spreadsheets/d/1BZLzsGgdE43GXAMtuhrg7btPRq94crQWjo5mb0VWNWk",
+    "updated_at": "2026-07-27T01:45:55.568Z"
+  },
+  "artifact": {
+    "repository_path": "research/attn-vs-hope/Attn-vs-HOPE.xlsx",
+    "exported_at": "2026-07-27T10:46:51.477084070+09:00",
+    "size_bytes": 29321,
+    "sha256": "0c04b122a214b9e2543abf6925260f307ddbdda7bc9cedca7e3d1f92bb7b8267"
+  },
+  "portable_xlsx_checks": {
+    "sheet_count": 1,
+    "visible_sheets": ["시트1"],
+    "sheet": "시트1",
+    "used_range": "A1:P89",
+    "defined_name_count": 38,
+    "formula_cell_count": 872,
+    "note_comment_count": 117,
+    "korean_note_comment_count": 117,
+    "cached_formula_error_count": 0,
+    "external_workbook_link_count": 0
+  },
+  "live_sheet_checks": {
+    "source_updated_at": "2026-07-27T01:45:55.568Z",
+    "formula_count": 872,
+    "effective_formula_error_count": 0
+  },
+  "key_outputs_ms": {
+    "full_attention_ttft": {"cell": "O18", "value_ms": 3204.916},
+    "hope_forward_ttft": {"cell": "O46", "value_ms": 552.123},
+    "hope_including_online_ttft": {"cell": "O48", "value_ms": 6757.768},
+    "full_attention_itl": {"cell": "O59", "value_ms": 10.888},
+    "hope_forward_itl": {"cell": "O87", "value_ms": 0.604},
+    "hope_including_online_itl": {"cell": "O89", "value_ms": 18.89}
+  },
+  "corrected_cells": [
+    {"range": "H1", "contract": "note says current 2048 and not stale current 64"},
+    {"range": "P24:P33", "contract": "CMS-level bound gates"},
+    {"range": "P41:P46", "contract": "Titans/update bound independent of CMS"},
+    {"range": "P65:P74", "contract": "CMS-level bound gates"},
+    {"range": "P82:P87", "contract": "Titans/update bound independent of CMS"}
+  ],
+  "artifact_roles": {
+    "native_reference": {
+      "path": "research/attn-vs-hope/Attn-vs-HOPE.xlsx",
+      "purpose": "user-reviewed operational model"
+    },
+    "generated_companion": {
+      "path": "experiments/E5-attn-vs-hope/sheet/Attn-vs-HOPE.xlsx",
+      "purpose": "reproducible analytical companion"
+    }
+  }
+}
