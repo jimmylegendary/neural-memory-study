@@ -534,6 +534,8 @@ class TestWorkbookSource(unittest.TestCase):
     def test_compare_contains_required_section_8_binding_metrics(self) -> None:
         package = self.require_package()
         required_headers = {
+            "Compute ms",
+            "HBM ms",
             "HBM read GiB",
             "HBM write GiB",
             "HBM total GiB",
@@ -549,18 +551,20 @@ class TestWorkbookSource(unittest.TestCase):
             9: "21_HOPE_Decode",
         }
         expected_summary_cells = {
-            "E": "$B$3",
-            "F": "$C$3",
-            "G": "$D$3",
-            "H": "$F$3",
-            "I": "$M$3",
-            "J": "$N$3",
+            "G": "$B$3",
+            "H": "$C$3",
+            "I": "$D$3",
+            "K": "$M$3",
+            "L": "$N$3",
         }
         for row, source_sheet in case_sheets.items():
             for column, source_cell in expected_summary_cells.items():
                 with self.subTest(row=row, column=column):
                     formula = package.cell_formula("30_Compare", f"{column}{row}") or ""
                     self.assertIn(f"'{source_sheet}'!{source_cell}", formula)
+            ai_formula = package.cell_formula("30_Compare", f"J{row}") or ""
+            self.assertIn(f"F{row}", ai_formula)
+            self.assertIn(f"I{row}", ai_formula)
 
     def test_hope_stage_sheets_expose_canonical_groups_and_sparse_cms(self) -> None:
         package = self.require_package()
@@ -620,21 +624,144 @@ class TestWorkbookSource(unittest.TestCase):
         )
         sweep_text = set(package.visible_text("40_Sweeps"))
         self.assertIn("Attention ITL ms", sweep_text)
+        self.assertIn("HOPE forward ITL ms (primary)", sweep_text)
         self.assertIn("HOPE including-online ITL ms", sweep_text)
+
+    def test_primary_prefill_compare_is_end_to_end_and_scales_every_flow_metric(
+        self,
+    ) -> None:
+        package = self.require_package()
+        label = str(package.cell_value("30_Compare", "A7"))
+        self.assertIn("TTFT (64×2K, including online)", label)
+        self.assertNotIn("per 2K", label)
+        chunk_row = package.find_row("01_Inputs", "A", "prefill_chunks")
+        self.assertIsNotNone(chunk_row)
+        chunk_ref = f"'01_Inputs'!$C${chunk_row}"
+        for column in "BCDEFGHI":
+            with self.subTest(column=column):
+                formula = package.cell_formula("30_Compare", f"{column}7") or ""
+                self.assertIn(chunk_ref, formula)
+        for column in "MN":
+            with self.subTest(unscaled_resident_metric=column):
+                formula = package.cell_formula("30_Compare", f"{column}7") or ""
+                self.assertNotIn(chunk_ref, formula)
+
+        results = json.loads(RESULTS.read_text(encoding="utf-8"))
+        shipped = results["hope_scenarios"]["shipped_credible_momentum"]
+        chunks = results["model_inputs"]["prefill_chunks"]
+        summary = shipped["prefill"]["summary"]
+        expected = {
+            "B7": shipped["metrics"]["ttft"]["including_online_ms"],
+            "C7": summary["aggregate_latency_seconds"] * 1_000 * chunks,
+            "D7": summary["aggregate_compute_seconds"] * 1_000 * chunks,
+            "E7": summary["aggregate_memory_seconds"] * 1_000 * chunks,
+            "F7": summary["flops"] * chunks,
+            "G7": summary["hbm_read_bytes"] * chunks / (2**30),
+            "H7": summary["hbm_write_bytes"] * chunks / (2**30),
+            "I7": summary["effective_hbm_bytes"] * chunks / (2**30),
+        }
+        for cell_ref, value in expected.items():
+            with self.subTest(cell=cell_ref):
+                self.assertAlmostEqual(
+                    float(package.cell_value("30_Compare", cell_ref)),
+                    float(value),
+                    places=6,
+                )
+
+        visible = "\n".join(package.visible_text("30_Compare"))
+        self.assertNotIn("prefill per 2K chunk", visible)
+
+    def test_round2_compare_and_sweep_cells_have_transitive_input_lineage(self) -> None:
+        package = self.require_package()
+        targets = {
+            "30_Compare": [
+                *(f"{column}7" for column in "BCDEFGHI"),
+                "B13",
+                "B14",
+                "B15",
+                "B16",
+            ],
+            "40_Sweeps": [
+                "C6",
+                "D6",
+                "H6",
+                "J6",
+                "C17",
+                "D17",
+                "H17",
+                "J17",
+            ],
+        }
+        for sheet_name, cell_refs in targets.items():
+            for cell_ref in cell_refs:
+                with self.subTest(sheet=sheet_name, cell=cell_ref):
+                    self.assertIsNotNone(
+                        package.cell_formula(sheet_name, cell_ref)
+                    )
+                    self.assertTrue(
+                        package.lineage_sources(sheet_name, cell_ref),
+                        "Round-2 formula must transitively reach 01_Inputs or 02_HW",
+                    )
+
+    def test_sweeps_separate_forward_primary_from_online_sensitivity(self) -> None:
+        package = self.require_package()
+        expected_headers = [
+            "Attention ITL ms",
+            "HOPE forward ITL ms (primary)",
+            "HOPE including-online ITL ms",
+            "Attn / HOPE forward ITL",
+            "Forward primary crossover?",
+            "Attn / HOPE including-online ITL",
+            "Including-online sensitivity?",
+        ]
+        for header_row in (5, 16):
+            headers = {
+                str(package.cell_value("40_Sweeps", f"{column}{header_row}"))
+                for column in "ABCDEFGHIJ"
+            }
+            self.assertTrue(set(expected_headers).issubset(headers))
+
+        # At 1K context the serving conclusion reverses depending on whether
+        # amortized online learning is charged to the decode critical path.
+        attention = float(package.cell_value("40_Sweeps", "B6"))
+        forward = float(package.cell_value("40_Sweeps", "C6"))
+        including_online = float(package.cell_value("40_Sweeps", "D6"))
+        self.assertGreater(attention, forward)
+        self.assertLess(attention, including_online)
+        self.assertEqual("YES", package.cell_value("40_Sweeps", "H6"))
+        self.assertEqual("NO", package.cell_value("40_Sweeps", "J6"))
 
     def test_compare_crossover_summaries_are_formula_linked_to_sweeps(self) -> None:
         package = self.require_package()
-        self.assertEqual("Context crossover", package.cell_value("30_Compare", "A13"))
-        self.assertEqual("Batch crossover", package.cell_value("30_Compare", "A14"))
+        self.assertEqual(
+            "Context crossover · forward primary",
+            package.cell_value("30_Compare", "A13"),
+        )
+        self.assertEqual(
+            "Batch crossover · forward primary",
+            package.cell_value("30_Compare", "A14"),
+        )
+        self.assertEqual(
+            "Context crossover · including-online sensitivity",
+            package.cell_value("30_Compare", "A15"),
+        )
+        self.assertEqual(
+            "Batch crossover · including-online sensitivity",
+            package.cell_value("30_Compare", "A16"),
+        )
         expectations = {
-            "B13": (range(6, 12), "tokens"),
-            "B14": (range(17, 23), "requests"),
+            "B13": (range(6, 12), "H", "tokens"),
+            "B14": (range(17, 23), "H", "requests"),
+            "B15": (range(6, 12), "J", "tokens"),
+            "B16": (range(17, 23), "J", "requests"),
         }
-        for cell_ref, (rows, unit) in expectations.items():
+        for cell_ref, (rows, flag_column, unit) in expectations.items():
             with self.subTest(cell=cell_ref):
                 formula = package.cell_formula("30_Compare", cell_ref) or ""
                 for row in rows:
-                    self.assertIn(f"'40_Sweeps'!$G${row}", formula)
+                    self.assertIn(
+                        f"'40_Sweeps'!${flag_column}${row}", formula
+                    )
                     self.assertIn(f"'40_Sweeps'!$A${row}", formula)
                 self.assertEqual(unit, package.cell_value("30_Compare", f"C{cell_ref[1:]}"))
 
@@ -643,27 +770,33 @@ class TestWorkbookSource(unittest.TestCase):
         charts = package.chart_specs()
         self.assertEqual(3, len(charts))
         by_title = {str(chart["title"]): chart for chart in charts}
-        stage = by_title.get("Stagewise vs aggregate latency (ms)")
+        stage = by_title.get(
+            "TTFT/ITL invocation diagnostics (ms; prefill is full sequence)"
+        )
         roofline = by_title.get("Roofline scatter: AI vs effective TFLOP/s")
-        context = by_title.get("Context sweep: ITL ms and persistent state GiB")
+        context = by_title.get(
+            "Context sweep: forward-primary ITL with online sensitivity (ms)"
+        )
         self.assertIsNotNone(stage)
         self.assertIsNotNone(roofline)
         self.assertIsNotNone(context)
         self.assertIn("barChart", stage["types"])
-        self.assertIn("'30_Compare'!$B$6:$B$9", stage["formulas"])
-        self.assertIn("'30_Compare'!$C$6:$C$9", stage["formulas"])
+        for column in "BCDE":
+            self.assertIn(
+                f"'30_Compare'!${column}$6:${column}$9", stage["formulas"]
+            )
         self.assertIn("scatterChart", roofline["types"])
-        self.assertEqual(["'30_Compare'!$P$6:$P$9"], roofline["x_formulas"])
-        self.assertEqual(["'30_Compare'!$Q$6:$Q$9"], roofline["y_formulas"])
+        self.assertEqual(["'30_Compare'!$R$6:$R$9"], roofline["x_formulas"])
+        self.assertEqual(["'30_Compare'!$S$6:$S$9"], roofline["y_formulas"])
         self.assertIn("lineChart", context["types"])
-        for column in "ABCDE":
+        for column in "ABCD":
             self.assertIn(f"'40_Sweeps'!${column}$6:${column}$11", context["formulas"])
 
         swapped_xml = b"""<?xml version="1.0" encoding="utf-8"?>
 <c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart">
   <c:chart><c:plotArea><c:scatterChart><c:ser>
-    <c:xVal><c:numRef><c:f>'30_Compare'!$Q$6:$Q$9</c:f></c:numRef></c:xVal>
-    <c:yVal><c:numRef><c:f>'30_Compare'!$P$6:$P$9</c:f></c:numRef></c:yVal>
+    <c:xVal><c:numRef><c:f>'30_Compare'!$S$6:$S$9</c:f></c:numRef></c:xVal>
+    <c:yVal><c:numRef><c:f>'30_Compare'!$R$6:$R$9</c:f></c:numRef></c:yVal>
   </c:ser></c:scatterChart></c:plotArea></c:chart>
 </c:chartSpace>"""
         fixture_bytes = io.BytesIO()
@@ -677,8 +810,8 @@ class TestWorkbookSource(unittest.TestCase):
             x_formulas = swapped.get("x_formulas", swapped["formulas"])
             y_formulas = swapped.get("y_formulas", swapped["formulas"])
             self.assertFalse(
-                "'30_Compare'!$P$6:$P$9" in x_formulas
-                and "'30_Compare'!$Q$6:$Q$9" in y_formulas,
+                "'30_Compare'!$R$6:$R$9" in x_formulas
+                and "'30_Compare'!$S$6:$S$9" in y_formulas,
                 "flattened formula inspection incorrectly accepts swapped xVal/yVal roles",
             )
         finally:
@@ -694,7 +827,7 @@ class TestWorkbookSource(unittest.TestCase):
 
     def test_qa_rows_are_formula_backed_and_all_pass(self) -> None:
         package = self.require_package()
-        for row in range(6, 22):
+        for row in range(6, 26):
             with self.subTest(row=row):
                 for column in "BDEF":
                     self.assertIsNotNone(

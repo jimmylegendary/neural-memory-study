@@ -85,12 +85,18 @@ The aggregate form permits compute-heavy and memory-heavy stages to overlap
 optimistically, so it cannot exceed the stagewise sum. Neither number models
 distributed collectives or claims measured wall-clock performance.
 
-`results.json` additionally exposes `attention_moe.metrics.ttft_ms/itl_ms` and,
-for each HOPE scenario, per-chunk prefill, chunk-multiplied TTFT, and per-token
-forward/online-overhead/including-online ITL metrics. The reference results do
-not claim exact equality with the native Sheet because the engine keeps the
-sparse-CMS active-weight upper bound, explicit MoE traffic, and stagewise
-roofline assumptions auditable.
+Schema-v3 `results.json` additionally exposes
+`attention_moe.metrics.ttft_ms/itl_ms` and, for each HOPE scenario, per-chunk
+prefill, chunk-multiplied TTFT, and per-token
+forward/online-overhead/including-online ITL metrics. Each context/batch sweep
+row stores `hope_forward_decode_seconds` as the primary serving comparison and
+`hope_including_online_decode_seconds` as a separate online-learning
+sensitivity, with distinct predicates and first-satisfying-grid-point
+summaries. Those grid points are not interpolated crossover thresholds.
+
+The reference results do not claim exact equality with the native Sheet
+because the engine keeps the sparse-CMS active-weight upper bound, explicit
+MoE traffic, and stagewise roofline assumptions auditable.
 
 ## Reproduce
 

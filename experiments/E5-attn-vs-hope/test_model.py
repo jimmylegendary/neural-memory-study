@@ -799,6 +799,66 @@ class DeterministicRunnerTests(unittest.TestCase):
             payload["hardware"]["hbm_bandwidth_bytes_per_second"], 7.4e12
         )
 
+    def test_runner_separates_forward_primary_and_online_sensitivity_crossovers(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary_cwd:
+            subprocess.run(
+                [sys.executable, str(self.runner)],
+                cwd=temporary_cwd,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        payload = json.loads(
+            self.results_path.read_text(encoding="utf-8")
+        )
+        self.assertEqual(payload["schema_version"], 3)
+        crossovers = payload["crossovers"]
+        for sweep_name in ("context_sweep", "batch_sweep"):
+            for row in crossovers[sweep_name]:
+                with self.subTest(sweep=sweep_name, row=row):
+                    self.assertNotIn("hope_decode_seconds", row)
+                    self.assertIn("hope_forward_decode_seconds", row)
+                    self.assertIn("hope_including_online_decode_seconds", row)
+                    self.assertEqual(
+                        row["forward_primary_crossover"],
+                        row["attention_decode_seconds"]
+                        >= row["hope_forward_decode_seconds"],
+                    )
+                    self.assertEqual(
+                        row["including_online_sensitivity_crossover"],
+                        row["attention_decode_seconds"]
+                        >= row["hope_including_online_decode_seconds"],
+                    )
+
+        first = crossovers["context_sweep"][0]
+        self.assertEqual(first["context_tokens"], 1_024)
+        self.assertGreater(
+            first["attention_decode_seconds"],
+            first["hope_forward_decode_seconds"],
+        )
+        self.assertLess(
+            first["attention_decode_seconds"],
+            first["hope_including_online_decode_seconds"],
+        )
+        self.assertEqual(
+            crossovers["first_context_forward_primary_grid_point"], 1_024
+        )
+        self.assertIsNone(
+            crossovers[
+                "first_context_including_online_sensitivity_grid_point"
+            ]
+        )
+        self.assertEqual(
+            crossovers["first_batch_forward_primary_grid_point"], 1
+        )
+        self.assertIsNone(
+            crossovers[
+                "first_batch_including_online_sensitivity_grid_point"
+            ]
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

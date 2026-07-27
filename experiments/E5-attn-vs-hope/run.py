@@ -362,6 +362,29 @@ def _hope_scenario(
 
 
 def _crossovers(hardware: Hardware) -> dict[str, Any]:
+    def hope_decode_metrics(
+        *, batch: int, context: int
+    ) -> tuple[dict[str, object], float, float]:
+        stages = build_hope_decode(
+            hope_config(
+                batch=batch,
+                query_tokens=1,
+                context_tokens=context,
+                momentum_slots=1,
+                adaptive_q=False,
+                paper_lower_bound=False,
+            ),
+            hardware,
+            timing="amortized",
+        )
+        total = summarize(stages, hardware)
+        groups = summarize_by_group(stages, hardware)
+        forward = float(
+            groups["forward_total"]["stagewise_latency_seconds"]
+        )
+        including_online = float(total["stagewise_latency_seconds"])
+        return total, forward, including_online
+
     context_records = []
     for context in (1_024, 4_096, 16_384, 65_536, 131_072, 262_144):
         attention = summarize(
@@ -375,28 +398,24 @@ def _crossovers(hardware: Hardware) -> dict[str, Any]:
             ),
             hardware,
         )
-        hope = summarize(
-            build_hope_decode(
-                hope_config(
-                    batch=MODEL_INPUTS["batch"],
-                    query_tokens=1,
-                    context_tokens=context,
-                    momentum_slots=1,
-                    adaptive_q=False,
-                    paper_lower_bound=False,
-                ),
-                hardware,
-                timing="amortized",
-            ),
-            hardware,
+        hope, hope_forward, hope_including_online = hope_decode_metrics(
+            batch=MODEL_INPUTS["batch"], context=context
         )
+        attention_seconds = float(attention["stagewise_latency_seconds"])
         context_records.append(
             {
                 "context_tokens": context,
-                "attention_decode_seconds": attention[
-                    "stagewise_latency_seconds"
-                ],
-                "hope_decode_seconds": hope["stagewise_latency_seconds"],
+                "attention_decode_seconds": attention_seconds,
+                "hope_forward_decode_seconds": hope_forward,
+                "hope_including_online_decode_seconds": (
+                    hope_including_online
+                ),
+                "forward_primary_crossover": (
+                    attention_seconds >= hope_forward
+                ),
+                "including_online_sensitivity_crossover": (
+                    attention_seconds >= hope_including_online
+                ),
                 "attention_persistent_state_bytes": attention[
                     "persistent_state_bytes"
                 ],
@@ -417,47 +436,64 @@ def _crossovers(hardware: Hardware) -> dict[str, Any]:
             ),
             hardware,
         )
-        hope = summarize(
-            build_hope_decode(
-                hope_config(
-                    batch=batch,
-                    query_tokens=1,
-                    context_tokens=MODEL_INPUTS["input_sequence_tokens"],
-                    momentum_slots=1,
-                    adaptive_q=False,
-                    paper_lower_bound=False,
-                ),
-                hardware,
-                timing="amortized",
-            ),
-            hardware,
+        hope, hope_forward, hope_including_online = hope_decode_metrics(
+            batch=batch, context=MODEL_INPUTS["input_sequence_tokens"]
         )
+        attention_seconds = float(attention["stagewise_latency_seconds"])
         batch_records.append(
             {
                 "batch": batch,
-                "attention_decode_seconds": attention[
-                    "stagewise_latency_seconds"
-                ],
-                "hope_decode_seconds": hope["stagewise_latency_seconds"],
+                "attention_decode_seconds": attention_seconds,
+                "hope_forward_decode_seconds": hope_forward,
+                "hope_including_online_decode_seconds": (
+                    hope_including_online
+                ),
+                "forward_primary_crossover": (
+                    attention_seconds >= hope_forward
+                ),
+                "including_online_sensitivity_crossover": (
+                    attention_seconds >= hope_including_online
+                ),
                 "attention_persistent_state_bytes": attention[
                     "persistent_state_bytes"
                 ],
                 "hope_persistent_state_bytes": hope["persistent_state_bytes"],
             }
         )
-    first_crossover = next(
-        (
-            record["context_tokens"]
-            for record in context_records
-            if record["attention_decode_seconds"]
-            >= record["hope_decode_seconds"]
-        ),
-        None,
-    )
+    def first_grid_point(
+        records: list[dict[str, Any]], key: str, flag: str
+    ) -> int | None:
+        return next(
+            (int(record[key]) for record in records if record[flag]), None
+        )
+
     return {
+        "primary_crossover_metric": "hope_forward_decode_seconds",
+        "sensitivity_crossover_metric": (
+            "hope_including_online_decode_seconds"
+        ),
         "context_sweep": context_records,
         "batch_sweep": batch_records,
-        "first_context_where_attention_decode_not_faster": first_crossover,
+        "first_context_forward_primary_grid_point": first_grid_point(
+            context_records, "context_tokens", "forward_primary_crossover"
+        ),
+        "first_context_including_online_sensitivity_grid_point": (
+            first_grid_point(
+                context_records,
+                "context_tokens",
+                "including_online_sensitivity_crossover",
+            )
+        ),
+        "first_batch_forward_primary_grid_point": first_grid_point(
+            batch_records, "batch", "forward_primary_crossover"
+        ),
+        "first_batch_including_online_sensitivity_grid_point": (
+            first_grid_point(
+                batch_records,
+                "batch",
+                "including_online_sensitivity_crossover",
+            )
+        ),
     }
 
 
@@ -711,7 +747,7 @@ def build_results() -> dict[str, Any]:
     )
     live_manifest = json.loads(LIVE_MANIFEST_PATH.read_text(encoding="utf-8"))
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "method": (
             "Analytical stagewise roofline lower bounds; one MAC is two FLOPs; "
             "effective bytes cross the HBM boundary only."

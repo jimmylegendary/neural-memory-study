@@ -189,52 +189,65 @@ unit conversions remain visible rather than embedded in formulas.
 
 ## `30_Compare`
 
-- `A5:M9`: formula links to the four stage-sheet summaries for stagewise and
-  aggregate latency, FLOPs, separate HBM read/write/total GiB, AI, ridge AI,
-  ridge class, state GiB, HBM fit, and bound.
-- `A12:D14`: explicit context and batch crossover summaries. `B13:B14` are
-  formulas that walk the corresponding `40_Sweeps!G` flag rows and return the
-  first sweep control from column A, or `None in sweep`.
-- `A17:C23`: Full Attention TTFT/ITL and HOPE forward versus including-online
+- `A5:O9`: formula links to the four architecture cases for stagewise,
+  aggregate, compute, and HBM latency; FLOPs; separate HBM read/write/total
+  GiB; AI/ridge classification; resident state; HBM fit; and bound. Both
+  prefill rows are end-to-end TTFT cases. In the HOPE row, `B7:I7` multiply the
+  one-chunk summary by `prefill_chunks`; resident state and HBM fit in `M7:N7`
+  remain unscaled because the state is resident rather than transferred once
+  per chunk.
+- `A12:D16`: four explicit first-satisfying-grid-point summaries. `B13:B14`
+  walk the forward-primary flags in `40_Sweeps!H`; `B15:B16` independently
+  walk the including-online sensitivity flags in `40_Sweeps!J`. These are grid
+  observations, not interpolated thresholds.
+- `A19:C25`: Full Attention TTFT/ITL and HOPE forward versus including-online
   TTFT/ITL. Attention prefill is full ISL; only HOPE TTFT multiplies 64 chunks.
-- `O5:Q9`: formula-backed AI/effective-TFLOP helper table.
-- Native chart 1: stagewise versus aggregate latency.
+- `Q5:S9`: formula-backed AI/effective-TFLOP helper table. AI in `R6:R9`
+  derives from the scaled comparison-table FLOPs/bytes, and effective TFLOP/s
+  in `S6:S9` derives from the same scaled FLOPs/stagewise time.
+- Native chart 1: full-invocation TTFT/ITL latency diagnostics; every prefill
+  series is full sequence and every decode series is one Q=1 token.
 - Native chart 2: roofline scatter with explicit X-series
-  `P6:P9` (AI) and Y-series `Q6:Q9` (effective TFLOP/s).
+  `R6:R9` (AI) and Y-series `S6:S9` (effective TFLOP/s).
 
 ## `40_Sweeps`
 
-- Context sweep: `A5:G11`; source controls `01_Inputs!B64:G64`.
-- Attention context-stage helpers: `H5:T11`.
-- Batch sweep: `A16:G22`; source controls `01_Inputs!B65:G65`.
-- Attention batch-stage helpers: `H16:T22`.
-- Columns B/C are explicitly ITL in milliseconds. Column G is a formula flag
-  (`YES` when Attention ITL is greater than or equal to HOPE including-online
-  ITL); `30_Compare!B13:B14` consumes these flags.
+- Context sweep: `A5:J11`; source controls `01_Inputs!B64:G64`.
+- Batch sweep: `A16:J22`; source controls `01_Inputs!B65:G65`.
+- `A25:N38`: vertical Attention stage helper. Columns C:H recompute each
+  context point and I:N recompute each batch point.
+- `A41:H77`: vertical HOPE stage helper. Columns C:H recompute the complete
+  amortized stage list for each batch; the primary forward subtotal uses
+  `SUMIF` over `titans_forward` and `cms_forward`, while including-online uses
+  the complete column sum.
+- Columns B/C/D are Attention, HOPE forward-primary, and HOPE
+  including-online-sensitivity ITL in milliseconds. G/H contain the forward
+  ratio and primary flag; I/J contain the including-online ratio and
+  sensitivity flag.
 - Attention state: `2BKD_kv b_kv / bytes_per_GiB`.
 - HOPE context latency/state remain constant because the recurrent state does
   not grow with context.
 - HOPE batch state scales with request count.
-- HOPE batch latency recomputes the shared static-q projection at each batch;
-  only request-local stages are scaled from the baseline. This preserves the
-  non-batch-linear shared `W_q` HBM read.
-- Native chart 3 uses `A5:E11`: context-length ITL and persistent
-  state.
+- HOPE batch forward latency is reconstructed stage by stage rather than
+  scaling the B=32 total, preserving shared `W_q` and personalized sparse-CMS
+  batch semantics. Including-online remains a separately labeled sensitivity.
+- Native chart 3 uses `A5:D11`: Attention ITL, HOPE forward ITL, and HOPE
+  including-online ITL across context.
 
 ## `90_QA`
 
-- `A5:G21`: 16 formula-versus-engine reconciliation rows.
+- `A5:G25`: 20 formula-versus-engine reconciliation rows.
   - Column B: workbook formula result.
   - Column C: clearly labeled imported engine reference.
   - Column D: formula delta.
   - Column E: tolerance.
   - Column F: formula-generated PASS/REVIEW.
 - Checks cover baseline FLOPs/HBM/stagewise latency, HOPE forward/online/
-  including-online ITL, both context-sweep endpoints, and B=1/B=32 HOPE batch
-  points.
-- `A25:C45`: the 20 upstream boolean invariants imported from
+  including-online ITL, both Attention context endpoints, the 1K conclusion
+  reversal, and forward/including-online HOPE values at B=1 and B=32.
+- `A29:C49`: the 20 upstream boolean invariants imported from
   `results.json.qa_checks`.
-- `A48:F54`: native live-Sheet operational outputs beside generated formulas,
+- `A52:F58`: native live-Sheet operational outputs beside generated formulas,
   deltas, and a `MATCH`/`ASSUMPTION DIFFERENCE` classification. This is an
   explicit reconciliation view, not a tolerance-forced QA gate; sparse-CMS
   active-weight reads, explicit MoE traffic, and roofline partition differ.

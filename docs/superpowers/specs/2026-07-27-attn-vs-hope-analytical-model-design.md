@@ -380,13 +380,21 @@ The comparison sheet shows operation-level diagnostics plus end-to-end metrics:
 - Full Attention TTFT from one full-ISL invocation;
 - HOPE forward and including-online TTFT from 64 per-chunk invocations;
 - Full Attention, HOPE forward, and HOPE including-online ITL at (Q=1);
-- context-length and batch crossovers.
+- context-length and batch first-satisfying-grid-point comparisons, with HOPE
+  forward ITL as the primary serving axis and including-online ITL as a
+  separate sensitivity axis.
+
+The primary prefill comparison must never mix a full-ISL Attention invocation
+with one HOPE chunk. HOPE FLOPs, read/write bytes, compute/HBM/aggregate/
+stagewise latency are all scaled by the chunk count for the TTFT row; resident
+state and HBM fit are not scaled. Roofline AI and effective TFLOP/s use those
+same end-to-end numerators, denominators, and times.
 
 Charts are limited to:
 
-1. stagewise latency comparison;
+1. full-invocation TTFT/ITL latency diagnostics;
 2. roofline scatter; and
-3. context-length sweep of ITL and persistent state.
+3. context-length Attention/HOPE-forward ITL with including-online sensitivity.
 
 ## 9. Validation
 
@@ -408,6 +416,9 @@ Automated tests must prove:
   forward-total exactly equals Titans-forward plus CMS-forward;
 - Attention TTFT uses full ISL; HOPE TTFT alone applies the chunk multiplier;
   decode is (Q=1) with no OSL multiplier;
+- sweep rows expose both HOPE forward and including-online decode seconds,
+  forward is the primary crossover predicate, and context 1024 demonstrates
+  the expected conclusion reversal when online work is included;
 - stagewise roofline is no smaller than the aggregate optimistic bound;
 - the legacy HOPE closed form reproduces:
 

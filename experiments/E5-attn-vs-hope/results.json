@@ -663,43 +663,61 @@
         "attention_decode_seconds": 0.00038163207135135134,
         "attention_persistent_state_bytes": 2147483648,
         "batch": 1,
-        "hope_decode_seconds": 0.0009717198910032334,
-        "hope_persistent_state_bytes": 3157868544
+        "forward_primary_crossover": true,
+        "hope_forward_decode_seconds": 2.814179243243243e-05,
+        "hope_including_online_decode_seconds": 0.0009717198910032334,
+        "hope_persistent_state_bytes": 3157868544,
+        "including_online_sensitivity_crossover": false
       },
       {
         "attention_decode_seconds": 0.0007264222832432432,
         "attention_persistent_state_bytes": 4294967296,
         "batch": 2,
-        "hope_decode_seconds": 0.0019343710166010615,
-        "hope_persistent_state_bytes": 6315737088
+        "forward_primary_crossover": true,
+        "hope_forward_decode_seconds": 4.7214819459459455e-05,
+        "hope_including_online_decode_seconds": 0.0019343710166010615,
+        "hope_persistent_state_bytes": 6315737088,
+        "including_online_sensitivity_crossover": false
       },
       {
         "attention_decode_seconds": 0.0014147406702702701,
         "attention_persistent_state_bytes": 8589934592,
         "batch": 4,
-        "hope_decode_seconds": 0.0038596732677967176,
-        "hope_persistent_state_bytes": 12631474176
+        "forward_primary_crossover": true,
+        "hope_forward_decode_seconds": 8.536087351351351e-05,
+        "hope_including_online_decode_seconds": 0.0038596732677967176,
+        "hope_persistent_state_bytes": 12631474176,
+        "including_online_sensitivity_crossover": false
       },
       {
         "attention_decode_seconds": 0.002786420664280082,
         "attention_persistent_state_bytes": 17179869184,
         "batch": 8,
-        "hope_decode_seconds": 0.007710277770188029,
-        "hope_persistent_state_bytes": 25262948352
+        "forward_primary_crossover": true,
+        "hope_forward_decode_seconds": 0.0001616529816216216,
+        "hope_including_online_decode_seconds": 0.007710277770188029,
+        "hope_persistent_state_bytes": 25262948352,
+        "including_online_sensitivity_crossover": false
       },
       {
         "attention_decode_seconds": 0.005510663376647901,
         "attention_persistent_state_bytes": 34359738368,
         "batch": 16,
-        "hope_decode_seconds": 0.015411486774970654,
-        "hope_persistent_state_bytes": 50525896704
+        "forward_primary_crossover": true,
+        "hope_forward_decode_seconds": 0.00031423719783783783,
+        "hope_including_online_decode_seconds": 0.015411486774970654,
+        "hope_persistent_state_bytes": 50525896704,
+        "including_online_sensitivity_crossover": false
       },
       {
         "attention_decode_seconds": 0.010888036865046824,
         "attention_persistent_state_bytes": 68719476736,
         "batch": 32,
-        "hope_decode_seconds": 0.0308139047845359,
-        "hope_persistent_state_bytes": 101051793408
+        "forward_primary_crossover": true,
+        "hope_forward_decode_seconds": 0.0006194056302702702,
+        "hope_including_online_decode_seconds": 0.0308139047845359,
+        "hope_persistent_state_bytes": 101051793408,
+        "including_online_sensitivity_crossover": false
       }
     ],
     "context_sweep": [
@@ -707,46 +725,69 @@
         "attention_decode_seconds": 0.001655891982884663,
         "attention_persistent_state_bytes": 536870912,
         "context_tokens": 1024,
-        "hope_decode_seconds": 0.0308139047845359,
-        "hope_persistent_state_bytes": 101051793408
+        "forward_primary_crossover": true,
+        "hope_forward_decode_seconds": 0.0006194056302702702,
+        "hope_including_online_decode_seconds": 0.0308139047845359,
+        "hope_persistent_state_bytes": 101051793408,
+        "including_online_sensitivity_crossover": false
       },
       {
         "attention_decode_seconds": 0.0018741135785603387,
         "attention_persistent_state_bytes": 2147483648,
         "context_tokens": 4096,
-        "hope_decode_seconds": 0.0308139047845359,
-        "hope_persistent_state_bytes": 101051793408
+        "forward_primary_crossover": true,
+        "hope_forward_decode_seconds": 0.0006194056302702702,
+        "hope_including_online_decode_seconds": 0.0308139047845359,
+        "hope_persistent_state_bytes": 101051793408,
+        "including_online_sensitivity_crossover": false
       },
       {
         "attention_decode_seconds": 0.0027464287353170954,
         "attention_persistent_state_bytes": 8589934592,
         "context_tokens": 16384,
-        "hope_decode_seconds": 0.0308139047845359,
-        "hope_persistent_state_bytes": 101051793408
+        "forward_primary_crossover": true,
+        "hope_forward_decode_seconds": 0.0006194056302702702,
+        "hope_including_online_decode_seconds": 0.0308139047845359,
+        "hope_persistent_state_bytes": 101051793408,
+        "including_online_sensitivity_crossover": false
       },
       {
         "attention_decode_seconds": 0.006235689362344123,
         "attention_persistent_state_bytes": 34359738368,
         "context_tokens": 65536,
-        "hope_decode_seconds": 0.0308139047845359,
-        "hope_persistent_state_bytes": 101051793408
+        "forward_primary_crossover": true,
+        "hope_forward_decode_seconds": 0.0006194056302702702,
+        "hope_including_online_decode_seconds": 0.0308139047845359,
+        "hope_persistent_state_bytes": 101051793408,
+        "including_online_sensitivity_crossover": false
       },
       {
         "attention_decode_seconds": 0.010888036865046824,
         "attention_persistent_state_bytes": 68719476736,
         "context_tokens": 131072,
-        "hope_decode_seconds": 0.0308139047845359,
-        "hope_persistent_state_bytes": 101051793408
+        "forward_primary_crossover": true,
+        "hope_forward_decode_seconds": 0.0006194056302702702,
+        "hope_including_online_decode_seconds": 0.0308139047845359,
+        "hope_persistent_state_bytes": 101051793408,
+        "including_online_sensitivity_crossover": false
       },
       {
         "attention_decode_seconds": 0.02019273187045223,
         "attention_persistent_state_bytes": 137438953472,
         "context_tokens": 262144,
-        "hope_decode_seconds": 0.0308139047845359,
-        "hope_persistent_state_bytes": 101051793408
+        "forward_primary_crossover": true,
+        "hope_forward_decode_seconds": 0.0006194056302702702,
+        "hope_including_online_decode_seconds": 0.0308139047845359,
+        "hope_persistent_state_bytes": 101051793408,
+        "including_online_sensitivity_crossover": false
       }
     ],
-    "first_context_where_attention_decode_not_faster": null
+    "first_batch_forward_primary_grid_point": 1,
+    "first_batch_including_online_sensitivity_grid_point": null,
+    "first_context_forward_primary_grid_point": 1024,
+    "first_context_including_online_sensitivity_grid_point": null,
+    "primary_crossover_metric": "hope_forward_decode_seconds",
+    "sensitivity_crossover_metric": "hope_including_online_decode_seconds"
   },
   "default_scenarios": [
     "paper_equation_lower_bound",
@@ -12647,7 +12688,7 @@
     "shipped_default_has_no_M_q": true,
     "shipped_forward_is_static_q_plus_M_mem": true
   },
-  "schema_version": 2,
+  "schema_version": 3,
   "sources": {
     "design": "docs/superpowers/specs/2026-07-27-attn-vs-hope-analytical-model-design.md",
     "google_meeting_package": "research/google-meeting/",

@@ -116,7 +116,7 @@ Expected: all cases pass with no warning or skipped test.
 
 - [ ] **Step 9: Add the deterministic runner and verify its outputs**
 
-`run.py` must use live-Sheet peak/BW authority plus the H100 twin capacity/provenance, write sorted/indented JSON, include all stage records/group summaries/TTFT/ITL metrics and QA checks, and print the same compact report to stdout and `stdout.txt`.
+`run.py` must use live-Sheet peak/BW authority plus the H100 twin capacity/provenance, write sorted/indented JSON, include all stage records/group summaries/TTFT/ITL metrics and QA checks, and print the same compact report to stdout and `stdout.txt`. Context/batch rows must carry explicit HOPE forward-primary and including-online-sensitivity decode seconds and flags; first results are labeled as satisfying grid points rather than interpolated thresholds.
 
 Run twice:
 
@@ -168,7 +168,7 @@ Expected: failure because the builder/output is missing.
 
 - [ ] **Step 3: Implement the builder**
 
-Use only `@oai/artifact-tool`. Build compact input tables, the design section 8 stage columns, formula-driven summaries, HBM-fit checks, five formula-only HOPE dependency-group subtotals, explicit full-ISL TTFT and Q=1 ITL comparisons, and context/batch ITL sweeps. Add only the three approved charts: stagewise latency, roofline scatter, and context-length ITL/state sweep. Use a restrained navy/blue/gray research style and preserve units in headers.
+Use only `@oai/artifact-tool`. Build compact input tables, the design section 8 stage columns, formula-driven summaries, HBM-fit checks, five formula-only HOPE dependency-group subtotals, explicit full-ISL TTFT and Q=1 ITL comparisons, and context/batch ITL sweeps. The primary prefill comparison scales every HOPE flow/latency metric to 64×2K TTFT while leaving resident state unscaled. Serving sweeps use HOPE forward ITL as primary and show including-online ITL separately. Add only the three approved charts: full-invocation latency diagnostics, roofline scatter, and context-length forward/sensitivity ITL. Use a restrained navy/blue/gray research style and preserve units in headers.
 
 - [ ] **Step 4: Generate and render the workbook**
 

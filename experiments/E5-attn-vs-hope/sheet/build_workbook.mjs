@@ -410,10 +410,10 @@ function attentionStages(I, mode, overrides = {}) {
   return specs;
 }
 
-function hopeStages(I, memoryRefs, cmsRefs, phase, timing = "amortized") {
-  const B = I.batch;
-  const Q = phase === "prefill" ? I.hope_prefill_chunk_tokens : I.decode_query_tokens;
-  const position = phase === "prefill" ? I.prefill_position : I.decode_position;
+function hopeStages(I, memoryRefs, cmsRefs, phase, timing = "amortized", overrides = {}) {
+  const B = overrides.batch ?? I.batch;
+  const Q = overrides.query ?? (phase === "prefill" ? I.hope_prefill_chunk_tokens : I.decode_query_tokens);
+  const position = overrides.position ?? (phase === "prefill" ? I.prefill_position : I.decode_position);
   const N = `((${B})*(${Q}))`;
   const zero = "0";
   const one = "1";
@@ -647,7 +647,7 @@ function writeGuide(sheet) {
     ["End-to-end timing", "Attention TTFT is one full-ISL invocation; HOPE TTFT multiplies per-chunk groups by 64. ITL is one Q=1 token and never multiplies OSL."],
     ["CMS sparsity", "Capacity 64/128/256 controls residency; compute uses router plus top-k=1 active rank-64 expert A/B matrices."],
     ["HBM fit", "Persistent request state is compared with device HBM capacity; model weights and runtime workspace are outside this fit flag."],
-    ["Charts", "Only three approved native charts: stagewise latency, roofline scatter, and context decode/state sweep."],
+    ["Charts", "Only three approved native charts: full-invocation latency diagnostics, roofline scatter, and context forward/sensitivity ITL sweep."],
     ["Rebuild", "Run build_workbook.mjs with the bundled @oai/artifact-tool runtime. See DESKTOP-HANDOFF.md."],
   ];
   sheet.getRange("A4:B4").values = [["Topic", "Guidance"]];
@@ -686,11 +686,13 @@ function writeHopeDecodeTiming(sheet, info, I, H, memoryRefs) {
 }
 
 function writeCompare(sheet, refs, I, H) {
-  writeTitle(sheet, "AA", "30 · Architecture comparison", "Formula-linked section-8 metrics, sweep-derived crossover summaries, and the two approved comparison charts.");
+  writeTitle(sheet, "AC", "30 · Architecture comparison", "Primary prefill rows are full-sequence TTFT; decode rows are one-token ITL. Forward serving and including-online sensitivity remain separate.");
   const headers = [
     "Architecture / phase",
     "Stagewise ms",
     "Aggregate ms",
+    "Compute ms",
+    "HBM ms",
     "FLOPs",
     "HBM read GiB",
     "HBM write GiB",
@@ -702,58 +704,72 @@ function writeCompare(sheet, refs, I, H) {
     "HBM fit",
     "Bound",
   ];
-  sheet.getRange("A5:M5").values = [headers];
-  styleHeader(sheet.getRange("A5:M5"));
+  sheet.getRange("A5:O5").values = [headers];
+  styleHeader(sheet.getRange("A5:O5"));
   const cases = [
-    ["Attention+MoE · prefill full ISL", refs.attnPrefill],
-    ["HOPE shipped · prefill per 2K chunk", refs.hopePrefill],
-    ["Attention+MoE · decode Q=1", refs.attnDecode],
-    ["HOPE shipped · including-online Q=1", refs.hopeDecode],
+    { label: "Attention+MoE · TTFT full ISL", item: refs.attnPrefill, scale: "1" },
+    { label: "HOPE shipped · TTFT (64×2K, including online)", item: refs.hopePrefill, scale: I.prefill_chunks },
+    { label: "Attention+MoE · ITL Q=1", item: refs.attnDecode, scale: "1" },
+    { label: "HOPE shipped · ITL Q=1 (including online)", item: refs.hopeDecode, scale: "1" },
   ];
-  sheet.getRange("A6:A9").values = cases.map(([label]) => [label]);
-  sheet.getRange("B6:M9").formulas = cases.map(([, item]) => [
-    `=${item.stagewiseMs}`,
-    `=${item.aggregateMs}`,
-    `=${item.flops}`,
-    `=${item.read}/${H.bytes_per_gib}`,
-    `=${item.write}/${H.bytes_per_gib}`,
-    `=${item.totalBytes}/${H.bytes_per_gib}`,
-    `=${item.ai}`,
-    `=${item.ridgeAi}`,
-    `=${item.ridgeClass}`,
-    `=${item.state}/${H.bytes_per_gib}`,
-    `=${item.fit}`,
-    `=${item.bound}`,
-  ]);
-  styleBody(sheet.getRange("A6:M9"));
-  sheet.getRange("B6:C9").format.numberFormat = "0.000000";
-  sheet.getRange("D6:D9").format.numberFormat = "0.00E+00";
-  sheet.getRange("E6:I9").format.numberFormat = "0.000";
-  sheet.getRange("K6:K9").format.numberFormat = "0.000";
+  sheet.getRange("A6:A9").values = cases.map(({ label }) => [label]);
+  sheet.getRange("B6:O9").formulas = cases.map(({ item, scale }, index) => {
+    const row = index + 6;
+    return [
+      `=(${item.stagewiseMs})*(${scale})`,
+      `=(${item.aggregateMs})*(${scale})`,
+      `=(${item.aggregateComputeMs})*(${scale})`,
+      `=(${item.aggregateHbmMs})*(${scale})`,
+      `=(${item.flops})*(${scale})`,
+      `=((${item.read})*(${scale}))/${H.bytes_per_gib}`,
+      `=((${item.write})*(${scale}))/${H.bytes_per_gib}`,
+      `=((${item.totalBytes})*(${scale}))/${H.bytes_per_gib}`,
+      `=F${row}/(I${row}*(${H.bytes_per_gib}))`,
+      `=${item.ridgeAi}`,
+      `=${item.ridgeClass}`,
+      `=${item.state}/${H.bytes_per_gib}`,
+      `=${item.fit}`,
+      `=${item.bound}`,
+    ];
+  });
+  styleBody(sheet.getRange("A6:O9"));
+  sheet.getRange("B6:E9").format.numberFormat = "0.000000";
+  sheet.getRange("F6:F9").format.numberFormat = "0.00E+00";
+  sheet.getRange("G6:K9").format.numberFormat = "0.000";
+  sheet.getRange("M6:M9").format.numberFormat = "0.000";
 
-  const firstCrossoverFormula = (startRow, endRow) => {
+  const firstCrossoverFormula = (startRow, endRow, flagColumn) => {
     let expression = '"None in sweep"';
     for (let row = endRow; row >= startRow; row -= 1) {
-      expression = `IF(${qref("40_Sweeps", `$G$${row}`)}="YES",${qref("40_Sweeps", `$A$${row}`)},${expression})`;
+      expression = `IF(${qref("40_Sweeps", `$${flagColumn}$${row}`)}="YES",${qref("40_Sweeps", `$A$${row}`)},${expression})`;
     }
     return `=${expression}`;
   };
-  sheet.getRange("A12:D12").values = [["Crossover summary", "First crossover", "Unit", "Rule"]];
+  sheet.getRange("A12:D12").values = [["Serving comparison", "First satisfying grid point", "Unit", "Rule"]];
   styleHeader(sheet.getRange("A12:D12"), COLORS.gray);
-  sheet.getRange("A13:A14").values = [["Context crossover"], ["Batch crossover"]];
-  sheet.getRange("B13:B14").formulas = [
-    [firstCrossoverFormula(6, 11)],
-    [firstCrossoverFormula(17, 22)],
+  sheet.getRange("A13:A16").values = [
+    ["Context crossover · forward primary"],
+    ["Batch crossover · forward primary"],
+    ["Context crossover · including-online sensitivity"],
+    ["Batch crossover · including-online sensitivity"],
   ];
-  sheet.getRange("C13:D14").values = [
-    ["tokens", "First sweep row where Attention decode ms >= HOPE decode ms"],
-    ["requests", "First sweep row where Attention decode ms >= HOPE decode ms"],
+  sheet.getRange("B13:B16").formulas = [
+    [firstCrossoverFormula(6, 11, "H")],
+    [firstCrossoverFormula(17, 22, "H")],
+    [firstCrossoverFormula(6, 11, "J")],
+    [firstCrossoverFormula(17, 22, "J")],
   ];
-  styleBody(sheet.getRange("A13:D14"));
+  sheet.getRange("C13:D16").values = [
+    ["tokens", "First grid row where Attention ITL >= HOPE forward ITL"],
+    ["requests", "First grid row where Attention ITL >= HOPE forward ITL"],
+    ["tokens", "Sensitivity: first grid row where Attention ITL >= HOPE including-online ITL"],
+    ["requests", "Sensitivity: first grid row where Attention ITL >= HOPE including-online ITL"],
+  ];
+  styleBody(sheet.getRange("A13:D16"));
 
-  sheet.getRange("A17:C17").values = [["End-to-end metric", "ms", "Definition"]];
-  styleHeader(sheet.getRange("A17:C17"), COLORS.gray);
-  sheet.getRange("A18:A23").values = [
+  sheet.getRange("A19:C19").values = [["End-to-end metric", "ms", "Definition"]];
+  styleHeader(sheet.getRange("A19:C19"), COLORS.gray);
+  sheet.getRange("A20:A25").values = [
     ["Full Attention TTFT"],
     ["HOPE forward TTFT"],
     ["HOPE including-online TTFT"],
@@ -761,7 +777,7 @@ function writeCompare(sheet, refs, I, H) {
     ["HOPE forward ITL"],
     ["HOPE including-online ITL"],
   ];
-  sheet.getRange("B18:B23").formulas = [
+  sheet.getRange("B20:B25").formulas = [
     [`=${refs.attnPrefill.stagewiseMs}`],
     [`=(${refs.hopePrefill.groups.forward_total.stagewiseMs})*(${I.prefill_chunks})`],
     [`=(${refs.hopePrefill.stagewiseMs})*(${I.prefill_chunks})`],
@@ -769,7 +785,7 @@ function writeCompare(sheet, refs, I, H) {
     [`=${refs.hopeTiming.forwardItlMs}`],
     [`=${refs.hopeTiming.includingOnlineItlMs}`],
   ];
-  sheet.getRange("C18:C23").values = [
+  sheet.getRange("C20:C25").values = [
     ["Full ISL causal invocation"],
     ["64 × (Titans + CMS forward per 2K chunk)"],
     ["64 × (forward + loss + backward/update per 2K chunk)"],
@@ -777,134 +793,169 @@ function writeCompare(sheet, refs, I, H) {
     ["One Q=1 Titans + CMS forward"],
     ["One Q=1 forward + amortized online overhead; no OSL multiplier"],
   ];
-  styleBody(sheet.getRange("A18:C23"));
-  sheet.getRange("B18:B23").format.numberFormat = "0.000000";
+  styleBody(sheet.getRange("A20:C25"));
+  sheet.getRange("B20:B25").format.numberFormat = "0.000000";
 
-  sheet.getRange("O5:Q5").values = [["Case", "AI FLOP/B", "Effective TFLOP/s"]];
-  styleHeader(sheet.getRange("O5:Q5"), COLORS.gray);
-  sheet.getRange("O6:O9").values = cases.map(([label]) => [label]);
-  sheet.getRange("P6:Q9").formulas = cases.map(([, item]) => [
-    `=${item.ai}`,
-    `=(${item.flops}/(${item.stagewiseMs}/${H.ms_per_second}))/${H.flops_per_tflop}`,
-  ]);
-  styleBody(sheet.getRange("O6:Q9"));
-  sheet.getRange("P6:Q9").format.numberFormat = "0.000";
+  sheet.getRange("Q5:S5").values = [["Case", "AI FLOP/B", "Effective TFLOP/s"]];
+  styleHeader(sheet.getRange("Q5:S5"), COLORS.gray);
+  sheet.getRange("Q6:Q9").values = cases.map(({ label }) => [label]);
+  sheet.getRange("R6:S9").formulas = cases.map((_, index) => {
+    const row = index + 6;
+    return [
+      `=J${row}`,
+      `=(F${row}/(B${row}/(${H.ms_per_second})))/${H.flops_per_tflop}`,
+    ];
+  });
+  styleBody(sheet.getRange("Q6:S9"));
+  sheet.getRange("R6:S9").format.numberFormat = "0.000";
 
-  const stageChart = sheet.charts.add("bar", sheet.getRange("A5:C9"));
-  stageChart.title = "Stagewise vs aggregate latency (ms)";
+  const stageChart = sheet.charts.add("bar", sheet.getRange("A5:E9"));
+  stageChart.title = "TTFT/ITL invocation diagnostics (ms; prefill is full sequence)";
   stageChart.hasLegend = true;
   stageChart.yAxis = { numberFormatCode: "0.000" };
-  stageChart.setPosition("S4", "AA17");
+  stageChart.setPosition("U4", "AC17");
 
-  const rooflineChart = sheet.charts.add("scatter", sheet.getRange("P5:Q9"));
-  rooflineChart.series.getItemAt(0).xFormula = qref("30_Compare", "$P$6:$P$9");
+  const rooflineChart = sheet.charts.add("scatter", sheet.getRange("R5:S9"));
+  rooflineChart.series.getItemAt(0).xFormula = qref("30_Compare", "$R$6:$R$9");
   rooflineChart.title = "Roofline scatter: AI vs effective TFLOP/s";
   rooflineChart.hasLegend = false;
   rooflineChart.xAxis = { numberFormatCode: "0.0" };
   rooflineChart.yAxis = { numberFormatCode: "0.0" };
-  rooflineChart.setPosition("S19", "AA33");
+  rooflineChart.setPosition("U19", "AC33");
 
   sheet.freezePanes.freezeRows(5);
-  [38, 14, 14, 18, 15, 15, 15, 14, 13, 16, 14, 12, 12, 3, 45, 16, 20, 3].forEach((width, index) => {
+  [46, 14, 14, 14, 14, 18, 15, 15, 15, 14, 13, 16, 14, 12, 12, 3, 48, 16, 20].forEach((width, index) => {
     sheet.getRange(`${colName(index + 1)}:${colName(index + 1)}`).format.columnWidth = width;
   });
 }
 
 function writeSweeps(sheet, refs, I, H) {
-  writeTitle(sheet, "AD", "40 · Context and batch sweeps", "All sweep outputs are formulas. Imported engine values appear only on 90_QA as references.");
-  const helperStart = 8;
+  writeTitle(sheet, "S", "40 · Context and batch sweeps", "Forward-only ITL is the primary serving axis; including-online ITL is retained as a separate sensitivity. Imported engine values appear only on 90_QA.");
   const contextHeader = 5;
   const contextStart = 6;
   const contextEnd = contextStart + refs.sweepRefs.contexts.length - 1;
-  sheet.getRange(`A${contextHeader}:G${contextHeader}`).values = [["Context tokens", "Attention ITL ms", "HOPE including-online ITL ms", "Attention state GiB", "HOPE state GiB", "Attn / HOPE ITL", "Attention >= HOPE?"]];
-  styleHeader(sheet.getRange(`A${contextHeader}:G${contextHeader}`));
-  const helperHeaders = attentionStages(I, "decode").map((item) => item.name);
-  sheet.getRange(`${colName(helperStart)}${contextHeader}:${colName(helperStart + helperHeaders.length - 1)}${contextHeader}`).values = [helperHeaders];
-  styleHeader(sheet.getRange(`${colName(helperStart)}${contextHeader}:${colName(helperStart + helperHeaders.length - 1)}${contextHeader}`), COLORS.gray);
+  const batchHeader = 16;
+  const batchStart = 17;
+  const batchEnd = batchStart + refs.sweepRefs.batches.length - 1;
+
+  const attentionHelperHeader = 25;
+  const attentionHelperStart = attentionHelperHeader + 1;
+  const attentionBaseSpecs = attentionStages(I, "decode");
+  const attentionHelperEnd = attentionHelperStart + attentionBaseSpecs.length - 1;
+  sheet.getRange(`A${attentionHelperHeader}:N${attentionHelperHeader}`).values = [[
+    "Component",
+    "Attention stage",
+    ...Array(refs.sweepRefs.contexts.length + refs.sweepRefs.batches.length).fill(null),
+  ]];
+  sheet.getRange(`C${attentionHelperHeader}:H${attentionHelperHeader}`).formulas = [refs.sweepRefs.contexts.map((item) => `=${item}`)];
+  sheet.getRange(`I${attentionHelperHeader}:N${attentionHelperHeader}`).formulas = [refs.sweepRefs.batches.map((item) => `=${item}`)];
+  styleHeader(sheet.getRange(`A${attentionHelperHeader}:N${attentionHelperHeader}`), COLORS.gray);
+  sheet.getRange(`A${attentionHelperStart}:B${attentionHelperEnd}`).values = attentionBaseSpecs.map((item) => [item.component, item.name]);
+  refs.sweepRefs.contexts.forEach((contextRef, index) => {
+    const splits = `(INT(((${contextRef})+(${I.kv_split_tokens})-1)/(${I.kv_split_tokens})))`;
+    const specs = attentionStages(I, "decode", { context: contextRef, splits });
+    specs.forEach((spec, stageIndex) => {
+      sheet.getRange(`${colName(3 + index)}${attentionHelperStart + stageIndex}`).formulas = [[`=${stageTimeFormula(spec, I, H)}`]];
+    });
+  });
+  refs.sweepRefs.batches.forEach((batchRef, index) => {
+    const specs = attentionStages(I, "decode", { batch: batchRef });
+    specs.forEach((spec, stageIndex) => {
+      sheet.getRange(`${colName(9 + index)}${attentionHelperStart + stageIndex}`).formulas = [[`=${stageTimeFormula(spec, I, H)}`]];
+    });
+  });
+  styleBody(sheet.getRange(`A${attentionHelperStart}:N${attentionHelperEnd}`));
+  sheet.getRange(`C${attentionHelperHeader}:N${attentionHelperEnd}`).format.numberFormat = "0.000000";
+
+  const hopeHelperHeader = attentionHelperEnd + 3;
+  const hopeHelperStart = hopeHelperHeader + 1;
+  const hopeBatchSpecs = refs.sweepRefs.batches.map((batchRef) => hopeStages(
+    I,
+    refs.memoryRefs,
+    refs.cmsRefs,
+    "decode",
+    "amortized",
+    { batch: batchRef },
+  ));
+  const hopeBaseSpecs = hopeBatchSpecs[0];
+  const hopeHelperEnd = hopeHelperStart + hopeBaseSpecs.length - 1;
+  sheet.getRange(`A${hopeHelperHeader}:H${hopeHelperHeader}`).values = [[
+    "Dependency group",
+    "HOPE stage",
+    ...Array(refs.sweepRefs.batches.length).fill(null),
+  ]];
+  sheet.getRange(`C${hopeHelperHeader}:H${hopeHelperHeader}`).formulas = [refs.sweepRefs.batches.map((item) => `=${item}`)];
+  styleHeader(sheet.getRange(`A${hopeHelperHeader}:H${hopeHelperHeader}`), COLORS.gray);
+  sheet.getRange(`A${hopeHelperStart}:B${hopeHelperEnd}`).values = hopeBaseSpecs.map((item) => [item.component, item.name]);
+  hopeBatchSpecs.forEach((specs, batchIndex) => {
+    specs.forEach((spec, stageIndex) => {
+      sheet.getRange(`${colName(3 + batchIndex)}${hopeHelperStart + stageIndex}`).formulas = [[`=${stageTimeFormula(spec, I, H)}`]];
+    });
+  });
+  styleBody(sheet.getRange(`A${hopeHelperStart}:H${hopeHelperEnd}`));
+  sheet.getRange(`C${hopeHelperHeader}:H${hopeHelperEnd}`).format.numberFormat = "0.000000";
+  sheet.getRange(`A${contextHeader}:J${contextHeader}`).values = [["Context tokens", "Attention ITL ms", "HOPE forward ITL ms (primary)", "HOPE including-online ITL ms", "Attention state GiB", "HOPE state GiB", "Attn / HOPE forward ITL", "Forward primary crossover?", "Attn / HOPE including-online ITL", "Including-online sensitivity?"]];
+  styleHeader(sheet.getRange(`A${contextHeader}:J${contextHeader}`));
   refs.sweepRefs.contexts.forEach((contextRef, index) => {
     const row = contextStart + index;
     const contextCell = `$A$${row}`;
-    const splits = `(INT(((${contextCell})+(${I.kv_split_tokens})-1)/(${I.kv_split_tokens})))`;
-    const specs = attentionStages(I, "decode", { context: contextCell, splits });
     sheet.getRange(`A${row}`).formulas = [[`=${contextRef}`]];
-    specs.forEach((spec, stageIndex) => {
-      sheet.getRange(`${colName(helperStart + stageIndex)}${row}`).formulas = [[`=${stageTimeFormula(spec, I, H)}`]];
-    });
-    const helperEnd = colName(helperStart + specs.length - 1);
-    sheet.getRange(`B${row}:G${row}`).formulas = [[
-      `=SUM(${colName(helperStart)}${row}:${helperEnd}${row})`,
+    sheet.getRange(`B${row}:J${row}`).formulas = [[
+      `=SUM(${colName(3 + index)}${attentionHelperStart}:${colName(3 + index)}${attentionHelperEnd})`,
+      `=${refs.hopeTiming.forwardItlMs}`,
       `=${refs.hopeTiming.includingOnlineItlMs}`,
       `=(2*(${I.batch})*(${contextCell})*(${I.kv_heads})*(${I.head_dim})*(${I.kv_bytes}))/${H.bytes_per_gib}`,
       `=${refs.hopeDecode.state}/${H.bytes_per_gib}`,
       `=B${row}/C${row}`,
       `=IF(B${row}>=C${row},"YES","NO")`,
+      `=B${row}/D${row}`,
+      `=IF(B${row}>=D${row},"YES","NO")`,
     ]];
   });
-  styleBody(sheet.getRange(`A${contextStart}:${colName(helperStart + helperHeaders.length - 1)}${contextEnd}`));
+  styleBody(sheet.getRange(`A${contextStart}:J${contextEnd}`));
   sheet.getRange(`A${contextStart}:A${contextEnd}`).format.numberFormat = "#,##0";
-  sheet.getRange(`B${contextStart}:F${contextEnd}`).format.numberFormat = "0.000000";
+  sheet.getRange(`B${contextStart}:G${contextEnd}`).format.numberFormat = "0.000000";
+  sheet.getRange(`I${contextStart}:I${contextEnd}`).format.numberFormat = "0.000000";
 
-  const batchHeader = 16;
-  const batchStart = 17;
-  const batchEnd = batchStart + refs.sweepRefs.batches.length - 1;
-  sheet.getRange(`A${batchHeader}:G${batchHeader}`).values = [["Batch", "Attention ITL ms", "HOPE including-online ITL ms", "Attention state GiB", "HOPE state GiB", "Attn / HOPE ITL", "Attention >= HOPE?"]];
-  styleHeader(sheet.getRange(`A${batchHeader}:G${batchHeader}`));
-  sheet.getRange(`${colName(helperStart)}${batchHeader}:${colName(helperStart + helperHeaders.length - 1)}${batchHeader}`).values = [helperHeaders];
-  styleHeader(sheet.getRange(`${colName(helperStart)}${batchHeader}:${colName(helperStart + helperHeaders.length - 1)}${batchHeader}`), COLORS.gray);
+  sheet.getRange(`A${batchHeader}:J${batchHeader}`).values = [["Batch", "Attention ITL ms", "HOPE forward ITL ms (primary)", "HOPE including-online ITL ms", "Attention state GiB", "HOPE state GiB", "Attn / HOPE forward ITL", "Forward primary crossover?", "Attn / HOPE including-online ITL", "Including-online sensitivity?"]];
+  styleHeader(sheet.getRange(`A${batchHeader}:J${batchHeader}`));
   refs.sweepRefs.batches.forEach((batchRef, index) => {
     const row = batchStart + index;
     const batchCell = `$A$${row}`;
-    const specs = attentionStages(I, "decode", { batch: batchCell });
     sheet.getRange(`A${row}`).formulas = [[`=${batchRef}`]];
-    specs.forEach((spec, stageIndex) => {
-      sheet.getRange(`${colName(helperStart + stageIndex)}${row}`).formulas = [[`=${stageTimeFormula(spec, I, H)}`]];
-    });
-    const helperEnd = colName(helperStart + specs.length - 1);
-    const staticRow = refs.hopeDecodeInfo.rows.static_q_projection;
-    const baselineStaticMs = qref("21_HOPE_Decode", `$Q$${staticRow}`);
-    const otherExecutions = `(SUM(${qref("21_HOPE_Decode", `$F$${refs.hopeDecodeInfo.dataStart}:$F$${refs.hopeDecodeInfo.dataEnd}`)})-${qref("21_HOPE_Decode", `$F$${staticRow}`)})`;
-    const otherLaunchMs = `((${otherExecutions})*(${H.launch_seconds})*(${H.ms_per_second}))`;
-    const staticN = `((${batchCell})*(${I.decode_query_tokens}))`;
-    const staticModelAct = `((${staticN})*(${I.model_dim})*(${I.activation_bytes}))`;
-    const staticSpec = stage({
-      phase: "decode",
-      component: "titans",
-      name: "static_q_projection",
-      equation: "2ND²",
-      cadence: "1",
-      flops: `(2*(${staticN})*(${I.model_dim})*(${I.model_dim}))`,
-      read: `((${staticModelAct})+(${I.model_dim})*(${I.model_dim})*(${I.weight_bytes}))`,
-      mandatory: "0",
-      temporary: staticModelAct,
-      persistent: "0",
-      note: "Static-q batch helper",
-    });
-    const staticAtBatchMs = stageTimeFormula(staticSpec, I, H);
-    sheet.getRange(`B${row}:G${row}`).formulas = [[
-      `=SUM(${colName(helperStart)}${row}:${helperEnd}${row})`,
-      `=((${refs.hopeTiming.includingOnlineItlMs})-(${baselineStaticMs})-(${otherLaunchMs}))*(${batchCell})/(${I.batch})+(${otherLaunchMs})+(${staticAtBatchMs})`,
+    const attentionColumn = colName(9 + index);
+    const hopeColumn = colName(3 + index);
+    const hopeTimingRange = `${hopeColumn}$${hopeHelperStart}:${hopeColumn}$${hopeHelperEnd}`;
+    sheet.getRange(`B${row}:J${row}`).formulas = [[
+      `=SUM(${attentionColumn}$${attentionHelperStart}:${attentionColumn}$${attentionHelperEnd})`,
+      `=SUMIF($A$${hopeHelperStart}:$A$${hopeHelperEnd},"titans_forward",${hopeTimingRange})+SUMIF($A$${hopeHelperStart}:$A$${hopeHelperEnd},"cms_forward",${hopeTimingRange})`,
+      `=SUM(${hopeTimingRange})`,
       `=(2*(${batchCell})*(${I.decode_context_tokens})*(${I.kv_heads})*(${I.head_dim})*(${I.kv_bytes}))/${H.bytes_per_gib}`,
       `=(${refs.hopeDecode.state})*(${batchCell})/(${I.batch})/${H.bytes_per_gib}`,
       `=B${row}/C${row}`,
       `=IF(B${row}>=C${row},"YES","NO")`,
+      `=B${row}/D${row}`,
+      `=IF(B${row}>=D${row},"YES","NO")`,
     ]];
   });
-  styleBody(sheet.getRange(`A${batchStart}:${colName(helperStart + helperHeaders.length - 1)}${batchEnd}`));
+  styleBody(sheet.getRange(`A${batchStart}:J${batchEnd}`));
   sheet.getRange(`A${batchStart}:A${batchEnd}`).format.numberFormat = "#,##0";
-  sheet.getRange(`B${batchStart}:F${batchEnd}`).format.numberFormat = "0.000000";
+  sheet.getRange(`B${batchStart}:G${batchEnd}`).format.numberFormat = "0.000000";
+  sheet.getRange(`I${batchStart}:I${batchEnd}`).format.numberFormat = "0.000000";
 
-  const chart = sheet.charts.add("line", sheet.getRange(`A${contextHeader}:E${contextEnd}`));
-  chart.title = "Context sweep: ITL ms and persistent state GiB";
+  const chart = sheet.charts.add("line", sheet.getRange(`A${contextHeader}:D${contextEnd}`));
+  chart.title = "Context sweep: forward-primary ITL with online sensitivity (ms)";
   chart.hasLegend = true;
   chart.xAxis = { axisType: "textAxis" };
   chart.yAxis = { numberFormatCode: "0.000" };
-  chart.setPosition("V4", "AD22");
+  chart.setPosition("K4", "S22");
 
   sheet.freezePanes.freezeRows(5);
   sheet.getRange("A:A").format.columnWidth = 18;
-  sheet.getRange("B:F").format.columnWidth = 20;
-  sheet.getRange("G:G").format.columnWidth = 20;
-  sheet.getRange(`${colName(helperStart)}:${colName(helperStart + helperHeaders.length - 1)}`).format.columnWidth = 18;
+  sheet.getRange("B:B").format.columnWidth = 30;
+  sheet.getRange("C:F").format.columnWidth = 22;
+  sheet.getRange("G:J").format.columnWidth = 24;
+  sheet.getRange("K:S").format.columnWidth = 16;
 }
 
 function writeQA(sheet, refs, I, H) {
@@ -927,8 +978,12 @@ function writeQA(sheet, refs, I, H) {
     ["HOPE including-online ITL ms", refs.hopeTiming.includingOnlineItlMs, shipped.metrics.decode_per_token.including_online_itl_ms, 1e-8, "No OSL multiplier"],
     ["Context sweep 1K Attention decode ms", qref("40_Sweeps", "$B$6"), results.crossovers.context_sweep[0].attention_decode_seconds * 1000, 1e-8, "Formula-driven sweep endpoint"],
     ["Context sweep 256K Attention decode ms", qref("40_Sweeps", "$B$11"), results.crossovers.context_sweep.at(-1).attention_decode_seconds * 1000, 1e-8, "Formula-driven sweep endpoint"],
-    ["Batch sweep B=1 HOPE decode ms", qref("40_Sweeps", "$C$17"), results.crossovers.batch_sweep[0].hope_decode_seconds * 1000, 1e-8, "Static-q read is not batch-linear"],
-    ["Batch sweep B=32 HOPE decode ms", qref("40_Sweeps", "$C$22"), results.crossovers.batch_sweep.at(-1).hope_decode_seconds * 1000, 1e-8, "Formula-driven sweep endpoint"],
+    ["Context sweep 1K HOPE forward ms", qref("40_Sweeps", "$C$6"), results.crossovers.context_sweep[0].hope_forward_decode_seconds * 1000, 1e-8, "Primary serving axis"],
+    ["Context sweep 1K HOPE including-online ms", qref("40_Sweeps", "$D$6"), results.crossovers.context_sweep[0].hope_including_online_decode_seconds * 1000, 1e-8, "Sensitivity axis"],
+    ["Batch sweep B=1 HOPE forward ms", qref("40_Sweeps", "$C$17"), results.crossovers.batch_sweep[0].hope_forward_decode_seconds * 1000, 1e-8, "Exact forward-stage reconstruction"],
+    ["Batch sweep B=1 HOPE including-online ms", qref("40_Sweeps", "$D$17"), results.crossovers.batch_sweep[0].hope_including_online_decode_seconds * 1000, 1e-8, "Static-q read is not batch-linear"],
+    ["Batch sweep B=32 HOPE forward ms", qref("40_Sweeps", "$C$22"), results.crossovers.batch_sweep.at(-1).hope_forward_decode_seconds * 1000, 1e-8, "Formula-driven sweep endpoint"],
+    ["Batch sweep B=32 HOPE including-online ms", qref("40_Sweeps", "$D$22"), results.crossovers.batch_sweep.at(-1).hope_including_online_decode_seconds * 1000, 1e-8, "Formula-driven sweep endpoint"],
   ];
   sheet.getRange(`A6:A${5 + checks.length}`).values = checks.map((item) => [item[0]]);
   sheet.getRange(`B6:B${5 + checks.length}`).formulas = checks.map((item) => [`=${item[1]}`]);
@@ -988,7 +1043,7 @@ function writeSources(sheet) {
   sheet.getRange("A5:E5").values = [["Source", "Kind", "Location / URL", "Used for", "Notes"]];
   styleHeader(sheet.getRange("A5:E5"));
   const rows = [
-    ["Verified engine output", "Repository file", "experiments/E5-attn-vs-hope/results.json", "Raw inputs, QA references, stage/group-order assertion", "Schema v2 dependency and TTFT/ITL contract"],
+    ["Verified engine output", "Repository file", "experiments/E5-attn-vs-hope/results.json", "Raw inputs, QA references, stage/group-order assertion", "Schema v3 dependency, TTFT/ITL, and crossover-axis contract"],
     ["Analytical model", "Repository file", "experiments/E5-attn-vs-hope/model.py", "Equations and stage semantics", "Read-only upstream"],
     ["Approved design", "Repository file", results.sources.design, "Workbook sections and validation contract", "Sections 4–9"],
     ["Hardware authority", "Mixed source", results.sources.hardware.source, "Live-Sheet peak/BW; twin capacity/provenance only", results.sources.hardware.authority],
@@ -1010,16 +1065,16 @@ async function inspectWorkbook(workbook) {
   const overview = await workbook.inspect({ kind: "sheet,drawing", include: "id,name,type", maxChars: 5000 });
   console.log("INSPECT_OVERVIEW");
   console.log(overview.ndjson);
-  const compare = await workbook.inspect({ kind: "table", range: "'30_Compare'!A5:Q22", include: "values,formulas", tableMaxRows: 24, tableMaxCols: 17, maxChars: 12000 });
+  const compare = await workbook.inspect({ kind: "table", range: "'30_Compare'!A5:S25", include: "values,formulas", tableMaxRows: 26, tableMaxCols: 19, maxChars: 14000 });
   console.log("INSPECT_COMPARE");
   console.log(compare.ndjson);
   const timing = await workbook.inspect({ kind: "table", range: "'21_HOPE_Decode'!A5:E8", include: "values,formulas", tableMaxRows: 8, tableMaxCols: 5, maxChars: 5000 });
   console.log("INSPECT_HOPE_TIMING");
   console.log(timing.ndjson);
-  const sweeps = await workbook.inspect({ kind: "table", range: "'40_Sweeps'!A5:G22", include: "values,formulas", tableMaxRows: 22, tableMaxCols: 7, maxChars: 8000 });
+  const sweeps = await workbook.inspect({ kind: "table", range: "'40_Sweeps'!A5:J22", include: "values,formulas", tableMaxRows: 22, tableMaxCols: 10, maxChars: 10000 });
   console.log("INSPECT_SWEEPS");
   console.log(sweeps.ndjson);
-  const qa = await workbook.inspect({ kind: "table", range: "'90_QA'!A5:G21", include: "values,formulas", tableMaxRows: 24, tableMaxCols: 7, maxChars: 9000 });
+  const qa = await workbook.inspect({ kind: "table", range: "'90_QA'!A5:G25", include: "values,formulas", tableMaxRows: 26, tableMaxCols: 7, maxChars: 10000 });
   console.log("INSPECT_QA");
   console.log(qa.ndjson);
   const errors = await workbook.inspect({ kind: "match", searchTerm: "#REF!|#DIV/0!|#VALUE!|#NAME\\?|#N/A", options: { useRegex: true, maxResults: 300 }, summary: "final formula error scan", maxChars: 6000 });
@@ -1063,6 +1118,8 @@ async function buildWorkbook() {
   const refs = {
     I,
     H,
+    memoryRefs,
+    cmsRefs,
     sweepRefs,
     attnPrefill: attnPrefillInfo.summary,
     attnDecode: attnDecodeInfo.summary,
