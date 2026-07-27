@@ -201,20 +201,84 @@ class BuilderAndSummaryTests(unittest.TestCase):
         )
 
     def test_expert_weight_bytes_use_unique_active_experts(self) -> None:
-        one_token = PrimitiveInvariantTests.attention_config(
-            query_tokens=1, active_unique_experts=2
+        one_request = PrimitiveInvariantTests.attention_config(
+            batch=1,
+            active_unique_experts=2,
+            fuse_expert_intermediates=True,
         )
-        four_tokens = PrimitiveInvariantTests.attention_config(
-            query_tokens=4, active_unique_experts=2
+        four_requests = PrimitiveInvariantTests.attention_config(
+            batch=4,
+            active_unique_experts=2,
+            fuse_expert_intermediates=True,
         )
         one = self.stage(
-            build_attention_decode(one_token, self.hardware), "expert_weight_read"
+            build_attention_decode(one_request, self.hardware),
+            "expert_gate_projection",
         )
         four = self.stage(
-            build_attention_decode(four_tokens, self.hardware), "expert_weight_read"
+            build_attention_decode(four_requests, self.hardware),
+            "expert_gate_projection",
         )
-        self.assertEqual(one.hbm_read_bytes, 2 * 3 * 16 * 32 * 2)
+        self.assertEqual(one.hbm_read_bytes, 2 * 16 * 32 * 2)
         self.assertEqual(four.hbm_read_bytes, one.hbm_read_bytes)
+
+    def test_swiglu_stages_keep_each_gemms_weights_with_its_flops(self) -> None:
+        cfg = replace(
+            self.prefill,
+            active_unique_experts=2,
+            expert_activation_flops_per_element=4,
+        )
+        stages = build_attention_prefill(cfg, self.hardware)
+        names = [stage.stage for stage in stages]
+        expected = [
+            "moe_dispatch",
+            "expert_up_projection",
+            "expert_gate_projection",
+            "expert_swiglu_activation",
+            "expert_down_projection",
+            "moe_combine",
+        ]
+        first = names.index("moe_dispatch")
+        self.assertEqual(names[first : first + len(expected)], expected)
+
+        up = self.stage(stages, "expert_up_projection")
+        gate = self.stage(stages, "expert_gate_projection")
+        activation = self.stage(stages, "expert_swiglu_activation")
+        down = self.stage(stages, "expert_down_projection")
+        self.assertEqual(up.flops, 16_384)
+        self.assertEqual(gate.flops, 16_384)
+        self.assertEqual(down.flops, 16_384)
+        self.assertEqual(activation.flops, 2_048)
+        self.assertEqual(up.hbm_read_bytes, 2_560)
+        self.assertEqual(gate.hbm_read_bytes, 2_560)
+        self.assertEqual(down.hbm_read_bytes, 3_072)
+        self.assertEqual(up.temporary_write_bytes, 1_024)
+        self.assertEqual(gate.temporary_write_bytes, 1_024)
+        self.assertEqual(activation.hbm_read_bytes, 2_048)
+        self.assertEqual(activation.temporary_write_bytes, 1_024)
+
+    def test_fused_swiglu_keeps_weights_but_removes_intermediate_traffic(self) -> None:
+        cfg = PrimitiveInvariantTests.attention_config(
+            active_unique_experts=2,
+            expert_activation_flops_per_element=4,
+            fuse_expert_intermediates=True,
+        )
+        stages = build_attention_prefill(cfg, self.hardware)
+        up = self.stage(stages, "expert_up_projection")
+        gate = self.stage(stages, "expert_gate_projection")
+        activation = self.stage(stages, "expert_swiglu_activation")
+        down = self.stage(stages, "expert_down_projection")
+        combine = self.stage(stages, "moe_combine")
+
+        self.assertEqual(up.hbm_read_bytes, 2_112)
+        self.assertEqual(gate.hbm_read_bytes, 2_048)
+        self.assertEqual(down.hbm_read_bytes, 2_048)
+        self.assertEqual(up.hbm_write_bytes, 0)
+        self.assertEqual(gate.hbm_write_bytes, 0)
+        self.assertEqual(activation.hbm_read_bytes, 0)
+        self.assertEqual(activation.hbm_write_bytes, 0)
+        self.assertEqual(down.temporary_write_bytes, 64)
+        self.assertEqual(combine.hbm_read_bytes, 64)
 
     def test_attention_flop_equations_match_design(self) -> None:
         stages = build_attention_prefill(self.prefill, self.hardware)
@@ -222,7 +286,9 @@ class BuilderAndSummaryTests(unittest.TestCase):
         self.assertEqual(self.stage(stages, "flash_attention").flops, 1_680)
         self.assertEqual(self.stage(stages, "output_projection").flops, 4_096)
         self.assertEqual(self.stage(stages, "moe_router").flops, 2_112)
-        self.assertEqual(self.stage(stages, "expert_compute").flops, 49_152)
+        self.assertEqual(self.stage(stages, "expert_up_projection").flops, 16_384)
+        self.assertEqual(self.stage(stages, "expert_gate_projection").flops, 16_384)
+        self.assertEqual(self.stage(stages, "expert_down_projection").flops, 16_384)
 
     def test_attention_summary_reports_full_kv_residency(self) -> None:
         total = analytical_model.summarize(
@@ -309,17 +375,28 @@ class BuilderAndSummaryTests(unittest.TestCase):
         }
         self.assertFalse(any("M_q" in name for name in stage_names))
 
-    def test_hope_forward_orders_titans_before_cms(self) -> None:
-        stages = analytical_model.build_hope_prefill(
-            self.hope_config(query_tokens=4), self.hardware
-        )
-        last_titans = max(
-            index for index, stage in enumerate(stages) if stage.component == "titans"
-        )
-        first_cms = min(
-            index for index, stage in enumerate(stages) if stage.component == "cms"
-        )
-        self.assertLess(last_titans, first_cms)
+    def test_all_titans_work_precedes_cms(self) -> None:
+        cases = {
+            "prefill": analytical_model.build_hope_prefill(
+                self.hope_config(query_tokens=4), self.hardware
+            ),
+            "decode_boundary": analytical_model.build_hope_decode(
+                self.hope_config(), self.hardware, timing="boundary"
+            ),
+        }
+        for name, stages in cases.items():
+            with self.subTest(case=name):
+                last_titans = max(
+                    index
+                    for index, stage in enumerate(stages)
+                    if stage.component in {"titans", "titans_update"}
+                )
+                first_cms = min(
+                    index
+                    for index, stage in enumerate(stages)
+                    if stage.component == "cms"
+                )
+                self.assertLess(last_titans, first_cms)
 
     def test_legacy_anchor(self) -> None:
         got = analytical_model.legacy_hope_proxy(
@@ -437,6 +514,16 @@ class ValidationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             PrimitiveInvariantTests.attention_config(compute_efficiency=1.01)
 
+    def test_rejects_kv_reload_multiplier_below_one(self) -> None:
+        with self.assertRaises(ValueError):
+            PrimitiveInvariantTests.attention_config(kv_reload_multiplier=0.999)
+
+    def test_attention_decode_rejects_multi_token_invocation(self) -> None:
+        cfg = PrimitiveInvariantTests.attention_config(query_tokens=2)
+        hardware = Hardware("tiny", 1.0, 1.0, 1)
+        with self.assertRaises(ValueError):
+            build_attention_decode(cfg, hardware)
+
     def test_memory_spec_rejects_zero_dimension(self) -> None:
         with self.assertRaises(ValueError):
             analytical_model.MemorySpec("bad", 0, 1, 1, 1, 0, 1.0, 1.0)
@@ -455,6 +542,36 @@ class DeterministicRunnerTests(unittest.TestCase):
     @staticmethod
     def digest(path: Path) -> str:
         return hashlib.sha256(path.read_bytes()).hexdigest()
+
+    def test_runner_decouples_cms_state_from_titans_momentum(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_cwd:
+            subprocess.run(
+                [sys.executable, str(self.runner)],
+                cwd=temporary_cwd,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        payload = json.loads(self.results_path.read_text(encoding="utf-8"))
+        paper = payload["hope_scenarios"]["paper_equation_lower_bound"]
+        shipped = payload["hope_scenarios"]["shipped_credible_momentum"]
+        paper_levels = paper["inputs"]["decode"]["cms_levels"]
+        shipped_levels = shipped["inputs"]["decode"]["cms_levels"]
+        self.assertEqual(
+            [level["optimizer_slots"] for level in paper_levels],
+            [0, 0, 0],
+        )
+        self.assertEqual(shipped_levels, paper_levels)
+
+        def cms_state(scenario: dict[str, object]) -> list[int]:
+            stages = scenario["decode"]["normal"]["stages"]
+            return [
+                stage["persistent_state_delta_bytes"]
+                for stage in stages
+                if stage["component"] == "cms"
+            ]
+
+        self.assertEqual(cms_state(shipped), cms_state(paper))
 
     def test_runner_outputs_are_complete_and_byte_stable(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_cwd:

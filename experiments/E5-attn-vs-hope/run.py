@@ -45,6 +45,8 @@ MODEL_INPUTS = {
     "experts": 128,
     "top_k": 1,
     "expert_hidden_dim": 16_384,
+    "expert_activation_flops_per_element": 4,
+    "fuse_expert_intermediates": False,
     "element_bytes": 1,
     "partial_bytes": 4,
     "kv_split_tokens": 2_048,
@@ -56,6 +58,7 @@ MODEL_INPUTS = {
     "cms_capacities": [64, 128, 256],
     "cms_update_periods": [1_000, 5_000, 10_000],
     "cms_bptt_span": 4,
+    "cms_optimizer_slots": 0,
 }
 
 
@@ -131,6 +134,10 @@ def attention_config(
         expert_hbm_fraction=1.0,
         compute_efficiency=1.0,
         bandwidth_efficiency=1.0,
+        expert_activation_flops_per_element=MODEL_INPUTS[
+            "expert_activation_flops_per_element"
+        ],
+        fuse_expert_intermediates=MODEL_INPUTS["fuse_expert_intermediates"],
     )
 
 
@@ -155,7 +162,7 @@ def _memory_specs(momentum_slots: int, adaptive_q: bool) -> tuple[MemorySpec, ..
     return tuple(values)
 
 
-def _cms_levels(optimizer_slots: int) -> tuple[CMSLevel, ...]:
+def _cms_levels(cms_optimizer_slots: int) -> tuple[CMSLevel, ...]:
     d = MODEL_INPUTS["model_dim"]
     low_rank = MODEL_INPUTS["cms_low_rank_dim"]
     return tuple(
@@ -168,7 +175,7 @@ def _cms_levels(optimizer_slots: int) -> tuple[CMSLevel, ...]:
             output_dim=d,
             update_period=period,
             bptt_span=MODEL_INPUTS["cms_bptt_span"],
-            optimizer_slots=optimizer_slots,
+            optimizer_slots=cms_optimizer_slots,
             personalized=True,
             gradient_multiplier=1.0,
         )
@@ -191,6 +198,7 @@ def hope_config(
     momentum_slots: int,
     adaptive_q: bool,
     paper_lower_bound: bool,
+    cms_optimizer_slots: int = 0,
 ) -> HopeConfig:
     return HopeConfig(
         batch=batch,
@@ -202,7 +210,7 @@ def hope_config(
         state_bytes=MODEL_INPUTS["element_bytes"],
         optimizer_bytes=4,
         memories=_memory_specs(momentum_slots, adaptive_q),
-        cms_levels=_cms_levels(momentum_slots),
+        cms_levels=_cms_levels(cms_optimizer_slots),
         position=0,
         adaptive_q=adaptive_q,
         schedule="eager_gradient",
@@ -252,6 +260,7 @@ def _hope_scenario(
     adaptive_q: bool,
     paper_lower_bound: bool,
     included_in_defaults: bool,
+    cms_optimizer_slots: int,
 ) -> dict[str, Any]:
     prefill = hope_config(
         batch=MODEL_INPUTS["batch"],
@@ -260,6 +269,7 @@ def _hope_scenario(
         momentum_slots=momentum_slots,
         adaptive_q=adaptive_q,
         paper_lower_bound=paper_lower_bound,
+        cms_optimizer_slots=cms_optimizer_slots,
     )
     decode = hope_config(
         batch=MODEL_INPUTS["batch"],
@@ -268,6 +278,7 @@ def _hope_scenario(
         momentum_slots=momentum_slots,
         adaptive_q=adaptive_q,
         paper_lower_bound=paper_lower_bound,
+        cms_optimizer_slots=cms_optimizer_slots,
     )
     return {
         "included_in_defaults": included_in_defaults,
@@ -513,6 +524,7 @@ def build_results() -> dict[str, Any]:
             adaptive_q=False,
             paper_lower_bound=True,
             included_in_defaults=True,
+            cms_optimizer_slots=MODEL_INPUTS["cms_optimizer_slots"],
         ),
         "shipped_credible_momentum": _hope_scenario(
             hardware,
@@ -520,6 +532,7 @@ def build_results() -> dict[str, Any]:
             adaptive_q=False,
             paper_lower_bound=False,
             included_in_defaults=True,
+            cms_optimizer_slots=MODEL_INPUTS["cms_optimizer_slots"],
         ),
         "legacy_repo_proxy": {
             "included_in_defaults": True,
@@ -532,6 +545,7 @@ def build_results() -> dict[str, Any]:
             adaptive_q=True,
             paper_lower_bound=False,
             included_in_defaults=False,
+            cms_optimizer_slots=MODEL_INPUTS["cms_optimizer_slots"],
         ),
     }
     qa_checks = _qa_checks(

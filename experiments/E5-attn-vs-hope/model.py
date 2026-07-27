@@ -77,6 +77,8 @@ class AttentionMoEConfig:
     expert_hbm_fraction: float
     compute_efficiency: float
     bandwidth_efficiency: float
+    expert_activation_flops_per_element: int = 0
+    fuse_expert_intermediates: bool = False
 
     def __post_init__(self) -> None:
         positive_dimensions = (
@@ -101,6 +103,8 @@ class AttentionMoEConfig:
         for name in positive_dimensions:
             _require_positive(name, getattr(self, name))
         _require_positive("kv_reload_multiplier", self.kv_reload_multiplier)
+        if self.kv_reload_multiplier < 1:
+            raise ValueError("kv_reload_multiplier must be at least 1.0")
         _require_nonnegative(
             "softmax_flops_per_pair", self.softmax_flops_per_pair
         )
@@ -108,6 +112,12 @@ class AttentionMoEConfig:
             "router_flops_per_token_expert",
             self.router_flops_per_token_expert,
         )
+        _require_nonnegative(
+            "expert_activation_flops_per_element",
+            self.expert_activation_flops_per_element,
+        )
+        if self.expert_matrices not in {2, 3}:
+            raise ValueError("expert_matrices must be 2 or 3")
         if self.top_k > self.experts:
             raise ValueError("top_k must not exceed experts")
         if self.active_unique_experts is not None:
@@ -116,6 +126,8 @@ class AttentionMoEConfig:
                 raise ValueError("active_unique_experts must not exceed experts")
         if not 0 <= self.expert_hbm_fraction <= 1:
             raise ValueError("expert_hbm_fraction must be in [0, 1]")
+        if not isinstance(self.fuse_expert_intermediates, bool):
+            raise TypeError("fuse_expert_intermediates must be bool")
         _require_efficiency("compute_efficiency", self.compute_efficiency)
         _require_efficiency("bandwidth_efficiency", self.bandwidth_efficiency)
 
@@ -531,15 +543,33 @@ def _attention_suffix(
     )
     routing_metadata_bytes = n * config.top_k * 8
     active_experts = _active_expert_count(config)
-    expert_weight_bytes = (
+    expert_matrix_weight_bytes = (
         active_experts
-        * config.expert_matrices
         * config.model_dim
         * config.expert_hidden_dim
         * config.weight_bytes
         * config.expert_hbm_fraction
     )
-    return [
+    expert_hidden_bytes = (
+        n
+        * config.top_k
+        * config.expert_hidden_dim
+        * config.activation_bytes
+    )
+    expert_gemm_flops = (
+        2
+        * n
+        * config.top_k
+        * config.model_dim
+        * config.expert_hidden_dim
+    )
+    expert_elementwise_flops = (
+        n
+        * config.top_k
+        * config.expert_hidden_dim
+        * config.expert_activation_flops_per_element
+    )
+    stages = [
         _stage(
             hardware,
             config,
@@ -582,47 +612,136 @@ def _attention_suffix(
                 "temporary traffic."
             ),
         ),
-        _stage(
-            hardware,
-            config,
-            phase=phase,
-            component="moe",
-            stage="expert_weight_read",
-            hbm_read_bytes=expert_weight_bytes,
-            notes=(
-                f"Reads {active_experts:.6g} unique active experts after the "
-                "configured HBM-residency fraction."
-            ),
-        ),
-        _stage(
-            hardware,
-            config,
-            phase=phase,
-            component="moe",
-            stage="expert_compute",
-            flops=(
-                2
-                * n
-                * config.top_k
-                * config.expert_matrices
-                * config.model_dim
-                * config.expert_hidden_dim
-            ),
-            hbm_read_bytes=routed_activation_bytes,
-            temporary_write_bytes=routed_activation_bytes,
-            notes="Top-k expert matrices; one MAC is two FLOPs.",
-        ),
-        _stage(
-            hardware,
-            config,
-            phase=phase,
-            component="moe",
-            stage="moe_combine",
-            hbm_read_bytes=routed_activation_bytes,
-            mandatory_write_bytes=model_activation_bytes,
-            notes="Combines routed expert results and writes the block output.",
-        ),
     ]
+    stages.append(
+        _stage(
+            hardware,
+            config,
+            phase=phase,
+            component="moe",
+            stage="expert_up_projection",
+            flops=expert_gemm_flops,
+            hbm_read_bytes=(
+                routed_activation_bytes + expert_matrix_weight_bytes
+            ),
+            temporary_write_bytes=(
+                0
+                if config.fuse_expert_intermediates
+                else expert_hidden_bytes
+            ),
+            notes=(
+                f"Up-projection GEMM and its weights for {active_experts:.6g} "
+                "unique active experts."
+            ),
+        )
+    )
+    if config.expert_matrices == 3:
+        stages.extend(
+            [
+                _stage(
+                    hardware,
+                    config,
+                    phase=phase,
+                    component="moe",
+                    stage="expert_gate_projection",
+                    flops=expert_gemm_flops,
+                    hbm_read_bytes=expert_matrix_weight_bytes
+                    + (
+                        0
+                        if config.fuse_expert_intermediates
+                        else routed_activation_bytes
+                    ),
+                    temporary_write_bytes=(
+                        0
+                        if config.fuse_expert_intermediates
+                        else expert_hidden_bytes
+                    ),
+                    notes=(
+                        "Gate-projection GEMM carries its own expert-weight "
+                        "traffic."
+                    ),
+                ),
+                _stage(
+                    hardware,
+                    config,
+                    phase=phase,
+                    component="moe",
+                    stage="expert_swiglu_activation",
+                    flops=expert_elementwise_flops,
+                    hbm_read_bytes=(
+                        0
+                        if config.fuse_expert_intermediates
+                        else 2 * expert_hidden_bytes
+                    ),
+                    temporary_write_bytes=(
+                        0
+                        if config.fuse_expert_intermediates
+                        else expert_hidden_bytes
+                    ),
+                    notes=(
+                        "SiLU and gate product; intermediate HBM traffic is "
+                        "zero only when expert intermediates are fused."
+                    ),
+                ),
+            ]
+        )
+    else:
+        stages.append(
+            _stage(
+                hardware,
+                config,
+                phase=phase,
+                component="moe",
+                stage="expert_activation",
+                flops=expert_elementwise_flops,
+                hbm_read_bytes=(
+                    0
+                    if config.fuse_expert_intermediates
+                    else expert_hidden_bytes
+                ),
+                temporary_write_bytes=(
+                    0
+                    if config.fuse_expert_intermediates
+                    else expert_hidden_bytes
+                ),
+                notes="Conventional two-matrix expert activation.",
+            )
+        )
+    stages.extend(
+        [
+            _stage(
+                hardware,
+                config,
+                phase=phase,
+                component="moe",
+                stage="expert_down_projection",
+                flops=expert_gemm_flops,
+                hbm_read_bytes=expert_matrix_weight_bytes
+                + (
+                    0
+                    if config.fuse_expert_intermediates
+                    else expert_hidden_bytes
+                ),
+                temporary_write_bytes=routed_activation_bytes,
+                notes=(
+                    "Down-projection GEMM carries its own expert-weight traffic."
+                ),
+            ),
+            _stage(
+                hardware,
+                config,
+                phase=phase,
+                component="moe",
+                stage="moe_combine",
+                hbm_read_bytes=routed_activation_bytes,
+                mandatory_write_bytes=model_activation_bytes,
+                notes=(
+                    "Combines routed expert results and writes the block output."
+                ),
+            ),
+        ]
+    )
+    return stages
 
 
 def build_attention_prefill(
@@ -672,6 +791,8 @@ def build_attention_decode(
 ) -> list[Stage]:
     """Build the auditable Flash-Decode portion of one next-token invocation."""
 
+    if config.query_tokens != 1:
+        raise ValueError("attention decode models exactly one next-token invocation")
     stages = _attention_prefix(config, hardware, "decode")
     pairs = (
         config.batch
@@ -759,7 +880,7 @@ def _hope_stage(
     )
 
 
-def _hope_forward_stages(
+def _titans_forward_stages(
     config: HopeConfig, hardware: Hardware, phase: str
 ) -> list[Stage]:
     n = config.processed_tokens
@@ -821,6 +942,14 @@ def _hope_forward_stages(
             )
         )
 
+    return stages
+
+
+def _cms_forward_stages(
+    config: HopeConfig, hardware: Hardware, phase: str
+) -> list[Stage]:
+    n = config.processed_tokens
+    stages = []
     for level in config.cms_levels:
         params = (
             level.input_dim * level.hidden_dim
@@ -1037,7 +1166,7 @@ def build_hope_prefill(config: HopeConfig, hardware: Hardware) -> list[Stage]:
     """Build one HOPE prefill chunk with explicit update-boundary events."""
 
     phase = "prefill"
-    stages = _hope_forward_stages(config, hardware, phase)
+    stages = _titans_forward_stages(config, hardware, phase)
     for memory in config.memories:
         boundaries = update_boundary_count(
             config.position, config.query_tokens, memory.update_chunk
@@ -1070,6 +1199,7 @@ def build_hope_prefill(config: HopeConfig, hardware: Hardware) -> list[Stage]:
                     config, hardware, phase, memory, boundaries
                 )
             )
+    stages.extend(_cms_forward_stages(config, hardware, phase))
     if config.include_cms_updates:
         for level in config.cms_levels:
             boundaries = update_boundary_count(
@@ -1097,7 +1227,7 @@ def build_hope_decode(
     if timing not in {"normal", "boundary", "amortized"}:
         raise ValueError("timing must be normal, boundary, or amortized")
     phase = "decode"
-    stages = _hope_forward_stages(config, hardware, phase)
+    stages = _titans_forward_stages(config, hardware, phase)
     for memory in config.memories:
         if config.schedule == "eager_gradient":
             stages.extend(
@@ -1133,6 +1263,7 @@ def build_hope_decode(
                     1 if timing == "boundary" else 1 / memory.update_chunk,
                 )
             )
+    stages.extend(_cms_forward_stages(config, hardware, phase))
     if config.include_cms_updates and timing != "normal":
         for level in config.cms_levels:
             stages.extend(

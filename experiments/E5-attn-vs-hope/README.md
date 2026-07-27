@@ -9,6 +9,8 @@ effective bytes count traffic that crosses the HBM boundary only.
 
 - Full attention uses `D_q = H_q d_h`, `D_kv = H_kv d_h`, causal
   `B H_q Q(Q+1)/2` prefill pairs, and linear `B H_q QK` decode pairs.
+- Decode is exactly one next-token invocation (`Q=1`), and the KV HBM reload
+  multiplier is a lower-bound multiplier no smaller than one.
 - FlashAttention does not materialize the quadratic score or probability
   matrix in HBM. It still accounts for Q/K/V reads and the final output write.
 - Split Flash-Decode materializes partial outputs and LSE records only for more
@@ -16,8 +18,9 @@ effective bytes count traffic that crosses the HBM boundary only.
 - Shipped HOPE has static `q=xW_q` and mutable
   `{M_k,M_v,M_eta,M_alpha,M_mem}`. `M_q` appears only in the explicitly
   hypothetical adaptive-q scenario.
-- HOPE forward is self-modifying Titans followed by all sequential CMS levels.
-  CMS read cadence is one token even when a level's update period is long.
+- HOPE executes all self-modifying Titans forward/loss/backward/update work
+  before entering the sequential CMS chain. CMS read cadence is one token even
+  when a level's update period is long.
 
 ## Implementation choices
 
@@ -37,10 +40,14 @@ effective bytes count traffic that crosses the HBM boundary only.
 - The shipped reference uses eager Titans gradients and reports normal,
   simultaneous-boundary, and per-memory-period amortized decode. CMS online
   backward/update is excluded from this baseline, while every CMS forward read
-  remains present.
+  remains present. CMS optimizer slots are an independent input and default to
+  zero; they are never inferred from Titans momentum slots.
 - Router metadata uses 8 bytes per selected route (index plus score). Dispatch,
-  expert output, Q, and other potentially fusible intermediates stay explicit as
-  temporary HBM traffic so later workbook variants can audit fusion assumptions.
+  expert up projection, gate projection, SwiGLU activation/intermediate,
+  down-projection, combine, Q, and other potentially fusible intermediates stay
+  explicit. Every expert GEMM carries its own active-expert weight bytes and
+  FLOPs in one stage. `fuse_expert_intermediates` removes only the internal
+  up/gate/SwiGLU HBM materializations; dispatch and combine remain explicit.
 
 ## Scenarios and sensitivities
 
@@ -55,8 +62,9 @@ effective bytes count traffic that crosses the HBM boundary only.
 Sensitivity inputs include batch, context, prefill chunk, head/KV geometry,
 Flash-Decode splits, KV reload multiplier, expert count/top-k/hidden width,
 unique active experts, HBM-resident expert fraction, mutable-state byte widths,
-memory update chunks, CMS capacity/LRD/update period/BPTT span, optimizer slots,
-update schedule, state reload count, and stage efficiencies.
+expert-activation FLOPs, expert-intermediate fusion, memory update chunks,
+Titans momentum slots, CMS capacity/LRD/update period/BPTT span, independent CMS
+optimizer slots, update schedule, state reload count, and stage efficiencies.
 
 ## Stagewise versus aggregate roofline
 
