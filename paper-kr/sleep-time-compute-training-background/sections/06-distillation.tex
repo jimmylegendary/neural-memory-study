@@ -1,0 +1,100 @@
+\chapter{Distillation: 큰 경험을 작은 상태로 옮기기}
+\label{bg:chapter-distillation}
+
+\section{교사와 학생}
+
+\concept{distillation}{지식 증류}는 \concept{teacher-model}{교사 모델}이 제공한 output
+distribution, rationale, feature, selected answer를 \concept{student-model}{학생 모델}이
+모방하도록 학습하는 방식이다. 교사가 더 크거나 더 많은 context를 사용할 수 있고, 학생은
+작거나 latency가 낮을 수 있다. Sleep context에서는 긴 episodic history를 짧은 memory,
+adapter, 작은 model로 압축하는 operator로 이해할 수 있다.
+
+Hard target은 교사의 최고 확률 token 하나만 사용한다. Soft target은 전체 분포를 사용해
+두 번째·세 번째 선택지에 대한 정보도 전달한다. \concept{temperature}{온도} $T$를 적용하면
+
+\begin{equation}
+  p_i^{(T)}=\frac{\exp(z_i/T)}{\sum_j\exp(z_j/T)}.
+\end{equation}
+
+$T>1$에서 분포가 평평해져 relative preference가 더 드러난다. 학생 분포 $q$와 교사 분포
+$p$ 사이 \concept{kl-divergence}{KL 발산}을 줄일 수 있다.
+
+\begin{equation}
+  D_{\mathrm{KL}}(p\Vert q)=\sum_i p_i\log\frac{p_i}{q_i}.
+  \label{eq:bg-kl}
+\end{equation}
+
+KL은 대칭 거리가 아니다. 어떤 방향을 쓰는지에 따라 mode covering과 mode seeking 특성이
+달라진다. 실제 distillation loss는 hard label loss와 soft loss를 섞는다.
+
+\begin{equation}
+  L=\alpha L_{\mathrm{hard}}+(1-\alpha)T^2
+  D_{\mathrm{KL}}(p_T\Vert q_T).
+  \label{eq:bg-distill-loss}
+\end{equation}
+
+\section{Memory consolidation으로서 distillation}
+
+긴 history를 매번 prompt에 넣는 대신 teacher가 충분한 context와 retrieval을 사용해 reusable
+summary나 strategy를 만든다. destination에 따라 세 종류로 나뉜다.
+
+\begin{enumerate}
+  \item \textbf{External distillation}: episode를 concise text, vector prototype, graph fact로 바꾼다.
+  \item \textbf{Adapter distillation}: teacher의 behavior를 LoRA나 adapter에 학습한다.
+  \item \textbf{Model distillation}: 여러 cycle의 memory를 base model weights로 통합한다.
+\end{enumerate}
+
+첫 번째는 provenance와 수정이 쉽고 inference 때 retrieval cost가 남는다. 두 번째는 repeated
+query의 retrieval cost를 줄일 수 있지만 base model compatibility와 adapter routing이 필요하다.
+세 번째는 access latency가 가장 낮을 수 있으나 interference, deletion, rollback cost가 가장
+크다.
+
+\section{무엇이 압축 과정에서 사라지는가}
+
+Distillation은 loss가 중요하게 보는 behavior만 보존한다. rare exception, uncertainty,
+source wording, provenance는 teacher output에 드러나지 않으면 사라진다. 외부 summary가
+``사용자는 항상 아침 운동을 선호한다''고 일반화했지만 원 episode가 ``이번 주만''이었다면
+identity drift가 발생한다.
+
+세 가지 검증을 분리한다.
+
+\begin{itemize}
+  \item \textbf{fidelity}: teacher와 student가 같은 query distribution에서 얼마나 같은가?
+  \item \textbf{utility}: teacher와 달라도 downstream task를 실제로 더 잘 푸는가?
+  \item \textbf{provenance preservation}: output의 각 claim을 source episode로 되돌릴 수 있는가?
+\end{itemize}
+
+Fidelity가 너무 높으면 teacher 오류까지 복사한다. utility만 최적화하면 근거 없는 shortcut을
+배울 수 있다. provenance는 loss 한 항으로 쉽게 보장되지 않으므로 external metadata와
+release gate가 필요하다.
+
+\section{Recursive distillation과 model collapse}
+
+Sleep cycle $k$의 output이 cycle $k+1$의 training data가 되면 recursive depth가 증가한다.
+실제 data anchor가 줄고 생성 data만 반복되면 distribution tail이 사라질 수 있다
+\parencite{shumailov2024collapse}. 반면 real data를 계속 누적하는 조건에서는 collapse가
+필연적이지 않을 수 있다. 따라서 synthetic 여부의 이분법 대신 각 item에
+origin, teacher version, recursive depth, real-evidence links를 기록한다.
+
+\begin{table}[htbp]
+\centering
+\caption{Sleep distillation destination의 차이}
+\label{tab:bg-distillation-destinations}
+\begin{tabularx}{\textwidth}{L{0.19\textwidth}YYYY}
+\toprule
+Destination & update 비용 & wake 비용 & 수정/삭제 & 대표 위험 \\
+\midrule
+text summary & 낮음--중간 & retrieval/context & 쉬움 & over-compression \\
+vector prototype & 중간 & ANN search & 중간 & embedding drift \\
+temporal graph & 중간--높음 & traversal + context & 비교적 쉬움 & conflict/edge explosion \\
+LoRA/adapter & training 필요 & routing + matmul & version rollback 가능 & conflict/base churn \\
+full weights & 가장 높음 & 낮을 수 있음 & 가장 어려움 & interference/unlearning \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{keypoint}
+Distillation은 기억을 ``옮기는'' 마법이 아니라 task distribution이 정한 정보만 보존하는
+lossy compression이다. Sleep system은 압축률뿐 아니라 삭제 가능한 provenance와 later
+utility를 함께 최적화해야 한다.
+\end{keypoint}

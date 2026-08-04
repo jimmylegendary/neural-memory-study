@@ -1,0 +1,81 @@
+\documentclass[11pt,a4paper,oneside,openany]{book}
+\usepackage{stc-common}
+\addbibresource{bibliography.bib}
+
+\hypersetup{
+  pdftitle={Sleep-Time Compute를 위한 Training Background},
+  pdfauthor={Samsung SAIT Neural Memory Study},
+  pdfsubject={Training foundations for sleep-time compute},
+  pdfkeywords={training, continual learning, sleep-time compute, memory, LoRA, reinforcement learning}
+}
+
+\title{Sleep-Time Compute를 위한\\Training Background}
+\author{Samsung SAIT Neural Memory Study}
+\date{Source freeze: 2026-08-05\\Build edition: 1.0}
+
+\begin{document}
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+  \centering
+  \vspace*{20mm}
+  {\sffamily\bfseries\color{STCNavy}\fontsize{28}{34}\selectfont
+   Sleep-Time Compute를 위한\par Training Background\par}
+  \vspace{8mm}
+  {\Large 학습을 처음 접하는 시스템·메모리 연구자를 위한 독립 참고서\par}
+  \vspace{18mm}
+  \begin{tcolorbox}[width=0.84\textwidth,colback=STCMist,colframe=STCBlue,boxrule=0.8pt,arc=2mm]
+  이 책은 ``용어 사전''이 아니라, 데이터가 어떻게 손실과 기울기로 바뀌고,
+  그 기울기가 어떤 상태를 얼마나 오래 바꾸며, 그 결과를 어떻게 검증·출판·롤백하는지
+  하나의 시스템으로 설명한다. Study Paper의 \textsf{[배경: concept-id]} 링크는 이 책의
+  해당 개념으로 연결된다.
+  \end{tcolorbox}
+  \vfill
+  {\sffamily Samsung SAIT Neural Memory Study\par}
+  {\small Source freeze 2026-08-05 · Korean explanatory edition\par}
+\end{titlepage}
+\hypersetup{pageanchor=true}
+\frontmatter
+
+\chapter*{읽는 방법}
+\addcontentsline{toc}{chapter}{읽는 방법}
+각 장은 \textbf{직관}에서 시작해, 필요한 만큼의 \textbf{최소 수식}, 작은
+\textbf{수치 예}, \textbf{Sleep-time compute와의 연결}, 마지막으로
+\textbf{시스템 비용} 순서로 진행한다. 미적분을 몰라도 ``기울기는 어느 쪽으로 움직이면
+손실이 줄어드는지를 알려 주는 경사''라는 직관에서 출발할 수 있다. 수식은 정확한 상태와
+비용을 구분하기 위해 사용하며, 독자가 계산을 암기하는 것이 목적은 아니다.
+
+\begin{keypoint}[이 책이 답하는 질문]
+\begin{enumerate}
+  \item 모델이 ``배운다''는 것은 어떤 수치 상태가 바뀐다는 뜻인가?
+  \item full fine-tuning, LoRA, distillation, replay, RL은 데이터·목표·상태가 어떻게 다른가?
+  \item 계속 배우면 왜 잊고, 용량은 어디서 소진되며, 무엇을 검증해야 하는가?
+  \item wake 학습과 sleep 학습을 분리하면 어떤 compute, memory, I/O, rollback 비용이 생기는가?
+\end{enumerate}
+\end{keypoint}
+
+\tableofcontents
+\listoffigures
+\listoftables
+
+\mainmatter
+\input{sections/01-learning-objectives}
+\input{sections/02-forward-backward-optimizer}
+\input{sections/03-batch-sampling-evaluation}
+\input{sections/04-training-regimes}
+\input{sections/05-supervision-representations}
+\input{sections/06-distillation}
+\input{sections/07-peft-lora-adapters-moe}
+\IfFileExists{sections/08-data-augmentation-replay.tex}{\input{sections/08-data-augmentation-replay}}{}
+\IfFileExists{sections/09-continual-learning.tex}{\input{sections/09-continual-learning}}{}
+\IfFileExists{sections/10-stability-plasticity-methods.tex}{\input{sections/10-stability-plasticity-methods}}{}
+\IfFileExists{sections/11-rl-foundations.tex}{\input{sections/11-rl-foundations}}{}
+\IfFileExists{sections/12-rlhf-memory-policy.tex}{\input{sections/12-rlhf-memory-policy}}{}
+\IfFileExists{sections/13-meta-learning-ttt.tex}{\input{sections/13-meta-learning-ttt}}{}
+\IfFileExists{sections/14-editing-unlearning.tex}{\input{sections/14-editing-unlearning}}{}
+\IfFileExists{sections/15-training-systems.tex}{\input{sections/15-training-systems}}{}
+\IfFileExists{sections/16-stc-mapping.tex}{\input{sections/16-stc-mapping}}{}
+\IfFileExists{glossary.tex}{\input{glossary}}{}
+
+\backmatter
+\printbibliography[heading=bibintoc,title={참고문헌}]
+\end{document}

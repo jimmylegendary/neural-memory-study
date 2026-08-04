@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0.0",
+  "figures": [
+    {"file":"learning-map.pdf","figure_id":"BG-F001","source_ids":["SRC-STC-0030"],"mode":"original-redraw","alt":"데이터에서 순전파, 손실, 역전파, 옵티마이저, 검증, 출판으로 이어지고 실패 시 다시 데이터로 돌아가는 학습 파이프라인."},
+    {"file":"training-regimes.pdf","figure_id":"BG-F002","source_ids":["SRC-STC-0014","SRC-STC-0021","SRC-STC-0030"],"mode":"original-redraw","alt":"가로축은 배포 전후 시간, 세로축은 변경 상태의 크기이며 사전학습부터 외부 기억 sleep까지 위치시킨 산점도."},
+    {"file":"continual-learning-map.pdf","figure_id":"BG-F003","source_ids":["SRC-STC-0002","SRC-STC-0003","SRC-STC-0004","SRC-STC-0007"],"mode":"original-redraw","alt":"Replay, regularization, constraint/isolation, growth/compaction의 네 방법이 검증 가능한 기억으로 모이는 흐름도."},
+    {"file":"rl-sleep-policy.pdf","figure_id":"BG-F004","source_ids":["SRC-STC-0051","SRC-STC-0021"],"mode":"original-redraw","alt":"상태, 정책, 행동, 다음 wake 결과, 지연 보상으로 구성된 sleep controller 강화학습 순환."},
+    {"file":"training-memory-cost.pdf","figure_id":"BG-F005","source_ids":["SRC-STC-0030","SRC-STC-0021"],"mode":"original-redraw","alt":"Inference, LoRA sleep, full fine-tuning sleep의 model weights, gradients, optimizer state, activations 상대 메모리 스택."}
+  ]
+}

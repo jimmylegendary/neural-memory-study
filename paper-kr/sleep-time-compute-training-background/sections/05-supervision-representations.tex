@@ -1,0 +1,83 @@
+\chapter{지도 신호, 자기지도, representation과 언어모델 loss}
+\label{bg:chapter-supervision}
+
+\section{정답은 어디서 오는가}
+
+\concept{supervision}{지도 신호}는 입력에 대해 원하는 target이나 비교를 제공한다.
+image label, 정답 문장, tool execution result, 사람 preference가 모두 supervision이다.
+정답 비용이 높고 누락·편향이 존재하므로 data provenance가 중요하다.
+
+\concept{self-supervision}{자기지도학습}은 raw data 안에서 target을 만든다. 다음 token 예측은
+앞 token을 input, 실제 다음 token을 target으로 사용한다. 별도 사람이 모든 문장을 label하지
+않아도 scale할 수 있지만, 데이터가 사실인지 안전한지는 보장하지 않는다. Sleep transcript를
+그대로 next-token target으로 쓰면 model error와 prompt injection도 학습 대상이 될 수 있다.
+
+\section{Representation은 저장소와 다르다}
+
+\concept{representation}{표현}은 input을 후속 계산에 유용한 vector 또는 state로 바꾼
+것이다. representation 안에 정보가 통계적으로 존재하는 것과, model이 필요한 query에서
+그 정보를 꺼내 행동에 쓰는 것은 다르다. linear probe가 fact를 읽어도 generation path가
+접근하지 못할 수 있다. 그래서 parametric memory의 capacity는 단순 bit encoding, probe
+decodability, behavioral access, composition을 나눠 측정해야 한다.
+
+External vector memory도 마찬가지다. embedding space에 가까운 record가 존재해도 retriever가
+top-$k$에 넣지 못하거나, generator가 context를 무시하면 end-to-end memory는 실패한다.
+Memory medium에 상관없이 write, address, read, use의 네 단계를 구분한다.
+
+\section{Logit, softmax, cross-entropy}
+
+언어모델의 마지막 layer는 vocabulary 각 token에 \concept{logit}{로짓} $z_i$를 준다.
+\concept{softmax}{소프트맥스}는 이를 확률로 바꾼다.
+
+\begin{equation}
+  p_i=\frac{\exp(z_i)}{\sum_j\exp(z_j)}.
+  \label{eq:bg-softmax}
+\end{equation}
+
+정답 token이 $y$일 때 \concept{cross-entropy}{교차엔트로피}는
+$\ell=-\log p_y$다. 정답 확률이 1에 가까우면 0에 가까워지고, 낮으면 커진다. 이 loss는
+모든 오답 token을 동일한 의미로 보지 않는다. 확률 분포 전체를 통해 gradient가 흐른다.
+
+예를 들어 vocabulary가 세 token이고 logit이 $(2,1,0)$이면 softmax 확률은 대략
+$(0.665,0.245,0.090)$이다. 첫 token이 정답이면 loss는 약 $0.408$, 셋째가 정답이면
+약 $2.408$이다. 그러나 ``서울은 한국의 수도''를 맞히는 token loss와 사용자 개인정보를
+노출하는 token loss는 제품 위험이 다르다. objective weighting과 evaluation이 이를 반영해야
+한다.
+
+\section{Mask와 sequence-level objective}
+
+LLM training에서는 padding token, prompt token, tool output 중 어느 token에 loss를 줄지
+mask로 결정한다. Instruction tuning에서 user prompt까지 모방 loss를 주면 user 발화를
+assistant가 생성하려 할 수 있다. tool trace의 private field를 mask하지 않으면 secret을
+학습할 수 있다.
+
+Token loss만으로 sequence의 factual consistency나 task success를 직접 표현하기 어렵다.
+verifier score, execution success, preference loss, contrastive loss를 결합할 수 있지만 objective가
+많아질수록 gradient conflict와 weight selection 문제가 생긴다.
+
+\begin{equation}
+  J = \lambda_{\mathrm{new}}L_{\mathrm{new}}
+      +\lambda_{\mathrm{replay}}L_{\mathrm{old}}
+      +\lambda_{\mathrm{safety}}L_{\mathrm{safety}}
+      +\lambda_{\mathrm{anchor}}D(f_\theta,f_{\theta_0}).
+  \label{eq:bg-multiobjective}
+\end{equation}
+
+$D$는 old model과의 behavior 차이를 제한한다. 계수 하나를 바꾸면 무엇을 ``기억''으로
+보존하는지가 달라진다. Sleep controller는 data selection뿐 아니라 loss mixture까지 policy로
+관리할 수 있지만, 그 policy 자체가 또 하나의 학습·검증 대상이 된다.
+
+\section{Systems 관점: data transformation도 compute다}
+
+Training FLOPs 이전에 transcript parsing, PII filtering, deduplication, semantic clustering,
+negative construction, teacher generation, verifier execution이 있다. External-memory sleep은
+이 transformation만 수행하고 weight backward는 하지 않을 수 있다. 그래서 background
+synthesis도 중요한 sleep-time compute다. GPU FLOPs가 작아도 graph update와 vector index
+rewrite가 storage-bound일 수 있으며, source history가 길수록 read amplification이 커진다.
+
+\begin{cautionbox}
+Self-generated target은 무료 data가 아니다. teacher error, confirmation bias, model collapse,
+benchmark leakage를 추적해야 한다. 실제 사용자/환경 관측이라는 anchor와 recursive generation
+depth를 provenance에 남기지 않으면 나중에 품질 저하의 원인을 찾을 수 없다.
+\end{cautionbox}
+
