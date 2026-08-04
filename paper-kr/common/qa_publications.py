@@ -12,6 +12,7 @@ from typing import Any, NamedTuple
 
 
 BGREF = re.compile(r"\\bgref\{([^}]+)\}")
+CONCEPT_ANCHOR = re.compile(r"\\concept\{([^}]+)\}\{[^}]+\}")
 CLAIM_REF = re.compile(r"\\claim\{(STC-C\d{3,4})\}")
 FIGURE_REF = re.compile(r"\\stcfigure\{(STC-F\d{3})\}")
 LABEL = re.compile(r"\\label\{([^}]+)\}")
@@ -30,6 +31,8 @@ class CrossRefReport(NamedTuple):
 class SourceTreeReport(NamedTuple):
     referenced_concepts: tuple[str, ...]
     unresolved_concepts: tuple[str, ...]
+    declared_concepts: tuple[str, ...]
+    unknown_declared_concepts: tuple[str, ...]
     referenced_claims: tuple[str, ...]
     unknown_claims: tuple[str, ...]
     referenced_figures: tuple[str, ...]
@@ -42,6 +45,7 @@ class SourceTreeReport(NamedTuple):
         return not any(
             (
                 self.unresolved_concepts,
+                self.unknown_declared_concepts,
                 self.unknown_claims,
                 self.unknown_figures,
                 self.duplicate_labels,
@@ -129,6 +133,8 @@ def validate_source_tree(
     }
     combined = "\n".join(text_by_path.values())
     cross_refs = validate_cross_document_refs(combined, concept_registry)
+    declared_concepts = _ordered_unique(CONCEPT_ANCHOR.findall(combined))
+    known_concepts = set(_concept_map(concept_registry))
     claims = _ordered_unique(CLAIM_REF.findall(combined))
     figures = _ordered_unique(FIGURE_REF.findall(combined))
     known_claims = {
@@ -151,6 +157,10 @@ def validate_source_tree(
     return SourceTreeReport(
         cross_refs.referenced_concepts,
         cross_refs.unresolved_concepts,
+        declared_concepts,
+        tuple(
+            concept for concept in declared_concepts if concept not in known_concepts
+        ),
         claims,
         tuple(claim for claim in claims if claim not in known_claims),
         figures,
@@ -287,6 +297,10 @@ def main() -> int:
         if not source_report.success:
             diagnostics.extend(
                 [f"unresolved-concept:{item}" for item in source_report.unresolved_concepts]
+                + [
+                    f"unknown-declared-concept:{item}"
+                    for item in source_report.unknown_declared_concepts
+                ]
                 + [f"unknown-claim:{item}" for item in source_report.unknown_claims]
                 + [f"unknown-figure:{item}" for item in source_report.unknown_figures]
                 + [f"duplicate-label:{item}" for item in source_report.duplicate_labels]
@@ -294,9 +308,9 @@ def main() -> int:
             )
         if args.require_all_concepts:
             known = set(_concept_map(concepts))
-            referenced = set(source_report.referenced_concepts)
-            for missing in sorted(known - referenced):
-                diagnostics.append(f"concept-not-linked:{missing}")
+            declared = set(source_report.declared_concepts)
+            for missing in sorted(known - declared):
+                diagnostics.append(f"concept-not-declared:{missing}")
     pdf_report = qa_pdf(
         args.pdf,
         kind=args.kind,

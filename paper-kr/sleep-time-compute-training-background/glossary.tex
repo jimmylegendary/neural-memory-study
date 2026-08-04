@@ -1,0 +1,136 @@
+\chapter*{용어 사전과 개념 의존성}
+\addcontentsline{toc}{chapter}{용어 사전과 개념 의존성}
+\markboth{용어 사전과 개념 의존성}{용어 사전과 개념 의존성}
+\setcounter{table}{0}
+\renewcommand{\thetable}{G.\arabic{table}}
+\label{bg:glossary}
+
+이 사전은 Study Paper가 참조하는 canonical concept registry에서 자동 생성한다. 
+용어를 단독 정의로만 읽지 말고, 세 번째 열의 prerequisite를 먼저 확인한다. 
+본문의 파란 링크는 각 개념이 처음 설명되는 절로 이동한다.
+
+\small
+\begin{longtable}{p{0.20\textwidth} p{0.52\textwidth} p{0.18\textwidth}}
+\caption{Sleep-time compute를 읽기 위한 canonical glossary}\label{tab:bg-glossary}\\
+\toprule
+용어 (concept ID) & 한 문장 정의 & 선행 개념 \\
+\midrule
+\endfirsthead
+\toprule
+용어 (concept ID) & 한 문장 정의 & 선행 개념 \\
+\midrule
+\endhead
+\midrule\multicolumn{3}{r}{다음 쪽에 계속}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\hypertarget{glossary:data}{\hyperref[bg:data]{\textbf{데이터}}} \newline\texttt{data} & 학습이나 평가에 사용되는 관측, 예시, 선호, 경험의 집합이다. & \scriptsize 없음 \\
+\hypertarget{glossary:parameter}{\hyperref[bg:parameter]{\textbf{파라미터}}} \newline\texttt{parameter} & 학습으로 값이 바뀌며 모델의 함수를 결정하는 수치다. & \scriptsize 없음 \\
+\hypertarget{glossary:forward-pass}{\hyperref[bg:forward-pass]{\textbf{순전파}}} \newline\texttt{forward-pass} & 입력과 현재 파라미터로 예측을 계산하는 과정이다. & \scriptsize data, parameter \\
+\hypertarget{glossary:objective}{\hyperref[bg:objective]{\textbf{목적함수}}} \newline\texttt{objective} & 학습이 줄이거나 늘리려는 전체 수치화 목표다. & \scriptsize forward-pass \\
+\hypertarget{glossary:loss}{\hyperref[bg:loss]{\textbf{손실}}} \newline\texttt{loss} & 한 예측 또는 배치가 목표와 얼마나 어긋났는지 나타내는 학습 신호다. & \scriptsize objective \\
+\hypertarget{glossary:gradient}{\hyperref[bg:gradient]{\textbf{기울기}}} \newline\texttt{gradient} & 각 파라미터를 조금 바꿀 때 손실이 어느 방향으로 얼마나 변하는지 나타낸다. & \scriptsize loss, parameter \\
+\hypertarget{glossary:backpropagation}{\hyperref[bg:backpropagation]{\textbf{역전파}}} \newline\texttt{backpropagation} & 출력의 손실에서 각 파라미터의 기울기를 연쇄법칙으로 계산하는 절차다. & \scriptsize forward-pass, gradient \\
+\hypertarget{glossary:optimizer}{\hyperref[bg:optimizer]{\textbf{옵티마이저}}} \newline\texttt{optimizer} & 기울기와 내부 상태를 사용해 파라미터를 갱신하는 규칙이다. & \scriptsize gradient \\
+\hypertarget{glossary:learning-rate}{\hyperref[bg:learning-rate]{\textbf{학습률}}} \newline\texttt{learning-rate} & 한 갱신에서 기울기를 얼마나 크게 반영할지 정하는 크기다. & \scriptsize optimizer \\
+\hypertarget{glossary:optimizer-state}{\hyperref[bg:optimizer-state]{\textbf{옵티마이저 상태}}} \newline\texttt{optimizer-state} & 모멘텀과 분산 추정치처럼 옵티마이저가 파라미터 외에 유지하는 상태다. & \scriptsize optimizer \\
+\hypertarget{glossary:batch}{\hyperref[bg:batch]{\textbf{배치}}} \newline\texttt{batch} & 한 번의 갱신을 위해 함께 처리하는 예시 묶음이다. & \scriptsize data, loss \\
+\hypertarget{glossary:epoch}{\hyperref[bg:epoch]{\textbf{에폭}}} \newline\texttt{epoch} & 학습 데이터 전체를 대략 한 번 소비한 단위다. & \scriptsize batch \\
+\hypertarget{glossary:sampling}{\hyperref[bg:sampling]{\textbf{샘플링}}} \newline\texttt{sampling} & 전체 데이터에서 다음 학습 예시나 배치를 선택하는 규칙이다. & \scriptsize data, batch \\
+\hypertarget{glossary:validation-set}{\hyperref[bg:validation-set]{\textbf{검증 세트}}} \newline\texttt{validation-set} & 학습에는 직접 쓰지 않고 설정 선택과 조기 종료에 사용하는 데이터다. & \scriptsize data \\
+\hypertarget{glossary:test-set}{\hyperref[bg:test-set]{\textbf{테스트 세트}}} \newline\texttt{test-set} & 최종 선택 뒤 일반화 성능을 추정하기 위해 보존하는 데이터다. & \scriptsize validation-set \\
+\hypertarget{glossary:overfitting}{\hyperref[bg:overfitting]{\textbf{과적합}}} \newline\texttt{overfitting} & 학습 데이터에는 잘 맞지만 새로운 데이터에는 성능이 낮아지는 현상이다. & \scriptsize validation-set \\
+\hypertarget{glossary:generalization}{\hyperref[bg:generalization]{\textbf{일반화}}} \newline\texttt{generalization} & 학습에서 보지 못한 입력에서도 유용한 성능을 유지하는 능력이다. & \scriptsize test-set, overfitting \\
+\hypertarget{glossary:pretraining}{\hyperref[bg:pretraining]{\textbf{사전학습}}} \newline\texttt{pretraining} & 배포 전 대규모 데이터로 범용 모델을 처음 형성하는 학습이다. & \scriptsize objective, batch \\
+\hypertarget{glossary:continued-pretraining}{\hyperref[bg:continued-pretraining]{\textbf{지속 사전학습}}} \newline\texttt{continued-pretraining} & 기존 사전학습 모델을 추가 비지도 또는 자기지도 코퍼스로 계속 학습하는 방식이다. & \scriptsize pretraining \\
+\hypertarget{glossary:fine-tuning}{\hyperref[bg:fine-tuning]{\textbf{미세조정}}} \newline\texttt{fine-tuning} & 사전학습 모델을 더 좁은 데이터와 목적에 맞게 추가 학습하는 방식이다. & \scriptsize pretraining \\
+\hypertarget{glossary:instruction-tuning}{\hyperref[bg:instruction-tuning]{\textbf{지시 튜닝}}} \newline\texttt{instruction-tuning} & 지시와 응답 쌍으로 지시 따르기 행동을 학습하는 미세조정이다. & \scriptsize fine-tuning, supervision \\
+\hypertarget{glossary:preference-optimization}{\hyperref[bg:preference-optimization]{\textbf{선호 최적화}}} \newline\texttt{preference-optimization} & 사람 또는 모델이 선호한 출력 쪽으로 정책을 이동시키는 후학습 계열이다. & \scriptsize fine-tuning, loss \\
+\hypertarget{glossary:supervision}{\hyperref[bg:supervision]{\textbf{지도 신호}}} \newline\texttt{supervision} & 입력에 대해 원하는 목표나 비교 신호를 외부에서 제공하는 학습 방식이다. & \scriptsize data, loss \\
+\hypertarget{glossary:self-supervision}{\hyperref[bg:self-supervision]{\textbf{자기지도학습}}} \newline\texttt{self-supervision} & 원시 데이터 자체에서 마스킹이나 다음 토큰 같은 목표를 구성하는 학습 방식이다. & \scriptsize supervision \\
+\hypertarget{glossary:representation}{\hyperref[bg:representation]{\textbf{표현}}} \newline\texttt{representation} & 모델이 입력의 정보를 후속 계산에 쓰기 좋은 내부 벡터나 상태로 표현한 것이다. & \scriptsize forward-pass \\
+\hypertarget{glossary:logit}{\hyperref[bg:logit]{\textbf{로짓}}} \newline\texttt{logit} & 확률 정규화 전 모델이 각 선택지에 부여한 점수다. & \scriptsize forward-pass \\
+\hypertarget{glossary:softmax}{\hyperref[bg:softmax]{\textbf{소프트맥스}}} \newline\texttt{softmax} & 로짓을 합이 1인 확률 분포로 바꾸는 함수다. & \scriptsize logit \\
+\hypertarget{glossary:cross-entropy}{\hyperref[bg:cross-entropy]{\textbf{교차엔트로피}}} \newline\texttt{cross-entropy} & 목표 분포에 높은 확률을 주도록 만드는 대표적 분류·언어모델 손실이다. & \scriptsize softmax, loss \\
+\hypertarget{glossary:distillation}{\hyperref[bg:distillation]{\textbf{지식 증류}}} \newline\texttt{distillation} & 교사 모델의 출력이나 내부 신호를 학생 모델이 모방하도록 학습하는 방식이다. & \scriptsize loss, softmax \\
+\hypertarget{glossary:teacher-model}{\hyperref[bg:teacher-model]{\textbf{교사 모델}}} \newline\texttt{teacher-model} & 증류 목표를 제공하는 기준 모델 또는 모델 집합이다. & \scriptsize distillation \\
+\hypertarget{glossary:student-model}{\hyperref[bg:student-model]{\textbf{학생 모델}}} \newline\texttt{student-model} & 교사의 행동이나 분포를 학습하는 대상 모델이다. & \scriptsize distillation \\
+\hypertarget{glossary:kl-divergence}{\hyperref[bg:kl-divergence]{\textbf{KL 발산}}} \newline\texttt{kl-divergence} & 두 확률 분포의 불일치를 한 방향으로 측정하는 양이다. & \scriptsize softmax \\
+\hypertarget{glossary:temperature}{\hyperref[bg:temperature]{\textbf{온도}}} \newline\texttt{temperature} & 확률 분포의 날카로움과 탐색 정도를 조절하는 스케일이다. & \scriptsize softmax \\
+\hypertarget{glossary:peft}{\hyperref[bg:peft]{\textbf{PEFT}}} \newline\texttt{peft} & 전체 가중치 대신 작은 일부 상태만 학습하는 파라미터 효율 미세조정이다. & \scriptsize fine-tuning, parameter \\
+\hypertarget{glossary:lora}{\hyperref[bg:lora]{\textbf{LoRA}}} \newline\texttt{lora} & 가중치 변화량을 두 저랭크 행렬의 곱으로 제한하는 PEFT 방식이다. & \scriptsize peft \\
+\hypertarget{glossary:adapter}{\hyperref[bg:adapter]{\textbf{어댑터}}} \newline\texttt{adapter} & 기본 모델 사이에 삽입하거나 별도로 결합하는 작은 학습 모듈이다. & \scriptsize peft \\
+\hypertarget{glossary:mixture-of-experts}{\hyperref[bg:mixture-of-experts]{\textbf{MoE}}} \newline\texttt{mixture-of-experts} & 입력마다 일부 전문가 모듈만 선택해 계산하는 희소 모델 구조다. & \scriptsize parameter, forward-pass \\
+\hypertarget{glossary:trainable-state}{\hyperref[bg:trainable-state]{\textbf{학습 가능 상태}}} \newline\texttt{trainable-state} & 한 학습 단계에서 실제로 갱신 가능한 파라미터와 보조 상태의 집합이다. & \scriptsize parameter, optimizer-state \\
+\hypertarget{glossary:serving-artifact}{\hyperref[bg:serving-artifact]{\textbf{서빙 산출물}}} \newline\texttt{serving-artifact} & 학습이 끝난 뒤 추론에 배포되는 가중치, 어댑터, 인덱스 또는 그래프다. & \scriptsize trainable-state \\
+\hypertarget{glossary:data-curation}{\hyperref[bg:data-curation]{\textbf{데이터 큐레이션}}} \newline\texttt{data-curation} & 목표와 정책에 맞는 학습 후보를 수집·정규화·중복 제거·분류하는 과정이다. & \scriptsize data \\
+\hypertarget{glossary:data-filtering}{\hyperref[bg:data-filtering]{\textbf{데이터 필터링}}} \newline\texttt{data-filtering} & 품질·안전·권리·관련성 기준으로 학습 후보를 남기거나 제외하는 절차다. & \scriptsize data-curation \\
+\hypertarget{glossary:data-augmentation}{\hyperref[bg:data-augmentation]{\textbf{데이터 증강}}} \newline\texttt{data-augmentation} & 의미상 보존하려는 속성을 유지하면서 학습 예시의 변형을 만드는 방법이다. & \scriptsize data \\
+\hypertarget{glossary:synthetic-data}{\hyperref[bg:synthetic-data]{\textbf{합성 데이터}}} \newline\texttt{synthetic-data} & 모델·규칙·시뮬레이터가 생성한 학습 또는 평가 예시다. & \scriptsize data \\
+\hypertarget{glossary:provenance}{\hyperref[bg:provenance]{\textbf{출처 추적성}}} \newline\texttt{provenance} & 데이터와 산출물이 어디서 왔고 어떤 변환·검증을 거쳤는지 추적하는 기록이다. & \scriptsize data \\
+\hypertarget{glossary:replay-buffer}{\hyperref[bg:replay-buffer]{\textbf{리플레이 버퍼}}} \newline\texttt{replay-buffer} & 미래 학습에서 다시 사용할 과거 경험이나 예시를 제한된 용량으로 보관한 저장소다. & \scriptsize sampling, data \\
+\hypertarget{glossary:coreset}{\hyperref[bg:coreset]{\textbf{코어셋}}} \newline\texttt{coreset} & 전체 과거 데이터를 대표하도록 선택한 작은 가중 표본 집합이다. & \scriptsize replay-buffer \\
+\hypertarget{glossary:generated-replay}{\hyperref[bg:generated-replay]{\textbf{생성 리플레이}}} \newline\texttt{generated-replay} & 원본 예시 대신 생성 모델이 복원한 과거 분포의 표본을 재학습에 쓰는 방식이다. & \scriptsize synthetic-data, replay-buffer \\
+\hypertarget{glossary:continual-learning}{\hyperref[bg:continual-learning]{\textbf{지속학습}}} \newline\texttt{continual-learning} & 시간에 따라 도착하는 데이터나 과제를 배우면서 이전 능력을 유지하는 학습 설정이다. & \scriptsize fine-tuning \\
+\hypertarget{glossary:catastrophic-forgetting}{\hyperref[bg:catastrophic-forgetting]{\textbf{파국적 망각}}} \newline\texttt{catastrophic-forgetting} & 새 학습 뒤 이전 데이터나 과제 성능이 급격히 무너지는 현상이다. & \scriptsize continual-learning \\
+\hypertarget{glossary:stability-plasticity}{\hyperref[bg:stability-plasticity]{\textbf{안정성–가소성}}} \newline\texttt{stability-plasticity} & 기존 능력을 안정적으로 보존하는 힘과 새 정보를 빠르게 배우는 가소성 사이의 긴장이다. & \scriptsize continual-learning \\
+\hypertarget{glossary:backward-transfer}{\hyperref[bg:backward-transfer]{\textbf{후방 전이}}} \newline\texttt{backward-transfer} & 새 학습이 과거 과제 성능을 높이거나 낮추는 효과다. & \scriptsize continual-learning \\
+\hypertarget{glossary:regularization}{\hyperref[bg:regularization]{\textbf{정규화}}} \newline\texttt{regularization} & 원하는 해의 성질이나 과거 상태 보존을 손실에 제약으로 더하는 방법이다. & \scriptsize loss \\
+\hypertarget{glossary:ewc}{\hyperref[bg:ewc]{\textbf{EWC}}} \newline\texttt{ewc} & 과거 과제에 중요했던 가중치의 이동을 중요도에 비례해 벌점 주는 지속학습 방법이다. & \scriptsize regularization, catastrophic-forgetting \\
+\hypertarget{glossary:gradient-projection}{\hyperref[bg:gradient-projection]{\textbf{기울기 투영}}} \newline\texttt{gradient-projection} & 새 기울기를 허용된 제약 영역으로 투영해 과거 손실의 악화를 제한하는 방법이다. & \scriptsize gradient \\
+\hypertarget{glossary:gem}{\hyperref[bg:gem]{\textbf{GEM}}} \newline\texttt{gem} & episodic memory의 과거 기울기를 제약으로 사용하는 Gradient Episodic Memory 방법이다. & \scriptsize gradient-projection, replay-buffer \\
+\hypertarget{glossary:parameter-isolation}{\hyperref[bg:parameter-isolation]{\textbf{파라미터 격리}}} \newline\texttt{parameter-isolation} & 과제·사용자·시기별로 다른 파라미터 부분을 배정해 간섭을 막는 방법이다. & \scriptsize parameter, continual-learning \\
+\hypertarget{glossary:dynamic-expansion}{\hyperref[bg:dynamic-expansion]{\textbf{동적 확장}}} \newline\texttt{dynamic-expansion} & 기존 용량이 부족할 때 모듈이나 파라미터를 동적으로 추가하는 방법이다. & \scriptsize parameter-isolation \\
+\hypertarget{glossary:pruning}{\hyperref[bg:pruning]{\textbf{프루닝}}} \newline\texttt{pruning} & 중요도가 낮은 연결·모듈·기억을 제거해 용량과 계산을 회수하는 과정이다. & \scriptsize parameter \\
+\hypertarget{glossary:capacity-budget}{\hyperref[bg:capacity-budget]{\textbf{용량 예산}}} \newline\texttt{capacity-budget} & 정확도·지연·비용·권리 제약 아래 한 계층이 사용할 수 있는 저장·상태 한도다. & \scriptsize serving-artifact \\
+\hypertarget{glossary:compression}{\hyperref[bg:compression]{\textbf{압축}}} \newline\texttt{compression} & 허용 가능한 정보 손실 아래 상태나 데이터를 더 작은 표현으로 바꾸는 과정이다. & \scriptsize capacity-budget \\
+\hypertarget{glossary:rate-distortion}{\hyperref[bg:rate-distortion]{\textbf{율–왜곡}}} \newline\texttt{rate-distortion} & 표현률 또는 저장 비용과 허용 왜곡 사이의 최적 trade-off를 다루는 관점이다. & \scriptsize compression, loss \\
+\hypertarget{glossary:memory-admission}{\hyperref[bg:memory-admission]{\textbf{기억 입장 정책}}} \newline\texttt{memory-admission} & 새 경험을 어느 기억 계층에 넣을지 또는 버릴지 결정하는 정책이다. & \scriptsize capacity-budget \\
+\hypertarget{glossary:memory-eviction}{\hyperref[bg:memory-eviction]{\textbf{기억 퇴거 정책}}} \newline\texttt{memory-eviction} & 용량을 회수하기 위해 어떤 기존 기억을 제거·축약·하향 이동할지 정하는 정책이다. & \scriptsize memory-admission \\
+\hypertarget{glossary:consolidation}{\hyperref[bg:consolidation]{\textbf{공고화}}} \newline\texttt{consolidation} & 여러 경험을 재생·요약·결합해 더 안정적이고 장기적인 상태로 전환하는 과정이다. & \scriptsize continual-learning, replay-buffer \\
+\hypertarget{glossary:rl-state}{\hyperref[bg:rl-state]{\textbf{RL 상태}}} \newline\texttt{rl-state} & 의사결정 시점에 정책이 관측하는 환경·시스템·기억의 정보다. & \scriptsize data \\
+\hypertarget{glossary:action}{\hyperref[bg:action]{\textbf{행동}}} \newline\texttt{action} & 정책이 상태를 보고 선택해 환경이나 기억 시스템을 바꾸는 조작이다. & \scriptsize rl-state \\
+\hypertarget{glossary:reward}{\hyperref[bg:reward]{\textbf{보상}}} \newline\texttt{reward} & 행동 결과의 바람직함을 수치로 제공하는 학습 신호다. & \scriptsize action \\
+\hypertarget{glossary:trajectory}{\hyperref[bg:trajectory]{\textbf{궤적}}} \newline\texttt{trajectory} & 시간 순서로 이어진 상태·행동·보상의 열이다. & \scriptsize rl-state, action, reward \\
+\hypertarget{glossary:return}{\hyperref[bg:return]{\textbf{리턴}}} \newline\texttt{return} & 현재 이후 보상을 할인해 더한 누적 성과다. & \scriptsize trajectory \\
+\hypertarget{glossary:policy}{\hyperref[bg:policy]{\textbf{정책}}} \newline\texttt{policy} & 상태에서 행동의 확률 또는 선택으로 가는 의사결정 규칙이다. & \scriptsize rl-state, action \\
+\hypertarget{glossary:value-function}{\hyperref[bg:value-function]{\textbf{가치 함수}}} \newline\texttt{value-function} & 한 상태나 상태–행동에서 기대되는 미래 return을 추정하는 함수다. & \scriptsize return, rl-state \\
+\hypertarget{glossary:credit-assignment}{\hyperref[bg:credit-assignment]{\textbf{신용 할당}}} \newline\texttt{credit-assignment} & 지연된 결과의 책임이나 공을 과거 행동과 상태에 배분하는 문제다. & \scriptsize return, action \\
+\hypertarget{glossary:policy-gradient}{\hyperref[bg:policy-gradient]{\textbf{정책 기울기}}} \newline\texttt{policy-gradient} & 기대 return이 증가하도록 정책 파라미터의 기울기를 추정하는 방법이다. & \scriptsize policy, gradient, return \\
+\hypertarget{glossary:on-policy}{\hyperref[bg:on-policy]{\textbf{온폴리시}}} \newline\texttt{on-policy} & 현재 학습 중인 정책이 수집한 경험으로 그 정책을 갱신하는 설정이다. & \scriptsize policy \\
+\hypertarget{glossary:off-policy}{\hyperref[bg:off-policy]{\textbf{오프폴리시}}} \newline\texttt{off-policy} & 현재 정책과 다른 과거·행동 정책이 수집한 경험도 학습에 사용하는 설정이다. & \scriptsize policy, replay-buffer \\
+\hypertarget{glossary:reward-model}{\hyperref[bg:reward-model]{\textbf{보상 모델}}} \newline\texttt{reward-model} & 사람이나 모델의 비교 선호에서 출력의 품질 점수를 근사한 모델이다. & \scriptsize preference-optimization \\
+\hypertarget{glossary:rlhf}{\hyperref[bg:rlhf]{\textbf{RLHF}}} \newline\texttt{rlhf} & 사람 피드백으로 학습한 보상이나 선호를 이용해 모델 정책을 조정하는 절차다. & \scriptsize reward-model, policy-gradient \\
+\hypertarget{glossary:rlaif}{\hyperref[bg:rlaif]{\textbf{RLAIF}}} \newline\texttt{rlaif} & 사람 대신 또는 사람과 함께 AI가 만든 피드백을 이용하는 선호 학습 절차다. & \scriptsize rlhf \\
+\hypertarget{glossary:dpo}{\hyperref[bg:dpo]{\textbf{DPO}}} \newline\texttt{dpo} & 명시적 보상 모델과 online RL rollout 없이 선호 쌍으로 정책을 직접 최적화하는 방법이다. & \scriptsize preference-optimization \\
+\hypertarget{glossary:off-policy-evaluation}{\hyperref[bg:off-policy-evaluation]{\textbf{오프폴리시 평가}}} \newline\texttt{off-policy-evaluation} & 새 정책을 실제 배포하지 않고 과거 로그로 기대 성과를 추정하는 평가다. & \scriptsize off-policy, validation-set \\
+\hypertarget{glossary:meta-learning}{\hyperref[bg:meta-learning]{\textbf{메타학습}}} \newline\texttt{meta-learning} & 새 과제나 데이터에 적은 단계로 잘 적응하도록 학습 절차 자체를 학습하는 관점이다. & \scriptsize fine-tuning \\
+\hypertarget{glossary:bilevel-optimization}{\hyperref[bg:bilevel-optimization]{\textbf{이중수준 최적화}}} \newline\texttt{bilevel-optimization} & 내부 적응 결과를 바깥 목표로 평가해 초기값이나 학습 규칙을 최적화하는 중첩 문제다. & \scriptsize meta-learning, objective \\
+\hypertarget{glossary:fast-weights}{\hyperref[bg:fast-weights]{\textbf{빠른 가중치}}} \newline\texttt{fast-weights} & base weights보다 빠르게, 짧은 범위에서 갱신·폐기되는 파라미터성 상태다. & \scriptsize parameter \\
+\hypertarget{glossary:test-time-training}{\hyperref[bg:test-time-training]{\textbf{테스트 시점 학습}}} \newline\texttt{test-time-training} & 배포 후 현재 또는 최근 입력에서 만든 목표로 추론 경로 안팎에서 상태를 갱신하는 학습이다. & \scriptsize fast-weights, self-supervision \\
+\hypertarget{glossary:model-editing}{\hyperref[bg:model-editing]{\textbf{모델 편집}}} \newline\texttt{model-editing} & 좁은 사실이나 행동을 국소적으로 바꾸면서 나머지 능력을 보존하려는 모델 수정이다. & \scriptsize parameter \\
+\hypertarget{glossary:locality}{\hyperref[bg:locality]{\textbf{국소성}}} \newline\texttt{locality} & 의도한 대상 밖의 예측과 능력이 수정 전과 가깝게 유지되는 성질이다. & \scriptsize model-editing, generalization \\
+\hypertarget{glossary:unlearning}{\hyperref[bg:unlearning]{\textbf{머신 언러닝}}} \newline\texttt{unlearning} & 지정 데이터나 그 영향이 학습되지 않은 상태에 가깝도록 제거하는 절차다. & \scriptsize model-editing, provenance \\
+\hypertarget{glossary:mixed-precision}{\hyperref[bg:mixed-precision]{\textbf{혼합 정밀도}}} \newline\texttt{mixed-precision} & 정확도와 안정성을 지키며 연산·상태별로 서로 다른 수치 정밀도를 쓰는 학습 기법이다. & \scriptsize trainable-state \\
+\hypertarget{glossary:activation-checkpointing}{\hyperref[bg:activation-checkpointing]{\textbf{활성 체크포인팅}}} \newline\texttt{activation-checkpointing} & 일부 activation만 저장하고 backward 때 나머지를 재계산해 메모리를 절약하는 기법이다. & \scriptsize forward-pass \\
+\hypertarget{glossary:data-parallelism}{\hyperref[bg:data-parallelism]{\textbf{데이터 병렬화}}} \newline\texttt{data-parallelism} & 장치마다 다른 batch shard를 처리하고 gradient를 결합하는 병렬화다. & \scriptsize batch \\
+\hypertarget{glossary:tensor-parallelism}{\hyperref[bg:tensor-parallelism]{\textbf{텐서 병렬화}}} \newline\texttt{tensor-parallelism} & 한 층의 텐서 연산과 파라미터를 여러 장치에 나누는 병렬화다. & \scriptsize parameter \\
+\hypertarget{glossary:pipeline-parallelism}{\hyperref[bg:pipeline-parallelism]{\textbf{파이프라인 병렬화}}} \newline\texttt{pipeline-parallelism} & 연속된 층 구간을 여러 stage에 배치하고 microbatch를 파이프라인으로 흘리는 병렬화다. & \scriptsize forward-pass \\
+\hypertarget{glossary:sharding}{\hyperref[bg:sharding]{\textbf{샤딩}}} \newline\texttt{sharding} & 파라미터·gradient·optimizer state를 장치나 저장 계층에 분할 배치하는 방법이다. & \scriptsize optimizer-state, parameter \\
+\hypertarget{glossary:versioning}{\hyperref[bg:versioning]{\textbf{버전 관리}}} \newline\texttt{versioning} & 학습 데이터·코드·상태·평가·산출물을 함께 식별 가능한 버전으로 묶는 관리다. & \scriptsize serving-artifact \\
+\hypertarget{glossary:rollback}{\hyperref[bg:rollback]{\textbf{롤백}}} \newline\texttt{rollback} & 실패한 새 상태를 중단하고 검증된 이전 상태로 원자적으로 되돌리는 절차다. & \scriptsize versioning \\
+\hypertarget{glossary:publication-gate}{\hyperref[bg:publication-gate]{\textbf{출판 게이트}}} \newline\texttt{publication-gate} & 후보 상태가 검증·안전·권리·비용 기준을 통과할 때만 serving에 승격하는 경계다. & \scriptsize validation-set, versioning \\
+\hypertarget{glossary:wake-state}{\hyperref[bg:wake-state]{\textbf{Wake 상태}}} \newline\texttt{wake-state} & 사용자 요청을 처리하는 latency-critical 경로에서 읽거나 짧게 갱신되는 상태다. & \scriptsize serving-artifact \\
+\hypertarget{glossary:sleep-state}{\hyperref[bg:sleep-state]{\textbf{Sleep 상태}}} \newline\texttt{sleep-state} & 응답 경로 밖에서 재생·압축·학습·검증·승격되는 deferred 상태다. & \scriptsize wake-state, continual-learning \\
+\hypertarget{glossary:parametric-memory}{\hyperref[bg:parametric-memory]{\textbf{모수적 기억}}} \newline\texttt{parametric-memory} & 모델 가중치·어댑터·fast weights처럼 forward 함수 안에 내재된 기억 상태다. & \scriptsize parameter \\
+\hypertarget{glossary:external-memory}{\hyperref[bg:external-memory]{\textbf{외부 기억}}} \newline\texttt{external-memory} & text·vector·graph·log처럼 모델 밖에 저장되어 검색과 도구 호출로 사용되는 기억이다. & \scriptsize data \\
+\hypertarget{glossary:memory-routing}{\hyperref[bg:memory-routing]{\textbf{기억 라우팅}}} \newline\texttt{memory-routing} & 질의와 상태에 따라 외부 기억·fast state·parametric state 중 어디를 읽고 쓸지 정하는 제어다. & \scriptsize external-memory, parametric-memory \\
+\hypertarget{glossary:observability}{\hyperref[bg:observability]{\textbf{관측 가능성}}} \newline\texttt{observability} & 데이터·학습·평가·배포 상태와 실패 원인을 지표·로그·trace로 재구성할 수 있는 성질이다. & \scriptsize publication-gate \\
+\end{longtable}
+\normalsize
+
+\begin{keypoint}[의존성 표를 사용하는 법]
+어떤 Study claim이 낯설다면 해당 concept ID의 본문 label로 이동하고, 선행 개념을 
+왼쪽에서 오른쪽 순서로 읽는다. 용어 정의는 결과를 보장하지 않는다. 예를 들어 
+\texttt{unlearning}의 정의를 안다는 것은 특정 방법이 삭제 요구를 완전히 충족한다는 뜻이 아니다.
+\end{keypoint}

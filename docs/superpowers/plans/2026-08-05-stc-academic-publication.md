@@ -141,30 +141,30 @@ git commit -m "docs: explain core training regimes for sleep-time compute"
 - Consumes: sections 1–7 and concept registry
 - Produces: complete Background `.aux` label surface for Study/Easy projects
 
-- [ ] **Step 1: Explain data and continual-learning foundations**
+- [x] **Step 1: Explain data and continual-learning foundations**
 
 Cover curation, filtering, augmentation, synthetic data, coreset, replay buffer, generated replay, catastrophic forgetting, stability–plasticity, EWC/regularization, gradient projection, isolation, growth, pruning, and capacity exhaustion.
 
-- [ ] **Step 2: Explain RL and learned policies**
+- [x] **Step 2: Explain RL and learned policies**
 
 Cover state/action/reward/trajectory, return, policy/value, credit assignment, policy gradient, on/off-policy distinction, RLHF/RLAIF, preference data, policy optimization, and how RL could learn admission, trigger, routing, eviction, and consolidation policies. Keep algorithm names subordinate to concepts and identify unstable/offline-evaluation risks.
 
-- [ ] **Step 3: Explain meta-learning, TTT, editing, and systems**
+- [x] **Step 3: Explain meta-learning, TTT, editing, and systems**
 
 Connect bilevel optimization, fast weights, TTT, model editing, unlearning, optimizer-state memory, activations, mixed precision, checkpointing, data parallelism, sharding, and publication/rollback to STC.
 
-- [ ] **Step 4: Write the end-to-end STC mapping**
+- [x] **Step 4: Write the end-to-end STC mapping**
 
 Map every sleep operator to data, teacher, student, trainable state, loss/reward, optimizer, capacity destination, validation set, publication boundary, rollback artifact, and systems cost.
 
-- [ ] **Step 5: Compile and validate labels**
+- [x] **Step 5: Compile and validate labels**
 
 ```bash
 make -C paper-kr/sleep-time-compute-training-background clean background
 python3 paper-kr/common/qa_publications.py --pdf build/publications/TRAINING-BACKGROUND-FOR-SLEEP-TIME-COMPUTE-KR.pdf --kind background --require-all-concepts
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add paper-kr/sleep-time-compute-training-background paper-kr/common/concept-registry.json

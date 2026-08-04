@@ -96,6 +96,31 @@ def test_source_validation_rejects_unknown_claims_and_figures(tmp_path):
     assert report.unknown_figures == ("STC-F999",)
 
 
+def test_background_concept_anchors_are_collected_separately_from_study_refs(tmp_path):
+    module = _load_qa()
+    tex = tmp_path / "background.tex"
+    tex.write_text(
+        r"\concept{loss}{손실}\concept{gradient}{기울기}\concept{unknown}{미등록}",
+        encoding="utf-8",
+    )
+    registry = {
+        "concepts": [
+            {"concept_id": "loss", "label": "bg:loss"},
+            {"concept_id": "gradient", "label": "bg:gradient"},
+        ]
+    }
+
+    report = module.validate_source_tree(
+        tmp_path,
+        concept_registry=registry,
+        claim_map={"claims": []},
+        figure_ledger={"figures": []},
+    )
+
+    assert report.declared_concepts == ("loss", "gradient", "unknown")
+    assert report.unknown_declared_concepts == ("unknown",)
+
+
 def test_concept_registry_is_dependency_closed(tmp_path):
     module = _load_qa()
     path = tmp_path / "concepts.json"
@@ -170,6 +195,26 @@ def test_background_figure_generator_builds_all_vector_pdfs(tmp_path):
             ["pdfinfo", str(path)], check=True, capture_output=True, text=True
         ).stdout
         assert "Pages:           1" in info
+
+
+def test_background_glossary_generator_covers_every_registered_concept(tmp_path):
+    generator = (
+        REPO_ROOT
+        / "paper-kr/sleep-time-compute-training-background/build_glossary.py"
+    )
+    spec = importlib.util.spec_from_file_location("stc_background_glossary", generator)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    registry = REPO_ROOT / "paper-kr/common/concept-registry.json"
+    output = tmp_path / "glossary.tex"
+
+    module.build_glossary(registry, output)
+
+    source = output.read_text(encoding="utf-8")
+    concepts = json.loads(registry.read_text(encoding="utf-8"))["concepts"]
+    assert source.count(r"\hypertarget{glossary:") == len(concepts)
+    assert all(item["concept_id"] in source for item in concepts)
 
 
 def test_concept_anchors_are_not_declared_inside_display_math():

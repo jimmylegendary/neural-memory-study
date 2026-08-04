@@ -1,0 +1,130 @@
+\chapter{Sleep이 먹는 것: data curation, augmentation, replay}
+\label{bg:chapter-data-replay}
+
+Sleep-time compute가 training이라면 첫 질문은 ``어떤 optimizer를 쓸까''가 아니라
+``어떤 경험을 학습 가능한 증거로 만들까''다. Wake log에는 사용자 발화, model response,
+tool result, correction, 반복 조회, 실패 trace가 섞여 있다. 이들을 그대로 next-token data로
+넣으면 개인 식별 정보, 틀린 model output, 중복된 쉬운 예, 시간 순서가 깨진 사실이 모두 같은
+가중치로 학습된다. 따라서 sleep pipeline의 품질 상한은 대개 data plane에서 정해진다.
+
+\section{Log와 training example은 다르다}
+
+\concept{data-curation}{데이터 큐레이션}은 후보 경험을 수집하고 정규화하며 중복을 제거하고,
+목표·권리·민감도·시간 범주를 부여하는 전 과정이다. \concept{data-filtering}{데이터 필터링}은
+그중 정해진 기준으로 남길 것과 제외할 것을 가르는 단계다. 둘을 분리해야 ``수집은 했지만
+학습에는 쓰지 않음'', ``외부 기억에는 보존하지만 parametric update에는 금지'' 같은 결정을
+표현할 수 있다.
+
+한 sleep example $e_i$를 최소한 다음 record로 본다.
+
+\begin{equation}
+e_i=(x_i, y_i, t_i, u_i, s_i, q_i, r_i, p_i, v_i),
+\end{equation}
+
+여기서 $x_i$는 입력 context, $y_i$는 목표 또는 preference, $t_i$는 event time, $u_i$는
+user/tenant scope, $s_i$는 source type, $q_i$는 quality와 uncertainty, $r_i$는 retention/rights,
+$p_i$는 provenance pointer, $v_i$는 생성한 model·tool version이다. 실제 시스템에서는 원문과
+이 record를 분리해 저장할 수 있다. 원문 삭제 요청을 처리하려면 record가 어느 artifact와
+update에 기여했는지도 이어져야 한다.
+
+\concept{provenance}{출처 추적성}은 단순 URL 열이 아니다. ``원본 event $\rightarrow$
+정제 record $\rightarrow$ replay batch $\rightarrow$ checkpoint $\rightarrow$ serving version''을
+역추적할 수 있어야 한다. provenance가 없으면 잘못된 기억을 발견해도 external index 한 row만
+지우면 되는지, LoRA를 폐기해야 하는지, base model을 다시 만들어야 하는지 판단할 수 없다.
+
+\begin{table}[htbp]
+\centering
+\caption{Wake event를 sleep data로 바꿀 때 필요한 gate}
+\label{tab:bg-data-gates}
+\small
+\begin{tabularx}{\textwidth}{p{0.16\textwidth} X X}
+\toprule
+Gate & 묻는 질문 & 실패 시 기본 동작 \\
+\midrule
+scope & 누구의 기억이며 어느 tenant에서만 유효한가? & global 학습 금지, 격리 저장 \\
+grounding & correction이나 fact가 신뢰 가능한 source에 연결되는가? & 외부 후보로 격하 또는 제외 \\
+temporal & 언제부터 언제까지 참이며 newer record와 충돌하는가? & time interval과 supersession edge 기록 \\
+rights/privacy & 저장·재생·가중치 반영·장기 보존 권한이 각각 있는가? & 허용된 destination만 사용 \\
+difficulty & 모델이 이미 맞히는 중복 easy example인가? & down-sample 또는 대표 예만 보존 \\
+contamination & validation/test 또는 비공개 benchmark 정답이 섞였는가? & quarantine, 평가 집합 재구성 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Augmentation은 의미를 보존한다는 가정이다}
+
+\concept{data-augmentation}{데이터 증강}은 한 예시를 여러 변형으로 늘리는 기법이지만,
+핵심은 ``이 변환 아래 목표가 변하지 않는다''는 invariance 가정이다. 이미지 회전처럼 명확한
+경우도 있지만 memory data에서는 더 위험하다. 발화를 paraphrase하면 표현 다양성은 늘지만
+negation, 날짜, actor, uncertainty가 바뀔 수 있다. context를 잘라내면 정답은 남아 보여도
+근거와 privacy scope가 사라질 수 있다.
+
+Sleep용 augmentation은 세 층으로 나누면 안전하다.
+
+\begin{enumerate}
+  \item \textbf{surface augmentation}: 표현·순서·format을 바꾸되 entity, time, polarity,
+        provenance를 보존한다.
+  \item \textbf{contrast construction}: 헷갈리는 old/new fact, 같은 이름의 다른 사람,
+        허용/금지 scope를 쌍으로 만들어 decision boundary를 학습한다.
+  \item \textbf{counterfactual probe}: 목표 자체를 학습시키기보다 모델이 evidence 없이
+        외운 답을 내는지 평가한다. training set과 validation set을 섞지 않는다.
+\end{enumerate}
+
+\concept{synthetic-data}{합성 데이터}는 teacher model, simulator, rule로 만든 예시다. 긴
+episode를 question--answer pair로 변환하거나 드문 failure를 증폭하는 데 유용하지만, 생성자의
+오류와 표현 편향도 함께 복제한다. recursive distillation에서 생성 data가 다시 다음 cycle의
+teacher data가 되는 깊이를 record하고, real-evidence anchor를 일정 비율 유지해야 하는 이유가
+여기에 있다 \parencite{shumailov2024collapse}.
+
+\section{Replay: 과거를 다시 보여 주는 가장 직접적인 기준선}
+
+\concept{replay-buffer}{리플레이 버퍼}는 과거 경험 일부를 다시 학습시키기 위한 제한된 저장소다.
+새 batch $B_{new}$만 학습하지 않고 replay sample $B_{old}$를 섞으면
+
+\begin{equation}
+\mathcal{L}_{sleep}=\lambda_{new}\mathcal{L}(B_{new})+
+\lambda_{old}\mathcal{L}(B_{old})+lambda_{safe}\mathcal{L}(B_{safety})
+\end{equation}
+
+처럼 plasticity와 retention을 직접 trade-off할 수 있다. 작은 episodic memory도 forgetting을
+줄이는 강한 baseline이 될 수 있으며 \parencite{chaudhry2019tiny}, class prototype에 가까운
+대표 예를 유지하는 방식도 쓰인다 \parencite{rebuffi2017icarl}. 그러나 buffer가 raw episode를
+보존하면 저장·privacy 비용이 크고, random sampling은 다수 사용자의 반복 패턴이 희귀하지만
+중요한 경험을 밀어낸다.
+
+\concept{coreset}{코어셋}은 전체 데이터의 loss나 representation을 작은 weighted subset으로
+근사하려는 관점이다. Sleep system에서는 단순 diversity 외에도 다음 utility를 함께 본다.
+
+\begin{equation}
+U(e)=\alpha N(e)+\beta E(e)+\gamma F(e)+\delta R(e)
+-\eta C_{store}(e)-\zeta C_{risk}(e),
+\end{equation}
+
+$N$은 novelty, $E$는 evidence quality, $F$는 예상 future reuse, $R$은 forgetting 방지 기여다.
+이 점수는 established formula가 아니라 controller를 설계하기 위한 decomposition이다. 각 항의
+scale과 label delay가 다르므로 하나의 숫자로 만들기 전에 raw features와 의사결정 이유를 남긴다.
+
+\concept{generated-replay}{생성 리플레이}는 raw 과거를 전부 저장하는 대신 generator가 과거
+분포를 복원하도록 한다 \parencite{shin2017dgr}. 저장 bytes를 줄일 수 있지만 generator 자체도
+잊고, 원본 provenance를 잃으며, tail을 평탄화할 수 있다. 따라서 ``raw replay 대 generated
+replay''는 어느 하나를 고르는 문제가 아니라 민감한 원문, 검증된 canonical fact, 일반 skill
+pattern에 서로 다른 retention을 주는 tiering 문제다.
+
+\begin{keypoint}[Sleep dataset의 최소 산출물]
+Sleep job 입력은 folder 하나가 아니라 immutable dataset manifest여야 한다. manifest에는 source
+snapshot, filter version, included/excluded count와 reason, tenant/time scope, dedup cluster,
+augmentation lineage, train/validation split, hash, expiry가 포함된다. 같은 checkpoint를 다시 만들 수
+없다면 rollback도 감사도 불가능하다.
+\end{keypoint}
+
+\section{평가 누수와 시간 누수}
+
+개인화 memory에서는 random split이 특히 위험하다. 같은 episode의 paraphrase가 train과 validation에
+나뉘면 memorization을 generalization으로 오해한다. 미래 correction이 과거 시점 평가 입력에 들어가면
+temporal leakage가 생긴다. 권장 split unit은 token이 아니라 user, episode, entity thread, time window다.
+평가는 ``현재 사실 회상'', ``과거 시점 질의'', ``다른 user로의 비누출'', ``삭제 후 비회상''을 분리한다.
+
+Sleep-time compute에서 data volume은 공짜 scaling 축이 아니다. 중복 experience를 더 많이 replay하면
+FLOPs는 늘지만 effective evidence는 거의 늘지 않는다. 그래서 future scaling law의 독립변수는 raw
+token 수보다 provenance-weighted novel evidence, replay diversity, recursive depth, validation coverage에
+가까워야 한다.
