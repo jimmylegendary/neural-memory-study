@@ -71,7 +71,7 @@ uv run --project research/sleep-time-compute pytest -q research/sleep-time-compu
 
 Expected: focused tests pass; existing 736 tests remain green.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add research/sleep-time-compute/program research/sleep-time-compute/tests/test_program_validation.py
@@ -94,23 +94,23 @@ git commit -m "feat: add sleep-time research program validator"
 - Consumes: existing audits, monograph, scaling agenda, Google meeting evidence
 - Produces: hypothesis set `H-STC`, `H-EXT`, `H-HYBRID`, `H-REFRESH`, `H-NICHE`; seed source IDs; search clusters
 
-- [ ] **Step 1: Build the objective-to-question matrix**
+- [x] **Step 1: Build the objective-to-question matrix**
 
 `ALIGNMENT.md` must contain the user's eight decision questions, success criteria, intended audience, explicit exclusions, and the evidence required to answer each question.
 
-- [ ] **Step 2: Build the approach taxonomy**
+- [x] **Step 2: Build the approach taxonomy**
 
 `APPROACH-TAXONOMY.md` must compare external retrieval, long context/state, TTT/fast weights, continual-learning families, model editing, periodic refresh, explicit sleep consolidation, and hybrid promotion across memory medium, update timing, trainable state, data, capacity behavior, cost, governance, and strongest known result.
 
-- [ ] **Step 3: Build unknown-unknown and disconfirmation registers**
+- [x] **Step 3: Build unknown-unknown and disconfirmation registers**
 
 Every row must include `unknown_id`, why ordinary search misses it, discovery query/family, evidence needed, owner artifact, and closure condition. Required adjacent fields: database compaction, cache lifecycle, on-device adaptation, continual robotics, federated personalization, autonomous-agent experience learning, knowledge editing/unlearning.
 
-- [ ] **Step 4: Populate the seed corpus**
+- [x] **Step 4: Populate the seed corpus**
 
 `SEED-CORPUS.json` must contain fixed IDs, title, authors, year, venue/status, DOI/arXiv/version, source URL, local artifact path if rights permit, cluster labels, supportive/disconfirming role, and translation candidacy.
 
-- [ ] **Step 5: Validate package**
+- [x] **Step 5: Validate package**
 
 ```bash
 python3 research/sleep-time-compute/program/validate_program.py --phase pre-research

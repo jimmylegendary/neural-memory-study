@@ -18,6 +18,33 @@ AUTHORING_MARKERS = re.compile(r"\b(?:TO" + r"DO|T" + r"BD|FIX" + r"ME)\b")
 LATEX_REFERENCE_ERRORS = re.compile(
     r"(?:undefined references|Citation[^\n]*undefined)", re.IGNORECASE
 )
+PRE_RESEARCH_REQUIRED_FILES = (
+    "ALIGNMENT.md",
+    "QUESTION-TREE.md",
+    "APPROACH-TAXONOMY.md",
+    "UNKNOWN-UNKNOWN-REGISTER.md",
+    "SEARCH-AND-SATURATION-PLAN.md",
+    "SEED-CORPUS.json",
+    "TRANSLATION-CANDIDATES.md",
+    "FIGURE-SOURCE-PLAN.md",
+)
+SEED_SOURCE_REQUIRED_FIELDS = frozenset(
+    {
+        "seed_id",
+        "title",
+        "authors",
+        "year",
+        "venue_status",
+        "doi",
+        "arxiv_id",
+        "version",
+        "source_url",
+        "local_artifact",
+        "clusters",
+        "evidence_role",
+        "translation_candidacy",
+    }
+)
 
 
 class Diagnostic(NamedTuple):
@@ -383,7 +410,12 @@ def validate_program(root: Path) -> ProgramValidationReport:
     return ProgramValidationReport(not diagnostics, tuple(diagnostics))
 
 
-def _scan_authoring_markers(paths: list[Path]) -> list[Diagnostic]:
+def _scan_text_patterns(
+    paths: list[Path],
+    *,
+    reject_authoring_markers: bool,
+    reject_latex_reference_errors: bool,
+) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
     for base in paths:
         if not base.exists():
@@ -398,7 +430,7 @@ def _scan_authoring_markers(paths: list[Path]) -> list[Diagnostic]:
                 continue
             text = path.read_text(encoding="utf-8", errors="replace")
             for line_number, line in enumerate(text.splitlines(), start=1):
-                if AUTHORING_MARKERS.search(line):
+                if reject_authoring_markers and AUTHORING_MARKERS.search(line):
                     diagnostics.append(
                         Diagnostic(
                             "authoring-marker-found",
@@ -406,7 +438,7 @@ def _scan_authoring_markers(paths: list[Path]) -> list[Diagnostic]:
                             "Unresolved authoring marker found.",
                         )
                     )
-                if LATEX_REFERENCE_ERRORS.search(line):
+                if reject_latex_reference_errors and LATEX_REFERENCE_ERRORS.search(line):
                     diagnostics.append(
                         Diagnostic(
                             "latex-reference-error-found",
@@ -415,6 +447,199 @@ def _scan_authoring_markers(paths: list[Path]) -> list[Diagnostic]:
                         )
                     )
     return diagnostics
+
+
+def _require_tokens(
+    path: Path,
+    tokens: tuple[str, ...],
+    diagnostics: list[Diagnostic],
+) -> None:
+    text = path.read_text(encoding="utf-8", errors="replace").casefold()
+    for token in tokens:
+        if token.casefold() not in text:
+            diagnostics.append(
+                Diagnostic(
+                    "pre-research-content-missing",
+                    str(path),
+                    f"Required contract token is missing: {token}",
+                )
+            )
+
+
+def _validate_pre_research_contract(
+    phase_root: Path, diagnostics: list[Diagnostic]
+) -> None:
+    paths = {name: phase_root / name for name in PRE_RESEARCH_REQUIRED_FILES}
+    for name, path in paths.items():
+        if not path.is_file():
+            diagnostics.append(
+                Diagnostic(
+                    "pre-research-file-missing",
+                    str(path),
+                    f"Required pre-research artifact is missing: {name}",
+                )
+            )
+
+    token_contracts = {
+        "ALIGNMENT.md": tuple(
+            [f"DQ{i}" for i in range(1, 9)]
+            + ["H-STC", "H-EXT", "H-HYBRID", "H-REFRESH", "H-NICHE", "명시적 제외"]
+        ),
+        "QUESTION-TREE.md": tuple(["Q0"] + [f"Q{i}." for i in range(1, 9)]),
+        "APPROACH-TAXONOMY.md": (
+            "Long context",
+            "Recurrent/SSM/neural memory",
+            "External text/event memory",
+            "Test-time training",
+            "Replay-based continual learning",
+            "Model editing",
+            "Periodic global refresh",
+            "Explicit sleep consolidation",
+            "Hybrid promotion lifecycle",
+        ),
+        "UNKNOWN-UNKNOWN-REGISTER.md": (
+            "unknown_id",
+            "database",
+            "cache lifecycle",
+            "on-device adaptation",
+            "continual robotics",
+            "federated personalization",
+            "autonomous agent",
+            "knowledge editing",
+            "unlearning",
+        ),
+        "SEARCH-AND-SATURATION-PLAN.md": tuple(
+            [f"C{i:02d}" for i in range(1, 13)]
+            + ["negative pass", "functional-equivalence pass", "Saturation rule"]
+        ),
+        "TRANSLATION-CANDIDATES.md": (
+            "12–15",
+            "Existing translation assets",
+            "Source-fidelity contract",
+        ),
+        "FIGURE-SOURCE-PLAN.md": (
+            "STC-F001",
+            "STC-F030",
+            "Rights record fields",
+            "Visual QA",
+        ),
+    }
+    for name, tokens in token_contracts.items():
+        path = paths[name]
+        if path.is_file():
+            _require_tokens(path, tokens, diagnostics)
+
+    seed_path = paths["SEED-CORPUS.json"]
+    if not seed_path.is_file():
+        return
+    payload = _read_json(seed_path, diagnostics)
+    if not isinstance(payload, dict):
+        return
+    if payload.get("schema_version") != "1.0.0":
+        diagnostics.append(
+            Diagnostic(
+                "seed-corpus-schema-version-invalid",
+                str(seed_path),
+                "Seed corpus schema_version must equal 1.0.0.",
+            )
+        )
+    frozen_at = payload.get("frozen_at")
+    if not isinstance(frozen_at, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", frozen_at):
+        diagnostics.append(
+            Diagnostic(
+                "seed-corpus-freeze-invalid",
+                str(seed_path),
+                "Seed corpus frozen_at must be an ISO date.",
+            )
+        )
+    sources = payload.get("sources")
+    if not isinstance(sources, list):
+        diagnostics.append(
+            Diagnostic(
+                "seed-corpus-sources-invalid",
+                str(seed_path),
+                "Seed corpus sources must be an array.",
+            )
+        )
+        return
+    if len(sources) < 20:
+        diagnostics.append(
+            Diagnostic(
+                "seed-corpus-too-small",
+                str(seed_path),
+                f"Seed corpus contains {len(sources)} sources; expected at least 20.",
+            )
+        )
+    seen: set[str] = set()
+    for index, source in enumerate(sources):
+        location = f"{seed_path}#sources/{index}"
+        if not isinstance(source, dict):
+            diagnostics.append(
+                Diagnostic(
+                    "seed-source-invalid", location, "Seed source must be an object."
+                )
+            )
+            continue
+        missing = sorted(SEED_SOURCE_REQUIRED_FIELDS - set(source))
+        if missing:
+            diagnostics.append(
+                Diagnostic(
+                    "seed-source-metadata-missing",
+                    location,
+                    f"Missing metadata fields: {', '.join(missing)}",
+                )
+            )
+        seed_id = source.get("seed_id")
+        if not isinstance(seed_id, str) or not re.fullmatch(r"SEED-STC-\d{3}", seed_id):
+            diagnostics.append(
+                Diagnostic(
+                    "seed-source-id-invalid", location, f"Invalid seed ID: {seed_id!r}"
+                )
+            )
+        elif seed_id in seen:
+            diagnostics.append(
+                Diagnostic(
+                    "duplicate-seed-source-id", location, f"Duplicate seed ID: {seed_id}"
+                )
+            )
+        else:
+            seen.add(seed_id)
+        source_url = source.get("source_url")
+        if not isinstance(source_url, str) or not source_url.startswith("https://"):
+            diagnostics.append(
+                Diagnostic(
+                    "seed-source-url-invalid",
+                    location,
+                    "Seed source_url must be an HTTPS URL.",
+                )
+            )
+
+
+def validate_phase(
+    root: Path,
+    phase: str,
+    *,
+    reject_authoring_markers: bool = False,
+    reject_latex_reference_errors: bool = False,
+    enforce_contract: bool = True,
+) -> ProgramValidationReport:
+    """Validate one research phase package and optional authoring error gates."""
+
+    root = Path(root)
+    phase_root = root / "research" / "sleep-time-compute" / phase
+    diagnostics: list[Diagnostic] = []
+    if enforce_contract and phase == "pre-research":
+        _validate_pre_research_contract(phase_root, diagnostics)
+    if reject_authoring_markers or reject_latex_reference_errors:
+        diagnostics.extend(
+            _scan_text_patterns(
+                [phase_root],
+                reject_authoring_markers=reject_authoring_markers,
+                reject_latex_reference_errors=reject_latex_reference_errors,
+            )
+        )
+    diagnostics = sorted(set(diagnostics), key=lambda item: (item.code, item.path, item.message))
+    return ProgramValidationReport(not diagnostics, tuple(diagnostics))
 
 
 def _default_repository_root() -> Path:
@@ -433,23 +658,32 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     diagnostics: list[Diagnostic] = []
-    manifest, _ = _resolve_manifest(args.root)
-    if manifest.exists():
-        diagnostics.extend(validate_program(args.root).diagnostics)
-    elif not args.phase:
-        diagnostics.append(
-            Diagnostic(
-                "registry-file-missing", str(manifest), "Research spine is missing."
-            )
+    if args.phase:
+        diagnostics.extend(
+            validate_phase(
+                args.root,
+                args.phase,
+                reject_authoring_markers=args.reject_authoring_markers,
+                reject_latex_reference_errors=args.reject_latex_reference_errors,
+            ).diagnostics
         )
-
-    if args.reject_authoring_markers or args.reject_latex_reference_errors:
-        scan_paths: list[Path] = []
-        if args.phase:
-            scan_paths.append(
-                args.root / "research" / "sleep-time-compute" / args.phase
+    else:
+        manifest, _ = _resolve_manifest(args.root)
+        if manifest.exists():
+            diagnostics.extend(validate_program(args.root).diagnostics)
+        else:
+            diagnostics.append(
+                Diagnostic(
+                    "registry-file-missing", str(manifest), "Research spine is missing."
+                )
             )
-        elif args.all:
+
+    if (
+        not args.phase
+        and (args.reject_authoring_markers or args.reject_latex_reference_errors)
+    ):
+        scan_paths: list[Path] = []
+        if args.all:
             scan_paths.extend(
                 [
                     args.root / "paper-kr",
@@ -460,7 +694,13 @@ def main(argv: list[str] | None = None) -> int:
                     args.root / "research" / "sleep-time-compute" / "deep-research",
                 ]
             )
-        diagnostics.extend(_scan_authoring_markers(scan_paths))
+        diagnostics.extend(
+            _scan_text_patterns(
+                scan_paths,
+                reject_authoring_markers=args.reject_authoring_markers,
+                reject_latex_reference_errors=args.reject_latex_reference_errors,
+            )
+        )
 
     for diagnostic in sorted(set(diagnostics)):
         print(f"{diagnostic.code}\t{diagnostic.path}\t{diagnostic.message}")

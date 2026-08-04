@@ -255,3 +255,73 @@ def test_valid_frozen_program_succeeds(tmp_path):
 
     assert report.success
     assert report.diagnostics == ()
+
+
+def test_pre_research_phase_requires_all_alignment_artifacts(tmp_path):
+    module = _load_validator()
+
+    report = module.validate_phase(tmp_path, "pre-research")
+
+    assert "pre-research-file-missing" in _codes(report)
+
+
+def test_pre_research_seed_records_require_fixed_metadata(tmp_path):
+    module = _load_validator()
+    phase_root = tmp_path / "research" / "sleep-time-compute" / "pre-research"
+    phase_root.mkdir(parents=True)
+    for filename in module.PRE_RESEARCH_REQUIRED_FILES:
+        path = phase_root / filename
+        if filename == "SEED-CORPUS.json":
+            _write_json(
+                path,
+                {
+                    "schema_version": "1.0.0",
+                    "frozen_at": "2026-08-05",
+                    "purpose": "fixture",
+                    "sources": [{"seed_id": "SEED-STC-001", "title": "Incomplete"}],
+                },
+            )
+        else:
+            path.write_text("fixture\n", encoding="utf-8")
+
+    report = module.validate_phase(tmp_path, "pre-research")
+
+    assert "seed-source-metadata-missing" in _codes(report)
+
+
+def test_marker_and_latex_error_flags_are_independent(tmp_path):
+    module = _load_validator()
+    phase_root = tmp_path / "research" / "sleep-time-compute" / "pre-research"
+    phase_root.mkdir(parents=True)
+    (phase_root / "note.md").write_text("LaTeX Warning: undefined references\n")
+
+    marker_only = module.validate_phase(
+        tmp_path,
+        "pre-research",
+        reject_authoring_markers=True,
+        reject_latex_reference_errors=False,
+        enforce_contract=False,
+    )
+    latex_only = module.validate_phase(
+        tmp_path,
+        "pre-research",
+        reject_authoring_markers=False,
+        reject_latex_reference_errors=True,
+        enforce_contract=False,
+    )
+
+    assert "latex-reference-error-found" not in _codes(marker_only)
+    assert "latex-reference-error-found" in _codes(latex_only)
+
+
+def test_repository_pre_research_package_satisfies_contract():
+    module = _load_validator()
+    repository_root = PACKAGE_ROOT.parents[1]
+
+    report = module.validate_phase(
+        repository_root,
+        "pre-research",
+        reject_authoring_markers=True,
+    )
+
+    assert report.success, report.diagnostics
