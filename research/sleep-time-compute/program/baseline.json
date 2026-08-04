@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.0.0",
+  "captured_at_utc": "2026-08-04T18:19:06Z",
+  "source_commit": "b23302468e1e6ca862a3e8dc896d76dcc862a733",
+  "branch": "codex/stc-study-rebuild",
+  "tracked_clean": true,
+  "environment_bootstrap": {
+    "command": "cd presentation/sleep-time-compute && npm ci",
+    "result": "19 packages installed; 0 vulnerabilities",
+    "reason": "The isolated worktree did not contain ignored node_modules, so the first presentation test attempt could not resolve jszip."
+  },
+  "suites": [
+    {
+      "id": "stc-python",
+      "command": "uv run --project research/sleep-time-compute pytest -q research/sleep-time-compute/tests",
+      "passed": 736,
+      "failed": 0,
+      "duration_seconds": 19.00
+    },
+    {
+      "id": "attn-vs-hope-analytical",
+      "command": "python3 -m unittest -q experiments/E5-attn-vs-hope/test_model.py",
+      "passed": 38,
+      "failed": 0,
+      "duration_seconds": 0.359
+    },
+    {
+      "id": "attn-vs-hope-workbook",
+      "command": "python3 -m unittest -q experiments/E5-attn-vs-hope/sheet/test_workbook_source.py",
+      "passed": 24,
+      "failed": 0,
+      "duration_seconds": 6.148
+    },
+    {
+      "id": "sleep-time-presentation",
+      "command": "cd presentation/sleep-time-compute && npm test",
+      "passed": 4,
+      "failed": 0,
+      "components": {
+        "node_tests": 2,
+        "python_tests": 2
+      }
+    }
+  ],
+  "totals": {
+    "passed": 802,
+    "failed": 0
+  }
+}
