@@ -33,7 +33,7 @@
 - Consumes: JSON files under `pre-research/` and `deep-research/`
 - Produces: `validate_program(root: Path) -> ProgramValidationReport`
 
-- [ ] **Step 1: Write failing schema-validation tests**
+- [x] **Step 1: Write failing schema-validation tests**
 
 ```python
 def test_research_spine_requires_frozen_sources_and_locators(tmp_path):
@@ -50,7 +50,7 @@ def test_translation_selection_is_between_twelve_and_fifteen(tmp_path):
     assert "translation-count-out-of-range" in {d.code for d in report.diagnostics}
 ```
 
-- [ ] **Step 2: Run tests and confirm failure**
+- [x] **Step 2: Run tests and confirm failure**
 
 ```bash
 uv run --project research/sleep-time-compute pytest -q research/sleep-time-compute/tests/test_program_validation.py
@@ -58,11 +58,11 @@ uv run --project research/sleep-time-compute pytest -q research/sleep-time-compu
 
 Expected: import or assertion failure because validator and schemas do not exist.
 
-- [ ] **Step 3: Implement strict schemas and validator**
+- [x] **Step 3: Implement strict schemas and validator**
 
 The validator must reject duplicate IDs, non-ISO dates, mutable URLs without version metadata, missing locator, unsupported claim type, public direct-reuse figures without license evidence, translation count outside 12–15, and a frozen spine with unresolved load-bearing claims.
 
-- [ ] **Step 4: Run focused and existing tests**
+- [x] **Step 4: Run focused and existing tests**
 
 ```bash
 uv run --project research/sleep-time-compute pytest -q research/sleep-time-compute/tests/test_program_validation.py

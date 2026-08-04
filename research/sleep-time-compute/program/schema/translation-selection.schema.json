@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://neural-memory.local/schema/stc/translation-selection.schema.json",
+  "title": "Sleep-Time Compute Translation Selection",
+  "type": "object",
+  "required": ["schema_version", "selected"],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "selected": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["paper_id", "source_id", "selection_reason", "status"],
+        "properties": {
+          "paper_id": {
+            "type": "string",
+            "pattern": "^STC-T[0-9]{2}$"
+          },
+          "source_id": {
+            "type": "string",
+            "pattern": "^SRC-STC-[0-9]{4}$"
+          },
+          "selection_reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": ["selected", "reserve", "rejected"]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://neural-memory.local/schema/stc/research-spine.schema.json",
+  "title": "Sleep-Time Compute Research Spine",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "status",
+    "source_freeze",
+    "registries",
+    "unresolved_load_bearing_claims"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "status": {
+      "enum": ["draft", "frozen"]
+    },
+    "source_freeze": {
+      "type": "string",
+      "format": "date"
+    },
+    "registries": {
+      "type": "object",
+      "required": ["sources", "claims", "figures", "translations"],
+      "properties": {
+        "sources": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claims": {
+          "type": "string",
+          "minLength": 1
+        },
+        "figures": {
+          "type": "string",
+          "minLength": 1
+        },
+        "translations": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "unresolved_load_bearing_claims": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^STC-C[0-9]{3,4}$"
+      },
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false
+}

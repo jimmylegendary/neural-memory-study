@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://neural-memory.local/schema/stc/figure-record.schema.json",
+  "title": "Sleep-Time Compute Figure Record",
+  "type": "object",
+  "required": [
+    "figure_id",
+    "title",
+    "mode",
+    "public",
+    "source_ids",
+    "license"
+  ],
+  "properties": {
+    "figure_id": {
+      "type": "string",
+      "pattern": "^STC-F[0-9]{3,4}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "enum": ["direct_reuse", "redrawn", "original", "data_derived"]
+    },
+    "public": {
+      "type": "boolean"
+    },
+    "source_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^SRC-STC-[0-9]{4}$"
+      },
+      "uniqueItems": true
+    },
+    "license": {
+      "type": "object",
+      "required": [
+        "license_id",
+        "evidence_url",
+        "evidence_locator",
+        "reuse_allowed",
+        "review_status"
+      ],
+      "properties": {
+        "license_id": {
+          "type": "string"
+        },
+        "evidence_url": {
+          "type": "string"
+        },
+        "evidence_locator": {
+          "type": "string"
+        },
+        "reuse_allowed": {
+          "type": "boolean"
+        },
+        "review_status": {
+          "enum": ["pending", "reviewed", "rejected"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "caption": {
+      "type": "string"
+    },
+    "local_path": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
