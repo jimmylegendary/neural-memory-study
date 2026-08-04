@@ -69,6 +69,13 @@ def _latex_environment(root: Path) -> dict[str, str]:
     """
 
     environment = os.environ.copy()
+    environment.update(
+        {
+            "SOURCE_DATE_EPOCH": "1785888000",
+            "FORCE_SOURCE_DATE": "1",
+            "TZ": "UTC",
+        }
+    )
     common = str((Path(root).resolve() / "paper-kr/common").resolve())
     for variable in ("TEXINPUTS", "BIBINPUTS"):
         prior = environment.get(variable, "")

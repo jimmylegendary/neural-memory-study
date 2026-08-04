@@ -282,31 +282,31 @@ git commit -m "paper: complete strategic sleep-time compute study"
 - Consumes: Full Study sections and claims
 - Produces: 12–18 page Conference PDF and separate Appendix PDF
 
-- [ ] **Step 1: Select conference narrative**
+- [x] **Step 1: Select conference narrative**
 
 Keep operational definition, strongest-alternative comparison, conditional verdict, candidate scaling law, device/system implications, limitations, and contribution table in the main paper. Move exhaustive chronology, paper catalog, derivations, extended tables, and benchmark details to appendix.
 
-- [ ] **Step 2: Build both variants**
+- [x] **Step 2: Build both variants**
 
 ```bash
 make -C paper-kr/sleep-time-compute-study conference appendix
 ```
 
-- [ ] **Step 3: Verify page budget and references**
+- [x] **Step 3: Verify page budget and references**
 
 ```bash
 python3 paper-kr/common/qa_publications.py --pdf build/publications/SLEEP-TIME-COMPUTE-CONFERENCE-KR.pdf --kind conference --min-pages 12 --max-pages 18
 python3 paper-kr/common/qa_publications.py --pdf build/publications/SLEEP-TIME-COMPUTE-CONFERENCE-APPENDIX-KR.pdf --kind appendix
 ```
 
-- [ ] **Step 4: Run Veridraft manuscript gate**
+- [x] **Step 4: Run Veridraft manuscript gate**
 
 ```bash
 python3 -m veridraft readiness --venue mlsys --data-dir .veridraft-stc-study > claims/stc-study/reports/readiness-mlsys.txt
 python3 -m veridraft events --data-dir .veridraft-stc-study > claims/stc-study/reports/events.txt
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add paper-kr/sleep-time-compute-study claims/stc-study/reports build/publications/SLEEP-TIME-COMPUTE-*.pdf build/publications/TRAINING-BACKGROUND-FOR-SLEEP-TIME-COMPUTE-KR.pdf

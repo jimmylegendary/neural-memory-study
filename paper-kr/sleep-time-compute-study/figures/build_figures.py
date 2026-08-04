@@ -89,7 +89,17 @@ def title(ax, text, subtitle=""):
 
 def save(fig, name):
     OUT.mkdir(parents=True, exist_ok=True)
-    fig.savefig(OUT / name, bbox_inches="tight", pad_inches=0.08)
+    fig.savefig(
+        OUT / name,
+        bbox_inches="tight",
+        pad_inches=0.08,
+        metadata={
+            "Creator": "STC Study Figure Builder",
+            "Producer": "Matplotlib PDF backend",
+            "CreationDate": None,
+            "ModDate": None,
+        },
+    )
     plt.close(fig)
 
 

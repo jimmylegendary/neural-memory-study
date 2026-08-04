@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "source_freeze": "2026-08-05",
+  "conference": {
+    "min_pages": 12,
+    "max_pages": 18,
+    "actual_pages": 12,
+    "includes_references": true
+  },
+  "full_study": {
+    "min_pages": 45,
+    "max_pages": 70,
+    "actual_pages": 70
+  },
+  "appendix": {
+    "min_pages": 20,
+    "max_pages": null,
+    "actual_pages": 30
+  }
+}

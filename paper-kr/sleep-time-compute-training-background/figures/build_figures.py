@@ -98,7 +98,17 @@ def setup(width=12, height=5.2):
 
 
 def save(fig, name):
-    fig.savefig(OUT / name, bbox_inches="tight", pad_inches=0.08)
+    fig.savefig(
+        OUT / name,
+        bbox_inches="tight",
+        pad_inches=0.08,
+        metadata={
+            "Creator": "STC Training Background Figure Builder",
+            "Producer": "Matplotlib PDF backend",
+            "CreationDate": None,
+            "ModDate": None,
+        },
+    )
     plt.close(fig)
 
 

@@ -69,18 +69,22 @@
 \renewcommand{\arraystretch}{1.18}
 \captionsetup{font=small,labelfont={bf,color=STCNavy},justification=raggedright,singlelinecheck=false}
 
-\titleformat{\chapter}[display]
-  {\normalfont\sffamily\bfseries\color{STCNavy}}
-  {\filleft\Large\chaptername\ \thechapter}
-  {0.6ex}
-  {\titlerule[1.2pt]\vspace{0.9ex}\raggedright\LARGE}
+\makeatletter
+\@ifundefined{chapter}{}{%
+  \titleformat{\chapter}[display]
+    {\normalfont\sffamily\bfseries\color{STCNavy}}
+    {\filleft\Large\chaptername\ \thechapter}
+    {0.6ex}
+    {\titlerule[1.2pt]\vspace{0.9ex}\raggedright\LARGE}%
+  \titlespacing*{\chapter}{0pt}{-15pt}{28pt}%
+}
+\makeatother
 \titleformat{\section}
   {\normalfont\Large\sffamily\bfseries\color{STCNavy}}
   {\thesection}{0.7em}{}
 \titleformat{\subsection}
   {\normalfont\large\sffamily\bfseries\color{STCBlue}}
   {\thesubsection}{0.65em}{}
-\titlespacing*{\chapter}{0pt}{-15pt}{28pt}
 
 \pagestyle{fancy}
 \fancyhf{}

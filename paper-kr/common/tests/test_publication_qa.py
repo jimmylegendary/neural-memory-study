@@ -36,6 +36,9 @@ def test_latex_environment_exposes_shared_bibliography_to_tex_and_bibtex():
 
     assert common in environment["TEXINPUTS"].split(":")
     assert common in environment["BIBINPUTS"].split(":")
+    assert environment["SOURCE_DATE_EPOCH"] == "1785888000"
+    assert environment["FORCE_SOURCE_DATE"] == "1"
+    assert environment["TZ"] == "UTC"
 
 
 def test_bgref_must_resolve_to_background_label():
@@ -195,6 +198,7 @@ def test_background_figure_generator_builds_all_vector_pdfs(tmp_path):
             ["pdfinfo", str(path)], check=True, capture_output=True, text=True
         ).stdout
         assert "Pages:           1" in info
+        assert b"/CreationDate" not in path.read_bytes()
 
 
 def test_background_glossary_generator_covers_every_registered_concept(tmp_path):
@@ -260,6 +264,7 @@ def test_study_figure_generator_builds_canonical_fifteen_vector_pdfs(tmp_path):
             ["pdfinfo", str(path)], check=True, capture_output=True, text=True
         ).stdout
         assert "Pages:           1" in info
+        assert b"/CreationDate" not in path.read_bytes()
 
 
 def test_claim_table_generator_covers_every_public_supported_claim(tmp_path):
