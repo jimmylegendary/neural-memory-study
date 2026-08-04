@@ -1,0 +1,54 @@
+{
+  "authors": "Charles Packer, Sarah Wooders, Kevin Lin, Vivian Fang, Shishir G. Patil, Ion Stoica, Joseph E. Gonzalez",
+  "expected": {
+    "equations": null,
+    "figures": 8,
+    "tables": 3
+  },
+  "figure_pages": [
+    2,
+    3,
+    4,
+    6,
+    7
+  ],
+  "license_note": "arXiv license; translated derivative and complete source plate are not cleared for public redistribution",
+  "load_bearing_locators": {
+    "abstract": {
+      "locator": "not separately titled; inspect complete source plate",
+      "page": null
+    },
+    "conclusion": {
+      "locator": "not separately titled; inspect complete source plate",
+      "page": null
+    },
+    "limitations": {
+      "locator": "not separately titled; inspect complete source plate",
+      "page": null
+    },
+    "method": {
+      "locator": "source PDF p.4",
+      "page": 4
+    },
+    "primary-result": {
+      "locator": "source PDF p.2",
+      "page": 2
+    }
+  },
+  "pages": 13,
+  "paper_id": "STC-T08",
+  "rights": "internal-only",
+  "selection_sha256": "9f674bcff69c86f11c813dcfad613d8841f5f8ed17979e3c4df06a91df7762e0",
+  "source_exception": null,
+  "source_path": "translations-kr/stc-core/sources/STC-T08.pdf",
+  "source_plate_mode": "complete-pdf-pages",
+  "source_sha256": "9f674bcff69c86f11c813dcfad613d8841f5f8ed17979e3c4df06a91df7762e0",
+  "source_type": "pdf",
+  "table_pages": [
+    4,
+    5,
+    6
+  ],
+  "title": "MemGPT: Towards LLMs as Operating Systems",
+  "version": "arXiv:2310.08560v2"
+}

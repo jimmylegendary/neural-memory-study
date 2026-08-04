@@ -1,0 +1,62 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{translation}[2026/08/05 STC faithful Korean translation style]
+\RequirePackage{luatexja-fontspec}
+\setmainfont{Noto Serif CJK KR}
+\setmainjfont{Noto Serif CJK KR}
+\setsansfont{Noto Sans CJK KR}
+\setsansjfont{Noto Sans CJK KR}
+\setmonofont{Noto Sans Mono CJK KR}
+\setmonojfont{Noto Sans Mono CJK KR}
+\RequirePackage[margin=24mm,headheight=15pt]{geometry}
+\RequirePackage{xcolor}
+\definecolor{stcnavy}{HTML}{17263C}
+\definecolor{stcblue}{HTML}{2F6690}
+\definecolor{stcteal}{HTML}{3A7D78}
+\definecolor{stcamber}{HTML}{A46719}
+\definecolor{stcmist}{HTML}{EEF2F5}
+\definecolor{stcink}{HTML}{22262C}
+\RequirePackage{microtype}
+\RequirePackage{graphicx}
+\RequirePackage{pdfpages}
+\RequirePackage{amsmath,amssymb,bm,mathtools}
+\RequirePackage{booktabs,longtable,array,multirow,tabularx}
+\RequirePackage{adjustbox}
+\RequirePackage[most]{tcolorbox}
+\RequirePackage{fancyhdr}
+\RequirePackage{caption}
+\RequirePackage{xurl}
+\RequirePackage[hidelinks,unicode,pdfencoding=auto]{hyperref}
+\RequirePackage{bookmark}
+\RequirePackage{newunicodechar}
+\newunicodechar{✓}{\ensuremath{\checkmark}}
+\newunicodechar{✗}{\ensuremath{\times}}
+\newunicodechar{∗}{\ensuremath{\ast}}
+\newunicodechar{∼}{\ensuremath{\sim}}
+\newunicodechar{⊤}{\ensuremath{\top}}
+\newunicodechar{Ł}{\L{}}
+\newunicodechar{ł}{\l{}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{-2}
+\emergencystretch=3em
+\tolerance=2000
+\hbadness=1800
+\captionsetup{font=small,labelfont=bf}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\sffamily\small\color{stcnavy}STC Core Translation}
+\fancyhead[R]{\sffamily\small\color{stcblue}\leftmark}
+\fancyfoot[C]{\sffamily\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\st}[1]{#1}
+\providecommand{\passthrough}[1]{#1}
+\providecommand{\pandocbounded}[1]{#1}
+\providecommand{\real}[1]{#1}
+\providecommand{\textsubscript}[1]{\ensuremath{_{#1}}}
+\providecommand{\textsuperscript}[1]{\ensuremath{^{#1}}}
+\newtcolorbox{translationnotice}{
+  colback=stcmist,colframe=stcblue,boxrule=0.8pt,arc=2mm,
+  left=3mm,right=3mm,top=2mm,bottom=2mm
+}

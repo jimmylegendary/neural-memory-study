@@ -1,0 +1,53 @@
+{
+  "authors": "Hanul Shin, Jung Kwon Lee, Jaehong Kim, Jiwon Kim",
+  "expected": {
+    "equations": null,
+    "figures": 7,
+    "tables": 1
+  },
+  "figure_pages": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "license_note": "arXiv/proceedings rights; translated derivative and source plate are internal-only",
+  "load_bearing_locators": {
+    "abstract": {
+      "locator": "source PDF p.1",
+      "page": 1
+    },
+    "conclusion": {
+      "locator": "source PDF p.8",
+      "page": 8
+    },
+    "limitations": {
+      "locator": "not separately titled; inspect complete source plate",
+      "page": null
+    },
+    "method": {
+      "locator": "source PDF p.3",
+      "page": 3
+    },
+    "primary-result": {
+      "locator": "source PDF p.4",
+      "page": 4
+    }
+  },
+  "pages": 10,
+  "paper_id": "STC-T07",
+  "rights": "internal-only",
+  "selection_sha256": "cd9cfc3c5b6e71fa3255a40037c6819f403415e2e4fcb539a83f9eda88067e10",
+  "source_exception": null,
+  "source_path": "translations-kr/stc-core/sources/STC-T07.pdf",
+  "source_plate_mode": "complete-pdf-pages",
+  "source_sha256": "cd9cfc3c5b6e71fa3255a40037c6819f403415e2e4fcb539a83f9eda88067e10",
+  "source_type": "pdf",
+  "table_pages": [
+    4
+  ],
+  "title": "Continual Learning with Deep Generative Replay",
+  "version": "arXiv:1705.08690v3"
+}

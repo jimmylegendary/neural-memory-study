@@ -1,0 +1,139 @@
+{
+  "papers": [
+    {
+      "license_note": "arXiv license; translated derivative and complete source plate are not cleared for public redistribution",
+      "output": "build/publications/translations-kr/STC-T01-SLEEP-TIME-COMPUTE-KR.pdf",
+      "output_sha256": "5717a7fded67078a9d54543c78edeca49f8ef132c5c8e81810c0fe7fef77dafa",
+      "paper_id": "STC-T01",
+      "public_release_allowed": false,
+      "rights": "internal-only",
+      "source_sha256": "050133427aa9cd015a6715d30f9e3cb5f316bfe70929815ad5cb63ec08cf14cc"
+    },
+    {
+      "license_note": "arXiv license; translated derivative and complete source plate are not cleared for public redistribution",
+      "output": "build/publications/translations-kr/STC-T02-LANGUAGE-MODELS-NEED-SLEEP-KR.pdf",
+      "output_sha256": "21b9cba49e3f327a260f48dcc999a9a1e5c21f86ab3d3d4ff05dd855aea26ba1",
+      "paper_id": "STC-T02",
+      "public_release_allowed": false,
+      "rights": "internal-only",
+      "source_sha256": "dab98367e19e99eb8838a6604afddb9ea85a940f2f41d8a1602e55977fb12d14"
+    },
+    {
+      "license_note": "arXiv license; translated derivative and complete source plate are not cleared for public redistribution",
+      "output": "build/publications/translations-kr/STC-T03-CONTINUAL-FACT-WRITES-KR.pdf",
+      "output_sha256": "aa6dd74f8dd1f9f09e9d96bff67a8b3af11c1df725539d99b6b33e812834737c",
+      "paper_id": "STC-T03",
+      "public_release_allowed": false,
+      "rights": "internal-only",
+      "source_sha256": "3d7fde31817d293afd64066174293fe6a925ce2650331550d66c38af3d6b3702"
+    },
+    {
+      "license_note": "CC BY 4.0; attribution retained",
+      "output": "build/publications/translations-kr/STC-T04-PLOS-SLEEP-SNN-KR.pdf",
+      "output_sha256": "0b17d6360e7ba2a859b95fdf914e47873123e7de2b32d753338be2d94c50fcde",
+      "paper_id": "STC-T04",
+      "public_release_allowed": true,
+      "rights": "public",
+      "source_sha256": "a5ac00a79026561ba06b429b706beeefca552286e70971567ba6038c1ea39035"
+    },
+    {
+      "license_note": "CC BY-NC-ND 4.0; Korean derivative is restricted to internal study",
+      "output": "build/publications/translations-kr/STC-T05-PNAS-HIPPOCAMPUS-NEOCORTEX-SLEEP-KR.pdf",
+      "output_sha256": "9a1649adf78a63d8013f5b471382e86e84a5118cd2ad6259281dc3d11d04aba2",
+      "paper_id": "STC-T05",
+      "public_release_allowed": false,
+      "rights": "internal-only",
+      "source_sha256": "12082fda299f51add192109ca9e8661c87b72abbd947bed178ca6dc533c128a2"
+    },
+    {
+      "license_note": "arXiv/proceedings rights; translated derivative and source plate are internal-only",
+      "output": "build/publications/translations-kr/STC-T06-DENSE-ASSOCIATIVE-MEMORY-KR.pdf",
+      "output_sha256": "737c04a6162dede14f46bc3e87205fb08e1621254442d8f2f2b9bea7dd62c8cc",
+      "paper_id": "STC-T06",
+      "public_release_allowed": false,
+      "rights": "internal-only",
+      "source_sha256": "fa30d11b475edaaebeaa55815cf98c32ada2806e510bc16ca55602f06f23c83d"
+    },
+    {
+      "license_note": "arXiv/proceedings rights; translated derivative and source plate are internal-only",
+      "output": "build/publications/translations-kr/STC-T07-DEEP-GENERATIVE-REPLAY-KR.pdf",
+      "output_sha256": "7fc25cfbfb4eac89bb2a19b47b8d0797d3e24ab4ac62006a64e2dff07e9c9a76",
+      "paper_id": "STC-T07",
+      "public_release_allowed": false,
+      "rights": "internal-only",
+      "source_sha256": "cd9cfc3c5b6e71fa3255a40037c6819f403415e2e4fcb539a83f9eda88067e10"
+    },
+    {
+      "license_note": "arXiv license; translated derivative and complete source plate are not cleared for public redistribution",
+      "output": "build/publications/translations-kr/STC-T08-MEMGPT-KR.pdf",
+      "output_sha256": "7c563e9aeacc0783d3c93976334c00e94f63ba2bb1d484e101ca90593daa62f2",
+      "paper_id": "STC-T08",
+      "public_release_allowed": false,
+      "rights": "internal-only",
+      "source_sha256": "9f674bcff69c86f11c813dcfad613d8841f5f8ed17979e3c4df06a91df7762e0"
+    },
+    {
+      "license_note": "arXiv license; translated derivative and complete source plate are not cleared for public redistribution",
+      "output": "build/publications/translations-kr/STC-T09-ZEP-TEMPORAL-KG-KR.pdf",
+      "output_sha256": "290e0941548191a8844bac098945c4088f43be3b399d97f6471084ba9a3966a0",
+      "paper_id": "STC-T09",
+      "public_release_allowed": false,
+      "rights": "internal-only",
+      "source_sha256": "d26f7eb599540e8b14d75e7efda58a07661abbb1b864e58323b5768475a15d42"
+    },
+    {
+      "license_note": "arXiv/proceedings rights; translated derivative and source plate are internal-only",
+      "output": "build/publications/translations-kr/STC-T10-NESTED-LEARNING-HOPE-KR.pdf",
+      "output_sha256": "9e76c21ccfe2e2e92e40409b3b6196f518b6088e1f7d9c27c5a89bb3e3f256d5",
+      "paper_id": "STC-T10",
+      "public_release_allowed": false,
+      "rights": "internal-only",
+      "source_sha256": "e87a9ce82ff24e96f55b83fb9713a5d6fc9e4a1a232c12d42da49c10022ed891"
+    },
+    {
+      "license_note": "arXiv license; translated derivative and complete source plate are not cleared for public redistribution",
+      "output": "build/publications/translations-kr/STC-T11-MEMORY-CACHING-KR.pdf",
+      "output_sha256": "fbbdd950137da0a62a5f2890a5ca5282d7b6b80e2ff1eb1368362cf11b747a16",
+      "paper_id": "STC-T11",
+      "public_release_allowed": false,
+      "rights": "internal-only",
+      "source_sha256": "f4983c96c96400320b3d883e8d39f96ade91cae55e2bde04c4d99b06a8348e82"
+    },
+    {
+      "license_note": "arXiv license; translated derivative and complete source plate are not cleared for public redistribution",
+      "output": "build/publications/translations-kr/STC-T12-RATE-DISTORTION-MEMORY-COMPACTION-KR.pdf",
+      "output_sha256": "19e516a9434f8d7a07ea914293c97d9baad7da21683dd43bd314a0b2d9ea26ac",
+      "paper_id": "STC-T12",
+      "public_release_allowed": false,
+      "rights": "internal-only",
+      "source_sha256": "6c19532535fbc3c748faa1a67b0e047581a6fc56b99b54d43e47097be8107ebd"
+    },
+    {
+      "license_note": "CC BY 4.0; attribution retained",
+      "output": "build/publications/translations-kr/STC-T13-PERTURBED-ADVERSARIAL-DREAMING-KR.pdf",
+      "output_sha256": "e5a71c2f672bfc3aad04be78de44eb5dfeb7fc432672000b7e1f74772ebee132",
+      "paper_id": "STC-T13",
+      "public_release_allowed": true,
+      "rights": "public",
+      "source_sha256": "ce7aef9099666b4b40208c83580d43b248d9129f818b53e91950c299790866f1"
+    },
+    {
+      "license_note": "arXiv license; translated derivative and complete source plate are not cleared for public redistribution",
+      "output": "build/publications/translations-kr/STC-T14-LANGUAGE-MODEL-MEMORIZATION-CAPACITY-KR.pdf",
+      "output_sha256": "57ef2b1885bfd40e43cd9476e00727c33ab1c19f395c57218b109aef1ac2b30d",
+      "paper_id": "STC-T14",
+      "public_release_allowed": false,
+      "rights": "internal-only",
+      "source_sha256": "ce0148ea694019714c4c3d5d8bb3a09b2f1e7c402f377f9db50cae705e32b123"
+    },
+    {
+      "license_note": "Proceedings/arXiv rights; translated derivative and source plate are internal-only",
+      "output": "build/publications/translations-kr/STC-T15-LORA-KNOWLEDGE-MEMORY-KR.pdf",
+      "output_sha256": "1e8d8fae780eb44d0198f5caedee92b7f9b24bb54c89e047e514ab6d34e72bc4",
+      "paper_id": "STC-T15",
+      "public_release_allowed": false,
+      "rights": "internal-only",
+      "source_sha256": "08b937f35edf84cb1ac2ab67b8ff4a49a8f4f1d71a7629418555c0fcca66ad68"
+    }
+  ]
+}

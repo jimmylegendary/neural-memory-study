@@ -1,0 +1,10 @@
+{
+  "output": "build/publications/translations-kr/STC-T08-MEMGPT-KR.pdf",
+  "pages": 20,
+  "paper_id": "STC-T08",
+  "rights": "internal-only",
+  "sha256": "7c563e9aeacc0783d3c93976334c00e94f63ba2bb1d484e101ca90593daa62f2",
+  "source_pages": 13,
+  "source_plate_mode": "complete-pdf-pages",
+  "source_sha256": "9f674bcff69c86f11c813dcfad613d8841f5f8ed17979e3c4df06a91df7762e0"
+}

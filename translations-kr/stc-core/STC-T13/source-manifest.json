@@ -1,0 +1,68 @@
+{
+  "authors": "Nicolas Deperrois, Mihai A. Petrovici, Walter Senn, Jakob Jordan",
+  "expected": {
+    "equations": null,
+    "figures": 9,
+    "tables": 1
+  },
+  "figure_pages": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    15,
+    16,
+    18,
+    21,
+    30,
+    31,
+    32,
+    33,
+    34
+  ],
+  "license_note": "CC BY 4.0; attribution retained",
+  "load_bearing_locators": {
+    "abstract": {
+      "locator": "not separately titled; inspect complete source plate",
+      "page": null
+    },
+    "conclusion": {
+      "locator": "source PDF p.13",
+      "page": 13
+    },
+    "limitations": {
+      "locator": "source PDF p.13",
+      "page": 13
+    },
+    "method": {
+      "locator": "source PDF p.5",
+      "page": 5
+    },
+    "primary-result": {
+      "locator": "source PDF p.3",
+      "page": 3
+    }
+  },
+  "pages": 34,
+  "paper_id": "STC-T13",
+  "rights": "public",
+  "selection_sha256": "ce7aef9099666b4b40208c83580d43b248d9129f818b53e91950c299790866f1",
+  "source_exception": null,
+  "source_path": "translations-kr/stc-core/sources/STC-T13.pdf",
+  "source_plate_mode": "complete-pdf-pages",
+  "source_sha256": "ce7aef9099666b4b40208c83580d43b248d9129f818b53e91950c299790866f1",
+  "source_type": "pdf",
+  "table_pages": [
+    8,
+    31
+  ],
+  "title": "Learning cortical representations through perturbed and adversarial dreaming",
+  "version": "Version of Record v2"
+}

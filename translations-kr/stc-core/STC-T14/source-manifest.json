@@ -1,0 +1,65 @@
+{
+  "authors": "John X. Morris, Chawin Sitawarin, Chuan Guo, Narine Kokhlikyan, G. Edward Suh, Alexander M. Rush, Kamalika Chaudhuri, Saeed Mahloujifar",
+  "expected": {
+    "equations": null,
+    "figures": 17,
+    "tables": 5
+  },
+  "figure_pages": [
+    1,
+    2,
+    3,
+    7,
+    8,
+    9,
+    10,
+    15,
+    16,
+    17,
+    18,
+    19
+  ],
+  "license_note": "arXiv license; translated derivative and complete source plate are not cleared for public redistribution",
+  "load_bearing_locators": {
+    "abstract": {
+      "locator": "not separately titled; inspect complete source plate",
+      "page": null
+    },
+    "conclusion": {
+      "locator": "source PDF p.12",
+      "page": 12
+    },
+    "limitations": {
+      "locator": "not separately titled; inspect complete source plate",
+      "page": null
+    },
+    "method": {
+      "locator": "source PDF p.1",
+      "page": 1
+    },
+    "primary-result": {
+      "locator": "source PDF p.1",
+      "page": 1
+    }
+  },
+  "pages": 21,
+  "paper_id": "STC-T14",
+  "rights": "internal-only",
+  "selection_sha256": "ce0148ea694019714c4c3d5d8bb3a09b2f1e7c402f377f9db50cae705e32b123",
+  "source_exception": null,
+  "source_path": "translations-kr/stc-core/sources/STC-T14.pdf",
+  "source_plate_mode": "complete-pdf-pages",
+  "source_sha256": "ce0148ea694019714c4c3d5d8bb3a09b2f1e7c402f377f9db50cae705e32b123",
+  "source_type": "pdf",
+  "table_pages": [
+    6,
+    10,
+    11,
+    15,
+    16,
+    17,
+    18
+  ],
+  "title": "How much do language models memorize?",
+  "version": "arXiv:2505.24832v3"
+}

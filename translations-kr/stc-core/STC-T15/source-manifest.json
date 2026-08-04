@@ -1,0 +1,76 @@
+{
+  "authors": "Seungju Back, Dongwoo Lee, Naun Kang, Taehee Lee, S. K. Hong, Youngjune Gwon, Sungjin Ahn",
+  "expected": {
+    "equations": null,
+    "figures": 22,
+    "tables": 7
+  },
+  "figure_pages": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    28,
+    29,
+    30,
+    31,
+    33,
+    34,
+    38,
+    41
+  ],
+  "license_note": "Proceedings/arXiv rights; translated derivative and source plate are internal-only",
+  "load_bearing_locators": {
+    "abstract": {
+      "locator": "not separately titled; inspect complete source plate",
+      "page": null
+    },
+    "conclusion": {
+      "locator": "not separately titled; inspect complete source plate",
+      "page": null
+    },
+    "limitations": {
+      "locator": "source PDF p.9",
+      "page": 9
+    },
+    "method": {
+      "locator": "source PDF p.2",
+      "page": 2
+    },
+    "primary-result": {
+      "locator": "source PDF p.14",
+      "page": 14
+    }
+  },
+  "pages": 41,
+  "paper_id": "STC-T15",
+  "rights": "internal-only",
+  "selection_sha256": "08b937f35edf84cb1ac2ab67b8ff4a49a8f4f1d71a7629418555c0fcca66ad68",
+  "source_exception": null,
+  "source_path": "translations-kr/stc-core/sources/STC-T15.pdf",
+  "source_plate_mode": "complete-pdf-pages",
+  "source_sha256": "08b937f35edf84cb1ac2ab67b8ff4a49a8f4f1d71a7629418555c0fcca66ad68",
+  "source_type": "pdf",
+  "table_pages": [
+    4,
+    7,
+    18,
+    19,
+    21,
+    22,
+    27,
+    32,
+    35,
+    37
+  ],
+  "title": "Understanding LoRA as Knowledge Memory: An Empirical Analysis",
+  "version": "arXiv:2603.01097v5"
+}

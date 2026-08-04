@@ -1,0 +1,142 @@
+{
+  "paper_count": 15,
+  "reports": [
+    {
+      "errors": [],
+      "paper_id": "STC-T01",
+      "rights": "internal-only",
+      "success": true,
+      "warnings": [
+        "equation-count-deferred-to-complete-source-plate"
+      ]
+    },
+    {
+      "errors": [],
+      "paper_id": "STC-T02",
+      "rights": "internal-only",
+      "success": true,
+      "warnings": [
+        "equation-count-deferred-to-complete-source-plate"
+      ]
+    },
+    {
+      "errors": [],
+      "paper_id": "STC-T03",
+      "rights": "internal-only",
+      "success": true,
+      "warnings": [
+        "equation-count-deferred-to-complete-source-plate"
+      ]
+    },
+    {
+      "errors": [],
+      "paper_id": "STC-T04",
+      "rights": "public",
+      "success": true,
+      "warnings": [
+        "equation-count-deferred-to-complete-source-plate"
+      ]
+    },
+    {
+      "errors": [],
+      "paper_id": "STC-T05",
+      "rights": "internal-only",
+      "success": true,
+      "warnings": [
+        "documented-source-equivalence-exception",
+        "equation-count-deferred-to-complete-source-plate"
+      ]
+    },
+    {
+      "errors": [],
+      "paper_id": "STC-T06",
+      "rights": "internal-only",
+      "success": true,
+      "warnings": [
+        "equation-count-deferred-to-complete-source-plate"
+      ]
+    },
+    {
+      "errors": [],
+      "paper_id": "STC-T07",
+      "rights": "internal-only",
+      "success": true,
+      "warnings": [
+        "equation-count-deferred-to-complete-source-plate"
+      ]
+    },
+    {
+      "errors": [],
+      "paper_id": "STC-T08",
+      "rights": "internal-only",
+      "success": true,
+      "warnings": [
+        "equation-count-deferred-to-complete-source-plate"
+      ]
+    },
+    {
+      "errors": [],
+      "paper_id": "STC-T09",
+      "rights": "internal-only",
+      "success": true,
+      "warnings": [
+        "equation-count-deferred-to-complete-source-plate"
+      ]
+    },
+    {
+      "errors": [],
+      "paper_id": "STC-T10",
+      "rights": "internal-only",
+      "success": true,
+      "warnings": [
+        "equation-count-deferred-to-complete-source-plate"
+      ]
+    },
+    {
+      "errors": [],
+      "paper_id": "STC-T11",
+      "rights": "internal-only",
+      "success": true,
+      "warnings": [
+        "equation-count-deferred-to-complete-source-plate"
+      ]
+    },
+    {
+      "errors": [],
+      "paper_id": "STC-T12",
+      "rights": "internal-only",
+      "success": true,
+      "warnings": [
+        "equation-count-deferred-to-complete-source-plate"
+      ]
+    },
+    {
+      "errors": [],
+      "paper_id": "STC-T13",
+      "rights": "public",
+      "success": true,
+      "warnings": [
+        "equation-count-deferred-to-complete-source-plate"
+      ]
+    },
+    {
+      "errors": [],
+      "paper_id": "STC-T14",
+      "rights": "internal-only",
+      "success": true,
+      "warnings": [
+        "equation-count-deferred-to-complete-source-plate"
+      ]
+    },
+    {
+      "errors": [],
+      "paper_id": "STC-T15",
+      "rights": "internal-only",
+      "success": true,
+      "warnings": [
+        "equation-count-deferred-to-complete-source-plate"
+      ]
+    }
+  ],
+  "success": true
+}

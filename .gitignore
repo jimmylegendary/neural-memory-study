@@ -11,4 +11,5 @@ build/publications/*-renders/
 build/publications/*.txt
 build/latex/
 build/render/
+build/translation/
 .veridraft-stc-study/

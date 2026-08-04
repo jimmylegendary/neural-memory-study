@@ -1,0 +1,44 @@
+{
+  "authors": "Ryan Golden, Jean Erik Delanois, Pavel Sanda, Maxim Bazhenov",
+  "expected": {
+    "equations": null,
+    "figures": 7,
+    "tables": 0
+  },
+  "figure_pages": [],
+  "license_note": "CC BY 4.0; attribution retained",
+  "load_bearing_locators": {
+    "abstract": {
+      "locator": "source PDF p.1",
+      "page": 1
+    },
+    "conclusion": {
+      "locator": "source PDF p.16",
+      "page": 16
+    },
+    "limitations": {
+      "locator": "source PDF p.16",
+      "page": 16
+    },
+    "method": {
+      "locator": "source PDF p.1",
+      "page": 1
+    },
+    "primary-result": {
+      "locator": "source PDF p.3",
+      "page": 3
+    }
+  },
+  "pages": 31,
+  "paper_id": "STC-T04",
+  "rights": "public",
+  "selection_sha256": "a5ac00a79026561ba06b429b706beeefca552286e70971567ba6038c1ea39035",
+  "source_exception": null,
+  "source_path": "translations-kr/stc-core/sources/STC-T04.pdf",
+  "source_plate_mode": "complete-pdf-pages",
+  "source_sha256": "a5ac00a79026561ba06b429b706beeefca552286e70971567ba6038c1ea39035",
+  "source_type": "pdf",
+  "table_pages": [],
+  "title": "Sleep prevents catastrophic forgetting in spiking neural networks by forming a joint synaptic weight representation",
+  "version": "Version of Record, 2022-11-18"
+}

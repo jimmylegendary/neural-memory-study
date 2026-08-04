@@ -1,0 +1,49 @@
+{
+  "authors": "Dmitry Krotov, John J. Hopfield",
+  "expected": {
+    "equations": null,
+    "figures": 5,
+    "tables": 0
+  },
+  "figure_pages": [
+    5,
+    6,
+    7,
+    11
+  ],
+  "license_note": "arXiv/proceedings rights; translated derivative and source plate are internal-only",
+  "load_bearing_locators": {
+    "abstract": {
+      "locator": "source PDF p.1",
+      "page": 1
+    },
+    "conclusion": {
+      "locator": "source PDF p.8",
+      "page": 8
+    },
+    "limitations": {
+      "locator": "not separately titled; inspect complete source plate",
+      "page": null
+    },
+    "method": {
+      "locator": "source PDF p.1",
+      "page": 1
+    },
+    "primary-result": {
+      "locator": "not separately titled; inspect complete source plate",
+      "page": null
+    }
+  },
+  "pages": 12,
+  "paper_id": "STC-T06",
+  "rights": "internal-only",
+  "selection_sha256": "fa30d11b475edaaebeaa55815cf98c32ada2806e510bc16ca55602f06f23c83d",
+  "source_exception": null,
+  "source_path": "papers/external/1606.01164.pdf",
+  "source_plate_mode": "complete-pdf-pages",
+  "source_sha256": "fa30d11b475edaaebeaa55815cf98c32ada2806e510bc16ca55602f06f23c83d",
+  "source_type": "pdf",
+  "table_pages": [],
+  "title": "Dense Associative Memory for Pattern Recognition",
+  "version": "arXiv:1606.01164v2"
+}

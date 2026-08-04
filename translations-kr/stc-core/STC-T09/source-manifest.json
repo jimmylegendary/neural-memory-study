@@ -1,0 +1,47 @@
+{
+  "authors": "Preston Rasmussen, Pavlo Paliychuk, Travis Beauvais, Jack Ryan, Daniel Chalef",
+  "expected": {
+    "equations": null,
+    "figures": null,
+    "tables": 3
+  },
+  "figure_pages": [],
+  "license_note": "arXiv license; translated derivative and complete source plate are not cleared for public redistribution",
+  "load_bearing_locators": {
+    "abstract": {
+      "locator": "source PDF p.1",
+      "page": 1
+    },
+    "conclusion": {
+      "locator": "source PDF p.8",
+      "page": 8
+    },
+    "limitations": {
+      "locator": "not separately titled; inspect complete source plate",
+      "page": null
+    },
+    "method": {
+      "locator": "source PDF p.2",
+      "page": 2
+    },
+    "primary-result": {
+      "locator": "source PDF p.4",
+      "page": 4
+    }
+  },
+  "pages": 12,
+  "paper_id": "STC-T09",
+  "rights": "internal-only",
+  "selection_sha256": "d26f7eb599540e8b14d75e7efda58a07661abbb1b864e58323b5768475a15d42",
+  "source_exception": null,
+  "source_path": "translations-kr/stc-core/sources/STC-T09.pdf",
+  "source_plate_mode": "complete-pdf-pages",
+  "source_sha256": "d26f7eb599540e8b14d75e7efda58a07661abbb1b864e58323b5768475a15d42",
+  "source_type": "pdf",
+  "table_pages": [
+    6,
+    7
+  ],
+  "title": "Zep: A Temporal Knowledge Graph Architecture for Agent Memory",
+  "version": "arXiv:2501.13956v1"
+}

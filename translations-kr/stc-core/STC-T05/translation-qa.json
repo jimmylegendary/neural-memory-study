@@ -1,0 +1,10 @@
+{
+  "output": "build/publications/translations-kr/STC-T05-PNAS-HIPPOCAMPUS-NEOCORTEX-SLEEP-KR.pdf",
+  "pages": 11,
+  "paper_id": "STC-T05",
+  "rights": "internal-only",
+  "sha256": "9a1649adf78a63d8013f5b471382e86e84a5118cd2ad6259281dc3d11d04aba2",
+  "source_pages": null,
+  "source_plate_mode": "official-bioc-fulltext-plus-original-figures",
+  "source_sha256": "12082fda299f51add192109ca9e8661c87b72abbd947bed178ca6dc533c128a2"
+}

@@ -1,0 +1,71 @@
+{
+  "authors": "Charles O'Neill",
+  "expected": {
+    "equations": null,
+    "figures": 22,
+    "tables": 2
+  },
+  "figure_pages": [
+    1,
+    2,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32
+  ],
+  "license_note": "arXiv license; translated derivative and complete source plate are not cleared for public redistribution",
+  "load_bearing_locators": {
+    "abstract": {
+      "locator": "source PDF p.1",
+      "page": 1
+    },
+    "conclusion": {
+      "locator": "source PDF p.4",
+      "page": 4
+    },
+    "limitations": {
+      "locator": "not separately titled; inspect complete source plate",
+      "page": null
+    },
+    "method": {
+      "locator": "source PDF p.1",
+      "page": 1
+    },
+    "primary-result": {
+      "locator": "source PDF p.29",
+      "page": 29
+    }
+  },
+  "pages": 33,
+  "paper_id": "STC-T03",
+  "rights": "internal-only",
+  "selection_sha256": "3d7fde31817d293afd64066174293fe6a925ce2650331550d66c38af3d6b3702",
+  "source_exception": null,
+  "source_path": "translations-kr/stc-core/sources/STC-T03.pdf",
+  "source_plate_mode": "complete-pdf-pages",
+  "source_sha256": "3d7fde31817d293afd64066174293fe6a925ce2650331550d66c38af3d6b3702",
+  "source_type": "pdf",
+  "table_pages": [
+    3,
+    25
+  ],
+  "title": "Can a Language Model Learn Facts Continually in Its Weights?",
+  "version": "arXiv:2607.11020v2"
+}

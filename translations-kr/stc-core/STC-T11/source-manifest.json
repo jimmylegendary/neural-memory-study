@@ -1,0 +1,60 @@
+{
+  "authors": "Ali Behrouz, Zeman Li, Yuan Deng, Peilin Zhong, Meisam Razaviyayn, Vahab Mirrokni",
+  "expected": {
+    "equations": null,
+    "figures": 5,
+    "tables": 6
+  },
+  "figure_pages": [
+    1,
+    2,
+    5,
+    6,
+    8,
+    9,
+    13,
+    14
+  ],
+  "license_note": "arXiv license; translated derivative and complete source plate are not cleared for public redistribution",
+  "load_bearing_locators": {
+    "abstract": {
+      "locator": "source PDF p.1",
+      "page": 1
+    },
+    "conclusion": {
+      "locator": "not separately titled; inspect complete source plate",
+      "page": null
+    },
+    "limitations": {
+      "locator": "source PDF p.21",
+      "page": 21
+    },
+    "method": {
+      "locator": "source PDF p.4",
+      "page": 4
+    },
+    "primary-result": {
+      "locator": "source PDF p.4",
+      "page": 4
+    }
+  },
+  "pages": 22,
+  "paper_id": "STC-T11",
+  "rights": "internal-only",
+  "selection_sha256": "f4983c96c96400320b3d883e8d39f96ade91cae55e2bde04c4d99b06a8348e82",
+  "source_exception": null,
+  "source_path": "papers/2602.24281.pdf",
+  "source_plate_mode": "complete-pdf-pages",
+  "source_sha256": "f4983c96c96400320b3d883e8d39f96ade91cae55e2bde04c4d99b06a8348e82",
+  "source_type": "pdf",
+  "table_pages": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    22
+  ],
+  "title": "Memory Caching: RNNs with Growing Memory",
+  "version": "arXiv:2602.24281v1"
+}

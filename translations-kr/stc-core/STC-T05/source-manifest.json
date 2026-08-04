@@ -1,0 +1,79 @@
+{
+  "authors": "Dhairyya Singh, Kenneth A. Norman, Anna C. Schapiro",
+  "expected": {
+    "equations": null,
+    "figures": 4,
+    "tables": 0
+  },
+  "figure_captions": [
+    {
+      "caption": "Model architecture and sleep algorithm. (A) The architecture included C-HORSE (our model of the hippocampus; purple outlines), and a neocortical layer as the target of consolidation (orange outline). (B) When replaying attractor X, all units participating in the attractor have strong, stable activity during the plus phase. During the minus phase, oscillatory phases of higher inhibition lead to lower activity, with the weakest units in attractor X dropping out, and oscillatory phases of lower inhibition lead to higher activity, causing activity spreading to a nearby attractor, Y. (C) Stability trace for a real learning event, with background colors indicating the plus and minus phases. When the model first falls into an attractor, its activity is highly stable and triggers the plus phase. Short-term synaptic depression gradually destabilizes the attractor. The stability drop causes the plus phase to end, and the minus phase begins. As the attractor further destabilizes, the minus phase ends.",
+      "file": "pnas.2123432119fig01.jpg"
+    },
+    {
+      "caption": "Schapiro et al. category learning paradigm and results. (A) Satellite exemplars studied from three categories. (B) Performance change for unique and shared features from presleep to postsleep tests. *P < 0.05. (Results are collapsed across the frequency manipulation included in that study.) (C) Experimental protocol: Participants studied the satellites in the evening, had an immediate test, and were tested again 12 h later, after a night of sleep.",
+      "file": "pnas.2123432119fig02.jpg"
+    },
+    {
+      "caption": "Simulation 1: Category learning consolidation across one night of sleep. (A) Simulation protocol. (B) Change in full model performance from before to after sleep for unique features, shared features, and cross-cutting features. (C) Chord plot of replay transitions, with A, B, and C indicating categories. Arrow base indicates transition initiation, and head indicates termination. Arrow width indicates proportion of replays for a given satellite. The plot shows that replay was interleaved uniformly across exemplars (with a modest preference for within-category transitions). (D) (Left) Change in pairwise correlation of neocortical representations across items from before to after sleep. Black boxes indicate within-category changes. (Right) Averaged pairwise correlation change of neocortical representations within and across categories. (E) Fisher-transformed correlation between exemplar replay frequency during sleep and performance change, averaged across model initializations. All error bars represent ±1 SEM across network initializations.",
+      "file": "pnas.2123432119fig03.jpg"
+    },
+    {
+      "caption": "Simulation 2: Continual learning via alternating sleep stages. (A) Simulation protocol. (B) L1 distance of plus phase attractors to Env 1 and Env 2 item patterns in REM and NREM. Smaller distance indicates more replay of those patterns. (C) Mean performance across sleep for Env 1 and Env 2 items for NREM-only vs. alternating NREM/REM (N/R) vs. REM-only conditions.",
+      "file": "pnas.2123432119fig04.jpg"
+    }
+  ],
+  "license_note": "CC BY-NC-ND 4.0; Korean derivative is restricted to internal study",
+  "load_bearing_locators": {
+    "abstract": {
+      "locator": "official BioC ABSTRACT passages",
+      "page": null
+    },
+    "conclusion": {
+      "locator": "official BioC Discussion closing passages",
+      "page": null
+    },
+    "limitations": {
+      "locator": "official BioC Discussion passages",
+      "page": null
+    },
+    "method": {
+      "locator": "official BioC Methods passages",
+      "page": null
+    },
+    "primary-result": {
+      "locator": "official BioC Model Simulations passages",
+      "page": null
+    }
+  },
+  "pages": null,
+  "paper_id": "STC-T05",
+  "rights": "internal-only",
+  "section_inventory": [
+    "A model of autonomous interactions between hippocampus and neocortex driving sleep-dependent memory consolidation",
+    "Significance",
+    "Sleep is known to be an important time for consolidating our memories, with memory systems in the brain replaying recent memories and stabilizing them for long-term storage. We present a computational model that simulates these interactions between hippocampal and neocortical memory systems, providing an account of how they can autonomously produce useful offline learning. We explain how information stored initially in the hippocampus can help to build neocortical representations during sleep, and how the alternation of different stages of sleep across the night can facilitate graceful integration of new information with existing knowledge.",
+    "How do we build up our knowledge of the world over time? Many theories of memory formation and consolidation have posited that the hippocampus stores new information, then “teaches” this information to the neocortex over time, especially during sleep. But it is unclear, mechanistically, how this actually works—How are these systems able to interact during periods with virtually no environmental input to accomplish useful learning and shifts in representation? We provide a framework for thinking about this question, with neural network model simulations serving as demonstrations. The model is composed of hippocampus and neocortical areas, which replay memories and interact with one another completely autonomously during simulated sleep. Oscillations are leveraged to support error-driven learning that leads to useful changes in memory representation and behavior. The model has a non–rapid eye movement (NREM) sleep stage, where dynamics between the hippocampus and neocortex are tightly coupled, with the hippocampus helping neocortex to reinstate high-fidelity versions of new attractors, and a REM sleep stage, where neocortex is able to more freely explore existing attractors. We find that alternating between NREM and REM sleep stages, which alternately focuses the model’s replay on recent and remote information, facilitates graceful continual learning. We thus provide an account of how the hippocampus and neocortex can interact without any external input during sleep to drive useful new cortical learning and to protect old knowledge as new information is integrated.",
+    "Model Simulations",
+    "Simulation 1: Building Neocortical Representations of Novel Information.",
+    "Simulation 2: Integration of Recent and Remote Knowledge.",
+    "Discussion",
+    "Methods",
+    "Wake Training.",
+    "Wake Testing.",
+    "Sleep Activity Dynamics.",
+    "Sleep Learning.",
+    "Sleep Stages and Simulation Protocols.",
+    "Supplementary Material",
+    "Data, Materials, and Software Availability",
+    "Change History"
+  ],
+  "selection_sha256": "009024a0ce3f47d1c62aab6d91c4560f9af111918ce35013352ed189111e88c9",
+  "source_exception": "The frozen PMC HTML capture became unavailable behind a browser challenge; the same article/version was re-frozen from the official NCBI BioC endpoint and audited by DOI/PMCID.",
+  "source_path": "translations-kr/stc-core/sources/STC-T05.xml",
+  "source_plate_mode": "official-bioc-fulltext-plus-original-figures",
+  "source_sha256": "12082fda299f51add192109ca9e8661c87b72abbd947bed178ca6dc533c128a2",
+  "source_type": "bioc-xml",
+  "title": "A model of autonomous interactions between hippocampus and neocortex driving sleep-dependent memory consolidation",
+  "version": "PMC9636926 official BioC XML capture, 2026-08-05"
+}

@@ -1,0 +1,200 @@
+{
+  "papers": [
+    {
+      "all_original_equations_tables_figures_visually_preserved": true,
+      "expected": {
+        "equations": null,
+        "figures": 26,
+        "tables": 1
+      },
+      "output_pages": 39,
+      "paper_id": "STC-T01",
+      "source_pages": 31,
+      "source_plate_mode": "complete-pdf-pages",
+      "status": "PASS"
+    },
+    {
+      "all_original_equations_tables_figures_visually_preserved": true,
+      "expected": {
+        "equations": null,
+        "figures": 8,
+        "tables": 5
+      },
+      "output_pages": 62,
+      "paper_id": "STC-T02",
+      "source_pages": 26,
+      "source_plate_mode": "complete-pdf-pages",
+      "status": "PASS"
+    },
+    {
+      "all_original_equations_tables_figures_visually_preserved": true,
+      "expected": {
+        "equations": null,
+        "figures": 22,
+        "tables": 2
+      },
+      "output_pages": 41,
+      "paper_id": "STC-T03",
+      "source_pages": 33,
+      "source_plate_mode": "complete-pdf-pages",
+      "status": "PASS"
+    },
+    {
+      "all_original_equations_tables_figures_visually_preserved": true,
+      "expected": {
+        "equations": null,
+        "figures": 7,
+        "tables": 0
+      },
+      "output_pages": 38,
+      "paper_id": "STC-T04",
+      "source_pages": 31,
+      "source_plate_mode": "complete-pdf-pages",
+      "status": "PASS"
+    },
+    {
+      "all_original_equations_tables_figures_visually_preserved": true,
+      "expected": {
+        "equations": null,
+        "figures": 4,
+        "tables": 0
+      },
+      "output_pages": 11,
+      "paper_id": "STC-T05",
+      "source_pages": null,
+      "source_plate_mode": "official-bioc-fulltext-plus-original-figures",
+      "status": "PASS"
+    },
+    {
+      "all_original_equations_tables_figures_visually_preserved": true,
+      "expected": {
+        "equations": null,
+        "figures": 5,
+        "tables": 0
+      },
+      "output_pages": 19,
+      "paper_id": "STC-T06",
+      "source_pages": 12,
+      "source_plate_mode": "complete-pdf-pages",
+      "status": "PASS"
+    },
+    {
+      "all_original_equations_tables_figures_visually_preserved": true,
+      "expected": {
+        "equations": null,
+        "figures": 7,
+        "tables": 1
+      },
+      "output_pages": 17,
+      "paper_id": "STC-T07",
+      "source_pages": 10,
+      "source_plate_mode": "complete-pdf-pages",
+      "status": "PASS"
+    },
+    {
+      "all_original_equations_tables_figures_visually_preserved": true,
+      "expected": {
+        "equations": null,
+        "figures": 8,
+        "tables": 3
+      },
+      "output_pages": 20,
+      "paper_id": "STC-T08",
+      "source_pages": 13,
+      "source_plate_mode": "complete-pdf-pages",
+      "status": "PASS"
+    },
+    {
+      "all_original_equations_tables_figures_visually_preserved": true,
+      "expected": {
+        "equations": null,
+        "figures": null,
+        "tables": 3
+      },
+      "output_pages": 19,
+      "paper_id": "STC-T09",
+      "source_pages": 12,
+      "source_plate_mode": "complete-pdf-pages",
+      "status": "PASS"
+    },
+    {
+      "all_original_equations_tables_figures_visually_preserved": true,
+      "expected": {
+        "equations": null,
+        "figures": 12,
+        "tables": 9
+      },
+      "output_pages": 129,
+      "paper_id": "STC-T10",
+      "source_pages": 52,
+      "source_plate_mode": "complete-pdf-pages",
+      "status": "PASS"
+    },
+    {
+      "all_original_equations_tables_figures_visually_preserved": true,
+      "expected": {
+        "equations": null,
+        "figures": 5,
+        "tables": 6
+      },
+      "output_pages": 33,
+      "paper_id": "STC-T11",
+      "source_pages": 22,
+      "source_plate_mode": "complete-pdf-pages",
+      "status": "PASS"
+    },
+    {
+      "all_original_equations_tables_figures_visually_preserved": true,
+      "expected": {
+        "equations": null,
+        "figures": 6,
+        "tables": 6
+      },
+      "output_pages": 33,
+      "paper_id": "STC-T12",
+      "source_pages": 24,
+      "source_plate_mode": "complete-pdf-pages",
+      "status": "PASS"
+    },
+    {
+      "all_original_equations_tables_figures_visually_preserved": true,
+      "expected": {
+        "equations": null,
+        "figures": 9,
+        "tables": 1
+      },
+      "output_pages": 41,
+      "paper_id": "STC-T13",
+      "source_pages": 34,
+      "source_plate_mode": "complete-pdf-pages",
+      "status": "PASS"
+    },
+    {
+      "all_original_equations_tables_figures_visually_preserved": true,
+      "expected": {
+        "equations": null,
+        "figures": 17,
+        "tables": 5
+      },
+      "output_pages": 28,
+      "paper_id": "STC-T14",
+      "source_pages": 21,
+      "source_plate_mode": "complete-pdf-pages",
+      "status": "PASS"
+    },
+    {
+      "all_original_equations_tables_figures_visually_preserved": true,
+      "expected": {
+        "equations": null,
+        "figures": 22,
+        "tables": 7
+      },
+      "output_pages": 49,
+      "paper_id": "STC-T15",
+      "source_pages": 41,
+      "source_plate_mode": "complete-pdf-pages",
+      "status": "PASS"
+    }
+  ],
+  "success": true
+}

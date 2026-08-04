@@ -6,13 +6,14 @@ margin WITHOUT producing an "Overfull \\hbox" warning, so the LaTeX log is not a
 This rasterizes EVERY page and flags ink in the right-margin band. Sampling pages (as an earlier
 QA pass did) misses most of them; this scans all of them. Exit 1 if any page overflows.
 
-Usage: python3 overflow_gate.py [BOOK.pdf]
+Usage: python3 overflow_gate.py [BOOK.pdf] [MAX_PAGE]
 """
 import subprocess, sys, os, glob, re, tempfile
 from PIL import Image
 import numpy as np
 
 PDF = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "BOOK.pdf")
+MAX_PAGE = int(sys.argv[2]) if len(sys.argv) > 2 else None
 DPI = 150
 TEXT_RIGHT_CM = 18.5      # a4 21cm - 2.5cm geometry margin
 BAND_START_CM = 18.8      # tolerance past the text edge (ignore glyphs that legitimately touch it)
@@ -22,7 +23,11 @@ MIN_INK_PX = 40           # ignore stray antialias specks
 def main():
     ppc = DPI / 2.54
     with tempfile.TemporaryDirectory() as tmp:
-        subprocess.run(["pdftoppm", "-png", "-r", str(DPI), PDF, os.path.join(tmp, "p")], check=True)
+        command = ["pdftoppm", "-png", "-r", str(DPI)]
+        if MAX_PAGE is not None:
+            command.extend(["-f", "1", "-l", str(MAX_PAGE)])
+        command.extend([PDF, os.path.join(tmp, "p")])
+        subprocess.run(command, check=True)
         pages = sorted(glob.glob(os.path.join(tmp, "p-*.png")),
                        key=lambda f: int(re.findall(r"-(\d+)\.png", f)[0]))
         x_band = int(BAND_START_CM * ppc)

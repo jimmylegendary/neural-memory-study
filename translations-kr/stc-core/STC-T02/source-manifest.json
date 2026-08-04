@@ -1,0 +1,60 @@
+{
+  "authors": "Ali Behrouz, Farnoosh Hashemi, Adel Javanmard, Vahab Mirrokni",
+  "expected": {
+    "equations": null,
+    "figures": 8,
+    "tables": 5
+  },
+  "figure_pages": [
+    2,
+    3,
+    6,
+    7,
+    10,
+    11,
+    12,
+    13,
+    22,
+    26
+  ],
+  "license_note": "arXiv license; translated derivative and complete source plate are not cleared for public redistribution",
+  "load_bearing_locators": {
+    "abstract": {
+      "locator": "source PDF p.1",
+      "page": 1
+    },
+    "conclusion": {
+      "locator": "source PDF p.13",
+      "page": 13
+    },
+    "limitations": {
+      "locator": "source PDF p.24",
+      "page": 24
+    },
+    "method": {
+      "locator": "source PDF p.4",
+      "page": 4
+    },
+    "primary-result": {
+      "locator": "source PDF p.1",
+      "page": 1
+    }
+  },
+  "pages": 26,
+  "paper_id": "STC-T02",
+  "rights": "internal-only",
+  "selection_sha256": "dab98367e19e99eb8838a6604afddb9ea85a940f2f41d8a1602e55977fb12d14",
+  "source_exception": null,
+  "source_path": "translations-kr/stc-core/sources/STC-T02.pdf",
+  "source_plate_mode": "complete-pdf-pages",
+  "source_sha256": "dab98367e19e99eb8838a6604afddb9ea85a940f2f41d8a1602e55977fb12d14",
+  "source_type": "pdf",
+  "table_pages": [
+    11,
+    12,
+    13,
+    26
+  ],
+  "title": "Language Models Need Sleep: Learning to Self-Modify and Consolidate Memories",
+  "version": "arXiv:2606.03979v2"
+}
