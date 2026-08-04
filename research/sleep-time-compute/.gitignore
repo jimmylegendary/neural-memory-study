@@ -9,5 +9,6 @@ build/candidate-worktrees/
 build/replay-worktrees/
 build/g5-clean-reruns/
 .veridraft-stc/
+.veridraft-stc-study/
 registry/*.lock
 registry/.stc-jsonl-*.tmp

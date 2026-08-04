@@ -51,6 +51,13 @@
         "pattern": "^STC-C[0-9]{3,4}$"
       },
       "uniqueItems": true
+    },
+    "registry_hashes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      }
     }
   },
   "additionalProperties": false

@@ -28,6 +28,57 @@
           },
           "status": {
             "enum": ["selected", "reserve", "rejected"]
+          },
+          "exact_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "source_path": {
+            "type": ["string", "null"]
+          },
+          "source_media": {
+            "enum": ["PDF", "HTML"]
+          },
+          "source_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "license_state": {
+            "type": "string",
+            "minLength": 1
+          },
+          "figure_count": {
+            "type": ["integer", "null"],
+            "minimum": 0
+          },
+          "equation_count": {
+            "type": ["integer", "null"],
+            "minimum": 0
+          },
+          "table_count": {
+            "type": ["integer", "null"],
+            "minimum": 0
+          },
+          "count_method": {
+            "type": "string",
+            "minLength": 1
+          },
+          "existing_translation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1,
+            "uniqueItems": true
           }
         },
         "additionalProperties": false

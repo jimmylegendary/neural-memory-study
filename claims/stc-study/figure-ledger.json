@@ -1,0 +1,295 @@
+{
+  "figures": [
+    {
+      "caption": "Original synthesis figure; underlying factual claims retain source citations.",
+      "figure_id": "STC-F001",
+      "license": {
+        "evidence_locator": "figure-ledger entry STC-F001",
+        "evidence_url": "https://github.com/jimmylegendary/neural-memory-study/blob/main/claims/stc-study/figure-ledger.json",
+        "license_id": "original-author-created-redraw",
+        "reuse_allowed": true,
+        "review_status": "reviewed"
+      },
+      "local_path": "research/sleep-time-compute/study-paper/figures/stc-f001.pdf",
+      "mode": "redrawn",
+      "public": true,
+      "source_ids": [
+        "SRC-STC-0014",
+        "SRC-STC-0052"
+      ],
+      "title": "Wake-test-sleep lifecycle and reusable-state boundary"
+    },
+    {
+      "caption": "Original synthesis figure; underlying factual claims retain source citations.",
+      "figure_id": "STC-F002",
+      "license": {
+        "evidence_locator": "figure-ledger entry STC-F002",
+        "evidence_url": "https://github.com/jimmylegendary/neural-memory-study/blob/main/claims/stc-study/figure-ledger.json",
+        "license_id": "original-author-created-redraw",
+        "reuse_allowed": true,
+        "review_status": "reviewed"
+      },
+      "local_path": "research/sleep-time-compute/study-paper/figures/stc-f002.pdf",
+      "mode": "redrawn",
+      "public": true,
+      "source_ids": [
+        "SRC-STC-0014",
+        "SRC-STC-0021",
+        "SRC-STC-0016"
+      ],
+      "title": "Update timing by memory-medium taxonomy"
+    },
+    {
+      "caption": "Original synthesis figure; underlying factual claims retain source citations.",
+      "figure_id": "STC-F003",
+      "license": {
+        "evidence_locator": "figure-ledger entry STC-F003",
+        "evidence_url": "https://github.com/jimmylegendary/neural-memory-study/blob/main/claims/stc-study/figure-ledger.json",
+        "license_id": "original-author-created-redraw",
+        "reuse_allowed": true,
+        "review_status": "reviewed"
+      },
+      "local_path": "research/sleep-time-compute/study-paper/figures/stc-f003.pdf",
+      "mode": "redrawn",
+      "public": true,
+      "source_ids": [
+        "SRC-STC-0001",
+        "SRC-STC-0063"
+      ],
+      "title": "1995-2026 evidence chronology"
+    },
+    {
+      "caption": "Original synthesis figure; underlying factual claims retain source citations.",
+      "figure_id": "STC-F004",
+      "license": {
+        "evidence_locator": "figure-ledger entry STC-F004",
+        "evidence_url": "https://github.com/jimmylegendary/neural-memory-study/blob/main/claims/stc-study/figure-ledger.json",
+        "license_id": "original-author-created-redraw",
+        "reuse_allowed": true,
+        "review_status": "reviewed"
+      },
+      "local_path": "research/sleep-time-compute/study-paper/figures/stc-f004.pdf",
+      "mode": "redrawn",
+      "public": true,
+      "source_ids": [
+        "SRC-STC-0002",
+        "SRC-STC-0031",
+        "SRC-STC-0036"
+      ],
+      "title": "Problem-to-solution comparison matrix"
+    },
+    {
+      "caption": "Original synthesis figure; underlying factual claims retain source citations.",
+      "figure_id": "STC-F005",
+      "license": {
+        "evidence_locator": "figure-ledger entry STC-F005",
+        "evidence_url": "https://github.com/jimmylegendary/neural-memory-study/blob/main/claims/stc-study/figure-ledger.json",
+        "license_id": "original-author-created-redraw",
+        "reuse_allowed": true,
+        "review_status": "reviewed"
+      },
+      "local_path": "research/sleep-time-compute/study-paper/figures/stc-f005.pdf",
+      "mode": "redrawn",
+      "public": true,
+      "source_ids": [
+        "SRC-STC-0052",
+        "SRC-STC-0063",
+        "SRC-STC-0021"
+      ],
+      "title": "Conditional promisingness verdict"
+    },
+    {
+      "caption": "Original synthesis figure; underlying factual claims retain source citations.",
+      "figure_id": "STC-F006",
+      "license": {
+        "evidence_locator": "figure-ledger entry STC-F006",
+        "evidence_url": "https://github.com/jimmylegendary/neural-memory-study/blob/main/claims/stc-study/figure-ledger.json",
+        "license_id": "original-author-created-redraw",
+        "reuse_allowed": true,
+        "review_status": "reviewed"
+      },
+      "local_path": "research/sleep-time-compute/study-paper/figures/stc-f006.pdf",
+      "mode": "redrawn",
+      "public": true,
+      "source_ids": [
+        "SRC-STC-0030",
+        "SRC-STC-0066"
+      ],
+      "title": "Hybrid system-of-record and selective-promotion architecture"
+    },
+    {
+      "caption": "Original synthesis figure; underlying factual claims retain source citations.",
+      "figure_id": "STC-F007",
+      "license": {
+        "evidence_locator": "figure-ledger entry STC-F007",
+        "evidence_url": "https://github.com/jimmylegendary/neural-memory-study/blob/main/claims/stc-study/figure-ledger.json",
+        "license_id": "original-author-created-redraw",
+        "reuse_allowed": true,
+        "review_status": "reviewed"
+      },
+      "local_path": "research/sleep-time-compute/study-paper/figures/stc-f007.pdf",
+      "mode": "redrawn",
+      "public": true,
+      "source_ids": [
+        "SRC-STC-0035",
+        "SRC-STC-0050"
+      ],
+      "title": "Measured identities, break-even models, and hypotheses"
+    },
+    {
+      "caption": "Original synthesis figure; underlying factual claims retain source citations.",
+      "figure_id": "STC-F008",
+      "license": {
+        "evidence_locator": "figure-ledger entry STC-F008",
+        "evidence_url": "https://github.com/jimmylegendary/neural-memory-study/blob/main/claims/stc-study/figure-ledger.json",
+        "license_id": "original-author-created-redraw",
+        "reuse_allowed": true,
+        "review_status": "reviewed"
+      },
+      "local_path": "research/sleep-time-compute/study-paper/figures/stc-f008.pdf",
+      "mode": "redrawn",
+      "public": true,
+      "source_ids": [
+        "SRC-STC-0027",
+        "SRC-STC-0052"
+      ],
+      "title": "Sleep-cost versus later-reuse break-even"
+    },
+    {
+      "caption": "Original synthesis figure; underlying factual claims retain source citations.",
+      "figure_id": "STC-F009",
+      "license": {
+        "evidence_locator": "figure-ledger entry STC-F009",
+        "evidence_url": "https://github.com/jimmylegendary/neural-memory-study/blob/main/claims/stc-study/figure-ledger.json",
+        "license_id": "original-author-created-redraw",
+        "reuse_allowed": true,
+        "review_status": "reviewed"
+      },
+      "local_path": "research/sleep-time-compute/study-paper/figures/stc-f009.pdf",
+      "mode": "redrawn",
+      "public": true,
+      "source_ids": [
+        "SRC-STC-0034",
+        "SRC-STC-0036"
+      ],
+      "title": "Finite-memory capacity knee"
+    },
+    {
+      "caption": "Original synthesis figure; underlying factual claims retain source citations.",
+      "figure_id": "STC-F010",
+      "license": {
+        "evidence_locator": "figure-ledger entry STC-F010",
+        "evidence_url": "https://github.com/jimmylegendary/neural-memory-study/blob/main/claims/stc-study/figure-ledger.json",
+        "license_id": "original-author-created-redraw",
+        "reuse_allowed": true,
+        "review_status": "reviewed"
+      },
+      "local_path": "research/sleep-time-compute/study-paper/figures/stc-f010.pdf",
+      "mode": "redrawn",
+      "public": true,
+      "source_ids": [
+        "SRC-STC-0020",
+        "SRC-STC-0063"
+      ],
+      "title": "Cadence frontier across staleness and batching"
+    },
+    {
+      "caption": "Original synthesis figure; underlying factual claims retain source citations.",
+      "figure_id": "STC-F011",
+      "license": {
+        "evidence_locator": "figure-ledger entry STC-F011",
+        "evidence_url": "https://github.com/jimmylegendary/neural-memory-study/blob/main/claims/stc-study/figure-ledger.json",
+        "license_id": "original-author-created-redraw",
+        "reuse_allowed": true,
+        "review_status": "reviewed"
+      },
+      "local_path": "research/sleep-time-compute/study-paper/figures/stc-f011.pdf",
+      "mode": "redrawn",
+      "public": true,
+      "source_ids": [
+        "SRC-STC-0022",
+        "SRC-STC-0059"
+      ],
+      "title": "State-migration roofline for wake and sleep clusters"
+    },
+    {
+      "caption": "Original synthesis figure; underlying factual claims retain source citations.",
+      "figure_id": "STC-F012",
+      "license": {
+        "evidence_locator": "figure-ledger entry STC-F012",
+        "evidence_url": "https://github.com/jimmylegendary/neural-memory-study/blob/main/claims/stc-study/figure-ledger.json",
+        "license_id": "original-author-created-redraw",
+        "reuse_allowed": true,
+        "review_status": "reviewed"
+      },
+      "local_path": "research/sleep-time-compute/study-paper/figures/stc-f012.pdf",
+      "mode": "redrawn",
+      "public": true,
+      "source_ids": [
+        "SRC-STC-0056",
+        "SRC-STC-0065"
+      ],
+      "title": "Memory-device opportunity map"
+    },
+    {
+      "caption": "Original synthesis figure; underlying factual claims retain source citations.",
+      "figure_id": "STC-F013",
+      "license": {
+        "evidence_locator": "figure-ledger entry STC-F013",
+        "evidence_url": "https://github.com/jimmylegendary/neural-memory-study/blob/main/claims/stc-study/figure-ledger.json",
+        "license_id": "original-author-created-redraw",
+        "reuse_allowed": true,
+        "review_status": "reviewed"
+      },
+      "local_path": "research/sleep-time-compute/study-paper/figures/stc-f013.pdf",
+      "mode": "redrawn",
+      "public": true,
+      "source_ids": [
+        "SRC-STC-0042",
+        "SRC-STC-0053"
+      ],
+      "title": "Failure modes and lifecycle controls"
+    },
+    {
+      "caption": "Original synthesis figure; underlying factual claims retain source citations.",
+      "figure_id": "STC-F014",
+      "license": {
+        "evidence_locator": "figure-ledger entry STC-F014",
+        "evidence_url": "https://github.com/jimmylegendary/neural-memory-study/blob/main/claims/stc-study/figure-ledger.json",
+        "license_id": "original-author-created-redraw",
+        "reuse_allowed": true,
+        "review_status": "reviewed"
+      },
+      "local_path": "research/sleep-time-compute/study-paper/figures/stc-f014.pdf",
+      "mode": "redrawn",
+      "public": true,
+      "source_ids": [
+        "SRC-STC-0054",
+        "SRC-STC-0057",
+        "SRC-STC-0056"
+      ],
+      "title": "Industry and academia landscape at the source freeze"
+    },
+    {
+      "caption": "Original synthesis figure; underlying factual claims retain source citations.",
+      "figure_id": "STC-F015",
+      "license": {
+        "evidence_locator": "figure-ledger entry STC-F015",
+        "evidence_url": "https://github.com/jimmylegendary/neural-memory-study/blob/main/claims/stc-study/figure-ledger.json",
+        "license_id": "original-author-created-redraw",
+        "reuse_allowed": true,
+        "review_status": "reviewed"
+      },
+      "local_path": "research/sleep-time-compute/study-paper/figures/stc-f015.pdf",
+      "mode": "redrawn",
+      "public": true,
+      "source_ids": [
+        "SRC-STC-0036",
+        "SRC-STC-0056",
+        "SRC-STC-0050"
+      ],
+      "title": "Falsifiable research and benchmark agenda"
+    }
+  ],
+  "schema_version": "1.0.0"
+}

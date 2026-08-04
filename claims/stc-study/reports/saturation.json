@@ -1,0 +1,15 @@
+{
+  "citation_count": 73,
+  "cluster_count": 12,
+  "cluster_status_counts": {
+    "active_frontier": 5,
+    "bounded": 2,
+    "measurement_gap": 5
+  },
+  "saturation_claim": "bounded date snapshot; universality and citation saturation are not claimed",
+  "schema_version": "1.0.0",
+  "semantic_scholar_status": "unknown",
+  "source_count": 73,
+  "source_freeze": "2026-08-05",
+  "status": "bounded_date_snapshot_with_active_frontiers"
+}

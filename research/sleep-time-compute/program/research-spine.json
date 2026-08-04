@@ -1,0 +1,20 @@
+{
+  "registries": {
+    "claims": "claims/stc-study/claim-map.json",
+    "figures": "claims/stc-study/figure-ledger.json",
+    "sources": "research/sleep-time-compute/deep-research/SOURCE-REGISTRY.json",
+    "translations": "claims/stc-study/translation-selection.json"
+  },
+  "registry_hashes": {
+    "bundle": "45d93a6f9e261f66735fafb98ba6419b69b448d51817b829c3e8b6a6ed35d21d",
+    "claims": "2192c9c277c1b78914482d5a0a89cce7f8e4a5b1b056557952e4d304931f9724",
+    "figures": "f4e787bc636a32c9d3ae5d1a6db564b3ebd97dbda973b3a13a99339d543c93ea",
+    "saturation": "6d69253b99e2a8fcf041afaeffbf6af921d32768c0a43a6ec1efe1d44ca83677",
+    "sources": "e7678bdaa1f1358c86decd50c51f2081ede03617842d42c3d9a998c143f4ebd0",
+    "translations": "102a68ab8e5f67caf255b5b94d4c9e7ac7ab9ecde970611782da33b034ede7c3"
+  },
+  "schema_version": "1.0.0",
+  "source_freeze": "2026-08-05",
+  "status": "frozen",
+  "unresolved_load_bearing_claims": []
+}

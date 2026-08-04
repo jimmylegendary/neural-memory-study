@@ -1,0 +1,1493 @@
+{
+  "claims": [
+    {
+      "claim_id": "STC-C001",
+      "claim_type": "direct_fact",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "source registry audit; entry SRC-STC-0014",
+          "relation": "supports",
+          "source_id": "SRC-STC-0014"
+        }
+      ],
+      "tags": [
+        "audit",
+        "corpus"
+      ],
+      "text": "The date-frozen evidence audit contains 73 primary papers, official releases, documentation pages, and tagged repositories."
+    },
+    {
+      "claim_id": "STC-C002",
+      "claim_type": "direct_fact",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "official release, opening and How dreaming works",
+          "relation": "supports",
+          "source_id": "SRC-STC-0052"
+        },
+        {
+          "locator": "official docs, Overview and How Dream works",
+          "relation": "supports",
+          "source_id": "SRC-STC-0063"
+        }
+      ],
+      "tags": [
+        "audit",
+        "industry",
+        "product"
+      ],
+      "text": "By 2026-08-05, at least two public production systems described explicit background memory synthesis: OpenAI Dreaming and Mem0 Dream."
+    },
+    {
+      "claim_id": "STC-C003",
+      "claim_type": "direct_fact",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "paper abstract and §5 limitations",
+          "relation": "context",
+          "source_id": "SRC-STC-0036"
+        }
+      ],
+      "tags": [
+        "audit",
+        "saturation"
+      ],
+      "text": "The 12-cluster search closes only as a bounded date snapshot: 2 clusters are bounded, 5 remain active frontiers, and 5 retain measurement gaps."
+    },
+    {
+      "claim_id": "STC-C004",
+      "claim_type": "direct_fact",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "full paper, title through Discussion",
+          "relation": "context",
+          "source_id": "SRC-STC-0011"
+        }
+      ],
+      "tags": [
+        "audit",
+        "translation"
+      ],
+      "text": "A balanced 15-paper translation corpus spans explicit sleep, biological and computational precursors, continual learning, external memory, neural memory, capacity, and negative evidence."
+    },
+    {
+      "claim_id": "STC-C005",
+      "claim_type": "synthesis",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; §1; Fig. 1",
+          "relation": "supports",
+          "source_id": "SRC-STC-0014"
+        },
+        {
+          "locator": "official release, How dreaming works",
+          "relation": "supports",
+          "source_id": "SRC-STC-0052"
+        },
+        {
+          "locator": "official docs, Synthesis mode",
+          "relation": "supports",
+          "source_id": "SRC-STC-0063"
+        }
+      ],
+      "tags": [
+        "definition",
+        "lifecycle"
+      ],
+      "text": "Sleep-time compute is best defined by lifecycle, not by metaphor: computation is deferred beyond the latency-critical response and changes reusable state for later wake episodes."
+    },
+    {
+      "claim_id": "STC-C006",
+      "claim_type": "synthesis",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "§2, sleep-time agent architecture",
+          "relation": "supports",
+          "source_id": "SRC-STC-0014"
+        },
+        {
+          "locator": "§2-§3, self-modification and consolidation",
+          "relation": "supports",
+          "source_id": "SRC-STC-0021"
+        },
+        {
+          "locator": "§2-§3, temporal graph memory",
+          "relation": "supports",
+          "source_id": "SRC-STC-0016"
+        }
+      ],
+      "tags": [
+        "definition",
+        "taxonomy"
+      ],
+      "text": "Update timing and memory medium are orthogonal axes: a sleep phase may update weights, adapters, recurrent state, text/vector stores, graphs, or mixtures."
+    },
+    {
+      "claim_id": "STC-C007",
+      "claim_type": "direct_fact",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "official release, opening through How dreaming works",
+          "relation": "supports",
+          "source_id": "SRC-STC-0052"
+        }
+      ],
+      "tags": [
+        "external-memory",
+        "industry",
+        "openai"
+      ],
+      "text": "OpenAI Dreaming is production background synthesis over external user memory, not disclosed per-user foundation-weight training."
+    },
+    {
+      "claim_id": "STC-C008",
+      "claim_type": "direct_fact",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "official docs, Overview; Modes; Operational behavior",
+          "relation": "supports",
+          "source_id": "SRC-STC-0063"
+        },
+        {
+          "locator": "tag v2.0.13, dream-gate.ts",
+          "relation": "supports",
+          "source_id": "SRC-STC-0064"
+        }
+      ],
+      "tags": [
+        "external-memory",
+        "industry",
+        "mem0"
+      ],
+      "text": "Mem0 Dream performs scheduled background synthesis with provenance-preserving, additive outputs; merge and supersede are distinct ingest-time operations."
+    },
+    {
+      "claim_id": "STC-C009",
+      "claim_type": "direct_fact",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "tag 0.16.8, sleeptime_multi_agent_v4.py",
+          "relation": "supports",
+          "source_id": "SRC-STC-0059"
+        }
+      ],
+      "tags": [
+        "external-memory",
+        "industry",
+        "letta"
+      ],
+      "text": "Letta's tagged sleeptime group schedules an asynchronous post-response agent that revises durable memory outside the response-critical path."
+    },
+    {
+      "claim_id": "STC-C010",
+      "claim_type": "direct_fact",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; §2 Architecture; §3 Temporal KG",
+          "relation": "supports",
+          "source_id": "SRC-STC-0016"
+        },
+        {
+          "locator": "commit aab852d, README overview",
+          "relation": "supports",
+          "source_id": "SRC-STC-0065"
+        },
+        {
+          "locator": "official docs, Episodes",
+          "relation": "supports",
+          "source_id": "SRC-STC-0066"
+        }
+      ],
+      "tags": [
+        "external-memory",
+        "graph",
+        "zep"
+      ],
+      "text": "Zep and Graphiti represent external memory as temporally versioned episodes, entities, and relations rather than as user-specific model-weight updates."
+    },
+    {
+      "claim_id": "STC-C011",
+      "claim_type": "author_claim",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; §2 Virtual Context Management; Fig. 1",
+          "relation": "supports",
+          "source_id": "SRC-STC-0013"
+        }
+      ],
+      "tags": [
+        "external-memory",
+        "memgpt"
+      ],
+      "text": "MemGPT frames long-term agent memory as an operating-system-style hierarchy that pages information between constrained context and external storage."
+    },
+    {
+      "claim_id": "STC-C012",
+      "claim_type": "direct_fact",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; §2-§3",
+          "relation": "supports",
+          "source_id": "SRC-STC-0043"
+        },
+        {
+          "locator": "official Google Research post, Method",
+          "relation": "supports",
+          "source_id": "SRC-STC-0054"
+        }
+      ],
+      "tags": [
+        "external-memory",
+        "google",
+        "reasoning"
+      ],
+      "text": "ReasoningBank stores reusable reasoning strategies extracted from experience; the public method is an external strategy memory rather than broad online weight consolidation."
+    },
+    {
+      "claim_id": "STC-C013",
+      "claim_type": "synthesis",
+      "confidence": "medium",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "official Meta paper page, abstract",
+          "relation": "supports",
+          "source_id": "SRC-STC-0057"
+        },
+        {
+          "locator": "official Meta paper page, abstract",
+          "relation": "supports",
+          "source_id": "SRC-STC-0058"
+        }
+      ],
+      "tags": [
+        "external-memory",
+        "industry",
+        "meta"
+      ],
+      "text": "Meta's personalized-agent and HyperAgents work emphasizes feedback-conditioned agent behavior, program memory, and archives; public evidence does not establish fleet-scale per-user sleep updates to foundation weights."
+    },
+    {
+      "claim_id": "STC-C014",
+      "claim_type": "direct_fact",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "official Microsoft post, benchmark dimensions",
+          "relation": "supports",
+          "source_id": "SRC-STC-0056"
+        },
+        {
+          "locator": "commit 4efcbf2, README tasks and metrics",
+          "relation": "supports",
+          "source_id": "SRC-STC-0067"
+        }
+      ],
+      "tags": [
+        "benchmark",
+        "microsoft"
+      ],
+      "text": "Microsoft STATE-Bench evaluates agent memory across state tracking, adaptation, and efficiency, but is a benchmark rather than a disclosed sleep-training product."
+    },
+    {
+      "claim_id": "STC-C015",
+      "claim_type": "synthesis",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; §2 Method; §4 Experiments; §6 Limitations",
+          "relation": "supports",
+          "source_id": "SRC-STC-0021"
+        }
+      ],
+      "tags": [
+        "google",
+        "parametric",
+        "sleep"
+      ],
+      "text": "Language Models Need Sleep is direct evidence for parametric sleep: the model learns to self-modify and consolidate memories using replay-like training, but the reported regime remains research-scale rather than production deployment proof."
+    },
+    {
+      "claim_id": "STC-C016",
+      "claim_type": "author_claim",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "Evidence is narrow: a spiking network and controlled task sequence, not an LLM fleet.",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; Results, Figs. 2-7; Discussion",
+          "relation": "supports",
+          "source_id": "SRC-STC-0011"
+        }
+      ],
+      "tags": [
+        "biological-analogy",
+        "continual-learning",
+        "plos"
+      ],
+      "text": "In a two-task spiking-network setting, interleaved sleep-like replay formed a joint synaptic representation and reduced catastrophic forgetting."
+    },
+    {
+      "claim_id": "STC-C017",
+      "claim_type": "author_claim",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; Fig. 1; Simulation 2; Fig. 4",
+          "relation": "supports",
+          "source_id": "SRC-STC-0010"
+        }
+      ],
+      "tags": [
+        "biological-analogy",
+        "nrem-rem"
+      ],
+      "text": "A hippocampus-neocortex model used autonomous offline dynamics and alternating NREM/REM regimes to integrate new information while protecting older knowledge."
+    },
+    {
+      "claim_id": "STC-C018",
+      "claim_type": "author_claim",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; Results; Figs. 1-9; Discussion",
+          "relation": "supports",
+          "source_id": "SRC-STC-0009"
+        }
+      ],
+      "tags": [
+        "biological-analogy",
+        "dreaming"
+      ],
+      "text": "Perturbed and Adversarial Dreaming separates wake, NREM-like perturbed replay, and REM-like adversarial dreaming to learn cortical representations."
+    },
+    {
+      "claim_id": "STC-C019",
+      "claim_type": "author_claim",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; §2 Deep Generative Replay; Algorithm 1",
+          "relation": "supports",
+          "source_id": "SRC-STC-0003"
+        }
+      ],
+      "tags": [
+        "continual-learning",
+        "replay"
+      ],
+      "text": "Deep generative replay is a strong non-sleep-named baseline: a generator replays pseudo-data while the solver learns new data, reducing catastrophic forgetting."
+    },
+    {
+      "claim_id": "STC-C020",
+      "claim_type": "author_claim",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "§2; Eq. 3; experiments",
+          "relation": "supports",
+          "source_id": "SRC-STC-0002"
+        }
+      ],
+      "tags": [
+        "continual-learning",
+        "regularization"
+      ],
+      "text": "Elastic Weight Consolidation protects parameters judged important to earlier tasks through a Fisher-weighted quadratic penalty, trading plasticity for stability."
+    },
+    {
+      "claim_id": "STC-C021",
+      "claim_type": "author_claim",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "§2; Eqs. 3-10; Algorithm 1",
+          "relation": "supports",
+          "source_id": "SRC-STC-0004"
+        }
+      ],
+      "tags": [
+        "continual-learning",
+        "episodic-replay"
+      ],
+      "text": "Gradient Episodic Memory constrains updates using stored examples so that loss on prior tasks does not increase under the local constraint."
+    },
+    {
+      "claim_id": "STC-C022",
+      "claim_type": "author_claim",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; §2 Progress; §3 Compress; Fig. 1",
+          "relation": "supports",
+          "source_id": "SRC-STC-0007"
+        }
+      ],
+      "tags": [
+        "continual-learning",
+        "periodic-refresh"
+      ],
+      "text": "Progress & Compress alternates an active column with a consolidation phase that compresses knowledge into a reusable knowledge base, providing a direct periodic-refresh alternative to explicit sleep framing."
+    },
+    {
+      "claim_id": "STC-C023",
+      "claim_type": "synthesis",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "§2 Neural Long-Term Memory; Eqs. 7-13; Fig. 1",
+          "relation": "supports",
+          "source_id": "SRC-STC-0017"
+        }
+      ],
+      "tags": [
+        "neural-memory",
+        "test-time-learning",
+        "wake"
+      ],
+      "text": "Titans learns a neural memory state at test time using surprise-driven updates; this is wake-path fast-state learning, not by itself deferred cross-session sleep."
+    },
+    {
+      "claim_id": "STC-C024",
+      "claim_type": "synthesis",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "§2 Nested Learning; §4 HOPE; CMS frequency schedule",
+          "relation": "supports",
+          "source_id": "SRC-STC-0020"
+        }
+      ],
+      "tags": [
+        "google",
+        "hope",
+        "multi-timescale"
+      ],
+      "text": "Nested Learning/HOPE treats optimization processes at multiple update frequencies as nested memory levels, supplying a useful cadence model but not public evidence of deployed asynchronous sleep consolidation."
+    },
+    {
+      "claim_id": "STC-C025",
+      "claim_type": "author_claim",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; §2 Memory Caching; §4 Serving Experiments",
+          "relation": "supports",
+          "source_id": "SRC-STC-0022"
+        }
+      ],
+      "tags": [
+        "inference",
+        "memory-caching",
+        "serving"
+      ],
+      "text": "Memory Caching identifies a serving problem for recurrent memory models: reusable state has to be materialized, keyed, cached, and shared to recover prefix-cache-like efficiency."
+    },
+    {
+      "claim_id": "STC-C026",
+      "claim_type": "author_claim",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; §2 Method; Fig. 1",
+          "relation": "supports",
+          "source_id": "SRC-STC-0031"
+        }
+      ],
+      "tags": [
+        "alternative",
+        "external-memory",
+        "rag"
+      ],
+      "text": "Retrieval-augmented generation keeps mutable knowledge outside model weights and conditions generation on retrieved passages, making it a strong update-cost and governance baseline."
+    },
+    {
+      "claim_id": "STC-C027",
+      "claim_type": "synthesis",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; §4 Method; Eq. 3",
+          "relation": "supports",
+          "source_id": "SRC-STC-0030"
+        },
+        {
+          "locator": "§3 sequential fact-learning results",
+          "relation": "qualifies",
+          "source_id": "SRC-STC-0036"
+        }
+      ],
+      "tags": [
+        "alternative",
+        "lora",
+        "parametric"
+      ],
+      "text": "LoRA constrains adaptation to low-rank weight deltas, reducing trainable parameter and optimizer-state cost but not eliminating sequential interference or lifecycle governance."
+    },
+    {
+      "claim_id": "STC-C028",
+      "claim_type": "synthesis",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; §3 Causal Tracing; §4 ROME",
+          "relation": "supports",
+          "source_id": "SRC-STC-0032"
+        }
+      ],
+      "tags": [
+        "alternative",
+        "model-editing",
+        "parametric"
+      ],
+      "text": "ROME localizes and edits factual associations in transformer MLP weights, showing targeted parametric change is possible but not proving stable unbounded continual accumulation."
+    },
+    {
+      "claim_id": "STC-C029",
+      "claim_type": "synthesis",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; §3 MEMIT; scaling experiments",
+          "relation": "supports",
+          "source_id": "SRC-STC-0033"
+        }
+      ],
+      "tags": [
+        "alternative",
+        "model-editing",
+        "parametric"
+      ],
+      "text": "MEMIT extends model editing to many memories, but mass editing remains a bounded batch intervention rather than a demonstrated lifelong sleep loop."
+    },
+    {
+      "claim_id": "STC-C030",
+      "claim_type": "synthesis",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; §3 Generative Adapter; experiments",
+          "relation": "supports",
+          "source_id": "SRC-STC-0027"
+        }
+      ],
+      "tags": [
+        "adapter",
+        "alternative",
+        "latent-compilation"
+      ],
+      "text": "Generative Adapter compiles context into parameters in one forward pass, suggesting a latent-memory path whose value depends on reuse amortizing compilation and version-management cost."
+    },
+    {
+      "claim_id": "STC-C031",
+      "claim_type": "synthesis",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; §2-§3 self-edits",
+          "relation": "supports",
+          "source_id": "SRC-STC-0029"
+        },
+        {
+          "locator": "model-collapse results",
+          "relation": "qualifies",
+          "source_id": "SRC-STC-0041"
+        }
+      ],
+      "tags": [
+        "data-generation",
+        "self-adaptation",
+        "training"
+      ],
+      "text": "Self-Adapting Language Models generate their own adaptation data and update rules, bridging wake-time learning and later consolidation while introducing recursive-data quality risks."
+    },
+    {
+      "claim_id": "STC-C032",
+      "claim_type": "author_claim",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; §4 Results; §5 Discussion",
+          "relation": "supports",
+          "source_id": "SRC-STC-0036"
+        }
+      ],
+      "tags": [
+        "capacity",
+        "negative-evidence",
+        "parametric"
+      ],
+      "text": "Sequentially learned facts can remain encoded in weights yet become behaviorally unreachable; retention must therefore be measured by access and composition, not only by parameter storage."
+    },
+    {
+      "claim_id": "STC-C033",
+      "claim_type": "synthesis",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; capacity experiments",
+          "relation": "supports",
+          "source_id": "SRC-STC-0034"
+        },
+        {
+          "locator": "§4-§5",
+          "relation": "qualifies",
+          "source_id": "SRC-STC-0036"
+        }
+      ],
+      "tags": [
+        "capacity",
+        "negative-evidence"
+      ],
+      "text": "Static memorization capacity measurements do not directly determine safe continual-learning capacity because sequential access, interference, and governance add independent constraints."
+    },
+    {
+      "claim_id": "STC-C034",
+      "claim_type": "synthesis",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; §2 Rate-Distortion Formulation; limitations",
+          "relation": "supports",
+          "source_id": "SRC-STC-0035"
+        }
+      ],
+      "tags": [
+        "capacity",
+        "compaction",
+        "theory"
+      ],
+      "text": "A rate-distortion view makes memory compaction an explicit utility-budget tradeoff, but its proposed frontier is not yet a universal empirical scaling law for agents."
+    },
+    {
+      "claim_id": "STC-C035",
+      "claim_type": "author_claim",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "main results; Figs. 1-3; Methods",
+          "relation": "supports",
+          "source_id": "SRC-STC-0041"
+        }
+      ],
+      "tags": [
+        "data-quality",
+        "model-collapse",
+        "negative-evidence"
+      ],
+      "text": "Recursive training on generated data can collapse distribution tails when real-data support is lost, so sleep-generated replay cannot be treated as costless fresh data."
+    },
+    {
+      "claim_id": "STC-C036",
+      "claim_type": "author_claim",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; theoretical results; experiments",
+          "relation": "supports",
+          "source_id": "SRC-STC-0069"
+        }
+      ],
+      "tags": [
+        "data-quality",
+        "negative-evidence",
+        "qualification"
+      ],
+      "text": "Model collapse is not inevitable when real and synthetic data are accumulated under appropriate conditions; the relevant scaling variable is recursive depth and real-data anchoring, not a binary synthetic-data flag."
+    },
+    {
+      "claim_id": "STC-C037",
+      "claim_type": "synthesis",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "abstract; threat model; attack results",
+          "relation": "supports",
+          "source_id": "SRC-STC-0042"
+        }
+      ],
+      "tags": [
+        "governance",
+        "memory-poisoning",
+        "security"
+      ],
+      "text": "External memories create an attack surface: poisoned records can steer agent behavior while remaining hard to notice, making provenance and revocation first-class design requirements."
+    },
+    {
+      "claim_id": "STC-C038",
+      "claim_type": "synthesis",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "official OpenAI Dreaming release",
+          "relation": "supports",
+          "source_id": "SRC-STC-0052"
+        },
+        {
+          "locator": "official Mem0 Dream docs",
+          "relation": "supports",
+          "source_id": "SRC-STC-0063"
+        },
+        {
+          "locator": "tagged Letta sleeptime implementation",
+          "relation": "supports",
+          "source_id": "SRC-STC-0059"
+        },
+        {
+          "locator": "tagged Graphiti repository",
+          "relation": "supports",
+          "source_id": "SRC-STC-0065"
+        }
+      ],
+      "tags": [
+        "industry",
+        "promisingness",
+        "verdict"
+      ],
+      "text": "As of the freeze date, public industry evidence is strongest for external-memory sleep and background synthesis, not broad per-user foundation-weight sleep."
+    },
+    {
+      "claim_id": "STC-C039",
+      "claim_type": "synthesis",
+      "confidence": "medium",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "§4 experiments and §6 limitations",
+          "relation": "supports",
+          "source_id": "SRC-STC-0021"
+        },
+        {
+          "locator": "§4-§5 sequential-learning limits",
+          "relation": "supports",
+          "source_id": "SRC-STC-0036"
+        },
+        {
+          "locator": "memory-poisoning threat model",
+          "relation": "supports",
+          "source_id": "SRC-STC-0042"
+        }
+      ],
+      "tags": [
+        "negative-evidence",
+        "parametric",
+        "verdict"
+      ],
+      "text": "Broad per-user parametric sleep remains technically immature because public evidence does not jointly establish continual retention, rollback, deletion, security, and fleet-level serving economics."
+    },
+    {
+      "claim_id": "STC-C040",
+      "claim_type": "synthesis",
+      "confidence": "medium",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "external synthesis lifecycle",
+          "relation": "supports",
+          "source_id": "SRC-STC-0052"
+        },
+        {
+          "locator": "parameter compilation method",
+          "relation": "supports",
+          "source_id": "SRC-STC-0027"
+        },
+        {
+          "locator": "low-rank adapter method",
+          "relation": "supports",
+          "source_id": "SRC-STC-0030"
+        },
+        {
+          "locator": "episode provenance",
+          "relation": "context",
+          "source_id": "SRC-STC-0066"
+        }
+      ],
+      "tags": [
+        "architecture",
+        "hybrid",
+        "verdict"
+      ],
+      "text": "The most credible medium-term architecture is hybrid: keep an auditable external system of record, then selectively promote high-reuse, stable knowledge into reversible adapters or bounded parametric state."
+    },
+    {
+      "claim_id": "STC-C041",
+      "claim_type": "synthesis",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "static memorization-capacity experiments",
+          "relation": "supports",
+          "source_id": "SRC-STC-0034"
+        },
+        {
+          "locator": "rate-distortion proposal",
+          "relation": "supports",
+          "source_id": "SRC-STC-0035"
+        },
+        {
+          "locator": "memory-statistics tradeoff theory",
+          "relation": "supports",
+          "source_id": "SRC-STC-0050"
+        }
+      ],
+      "tags": [
+        "scaling-law",
+        "theory",
+        "verdict"
+      ],
+      "text": "No source in the frozen corpus establishes a universal sleep-time scaling law; current equations should be labeled accounting identities, break-even models, fit candidates, or untested hypotheses."
+    },
+    {
+      "claim_id": "STC-C042",
+      "claim_type": "synthesis",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "title and product terminology",
+          "relation": "supports",
+          "source_id": "SRC-STC-0052"
+        },
+        {
+          "locator": "title and product terminology",
+          "relation": "supports",
+          "source_id": "SRC-STC-0054"
+        },
+        {
+          "locator": "reflection-launcher terminology",
+          "relation": "supports",
+          "source_id": "SRC-STC-0060"
+        },
+        {
+          "locator": "Dream terminology",
+          "relation": "supports",
+          "source_id": "SRC-STC-0063"
+        }
+      ],
+      "tags": [
+        "mainstream",
+        "terminology"
+      ],
+      "text": "The lifecycle may become mainstream without the term 'sleep-time compute' becoming the dominant label; current systems use dreaming, reflection, synthesis, memory, self-evolution, and consolidation language."
+    },
+    {
+      "claim_id": "STC-C043",
+      "claim_type": "hypothesis",
+      "confidence": "medium",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "strategy selection and reuse results",
+          "relation": "supports",
+          "source_id": "SRC-STC-0043"
+        },
+        {
+          "locator": "RL over memory objective",
+          "relation": "supports",
+          "source_id": "SRC-STC-0051"
+        },
+        {
+          "locator": "utility-budget formulation",
+          "relation": "supports",
+          "source_id": "SRC-STC-0035"
+        }
+      ],
+      "tags": [
+        "hypothesis",
+        "scaling-law",
+        "utility"
+      ],
+      "text": "A useful candidate scaling variable is valid reusable evidence per unit sleep cost, not raw memories processed or raw sleep FLOPs."
+    },
+    {
+      "claim_id": "STC-C044",
+      "claim_type": "hypothesis",
+      "confidence": "medium",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "multi-frequency update framework",
+          "relation": "supports",
+          "source_id": "SRC-STC-0020"
+        },
+        {
+          "locator": "scheduled synthesis cadence",
+          "relation": "supports",
+          "source_id": "SRC-STC-0063"
+        },
+        {
+          "locator": "serving and state-reuse costs",
+          "relation": "supports",
+          "source_id": "SRC-STC-0022"
+        }
+      ],
+      "tags": [
+        "cadence",
+        "hypothesis",
+        "scaling-law"
+      ],
+      "text": "The optimal sleep cadence should balance staleness, batching efficiency, interference, and wake-SLA impact; neither continuous updating nor arbitrarily long batching is generally optimal."
+    },
+    {
+      "claim_id": "STC-C045",
+      "claim_type": "hypothesis",
+      "confidence": "medium",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "memorization-capacity curves",
+          "relation": "supports",
+          "source_id": "SRC-STC-0034"
+        },
+        {
+          "locator": "rate-distortion frontier",
+          "relation": "supports",
+          "source_id": "SRC-STC-0035"
+        },
+        {
+          "locator": "sequential reachability degradation",
+          "relation": "supports",
+          "source_id": "SRC-STC-0036"
+        }
+      ],
+      "tags": [
+        "capacity",
+        "hypothesis",
+        "scaling-law"
+      ],
+      "text": "Finite memory systems should exhibit a capacity knee where marginal consolidation utility falls and interference, compaction, or deletion cost rises sharply."
+    },
+    {
+      "claim_id": "STC-C046",
+      "claim_type": "synthesis",
+      "confidence": "high",
+      "load_bearing": true,
+      "public": true,
+      "scope_note": "",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "official memory controls",
+          "relation": "supports",
+          "source_id": "SRC-STC-0053"
+        },
+        {
+          "locator": "provenance and non-destructive behavior",
+          "relation": "supports",
+          "source_id": "SRC-STC-0063"
+        },
+        {
+          "locator": "episode provenance and temporal facts",
+          "relation": "supports",
+          "source_id": "SRC-STC-0066"
+        }
+      ],
+      "tags": [
+        "architecture",
+        "governance",
+        "provenance"
+      ],
+      "text": "For derived memory, the external source-of-record plus provenance graph is a stronger governance basis than treating updated weights as the sole authoritative record."
+    },
+    {
+      "claim_id": "STC-C047",
+      "claim_type": "direct_fact",
+      "confidence": "high",
+      "load_bearing": false,
+      "public": true,
+      "scope_note": "Retained as a blog-named lead and explicit evidence-hygiene example.",
+      "status": "supported",
+      "support": [
+        {
+          "locator": "SSRN abstract and metadata landing page",
+          "relation": "supports",
+          "source_id": "SRC-STC-0039"
+        }
+      ],
+      "tags": [
+        "dann",
+        "evidence-hygiene"
+      ],
+      "text": "The DANN/SSRN record is not load-bearing evidence because the frozen source exposes insufficient methods and results for independent verification."
+    },
+    {
+      "claim_id": "STC-C048",
+      "claim_type": "hypothesis",
+      "confidence": "medium",
+      "load_bearing": true,
+      "public": false,
+      "scope_note": "",
+      "status": "held",
+      "support": [
+        {
+          "locator": "provenance and non-destructive synthesis",
+          "relation": "supports",
+          "source_id": "SRC-STC-0063"
+        },
+        {
+          "locator": "episodes and temporal provenance",
+          "relation": "supports",
+          "source_id": "SRC-STC-0066"
+        }
+      ],
+      "tags": [
+        "device",
+        "governance",
+        "provenance-store"
+      ],
+      "text": "A memory-device vendor could provide a provenance-first append-only store optimized for derived-memory lineage and selective rebuild."
+    },
+    {
+      "claim_id": "STC-C049",
+      "claim_type": "hypothesis",
+      "confidence": "medium",
+      "load_bearing": true,
+      "public": false,
+      "scope_note": "",
+      "status": "held",
+      "support": [
+        {
+          "locator": "asynchronous sleeptime lifecycle",
+          "relation": "supports",
+          "source_id": "SRC-STC-0059"
+        },
+        {
+          "locator": "multi-year synthesized memory lifecycle",
+          "relation": "supports",
+          "source_id": "SRC-STC-0052"
+        }
+      ],
+      "tags": [
+        "device",
+        "rollback",
+        "snapshot"
+      ],
+      "text": "Snapshot and copy-on-write primitives could reduce rollback cost when sleep jobs produce new external or parametric memory generations."
+    },
+    {
+      "claim_id": "STC-C050",
+      "claim_type": "hypothesis",
+      "confidence": "medium",
+      "load_bearing": true,
+      "public": false,
+      "scope_note": "",
+      "status": "held",
+      "support": [
+        {
+          "locator": "memory decay lifecycle",
+          "relation": "supports",
+          "source_id": "SRC-STC-0062"
+        },
+        {
+          "locator": "merge, supersede, and synthesis modes",
+          "relation": "supports",
+          "source_id": "SRC-STC-0063"
+        },
+        {
+          "locator": "temporal graph updates",
+          "relation": "supports",
+          "source_id": "SRC-STC-0065"
+        }
+      ],
+      "tags": [
+        "device",
+        "endurance",
+        "index"
+      ],
+      "text": "High-endurance indexed memory tiers could target repeated graph, vector, and metadata rewrites from consolidation, merge, decay, and supersede operations."
+    },
+    {
+      "claim_id": "STC-C051",
+      "claim_type": "hypothesis",
+      "confidence": "low",
+      "load_bearing": true,
+      "public": false,
+      "scope_note": "",
+      "status": "held",
+      "support": [
+        {
+          "locator": "memory synthesis over large history",
+          "relation": "supports",
+          "source_id": "SRC-STC-0052"
+        },
+        {
+          "locator": "synthesis workflow",
+          "relation": "supports",
+          "source_id": "SRC-STC-0063"
+        }
+      ],
+      "tags": [
+        "device",
+        "near-data",
+        "preprocessing"
+      ],
+      "text": "Near-data preprocessing could accelerate deduplication, clustering, graph maintenance, and provenance filtering before expensive accelerator-side sleep training."
+    },
+    {
+      "claim_id": "STC-C052",
+      "claim_type": "hypothesis",
+      "confidence": "medium",
+      "load_bearing": true,
+      "public": false,
+      "scope_note": "",
+      "status": "held",
+      "support": [
+        {
+          "locator": "LoRA low-rank update construction",
+          "relation": "supports",
+          "source_id": "SRC-STC-0030"
+        },
+        {
+          "locator": "context-to-parameter adapter generation",
+          "relation": "supports",
+          "source_id": "SRC-STC-0027"
+        },
+        {
+          "locator": "self-modification and consolidation",
+          "relation": "supports",
+          "source_id": "SRC-STC-0021"
+        }
+      ],
+      "tags": [
+        "adapter",
+        "device",
+        "parametric"
+      ],
+      "text": "A versioned adapter fabric could store, activate, merge, and retire per-user or per-domain low-rank deltas without duplicating full foundation weights."
+    },
+    {
+      "claim_id": "STC-C053",
+      "claim_type": "hypothesis",
+      "confidence": "medium",
+      "load_bearing": true,
+      "public": false,
+      "scope_note": "",
+      "status": "held",
+      "support": [
+        {
+          "locator": "virtual context hierarchy",
+          "relation": "supports",
+          "source_id": "SRC-STC-0013"
+        },
+        {
+          "locator": "temporal graph architecture",
+          "relation": "supports",
+          "source_id": "SRC-STC-0016"
+        },
+        {
+          "locator": "memory-state caching",
+          "relation": "supports",
+          "source_id": "SRC-STC-0022"
+        }
+      ],
+      "tags": [
+        "device",
+        "pooled-memory",
+        "tiering"
+      ],
+      "text": "A pooled tiered-memory system could unify context cache, recurrent state, vector index, temporal graph, and cold episode storage while minimizing state migration."
+    },
+    {
+      "claim_id": "STC-C054",
+      "claim_type": "hypothesis",
+      "confidence": "medium",
+      "load_bearing": true,
+      "public": false,
+      "scope_note": "",
+      "status": "held",
+      "support": [
+        {
+          "locator": "official memory controls and deletion",
+          "relation": "supports",
+          "source_id": "SRC-STC-0053"
+        },
+        {
+          "locator": "provenance and non-destructive outputs",
+          "relation": "supports",
+          "source_id": "SRC-STC-0063"
+        },
+        {
+          "locator": "episode-derived graph facts",
+          "relation": "supports",
+          "source_id": "SRC-STC-0066"
+        }
+      ],
+      "tags": [
+        "delete",
+        "device",
+        "governance"
+      ],
+      "text": "Secure delete-and-rebuild acceleration could become a differentiator because deleting a source episode must propagate through derived summaries, graphs, caches, and any promoted parametric state."
+    },
+    {
+      "claim_id": "STC-C055",
+      "claim_type": "hypothesis",
+      "confidence": "medium",
+      "load_bearing": true,
+      "public": false,
+      "scope_note": "",
+      "status": "held",
+      "support": [
+        {
+          "locator": "memory-caching serving design",
+          "relation": "supports",
+          "source_id": "SRC-STC-0022"
+        },
+        {
+          "locator": "HOPE/CMS persistent state hierarchy",
+          "relation": "supports",
+          "source_id": "SRC-STC-0020"
+        }
+      ],
+      "tags": [
+        "cache",
+        "device",
+        "recurrent-state"
+      ],
+      "text": "Recurrent and neural-memory serving creates an opportunity for a cache tier keyed by reusable model state rather than only token KV prefixes."
+    },
+    {
+      "claim_id": "STC-C056",
+      "claim_type": "hypothesis",
+      "confidence": "low",
+      "load_bearing": true,
+      "public": false,
+      "scope_note": "",
+      "status": "held",
+      "support": [
+        {
+          "locator": "personalized-agent learning setup",
+          "relation": "supports",
+          "source_id": "SRC-STC-0044"
+        },
+        {
+          "locator": "distributed agent program and archive",
+          "relation": "supports",
+          "source_id": "SRC-STC-0045"
+        }
+      ],
+      "tags": [
+        "device",
+        "on-device",
+        "privacy"
+      ],
+      "text": "On-device consolidation may be attractive where privacy, intermittent connectivity, and local personalization outweigh device thermal and endurance limits."
+    },
+    {
+      "claim_id": "STC-C057",
+      "claim_type": "hypothesis",
+      "confidence": "medium",
+      "load_bearing": true,
+      "public": false,
+      "scope_note": "",
+      "status": "held",
+      "support": [
+        {
+          "locator": "STATE-Bench dimensions",
+          "relation": "supports",
+          "source_id": "SRC-STC-0056"
+        },
+        {
+          "locator": "STATE-Bench repository metrics",
+          "relation": "supports",
+          "source_id": "SRC-STC-0067"
+        },
+        {
+          "locator": "serving efficiency evaluation",
+          "relation": "supports",
+          "source_id": "SRC-STC-0022"
+        }
+      ],
+      "tags": [
+        "benchmark",
+        "device",
+        "measurement"
+      ],
+      "text": "Memory-device evaluation tooling should report useful retained evidence, staleness, rollback time, state-migration bytes, write amplification, and wake-SLA interference rather than bandwidth alone."
+    }
+  ],
+  "schema_version": "1.0.0"
+}

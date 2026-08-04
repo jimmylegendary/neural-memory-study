@@ -1,0 +1,327 @@
+{
+  "schema_version": "1.0.0",
+  "selected": [
+    {
+      "count_method": "Numbered figure/table labels extracted from the frozen source; equation count remains null until source-structure parity extraction.",
+      "equation_count": null,
+      "exact_version": "arXiv:2504.13171v1",
+      "existing_translation": "missing",
+      "figure_count": 26,
+      "license_state": "arXiv license; figure redistribution not cleared",
+      "paper_id": "STC-T01",
+      "role": [
+        "direct-stc",
+        "agent-lifecycle"
+      ],
+      "selection_reason": "Fills a load-bearing stratum in the balanced evidence corpus.",
+      "source_id": "SRC-STC-0014",
+      "source_media": "PDF",
+      "source_path": null,
+      "source_sha256": "050133427aa9cd015a6715d30f9e3cb5f316bfe70929815ad5cb63ec08cf14cc",
+      "source_url": "https://arxiv.org/pdf/2504.13171v1",
+      "status": "selected",
+      "table_count": 1
+    },
+    {
+      "count_method": "Numbered figure/table labels extracted from the frozen source; equation count remains null until source-structure parity extraction.",
+      "equation_count": null,
+      "exact_version": "arXiv:2606.03979v2",
+      "existing_translation": "existing_v1_requires_v2_delta",
+      "figure_count": 8,
+      "license_state": "arXiv license; figure redistribution not cleared",
+      "paper_id": "STC-T02",
+      "role": [
+        "direct-stc",
+        "parametric-sleep"
+      ],
+      "selection_reason": "Fills a load-bearing stratum in the balanced evidence corpus.",
+      "source_id": "SRC-STC-0021",
+      "source_media": "PDF",
+      "source_path": null,
+      "source_sha256": "dab98367e19e99eb8838a6604afddb9ea85a940f2f41d8a1602e55977fb12d14",
+      "source_url": "https://arxiv.org/pdf/2606.03979v2",
+      "status": "selected",
+      "table_count": 5
+    },
+    {
+      "count_method": "Numbered figure/table labels extracted from the frozen source; equation count remains null until source-structure parity extraction.",
+      "equation_count": null,
+      "exact_version": "arXiv:2607.11020v2",
+      "existing_translation": "missing",
+      "figure_count": 22,
+      "license_state": "arXiv license; figure redistribution not cleared",
+      "paper_id": "STC-T03",
+      "role": [
+        "capacity",
+        "negative-result",
+        "parametric"
+      ],
+      "selection_reason": "Fills a load-bearing stratum in the balanced evidence corpus.",
+      "source_id": "SRC-STC-0036",
+      "source_media": "PDF",
+      "source_path": null,
+      "source_sha256": "3d7fde31817d293afd64066174293fe6a925ce2650331550d66c38af3d6b3702",
+      "source_url": "https://arxiv.org/pdf/2607.11020v2",
+      "status": "selected",
+      "table_count": 2
+    },
+    {
+      "count_method": "Numbered figure/table labels extracted from the frozen source; equation count remains null until source-structure parity extraction.",
+      "equation_count": null,
+      "exact_version": "PLOS Computational Biology 18(11):e1010628",
+      "existing_translation": "missing",
+      "figure_count": 7,
+      "license_state": "CC BY 4.0 on PLOS article",
+      "paper_id": "STC-T04",
+      "role": [
+        "biological-computational",
+        "continual-learning",
+        "plos-target"
+      ],
+      "selection_reason": "Fills a load-bearing stratum in the balanced evidence corpus.",
+      "source_id": "SRC-STC-0011",
+      "source_media": "PDF",
+      "source_path": null,
+      "source_sha256": "a5ac00a79026561ba06b429b706beeefca552286e70971567ba6038c1ea39035",
+      "source_url": "https://journals.plos.org/ploscompbiol/article/file?id=10.1371/journal.pcbi.1010628&type=printable",
+      "status": "selected",
+      "table_count": 0
+    },
+    {
+      "count_method": "Numbered figure/table labels extracted from the frozen source; equation count remains null until source-structure parity extraction.",
+      "equation_count": null,
+      "exact_version": "PNAS 119(44):e2123432119; PMC9636926 HTML capture",
+      "existing_translation": "missing",
+      "figure_count": 4,
+      "license_state": "CC BY-NC-ND 4.0; exact figures require license review",
+      "paper_id": "STC-T05",
+      "role": [
+        "biological-computational",
+        "nrem-rem"
+      ],
+      "selection_reason": "Fills a load-bearing stratum in the balanced evidence corpus.",
+      "source_id": "SRC-STC-0010",
+      "source_media": "HTML",
+      "source_path": null,
+      "source_sha256": "009024a0ce3f47d1c62aab6d91c4560f9af111918ce35013352ed189111e88c9",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9636926/",
+      "status": "selected",
+      "table_count": 0
+    },
+    {
+      "count_method": "Numbered figure/table labels extracted from the frozen source; equation count remains null until source-structure parity extraction.",
+      "equation_count": null,
+      "exact_version": "arXiv:1606.01164v2",
+      "existing_translation": "missing",
+      "figure_count": 5,
+      "license_state": "arXiv license; figure redistribution not cleared",
+      "paper_id": "STC-T06",
+      "role": [
+        "dual-memory",
+        "wake-sleep-precursor"
+      ],
+      "selection_reason": "Fills a load-bearing stratum in the balanced evidence corpus.",
+      "source_id": "SRC-STC-0005",
+      "source_media": "PDF",
+      "source_path": "papers/external/1606.01164.pdf",
+      "source_sha256": "fa30d11b475edaaebeaa55815cf98c32ada2806e510bc16ca55602f06f23c83d",
+      "source_url": "https://arxiv.org/pdf/1606.01164v2",
+      "status": "selected",
+      "table_count": 0
+    },
+    {
+      "count_method": "Numbered figure/table labels extracted from the frozen source; equation count remains null until source-structure parity extraction.",
+      "equation_count": null,
+      "exact_version": "arXiv:1705.08690v3",
+      "existing_translation": "missing",
+      "figure_count": 7,
+      "license_state": "arXiv license; figure redistribution not cleared",
+      "paper_id": "STC-T07",
+      "role": [
+        "continual-learning",
+        "generative-replay"
+      ],
+      "selection_reason": "Fills a load-bearing stratum in the balanced evidence corpus.",
+      "source_id": "SRC-STC-0003",
+      "source_media": "PDF",
+      "source_path": null,
+      "source_sha256": "cd9cfc3c5b6e71fa3255a40037c6819f403415e2e4fcb539a83f9eda88067e10",
+      "source_url": "https://arxiv.org/pdf/1705.08690v3",
+      "status": "selected",
+      "table_count": 1
+    },
+    {
+      "count_method": "Numbered figure/table labels extracted from the frozen source; equation count remains null until source-structure parity extraction.",
+      "equation_count": null,
+      "exact_version": "arXiv:2310.08560v2",
+      "existing_translation": "missing",
+      "figure_count": 8,
+      "license_state": "arXiv license; figure redistribution not cleared",
+      "paper_id": "STC-T08",
+      "role": [
+        "agent-memory",
+        "external-memory"
+      ],
+      "selection_reason": "Fills a load-bearing stratum in the balanced evidence corpus.",
+      "source_id": "SRC-STC-0013",
+      "source_media": "PDF",
+      "source_path": null,
+      "source_sha256": "9f674bcff69c86f11c813dcfad613d8841f5f8ed17979e3c4df06a91df7762e0",
+      "source_url": "https://arxiv.org/pdf/2310.08560v2",
+      "status": "selected",
+      "table_count": 3
+    },
+    {
+      "count_method": "Numbered figure/table labels extracted from the frozen source; equation count remains null until source-structure parity extraction.",
+      "equation_count": null,
+      "exact_version": "arXiv:2501.13956v1",
+      "existing_translation": "missing",
+      "figure_count": null,
+      "license_state": "arXiv license; figure redistribution not cleared",
+      "paper_id": "STC-T09",
+      "role": [
+        "agent-memory",
+        "external-memory",
+        "temporal-graph"
+      ],
+      "selection_reason": "Fills a load-bearing stratum in the balanced evidence corpus.",
+      "source_id": "SRC-STC-0016",
+      "source_media": "PDF",
+      "source_path": null,
+      "source_sha256": "d26f7eb599540e8b14d75e7efda58a07661abbb1b864e58323b5768475a15d42",
+      "source_url": "https://arxiv.org/pdf/2501.13956v1",
+      "status": "selected",
+      "table_count": 3
+    },
+    {
+      "count_method": "Numbered figure/table labels extracted from the frozen source; equation count remains null until source-structure parity extraction.",
+      "equation_count": null,
+      "exact_version": "arXiv:2512.24695v1",
+      "existing_translation": "existing_full",
+      "figure_count": 12,
+      "license_state": "arXiv license; figure redistribution not cleared",
+      "paper_id": "STC-T10",
+      "role": [
+        "hope",
+        "multi-timescale",
+        "neural-memory"
+      ],
+      "selection_reason": "Fills a load-bearing stratum in the balanced evidence corpus.",
+      "source_id": "SRC-STC-0020",
+      "source_media": "PDF",
+      "source_path": "papers/2512.24695.pdf",
+      "source_sha256": "e87a9ce82ff24e96f55b83fb9713a5d6fc9e4a1a232c12d42da49c10022ed891",
+      "source_url": "https://arxiv.org/pdf/2512.24695v1",
+      "status": "selected",
+      "table_count": 9
+    },
+    {
+      "count_method": "Numbered figure/table labels extracted from the frozen source; equation count remains null until source-structure parity extraction.",
+      "equation_count": null,
+      "exact_version": "arXiv:2602.24281v1",
+      "existing_translation": "existing",
+      "figure_count": 5,
+      "license_state": "arXiv license; figure redistribution not cleared",
+      "paper_id": "STC-T11",
+      "role": [
+        "neural-memory",
+        "serving",
+        "state-cache"
+      ],
+      "selection_reason": "Fills a load-bearing stratum in the balanced evidence corpus.",
+      "source_id": "SRC-STC-0022",
+      "source_media": "PDF",
+      "source_path": "papers/2602.24281.pdf",
+      "source_sha256": "f4983c96c96400320b3d883e8d39f96ade91cae55e2bde04c4d99b06a8348e82",
+      "source_url": "https://arxiv.org/pdf/2602.24281v1",
+      "status": "selected",
+      "table_count": 6
+    },
+    {
+      "count_method": "Numbered figure/table labels extracted from the frozen source; equation count remains null until source-structure parity extraction.",
+      "equation_count": null,
+      "exact_version": "arXiv:2607.08032v1",
+      "existing_translation": "missing",
+      "figure_count": 6,
+      "license_state": "arXiv license; figure redistribution not cleared",
+      "paper_id": "STC-T12",
+      "role": [
+        "capacity",
+        "compaction",
+        "rate-distortion"
+      ],
+      "selection_reason": "Fills a load-bearing stratum in the balanced evidence corpus.",
+      "source_id": "SRC-STC-0035",
+      "source_media": "PDF",
+      "source_path": null,
+      "source_sha256": "6c19532535fbc3c748faa1a67b0e047581a6fc56b99b54d43e47097be8107ebd",
+      "source_url": "https://arxiv.org/pdf/2607.08032v1",
+      "status": "selected",
+      "table_count": 6
+    },
+    {
+      "count_method": "Numbered figure/table labels extracted from the frozen source; equation count remains null until source-structure parity extraction.",
+      "equation_count": null,
+      "exact_version": "eLife 11:e76384",
+      "existing_translation": "missing",
+      "figure_count": 9,
+      "license_state": "CC BY 4.0 on eLife article",
+      "paper_id": "STC-T13",
+      "role": [
+        "biological-computational",
+        "dreaming"
+      ],
+      "selection_reason": "Fills a load-bearing stratum in the balanced evidence corpus.",
+      "source_id": "SRC-STC-0009",
+      "source_media": "PDF",
+      "source_path": null,
+      "source_sha256": "ce7aef9099666b4b40208c83580d43b248d9129f818b53e91950c299790866f1",
+      "source_url": "https://elifesciences.org/articles/76384.pdf",
+      "status": "selected",
+      "table_count": 1
+    },
+    {
+      "count_method": "Numbered figure/table labels extracted from the frozen source; equation count remains null until source-structure parity extraction.",
+      "equation_count": null,
+      "exact_version": "arXiv:2505.24832v3",
+      "existing_translation": "missing",
+      "figure_count": 17,
+      "license_state": "arXiv license; figure redistribution not cleared",
+      "paper_id": "STC-T14",
+      "role": [
+        "capacity",
+        "parametric-memory"
+      ],
+      "selection_reason": "Fills a load-bearing stratum in the balanced evidence corpus.",
+      "source_id": "SRC-STC-0034",
+      "source_media": "PDF",
+      "source_path": null,
+      "source_sha256": "ce0148ea694019714c4c3d5d8bb3a09b2f1e7c402f377f9db50cae705e32b123",
+      "source_url": "https://arxiv.org/pdf/2505.24832v3",
+      "status": "selected",
+      "table_count": 5
+    },
+    {
+      "count_method": "Numbered figure/table labels extracted from the frozen source; equation count remains null until source-structure parity extraction.",
+      "equation_count": null,
+      "exact_version": "arXiv:2603.01097v5",
+      "existing_translation": "missing",
+      "figure_count": 22,
+      "license_state": "arXiv license; figure redistribution not cleared",
+      "paper_id": "STC-T15",
+      "role": [
+        "adapter",
+        "capacity",
+        "parametric-memory"
+      ],
+      "selection_reason": "Fills a load-bearing stratum in the balanced evidence corpus.",
+      "source_id": "SRC-STC-0040",
+      "source_media": "PDF",
+      "source_path": null,
+      "source_sha256": "08b937f35edf84cb1ac2ab67b8ff4a49a8f4f1d71a7629418555c0fcca66ad68",
+      "source_url": "https://arxiv.org/pdf/2603.01097v5",
+      "status": "selected",
+      "table_count": 7
+    }
+  ]
+}

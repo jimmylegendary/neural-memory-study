@@ -234,7 +234,7 @@ git commit -m "research: synthesize sleep-time compute strategic verdict"
 - Consumes: frozen source/citation/synthesis files
 - Produces: Veridraft bundle `sleep-time-compute-strategic-study-2026` and frozen spine
 
-- [ ] **Step 1: Write failing bundle-generation tests**
+- [x] **Step 1: Write failing bundle-generation tests**
 
 ```python
 def test_every_load_bearing_claim_has_primary_source_and_locator():
@@ -250,15 +250,15 @@ def test_device_projections_are_held_p3_claims():
     assert device and all(c["type"] == "P3" for c in device)
 ```
 
-- [ ] **Step 2: Implement deterministic bundle generation**
+- [x] **Step 2: Implement deterministic bundle generation**
 
 P1 requires `result_refs`; P2 literature claims require fixed source artifacts; P3 device projections default to internal hold. The same input must produce byte-identical sorted JSON.
 
-- [ ] **Step 3: Select 12–15 translation papers**
+- [x] **Step 3: Select 12–15 translation papers**
 
 The selection file must include exact paper IDs and roles, source path/hash, license state, figure count, equation/table count when extractable, and `existing_translation` status.
 
-- [ ] **Step 4: Run tests and Veridraft gates**
+- [x] **Step 4: Run tests and Veridraft gates**
 
 ```bash
 uv run --project research/sleep-time-compute pytest -q research/sleep-time-compute/tests/test_stc_claim_bundle.py
@@ -269,11 +269,11 @@ python3 -m veridraft gate sleep-time-compute-strategic-study-2026 --data-dir .ve
 
 Expected: zero blocked public Study claims; P3 held claims are reported, not leaked.
 
-- [ ] **Step 5: Freeze the spine**
+- [x] **Step 5: Freeze the spine**
 
 `research-spine.json` must record hashes for all registries and `status: "frozen"`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add veridraft.stc-study.config.json claims/stc-study research/sleep-time-compute/program research/sleep-time-compute/tests/test_stc_claim_bundle.py
