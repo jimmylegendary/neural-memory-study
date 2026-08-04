@@ -397,3 +397,36 @@ def test_deep_research_source_citation_and_rights_ids_are_one_to_one():
     assert {item["source_id"] for item in citations} == source_ids
     assert {item["source_id"] for item in rights} == source_ids
     assert all(item["status"] == "frozen" for item in sources)
+
+
+def test_synthesis_phase_requires_all_strategic_artifacts(tmp_path):
+    module = _load_validator()
+
+    report = module.validate_phase(tmp_path, "synthesis")
+
+    assert "synthesis-file-missing" in _codes(report)
+
+
+def test_synthesis_contract_rejects_shallow_placeholder_files(tmp_path):
+    module = _load_validator()
+    phase_root = tmp_path / "research" / "sleep-time-compute" / "deep-research"
+    phase_root.mkdir(parents=True)
+    for filename in module.SYNTHESIS_REQUIRED_FILES:
+        (phase_root / filename).write_text("placeholder\n", encoding="utf-8")
+
+    report = module.validate_phase(tmp_path, "synthesis")
+
+    assert "synthesis-content-missing" in _codes(report)
+
+
+def test_repository_synthesis_package_satisfies_contract():
+    module = _load_validator()
+    repository_root = PACKAGE_ROOT.parents[1]
+
+    report = module.validate_phase(
+        repository_root,
+        "synthesis",
+        reject_authoring_markers=True,
+    )
+
+    assert report.success, report.diagnostics

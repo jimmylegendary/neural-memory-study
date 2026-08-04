@@ -188,27 +188,27 @@ git commit -m "research: refresh sleep-time compute evidence through 2026-08-05"
 - Consumes: frozen citation pool and source registry
 - Produces: paper-ready comparison rows and conditional conclusions
 
-- [ ] **Step 1: Compare each problem against its strongest non-STC solution**
+- [x] **Step 1: Compare each problem against its strongest non-STC solution**
 
 Required problem rows: static deployment, personalization, agent experience, knowledge freshness, continual learning, bounded capacity, latency isolation, deletion/rollback, long-context reasoning, on-device adaptation.
 
-- [ ] **Step 2: Score evidence maturity separately from expected value**
+- [x] **Step 2: Score evidence maturity separately from expected value**
 
 Use ordinal fields with explicit rubrics: `problem_severity`, `quality_advantage`, `cost_advantage`, `evidence_maturity`, `deployment_fit`, `governance`, `industry_momentum`, `academic_momentum`. Do not average them into an unsupported single magic number.
 
-- [ ] **Step 3: Write conditional mainstream scenarios**
+- [x] **Step 3: Write conditional mainstream scenarios**
 
 Required scenarios: external-memory dominant, hybrid promotion dominant, periodic-refresh dominant, STC niche, STC broad adoption. Each scenario needs triggers, leading indicators, falsifiers, and device implications.
 
-- [ ] **Step 4: Define candidate scaling-law family**
+- [x] **Step 4: Define candidate scaling-law family**
 
 Separate measured identities, analytical break-even equations, fit candidates, and untested hypotheses. Include sleep FLOPs, effective wake evidence, replay diversity, activated capacity, interference, state-migration bytes, reuse count, wake-SLA cost, validation cost, recursive-distillation depth.
 
-- [ ] **Step 5: Derive device opportunities from workload primitives**
+- [x] **Step 5: Derive device opportunities from workload primitives**
 
 Every opportunity must state whether value survives if STC does not become mainstream, plus capacity/bandwidth/endurance/latency/atomicity/security requirements.
 
-- [ ] **Step 6: Validate and commit**
+- [x] **Step 6: Validate and commit**
 
 ```bash
 python3 research/sleep-time-compute/program/validate_program.py --phase synthesis

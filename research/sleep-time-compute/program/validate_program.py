@@ -38,6 +38,14 @@ DEEP_RESEARCH_REQUIRED_FILES = (
     "SOURCE-RIGHTS.json",
     "S2-STATUS.json",
 )
+SYNTHESIS_REQUIRED_FILES = (
+    "PROBLEM-SOLUTION-MATRIX.md",
+    "STRONGEST-ALTERNATIVES.md",
+    "PROMISINGNESS-ASSESSMENT.md",
+    "MAINSTREAM-SCENARIOS.md",
+    "SCALING-LAW-HYPOTHESES.md",
+    "DEVICE-OPPORTUNITY-MATRIX.md",
+)
 SEED_SOURCE_REQUIRED_FIELDS = frozenset(
     {
         "seed_id",
@@ -644,7 +652,6 @@ def _validate_deep_research_contract(
                     f"Required deep-research artifact is missing: {name}",
                 )
             )
-
     token_contracts = {
         "LATEST-INDUSTRY-ACADEMIA-AUDIT.md": (
             "Google/DeepMind",
@@ -790,6 +797,90 @@ def _validate_deep_research_contract(
             )
 
 
+def _validate_synthesis_contract(
+    phase_root: Path, diagnostics: list[Diagnostic]
+) -> None:
+    paths = {name: phase_root / name for name in SYNTHESIS_REQUIRED_FILES}
+    for name, path in paths.items():
+        if not path.is_file():
+            diagnostics.append(
+                Diagnostic(
+                    "synthesis-file-missing",
+                    str(path),
+                    f"Required synthesis artifact is missing: {name}",
+                )
+            )
+
+    token_contracts = {
+        "PROBLEM-SOLUTION-MATRIX.md": (
+            "static deployment",
+            "personalization",
+            "agent experience",
+            "knowledge freshness",
+            "continual learning",
+            "bounded capacity",
+            "latency isolation",
+            "deletion/rollback",
+            "long-context reasoning",
+            "on-device adaptation",
+        ),
+        "STRONGEST-ALTERNATIVES.md": (
+            "external retrieval",
+            "long context",
+            "test-time training",
+            "continual learning",
+            "model editing",
+            "periodic refresh",
+            "hybrid",
+        ),
+        "PROMISINGNESS-ASSESSMENT.md": (
+            "evidence maturity",
+            "expected value",
+            "conditional verdict",
+            "falsifier",
+        ),
+        "MAINSTREAM-SCENARIOS.md": (
+            "external-memory dominant",
+            "hybrid promotion dominant",
+            "periodic-refresh dominant",
+            "STC niche",
+            "STC broad adoption",
+        ),
+        "SCALING-LAW-HYPOTHESES.md": (
+            "measured identity",
+            "analytical break-even",
+            "fit candidate",
+            "untested hypothesis",
+            "sleep FLOPs",
+            "state-migration bytes",
+            "recursive-distillation depth",
+        ),
+        "DEVICE-OPPORTUNITY-MATRIX.md": (
+            "capacity",
+            "bandwidth",
+            "endurance",
+            "latency",
+            "atomicity",
+            "security",
+            "survives if STC does not become mainstream",
+        ),
+    }
+    for name, tokens in token_contracts.items():
+        path = paths[name]
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace").casefold()
+        for token in tokens:
+            if token.casefold() not in text:
+                diagnostics.append(
+                    Diagnostic(
+                        "synthesis-content-missing",
+                        str(path),
+                        f"Required synthesis token is missing: {token}",
+                    )
+                )
+
+
 def validate_phase(
     root: Path,
     phase: str,
@@ -801,12 +892,15 @@ def validate_phase(
     """Validate one research phase package and optional authoring error gates."""
 
     root = Path(root)
-    phase_root = root / "research" / "sleep-time-compute" / phase
+    phase_directory = "deep-research" if phase == "synthesis" else phase
+    phase_root = root / "research" / "sleep-time-compute" / phase_directory
     diagnostics: list[Diagnostic] = []
     if enforce_contract and phase == "pre-research":
         _validate_pre_research_contract(phase_root, diagnostics)
     if enforce_contract and phase == "deep-research":
         _validate_deep_research_contract(phase_root, diagnostics)
+    if enforce_contract and phase == "synthesis":
+        _validate_synthesis_contract(phase_root, diagnostics)
     if reject_authoring_markers or reject_latex_reference_errors:
         diagnostics.extend(
             _scan_text_patterns(
@@ -828,7 +922,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "root", nargs="?", type=Path, default=_default_repository_root()
     )
-    parser.add_argument("--phase", choices=["pre-research", "deep-research"])
+    parser.add_argument(
+        "--phase", choices=["pre-research", "deep-research", "synthesis"]
+    )
     parser.add_argument("--all", action="store_true")
     parser.add_argument("--reject-authoring-markers", action="store_true")
     parser.add_argument("--reject-latex-reference-errors", action="store_true")
