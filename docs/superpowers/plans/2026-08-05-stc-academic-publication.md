@@ -35,7 +35,7 @@
 - Consumes: claim/figure/source registries
 - Produces: `build_all(root: Path) -> BuildManifest`; `qa_pdf(path: Path) -> QAReport`
 
-- [ ] **Step 1: Write failing QA tests**
+- [x] **Step 1: Write failing QA tests**
 
 ```python
 def test_bgref_must_resolve_to_background_label(tmp_path):
@@ -49,23 +49,23 @@ def test_public_figure_requires_reuse_permission():
     assert "public-reuse-not-authorized" in validate_figure(record, audience="public")
 ```
 
-- [ ] **Step 2: Run tests and confirm failure**
+- [x] **Step 2: Run tests and confirm failure**
 
 ```bash
 python3 -m pytest -q paper-kr/common/tests/test_publication_qa.py
 ```
 
-- [ ] **Step 3: Implement style, build, and QA**
+- [x] **Step 3: Implement style, build, and QA**
 
 The style must support Korean CJK fonts, BibLaTeX, external documents, claim margin markers, accessible color-independent callouts, figure source captions, and print-safe grayscale. Build order: Background twice with Biber, Study twice with external Background `.aux`, Conference and Appendix twice.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 ```bash
 python3 -m pytest -q paper-kr/common/tests/test_publication_qa.py
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add paper-kr/common paper-kr/sleep-time-compute-study/Makefile paper-kr/sleep-time-compute-training-background/Makefile
@@ -90,30 +90,30 @@ git commit -m "feat: add native LaTeX publication harness"
 - Consumes: verified primary training references
 - Produces: concept labels for objective, loss, gradient, optimizer, batch, epoch, generalization, pretraining, continued pretraining, fine-tuning, instruction tuning, self-supervision, distillation, KL, PEFT, LoRA, adapter, MoE
 
-- [ ] **Step 1: Define the concept dependency map**
+- [x] **Step 1: Define the concept dependency map**
 
 Populate `concept-registry.json` with stable IDs, background labels, one-sentence definition, prerequisites, first Study section, and glossary term.
 
-- [ ] **Step 2: Write sections 1–3**
+- [x] **Step 2: Write sections 1–3**
 
 Use a scalar and a two-parameter example to connect objective, forward, backward, gradient, optimizer state, batch variance, epoch, validation, overfitting, and generalization. Explain memory/compute consequences without assuming calculus beyond slope.
 
-- [ ] **Step 3: Write sections 4–7**
+- [x] **Step 3: Write sections 4–7**
 
 Distinguish pre-training, continued pre-training, full fine-tuning, instruction tuning, preference optimization, PEFT, LoRA, adapters, sparse experts, and distillation by trainable state, data, objective, retained optimizer state, serving artifact, and failure mode.
 
-- [ ] **Step 4: Build conceptual figures**
+- [x] **Step 4: Build conceptual figures**
 
 `learning-map.pdf` must show data→objective→gradient→update→validation→publication. `training-regimes.pdf` must locate regimes by when learning occurs and how much state changes. Both require source IDs and text alternatives.
 
-- [ ] **Step 5: Compile and QA**
+- [x] **Step 5: Compile and QA**
 
 ```bash
 make -C paper-kr/sleep-time-compute-training-background background
 python3 paper-kr/common/qa_publications.py --pdf build/publications/TRAINING-BACKGROUND-FOR-SLEEP-TIME-COMPUTE-KR.pdf --kind background
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add paper-kr/common/concept-registry.json paper-kr/sleep-time-compute-training-background
