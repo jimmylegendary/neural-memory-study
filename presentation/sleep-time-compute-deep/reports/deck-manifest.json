@@ -1,0 +1,1516 @@
+{
+  "schema": "stc-deep-seminar/v1",
+  "title": "Sleep-Time Compute",
+  "freezeDate": "2026-08-05",
+  "sourceTemplate": "presentation/sleep-time-compute/build/sleep-time-compute-research.pptx",
+  "starter": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/build/deck-work/template-starter.pptx",
+  "output": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/build/publications/SLEEP-TIME-COMPUTE-DEEP-SEMINAR-112SLIDES-KR.pptx",
+  "outputBytes": 585283,
+  "slideCount": 112,
+  "editedTextShapeCount": 2329,
+  "speakerNotesCount": 112,
+  "authoringTool": "@oai/artifact-tool",
+  "authoringContract": "inherited text rewrite and speaker-notes edit only; no new slide primitives",
+  "slides": [
+    {
+      "slide": 1,
+      "id": "STC-DEEP-001",
+      "sourcePattern": 1,
+      "title": "SLEEP–TIME COMPUTE",
+      "refs": [
+        "STC-S01",
+        "STC-C005",
+        "STC-C040"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-01.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-01.layout.json"
+    },
+    {
+      "slide": 2,
+      "id": "STC-DEEP-002",
+      "sourcePattern": 2,
+      "title": "핵심은 ‘자는 모델’이 아니라 기억의 이동 규칙이다",
+      "refs": [
+        "STC-S02",
+        "STC-C005",
+        "STC-C006",
+        "STC-C040"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-02.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-02.layout.json"
+    },
+    {
+      "slide": 3,
+      "id": "STC-DEEP-003",
+      "sourcePattern": 3,
+      "title": "Strict sleep은 세 조건을 동시에 만족한다",
+      "refs": [
+        "STC-S02",
+        "STC-C005"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-03.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-03.layout.json"
+    },
+    {
+      "slide": 4,
+      "id": "STC-DEEP-004",
+      "sourcePattern": 4,
+      "title": "앞으로의 학습은 세 phase와 하나의 memory fabric으로 나뉜다",
+      "refs": [
+        "STC-S03",
+        "bg:pretraining",
+        "bg:test-time-training",
+        "bg:sleep-state"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-04.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-04.layout.json"
+    },
+    {
+      "slide": 5,
+      "id": "STC-DEEP-005",
+      "sourcePattern": 25,
+      "title": "세미나는 정의에서 device experiment까지 한 방향으로 간다",
+      "refs": [
+        "STC-S02",
+        "STC-S17",
+        "easy:E01",
+        "easy:E12"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-05.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-05.layout.json"
+    },
+    {
+      "slide": 6,
+      "id": "STC-DEEP-006",
+      "sourcePattern": 14,
+      "title": "현재의 최선은 external-first, parameter-last hybrid다",
+      "refs": [
+        "STC-C038",
+        "STC-C039",
+        "STC-C040",
+        "STC-C046"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-06.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-06.layout.json"
+    },
+    {
+      "slide": 7,
+      "id": "STC-DEEP-007",
+      "sourcePattern": 15,
+      "title": "Production 신호는 external sleep이 강하고 parametric sleep은 연구 단계다",
+      "refs": [
+        "STC-C002",
+        "STC-C038",
+        "STC-C039"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-07.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-07.layout.json"
+    },
+    {
+      "slide": 8,
+      "id": "STC-DEEP-008",
+      "sourcePattern": 26,
+      "title": "오늘의 단위는 ‘검증 가능한 기억 lifecycle’이다",
+      "refs": [
+        "STC-F001",
+        "STC-F015",
+        "STC-C041"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-08.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-08.layout.json"
+    },
+    {
+      "slide": 9,
+      "id": "STC-DEEP-009",
+      "sourcePattern": 12,
+      "title": "Training은 data를 미래 행동으로 변환하는 operator pipeline이다",
+      "refs": [
+        "bg:data",
+        "bg:objective",
+        "bg:optimizer",
+        "STC-S03"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-09.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-09.layout.json"
+    },
+    {
+      "slide": 10,
+      "id": "STC-DEEP-010",
+      "sourcePattern": 7,
+      "title": "한 번의 update는 forward→loss→backward→optimizer 순서다",
+      "refs": [
+        "bg:forward-pass",
+        "bg:loss",
+        "bg:backpropagation",
+        "bg:optimizer"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-10.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-10.layout.json"
+    },
+    {
+      "slide": 11,
+      "id": "STC-DEEP-011",
+      "sourcePattern": 3,
+      "title": "Objective·metric·evaluator는 같은 것이 아니다",
+      "refs": [
+        "bg:objective",
+        "bg:validation-set",
+        "bg:reward-model"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-11.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-11.layout.json"
+    },
+    {
+      "slide": 12,
+      "id": "STC-DEEP-012",
+      "sourcePattern": 9,
+      "title": "Sleep data는 real·replay·synthetic·feedback을 함께 다룬다",
+      "refs": [
+        "bg:data-curation",
+        "bg:replay-buffer",
+        "bg:synthetic-data",
+        "bg:provenance"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-12.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-12.layout.json"
+    },
+    {
+      "slide": 13,
+      "id": "STC-DEEP-013",
+      "sourcePattern": 4,
+      "title": "Fine-tuning은 full weight부터 external transform까지 연속체다",
+      "refs": [
+        "bg:fine-tuning",
+        "bg:peft",
+        "bg:lora",
+        "bg:external-memory"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-13.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-13.layout.json"
+    },
+    {
+      "slide": 14,
+      "id": "STC-DEEP-014",
+      "sourcePattern": 16,
+      "title": "LoRA는 update를 작게 만들지만 training을 없애지는 않는다",
+      "refs": [
+        "bg:lora",
+        "bg:adapter",
+        "STC-C027"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-14.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-14.layout.json"
+    },
+    {
+      "slide": 15,
+      "id": "STC-DEEP-015",
+      "sourcePattern": 6,
+      "title": "Distillation은 behavior를 옮기지만 무엇을 버릴지도 결정한다",
+      "refs": [
+        "bg:distillation",
+        "bg:teacher-model",
+        "bg:student-model",
+        "bg:kl-divergence"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-15.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-15.layout.json"
+    },
+    {
+      "slide": 16,
+      "id": "STC-DEEP-016",
+      "sourcePattern": 13,
+      "title": "Replay와 augmentation은 retention data plane을 만든다",
+      "refs": [
+        "STC-C019",
+        "bg:replay-buffer",
+        "bg:generated-replay",
+        "bg:data-augmentation"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-16.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-16.layout.json"
+    },
+    {
+      "slide": 17,
+      "id": "STC-DEEP-017",
+      "sourcePattern": 12,
+      "title": "RL-style sleep은 rollout→reward→update의 delayed loop다",
+      "refs": [
+        "bg:policy-gradient",
+        "bg:reward-model",
+        "bg:trajectory",
+        "bg:credit-assignment"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-17.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-17.layout.json"
+    },
+    {
+      "slide": 18,
+      "id": "STC-DEEP-018",
+      "sourcePattern": 15,
+      "title": "Continual learning은 retention과 plasticity를 동시에 요구한다",
+      "refs": [
+        "bg:continual-learning",
+        "bg:catastrophic-forgetting",
+        "STC-C020",
+        "STC-C021"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-18.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-18.layout.json"
+    },
+    {
+      "slide": 19,
+      "id": "STC-DEEP-019",
+      "sourcePattern": 18,
+      "title": "Capacity는 parameter 수보다 utility가 꺾이는 경계다",
+      "refs": [
+        "STC-C032",
+        "STC-C033",
+        "STC-C034",
+        "STC-C045"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-19.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-19.layout.json"
+    },
+    {
+      "slide": 20,
+      "id": "STC-DEEP-020",
+      "sourcePattern": 25,
+      "title": "Background paper는 mechanism을 읽기 위한 공통 언어다",
+      "refs": [
+        "bg:forward-pass",
+        "bg:lora",
+        "bg:continual-learning",
+        "bg:rlhf",
+        "bg:versioning"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-20.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-20.layout.json"
+    },
+    {
+      "slide": 21,
+      "id": "STC-DEEP-021",
+      "sourcePattern": 16,
+      "title": "Long context는 작업대이지 장기기억 lifecycle이 아니다",
+      "refs": [
+        "STC-S04",
+        "STC-C026",
+        "bg:external-memory"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-21.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-21.layout.json"
+    },
+    {
+      "slide": 22,
+      "id": "STC-DEEP-022",
+      "sourcePattern": 14,
+      "title": "Canonical truth와 compiled memory를 분리해야 한다",
+      "refs": [
+        "STC-C040",
+        "STC-C046"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-22.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-22.layout.json"
+    },
+    {
+      "slide": 23,
+      "id": "STC-DEEP-023",
+      "sourcePattern": 17,
+      "title": "Full attention의 reuse 비용이 길어질수록 state 압축이 매력적이다",
+      "refs": [
+        "STC-C025",
+        "STC-C055",
+        "background:attention"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-23.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-23.layout.json"
+    },
+    {
+      "slide": 24,
+      "id": "STC-DEEP-024",
+      "sourcePattern": 19,
+      "title": "Recurrent model도 state cache가 없으면 serving 이득을 잃는다",
+      "refs": [
+        "STC-C025",
+        "STC-C055"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-24.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-24.layout.json"
+    },
+    {
+      "slide": 25,
+      "id": "STC-DEEP-025",
+      "sourcePattern": 21,
+      "title": "Stale·conflicting fact는 update가 아니라 transaction 문제다",
+      "refs": [
+        "STC-C010",
+        "STC-C046",
+        "bg:provenance"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-25.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-25.layout.json"
+    },
+    {
+      "slide": 26,
+      "id": "STC-DEEP-026",
+      "sourcePattern": 18,
+      "title": "Memory는 늘릴수록 좋다가 어느 순간 noise가 앞선다",
+      "refs": [
+        "STC-C045",
+        "STC-F009"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-26.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-26.layout.json"
+    },
+    {
+      "slide": 27,
+      "id": "STC-DEEP-027",
+      "sourcePattern": 24,
+      "title": "Poison·privacy·delete는 memory medium마다 다른 잔여 위험을 남긴다",
+      "refs": [
+        "STC-C037",
+        "STC-C054",
+        "bg:unlearning"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-27.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-27.layout.json"
+    },
+    {
+      "slide": 28,
+      "id": "STC-DEEP-028",
+      "sourcePattern": 23,
+      "title": "Research question은 여섯 개의 answerable 축으로 분해된다",
+      "refs": [
+        "STC-S04",
+        "STC-S15",
+        "STC-F015"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-28.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-28.layout.json"
+    },
+    {
+      "slide": 29,
+      "id": "STC-DEEP-029",
+      "sourcePattern": 5,
+      "title": "‘Sleep’이라는 이름보다 offline consolidation 계보가 먼저였다",
+      "refs": [
+        "STC-S05",
+        "STC-C016",
+        "STC-C022"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-29.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-29.layout.json"
+    },
+    {
+      "slide": 30,
+      "id": "STC-DEEP-030",
+      "sourcePattern": 6,
+      "title": "Complementary learning systems는 fast와 slow memory 역할을 나눈다",
+      "refs": [
+        "SRC-STC-0001",
+        "STC-C017"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-30.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-30.layout.json"
+    },
+    {
+      "slide": 31,
+      "id": "STC-DEEP-031",
+      "sourcePattern": 7,
+      "title": "Wake–Sleep은 generative model 학습 알고리즘에서 시작했다",
+      "refs": [
+        "SRC-STC-0002",
+        "STC-S05"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-31.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-31.layout.json"
+    },
+    {
+      "slide": 32,
+      "id": "STC-DEEP-032",
+      "sourcePattern": 12,
+      "title": "Pseudorehearsal과 generative replay는 old data를 재구성한다",
+      "refs": [
+        "STC-C019",
+        "bg:generated-replay"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-32.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-32.layout.json"
+    },
+    {
+      "slide": 33,
+      "id": "STC-DEEP-033",
+      "sourcePattern": 8,
+      "title": "EWC와 GEM은 sleep 없이 update 충돌을 줄인다",
+      "refs": [
+        "STC-C020",
+        "STC-C021",
+        "bg:ewc",
+        "bg:gem"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-33.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-33.layout.json"
+    },
+    {
+      "slide": 34,
+      "id": "STC-DEEP-034",
+      "sourcePattern": 7,
+      "title": "Progress & Compress는 active learning과 consolidation을 교대했다",
+      "refs": [
+        "STC-C022",
+        "SRC-STC-0008"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-34.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-34.layout.json"
+    },
+    {
+      "slide": 35,
+      "id": "STC-DEEP-035",
+      "sourcePattern": 7,
+      "title": "2022 PLOS는 두 과제 SNN에서 sleep-like replay를 검증했다",
+      "refs": [
+        "STC-C016",
+        "SRC-STC-0011"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-35.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-35.layout.json"
+    },
+    {
+      "slide": 36,
+      "id": "STC-DEEP-036",
+      "sourcePattern": 6,
+      "title": "NREM/REM alternation은 integration과 protection objective를 나눈다",
+      "refs": [
+        "STC-C017",
+        "STC-T05"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-36.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-36.layout.json"
+    },
+    {
+      "slide": 37,
+      "id": "STC-DEEP-037",
+      "sourcePattern": 8,
+      "title": "PAD는 wake·perturbed replay·adversarial dreaming을 분리했다",
+      "refs": [
+        "STC-C018",
+        "STC-T13"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-37.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-37.layout.json"
+    },
+    {
+      "slide": 38,
+      "id": "STC-DEEP-038",
+      "sourcePattern": 10,
+      "title": "계보는 agent external memory와 neural memory에서 합류한다",
+      "refs": [
+        "STC-C011",
+        "STC-C023",
+        "STC-C024",
+        "STC-C038"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-38.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-38.layout.json"
+    },
+    {
+      "slide": 39,
+      "id": "STC-DEEP-039",
+      "sourcePattern": 9,
+      "title": "문제마다 sleep의 strongest alternative가 다르다",
+      "refs": [
+        "STC-S06",
+        "STC-S08",
+        "STC-F006",
+        "STC-C040"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-39.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-39.layout.json"
+    },
+    {
+      "slide": 40,
+      "id": "STC-DEEP-040",
+      "sourcePattern": 17,
+      "title": "더 긴 inference가 memory lifecycle을 대체하지는 않는다",
+      "refs": [
+        "STC-C007",
+        "STC-C008",
+        "STC-C009",
+        "STC-F004"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-40.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-40.layout.json"
+    },
+    {
+      "slide": 41,
+      "id": "STC-DEEP-041",
+      "sourcePattern": 6,
+      "title": "Prompt compression은 가장 싼 ‘sleep-like’ baseline이다",
+      "refs": [
+        "STC-C010",
+        "STC-C040",
+        "STC-F006"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-41.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-41.layout.json"
+    },
+    {
+      "slide": 42,
+      "id": "STC-DEEP-042",
+      "sourcePattern": 10,
+      "title": "Retrieval은 canonical truth와 reusable access를 분리한다",
+      "refs": [
+        "STC-C011",
+        "STC-C012",
+        "STC-C038",
+        "STC-F007"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-42.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-42.layout.json"
+    },
+    {
+      "slide": 43,
+      "id": "STC-DEEP-043",
+      "sourcePattern": 13,
+      "title": "Graph memory는 관계·시간·충돌을 명시적으로 보존한다",
+      "refs": [
+        "STC-C013",
+        "STC-C038",
+        "STC-F007"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-43.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-43.layout.json"
+    },
+    {
+      "slide": 44,
+      "id": "STC-DEEP-044",
+      "sourcePattern": 11,
+      "title": "KV·prefix·recurrent state는 재사용 단위가 서로 다르다",
+      "refs": [
+        "STC-C023",
+        "STC-C024",
+        "STC-C025",
+        "STC-F004"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-44.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-44.layout.json"
+    },
+    {
+      "slide": 45,
+      "id": "STC-DEEP-045",
+      "sourcePattern": 14,
+      "title": "External-first가 현재 production default인 이유",
+      "refs": [
+        "STC-C038",
+        "STC-C039",
+        "STC-C040",
+        "STC-C046"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-45.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-45.layout.json"
+    },
+    {
+      "slide": 46,
+      "id": "STC-DEEP-046",
+      "sourcePattern": 4,
+      "title": "Continual learning은 update 위치를 네 층으로 나눈다",
+      "refs": [
+        "STC-C019",
+        "STC-C020",
+        "STC-C021",
+        "STC-C027"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-46.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-46.layout.json"
+    },
+    {
+      "slide": 47,
+      "id": "STC-DEEP-047",
+      "sourcePattern": 7,
+      "title": "TTT·neural memory는 wake에서 state를 즉시 바꾼다",
+      "refs": [
+        "STC-C023",
+        "STC-C024",
+        "STC-C025",
+        "STC-T08",
+        "STC-T09"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-47.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-47.layout.json"
+    },
+    {
+      "slide": 48,
+      "id": "STC-DEEP-048",
+      "sourcePattern": 15,
+      "title": "Sleep이 이겨야 할 frontier는 이미 강하다",
+      "refs": [
+        "STC-S08",
+        "STC-F006",
+        "STC-C040",
+        "STC-C045"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-48.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-48.layout.json"
+    },
+    {
+      "slide": 49,
+      "id": "STC-DEEP-049",
+      "sourcePattern": 12,
+      "title": "Sleep pipeline은 여섯 operator와 두 gate로 구성된다",
+      "refs": [
+        "STC-S07",
+        "STC-F008",
+        "STC-C041"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-49.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-49.layout.json"
+    },
+    {
+      "slide": 50,
+      "id": "STC-DEEP-050",
+      "sourcePattern": 3,
+      "title": "Admission은 ‘많이 저장’이 아니라 expected value 판단이다",
+      "refs": [
+        "STC-C029",
+        "STC-C030",
+        "STC-F009"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-50.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-50.layout.json"
+    },
+    {
+      "slide": 51,
+      "id": "STC-DEEP-051",
+      "sourcePattern": 7,
+      "title": "Replay batch는 new·old·negative를 함께 담아야 한다",
+      "refs": [
+        "STC-C019",
+        "STC-C020",
+        "bg:replay-buffer",
+        "bg:hard-negative"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-51.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-51.layout.json"
+    },
+    {
+      "slide": 52,
+      "id": "STC-DEEP-052",
+      "sourcePattern": 16,
+      "title": "Distillation은 memory를 줄이지만 entropy를 공짜로 없애지 못한다",
+      "refs": [
+        "STC-C022",
+        "STC-C028",
+        "bg:distillation",
+        "STC-F009"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-52.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-52.layout.json"
+    },
+    {
+      "slide": 53,
+      "id": "STC-DEEP-053",
+      "sourcePattern": 8,
+      "title": "Dream data는 coverage를 늘리지만 오류도 증폭할 수 있다",
+      "refs": [
+        "STC-C018",
+        "STC-C031",
+        "bg:synthetic-data",
+        "bg:reward-model"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-53.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-53.layout.json"
+    },
+    {
+      "slide": 54,
+      "id": "STC-DEEP-054",
+      "sourcePattern": 22,
+      "title": "Promotion은 utility·retention·harm 세 축을 동시에 통과해야 한다",
+      "refs": [
+        "STC-C041",
+        "STC-C042",
+        "STC-F014",
+        "STC-S15"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-54.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-54.layout.json"
+    },
+    {
+      "slide": 55,
+      "id": "STC-DEEP-055",
+      "sourcePattern": 21,
+      "title": "Publish는 파일 복사가 아니라 state transaction이다",
+      "refs": [
+        "STC-C041",
+        "STC-C043",
+        "STC-F011"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-55.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-55.layout.json"
+    },
+    {
+      "slide": 56,
+      "id": "STC-DEEP-056",
+      "sourcePattern": 6,
+      "title": "Parametric destination은 update 반경으로 구분한다",
+      "refs": [
+        "STC-C026",
+        "STC-C027",
+        "STC-C040",
+        "STC-F010"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-56.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-56.layout.json"
+    },
+    {
+      "slide": 57,
+      "id": "STC-DEEP-057",
+      "sourcePattern": 7,
+      "title": "LoRA promotion에는 utility 외 네 가지 gate가 더 필요하다",
+      "refs": [
+        "STC-C027",
+        "STC-C041",
+        "STC-C046",
+        "bg:lora"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-57.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-57.layout.json"
+    },
+    {
+      "slide": 58,
+      "id": "STC-DEEP-058",
+      "sourcePattern": 24,
+      "title": "Shared-weight sleep은 가장 강한 반증을 요구한다",
+      "refs": [
+        "STC-C039",
+        "STC-C040",
+        "STC-C046",
+        "STC-F015"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-58.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-58.layout.json"
+    },
+    {
+      "slide": 59,
+      "id": "STC-DEEP-059",
+      "sourcePattern": 10,
+      "title": "External destination도 raw→derived 계층을 분리해야 한다",
+      "refs": [
+        "STC-C012",
+        "STC-C013",
+        "STC-C038",
+        "STC-F010"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-59.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-59.layout.json"
+    },
+    {
+      "slide": 60,
+      "id": "STC-DEEP-060",
+      "sourcePattern": 18,
+      "title": "Capacity는 가득 찬 뒤가 아니라 knee 전에 관리한다",
+      "refs": [
+        "STC-C028",
+        "STC-C029",
+        "STC-C030",
+        "STC-F009"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-60.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-60.layout.json"
+    },
+    {
+      "slide": 61,
+      "id": "STC-DEEP-061",
+      "sourcePattern": 20,
+      "title": "Delete는 모든 derived state를 따라가는 역방향 graph다",
+      "refs": [
+        "STC-C044",
+        "STC-C046",
+        "STC-F012"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-61.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-61.layout.json"
+    },
+    {
+      "slide": 62,
+      "id": "STC-DEEP-062",
+      "sourcePattern": 19,
+      "title": "Sleep cadence는 queue value와 staleness SLO로 정한다",
+      "refs": [
+        "STC-C032",
+        "STC-C033",
+        "STC-F013"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-62.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-62.layout.json"
+    },
+    {
+      "slide": 63,
+      "id": "STC-DEEP-063",
+      "sourcePattern": 5,
+      "title": "Evidence는 이름이 아니라 성숙도 ladder로 읽는다",
+      "refs": [
+        "STC-S09",
+        "STC-C001",
+        "STC-C002",
+        "STC-F005"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-63.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-63.layout.json"
+    },
+    {
+      "slide": 64,
+      "id": "STC-DEEP-064",
+      "sourcePattern": 22,
+      "title": "2025 STC는 ‘질의 전 reasoning’의 직접 이득을 보였다",
+      "refs": [
+        "STC-T01",
+        "STC-C002",
+        "STC-C034"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-64.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-64.layout.json"
+    },
+    {
+      "slide": 65,
+      "id": "STC-DEEP-065",
+      "sourcePattern": 7,
+      "title": "2026 ‘Language Models Need Sleep’은 parametric sleep을 구성했다",
+      "refs": [
+        "STC-T02",
+        "STC-C039",
+        "STC-C045"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-65.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-65.layout.json"
+    },
+    {
+      "slide": 66,
+      "id": "STC-DEEP-066",
+      "sourcePattern": 24,
+      "title": "2026 continual fact study는 weight write의 reachability를 반박했다",
+      "refs": [
+        "STC-T03",
+        "STC-C039",
+        "STC-C040",
+        "STC-F015"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-66.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-66.layout.json"
+    },
+    {
+      "slide": 67,
+      "id": "STC-DEEP-067",
+      "sourcePattern": 11,
+      "title": "Memory Caching은 RNN state reuse와 growing capacity를 연결한다",
+      "refs": [
+        "STC-T11",
+        "STC-C025",
+        "STC-F004"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-67.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-67.layout.json"
+    },
+    {
+      "slide": 68,
+      "id": "STC-DEEP-068",
+      "sourcePattern": 16,
+      "title": "Rate–distortion은 모든 memory layer의 공통 한계를 준다",
+      "refs": [
+        "STC-T12",
+        "STC-C028",
+        "STC-C030",
+        "STC-F009"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-68.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-68.layout.json"
+    },
+    {
+      "slide": 69,
+      "id": "STC-DEEP-069",
+      "sourcePattern": 18,
+      "title": "LoRA memory에도 finite capacity와 saturation knee가 있다",
+      "refs": [
+        "STC-T15",
+        "STC-C027",
+        "STC-C029"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-69.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-69.layout.json"
+    },
+    {
+      "slide": 70,
+      "id": "STC-DEEP-070",
+      "sourcePattern": 24,
+      "title": "DANN의 강한 문구는 현재 낮은 증거 등급으로 둔다",
+      "refs": [
+        "STC-C031",
+        "SRC-STC-0048",
+        "STC-S16"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-70.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-70.layout.json"
+    },
+    {
+      "slide": 71,
+      "id": "STC-DEEP-071",
+      "sourcePattern": 7,
+      "title": "OpenAI Dreaming은 strict external lifecycle STC의 제품 신호다",
+      "refs": [
+        "STC-C038",
+        "SRC-STC-0060",
+        "SRC-STC-0063"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-71.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-71.layout.json"
+    },
+    {
+      "slide": 72,
+      "id": "STC-DEEP-072",
+      "sourcePattern": 12,
+      "title": "Letta는 sleeptime agent를 pre-query memory compiler로 구현한다",
+      "refs": [
+        "STC-C038",
+        "SRC-STC-0030",
+        "SRC-STC-0064"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-72.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-72.layout.json"
+    },
+    {
+      "slide": 73,
+      "id": "STC-DEEP-073",
+      "sourcePattern": 10,
+      "title": "Mem0는 extraction·update·graph를 background memory로 묶는다",
+      "refs": [
+        "STC-C038",
+        "SRC-STC-0034",
+        "SRC-STC-0061"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-73.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-73.layout.json"
+    },
+    {
+      "slide": 74,
+      "id": "STC-DEEP-074",
+      "sourcePattern": 13,
+      "title": "Zep은 memory를 temporal truth-maintenance 문제로 본다",
+      "refs": [
+        "STC-T09",
+        "STC-C013",
+        "STC-C038"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-74.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-74.layout.json"
+    },
+    {
+      "slide": 75,
+      "id": "STC-DEEP-075",
+      "sourcePattern": 11,
+      "title": "Google은 parametric sleep과 external self-evolution을 병렬 탐색한다",
+      "refs": [
+        "STC-T02",
+        "STC-T10",
+        "SRC-STC-0054",
+        "SRC-STC-0055"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-75.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-75.layout.json"
+    },
+    {
+      "slide": 76,
+      "id": "STC-DEEP-076",
+      "sourcePattern": 11,
+      "title": "Meta는 explicit memory와 self-editable agent program을 연구한다",
+      "refs": [
+        "SRC-STC-0044",
+        "SRC-STC-0045",
+        "SRC-STC-0057",
+        "SRC-STC-0058"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-76.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-76.layout.json"
+    },
+    {
+      "slide": 77,
+      "id": "STC-DEEP-077",
+      "sourcePattern": 11,
+      "title": "Microsoft는 destination-neutral memory benchmark를 강화한다",
+      "refs": [
+        "SRC-STC-0026",
+        "SRC-STC-0027",
+        "SRC-STC-0056",
+        "SRC-STC-0067"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-77.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-77.layout.json"
+    },
+    {
+      "slide": 78,
+      "id": "STC-DEEP-078",
+      "sourcePattern": 5,
+      "title": "학계는 네 계보가 lifecycle 관점에서 수렴한다",
+      "refs": [
+        "STC-S05",
+        "STC-C016",
+        "STC-C023",
+        "STC-C028"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-78.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-78.layout.json"
+    },
+    {
+      "slide": 79,
+      "id": "STC-DEEP-079",
+      "sourcePattern": 15,
+      "title": "여섯 핵심 주장 중 강한 결론은 두 개뿐이다",
+      "refs": [
+        "STC-S10",
+        "STC-C038",
+        "STC-C039",
+        "STC-C040"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-79.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-79.layout.json"
+    },
+    {
+      "slide": 80,
+      "id": "STC-DEEP-080",
+      "sourcePattern": 9,
+      "title": "가치는 reuse·stability·verifiability가 높은 workload에 집중된다",
+      "refs": [
+        "STC-S10",
+        "STC-C034",
+        "STC-C035",
+        "STC-F007"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-80.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-80.layout.json"
+    },
+    {
+      "slide": 81,
+      "id": "STC-DEEP-081",
+      "sourcePattern": 23,
+      "title": "주류화 여부는 다섯 시나리오로 추적한다",
+      "refs": [
+        "STC-S11",
+        "STC-C045",
+        "STC-C046"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-81.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-81.layout.json"
+    },
+    {
+      "slide": 82,
+      "id": "STC-DEEP-082",
+      "sourcePattern": 14,
+      "title": "가장 가능성 높은 경로는 lifecycle mainstream·parameter niche다",
+      "refs": [
+        "STC-C038",
+        "STC-C039",
+        "STC-C045",
+        "STC-C046"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-82.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-82.layout.json"
+    },
+    {
+      "slide": 83,
+      "id": "STC-DEEP-083",
+      "sourcePattern": 16,
+      "title": "Sleep scaling은 compute를 미래 query에 선불 배분하는 법칙이다",
+      "refs": [
+        "STC-S12",
+        "STC-C034",
+        "STC-F016"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-83.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-83.layout.json"
+    },
+    {
+      "slide": 84,
+      "id": "STC-DEEP-084",
+      "sourcePattern": 16,
+      "title": "순가치는 quality gain에서 다섯 비용을 뺀 값이다",
+      "refs": [
+        "STC-C034",
+        "STC-C035",
+        "STC-C041",
+        "STC-F016"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-84.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-84.layout.json"
+    },
+    {
+      "slide": 85,
+      "id": "STC-DEEP-085",
+      "sourcePattern": 17,
+      "title": "Compute scaling은 초기에 이득이 크고 뒤에는 포화한다",
+      "refs": [
+        "STC-C036",
+        "STC-H001",
+        "STC-F016"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-85.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-85.layout.json"
+    },
+    {
+      "slide": 86,
+      "id": "STC-DEEP-086",
+      "sourcePattern": 17,
+      "title": "Data scaling의 독립변수는 sample 수가 아니라 valid diversity다",
+      "refs": [
+        "STC-C031",
+        "STC-C036",
+        "STC-H002"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-86.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-86.layout.json"
+    },
+    {
+      "slide": 87,
+      "id": "STC-DEEP-087",
+      "sourcePattern": 18,
+      "title": "Capacity scaling에는 utility knee와 interference cliff가 있다",
+      "refs": [
+        "STC-C028",
+        "STC-C029",
+        "STC-H003",
+        "STC-F009"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-87.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-87.layout.json"
+    },
+    {
+      "slide": 88,
+      "id": "STC-DEEP-088",
+      "sourcePattern": 17,
+      "title": "Reuse와 predictability가 sleep economics의 곱셈항이다",
+      "refs": [
+        "STC-C034",
+        "STC-C035",
+        "STC-H004"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-88.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-88.layout.json"
+    },
+    {
+      "slide": 89,
+      "id": "STC-DEEP-089",
+      "sourcePattern": 19,
+      "title": "Cadence scaling은 staleness와 batch efficiency를 교환한다",
+      "refs": [
+        "STC-C032",
+        "STC-C033",
+        "STC-H005",
+        "STC-F013"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-89.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-89.layout.json"
+    },
+    {
+      "slide": 90,
+      "id": "STC-DEEP-090",
+      "sourcePattern": 24,
+      "title": "Robustness cost를 빼면 scaling curve는 허상이다",
+      "refs": [
+        "STC-C042",
+        "STC-C044",
+        "STC-C046",
+        "STC-F015"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-90.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-90.layout.json"
+    },
+    {
+      "slide": 91,
+      "id": "STC-DEEP-091",
+      "sourcePattern": 16,
+      "title": "External↔parametric crossover는 reuse threshold로 계산한다",
+      "refs": [
+        "STC-C035",
+        "STC-C040",
+        "STC-F010"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-91.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-91.layout.json"
+    },
+    {
+      "slide": 92,
+      "id": "STC-DEEP-092",
+      "sourcePattern": 9,
+      "title": "Scaling law를 찾으려면 여섯 축을 독립 sweep한다",
+      "refs": [
+        "STC-S12",
+        "STC-C036",
+        "STC-F014"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-92.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-92.layout.json"
+    },
+    {
+      "slide": 93,
+      "id": "STC-DEEP-093",
+      "sourcePattern": 27,
+      "title": "현재 scaling law는 결과가 아니라 검증 가능한 hypothesis set이다",
+      "refs": [
+        "STC-H001",
+        "STC-H002",
+        "STC-H003",
+        "STC-H004",
+        "STC-H005"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-93.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-93.layout.json"
+    },
+    {
+      "slide": 94,
+      "id": "STC-DEEP-094",
+      "sourcePattern": 23,
+      "title": "다음 연구는 exponent보다 falsifier를 먼저 공개한다",
+      "refs": [
+        "STC-S16",
+        "STC-C042",
+        "STC-C045"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-94.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-94.layout.json"
+    },
+    {
+      "slide": 95,
+      "id": "STC-DEEP-095",
+      "sourcePattern": 20,
+      "title": "Infra는 wake·sleep·memory fabric의 세 plane으로 분리된다",
+      "refs": [
+        "STC-S13",
+        "STC-C041",
+        "STC-F011"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-95.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-95.layout.json"
+    },
+    {
+      "slide": 96,
+      "id": "STC-DEEP-096",
+      "sourcePattern": 7,
+      "title": "Wake cluster는 응답과 evidence capture를 끝까지 분리한다",
+      "refs": [
+        "STC-C041",
+        "STC-C043",
+        "STC-F011"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-96.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-96.layout.json"
+    },
+    {
+      "slide": 97,
+      "id": "STC-DEEP-097",
+      "sourcePattern": 7,
+      "title": "Sleep cluster는 mixed inference+training workload다",
+      "refs": [
+        "STC-C032",
+        "STC-C033",
+        "STC-F013"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-97.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-97.layout.json"
+    },
+    {
+      "slide": 98,
+      "id": "STC-DEEP-098",
+      "sourcePattern": 13,
+      "title": "Memory fabric는 truth와 compiled artifact를 같은 graph로 잇는다",
+      "refs": [
+        "STC-C043",
+        "STC-C044",
+        "STC-F010",
+        "STC-F012"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-98.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-98.layout.json"
+    },
+    {
+      "slide": 99,
+      "id": "STC-DEEP-099",
+      "sourcePattern": 20,
+      "title": "Data movement는 state locality와 delta transport로 줄인다",
+      "refs": [
+        "STC-C033",
+        "STC-C043",
+        "STC-F011"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-99.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-99.layout.json"
+    },
+    {
+      "slide": 100,
+      "id": "STC-DEEP-100",
+      "sourcePattern": 19,
+      "title": "Scheduler는 가치·deadline·locality를 함께 최적화한다",
+      "refs": [
+        "STC-C032",
+        "STC-C033",
+        "STC-F013"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-100.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-100.layout.json"
+    },
+    {
+      "slide": 101,
+      "id": "STC-DEEP-101",
+      "sourcePattern": 21,
+      "title": "Snapshot version은 model·memory·index를 하나의 read view로 묶는다",
+      "refs": [
+        "STC-C041",
+        "STC-C043",
+        "STC-F011"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-101.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-101.layout.json"
+    },
+    {
+      "slide": 102,
+      "id": "STC-DEEP-102",
+      "sourcePattern": 24,
+      "title": "Persistent memory는 새로운 control-plane attack surface다",
+      "refs": [
+        "STC-C042",
+        "STC-C046",
+        "STC-F015"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-102.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-102.layout.json"
+    },
+    {
+      "slide": 103,
+      "id": "STC-DEEP-103",
+      "sourcePattern": 21,
+      "title": "Deletion SLA는 serving 차단과 physical rebuild를 분리한다",
+      "refs": [
+        "STC-C044",
+        "STC-C046",
+        "STC-F012"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-103.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-103.layout.json"
+    },
+    {
+      "slide": 104,
+      "id": "STC-DEEP-104",
+      "sourcePattern": 22,
+      "title": "관측성은 FLOP보다 lifecycle accounting을 먼저 보여야 한다",
+      "refs": [
+        "STC-C033",
+        "STC-C041",
+        "STC-F014"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-104.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-104.layout.json"
+    },
+    {
+      "slide": 105,
+      "id": "STC-DEEP-105",
+      "sourcePattern": 9,
+      "title": "Device opportunity는 destination과 operator의 교차점에 있다",
+      "refs": [
+        "STC-S14",
+        "STC-C047",
+        "STC-F017"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-105.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-105.layout.json"
+    },
+    {
+      "slide": 106,
+      "id": "STC-DEEP-106",
+      "sourcePattern": 16,
+      "title": "HBM 기회는 inference와 training traffic이 겹치는 구간이다",
+      "refs": [
+        "STC-C047",
+        "STC-C048",
+        "STC-F017"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-106.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-106.layout.json"
+    },
+    {
+      "slide": 107,
+      "id": "STC-DEEP-107",
+      "sourcePattern": 20,
+      "title": "CXL·pooled memory는 큰 mutable state의 residency 문제를 푼다",
+      "refs": [
+        "STC-C047",
+        "STC-C048",
+        "STC-F017"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-107.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-107.layout.json"
+    },
+    {
+      "slide": 108,
+      "id": "STC-DEEP-108",
+      "sourcePattern": 13,
+      "title": "SSD·object tier는 canonical truth와 rebuild bandwidth를 담당한다",
+      "refs": [
+        "STC-C044",
+        "STC-C047",
+        "STC-F017"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-108.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-108.layout.json"
+    },
+    {
+      "slide": 109,
+      "id": "STC-DEEP-109",
+      "sourcePattern": 12,
+      "title": "Near-memory operator는 byte를 줄이는 지점에서만 가치가 있다",
+      "refs": [
+        "STC-C047",
+        "STC-C048",
+        "STC-F017"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-109.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-109.layout.json"
+    },
+    {
+      "slide": 110,
+      "id": "STC-DEEP-110",
+      "sourcePattern": 28,
+      "title": "Samsung이 우선 검증할 여섯 실험은 명확하다",
+      "refs": [
+        "STC-S14",
+        "STC-S15",
+        "STC-C047",
+        "STC-C048"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-110.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-110.layout.json"
+    },
+    {
+      "slide": 111,
+      "id": "STC-DEEP-111",
+      "sourcePattern": 25,
+      "title": "90일 benchmark는 baseline·cycle·device를 한 번에 묶는다",
+      "refs": [
+        "STC-S15",
+        "STC-C041",
+        "STC-C042",
+        "STC-F014"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-111.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-111.layout.json"
+    },
+    {
+      "slide": 112,
+      "id": "STC-DEEP-112",
+      "sourcePattern": 26,
+      "title": "결론: sleep은 모델 기능이 아니라 검증 가능한 memory economy다",
+      "refs": [
+        "STC-C038",
+        "STC-C039",
+        "STC-C040",
+        "STC-C047"
+      ],
+      "previewPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/slides/slide-112.png",
+      "layoutPath": "/home/jimmy/Documents/Codex/2026-07-25-claude-session-neural-memory/worktrees/stc-study-rebuild/presentation/sleep-time-compute-deep/build/layouts/slide-112.layout.json"
+    }
+  ]
+}

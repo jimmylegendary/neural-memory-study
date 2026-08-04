@@ -13,4 +13,7 @@ build/latex/
 build/render/
 build/translation/
 build/easy-companion/
+build/deck-docs/
+build/deck-work/
+build/publications/*.inspect.ndjson
 .veridraft-stc-study/

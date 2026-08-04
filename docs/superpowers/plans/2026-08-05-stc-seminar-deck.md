@@ -1,6 +1,6 @@
 # STC Deep Seminar Deck Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 현재 STC deck의 디자인을 보존하면서 Study Paper의 전체 논증을 68장 본 발표와 44장 appendix, 총 112장 PPTX/PDF로 전달한다.
 
@@ -31,7 +31,7 @@
 - Consumes: `presentation/sleep-time-compute/build/sleep-time-compute-research.pptx`
 - Produces: inventory of all 28 source slides and 112-slide frame map
 
-- [ ] **Step 1: Read required presentation API references**
+- [x] **Step 1: Read required presentation API references**
 
 Read completely:
 
@@ -44,13 +44,13 @@ artifact_tool_docs/api/references/inspect.md
 artifact_tool_docs/api/references/cookbook/imported-deck.md
 ```
 
-- [ ] **Step 2: Initialize artifact-tool workspace**
+- [x] **Step 2: Initialize artifact-tool workspace**
 
 ```bash
 node "$SKILL_DIR/container_tools/setup_artifact_tool_workspace.mjs" --workspace "$TMP_DIR"
 ```
 
-- [ ] **Step 3: Inspect every source slide**
+- [x] **Step 3: Inspect every source slide**
 
 ```bash
 node "$SKILL_DIR/template_following_scripts/inspect_template_deck.mjs" \
@@ -60,15 +60,15 @@ node "$SKILL_DIR/template_following_scripts/inspect_template_deck.mjs" \
 
 Review all 28 slide PNGs individually, layouts, `template-inspect.ndjson`, extracted media, font evidence, and placeholders.
 
-- [ ] **Step 4: Write the visual contract**
+- [x] **Step 4: Write the visual contract**
 
 `template-audit.txt` must document palette, fonts, sizes, title grid, source rail, page marker, divider patterns, figure frames, table patterns, note/source style, and placeholder rules.
 
-- [ ] **Step 5: Map all 112 output slides**
+- [x] **Step 5: Map all 112 output slides**
 
 Every output row requires output number, source slide number, narrative role, `duplicate-slide`, exact inherited `editTargets`, Study section ID, claim IDs, and figure IDs. Record why each source slide is reused or omitted.
 
-- [ ] **Step 6: Validate and commit**
+- [x] **Step 6: Validate and commit**
 
 ```bash
 node "$SKILL_DIR/template_following_scripts/validate_template_plan.mjs" \
@@ -90,7 +90,7 @@ git commit -m "slides: map deep seminar to source design"
 - Consumes: Study section/claim/figure registry
 - Produces: audience-facing copy and note sources for every slide
 
-- [ ] **Step 1: Write failing content tests**
+- [x] **Step 1: Write failing content tests**
 
 ```javascript
 assert.equal(content.slides.length, 112);
@@ -104,7 +104,7 @@ for (const slide of content.slides) {
 }
 ```
 
-- [ ] **Step 2: Define the core sequence**
+- [x] **Step 2: Define the core sequence**
 
 Core slide allocation:
 
@@ -121,7 +121,7 @@ Core slide allocation:
 68 conclusion and research decision
 ```
 
-- [ ] **Step 3: Define the appendix sequence**
+- [x] **Step 3: Define the appendix sequence**
 
 Appendix allocation:
 
@@ -134,11 +134,11 @@ Appendix allocation:
 111–112 source, terminology, discussion map
 ```
 
-- [ ] **Step 4: Populate every slide**
+- [x] **Step 4: Populate every slide**
 
 Each slide gets takeaway title, maximum three content beats, visual/figure instruction, claim IDs, exact source references, and presenter note. Do not include timing or authoring instructions in visible copy.
 
-- [ ] **Step 5: Run tests and commit**
+- [x] **Step 5: Run tests and commit**
 
 ```bash
 node --test presentation/sleep-time-compute-deep-study/tests/test_content_contract.mjs
@@ -159,7 +159,7 @@ git commit -m "slides: define 112-slide seminar narrative"
 - Consumes: source deck, frame map, content contract, canonical figures
 - Produces: editable 112-slide presentation object and PPTX
 
-- [ ] **Step 1: Build the starter deck**
+- [x] **Step 1: Build the starter deck**
 
 ```bash
 node "$SKILL_DIR/template_following_scripts/prepare_template_starter_deck.mjs" \
@@ -172,21 +172,21 @@ node "$SKILL_DIR/template_following_scripts/prepare_template_starter_deck.mjs" \
   --contact-sheet "$TMP_DIR/template-starter-contact-sheet.png"
 ```
 
-- [ ] **Step 2: Write failing import/edit/export test**
+- [x] **Step 2: Write failing import/edit/export test**
 
 Test that the build imports starter PPTX, preserves 112 slides and 16:9 dimensions, replaces all mapped title placeholders, retains required design furniture, and adds non-empty notes.
 
-- [ ] **Step 3: Implement the artifact-tool editor**
+- [x] **Step 3: Implement the artifact-tool editor**
 
 Use `PresentationFile.importPptx`, edit mapped inherited elements by resolved IDs, replace inherited media frames, preserve masters/layouts, add `[Sources]` notes, and export with `PresentationFile.exportPptx`. Do not use `python-pptx`, PptxGenJS, or direct OOXML mutation.
 
-- [ ] **Step 4: Run build tests**
+- [x] **Step 4: Run build tests**
 
 ```bash
 (cd presentation/sleep-time-compute-deep-study && npm ci && npm test)
 ```
 
-- [ ] **Step 5: Commit source**
+- [x] **Step 5: Commit source**
 
 ```bash
 git add presentation/sleep-time-compute-deep-study/src presentation/sleep-time-compute-deep-study/package*.json presentation/sleep-time-compute-deep-study/tests
@@ -206,13 +206,13 @@ git commit -m "feat: build deep seminar with artifact-tool"
 - Consumes: build source and canonical figures
 - Produces: final deck and per-slide renders
 
-- [ ] **Step 1: Build PPTX**
+- [x] **Step 1: Build PPTX**
 
 ```bash
 (cd presentation/sleep-time-compute-deep-study && npm run build)
 ```
 
-- [ ] **Step 2: Export PDF and render all slides**
+- [x] **Step 2: Export PDF and render all slides**
 
 ```bash
 libreoffice --headless --convert-to pdf --outdir presentation/sleep-time-compute-deep-study/build presentation/sleep-time-compute-deep-study/build/sleep-time-compute-deep-study.pptx
@@ -220,15 +220,15 @@ python3 "$SKILL_DIR/container_tools/render_slides.py" presentation/sleep-time-co
 python3 "$SKILL_DIR/container_tools/create_montage.py" --input_dir presentation/sleep-time-compute-deep-study/build/sleep-time-compute-deep-study --output_file presentation/sleep-time-compute-deep-study/build/contact-sheet.png
 ```
 
-- [ ] **Step 3: Review every slide individually**
+- [x] **Step 3: Review every slide individually**
 
 Record hierarchy, title wrapping, text fit, figure crop, table legibility, source rail, page marker, and notes for all 112 slides in `slide-review.json`. Fix every `fail` and rerender affected slides.
 
-- [ ] **Step 4: Inspect deck-level pacing**
+- [x] **Step 4: Inspect deck-level pacing**
 
 Use the contact sheet to verify adjacent silhouette variation, section transitions, evidence density, and that appendix is visually distinguishable but consistent.
 
-- [ ] **Step 5: Commit polished artifact**
+- [x] **Step 5: Commit polished artifact**
 
 ```bash
 git add presentation/sleep-time-compute-deep-study/build presentation/sleep-time-compute-deep-study/reports/slide-review.json
@@ -246,7 +246,7 @@ git commit -m "slides: render and polish deep sleep-time seminar"
 - Consumes: starter and final deck
 - Produces: release-grade deck QA
 
-- [ ] **Step 1: Run template fidelity**
+- [x] **Step 1: Run template fidelity**
 
 ```bash
 node "$SKILL_DIR/template_following_scripts/check_template_fidelity.mjs" \
@@ -259,7 +259,7 @@ node "$SKILL_DIR/template_following_scripts/check_template_fidelity.mjs" \
   --edit-dir presentation/sleep-time-compute-deep-study
 ```
 
-- [ ] **Step 2: Run overflow and OOXML tests**
+- [x] **Step 2: Run overflow and OOXML tests**
 
 ```bash
 python3 "$SKILL_DIR/container_tools/slides_test.py" presentation/sleep-time-compute-deep-study/build/sleep-time-compute-deep-study.pptx | tee presentation/sleep-time-compute-deep-study/reports/overflow.txt
@@ -268,11 +268,11 @@ python3 "$SKILL_DIR/container_tools/slides_test.py" presentation/sleep-time-comp
 
 Expected: slide count 112, notes 112, empty placeholders 0, missing relationships 0, invalid geometry 0, unintended overflow/overlap 0.
 
-- [ ] **Step 3: Verify paper consistency**
+- [x] **Step 3: Verify paper consistency**
 
 Programmatically compare all slide claim IDs, numeric strings, figure IDs, and citations against Study registries; unresolved items must be zero.
 
-- [ ] **Step 4: Commit final QA**
+- [x] **Step 4: Commit final QA**
 
 ```bash
 git add presentation/sleep-time-compute-deep-study
