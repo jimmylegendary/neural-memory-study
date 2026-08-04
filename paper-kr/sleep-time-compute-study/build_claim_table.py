@@ -25,7 +25,14 @@ def _tex(value: str) -> str:
 
 
 def build_claim_table(claim_map_path: Path, output_path: Path) -> None:
-    claims = json.loads(Path(claim_map_path).read_text(encoding="utf-8"))["claims"]
+    frozen_claims = json.loads(Path(claim_map_path).read_text(encoding="utf-8"))[
+        "claims"
+    ]
+    claims = [
+        claim
+        for claim in frozen_claims
+        if claim.get("public") is True and claim.get("status") == "supported"
+    ]
     lines = [
         "% Generated from claims/stc-study/claim-map.json. Do not edit by hand.",
         r"\chapter*{Canonical claim–evidence ledger}",
@@ -35,6 +42,8 @@ def build_claim_table(claim_map_path: Path, output_path: Path) -> None:
         "이 표는 번역문이 아니라 Veridraft gate를 통과한 frozen assertion surface다.",
         "",
         r"\scriptsize",
+        r"\begingroup",
+        r"\setlength{\tabcolsep}{3pt}",
         r"\begin{longtable}{p{0.105\textwidth} p{0.105\textwidth} p{0.455\textwidth} p{0.245\textwidth}}",
         r"\caption{Veridraft-gated public claims (source freeze 2026-08-05)}\label{tab:claim-ledger}\\",
         r"\toprule",
@@ -65,7 +74,7 @@ def build_claim_table(claim_map_path: Path, output_path: Path) -> None:
             rf"\hypertarget{{claim-ledger:{claim_id}}}{{\hyperlink{{claim:{claim_id}}}{{\textbf{{{claim_id}}}}}}} "
             rf"& {kind}\newline {confidence} & {statement} & {evidence} \\"
         )
-    lines.extend([r"\end{longtable}", r"\normalsize", ""])
+    lines.extend([r"\end{longtable}", r"\endgroup", r"\normalsize", ""])
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     Path(output_path).write_text("\n".join(lines), encoding="utf-8")
 

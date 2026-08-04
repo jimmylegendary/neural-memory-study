@@ -28,6 +28,14 @@ def _key(source_id: str) -> str:
     return source_id.lower().replace("-", "")
 
 
+def _version_label(version: object) -> str:
+    """Return a compact human-readable version while registry hashes stay canonical."""
+
+    if isinstance(version, dict):
+        return str(version.get("version_id") or version.get("retrieved_at") or "")
+    return str(version or "")
+
+
 def build_bibliography(registry_path: Path, output_path: Path) -> None:
     registry = json.loads(Path(registry_path).read_text(encoding="utf-8"))
     records = registry["sources"]
@@ -62,13 +70,15 @@ def build_bibliography(registry_path: Path, output_path: Path) -> None:
                     ("archivePrefix", "arXiv"),
                 ]
             )
-        if record.get("version"):
-            fields.append(("version", _bib(record["version"])))
+        version = _version_label(record.get("version"))
+        if version:
+            fields.append(("version", _bib(version)))
         fields.append(
             (
                 "note",
                 _bib(
-                    f"Frozen source {source_id}; type={record['source_type']}; "
+                    f"Frozen source {source_id}; "
+                    f"type={record['source_type'].replace('_', ' ')}; "
                     f"accessed={record.get('accessed_at', '2026-08-05')}"
                 ),
             )

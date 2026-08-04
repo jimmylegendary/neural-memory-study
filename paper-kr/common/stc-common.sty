@@ -32,10 +32,15 @@
 \RequirePackage{marginnote}
 \RequirePackage[most]{tcolorbox}
 \RequirePackage{csquotes}
+\RequirePackage{xurl}
 \RequirePackage{hyperref}
 \RequirePackage{xr-hyper}
 \RequirePackage[nameinlink,noabbrev]{cleveref}
 \RequirePackage[backend=bibtex,style=authoryear,maxcitenames=2,maxbibnames=99,doi=true,url=true,isbn=false]{biblatex}
+\setcounter{biburlnumpenalty}{100}
+\setcounter{biburlucpenalty}{100}
+\setcounter{biburllcpenalty}{100}
+\AtBeginBibliography{\raggedright\emergencystretch=2em}
 
 \definecolor{STCNavy}{HTML}{17263C}
 \definecolor{STCBlue}{HTML}{2F6690}
@@ -118,8 +123,8 @@
   \phantomsection\hypertarget{bg:#1}{}\label{bg:#1}%
   \textbf{#2}\index{#2}}
 \newcommand{\bgref}[1]{%
-  \textsuperscript{\href{run:TRAINING-BACKGROUND-FOR-SLEEP-TIME-COMPUTE-KR.pdf\#nameddest=bg:#1}%
-  {\sffamily\scriptsize[배경: #1]}}}
+  \allowbreak\textsuperscript{\href{run:TRAINING-BACKGROUND-FOR-SLEEP-TIME-COMPUTE-KR.pdf\#nameddest=bg:#1}%
+  {\sffamily\scriptsize[배경]}}}
 \newcommand{\evidencelevel}[1]{%
   \textsf{\small\textbf{근거수준: #1}}}
 \newcommand{\measured}{\textsc{Measured}}

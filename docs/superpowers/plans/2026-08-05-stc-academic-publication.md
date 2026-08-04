@@ -249,13 +249,13 @@ git commit -m "paper: draft sleep-time compute study foundations"
 - Consumes: strategic synthesis matrices and Veridraft claims
 - Produces: complete Full Study manuscript
 
-- [ ] **Step 1: Separate evidence maturity from expected value**
-- [ ] **Step 2: Present conditional mainstream scenarios with leading indicators and falsifiers**
-- [ ] **Step 3: Derive candidate scaling-law identities, break-even equations, regimes, and empirical protocol**
-- [ ] **Step 4: Derive system and device opportunities from workload primitives, including non-STC residual value**
-- [ ] **Step 5: Write limitations, non-results, and falsification criteria**
-- [ ] **Step 6: Reconcile every load-bearing sentence with `claim-table.tex`**
-- [ ] **Step 7: Compile and run full QA**
+- [x] **Step 1: Separate evidence maturity from expected value**
+- [x] **Step 2: Present conditional mainstream scenarios with leading indicators and falsifiers**
+- [x] **Step 3: Derive candidate scaling-law identities, break-even equations, regimes, and empirical protocol**
+- [x] **Step 4: Derive system and device opportunities from workload primitives, including non-STC residual value**
+- [x] **Step 5: Write limitations, non-results, and falsification criteria**
+- [x] **Step 6: Reconcile every load-bearing sentence with `claim-table.tex`**
+- [x] **Step 7: Compile and run full QA**
 
 ```bash
 make -C paper-kr/sleep-time-compute-study clean full
@@ -263,7 +263,7 @@ python3 paper-kr/common/qa_publications.py --pdf build/publications/SLEEP-TIME-C
 python3 build/overflow_gate.py build/publications/SLEEP-TIME-COMPUTE-STRATEGIC-STUDY-KR.pdf
 ```
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add paper-kr/sleep-time-compute-study

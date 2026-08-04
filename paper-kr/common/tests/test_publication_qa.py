@@ -235,8 +235,10 @@ def test_source_bibliography_generator_covers_frozen_registry(tmp_path):
     records = json.loads(registry.read_text(encoding="utf-8"))["sources"]
     assert source.count("@misc{srcstc") == len(records)
     assert all(item["source_id"].lower().replace("-", "") in source for item in records)
-    assert r"official\_release\_note" in source
+    assert "official release note" in source
     assert "type=official_release_note" not in source
+    assert r"content\_sha256" not in source
+    assert "web-capture:2026-08-05" in source
 
 
 def test_study_figure_generator_builds_canonical_fifteen_vector_pdfs(tmp_path):
@@ -260,7 +262,7 @@ def test_study_figure_generator_builds_canonical_fifteen_vector_pdfs(tmp_path):
         assert "Pages:           1" in info
 
 
-def test_claim_table_generator_covers_every_frozen_claim(tmp_path):
+def test_claim_table_generator_covers_every_public_supported_claim(tmp_path):
     generator = REPO_ROOT / "paper-kr/sleep-time-compute-study/build_claim_table.py"
     spec = importlib.util.spec_from_file_location("stc_claim_table", generator)
     assert spec is not None and spec.loader is not None
@@ -273,8 +275,47 @@ def test_claim_table_generator_covers_every_frozen_claim(tmp_path):
 
     source = output.read_text(encoding="utf-8")
     claims = json.loads(claim_map.read_text(encoding="utf-8"))["claims"]
-    assert source.count(r"\hypertarget{claim-ledger:") == len(claims)
-    assert all(item["claim_id"] in source for item in claims)
+    public_claims = [
+        item
+        for item in claims
+        if item.get("public") is True and item.get("status") == "supported"
+    ]
+    held_claims = [item for item in claims if item.get("status") == "held"]
+    assert source.count(r"\hypertarget{claim-ledger:") == len(public_claims) == 47
+    assert all(item["claim_id"] in source for item in public_claims)
+    assert all(item["claim_id"] not in source for item in held_claims)
+
+
+def test_study_uses_each_public_supported_claim_exactly_once():
+    claim_map = REPO_ROOT / "claims/stc-study/claim-map.json"
+    claims = json.loads(claim_map.read_text(encoding="utf-8"))["claims"]
+    expected = {
+        item["claim_id"]
+        for item in claims
+        if item.get("public") is True and item.get("status") == "supported"
+    }
+    source_root = REPO_ROOT / "paper-kr/sleep-time-compute-study/sections"
+    source = "\n".join(
+        path.read_text(encoding="utf-8") for path in sorted(source_root.glob("*.tex"))
+    )
+    used = re.findall(r"\\claim\{(STC-C\d{3})\}", source)
+    assert set(used) == expected
+    assert len(used) == len(expected)
+
+
+def test_study_uses_each_public_figure_exactly_once():
+    figure_ledger = REPO_ROOT / "claims/stc-study/figure-ledger.json"
+    figures = json.loads(figure_ledger.read_text(encoding="utf-8"))["figures"]
+    expected = {
+        item["figure_id"] for item in figures if item.get("public") is True
+    }
+    source_root = REPO_ROOT / "paper-kr/sleep-time-compute-study/sections"
+    source = "\n".join(
+        path.read_text(encoding="utf-8") for path in sorted(source_root.glob("*.tex"))
+    )
+    used = re.findall(r"\\stcfigure\{(STC-F\d{3})\}", source)
+    assert set(used) == expected
+    assert len(used) == len(expected)
 
 
 def test_concept_anchors_are_not_declared_inside_display_math():
