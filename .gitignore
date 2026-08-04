@@ -12,4 +12,5 @@ build/publications/*.txt
 build/latex/
 build/render/
 build/translation/
+build/easy-companion/
 .veridraft-stc-study/

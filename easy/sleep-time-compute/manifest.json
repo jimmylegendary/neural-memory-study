@@ -1,0 +1,140 @@
+{
+  "schema_version": "1.0.0",
+  "program": "Sleep-Time Compute section-level easy companion",
+  "source_freeze": "2026-08-05",
+  "study_pdf": "build/publications/SLEEP-TIME-COMPUTE-STRATEGIC-STUDY-KR.pdf",
+  "background_pdf": "build/publications/TRAINING-BACKGROUND-FOR-SLEEP-TIME-COMPUTE-KR.pdf",
+  "combined_output": "build/publications/SLEEP-TIME-COMPUTE-EASY-COMPANION-KR.pdf",
+  "required_blocks": [
+    "이 권이 답할 질문",
+    "먼저 세 문장",
+    "직관",
+    "예와 반례",
+    "그림 읽기",
+    "대안과 비교",
+    "아직 모르는 것",
+    "더 깊이 읽기"
+  ],
+  "booklets": [
+    {
+      "id": "E01",
+      "slug": "definition-and-training",
+      "title": "Sleep-time compute란 무엇이며 왜 training인가",
+      "file": "booklets/E01-definition-and-training.md",
+      "study_sections": ["STC-S02", "STC-S03"],
+      "claims": ["STC-C005", "STC-C006", "STC-C015"],
+      "figures": ["STC-F001", "STC-F002"],
+      "background_concepts": ["forward-pass", "loss", "backpropagation", "optimizer", "distillation", "wake-state", "sleep-state"]
+    },
+    {
+      "id": "E02",
+      "slug": "problems",
+      "title": "어떤 문제를 풀려는가",
+      "file": "booklets/E02-problems.md",
+      "study_sections": ["STC-S04"],
+      "claims": ["STC-C032", "STC-C033", "STC-C035", "STC-C037"],
+      "figures": ["STC-F004", "STC-F009"],
+      "background_concepts": ["continual-learning", "catastrophic-forgetting", "capacity-budget", "provenance", "generalization"]
+    },
+    {
+      "id": "E03",
+      "slug": "lineage",
+      "title": "뇌의 수면에서 agent memory까지의 계보",
+      "file": "booklets/E03-lineage.md",
+      "study_sections": ["STC-S05"],
+      "claims": ["STC-C016", "STC-C017", "STC-C018", "STC-C019", "STC-C022"],
+      "figures": ["STC-F003"],
+      "background_concepts": ["generated-replay", "replay-buffer", "consolidation", "regularization", "dynamic-expansion"]
+    },
+    {
+      "id": "E04",
+      "slug": "alternative-frontier",
+      "title": "Sleep 말고 가능한 최신 대안들",
+      "file": "booklets/E04-alternative-frontier.md",
+      "study_sections": ["STC-S06"],
+      "claims": ["STC-C026", "STC-C027", "STC-C028", "STC-C029", "STC-C030", "STC-C031"],
+      "figures": ["STC-F004", "STC-F006"],
+      "background_concepts": ["external-memory", "lora", "adapter", "model-editing", "test-time-training", "synthetic-data"]
+    },
+    {
+      "id": "E05",
+      "slug": "mechanisms",
+      "title": "Sleep phase 안에서 실제로 무엇을 계산하는가",
+      "file": "booklets/E05-mechanisms.md",
+      "study_sections": ["STC-S07"],
+      "claims": ["STC-C015", "STC-C019", "STC-C023", "STC-C024", "STC-C035"],
+      "figures": ["STC-F002", "STC-F013"],
+      "background_concepts": ["distillation", "data-augmentation", "synthetic-data", "lora", "reward", "policy-gradient", "consolidation"]
+    },
+    {
+      "id": "E06",
+      "slug": "strongest-comparison",
+      "title": "강한 대안과 정면 비교하면 무엇이 남는가",
+      "file": "booklets/E06-strongest-comparison.md",
+      "study_sections": ["STC-S08"],
+      "claims": ["STC-C020", "STC-C021", "STC-C026", "STC-C034", "STC-C040"],
+      "figures": ["STC-F004", "STC-F006"],
+      "background_concepts": ["ewc", "gem", "parameter-isolation", "rate-distortion", "memory-admission", "memory-eviction"]
+    },
+    {
+      "id": "E07",
+      "slug": "evidence-and-trends",
+      "title": "논문·제품·negative evidence는 어디까지 왔는가",
+      "file": "booklets/E07-evidence-and-trends.md",
+      "study_sections": ["STC-S09"],
+      "claims": ["STC-C001", "STC-C002", "STC-C003", "STC-C007", "STC-C008", "STC-C009", "STC-C047"],
+      "figures": ["STC-F003", "STC-F014"],
+      "background_concepts": ["validation-set", "test-set", "publication-gate", "provenance", "observability"]
+    },
+    {
+      "id": "E08",
+      "slug": "promising-and-mainstream",
+      "title": "정말 promising하며 주류가 될까",
+      "file": "booklets/E08-promising-and-mainstream.md",
+      "study_sections": ["STC-S10", "STC-S11"],
+      "claims": ["STC-C038", "STC-C039", "STC-C040", "STC-C042"],
+      "figures": ["STC-F005", "STC-F014"],
+      "background_concepts": ["serving-artifact", "external-memory", "parametric-memory", "versioning", "rollback"]
+    },
+    {
+      "id": "E09",
+      "slug": "scaling-law",
+      "title": "Sleep-time scaling law는 어떻게 세워야 하는가",
+      "file": "booklets/E09-scaling-law.md",
+      "study_sections": ["STC-S12"],
+      "claims": ["STC-C041", "STC-C043", "STC-C044", "STC-C045"],
+      "figures": ["STC-F007", "STC-F008", "STC-F009", "STC-F010"],
+      "background_concepts": ["objective", "validation-set", "capacity-budget", "rate-distortion", "off-policy-evaluation"]
+    },
+    {
+      "id": "E10",
+      "slug": "infrastructure",
+      "title": "Wake·sleep·long-term memory infra는 어떻게 나뉘는가",
+      "file": "booklets/E10-infrastructure.md",
+      "study_sections": ["STC-S13"],
+      "claims": ["STC-C025", "STC-C040", "STC-C046", "STC-C053", "STC-C055"],
+      "figures": ["STC-F006", "STC-F011", "STC-F013"],
+      "background_concepts": ["sharding", "versioning", "rollback", "memory-routing", "observability", "serving-artifact"]
+    },
+    {
+      "id": "E11",
+      "slug": "device-opportunity",
+      "title": "Memory device 회사에 생기는 기회",
+      "file": "booklets/E11-device-opportunity.md",
+      "study_sections": ["STC-S14"],
+      "claims": ["STC-C048", "STC-C049", "STC-C050", "STC-C051", "STC-C052", "STC-C053", "STC-C054", "STC-C055", "STC-C056", "STC-C057"],
+      "figures": ["STC-F011", "STC-F012"],
+      "background_concepts": ["adapter", "optimizer-state", "sharding", "versioning", "rollback", "provenance"]
+    },
+    {
+      "id": "E12",
+      "slug": "roadmap-and-falsifiers",
+      "title": "무엇을 측정하면 이 가설을 믿거나 버릴 수 있는가",
+      "file": "booklets/E12-roadmap-and-falsifiers.md",
+      "study_sections": ["STC-S15", "STC-S16", "STC-S17"],
+      "claims": ["STC-C035", "STC-C036", "STC-C037", "STC-C039", "STC-C041", "STC-C057"],
+      "figures": ["STC-F013", "STC-F015"],
+      "background_concepts": ["validation-set", "off-policy-evaluation", "unlearning", "publication-gate", "observability", "provenance"]
+    }
+  ]
+}

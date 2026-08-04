@@ -1,0 +1,105 @@
+{
+  "manifest": {
+    "success": true,
+    "errors": [],
+    "booklets": 12
+  },
+  "pdf": {
+    "success": true,
+    "errors": [],
+    "artifacts": [
+      {
+        "path": "easy/sleep-time-compute/pdf/E01-definition-and-training.pdf",
+        "pages": 8,
+        "sha256": "a58310372c6c4184c7e1ffb8848c1f6af97d12618c1b30de281d32553b773b7a",
+        "links": 24,
+        "background_links": 10
+      },
+      {
+        "path": "easy/sleep-time-compute/pdf/E02-problems.pdf",
+        "pages": 7,
+        "sha256": "164879fbc997f5893410b00849be1ab91672bce4bbb937013b37a99f193a272c",
+        "links": 20,
+        "background_links": 8
+      },
+      {
+        "path": "easy/sleep-time-compute/pdf/E03-lineage.pdf",
+        "pages": 7,
+        "sha256": "448c04c5b53119460c6345ad6c694ca2e722defb39f968af4369a002b0386095",
+        "links": 21,
+        "background_links": 9
+      },
+      {
+        "path": "easy/sleep-time-compute/pdf/E04-alternative-frontier.pdf",
+        "pages": 8,
+        "sha256": "0a9d8102194a7b4a10772f43e618799b1cc982bee37148c748b3b72b6ea5824d",
+        "links": 23,
+        "background_links": 11
+      },
+      {
+        "path": "easy/sleep-time-compute/pdf/E05-mechanisms.pdf",
+        "pages": 8,
+        "sha256": "314509a0da9f761376feecf7bc77b5b076a1f6c8d6b005524c85b590a0f00df3",
+        "links": 28,
+        "background_links": 16
+      },
+      {
+        "path": "easy/sleep-time-compute/pdf/E06-strongest-comparison.pdf",
+        "pages": 8,
+        "sha256": "79fd9bec16fb0d1431513f5e3a2a26566bde6e9615e751bfcd158bc6adcf719f",
+        "links": 23,
+        "background_links": 11
+      },
+      {
+        "path": "easy/sleep-time-compute/pdf/E07-evidence-and-trends.pdf",
+        "pages": 7,
+        "sha256": "08efea69f51c460366f16aef9ef174b291835c1bfb3add1c3db28214fdec3514",
+        "links": 21,
+        "background_links": 9
+      },
+      {
+        "path": "easy/sleep-time-compute/pdf/E08-promising-and-mainstream.pdf",
+        "pages": 7,
+        "sha256": "9d2efea3b3c0f9d9e8f0311571b5c2dd27122a24dfd97c35ac3e18025ea05c99",
+        "links": 23,
+        "background_links": 9
+      },
+      {
+        "path": "easy/sleep-time-compute/pdf/E09-scaling-law.pdf",
+        "pages": 9,
+        "sha256": "e55d5b03812daa668ff9802290d36fb4c3c97dcc6bf5001d442d13bccf2f1ae6",
+        "links": 19,
+        "background_links": 7
+      },
+      {
+        "path": "easy/sleep-time-compute/pdf/E10-infrastructure.pdf",
+        "pages": 8,
+        "sha256": "d0326f6b4dd2b63a1d83a6b1f526978ebf0eae07f91a3dc3c36f1c09ba6bbac1",
+        "links": 22,
+        "background_links": 10
+      },
+      {
+        "path": "easy/sleep-time-compute/pdf/E11-device-opportunity.pdf",
+        "pages": 8,
+        "sha256": "30551dee86ee1f0dccc6cb57a6b72a1c0b9b6a71cffcb010634211d8e871a856",
+        "links": 22,
+        "background_links": 10
+      },
+      {
+        "path": "easy/sleep-time-compute/pdf/E12-roadmap-and-falsifiers.pdf",
+        "pages": 7,
+        "sha256": "9b39f0f4069c70368acac5b517053c161db676030b06a074e308e15a7817856b",
+        "links": 27,
+        "background_links": 11
+      },
+      {
+        "path": "build/publications/SLEEP-TIME-COMPUTE-EASY-COMPANION-KR.pdf",
+        "pages": 62,
+        "sha256": "3e659ac139fcc7b74359ef514dd0da6b118a895b37c50208dd0b7e717dda3c20",
+        "links": 262,
+        "background_links": 121
+      }
+    ]
+  },
+  "success": true
+}

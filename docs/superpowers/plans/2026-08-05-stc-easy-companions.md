@@ -30,7 +30,7 @@
 - Consumes: Study section registry, claim map, figure ledger, Background concept registry
 - Produces: `build_booklet(booklet_id: str)` and `validate_booklet(booklet_id: str)`
 
-- [ ] **Step 1: Write failing consistency tests**
+- [x] **Step 1: Write failing consistency tests**
 
 ```python
 def test_every_claim_reference_exists_in_study_registry():
@@ -45,17 +45,17 @@ def test_every_background_link_exists():
     assert report.codes == ("unknown-background-concept:missing",)
 ```
 
-- [ ] **Step 2: Run tests and confirm failure**
+- [x] **Step 2: Run tests and confirm failure**
 
 ```bash
 python3 -m pytest -q easy/sleep-time-compute/tests/test_easy_qa.py
 ```
 
-- [ ] **Step 3: Implement builder and QA**
+- [x] **Step 3: Implement builder and QA**
 
 The builder reuses `easy/build/callouts.lua`, `easy/build/mathfit.lua`, CJK fonts, and canonical figures. QA rejects unknown claims/figures/concepts, missing required section blocks, hard-coded PDF page references, missing source captions, overflow, and missing glyphs.
 
-- [ ] **Step 4: Run tests and commit**
+- [x] **Step 4: Run tests and commit**
 
 ```bash
 python3 -m pytest -q easy/sleep-time-compute/tests/test_easy_qa.py
@@ -75,30 +75,30 @@ git commit -m "feat: add sleep-time easy companion pipeline"
 - Consumes: Study sections 2–6 and Background labels
 - Produces: introductory half of the easy narrative
 
-- [ ] **Step 1: Write E01**
+- [x] **Step 1: Write E01**
 
 Explain the strict wake/sleep boundary, what persists, why ordinary background batching is not STC, and how fine-tuning/distillation/replay differ. Link every training prerequisite to Background.
 
-- [ ] **Step 2: Write E02**
+- [x] **Step 2: Write E02**
 
 Use concrete scenarios for static deployment, personal agent memory, knowledge freshness, bounded capacity, deletion, and latency isolation. Include cases where no learning is needed.
 
-- [ ] **Step 3: Write E03**
+- [x] **Step 3: Write E03**
 
 Explain the lineage as changing solutions to the same stability–plasticity problem, not as a list of dates. Distinguish biological evidence from computational analogy.
 
-- [ ] **Step 4: Write E04**
+- [x] **Step 4: Write E04**
 
 Explain RAG/external memory, long context, recurrent state, TTT, continual learning, model editing, periodic refresh, and STC using a common “where is memory and when does it change?” frame.
 
-- [ ] **Step 5: Build and validate**
+- [x] **Step 5: Build and validate**
 
 ```bash
 python3 easy/sleep-time-compute/build.py --booklets E01,E02,E03,E04
 python3 easy/sleep-time-compute/qa.py --booklets E01,E02,E03,E04 --strict
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add easy/sleep-time-compute/booklets easy/sleep-time-compute/manifest.json easy/sleep-time-compute/pdf
@@ -117,23 +117,23 @@ git commit -m "docs: explain sleep-time foundations and alternatives"
 - Consumes: Study sections 7–11
 - Produces: mechanism and strategic judgment layer
 
-- [ ] **Step 1: Write E05**
+- [x] **Step 1: Write E05**
 
 Walk through one sleep job: admission, snapshot, data construction, teacher/student, loss or reward, optimizer, destination state, validation, publication, rollback. Use one numeric toy example.
 
-- [ ] **Step 2: Write E06**
+- [x] **Step 2: Write E06**
 
 For each target problem, compare STC to the strongest actual alternative and explain the conditional winner. Include at least one counterexample where STC is unnecessary or worse.
 
-- [ ] **Step 3: Write E07**
+- [x] **Step 3: Write E07**
 
 Separate paper mechanism, released code, product feature, and deployed evidence. Explain why more papers do not automatically mean mainstream adoption.
 
-- [ ] **Step 4: Write E08**
+- [x] **Step 4: Write E08**
 
 Explain evidence maturity versus expected value, five mainstream scenarios, leading indicators, and falsifiers without presenting a single unsupported probability.
 
-- [ ] **Step 5: Build, validate, and commit**
+- [x] **Step 5: Build, validate, and commit**
 
 ```bash
 python3 easy/sleep-time-compute/build.py --booklets E05,E06,E07,E08
@@ -154,23 +154,23 @@ git commit -m "docs: explain sleep-time evidence and strategic verdict"
 - Consumes: Study sections 12–17
 - Produces: scaling, systems, device, and roadmap layer
 
-- [ ] **Step 1: Write E09**
+- [x] **Step 1: Write E09**
 
 Explain why a candidate scaling law needs both benefit and cost. Derive reuse break-even with a simple “one sleep job reused by N sessions” example, then introduce saturation, interference, capacity, and state-migration terms.
 
-- [ ] **Step 2: Write E10**
+- [x] **Step 2: Write E10**
 
 Explain wake plane, snapshot boundary, sleep plane, validation/publication, long-term memory tier, versioning, rollback, tenant isolation, and data movement.
 
-- [ ] **Step 3: Write E11**
+- [x] **Step 3: Write E11**
 
 Map workload primitives to HBM, CXL/host memory, SSD, endurance, bandwidth, capacity, atomicity, deduplication, copy-on-write, near-memory operations. State which opportunities survive if STC remains niche.
 
-- [ ] **Step 4: Write E12**
+- [x] **Step 4: Write E12**
 
 Explain benchmark requirements, minimum experiments, negative controls, threats to validity, and evidence that would falsify broad STC adoption.
 
-- [ ] **Step 5: Build, validate, and commit**
+- [x] **Step 5: Build, validate, and commit**
 
 ```bash
 python3 easy/sleep-time-compute/build.py --booklets E09,E10,E11,E12
@@ -191,13 +191,13 @@ git commit -m "docs: explain sleep-time scaling and device opportunities"
 - Consumes: E01–E12
 - Produces: one combined PDF and artifact index
 
-- [ ] **Step 1: Build all individual and combined PDFs**
+- [x] **Step 1: Build all individual and combined PDFs**
 
 ```bash
 python3 easy/sleep-time-compute/build.py --all --combined
 ```
 
-- [ ] **Step 2: Run full-document QA**
+- [x] **Step 2: Run full-document QA**
 
 ```bash
 python3 easy/sleep-time-compute/qa.py --all --combined --strict --render-all-pages
@@ -206,7 +206,7 @@ python3 build/overflow_gate.py build/publications/SLEEP-TIME-COMPUTE-EASY-COMPAN
 
 Expected: 12 individual PDFs, combined PDF, unresolved link 0, missing glyph 0, overflow 0.
 
-- [ ] **Step 3: Update README and commit**
+- [x] **Step 3: Update README and commit**
 
 ```bash
 git add easy build/publications/SLEEP-TIME-COMPUTE-EASY-COMPANION-KR.pdf

@@ -1,0 +1,79 @@
+\documentclass[11pt,a4paper,oneside]{report}
+\usepackage{luatexja-fontspec}
+\setmainfont{Noto Serif CJK KR}
+\setmainjfont{Noto Serif CJK KR}
+\setsansfont{Noto Sans CJK KR}
+\setsansjfont{Noto Sans CJK KR}
+\setmonofont{Noto Sans Mono CJK KR}
+\setmonojfont{Noto Sans Mono CJK KR}
+\usepackage[margin=23mm,headheight=15pt]{geometry}
+\usepackage{xcolor,graphicx,amsmath,amssymb,bm,mathtools}
+\setkeys{Gin}{width=0.96\linewidth,height=0.50\textheight,keepaspectratio}
+\usepackage{booktabs,longtable,array,tabularx,multirow,adjustbox}
+\usepackage[most]{tcolorbox}
+\usepackage{microtype,fancyhdr,caption,xurl,newunicodechar}
+\usepackage[hidelinks,unicode,pdfencoding=auto]{hyperref}
+\usepackage{bookmark}
+\definecolor{stcnavy}{HTML}{17263C}
+\definecolor{stcblue}{HTML}{2F6690}
+\definecolor{stcteal}{HTML}{3A7D78}
+\definecolor{stcamber}{HTML}{A46719}
+\definecolor{stcmist}{HTML}{EEF2F5}
+\definecolor{stcink}{HTML}{22262C}
+\newunicodechar{✓}{\ensuremath{\checkmark}}
+\newunicodechar{✗}{\ensuremath{\times}}
+\newunicodechar{∗}{\ensuremath{\ast}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.52em}
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{-2}
+\emergencystretch=3em
+\tolerance=2000
+\hbadness=1800
+\captionsetup{font=small,labelfont=bf}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\sffamily\small\color{stcnavy}Sleep-Time Compute · Easy Companion}
+\fancyhead[R]{\sffamily\small\color{stcblue}\leftmark}
+\fancyfoot[C]{\sffamily\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\st}[1]{#1}
+\providecommand{\passthrough}[1]{#1}
+\providecommand{\pandocbounded}[1]{#1}
+\providecommand{\real}[1]{#1}
+\providecommand{\textsubscript}[1]{\ensuremath{_{#1}}}
+\providecommand{\textsuperscript}[1]{\ensuremath{^{#1}}}
+\newtcolorbox{cboxintuition}[1]{enhanced,breakable,colback=stcblue!5,colframe=stcblue!45,boxrule=.4pt,arc=2mm,borderline west={2.5pt}{0pt}{stcblue},title={\bfseries #1},coltitle=stcnavy}
+\newtcolorbox{cboxsymbol}[1]{enhanced,breakable,colback=stcamber!6,colframe=stcamber!45,boxrule=.4pt,arc=2mm,borderline west={2.5pt}{0pt}{stcamber},title={\bfseries #1},coltitle=stcamber!55!black}
+\newtcolorbox{cboxsysmodel}[1]{enhanced,breakable,colback=stcteal!5,colframe=stcteal!45,boxrule=.4pt,arc=2mm,borderline west={2.5pt}{0pt}{stcteal},title={\bfseries #1},coltitle=stcteal!55!black}
+\newtcolorbox{cboxexample}[1]{enhanced,breakable,colback=black!3,colframe=black!25,boxrule=.4pt,arc=2mm,borderline west={2.5pt}{0pt}{black!45},title={\bfseries #1},coltitle=stcink}
+\newtcolorbox{cboxnote}[1]{enhanced,breakable,colback=red!4,colframe=red!35,boxrule=.4pt,arc=2mm,borderline west={2.5pt}{0pt}{red!55},title={\bfseries #1},coltitle=red!55!black}
+\newtcolorbox{cboxkey}[1]{enhanced,breakable,colback=stcnavy!5,colframe=stcnavy!45,boxrule=.4pt,arc=2mm,borderline west={2.5pt}{0pt}{stcnavy},title={\bfseries #1},coltitle=stcnavy}
+\newtcolorbox{readingroute}{enhanced,breakable,colback=stcmist,colframe=stcteal,boxrule=.6pt,arc=2mm,left=3mm,right=3mm,top=2mm,bottom=2mm}
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+\begin{document}
+\begin{titlepage}
+\color{stcink}
+\vspace*{10mm}
+{\sffamily\small\color{stcteal}\MakeUppercase{$booklet-id$ · Section-level companion}\par}
+\vspace{10mm}
+{\sffamily\bfseries\fontsize{27}{33}\selectfont $title$\par}
+\vspace{6mm}
+{\Large 어려운 Study paper를 그림과 예로 다시 읽는 안내서\par}
+\vfill
+\begin{readingroute}
+\textbf{읽는 법}\quad 이 문서는 원 Study의 결론을 바꾸지 않고, 질문→세 문장→직관→예/반례→그림→대안→미증명 지점 순서로 풀어 쓴다. 파란색 training 용어는 별도 Background paper의 해당 개념으로 연결된다. 주장 ID와 figure ID는 원 Study와 동일하다.
+\end{readingroute}
+\vspace{9mm}
+{\small\color{stcblue}Sleep-Time Compute Research Program · source freeze 2026-08-05\par}
+\end{titlepage}
+$if(toc)$\tableofcontents\clearpage$endif$
+$body$
+\clearpage
+\chapter*{문서 경계와 사용법}
+\addcontentsline{toc}{chapter}{문서 경계와 사용법}
+이 문서는 쉬운 설명본이지 새로운 증거원이 아니다. 수치·인용·claim status는 원 Study paper와 claim map이 우선한다. 학습 개념은 Training Background paper를 함께 읽고, 논문 재현이나 외부 배포 판단에는 고정 source와 rights audit를 사용한다.
+\end{document}
