@@ -217,6 +217,66 @@ def test_background_glossary_generator_covers_every_registered_concept(tmp_path)
     assert all(item["concept_id"] in source for item in concepts)
 
 
+def test_source_bibliography_generator_covers_frozen_registry(tmp_path):
+    generator = REPO_ROOT / "paper-kr/common/build_source_bibliography.py"
+    spec = importlib.util.spec_from_file_location("stc_source_bibliography", generator)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    registry = (
+        REPO_ROOT
+        / "research/sleep-time-compute/deep-research/SOURCE-REGISTRY.json"
+    )
+    output = tmp_path / "source-registry.bib"
+
+    module.build_bibliography(registry, output)
+
+    source = output.read_text(encoding="utf-8")
+    records = json.loads(registry.read_text(encoding="utf-8"))["sources"]
+    assert source.count("@misc{srcstc") == len(records)
+    assert all(item["source_id"].lower().replace("-", "") in source for item in records)
+    assert r"official\_release\_note" in source
+    assert "type=official_release_note" not in source
+
+
+def test_study_figure_generator_builds_canonical_fifteen_vector_pdfs(tmp_path):
+    figure_builder = (
+        REPO_ROOT / "paper-kr/sleep-time-compute-study/figures/build_figures.py"
+    )
+    spec = importlib.util.spec_from_file_location("stc_study_figures", figure_builder)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.OUT = tmp_path
+
+    module.main()
+
+    expected = {f"stc-f{index:03d}.pdf" for index in range(1, 16)}
+    assert {path.name for path in tmp_path.glob("*.pdf")} == expected
+    for path in tmp_path.glob("*.pdf"):
+        info = subprocess.run(
+            ["pdfinfo", str(path)], check=True, capture_output=True, text=True
+        ).stdout
+        assert "Pages:           1" in info
+
+
+def test_claim_table_generator_covers_every_frozen_claim(tmp_path):
+    generator = REPO_ROOT / "paper-kr/sleep-time-compute-study/build_claim_table.py"
+    spec = importlib.util.spec_from_file_location("stc_claim_table", generator)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    claim_map = REPO_ROOT / "claims/stc-study/claim-map.json"
+    output = tmp_path / "claim-table.tex"
+
+    module.build_claim_table(claim_map, output)
+
+    source = output.read_text(encoding="utf-8")
+    claims = json.loads(claim_map.read_text(encoding="utf-8"))["claims"]
+    assert source.count(r"\hypertarget{claim-ledger:") == len(claims)
+    assert all(item["claim_id"] in source for item in claims)
+
+
 def test_concept_anchors_are_not_declared_inside_display_math():
     source_root = REPO_ROOT / "paper-kr/sleep-time-compute-training-background"
     violations = []

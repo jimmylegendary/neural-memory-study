@@ -192,34 +192,34 @@ git commit -m "paper: complete sleep-time compute training background"
 - Consumes: frozen Research Spine, Background label registry
 - Produces: Study section IDs `STC-S01`…`STC-S08` and claim citations
 
-- [ ] **Step 1: Write definition and contribution boundary**
+- [x] **Step 1: Write definition and contribution boundary**
 
 Define strict STC by causal boundary, lifetime input, persistent destination, deferred compute, and validation/publication. Explicitly exclude ordinary batching, within-query reasoning, passive cache eviction, unvalidated background summarization, and generic offline training without wake-derived state.
 
-- [ ] **Step 2: Write training prerequisite map with cross-PDF links**
+- [x] **Step 2: Write training prerequisite map with cross-PDF links**
 
 Every first-use term among fine-tuning, continued pre-training, LoRA, adapter, distillation, replay, augmentation, RL, continual learning, meta-learning, TTT, editing, and unlearning must call `\bgref{...}`.
 
-- [ ] **Step 3: Write problem and lineage sections**
+- [x] **Step 3: Write problem and lineage sections**
 
 Separate static deployment, personalization, long-horizon agent experience, continual learning, bounded capacity, freshness, governance, and system cost. Build chronology from biological precursors through external memory, TTT/neural memory, Letta, explicit consolidation, and 2026 work.
 
-- [ ] **Step 4: Write alternative frontier and STC mechanisms**
+- [x] **Step 4: Write alternative frontier and STC mechanisms**
 
 For each family, report current strongest method, evidence status, cost model, capacity behavior, failure mode, and whether it is complementary or substitutive to STC.
 
-- [ ] **Step 5: Write strongest-alternative comparison**
+- [x] **Step 5: Write strongest-alternative comparison**
 
 Each problem must have a named non-STC baseline and conditional verdict; no straw-man comparison is allowed.
 
-- [ ] **Step 6: Build and inspect draft**
+- [x] **Step 6: Build and inspect draft**
 
 ```bash
 make -C paper-kr/sleep-time-compute-study full-draft
 python3 paper-kr/common/qa_publications.py --pdf build/publications/SLEEP-TIME-COMPUTE-STRATEGIC-STUDY-KR.pdf --kind study --allow-incomplete-sections 9-17
 ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add paper-kr/sleep-time-compute-study paper-kr/common

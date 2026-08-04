@@ -1,0 +1,84 @@
+\chapter{초록과 기여 경계}
+\label{STC-S01}
+
+\section*{초록}
+
+Persistent agent가 wake 중 경험을 쌓고 응답 경로 밖에서 이를 재구성하기 시작하면서,
+배포 후 학습을 pre-training/post-training과 다른 축으로 볼 필요가 생겼다. 본 연구는
+\emph{sleep-time compute}를 생물학적 은유가 아니라 ``latency-critical response 뒤에 실행되어
+후속 wake episode가 재사용할 persistent state를 바꾸는 검증 가능한 변환''으로 정의한다. Update
+destination은 foundation weights에 한정하지 않고 adapter, recurrent/neural state, text, vector,
+temporal graph와 그 혼합을 포함한다.
+
+2026-08-05에 동결한 primary/official evidence를 기반으로 세 질문을 분리한다. 첫째, 새로운 lifecycle
+축이 실제로 등장했는가? 둘째, 그 축 안에서 parametric training이 external-memory synthesis보다
+우세한가? 셋째, 어느 scenario에서도 살아남는 system·memory-device primitive는 무엇인가? 답은
+비대칭적이다. Background external-memory synthesis는 공개 production system에서 관찰되지만,
+per-user foundation-weight sleep은 continual retention, deletion, rollback, security, fleet economics를
+동시에 입증하지 못했다. 따라서 near-term default는 external source-of-record에 evidence와 provenance를
+유지하고, high-reuse·stable pattern만 reversible adapter 또는 bounded parametric cache로 승격하는
+hybrid다.
+
+본 논문은 sleep이 풀려는 문제를 static deployment, personalization, agent experience, knowledge
+freshness, continual learning, bounded capacity, latency isolation, deletion/rollback, repeated long context,
+on-device adaptation으로 분해한다. 각 문제에 대해 long context, RAG, external memory, model editing,
+continual-learning regularization/replay, global periodic refresh라는 strongest non-STC baseline을 먼저
+세운다. 이 비교에서 sleep timing은 freshness·batching·validation 격리를 제공하지만, capacity와
+governance 문제를 자동으로 해결하지 않으며 one-off context에는 대체로 이점이 없다.
+
+Scaling 분석은 네 층으로 제한한다. 실제 trace에서 측정할 identity, reuse break-even model, cadence와
+capacity-knee fit candidate, 그리고 ``valid reusable evidence per sleep cost'' 같은 falsifiable hypothesis다.
+마지막으로 state movement, snapshot/COW, high-endurance index/graph tier, provenance filtering,
+adapter fabric, pooled memory, secure delete/rebuild, neural-state caching, on-device consolidation을
+scenario robustness에 따라 우선순위화한다.
+
+\section{연구 질문}
+
+\begin{enumerate}
+  \item \textbf{Existence}: sleep-time compute는 기존 offline maintenance의 새 이름인가, 독립된
+        lifecycle·system boundary인가?
+  \item \textbf{Necessity}: long context, retrieval, editing, continual learning, global refresh가 있는데
+        어떤 workload에서 deferred consolidation이 추가로 필요한가?
+  \item \textbf{Medium}: persistent knowledge를 weights/adapter에 넣을지, text/vector/graph로 둘지,
+        어떤 hybrid promotion rule이 최선인가?
+  \item \textbf{Capacity}: session이 누적될 때 forgetting, interference, stale memory, delete debt,
+        recursive synthetic data를 어떻게 bounded하게 만드는가?
+  \item \textbf{Scaling}: sleep FLOPs가 아니라 무엇을 독립변수와 outcome으로 측정해야 하는가?
+  \item \textbf{Infrastructure}: wake inference/training, sleep transformation, persistent memory가
+        state movement와 publication을 최소화하도록 어떻게 배치되어야 하는가?
+\end{enumerate}
+
+\section{기여}
+
+\begin{table}[htbp]
+\centering
+\caption{본 Study Paper의 기여와 evidence boundary}
+\label{tab:study-contributions}
+\small
+\begin{tabularx}{\textwidth}{p{0.18\textwidth} X X}
+\toprule
+기여 & 산출물 & 주장 경계 \\
+\midrule
+정의 & causal lifecycle definition과 제외 규칙 & 생물학적 동일성은 주장하지 않음 \\
+분류 & timing $\times$ medium $\times$ scope $\times$ persistence taxonomy & architecture 이름을 evidence로 쓰지 않음 \\
+대안 비교 & 문제별 strongest baseline과 non-win region & straw-man baseline 금지 \\
+근거 평가 & maturity $\neq$ expected value matrix, negative evidence & 검색 포화를 주장하지 않음 \\
+scaling & identity, break-even, candidate surface, falsifier & universal law로 부르지 않음 \\
+system/device & state-flow architecture와 opportunity stack & 시장 규모·매출 예측이 아님 \\
+재현성 & 57-claim ledger, 73-source registry, 15 figure ledger & date-frozen snapshot \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{한 문장 verdict}
+
+\begin{keypoint}[조건부 verdict]
+Sleep-time compute는 \textbf{background transformation lifecycle}로서는 이미 유망하고 일부는
+production이지만, \textbf{broad personalized parametric training}으로서는 아직 미성숙하다. 앞으로의
+주류 형태는 ``모델이 밤마다 전체 weights를 다시 배운다''보다 external memory maintenance와 selective
+parametric promotion을 포괄하는 control plane일 가능성이 높다.
+\end{keypoint}
+
+이 결론은 이름의 유행과 분리한다. Industry가 dreaming, reflection, synthesis, self-evolution,
+memory maintenance라고 부르더라도 causal boundary가 같으면 같은 분석 대상이다. 반대로 ``sleep''이라는
+단어를 써도 current response 계산이나 passive cache eviction만 수행하면 본 정의에는 들어오지 않는다.

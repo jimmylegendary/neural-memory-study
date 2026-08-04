@@ -1,0 +1,92 @@
+\chapter{STC mechanisms와 공개 system evidence}
+\label{STC-S07}
+
+이 장은 실제 system을 external synthesis, parametric consolidation, hybrid promotion으로 나누고,
+공개 evidence가 무엇을 말하는지와 말하지 않는지를 분리한다.
+
+\section{External-memory sleep: 현재 가장 성숙한 형태}
+
+OpenAI Dreaming은 external user memory를 background에서 종합하는 production feature이며, 공개 설명은
+per-user foundation-weight training을 말하지 않는다.\claim{STC-C007} \parencite{srcstc0052}
+이는 memory item 수를 그대로 늘리는 대신 관계와 장기 pattern을 만들어 다음 interaction을 돕는다는
+점에서 strict lifecycle 정의에 들어간다.
+
+Mem0 Dream은 scheduled background synthesis와 provenance-preserving additive output을 제공하며,
+merge와 supersede는 ingest-time operation으로 구분된다.\claim{STC-C008}
+\parencite{srcstc0063,srcstc0064} 이 구분은 derived memory를 append-only lineage로 남기고 삭제/충돌
+처리를 별도 operation으로 관리할 수 있게 한다.
+
+Letta의 tagged sleeptime group은 response 뒤 asynchronous agent를 scheduling해 durable memory를 수정한다.
+\claim{STC-C009} \parencite{srcstc0059} 즉 main agent와 memory agent를 분리함으로써 current response
+latency와 background memory-writing policy를 decouple한다.
+
+Zep/Graphiti는 episode, entity, relation을 temporal version으로 표현하며 per-user model-weight update가
+아니다.\claim{STC-C010} \parencite{srcstc0016,srcstc0065,srcstc0066} Temporal edge와 supersession은 mutable
+fact를 weights에 덮어쓰는 대신 history와 current truth를 함께 보존하는 강점을 가진다.
+
+ReasoningBank는 experience에서 reusable reasoning strategy를 추출해 external strategy memory에 저장하며,
+broad online weight consolidation이 아니다.\claim{STC-C012} \parencite{srcstc0043,srcstc0054} 이 계열은
+``무엇을 기억할지''와 ``main model을 바꿀지''를 분리한다.
+
+\section{Company evidence를 과대 해석하지 않기}
+
+Meta의 personalized-agent와 HyperAgents 공개 연구는 feedback-conditioned behavior, program memory,
+archive를 강조하지만 fleet-scale per-user foundation-weight sleep을 입증하지 않는다.
+\claim{STC-C013} \parencite{srcstc0057,srcstc0058} ``personalization 연구''가 곧 ``nightly user weight
+training product''라는 inference를 막기 위해 product, research prototype, benchmark를 구분한다.
+
+Microsoft STATE-Bench는 state tracking, adaptation, efficiency를 함께 평가하는 memory benchmark이지,
+sleep-training product 공개가 아니다.\claim{STC-C014} \parencite{srcstc0056,srcstc0067} Benchmark의
+등장은 업계 문제의식을 보여 주지만 특정 mechanism adoption의 증거는 아니다.
+
+\section{Parametric sleep: 직접적이지만 research-scale인 증거}
+
+Language Models Need Sleep은 model이 self-modify하고 replay-like training으로 memory를 consolidate하는
+parametric sleep의 직접 evidence다. 그러나 보고된 regime은 research-scale이며 production deployment
+proof는 아니다.\claim{STC-C015} \parencite{srcstc0021}
+
+Parametric path의 잠재 이점은 retrieval 없이 behavior/skill에 반영되고, repeated query에서 context
+token과 external hop을 줄이며, procedural pattern을 distributed representation에 통합할 수 있다는 것이다.
+동시에 다음 조건을 해결해야 한다.
+
+\begin{itemize}
+  \item multi-cycle old/new retention과 capacity saturation,
+  \item base model release마다 adapter/state rebase,
+  \item data lineage와 targeted delete/unlearning,
+  \item candidate validation, fleet rollout, rollback,
+  \item user isolation과 poisoned-memory defense,
+  \item per-user job scheduling과 serving artifact explosion.
+\end{itemize}
+
+\section{Hybrid promotion}
+
+External record를 authoritative evidence plane으로 유지하고 parametric state를 reconstructable serving
+cache로 취급한다. Admission은 안정성, reuse, scope, evidence, deletion risk를 평가하고 promotion은
+adapter/compiled state부터 시작한다. Global weights는 여러 cohort에 일반화되고 independent evidence가
+충분할 때만 periodic refresh queue로 보낸다.
+
+\begin{table}[htbp]
+\centering
+\caption{External, parametric, hybrid sleep의 운영 성질}
+\label{tab:mechanism-properties}
+\small
+\begin{tabularx}{\textwidth}{p{0.20\textwidth} X X X}
+\toprule
+성질 & External & Parametric & Hybrid \\
+\midrule
+write/delete & item-level 쉬움 & diffuse, 어려움 & source는 쉬움, cache rebuild \\
+provenance & explicit link & 간접/불완전 & external lineage가 기준 \\
+wake cost & retrieval+context & 낮을 수 있음 & hot pattern만 절감 \\
+capacity & storage/index 한도 & interference/state 한도 & tier별 budget \\
+portability & model-independent 가능 & base-dependent & external portable, delta conditional \\
+rollback & record/index version & artifact/model rollback & source replay로 재구성 \\
+best content & changing facts, episodes & repeated stable behavior & fact+behavior mixture \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{cautionbox}[“기억했다”의 세 수준]
+정보가 parameter에 encoding되었다고 해서 query에서 access되거나 다른 fact와 composition되는 것은 아니다.
+저장(storage), 접근(access), 활용(composition)을 separate metric으로 보고, external/parametric 양쪽에 같은
+task slice를 적용한다.
+\end{cautionbox}
