@@ -1,0 +1,2 @@
+PUBLISHED art-sleep-time-compute-strategic-study-2026 → audience=public  dest=.veridraft-stc-study/published/public/art-sleep-time-compute-strategic-study-2026
+  (egress: confidentiality decide() + redaction re-sweep passed; ruleset=caw02-redaction-vendored-v0)

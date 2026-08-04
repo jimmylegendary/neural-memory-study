@@ -1,0 +1,4 @@
+drafted art-sleep-time-compute-strategic-study-2026 via engine=minimal-latex renderer=pdflatex
+  PDF: .veridraft-stc-study/workspace/sleep-time-compute-strategic-study-2026/final/paper.pdf
+  TeX: .veridraft-stc-study/workspace/sleep-time-compute-strategic-study-2026/final/paper.tex
+  staged to: .veridraft-stc-study/artifacts/art-sleep-time-compute-strategic-study-2026

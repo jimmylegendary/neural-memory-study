@@ -1,0 +1,13 @@
+  #1 art-sleep-time-compute-strategic-study-2026  None→gated  actor=system
+  #2 art-sleep-time-compute-strategic-study-2026  gated→readiness:mlsys  actor=system reason=disclosure
+  #3 art-sleep-time-compute-strategic-study-2026  gated→readiness:mlsys  actor=system reason=disclosure
+  #4 art-sleep-time-compute-strategic-study-2026  None→gated  actor=system
+  #5 art-sleep-time-compute-strategic-study-2026  gated→readiness:mlsys  actor=system reason=disclosure
+  #6 art-sleep-time-compute-strategic-study-2026  gated→drafting  actor=system
+  #7 art-sleep-time-compute-strategic-study-2026  drafting→drafted  actor=system
+  #8 art-sleep-time-compute-strategic-study-2026  drafted→in_review  actor=system
+  #9 art-sleep-time-compute-strategic-study-2026  in_review→readiness:mlsys  actor=system reason=disclosure
+  #10 art-sleep-time-compute-strategic-study-2026  in_review→approved  actor=system
+  #11 art-sleep-time-compute-strategic-study-2026  approved→published_paper  actor=human:cli
+
+hash chain intact: True
