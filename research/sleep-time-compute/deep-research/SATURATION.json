@@ -1,0 +1,182 @@
+{
+  "schema_version": "1.0.0",
+  "source_freeze": "2026-08-05",
+  "method": "Four-pass manual primary-source search per cluster, augmented by the partial Veridraft/Semantic Scholar discovery cache. The cache is never counted as completed snowballing.",
+  "global_status": "bounded_date_snapshot_with_active_frontiers",
+  "semantic_scholar": "s2_unavailable; see S2-STATUS.json",
+  "state_definitions": {
+    "bounded": "Key seminal, strongest-comparator, and negative lineages are covered for the stated task scope, but universality is not claimed.",
+    "measurement_gap": "The needed scaling curve or operational evidence is absent even though relevant methods were found.",
+    "active_frontier": "New 2026 work or product behavior continued to change the comparison near the source freeze."
+  },
+  "clusters": [
+    {
+      "cluster_id": "C01",
+      "name": "biological and computational sleep",
+      "status": "bounded",
+      "passes": [
+        {"pass": "terminology", "query": "complementary learning systems replay consolidation sleep dreaming", "providers": ["DOI", "PLOS", "eLife", "PNAS"]},
+        {"pass": "functional_equivalence", "query": "offline replay generative replay dual memory continual learning", "providers": ["arXiv", "proceedings"]},
+        {"pass": "negative", "query": "sleep consolidation ablation capacity catastrophic forgetting limitation", "providers": ["DOI", "paper full text"]},
+        {"pass": "latest_status", "query": "2025 2026 computational sleep continual learning", "providers": ["arXiv", "OpenReview"]}
+      ],
+      "retained_count": 10,
+      "representative_source_ids": ["SRC-STC-0001", "SRC-STC-0008", "SRC-STC-0009", "SRC-STC-0010", "SRC-STC-0011", "SRC-STC-0012"],
+      "closure": "Mechanism analogies are covered, but none establish that human NREM/REM stages map one-to-one onto LLM operators."
+    },
+    {
+      "cluster_id": "C02",
+      "name": "continual learning",
+      "status": "bounded",
+      "passes": [
+        {"pass": "terminology", "query": "continual learning replay regularization gradient constraints modular expansion", "providers": ["proceedings", "DOI"]},
+        {"pass": "functional_equivalence", "query": "progress compress generative replay episodic memory consolidation", "providers": ["arXiv", "proceedings"]},
+        {"pass": "negative", "query": "continual learning task boundary plasticity loss replay corruption", "providers": ["paper full text", "OpenReview"]},
+        {"pass": "latest_status", "query": "ICLR 2026 continual learning memory statistics capacity", "providers": ["OpenReview"]}
+      ],
+      "retained_count": 14,
+      "representative_source_ids": ["SRC-STC-0002", "SRC-STC-0003", "SRC-STC-0004", "SRC-STC-0007", "SRC-STC-0050"],
+      "closure": "Canonical families and a 2026 memory-statistics bound are covered; real LLM lifelong streams remain outside most controlled benchmarks."
+    },
+    {
+      "cluster_id": "C03",
+      "name": "LLM parametric learning",
+      "status": "active_frontier",
+      "passes": [
+        {"pass": "terminology", "query": "continued pretraining SFT LoRA model editing continual facts", "providers": ["arXiv", "proceedings"]},
+        {"pass": "functional_equivalence", "query": "document adapter latent knowledge compilation self adapting language model", "providers": ["arXiv", "OpenReview"]},
+        {"pass": "negative", "query": "sequential facts weights interference unreachable knowledge unlearning", "providers": ["arXiv", "paper full text"]},
+        {"pass": "latest_status", "query": "2026 continual fact learning LoRA memory capacity", "providers": ["arXiv", "PMLR"]}
+      ],
+      "retained_count": 15,
+      "representative_source_ids": ["SRC-STC-0021", "SRC-STC-0027", "SRC-STC-0029", "SRC-STC-0034", "SRC-STC-0036", "SRC-STC-0040", "SRC-STC-0049"],
+      "closure": "The strongest 2026 negative result materially changes the verdict: facts may remain encoded yet become behaviorally unreachable after sequential writes."
+    },
+    {
+      "cluster_id": "C04",
+      "name": "test-time training and fast state",
+      "status": "active_frontier",
+      "passes": [
+        {"pass": "terminology", "query": "test-time training fast weights online optimization neural memory", "providers": ["arXiv", "OpenReview"]},
+        {"pass": "functional_equivalence", "query": "recurrent state context memorization inference adaptation", "providers": ["arXiv", "proceedings"]},
+        {"pass": "negative", "query": "test-time training stability latency state reuse serving", "providers": ["paper full text", "systems audit"]},
+        {"pass": "latest_status", "query": "2026 Titans MIRAS ATLAS TNT NSTM Memory Caching", "providers": ["arXiv", "OpenReview"]}
+      ],
+      "retained_count": 13,
+      "representative_source_ids": ["SRC-STC-0017", "SRC-STC-0018", "SRC-STC-0019", "SRC-STC-0020", "SRC-STC-0022", "SRC-STC-0023", "SRC-STC-0024"],
+      "closure": "The architecture frontier is current through 2026-08-05; cross-session serving reuse and rollback curves remain sparse."
+    },
+    {
+      "cluster_id": "C05",
+      "name": "external memory",
+      "status": "active_frontier",
+      "passes": [
+        {"pass": "terminology", "query": "RAG vector temporal graph agent memory reflection", "providers": ["arXiv", "proceedings"]},
+        {"pass": "functional_equivalence", "query": "background synthesis consolidation external memory episodes provenance", "providers": ["official docs", "official repositories"]},
+        {"pass": "negative", "query": "retrieval miss context pollution compaction stale memory poisoning", "providers": ["NeurIPS", "arXiv", "official docs"]},
+        {"pass": "latest_status", "query": "2026 OpenAI Dreaming Mem0 Dream Letta Zep ReasoningBank STATE-Bench", "providers": ["official releases", "official docs", "tagged code"]}
+      ],
+      "retained_count": 30,
+      "representative_source_ids": ["SRC-STC-0013", "SRC-STC-0015", "SRC-STC-0016", "SRC-STC-0043", "SRC-STC-0052", "SRC-STC-0054", "SRC-STC-0063", "SRC-STC-0065"],
+      "closure": "This is the fastest-moving cluster: two explicit production background-synthesis systems were public by the freeze date."
+    },
+    {
+      "cluster_id": "C06",
+      "name": "latent compilation",
+      "status": "measurement_gap",
+      "passes": [
+        {"pass": "terminology", "query": "document to adapter knowledge cartridge latent memory compilation", "providers": ["arXiv", "OpenReview"]},
+        {"pass": "functional_equivalence", "query": "generated adapter amortized fine tuning repeated queries", "providers": ["arXiv", "proceedings"]},
+        {"pass": "negative", "query": "adapter compilation amortization failure base model incompatibility", "providers": ["paper full text"]},
+        {"pass": "latest_status", "query": "2025 2026 generative adapter document adapter", "providers": ["OpenReview", "arXiv"]}
+      ],
+      "retained_count": 1,
+      "representative_source_ids": ["SRC-STC-0027"],
+      "closure": "No independent public curve jointly measures compilation cost, query reuse, base-version churn, and later utility; a crossover law is therefore a hypothesis."
+    },
+    {
+      "cluster_id": "C07",
+      "name": "product lifecycle",
+      "status": "active_frontier",
+      "passes": [
+        {"pass": "terminology", "query": "sleep time background memory consolidation product agent", "providers": ["official docs", "official releases"]},
+        {"pass": "functional_equivalence", "query": "scheduled synthesis post response reflection durable later wake memory", "providers": ["tagged repositories", "official docs"]},
+        {"pass": "negative", "query": "marketing only ingest time manual memory no durable destination", "providers": ["official code audit", "official docs audit"]},
+        {"pass": "latest_status", "query": "Google Meta Microsoft OpenAI Letta Mem0 Zep memory 2026", "providers": ["official organization sites"]}
+      ],
+      "retained_count": 20,
+      "representative_source_ids": ["SRC-STC-0052", "SRC-STC-0054", "SRC-STC-0056", "SRC-STC-0057", "SRC-STC-0059", "SRC-STC-0063", "SRC-STC-0066"],
+      "closure": "The date-bounded product audit is complete for seven required entities, but proprietary operator details remain intentionally unobserved."
+    },
+    {
+      "cluster_id": "C08",
+      "name": "capacity and forgetting",
+      "status": "measurement_gap",
+      "passes": [
+        {"pass": "terminology", "query": "model memory capacity continual learning rate distortion forgetting", "providers": ["arXiv", "OpenReview", "DOI"]},
+        {"pass": "functional_equivalence", "query": "memory compaction defragmentation consolidation expansion", "providers": ["arXiv", "official docs"]},
+        {"pass": "negative", "query": "semantic memory capacity nonidentifiability saturation overwrite", "providers": ["paper full text"]},
+        {"pass": "latest_status", "query": "2026 LLM memory capacity continual facts compaction", "providers": ["arXiv", "OpenReview"]}
+      ],
+      "retained_count": 27,
+      "representative_source_ids": ["SRC-STC-0034", "SRC-STC-0035", "SRC-STC-0036", "SRC-STC-0037", "SRC-STC-0049", "SRC-STC-0050", "SRC-STC-0063"],
+      "closure": "Bit capacity, behavioral reachability, retrieval capacity, governance capacity, and working-set capacity are not interchangeable; no single measured law spans all five."
+    },
+    {
+      "cluster_id": "C09",
+      "name": "training and data operators",
+      "status": "active_frontier",
+      "passes": [
+        {"pass": "terminology", "query": "replay distillation augmentation synthetic data RL scheduler meta learning", "providers": ["arXiv", "proceedings"]},
+        {"pass": "functional_equivalence", "query": "memory policy training consolidation curriculum", "providers": ["OpenReview", "arXiv"]},
+        {"pass": "negative", "query": "recursive self distillation collapse replay corruption reward hacking leakage", "providers": ["Nature", "NeurIPS", "paper full text"]},
+        {"pass": "latest_status", "query": "2026 RL over memory language models need sleep continual learning", "providers": ["OpenReview", "arXiv"]}
+      ],
+      "retained_count": 35,
+      "representative_source_ids": ["SRC-STC-0021", "SRC-STC-0029", "SRC-STC-0036", "SRC-STC-0041", "SRC-STC-0043", "SRC-STC-0051"],
+      "closure": "The operator taxonomy is broad, but recursive-depth and real-data-anchor scaling remain unmeasured for deployment-time sleep loops."
+    },
+    {
+      "cluster_id": "C10",
+      "name": "systems and infrastructure",
+      "status": "measurement_gap",
+      "passes": [
+        {"pass": "terminology", "query": "background training snapshot copy on write tiering offload", "providers": ["systems papers", "official repositories"]},
+        {"pass": "functional_equivalence", "query": "asynchronous memory consolidation worktree snapshot merge serving", "providers": ["tagged code", "official docs"]},
+        {"pass": "negative", "query": "state migration bytes P99 interference model residency rollback", "providers": ["systems audit", "paper full text"]},
+        {"pass": "latest_status", "query": "2026 agent memory serving infrastructure background synthesis", "providers": ["official releases", "official repositories"]}
+      ],
+      "retained_count": 16,
+      "representative_source_ids": ["SRC-STC-0022", "SRC-STC-0023", "SRC-STC-0052", "SRC-STC-0056", "SRC-STC-0059", "SRC-STC-0060", "SRC-STC-0064", "SRC-STC-0067"],
+      "closure": "Public systems expose lifecycle primitives but not end-to-end state-migration bytes, wake-SLA interference, or fleet utilization curves."
+    },
+    {
+      "cluster_id": "C11",
+      "name": "governance and security",
+      "status": "measurement_gap",
+      "passes": [
+        {"pass": "terminology", "query": "memory provenance deletion unlearning rollback agent", "providers": ["official docs", "papers"]},
+        {"pass": "functional_equivalence", "query": "versioned memory supersede merge immutable audit trail", "providers": ["official repositories", "official docs"]},
+        {"pass": "negative", "query": "memory poisoning derived state delete failure audit gap", "providers": ["NeurIPS", "official controls"]},
+        {"pass": "latest_status", "query": "2026 memory controls Dream provenance agent benchmark", "providers": ["official releases", "OpenReview"]}
+      ],
+      "retained_count": 22,
+      "representative_source_ids": ["SRC-STC-0042", "SRC-STC-0053", "SRC-STC-0060", "SRC-STC-0063", "SRC-STC-0065", "SRC-STC-0066"],
+      "closure": "Provenance and non-destructive history are visible in products, but public end-to-end deletion propagation and parametric rollback evidence is insufficient."
+    },
+    {
+      "cluster_id": "C12",
+      "name": "device and workload",
+      "status": "measurement_gap",
+      "passes": [
+        {"pass": "terminology", "query": "computational storage near data adaptation CXL memory training", "providers": ["systems literature", "official hardware docs"]},
+        {"pass": "functional_equivalence", "query": "on device personalization continual robotics background learning", "providers": ["arXiv", "proceedings"]},
+        {"pass": "negative", "query": "NAND endurance write amplification thermal low reuse personalization", "providers": ["systems audit"]},
+        {"pass": "latest_status", "query": "2026 on device agent memory consolidation hardware", "providers": ["official sources", "arXiv"]}
+      ],
+      "retained_count": 7,
+      "representative_source_ids": ["SRC-STC-0041", "SRC-STC-0042", "SRC-STC-0045", "SRC-STC-0053", "SRC-STC-0058"],
+      "closure": "The opportunity analysis must be derived from workload primitives, not claimed as a measured STC device market; dedicated empirical traces are absent."
+    }
+  ]
+}

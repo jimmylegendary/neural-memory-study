@@ -28,6 +28,16 @@ PRE_RESEARCH_REQUIRED_FILES = (
     "TRANSLATION-CANDIDATES.md",
     "FIGURE-SOURCE-PLAN.md",
 )
+DEEP_RESEARCH_REQUIRED_FILES = (
+    "SOURCE-REGISTRY.json",
+    "CITATION-POOL.json",
+    "SATURATION.json",
+    "LATEST-INDUSTRY-ACADEMIA-AUDIT.md",
+    "CHRONOLOGY.md",
+    "NEGATIVE-EVIDENCE.md",
+    "SOURCE-RIGHTS.json",
+    "S2-STATUS.json",
+)
 SEED_SOURCE_REQUIRED_FIELDS = frozenset(
     {
         "seed_id",
@@ -615,6 +625,171 @@ def _validate_pre_research_contract(
             )
 
 
+def _deep_content_missing(
+    path: Path, message: str, diagnostics: list[Diagnostic]
+) -> None:
+    diagnostics.append(Diagnostic("deep-research-content-missing", str(path), message))
+
+
+def _validate_deep_research_contract(
+    phase_root: Path, diagnostics: list[Diagnostic]
+) -> None:
+    paths = {name: phase_root / name for name in DEEP_RESEARCH_REQUIRED_FILES}
+    for name, path in paths.items():
+        if not path.is_file():
+            diagnostics.append(
+                Diagnostic(
+                    "deep-research-file-missing",
+                    str(path),
+                    f"Required deep-research artifact is missing: {name}",
+                )
+            )
+
+    token_contracts = {
+        "LATEST-INDUSTRY-ACADEMIA-AUDIT.md": (
+            "Google/DeepMind",
+            "Meta",
+            "Microsoft",
+            "OpenAI",
+            "Letta/MemGPT",
+            "Mem0",
+            "Zep",
+            "public implementation",
+            "deployment evidence",
+            "missing evidence",
+        ),
+        "CHRONOLOGY.md": ("1989", "2022", "2025", "2026", "source freeze"),
+        "NEGATIVE-EVIDENCE.md": (
+            "catastrophic forgetting",
+            "recursive self-distillation",
+            "replay scaling",
+            "data poisoning",
+            "stale memory",
+            "deletion",
+            "benchmark leakage",
+            "rollback",
+            "capacity exhaustion",
+            "operational",
+        ),
+    }
+    for name, tokens in token_contracts.items():
+        path = paths[name]
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace").casefold()
+        for token in tokens:
+            if token.casefold() not in text:
+                _deep_content_missing(
+                    path, f"Required deep-research token is missing: {token}", diagnostics
+                )
+
+    source_path = paths["SOURCE-REGISTRY.json"]
+    source_ids: set[str] = set()
+    if source_path.is_file():
+        payload = _read_json(source_path, diagnostics)
+        sources = payload.get("sources") if isinstance(payload, dict) else None
+        if not isinstance(sources, list) or len(sources) < 30:
+            diagnostics.append(
+                Diagnostic(
+                    "deep-research-source-registry-too-small",
+                    str(source_path),
+                    "Deep research requires at least 30 frozen primary/official sources.",
+                )
+            )
+        else:
+            for source in sources:
+                if isinstance(source, dict) and isinstance(source.get("source_id"), str):
+                    source_ids.add(source["source_id"])
+
+    citation_path = paths["CITATION-POOL.json"]
+    if citation_path.is_file():
+        payload = _read_json(citation_path, diagnostics)
+        citations = payload.get("citations") if isinstance(payload, dict) else None
+        if not isinstance(citations, list) or len(citations) < 40:
+            diagnostics.append(
+                Diagnostic(
+                    "deep-research-citation-pool-too-small",
+                    str(citation_path),
+                    "Deep research requires at least 40 verified citation candidates.",
+                )
+            )
+
+    saturation_path = paths["SATURATION.json"]
+    if saturation_path.is_file():
+        payload = _read_json(saturation_path, diagnostics)
+        clusters = payload.get("clusters") if isinstance(payload, dict) else None
+        cluster_ids = {
+            item.get("cluster_id")
+            for item in clusters or []
+            if isinstance(item, dict)
+        }
+        expected = {f"C{i:02d}" for i in range(1, 13)}
+        if not isinstance(clusters, list) or not expected <= cluster_ids:
+            diagnostics.append(
+                Diagnostic(
+                    "deep-research-saturation-cluster-missing",
+                    str(saturation_path),
+                    f"Missing search clusters: {', '.join(sorted(expected - cluster_ids))}",
+                )
+            )
+
+    rights_path = paths["SOURCE-RIGHTS.json"]
+    if rights_path.is_file():
+        payload = _read_json(rights_path, diagnostics)
+        rights = payload.get("rights") if isinstance(payload, dict) else None
+        required = {
+            "source_id",
+            "license_id",
+            "evidence_url",
+            "redistribution_allowed",
+            "review_status",
+        }
+        if not isinstance(rights, list) or len(rights) < 15:
+            diagnostics.append(
+                Diagnostic(
+                    "deep-research-rights-registry-too-small",
+                    str(rights_path),
+                    "At least 15 load-bearing sources require reviewed rights records.",
+                )
+            )
+        else:
+            for index, record in enumerate(rights):
+                if not isinstance(record, dict) or not required <= set(record):
+                    _deep_content_missing(
+                        rights_path,
+                        f"Rights record {index} lacks required audit fields.",
+                        diagnostics,
+                    )
+                elif source_ids and record.get("source_id") not in source_ids:
+                    _deep_content_missing(
+                        rights_path,
+                        f"Rights record {index} refers to an unknown source.",
+                        diagnostics,
+                    )
+
+    s2_path = paths["S2-STATUS.json"]
+    if s2_path.is_file():
+        payload = _read_json(s2_path, diagnostics)
+        required = {
+            "schema_version",
+            "attempted_at",
+            "veridraft_version",
+            "veridraft_commit",
+            "semantic_scholar_status",
+            "fallback_protocol",
+            "saturation_interpretation",
+            "failure_evidence",
+        }
+        if not isinstance(payload, dict) or not required <= set(payload):
+            diagnostics.append(
+                Diagnostic(
+                    "deep-research-s2-status-incomplete",
+                    str(s2_path),
+                    "Semantic Scholar/Veridraft status must preserve version, failure, fallback, and interpretation evidence.",
+                )
+            )
+
+
 def validate_phase(
     root: Path,
     phase: str,
@@ -630,6 +805,8 @@ def validate_phase(
     diagnostics: list[Diagnostic] = []
     if enforce_contract and phase == "pre-research":
         _validate_pre_research_contract(phase_root, diagnostics)
+    if enforce_contract and phase == "deep-research":
+        _validate_deep_research_contract(phase_root, diagnostics)
     if reject_authoring_markers or reject_latex_reference_errors:
         diagnostics.extend(
             _scan_text_patterns(

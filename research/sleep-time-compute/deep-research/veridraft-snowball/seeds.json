@@ -1,0 +1,7 @@
+[
+  {
+    "paperId": "ARXIV:2504.13171",
+    "title": "Sleep-time Compute: Beyond Inference Scaling at Test-time",
+    "abstract": "Deferred computation over a known context anticipates future queries and amortizes later test-time reasoning."
+  }
+]

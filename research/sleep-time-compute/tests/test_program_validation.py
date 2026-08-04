@@ -325,3 +325,75 @@ def test_repository_pre_research_package_satisfies_contract():
     )
 
     assert report.success, report.diagnostics
+
+
+def test_deep_research_phase_requires_all_evidence_artifacts(tmp_path):
+    module = _load_validator()
+
+    report = module.validate_phase(tmp_path, "deep-research")
+
+    assert "deep-research-file-missing" in _codes(report)
+
+
+def test_deep_research_rejects_empty_registries_and_missing_clusters(tmp_path):
+    module = _load_validator()
+    phase_root = tmp_path / "research" / "sleep-time-compute" / "deep-research"
+    phase_root.mkdir(parents=True)
+    for filename in module.DEEP_RESEARCH_REQUIRED_FILES:
+        path = phase_root / filename
+        if filename == "SOURCE-REGISTRY.json":
+            _write_json(path, {"schema_version": "1.0.0", "sources": []})
+        elif filename == "CITATION-POOL.json":
+            _write_json(path, {"schema_version": "1.0.0", "citations": []})
+        elif filename == "SATURATION.json":
+            _write_json(path, {"schema_version": "1.0.0", "clusters": []})
+        elif filename == "SOURCE-RIGHTS.json":
+            _write_json(path, {"schema_version": "1.0.0", "rights": []})
+        elif filename == "S2-STATUS.json":
+            _write_json(path, {"schema_version": "1.0.0"})
+        else:
+            path.write_text("fixture\n", encoding="utf-8")
+
+    report = module.validate_phase(tmp_path, "deep-research")
+
+    assert _codes(report) >= {
+        "deep-research-source-registry-too-small",
+        "deep-research-citation-pool-too-small",
+        "deep-research-saturation-cluster-missing",
+        "deep-research-rights-registry-too-small",
+        "deep-research-s2-status-incomplete",
+        "deep-research-content-missing",
+    }
+
+
+def test_repository_deep_research_package_satisfies_contract():
+    module = _load_validator()
+    repository_root = PACKAGE_ROOT.parents[1]
+
+    report = module.validate_phase(
+        repository_root,
+        "deep-research",
+        reject_authoring_markers=True,
+    )
+
+    assert report.success, report.diagnostics
+
+
+def test_deep_research_source_citation_and_rights_ids_are_one_to_one():
+    phase_root = PACKAGE_ROOT / "deep-research"
+    sources = json.loads(
+        (phase_root / "SOURCE-REGISTRY.json").read_text(encoding="utf-8")
+    )["sources"]
+    citations = json.loads(
+        (phase_root / "CITATION-POOL.json").read_text(encoding="utf-8")
+    )["citations"]
+    rights = json.loads(
+        (phase_root / "SOURCE-RIGHTS.json").read_text(encoding="utf-8")
+    )["rights"]
+
+    source_ids = {item["source_id"] for item in sources}
+
+    assert len(sources) == len(source_ids) >= 60
+    assert {item["source_id"] for item in citations} == source_ids
+    assert {item["source_id"] for item in rights} == source_ids
+    assert all(item["status"] == "frozen" for item in sources)

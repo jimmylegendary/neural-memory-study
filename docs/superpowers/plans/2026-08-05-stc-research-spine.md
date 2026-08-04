@@ -119,7 +119,7 @@ python3 research/sleep-time-compute/program/validate_program.py --phase pre-rese
 
 Expected: validator passes; `rg` returns no matches.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add research/sleep-time-compute/pre-research
@@ -141,7 +141,7 @@ git commit -m "research: align sleep-time compute pre-research"
 - Consumes: `SEED-CORPUS.json`, official web sources, citation graph
 - Produces: verified sources with fixed versions and cluster saturation metrics
 
-- [ ] **Step 1: Verify Veridraft and deep-survey prerequisites**
+- [x] **Step 1: Verify Veridraft and deep-survey prerequisites**
 
 ```bash
 python3 -m veridraft --version
@@ -150,23 +150,23 @@ python3 -m veridraft status --config veridraft.stc-study.config.json
 
 Expected: Veridraft `0.1.0`; configuration resolves. If Semantic Scholar access is unavailable, record `s2_unavailable` and run the documented DOI/arXiv/manual citation fallback without fabricating saturation.
 
-- [ ] **Step 2: Run forward/backward snowballing per cluster**
+- [x] **Step 2: Run forward/backward snowballing per cluster**
 
 Use the Veridraft deep-survey scripts from `/home/jimmy/repos/veridraft/skills/literature-review-agent/scripts/` with `--max-rounds 4`, then verify every retained citation against DOI, arXiv, proceedings, or official repository metadata.
 
-- [ ] **Step 3: Audit 2025–2026 company and product lineages**
+- [x] **Step 3: Audit 2025–2026 company and product lineages**
 
 Required entities: Google/DeepMind, Meta, Microsoft, OpenAI, Letta/MemGPT, Mem0, Zep. Record separately: research mechanism, public implementation, product feature, deployment evidence, missing evidence, and last verified date.
 
-- [ ] **Step 4: Run negative-evidence search**
+- [x] **Step 4: Run negative-evidence search**
 
 Search for collapse, catastrophic forgetting, recursive self-distillation degradation, replay scaling cost, data poisoning, stale memory, deletion failure, benchmark leakage, rollback, capacity exhaustion, and operational incidents. Each negative claim needs a fixed locator.
 
-- [ ] **Step 5: Freeze citation and source-rights registries**
+- [x] **Step 5: Freeze citation and source-rights registries**
 
 Direct-reuse figures require `license_url`, `license_type`, `reuse_scope`, and source hash. Full-text artifacts without authoritative permission remain external references rather than committed copies.
 
-- [ ] **Step 6: Verify saturation and commit**
+- [x] **Step 6: Verify saturation and commit**
 
 ```bash
 python3 research/sleep-time-compute/program/validate_program.py --phase deep-research

@@ -1,0 +1,1239 @@
+{
+  "schema_version": "1.0.0",
+  "source_freeze": "2026-08-05",
+  "selection_policy": "primary and official sources only; secondary sources used for discovery but not retained",
+  "citations": [
+    {
+      "citation_id": "CIT-STC-0001",
+      "source_id": "SRC-STC-0001",
+      "title": "Why There Are Complementary Learning Systems in the Hippocampus and Neocortex",
+      "published_at": "1995-07-01",
+      "canonical_url": "https://doi.org/10.1037/0033-295X.102.3.419",
+      "clusters": [
+        "C01",
+        "C02",
+        "C08"
+      ],
+      "evidence_role": "supportive_and_qualifying",
+      "maturity": "Psychological Review, peer reviewed",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0002",
+      "source_id": "SRC-STC-0002",
+      "title": "Overcoming catastrophic forgetting in neural networks",
+      "published_at": "2016-12-02",
+      "canonical_url": "https://arxiv.org/abs/1612.00796v2",
+      "clusters": [
+        "C02",
+        "C08",
+        "C09"
+      ],
+      "evidence_role": "supportive_and_qualifying",
+      "maturity": "PNAS, peer reviewed",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0003",
+      "source_id": "SRC-STC-0003",
+      "title": "Continual Learning with Deep Generative Replay",
+      "published_at": "2017-05-24",
+      "canonical_url": "https://arxiv.org/abs/1705.08690v3",
+      "clusters": [
+        "C01",
+        "C02",
+        "C09"
+      ],
+      "evidence_role": "supportive_and_qualifying",
+      "maturity": "NeurIPS 2017, peer reviewed",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0004",
+      "source_id": "SRC-STC-0004",
+      "title": "Gradient Episodic Memory for Continual Learning",
+      "published_at": "2017-06-26",
+      "canonical_url": "https://arxiv.org/abs/1706.08840v6",
+      "clusters": [
+        "C02",
+        "C09"
+      ],
+      "evidence_role": "strong_alternative",
+      "maturity": "NeurIPS 2017, peer reviewed",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0005",
+      "source_id": "SRC-STC-0005",
+      "title": "Dense Associative Memory for Pattern Recognition",
+      "published_at": "2016-06-03",
+      "canonical_url": "https://arxiv.org/abs/1606.01164v2",
+      "clusters": [
+        "C01",
+        "C02",
+        "C09"
+      ],
+      "evidence_role": "direct_precursor",
+      "maturity": "preprint lineage; final status to re-verify",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0006",
+      "source_id": "SRC-STC-0006",
+      "title": "FearNet: Brain-Inspired Model for Incremental Learning",
+      "published_at": "2017-11-28",
+      "canonical_url": "https://arxiv.org/abs/1711.10563v2",
+      "clusters": [
+        "C01",
+        "C02",
+        "C08"
+      ],
+      "evidence_role": "direct_precursor",
+      "maturity": "ICLR 2018 conference paper",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0007",
+      "source_id": "SRC-STC-0007",
+      "title": "Progress & Compress: A scalable framework for continual learning",
+      "published_at": "2018-05-16",
+      "canonical_url": "https://arxiv.org/abs/1805.06370v2",
+      "clusters": [
+        "C02",
+        "C03",
+        "C09"
+      ],
+      "evidence_role": "direct_precursor",
+      "maturity": "ICML 2018, peer reviewed",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0008",
+      "source_id": "SRC-STC-0008",
+      "title": "Continual Learning: Tackling Catastrophic Forgetting in Deep Neural Networks with Replay Processes",
+      "published_at": "2020-07-01",
+      "canonical_url": "https://arxiv.org/abs/2007.00487v3",
+      "clusters": [
+        "C01",
+        "C02",
+        "C09"
+      ],
+      "evidence_role": "supportive_and_qualifying",
+      "maturity": "Nature Communications, peer reviewed",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0009",
+      "source_id": "SRC-STC-0009",
+      "title": "Learning Cortical Representations through Perturbed and Adversarial Dreaming",
+      "published_at": "2022-04-06",
+      "canonical_url": "https://doi.org/10.7554/eLife.76384",
+      "clusters": [
+        "C01",
+        "C09"
+      ],
+      "evidence_role": "supportive_and_qualifying",
+      "maturity": "eLife, peer reviewed",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0010",
+      "source_id": "SRC-STC-0010",
+      "title": "A Model of Autonomous Interactions between Hippocampus and Neocortex Driving Sleep-Dependent Memory Consolidation",
+      "published_at": "2022-11-01",
+      "canonical_url": "https://doi.org/10.1073/pnas.2123432119",
+      "clusters": [
+        "C01",
+        "C08",
+        "C09"
+      ],
+      "evidence_role": "supportive_and_qualifying",
+      "maturity": "PNAS, peer reviewed",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0011",
+      "source_id": "SRC-STC-0011",
+      "title": "Sleep Prevents Catastrophic Forgetting in Spiking Neural Networks by Forming a Joint Synaptic Weight Representation",
+      "published_at": "2022-11-18",
+      "canonical_url": "https://doi.org/10.1371/journal.pcbi.1010628",
+      "clusters": [
+        "C01",
+        "C02",
+        "C08"
+      ],
+      "evidence_role": "supportive_and_qualifying",
+      "maturity": "PLOS Computational Biology, peer reviewed",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0012",
+      "source_id": "SRC-STC-0012",
+      "title": "Sleep Replay Consolidation Governs the Ability to Learn New Information without Forgetting Old Knowledge",
+      "published_at": "2022-12-15",
+      "canonical_url": "https://doi.org/10.1038/s41467-022-34938-7",
+      "clusters": [
+        "C01",
+        "C02",
+        "C09"
+      ],
+      "evidence_role": "supportive_and_disconfirming",
+      "maturity": "Nature Communications, peer reviewed",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0013",
+      "source_id": "SRC-STC-0013",
+      "title": "MemGPT: Towards LLMs as Operating Systems",
+      "published_at": "2023-10-12",
+      "canonical_url": "https://arxiv.org/abs/2310.08560v2",
+      "clusters": [
+        "C05",
+        "C07",
+        "C10"
+      ],
+      "evidence_role": "strong_alternative",
+      "maturity": "arXiv preprint",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0014",
+      "source_id": "SRC-STC-0014",
+      "title": "Sleep-time Compute: Beyond Inference Scaling at Test-time",
+      "published_at": "2025-04-17",
+      "canonical_url": "https://arxiv.org/abs/2504.13171v1",
+      "clusters": [
+        "C05",
+        "C07",
+        "C10"
+      ],
+      "evidence_role": "central_supportive",
+      "maturity": "arXiv preprint",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0015",
+      "source_id": "SRC-STC-0015",
+      "title": "Mem0: Building Production-Ready AI Agents with Scalable Long-Term Memory",
+      "published_at": "2025-04-28",
+      "canonical_url": "https://arxiv.org/abs/2504.19413v1",
+      "clusters": [
+        "C05",
+        "C07",
+        "C11"
+      ],
+      "evidence_role": "strong_alternative",
+      "maturity": "ECAI 2025 paper and official product lineage",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0016",
+      "source_id": "SRC-STC-0016",
+      "title": "Zep: A Temporal Knowledge Graph Architecture for Agent Memory",
+      "published_at": "2025-01-20",
+      "canonical_url": "https://arxiv.org/abs/2501.13956v1",
+      "clusters": [
+        "C05",
+        "C07",
+        "C11"
+      ],
+      "evidence_role": "strong_alternative",
+      "maturity": "arXiv preprint and official Graphiti/Zep lineage",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0017",
+      "source_id": "SRC-STC-0017",
+      "title": "Titans: Learning to Memorize at Test Time",
+      "published_at": "2024-12-31",
+      "canonical_url": "https://arxiv.org/abs/2501.00663v1",
+      "clusters": [
+        "C04",
+        "C08",
+        "C10"
+      ],
+      "evidence_role": "adjacent_fast_state",
+      "maturity": "NeurIPS 2025 poster",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0018",
+      "source_id": "SRC-STC-0018",
+      "title": "It's All Connected: A Journey Through Test-Time Memorization, Attentional Bias, Retention, and Online Optimization",
+      "published_at": "2025-04-17",
+      "canonical_url": "https://arxiv.org/abs/2504.13173v1",
+      "clusters": [
+        "C04",
+        "C08",
+        "C09"
+      ],
+      "evidence_role": "adjacent_fast_state",
+      "maturity": "ICLR 2026 poster",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0019",
+      "source_id": "SRC-STC-0019",
+      "title": "ATLAS: Learning to Optimally Memorize the Context at Test Time",
+      "published_at": "2025-05-29",
+      "canonical_url": "https://arxiv.org/abs/2505.23735v1",
+      "clusters": [
+        "C04",
+        "C08",
+        "C10"
+      ],
+      "evidence_role": "adjacent_fast_state",
+      "maturity": "ICML 2026",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0020",
+      "source_id": "SRC-STC-0020",
+      "title": "Nested Learning: The Illusion of Deep Learning Architectures",
+      "published_at": "2025-12-31",
+      "canonical_url": "https://arxiv.org/abs/2512.24695v1",
+      "clusters": [
+        "C04",
+        "C08",
+        "C09"
+      ],
+      "evidence_role": "optimization_as_memory_theory",
+      "maturity": "NeurIPS 2025 poster",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0021",
+      "source_id": "SRC-STC-0021",
+      "title": "Language Models Need Sleep: Learning to Self-Modify and Consolidate Memories",
+      "published_at": "2026-06-02",
+      "canonical_url": "https://arxiv.org/abs/2606.03979v2",
+      "clusters": [
+        "C03",
+        "C07",
+        "C09"
+      ],
+      "evidence_role": "central_supportive",
+      "maturity": "fixed preprint; venue status to verify",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0022",
+      "source_id": "SRC-STC-0022",
+      "title": "Memory Caching: RNNs with Growing Memory",
+      "published_at": "2026-02-27",
+      "canonical_url": "https://arxiv.org/abs/2602.24281v1",
+      "clusters": [
+        "C04",
+        "C05",
+        "C10"
+      ],
+      "evidence_role": "strong_alternative_and_bridge",
+      "maturity": "fixed preprint; venue status to verify",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0023",
+      "source_id": "SRC-STC-0023",
+      "title": "Online Neural Space Time Memory for Dynamic Novel View Synthesis",
+      "published_at": "2026-07-16",
+      "canonical_url": "https://arxiv.org/abs/2607.15271v1",
+      "clusters": [
+        "C04",
+        "C08",
+        "C10"
+      ],
+      "evidence_role": "adjacent_fast_state",
+      "maturity": "fixed preprint; venue status to verify",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0024",
+      "source_id": "SRC-STC-0024",
+      "title": "TNT: Improving Chunkwise Training for Test-Time Memorization",
+      "published_at": "2025-11-10",
+      "canonical_url": "https://arxiv.org/abs/2511.07343v1",
+      "clusters": [
+        "C04",
+        "C09"
+      ],
+      "evidence_role": "adjacent_fast_state",
+      "maturity": "fixed preprint; venue status to verify",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0025",
+      "source_id": "SRC-STC-0025",
+      "title": "Memorizing Transformers",
+      "published_at": "2022-03-16",
+      "canonical_url": "https://arxiv.org/abs/2203.08913v1",
+      "clusters": [
+        "C04",
+        "C05",
+        "C10"
+      ],
+      "evidence_role": "strong_alternative",
+      "maturity": "ICLR 2022 spotlight",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0026",
+      "source_id": "SRC-STC-0026",
+      "title": "Augmenting Language Models with Long-Term Memory",
+      "published_at": "2023-06-12",
+      "canonical_url": "https://arxiv.org/abs/2306.07174v1",
+      "clusters": [
+        "C04",
+        "C05"
+      ],
+      "evidence_role": "strong_alternative",
+      "maturity": "NeurIPS 2023",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0027",
+      "source_id": "SRC-STC-0027",
+      "title": "Generative Adapter: Contextualizing Language Models in Parameters with A Single Forward Pass",
+      "published_at": "2024-11-08",
+      "canonical_url": "https://arxiv.org/abs/2411.05877v1",
+      "clusters": [
+        "C03",
+        "C06",
+        "C09"
+      ],
+      "evidence_role": "strong_alternative",
+      "maturity": "ICLR 2025 poster",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0028",
+      "source_id": "SRC-STC-0028",
+      "title": "Memory Layers at Scale",
+      "published_at": "2024-12-12",
+      "canonical_url": "https://arxiv.org/abs/2412.09764v2",
+      "clusters": [
+        "C03",
+        "C04",
+        "C08"
+      ],
+      "evidence_role": "capacity_substrate",
+      "maturity": "ICML 2025 poster",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0029",
+      "source_id": "SRC-STC-0029",
+      "title": "Self-Adapting Language Models",
+      "published_at": "2025-06-12",
+      "canonical_url": "https://arxiv.org/abs/2506.10943v2",
+      "clusters": [
+        "C03",
+        "C04",
+        "C09"
+      ],
+      "evidence_role": "strong_alternative_and_bridge",
+      "maturity": "NeurIPS 2025 spotlight",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0030",
+      "source_id": "SRC-STC-0030",
+      "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+      "published_at": "2021-06-17",
+      "canonical_url": "https://arxiv.org/abs/2106.09685v2",
+      "clusters": [
+        "C03",
+        "C09",
+        "C10"
+      ],
+      "evidence_role": "training_primitive",
+      "maturity": "ICLR 2022",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0031",
+      "source_id": "SRC-STC-0031",
+      "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+      "published_at": "2020-05-22",
+      "canonical_url": "https://arxiv.org/abs/2005.11401v4",
+      "clusters": [
+        "C05",
+        "C10"
+      ],
+      "evidence_role": "strong_alternative",
+      "maturity": "NeurIPS 2020",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0032",
+      "source_id": "SRC-STC-0032",
+      "title": "Locating and Editing Factual Associations in GPT",
+      "published_at": "2022-02-10",
+      "canonical_url": "https://arxiv.org/abs/2202.05262v5",
+      "clusters": [
+        "C03",
+        "C11"
+      ],
+      "evidence_role": "strong_alternative",
+      "maturity": "NeurIPS 2022",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0033",
+      "source_id": "SRC-STC-0033",
+      "title": "Mass-Editing Memory in a Transformer",
+      "published_at": "2022-10-13",
+      "canonical_url": "https://arxiv.org/abs/2210.07229v2",
+      "clusters": [
+        "C03",
+        "C11"
+      ],
+      "evidence_role": "strong_alternative",
+      "maturity": "ICLR 2023",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0034",
+      "source_id": "SRC-STC-0034",
+      "title": "How much do language models memorize?",
+      "published_at": "2025-05-30",
+      "canonical_url": "https://arxiv.org/abs/2505.24832v3",
+      "clusters": [
+        "C03",
+        "C08"
+      ],
+      "evidence_role": "capacity_boundary",
+      "maturity": "fixed preprint; final venue to verify",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0035",
+      "source_id": "SRC-STC-0035",
+      "title": "What to Keep, What to Forget: A Rate--Distortion View of Memory Compaction in LLMs and Agents",
+      "published_at": "2026-07-09",
+      "canonical_url": "https://arxiv.org/abs/2607.08032v1",
+      "clusters": [
+        "C05",
+        "C08",
+        "C09"
+      ],
+      "evidence_role": "theory_and_proposal",
+      "maturity": "arXiv preprint",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0036",
+      "source_id": "SRC-STC-0036",
+      "title": "Can a Language Model Learn Facts Continually in Its Weights?",
+      "published_at": "2026-07-13",
+      "canonical_url": "https://arxiv.org/abs/2607.11020v2",
+      "clusters": [
+        "C03",
+        "C08",
+        "C09"
+      ],
+      "evidence_role": "central_disconfirming",
+      "maturity": "Baseten arXiv preprint",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0037",
+      "source_id": "SRC-STC-0037",
+      "title": "MemDefrag: Latent Memory Defragmentation for Large Language Models",
+      "published_at": "2026-07-07",
+      "canonical_url": "https://arxiv.org/abs/2607.05969v2",
+      "clusters": [
+        "C04",
+        "C08"
+      ],
+      "evidence_role": "capacity_aware_latent_memory",
+      "maturity": "arXiv preprint",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0038",
+      "source_id": "SRC-STC-0038",
+      "title": "Episodic-to-Semantic Consolidation Without Identity Drift",
+      "published_at": "2026-07-02",
+      "canonical_url": "https://arxiv.org/abs/2607.01988v1",
+      "clusters": [
+        "C05",
+        "C07",
+        "C08"
+      ],
+      "evidence_role": "central_supportive",
+      "maturity": "arXiv preprint with Information Sciences running header",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0039",
+      "source_id": "SRC-STC-0039",
+      "title": "Dream-Augmented Neural Networks: Harnessing Synthetic Sleep for Continual Learning and Zero Forgetting",
+      "published_at": "2025-01-01",
+      "canonical_url": "https://doi.org/10.2139/ssrn.5402490",
+      "clusters": [
+        "C01",
+        "C02",
+        "C09"
+      ],
+      "evidence_role": "low_evidence_claim_to_audit",
+      "maturity": "SSRN abstract-only manuscript, not peer reviewed",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0040",
+      "source_id": "SRC-STC-0040",
+      "title": "Understanding LoRA as Knowledge Memory: An Empirical Analysis",
+      "published_at": "2026-03-01",
+      "canonical_url": "https://arxiv.org/abs/2603.01097v5",
+      "clusters": [
+        "C03",
+        "C08",
+        "C09"
+      ],
+      "evidence_role": "capacity_and_training_boundary",
+      "maturity": "ICML 2026 / PMLR 306",
+      "fixed_locator": "paper abstract, methods, results, and limitations; exact claim locators are frozen in the claim map",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0041",
+      "source_id": "SRC-STC-0041",
+      "title": "AI Models Collapse When Trained on Recursively Generated Data",
+      "published_at": "2024-07-24",
+      "canonical_url": "https://doi.org/10.1038/s41586-024-07566-y",
+      "clusters": [
+        "C03",
+        "C09",
+        "C12"
+      ],
+      "evidence_role": "central_disconfirming",
+      "maturity": "Nature, peer reviewed",
+      "fixed_locator": "abstract; Methods; Fig. 1-4; version of record",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0042",
+      "source_id": "SRC-STC-0042",
+      "title": "AgentPoison: Red-teaming LLM Agents via Poisoning Memory or Knowledge Bases",
+      "published_at": "2024-07-17",
+      "canonical_url": "https://arxiv.org/abs/2407.12784v1",
+      "clusters": [
+        "C05",
+        "C11",
+        "C12"
+      ],
+      "evidence_role": "central_disconfirming",
+      "maturity": "NeurIPS 2024",
+      "fixed_locator": "abstract; Sections 3-5; Tables 1-4",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0043",
+      "source_id": "SRC-STC-0043",
+      "title": "ReasoningBank: Scaling Agent Self-Evolving with Reasoning Memory",
+      "published_at": "2025-09-29",
+      "canonical_url": "https://arxiv.org/abs/2509.25140v2",
+      "clusters": [
+        "C05",
+        "C07",
+        "C09"
+      ],
+      "evidence_role": "strong_alternative_and_bridge",
+      "maturity": "ICLR 2026",
+      "fixed_locator": "abstract; Sections 3-5; main result tables",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0044",
+      "source_id": "SRC-STC-0044",
+      "title": "Learning Personalized Agents from Human Feedback",
+      "published_at": "2026-02-18",
+      "canonical_url": "https://arxiv.org/abs/2602.16173v1",
+      "clusters": [
+        "C05",
+        "C07",
+        "C11"
+      ],
+      "evidence_role": "strong_external_memory_alternative",
+      "maturity": "Meta arXiv preprint",
+      "fixed_locator": "abstract; method loop; benchmark results",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0045",
+      "source_id": "SRC-STC-0045",
+      "title": "Hyperagents",
+      "published_at": "2026-03-19",
+      "canonical_url": "https://arxiv.org/abs/2603.19461v1",
+      "clusters": [
+        "C07",
+        "C09",
+        "C12"
+      ],
+      "evidence_role": "adjacent_self_improvement",
+      "maturity": "Meta arXiv preprint",
+      "fixed_locator": "abstract; Sections 3-6; safety discussion",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0046",
+      "source_id": "SRC-STC-0046",
+      "title": "Continual Knowledge Updating in LLM Systems: Learning Through Multi-Timescale Memory Dynamics",
+      "published_at": "2026-05-06",
+      "canonical_url": "https://arxiv.org/abs/2605.05097v3",
+      "clusters": [
+        "C05",
+        "C08",
+        "C09"
+      ],
+      "evidence_role": "external_consolidation_theory",
+      "maturity": "arXiv preprint",
+      "fixed_locator": "abstract; multi-timescale dynamics; experiments and limitations",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0047",
+      "source_id": "SRC-STC-0047",
+      "title": "SCM: Sleep-Consolidated Memory with Algorithmic Forgetting for Large Language Models",
+      "published_at": "2026-04-22",
+      "canonical_url": "https://arxiv.org/abs/2604.20943v1",
+      "clusters": [
+        "C05",
+        "C08",
+        "C09"
+      ],
+      "evidence_role": "low_maturity_direct_stc",
+      "maturity": "single-author research preview",
+      "fixed_locator": "abstract; algorithm; ten-turn demonstration; limitations",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0048",
+      "source_id": "SRC-STC-0048",
+      "title": "Remember When It Matters: Proactive Memory Agent for Long-Horizon Agents",
+      "published_at": "2026-07-09",
+      "canonical_url": "https://arxiv.org/abs/2607.08716v1",
+      "clusters": [
+        "C05",
+        "C07",
+        "C11"
+      ],
+      "evidence_role": "learned_external_memory_policy",
+      "maturity": "arXiv preprint",
+      "fixed_locator": "abstract; SETA data; SFT/GRPO training; validation results",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0049",
+      "source_id": "SRC-STC-0049",
+      "title": "MaRS: Memory-Adaptive Routing for Reliable Capacity Expansion and Knowledge Retention",
+      "published_at": "2026-01-26",
+      "canonical_url": "https://openreview.net/forum?id=GGrLeik2qo",
+      "clusters": [
+        "C03",
+        "C08",
+        "C09"
+      ],
+      "evidence_role": "capacity_expansion_alternative",
+      "maturity": "ICLR 2026 Poster",
+      "fixed_locator": "OpenReview abstract; Sections 3-5; capacity expansion discussion",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0050",
+      "source_id": "SRC-STC-0050",
+      "title": "Memory-Statistics Tradeoff in Continual Learning with Structural Regularization",
+      "published_at": "2026-01-26",
+      "canonical_url": "https://openreview.net/forum?id=qfEqXJnlB4",
+      "clusters": [
+        "C02",
+        "C08",
+        "C09"
+      ],
+      "evidence_role": "capacity_tradeoff_theory",
+      "maturity": "ICLR 2026 Poster",
+      "fixed_locator": "OpenReview abstract; theorem statements; upper/lower bounds",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0051",
+      "source_id": "SRC-STC-0051",
+      "title": "From Player to Master: Enhancing Test-Time Learning of LLM Agents via Reinforcement Learning over Memory",
+      "published_at": "2026-04-30",
+      "canonical_url": "https://openreview.net/forum?id=gNWNtstp3r",
+      "clusters": [
+        "C05",
+        "C07",
+        "C09"
+      ],
+      "evidence_role": "trained_external_memory_policy",
+      "maturity": "ICML 2026 regular paper",
+      "fixed_locator": "OpenReview abstract; Figure 2; Sections 3-5",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0052",
+      "source_id": "SRC-STC-0052",
+      "title": "Dreaming: Better Memory for a More Helpful ChatGPT",
+      "published_at": "2026-06-04",
+      "canonical_url": "https://openai.com/index/chatgpt-memory-dreaming/",
+      "clusters": [
+        "C05",
+        "C07",
+        "C10",
+        "C11"
+      ],
+      "evidence_role": "production_functional_stc",
+      "maturity": "public production rollout",
+      "fixed_locator": "official page lines 39-53, 241-284 in 2026-08-05 capture",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0053",
+      "source_id": "SRC-STC-0053",
+      "title": "Memory and New Controls for ChatGPT",
+      "published_at": "2025-04-10",
+      "canonical_url": "https://openai.com/index/memory-and-new-controls-for-chatgpt/",
+      "clusters": [
+        "C05",
+        "C11",
+        "C12"
+      ],
+      "evidence_role": "governance_and_deletion_boundary",
+      "maturity": "public product controls",
+      "fixed_locator": "official page; memory controls and deletion semantics",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0054",
+      "source_id": "SRC-STC-0054",
+      "title": "ReasoningBank: Enabling Agents to Learn from Experience",
+      "published_at": "2026-04-21",
+      "canonical_url": "https://www.research.google/blog/reasoningbank-enabling-agents-to-learn-from-experience/",
+      "clusters": [
+        "C05",
+        "C07",
+        "C09"
+      ],
+      "evidence_role": "official_external_memory_research",
+      "maturity": "official research release",
+      "fixed_locator": "Distilling insights; MaTTS; Performance & emergent capabilities",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0055",
+      "source_id": "SRC-STC-0055",
+      "title": "Introducing Nested Learning: A New ML Paradigm for Continual Learning",
+      "published_at": "2025-11-07",
+      "canonical_url": "https://research.google/blog/introducing-nested-learning-a-new-ml-paradigm-for-continual-learning/",
+      "clusters": [
+        "C04",
+        "C08",
+        "C09"
+      ],
+      "evidence_role": "official_parametric_multifrequency_research",
+      "maturity": "official NeurIPS 2025 research release",
+      "fixed_locator": "continuum of memories; Hope architecture; limitations",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0056",
+      "source_id": "SRC-STC-0056",
+      "title": "Introducing STATE-Bench: A Benchmark for AI Agent Memory",
+      "published_at": "2026-05-19",
+      "canonical_url": "https://opensource.microsoft.com/blog/2026/05/19/introducing-state-bench-a-benchmark-for-ai-agent-memory/",
+      "clusters": [
+        "C05",
+        "C10",
+        "C11"
+      ],
+      "evidence_role": "production_memory_benchmark",
+      "maturity": "official benchmark release",
+      "fixed_locator": "evaluation loop; metrics; no-memory baseline; open challenge",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0057",
+      "source_id": "SRC-STC-0057",
+      "title": "Learning Personalized Agents from Human Feedback",
+      "published_at": "2026-02-26",
+      "canonical_url": "https://ai.meta.com/research/publications/learning-personalized-agents-from-human-feedback/",
+      "clusters": [
+        "C05",
+        "C07",
+        "C11"
+      ],
+      "evidence_role": "official_external_memory_research",
+      "maturity": "official Meta research release",
+      "fixed_locator": "official abstract; three-step online feedback loop",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0058",
+      "source_id": "SRC-STC-0058",
+      "title": "HyperAgents",
+      "published_at": "2026-03-24",
+      "canonical_url": "https://ai.meta.com/research/publications/hyperagents/",
+      "clusters": [
+        "C07",
+        "C09",
+        "C12"
+      ],
+      "evidence_role": "official_self_improvement_research",
+      "maturity": "official Meta research release",
+      "fixed_locator": "official abstract; accumulated improvement; safety precautions",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0059",
+      "source_id": "SRC-STC-0059",
+      "title": "Letta Sleeptime Multi-Agent V4",
+      "published_at": "2026-05-14",
+      "canonical_url": "https://github.com/letta-ai/letta/blob/0.16.8/letta/groups/sleeptime_multi_agent_v4.py",
+      "clusters": [
+        "C05",
+        "C07",
+        "C10"
+      ],
+      "evidence_role": "public_async_sleep_implementation",
+      "maturity": "tagged production repository code",
+      "fixed_locator": "class at line 805; post-response run near 988; background task near 1056; prompt near 1169",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0060",
+      "source_id": "SRC-STC-0060",
+      "title": "Letta Code Reflection Launcher",
+      "published_at": "2026-07-23",
+      "canonical_url": "https://github.com/letta-ai/letta-code/blob/v0.28.18/src/cli/helpers/reflection-launcher.ts",
+      "clusters": [
+        "C07",
+        "C10",
+        "C11"
+      ],
+      "evidence_role": "versioned_external_memory_update_pattern",
+      "maturity": "tagged production repository code",
+      "fixed_locator": "isolated worktree/snapshot lines 2207-2234; merge-on-success lines 2281-2285",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0061",
+      "source_id": "SRC-STC-0061",
+      "title": "Mem0 V3 Add Memories API",
+      "published_at": "2026-08-05",
+      "canonical_url": "https://docs.mem0.ai/api-reference/memory/add-memories",
+      "clusters": [
+        "C05",
+        "C07",
+        "C11"
+      ],
+      "evidence_role": "async_external_memory_ingestion",
+      "maturity": "official product documentation snapshot",
+      "fixed_locator": "official page lines 207-217 and V3 behavior section",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0062",
+      "source_id": "SRC-STC-0062",
+      "title": "Mem0 Memory Decay",
+      "published_at": "2026-08-05",
+      "canonical_url": "https://docs.mem0.ai/platform/features/memory-decay",
+      "clusters": [
+        "C05",
+        "C08",
+        "C11"
+      ],
+      "evidence_role": "bounded_retrieval_ranking_mechanism",
+      "maturity": "official product documentation snapshot",
+      "fixed_locator": "official page lines 81-120, 243-271",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0063",
+      "source_id": "SRC-STC-0063",
+      "title": "Mem0 Dream",
+      "published_at": "2026-08-05",
+      "canonical_url": "https://docs.mem0.ai/platform/features/dream",
+      "clusters": [
+        "C05",
+        "C07",
+        "C08",
+        "C11"
+      ],
+      "evidence_role": "production_external_sleep_consolidation",
+      "maturity": "official paid product documentation snapshot",
+      "fixed_locator": "official page lines 81-145 and 190-226",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0064",
+      "source_id": "SRC-STC-0064",
+      "title": "Mem0 OpenClaw Dream Gate",
+      "published_at": "2026-07-22",
+      "canonical_url": "https://github.com/mem0ai/mem0/blob/v2.0.13/integrations/openclaw/dream-gate.ts",
+      "clusters": [
+        "C07",
+        "C10",
+        "C11"
+      ],
+      "evidence_role": "public_sleep_trigger_implementation",
+      "maturity": "tagged integration code, not a paper result",
+      "fixed_locator": "automatic consolidation and persistent lock/state near lines 620-632",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0065",
+      "source_id": "SRC-STC-0065",
+      "title": "Graphiti: Temporal Knowledge Graphs for Agent Memory",
+      "published_at": "2026-08-03",
+      "canonical_url": "https://github.com/getzep/graphiti/blob/aab852df94413fd0d55cbea2b7886173020281d5/README.md",
+      "clusters": [
+        "C05",
+        "C08",
+        "C11"
+      ],
+      "evidence_role": "external_temporal_graph_memory",
+      "maturity": "pinned official repository",
+      "fixed_locator": "README overview; temporal updates; provenance; hybrid retrieval",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0066",
+      "source_id": "SRC-STC-0066",
+      "title": "Zep Episodes",
+      "published_at": "2026-08-05",
+      "canonical_url": "https://help.getzep.com/episodes",
+      "clusters": [
+        "C05",
+        "C08",
+        "C11"
+      ],
+      "evidence_role": "episodic_provenance_storage",
+      "maturity": "official product documentation snapshot",
+      "fixed_locator": "official page lines 163-168 in 2026-08-05 capture",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0067",
+      "source_id": "SRC-STC-0067",
+      "title": "STATE-Bench Repository",
+      "published_at": "2026-07-16",
+      "canonical_url": "https://github.com/microsoft/STATE-Bench/tree/4efcbf2d4fe60df04878859b692d9391f3d5b33a",
+      "clusters": [
+        "C05",
+        "C10",
+        "C11"
+      ],
+      "evidence_role": "reproducible_agent_memory_benchmark",
+      "maturity": "pinned official repository",
+      "fixed_locator": "README; task suite; metrics; memory interface",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0068",
+      "source_id": "SRC-STC-0068",
+      "title": "Catastrophic Interference in Connectionist Networks: The Sequential Learning Problem",
+      "published_at": "1989-01-01",
+      "canonical_url": "https://doi.org/10.1016/S0079-7421(08)60536-8",
+      "clusters": [
+        "C02",
+        "C08"
+      ],
+      "evidence_role": "seminal_problem_definition",
+      "maturity": "Psychology of Learning and Motivation book chapter",
+      "fixed_locator": "chapter problem statement and sequential-learning experiments",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0069",
+      "source_id": "SRC-STC-0069",
+      "title": "Is Model Collapse Inevitable? Breaking the Curse of Recursion by Accumulating Real and Synthetic Data",
+      "published_at": "2024-04-01",
+      "canonical_url": "https://arxiv.org/abs/2404.01413v2",
+      "clusters": [
+        "C03",
+        "C09",
+        "C12"
+      ],
+      "evidence_role": "qualifying_negative_result",
+      "maturity": "ICML 2024",
+      "fixed_locator": "abstract; accumulated-data experiments; main theorem and figures",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0070",
+      "source_id": "SRC-STC-0070",
+      "title": "Continual Learning of Diffusion Models with Generative Distillation",
+      "published_at": "2023-11-23",
+      "canonical_url": "https://arxiv.org/abs/2311.14028v2",
+      "clusters": [
+        "C02",
+        "C03",
+        "C09"
+      ],
+      "evidence_role": "replay_failure_and_distillation_remedy",
+      "maturity": "arXiv preprint",
+      "fixed_locator": "abstract; catastrophic denoising failure; generative distillation method and experiments",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0071",
+      "source_id": "SRC-STC-0071",
+      "title": "When Benchmarks Leak: Inference-Time Decontamination for LLMs",
+      "published_at": "2026-07-01",
+      "canonical_url": "https://aclanthology.org/2026.acl-long.2071/",
+      "clusters": [
+        "C09",
+        "C11"
+      ],
+      "evidence_role": "benchmark_contamination_negative",
+      "maturity": "ACL 2026 long paper",
+      "fixed_locator": "pages 44743-44760; abstract; contamination experiments",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0072",
+      "source_id": "SRC-STC-0072",
+      "title": "AgentLeak: A Benchmark for Internal-Channel Privacy Leakage in Multi-Agent LLM Systems",
+      "published_at": "2026-02-12",
+      "canonical_url": "https://arxiv.org/abs/2602.11510v3",
+      "clusters": [
+        "C10",
+        "C11",
+        "C12"
+      ],
+      "evidence_role": "internal_channel_privacy_negative",
+      "maturity": "arXiv preprint",
+      "fixed_locator": "abstract; threat taxonomy; internal-channel results",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    },
+    {
+      "citation_id": "CIT-STC-0073",
+      "source_id": "SRC-STC-0073",
+      "title": "Search-Time Contamination in Deep Research Agents: Measuring Performance Inflation in Public Benchmark Evaluation",
+      "published_at": "2026-06-03",
+      "canonical_url": "https://arxiv.org/abs/2606.05241v1",
+      "clusters": [
+        "C05",
+        "C09",
+        "C11"
+      ],
+      "evidence_role": "retrieval_evaluation_contamination_negative",
+      "maturity": "arXiv preprint",
+      "fixed_locator": "abstract; contamination taxonomy; six-benchmark evaluation",
+      "decision": "retain",
+      "verified_at": "2026-08-05"
+    }
+  ]
+}
