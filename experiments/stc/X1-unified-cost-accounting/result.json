@@ -1,0 +1,356 @@
+{
+  "meta": {
+    "id": "X1-unified-cost-accounting",
+    "title": "Sleep-time compute 상각 논증의 유효 범위",
+    "grade": "EXPLORATION-GRADE / ACCOUNTING (측정 아님)",
+    "deterministic": true,
+    "randomness": "none",
+    "unit": "cost normalised so that one sleep-time generated token = 1",
+    "regimes": {
+      "stateful_gsm_symbolic": {
+        "gen_base": 600.0,
+        "reduction": 5.0,
+        "gen_source": "[Letta STC Fig.3 p.6] test-time 토큰 축 상단 근처. 수치표 없음 — 축에서 읽음",
+        "reduction_source": "[Letta STC Abstract; §5.1 p.6] 'roughly 5x'",
+        "context_character": "GSM8K에 1~2절 추가한 문장 몇 개. 짧다",
+        "len_c_plausible": 400.0
+      },
+      "stateful_aime": {
+        "gen_base": 22500.0,
+        "reduction": 5.0,
+        "gen_source": "[Letta STC Fig.4 p.7] 축 상단 (모델별 1000~22500)",
+        "reduction_source": "[Letta STC Abstract; §5.1 p.6]",
+        "context_character": "AIME 문제의 진술문들. 짧다. 일부 인스턴스는 문맥이 비어 있음 [App. J]",
+        "len_c_plausible": 300.0
+      },
+      "swe_features": {
+        "gen_base": 10000.0,
+        "reduction": 1.5,
+        "gen_source": "[Letta STC Fig.11 p.12] 3000~10000",
+        "reduction_source": "[Letta STC §6 p.12] 'roughly 1.5x'",
+        "context_character": "형제 PR 묶음 = 실제 코드베이스. 수천~수만 토큰",
+        "len_c_plausible": 8000.0
+      }
+    },
+    "from_paper": {
+      "kappa_cost": {
+        "value": 10.0,
+        "source": "[Letta STC §5.3 p.8 + fn.4] Databricks provisioned-throughput 문서 링크",
+        "note": "민감도 분석 없음. 측정 아님"
+      },
+      "n_rewrites_max": {
+        "value": 10.0,
+        "source": "[Letta STC App. K p.27] J <= 10 rethink_memory 호출"
+      },
+      "kappa_par_grid": {
+        "value": [
+          1,
+          2,
+          5,
+          10
+        ],
+        "source": "[Letta STC §5.2 p.8; Fig.7 legend p.10]",
+        "note": "논문은 5벌이 10벌보다 대체로 낫다고 보고하며 기제를 제시하지 않음"
+      }
+    },
+    "absent_from_paper": {
+      "len_c": "원 문맥 길이 — 토큰/문자 수 미보고. len_c_plausible은 이 실험의 가정",
+      "len_chat": "learned context 길이 — 미보고. 상태 용량 C가 absent인 이유",
+      "B_s_gen": "sleep 생성 토큰 수 — 미보고. 상각 논증의 분자가 숫자로 없음",
+      "N_q_distribution": "실서빙에서 한 문맥을 공유하는 질의 수의 분포 — 미보고. {1,2,5,10}으로 sweep만"
+    },
+    "assumptions_favouring_stc": {
+      "A1": "sleep 생성 토큰에는 kappa_cost 배수를 적용하지 않는다(throughput-optimized). STC에 유리",
+      "A2": "sleep의 문맥 읽기는 n_rewrites회로만 계산한다. 실제 rethink 루프는 누적 프롬프트를 다시 읽으므로 과소계상. STC에 유리",
+      "A3": "baseline은 c-hat 없이 원 문맥만 읽는다. 공정",
+      "A4": "정확도는 동일하다고 놓는다(논문의 '동일 정확도 도달' 프레이밍). 정확도 차이는 이 회계에 없다",
+      "A5": "원 문맥을 유지한다(keep_raw=True). 논문이 원시 문맥과 learned context를 함께 쓴다고 명시"
+    },
+    "caveat_tags": {
+      "ACCOUNTING-NOT-MEASURED": "닫힌 형태 회계다. wall-clock도 청구액도 아니다",
+      "PAPER-ABSENT-SWEPT": "len_c, len_chat, B_s_gen은 원 논문에 없어 가정/sweep한다",
+      "AXIS-READ": "gen_base는 수치표가 없어 그림 축 범위에서 읽은 값",
+      "SELF-BUILT-BENCH": "5x·1.5x 자체가 저자 제작 벤치의 값",
+      "PRO-STC-ASSUMPTIONS": "가정 A1·A2는 STC에 유리한 쪽으로 잡혀 있다"
+    }
+  },
+  "Q1_Q2_critical_length_by_regime": {
+    "description": "c-hat이 L*를 넘으면 N_q를 아무리 키워도 baseline을 이길 수 없다. L*/|c| 가 1보다 훨씬 크면 여유가 크고, 1 근처면 실제로 물린다",
+    "values": {
+      "stateful_gsm_symbolic": {
+        "gen_base": 600.0,
+        "reduction": 5.0,
+        "len_c_assumed": 400.0,
+        "context_character": "GSM8K에 1~2절 추가한 문장 몇 개. 짧다",
+        "critical_len_chat": {
+          "paper_implicit(w_in=0),kappa_par=1": {
+            "L_star_tokens": null,
+            "L_star_over_len_c": null
+          },
+          "paper_implicit(w_in=0),kappa_par=2": {
+            "L_star_tokens": null,
+            "L_star_over_len_c": null
+          },
+          "paper_implicit(w_in=0),kappa_par=5": {
+            "L_star_tokens": null,
+            "L_star_over_len_c": null
+          },
+          "paper_implicit(w_in=0),kappa_par=10": {
+            "L_star_tokens": null,
+            "L_star_over_len_c": null
+          },
+          "pricing(w_in=0.25),kappa_par=1": {
+            "L_star_tokens": 19200.0,
+            "L_star_over_len_c": 48.0
+          },
+          "pricing(w_in=0.25),kappa_par=2": {
+            "L_star_tokens": 9600.0,
+            "L_star_over_len_c": 24.0
+          },
+          "pricing(w_in=0.25),kappa_par=5": {
+            "L_star_tokens": 3840.0,
+            "L_star_over_len_c": 9.6
+          },
+          "pricing(w_in=0.25),kappa_par=10": {
+            "L_star_tokens": 1920.0,
+            "L_star_over_len_c": 4.8
+          },
+          "flops(w_in=1.0),kappa_par=1": {
+            "L_star_tokens": 4800.0,
+            "L_star_over_len_c": 12.0
+          },
+          "flops(w_in=1.0),kappa_par=2": {
+            "L_star_tokens": 2400.0,
+            "L_star_over_len_c": 6.0
+          },
+          "flops(w_in=1.0),kappa_par=5": {
+            "L_star_tokens": 960.0,
+            "L_star_over_len_c": 2.4
+          },
+          "flops(w_in=1.0),kappa_par=10": {
+            "L_star_tokens": 480.0,
+            "L_star_over_len_c": 1.2
+          }
+        }
+      },
+      "stateful_aime": {
+        "gen_base": 22500.0,
+        "reduction": 5.0,
+        "len_c_assumed": 300.0,
+        "context_character": "AIME 문제의 진술문들. 짧다. 일부 인스턴스는 문맥이 비어 있음 [App. J]",
+        "critical_len_chat": {
+          "paper_implicit(w_in=0),kappa_par=1": {
+            "L_star_tokens": null,
+            "L_star_over_len_c": null
+          },
+          "paper_implicit(w_in=0),kappa_par=2": {
+            "L_star_tokens": null,
+            "L_star_over_len_c": null
+          },
+          "paper_implicit(w_in=0),kappa_par=5": {
+            "L_star_tokens": null,
+            "L_star_over_len_c": null
+          },
+          "paper_implicit(w_in=0),kappa_par=10": {
+            "L_star_tokens": null,
+            "L_star_over_len_c": null
+          },
+          "pricing(w_in=0.25),kappa_par=1": {
+            "L_star_tokens": 720000.0,
+            "L_star_over_len_c": 2400.0
+          },
+          "pricing(w_in=0.25),kappa_par=2": {
+            "L_star_tokens": 360000.0,
+            "L_star_over_len_c": 1200.0
+          },
+          "pricing(w_in=0.25),kappa_par=5": {
+            "L_star_tokens": 144000.0,
+            "L_star_over_len_c": 480.0
+          },
+          "pricing(w_in=0.25),kappa_par=10": {
+            "L_star_tokens": 72000.0,
+            "L_star_over_len_c": 240.0
+          },
+          "flops(w_in=1.0),kappa_par=1": {
+            "L_star_tokens": 180000.0,
+            "L_star_over_len_c": 600.0
+          },
+          "flops(w_in=1.0),kappa_par=2": {
+            "L_star_tokens": 90000.0,
+            "L_star_over_len_c": 300.0
+          },
+          "flops(w_in=1.0),kappa_par=5": {
+            "L_star_tokens": 36000.0,
+            "L_star_over_len_c": 120.0
+          },
+          "flops(w_in=1.0),kappa_par=10": {
+            "L_star_tokens": 18000.0,
+            "L_star_over_len_c": 60.0
+          }
+        }
+      },
+      "swe_features": {
+        "gen_base": 10000.0,
+        "reduction": 1.5,
+        "len_c_assumed": 8000.0,
+        "context_character": "형제 PR 묶음 = 실제 코드베이스. 수천~수만 토큰",
+        "critical_len_chat": {
+          "paper_implicit(w_in=0),kappa_par=1": {
+            "L_star_tokens": null,
+            "L_star_over_len_c": null
+          },
+          "paper_implicit(w_in=0),kappa_par=2": {
+            "L_star_tokens": null,
+            "L_star_over_len_c": null
+          },
+          "paper_implicit(w_in=0),kappa_par=5": {
+            "L_star_tokens": null,
+            "L_star_over_len_c": null
+          },
+          "paper_implicit(w_in=0),kappa_par=10": {
+            "L_star_tokens": null,
+            "L_star_over_len_c": null
+          },
+          "pricing(w_in=0.25),kappa_par=1": {
+            "L_star_tokens": 133333.3,
+            "L_star_over_len_c": 16.67
+          },
+          "pricing(w_in=0.25),kappa_par=2": {
+            "L_star_tokens": 66666.7,
+            "L_star_over_len_c": 8.33
+          },
+          "pricing(w_in=0.25),kappa_par=5": {
+            "L_star_tokens": 26666.7,
+            "L_star_over_len_c": 3.33
+          },
+          "pricing(w_in=0.25),kappa_par=10": {
+            "L_star_tokens": 13333.3,
+            "L_star_over_len_c": 1.67
+          },
+          "flops(w_in=1.0),kappa_par=1": {
+            "L_star_tokens": 33333.3,
+            "L_star_over_len_c": 4.17
+          },
+          "flops(w_in=1.0),kappa_par=2": {
+            "L_star_tokens": 16666.7,
+            "L_star_over_len_c": 2.08
+          },
+          "flops(w_in=1.0),kappa_par=5": {
+            "L_star_tokens": 6666.7,
+            "L_star_over_len_c": 0.83
+          },
+          "flops(w_in=1.0),kappa_par=10": {
+            "L_star_tokens": 3333.3,
+            "L_star_over_len_c": 0.42
+          }
+        }
+      }
+    }
+  },
+  "Q3_breakeven_Nq": {
+    "description": "STC가 baseline과 같아지는 질의 수. null = 상각 불가",
+    "values": {
+      "stateful_gsm_symbolic": {
+        "B_s_gen_assumed": 1500.0,
+        "n_rewrites_assumed": 3.0,
+        "kappa_par": 1,
+        "values": {
+          "paper_implicit(w_in=0),|c_hat|/|c|=0.25": 0.31,
+          "paper_implicit(w_in=0),|c_hat|/|c|=1.0": 0.31,
+          "paper_implicit(w_in=0),|c_hat|/|c|=4.0": 0.31,
+          "pricing(w_in=0.25),|c_hat|/|c|=0.25": 0.38,
+          "pricing(w_in=0.25),|c_hat|/|c|=1.0": 0.38,
+          "pricing(w_in=0.25),|c_hat|/|c|=4.0": 0.41,
+          "flops(w_in=1.0),|c_hat|/|c|=0.25": 0.57,
+          "flops(w_in=1.0),|c_hat|/|c|=1.0": 0.61,
+          "flops(w_in=1.0),|c_hat|/|c|=4.0": 0.84
+        }
+      },
+      "stateful_aime": {
+        "B_s_gen_assumed": 56250.0,
+        "n_rewrites_assumed": 3.0,
+        "kappa_par": 1,
+        "values": {
+          "paper_implicit(w_in=0),|c_hat|/|c|=0.25": 0.31,
+          "paper_implicit(w_in=0),|c_hat|/|c|=1.0": 0.31,
+          "paper_implicit(w_in=0),|c_hat|/|c|=4.0": 0.31,
+          "pricing(w_in=0.25),|c_hat|/|c|=0.25": 0.31,
+          "pricing(w_in=0.25),|c_hat|/|c|=1.0": 0.31,
+          "pricing(w_in=0.25),|c_hat|/|c|=4.0": 0.31,
+          "flops(w_in=1.0),|c_hat|/|c|=0.25": 0.32,
+          "flops(w_in=1.0),|c_hat|/|c|=1.0": 0.32,
+          "flops(w_in=1.0),|c_hat|/|c|=4.0": 0.32
+        }
+      },
+      "swe_features": {
+        "B_s_gen_assumed": 25000.0,
+        "n_rewrites_assumed": 3.0,
+        "kappa_par": 1,
+        "values": {
+          "paper_implicit(w_in=0),|c_hat|/|c|=0.25": 0.75,
+          "paper_implicit(w_in=0),|c_hat|/|c|=1.0": 0.75,
+          "paper_implicit(w_in=0),|c_hat|/|c|=4.0": 0.75,
+          "pricing(w_in=0.25),|c_hat|/|c|=0.25": 0.94,
+          "pricing(w_in=0.25),|c_hat|/|c|=1.0": 0.99,
+          "pricing(w_in=0.25),|c_hat|/|c|=4.0": 1.22,
+          "flops(w_in=1.0),|c_hat|/|c|=0.25": 1.56,
+          "flops(w_in=1.0),|c_hat|/|c|=1.0": 1.93,
+          "flops(w_in=1.0),|c_hat|/|c|=4.0": 36.75
+        }
+      }
+    }
+  },
+  "Q4_kappa_cost_sensitivity": {
+    "description": "SWE-Features 레짐, FLOPs 회계에서 kappa_cost가 임계에 미치는 영향. kappa_cost는 논문이 측정하지 않고 벤더 문서에서 인용한 상수다",
+    "values": {
+      "kappa_cost=1.0,kappa_par=1": {
+        "L_star_tokens": 3333.3,
+        "L_star_over_len_c": 0.42
+      },
+      "kappa_cost=1.0,kappa_par=10": {
+        "L_star_tokens": 333.3,
+        "L_star_over_len_c": 0.04
+      },
+      "kappa_cost=2.0,kappa_par=1": {
+        "L_star_tokens": 6666.7,
+        "L_star_over_len_c": 0.83
+      },
+      "kappa_cost=2.0,kappa_par=10": {
+        "L_star_tokens": 666.7,
+        "L_star_over_len_c": 0.08
+      },
+      "kappa_cost=5.0,kappa_par=1": {
+        "L_star_tokens": 16666.7,
+        "L_star_over_len_c": 2.08
+      },
+      "kappa_cost=5.0,kappa_par=10": {
+        "L_star_tokens": 1666.7,
+        "L_star_over_len_c": 0.21
+      },
+      "kappa_cost=10.0,kappa_par=1": {
+        "L_star_tokens": 33333.3,
+        "L_star_over_len_c": 4.17
+      },
+      "kappa_cost=10.0,kappa_par=10": {
+        "L_star_tokens": 3333.3,
+        "L_star_over_len_c": 0.42
+      },
+      "kappa_cost=20.0,kappa_par=1": {
+        "L_star_tokens": 66666.7,
+        "L_star_over_len_c": 8.33
+      },
+      "kappa_cost=20.0,kappa_par=10": {
+        "L_star_tokens": 6666.7,
+        "L_star_over_len_c": 0.83
+      }
+    }
+  },
+  "findings": {
+    "F1_the_missing_term_is_structural": "논문의 식은 한 번 내는 비용(B_s)만 N_q로 나눈다. learned context의 prefill은 매 질의마다 내는 비용이므로 상각되지 않는다. 이 항이 0이 아니면 'N_q를 키우면 언제나 이긴다'가 성립하지 않는 영역이 원리적으로 존재한다. 논문의 회계(w_in=0)는 그 영역의 경계를 무한대로 보내 표현 자체를 못 한다.",
+    "F2_gsm_regime_is_safe": "Stateful GSM-Symbolic 레짐에서는 여유가 크다. FLOPs 회계·kappa_par=1에서 L* = 4800.0 토큰 (문맥의 12.0배), kappa_par=10에서도 480.0 토큰 (1.2배). 즉 짧은 문맥·큰 절감률 영역에서 논문의 5x는 prefill 항을 넣어도 뒤집히지 않는다. 이 실험은 그것을 반박하지 않는다.",
+    "F3_swe_regime_is_where_it_bites": "SWE-Features 레짐에서는 여유가 급감한다. 절감률이 1.5x로 작고 문맥이 코드베이스라 L* = 33333.3 토큰 (문맥의 4.17배), kappa_par=10이면 3333.3 토큰 (0.42배)까지 좁아진다. 형제 PR 묶음을 요약한 learned context가 이 길이를 넘는 것은 드문 일이 아니다. 논문이 SWE-Features에서 '이득이 작다'고만 보고한 자리에, 회계는 '이득이 사라지는 경계가 가깝다'는 더 강한 진술을 허용한다.",
+    "F4_ordering_is_the_load_bearing_result": "레짐 간 여유의 순서 — GSM-Symbolic >> AIME > SWE-Features — 는 세 파라미터(절감률, 문맥 길이, 병렬 벌수)의 방향만으로 결정되며, 미보고 값의 선택에 둔감하다. 본문 단정문으로 쓸 수 있는 것은 이 순서다. L*의 절대치는 아니다.",
+    "F5_kappa_cost_is_load_bearing_and_unmeasured": "kappa_cost는 임계에 선형으로 들어가는데, 논문은 이 값을 측정하지 않고 벤더 문서 한 줄에서 인용했으며 민감도 분석을 하지 않았다. kappa_cost가 1에 가까우면(배치 처리로 wake도 throughput-optimized로 돌리는 경우) 임계는 10분의 1로 줄어든다.",
+    "honest_limit": "이 실험은 Letta의 5x를 반박하지 않는다. 5x는 생성 토큰 축에서 관측된 사실이다. 이 실험이 반박하는 것은 '생성 토큰 축이 비용 축과 같다'는 암묵 등식이며, 그 등식이 깨지는 지점이 논문이 이미 약하다고 보고한 레짐과 일치한다는 것이다."
+  }
+}
