@@ -73,9 +73,9 @@ node --test presentation/sleep-time-compute-deep/tests/content.test.mjs
 python3 presentation/sleep-time-compute-deep/tests/verify_deck_release.py
 
 # Claim gates and release manifest
-python3 -m veridraft gate sleep-time-compute-strategic-study-2026 --data-dir .veridraft-stc-study
+python3 -m veridraft --data-dir .veridraft-stc-study gate sleep-time-compute-strategic-study-2026
 python3 research/sleep-time-compute/program/build_release_manifest.py --root . --require-ready
-sha256sum -c build/publications/SHA256SUMS
+(cd build/publications && sha256sum -c SHA256SUMS)
 ```
 
 Expected release outputs are `build/publications/`의 7개 core PDF/PPTX, translation 15개 PDF, `FINAL-QA.json`, `STC-STUDY-RELEASE-MANIFEST.json`, `SHA256SUMS`다. Deck authoring은 `@oai/artifact-tool`만 사용하며 LibreOffice는 PDF export/QA에만 사용한다.

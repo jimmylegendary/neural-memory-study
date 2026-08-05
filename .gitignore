@@ -16,4 +16,5 @@ build/easy-companion/
 build/deck-docs/
 build/deck-work/
 build/publications/*.inspect.ndjson
+build/publications/qa-logs/
 .veridraft-stc-study/

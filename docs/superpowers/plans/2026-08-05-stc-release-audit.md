@@ -111,16 +111,16 @@ git commit -m "docs: index sleep-time compute study release"
 - [ ] **Step 1: Re-import and gate final bundle**
 
 ```bash
-python3 -m veridraft import-bundle claims/stc-study/bundle.json --data-dir .veridraft-stc-study
-python3 -m veridraft gate sleep-time-compute-strategic-study-2026 --data-dir .veridraft-stc-study | tee claims/stc-study/reports/final-gate.txt
+python3 -m veridraft --data-dir .veridraft-stc-study import-bundle claims/stc-study/bundle.json
+python3 -m veridraft --data-dir .veridraft-stc-study gate sleep-time-compute-strategic-study-2026 | tee claims/stc-study/reports/final-gate.txt
 ```
 
 - [ ] **Step 2: Run readiness and public egress**
 
 ```bash
-python3 -m veridraft readiness --venue mlsys --data-dir .veridraft-stc-study | tee claims/stc-study/reports/readiness-mlsys.txt
-python3 -m veridraft publish --audience public --data-dir .veridraft-stc-study | tee claims/stc-study/reports/publish-public.txt
-python3 -m veridraft events --data-dir .veridraft-stc-study | tee claims/stc-study/reports/events.txt
+python3 -m veridraft --data-dir .veridraft-stc-study readiness sleep-time-compute-strategic-study-2026 --venue mlsys | tee claims/stc-study/reports/readiness-mlsys-final.txt
+python3 -m veridraft --data-dir .veridraft-stc-study publish sleep-time-compute-strategic-study-2026 --audience public --venue mlsys | tee claims/stc-study/reports/publish-public.txt
+python3 -m veridraft --data-dir .veridraft-stc-study events | tee claims/stc-study/reports/events-final.txt
 ```
 
 Expected: no blocked public claims, no confidentiality leak, event chain valid. Venue AI-policy text may require human sign-off and is recorded rather than falsely marked approved.
@@ -154,8 +154,11 @@ python3 -m pytest -q paper-kr/common/tests translations-kr/stc-core/tests easy/s
 - [ ] **Step 2: Run publication QA**
 
 ```bash
-python3 paper-kr/common/build_publications.py --all --clean
-python3 paper-kr/common/qa_publications.py --all --strict --render-all-pages
+python3 paper-kr/common/build_publications.py --root . --target all --clean
+python3 paper-kr/common/qa_publications.py --pdf build/publications/TRAINING-BACKGROUND-FOR-SLEEP-TIME-COMPUTE-KR.pdf --kind background --require-all-concepts
+python3 paper-kr/common/qa_publications.py --pdf build/publications/SLEEP-TIME-COMPUTE-STRATEGIC-STUDY-KR.pdf --kind study --claim-map claims/stc-study/claim-map.json --figure-ledger claims/stc-study/figure-ledger.json
+python3 paper-kr/common/qa_publications.py --pdf build/publications/SLEEP-TIME-COMPUTE-CONFERENCE-KR.pdf --kind conference --min-pages 12 --max-pages 18
+python3 paper-kr/common/qa_publications.py --pdf build/publications/SLEEP-TIME-COMPUTE-CONFERENCE-APPENDIX-KR.pdf --kind appendix
 python3 translations-kr/stc-core/qa_translations.py --all --strict --render-all-pages
 python3 easy/sleep-time-compute/qa.py --all --combined --strict --render-all-pages
 ```
@@ -163,8 +166,9 @@ python3 easy/sleep-time-compute/qa.py --all --combined --strict --render-all-pag
 - [ ] **Step 3: Run presentation QA**
 
 ```bash
-(cd presentation/sleep-time-compute-deep-study && npm test && npm run build && npm run qa)
-python3 "$SKILL_DIR/container_tools/slides_test.py" presentation/sleep-time-compute-deep-study/build/sleep-time-compute-deep-study.pptx
+node --test presentation/sleep-time-compute-deep/tests/content.test.mjs
+python3 presentation/sleep-time-compute-deep/tests/verify_deck_release.py
+PYTHONPATH=build/deck-work/python-deps python3 "$SKILL_DIR/container_tools/slides_test.py" build/publications/SLEEP-TIME-COMPUTE-DEEP-SEMINAR-112SLIDES-KR.pptx --width 1280 --height 720
 ```
 
 - [ ] **Step 4: Run program and link QA**

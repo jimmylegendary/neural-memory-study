@@ -24,7 +24,7 @@
 
 ```bash
 python3 research/sleep-time-compute/program/build_release_manifest.py --root . --require-ready
-sha256sum -c build/publications/SHA256SUMS
+(cd build/publications && sha256sum -c SHA256SUMS)
 ```
 
 전체 재현 명령과 예상 출력은 [Sleep-Time Compute deliverables index](research/sleep-time-compute/DELIVERABLES.md)에 고정한다.
