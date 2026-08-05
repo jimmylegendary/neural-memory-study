@@ -1,0 +1,446 @@
+{
+  "meta": {
+    "id": "X2-state-capacity-accounting",
+    "title": "세 경로의 상태 용량·정보 밀도·스케일링 회계",
+    "grade": "EXPLORATION-GRADE / ACCOUNTING (측정 아님)",
+    "deterministic": true,
+    "randomness": "none",
+    "sourced_constants": {
+      "bits_per_parameter": {
+        "value": 3.64,
+        "range": [
+          2.86,
+          4.23
+        ],
+        "source": "[lm-memorization-capacity Fig.6 caption; Table 1] GPT half precision 3.64 bpp; Table 1 평균 bf16 3.51 / fp32 3.83, 설정별 범위 2.86–4.23",
+        "caveat": "무작위 uniform 문자열을 from-scratch 학습한 소형 GPT에서 측정. LoRA delta 적용은 이 실험의 외삽이며 상한으로만 사용"
+      },
+      "W_state_MB_per_layer_1p3B": {
+        "value": 134.2,
+        "source": "[NM experiments/results.json claim1] neural-mem-1.3B (d=2048, m=16, L=24, bf16)"
+      },
+      "W_rmw_GB_per_token_1p3B": {
+        "value": 6.44,
+        "source": "[NM experiments/results.json claim1] 전 층 상태의 토큰당 read-modify-write"
+      },
+      "memit_edits": {
+        "value": 10000,
+        "hours": 7.44,
+        "model": "GPT-J 6B",
+        "source": "[memit §5.2.2; App. B.4] 10,000 편집 총 7.44 hr, A6000",
+        "derived": "편집당 2.6773 sec (note-writer 산술, 논문에 없음)"
+      },
+      "mem0_store_tokens": {
+        "value_range": [
+          7000,
+          14000
+        ],
+        "source": "[mem0 §4] LOCOMO 대화당 저장 토큰 (바이트 미보고)"
+      },
+      "memory_layers_flops_invariance": {
+        "source": "[memory-layers §5.1] 'Models with the same base model configuration have negligible differences in FLOPs' — memory 파라미터를 10^2배 늘려도 FLOPs 사실상 불변"
+      }
+    },
+    "absent_from_corpus": {
+      "C_cap_in_bytes": "corpus 전체에서 상태 용량을 바이트로 보고한 논문 0편. letta-stc·zep·memory-layers·mem0 모두 absent. 이 실험은 구성 파라미터에서 복원한다"
+    },
+    "anchors": {
+      "neural-mem-1.3B": {
+        "d": 2048,
+        "L": 24,
+        "note": "NM 앵커. W-경로 연속성",
+        "params_B": 1.3,
+        "has_fast_weights": true
+      },
+      "dense-8B (d=4096, L=32)": {
+        "d": 4096,
+        "L": 32,
+        "params_B": 8.0,
+        "note": "SEAL / LM-Need-Sleep / MEMIT가 다루는 스케일. Llama-3-8B급 dense transformer",
+        "has_fast_weights": false
+      }
+    },
+    "caveat_tags": {
+      "ACCOUNTING-NOT-MEASURED": "구성 파라미터에서 복원한 바이트다. 실측 아님",
+      "BPP-EXTRAPOLATED": "3.64 bits/param을 LoRA delta에 적용한 것은 외삽. 상한으로만",
+      "CORPUS-SILENT-ON-BYTES": "상태 용량을 바이트로 보고한 논문이 corpus에 없음",
+      "E-PATH-TOKENS-ONLY": "E-경로 용량은 토큰 수만 보고됨. 바이트 환산은 이 실험의 가정"
+    }
+  },
+  "Q1_state_bytes_by_path": {
+    "neural-mem-1.3B": {
+      "anchor": {
+        "d": 2048,
+        "L": 24,
+        "note": "NM 앵커. W-경로 연속성",
+        "params_B": 1.3,
+        "has_fast_weights": true
+      },
+      "W_path": {
+        "bytes_per_active_session": 3220800000,
+        "MB": 3220.8,
+        "residence": "HBM 상주 (토큰마다 RMW)",
+        "lifetime": "세션 (transient)",
+        "traffic_GB_per_token": 6.44,
+        "provenance": "measured-in-NM (neural-mem-1.3B)",
+        "counterfactual_caveat": null
+      },
+      "Theta_path_lora": {
+        "variants": {
+          "r=4,q,v": {
+            "params": 786432,
+            "bytes_bf16": 1572864,
+            "MB": 1.57,
+            "info_capacity_bits_upper": 2862612,
+            "info_capacity_MB_upper": 0.36
+          },
+          "r=4,q,k,v,o": {
+            "params": 1572864,
+            "bytes_bf16": 3145728,
+            "MB": 3.15,
+            "info_capacity_bits_upper": 5725225,
+            "info_capacity_MB_upper": 0.72
+          },
+          "r=16,q,v": {
+            "params": 3145728,
+            "bytes_bf16": 6291456,
+            "MB": 6.29,
+            "info_capacity_bits_upper": 11450450,
+            "info_capacity_MB_upper": 1.43
+          },
+          "r=16,q,k,v,o": {
+            "params": 6291456,
+            "bytes_bf16": 12582912,
+            "MB": 12.58,
+            "info_capacity_bits_upper": 22900900,
+            "info_capacity_MB_upper": 2.86
+          },
+          "r=64,q,v": {
+            "params": 12582912,
+            "bytes_bf16": 25165824,
+            "MB": 25.17,
+            "info_capacity_bits_upper": 45801800,
+            "info_capacity_MB_upper": 5.73
+          },
+          "r=64,q,k,v,o": {
+            "params": 25165824,
+            "bytes_bf16": 50331648,
+            "MB": 50.33,
+            "info_capacity_bits_upper": 91603599,
+            "info_capacity_MB_upper": 11.45
+          }
+        },
+        "residence": "웜 스토리지 → 요청 시 로드",
+        "lifetime": "사용자 (영속)"
+      },
+      "Theta_path_direct_edit": {
+        "delta_bytes": 0,
+        "per_user_bytes_if_personalised": 2600000000,
+        "per_user_GB_if_personalised": 2.6,
+        "why": "MEMIT/ROME류는 공유 가중치를 제자리에서 고친다. delta 아티팩트가 없으므로 사용자별 개인화를 하려면 모델 전체 사본이 필요하다",
+        "edit_cost": {
+          "value": 10000,
+          "hours": 7.44,
+          "model": "GPT-J 6B",
+          "source": "[memit §5.2.2; App. B.4] 10,000 편집 총 7.44 hr, A6000",
+          "derived": "편집당 2.6773 sec (note-writer 산술, 논문에 없음)"
+        }
+      },
+      "E_path": {
+        "variants": {
+          "7000_tokens": {
+            "as_utf8_text_bytes_assumed_4B_per_token": 28000,
+            "as_utf8_text_KB": 28.0,
+            "info_bits_face_value": 224000,
+            "as_embeddings_d1536_fp32_bytes_512tok_chunks": 84000
+          },
+          "14000_tokens": {
+            "as_utf8_text_bytes_assumed_4B_per_token": 56000,
+            "as_utf8_text_KB": 56.0,
+            "info_bits_face_value": 448000,
+            "as_embeddings_d1536_fp32_bytes_512tok_chunks": 168000
+          }
+        },
+        "residence": "콜드/벡터 스토어 → 질의마다 ret() + prefill",
+        "lifetime": "세션~사용자",
+        "note": "논문이 바이트를 보고하지 않아 토큰→바이트 환산은 가정"
+      }
+    },
+    "dense-8B (d=4096, L=32)": {
+      "anchor": {
+        "d": 4096,
+        "L": 32,
+        "params_B": 8.0,
+        "note": "SEAL / LM-Need-Sleep / MEMIT가 다루는 스케일. Llama-3-8B급 dense transformer",
+        "has_fast_weights": false
+      },
+      "W_path": {
+        "bytes_per_active_session": 17177600000,
+        "MB": 17177.6,
+        "residence": "HBM 상주 (토큰마다 RMW)",
+        "lifetime": "세션 (transient)",
+        "traffic_GB_per_token": null,
+        "provenance": "counterfactual: d^2 * L extrapolation from the NM anchor",
+        "counterfactual_caveat": "이 앵커는 dense transformer이므로 W층이 존재하지 않는다. 이 값은 '같은 폭의 TTT류 모델이라면'이라는 반사실 수치이며, Llama-3-8B의 상태량이 아니다. 경로 간 자릿수 비교 용도로만 쓴다."
+      },
+      "Theta_path_lora": {
+        "variants": {
+          "r=4,q,v": {
+            "params": 2097152,
+            "bytes_bf16": 4194304,
+            "MB": 4.19,
+            "info_capacity_bits_upper": 7633633,
+            "info_capacity_MB_upper": 0.95
+          },
+          "r=4,q,k,v,o": {
+            "params": 4194304,
+            "bytes_bf16": 8388608,
+            "MB": 8.39,
+            "info_capacity_bits_upper": 15267267,
+            "info_capacity_MB_upper": 1.91
+          },
+          "r=16,q,v": {
+            "params": 8388608,
+            "bytes_bf16": 16777216,
+            "MB": 16.78,
+            "info_capacity_bits_upper": 30534533,
+            "info_capacity_MB_upper": 3.82
+          },
+          "r=16,q,k,v,o": {
+            "params": 16777216,
+            "bytes_bf16": 33554432,
+            "MB": 33.55,
+            "info_capacity_bits_upper": 61069066,
+            "info_capacity_MB_upper": 7.63
+          },
+          "r=64,q,v": {
+            "params": 33554432,
+            "bytes_bf16": 67108864,
+            "MB": 67.11,
+            "info_capacity_bits_upper": 122138132,
+            "info_capacity_MB_upper": 15.27
+          },
+          "r=64,q,k,v,o": {
+            "params": 67108864,
+            "bytes_bf16": 134217728,
+            "MB": 134.22,
+            "info_capacity_bits_upper": 244276265,
+            "info_capacity_MB_upper": 30.53
+          }
+        },
+        "residence": "웜 스토리지 → 요청 시 로드",
+        "lifetime": "사용자 (영속)"
+      },
+      "Theta_path_direct_edit": {
+        "delta_bytes": 0,
+        "per_user_bytes_if_personalised": 16000000000,
+        "per_user_GB_if_personalised": 16.0,
+        "why": "MEMIT/ROME류는 공유 가중치를 제자리에서 고친다. delta 아티팩트가 없으므로 사용자별 개인화를 하려면 모델 전체 사본이 필요하다",
+        "edit_cost": {
+          "value": 10000,
+          "hours": 7.44,
+          "model": "GPT-J 6B",
+          "source": "[memit §5.2.2; App. B.4] 10,000 편집 총 7.44 hr, A6000",
+          "derived": "편집당 2.6773 sec (note-writer 산술, 논문에 없음)"
+        }
+      },
+      "E_path": {
+        "variants": {
+          "7000_tokens": {
+            "as_utf8_text_bytes_assumed_4B_per_token": 28000,
+            "as_utf8_text_KB": 28.0,
+            "info_bits_face_value": 224000,
+            "as_embeddings_d1536_fp32_bytes_512tok_chunks": 84000
+          },
+          "14000_tokens": {
+            "as_utf8_text_bytes_assumed_4B_per_token": 56000,
+            "as_utf8_text_KB": 56.0,
+            "info_bits_face_value": 448000,
+            "as_embeddings_d1536_fp32_bytes_512tok_chunks": 168000
+          }
+        },
+        "residence": "콜드/벡터 스토어 → 질의마다 ret() + prefill",
+        "lifetime": "세션~사용자",
+        "note": "논문이 바이트를 보고하지 않아 토큰→바이트 환산은 가정"
+      }
+    }
+  },
+  "Q2_information_density": {
+    "description": "저장 바이트 1개에 담기는 정보 bits. 분자는 [lm-memorization-capacity]의 3.64 bits/param 상한, 분모는 저장 dtype. E는 텍스트 액면가와 3:1 압축 가정",
+    "Theta_lora_r16_qv_8B": {
+      "params": 8388608,
+      "info_bits_upper": 30534533,
+      "info_MB_upper": 3.82,
+      "by_dtype": {
+        "bf16": {
+          "store_bytes": 16777216,
+          "store_MB": 16.78,
+          "bits_per_stored_byte": 1.82
+        },
+        "int8": {
+          "store_bytes": 8388608,
+          "store_MB": 8.39,
+          "bits_per_stored_byte": 3.64
+        },
+        "int4": {
+          "store_bytes": 4194304,
+          "store_MB": 4.19,
+          "bits_per_stored_byte": 7.28
+        }
+      }
+    },
+    "E_text_14k_tokens": {
+      "store_bytes": 56000,
+      "store_KB": 56.0,
+      "bits_per_stored_byte_face": 8.0,
+      "bits_per_stored_byte_compressed_3to1": 2.667
+    },
+    "ratio_E_over_Theta_compressed_by_dtype": {
+      "bf16": 1.47,
+      "int8": 0.73,
+      "int4": 0.37
+    },
+    "note": "bf16에서 Θ가 E보다 바이트 비효율인 것은 표현이 정보를 못 담아서가 아니라 파라미터 하나에 담기는 3.64 bits를 16 bits에 저장하기 때문이다. int4로 내리면 순서가 뒤집힌다 — 즉 이것은 알고리즘 한계가 아니라 dtype 선택이다."
+  },
+  "Q3_scaling_with_users": {
+    "description": "Θ-경로가 주류가 되면 웜 스토리지가 사용자 수에 선형으로 늘어난다",
+    "anchor": "dense-8B (d=4096, L=32), LoRA on {q,v}",
+    "values": {
+      "1e+03_users": {
+        "lora_r=4_bf16": {
+          "TB": 0.004
+        },
+        "lora_r=4_int4": {
+          "TB": 0.001
+        },
+        "lora_r=16_bf16": {
+          "TB": 0.017
+        },
+        "lora_r=16_int4": {
+          "TB": 0.004
+        },
+        "lora_r=64_bf16": {
+          "TB": 0.067
+        },
+        "lora_r=64_int4": {
+          "TB": 0.017
+        },
+        "direct_edit_full_copy_bf16": {
+          "TB": 16.0
+        },
+        "E_path_14k_tokens_text": {
+          "TB": 5.6e-05
+        }
+      },
+      "1e+05_users": {
+        "lora_r=4_bf16": {
+          "TB": 0.419
+        },
+        "lora_r=4_int4": {
+          "TB": 0.105
+        },
+        "lora_r=16_bf16": {
+          "TB": 1.678
+        },
+        "lora_r=16_int4": {
+          "TB": 0.419
+        },
+        "lora_r=64_bf16": {
+          "TB": 6.711
+        },
+        "lora_r=64_int4": {
+          "TB": 1.678
+        },
+        "direct_edit_full_copy_bf16": {
+          "TB": 1600.0
+        },
+        "E_path_14k_tokens_text": {
+          "TB": 0.0056
+        }
+      },
+      "1e+06_users": {
+        "lora_r=4_bf16": {
+          "TB": 4.194
+        },
+        "lora_r=4_int4": {
+          "TB": 1.049
+        },
+        "lora_r=16_bf16": {
+          "TB": 16.777
+        },
+        "lora_r=16_int4": {
+          "TB": 4.194
+        },
+        "lora_r=64_bf16": {
+          "TB": 67.109
+        },
+        "lora_r=64_int4": {
+          "TB": 16.777
+        },
+        "direct_edit_full_copy_bf16": {
+          "TB": 16000.0
+        },
+        "E_path_14k_tokens_text": {
+          "TB": 0.056
+        }
+      },
+      "1e+08_users": {
+        "lora_r=4_bf16": {
+          "TB": 419.43
+        },
+        "lora_r=4_int4": {
+          "TB": 104.858
+        },
+        "lora_r=16_bf16": {
+          "TB": 1677.722
+        },
+        "lora_r=16_int4": {
+          "TB": 419.43
+        },
+        "lora_r=64_bf16": {
+          "TB": 6710.886
+        },
+        "lora_r=64_int4": {
+          "TB": 1677.722
+        },
+        "direct_edit_full_copy_bf16": {
+          "TB": 1600000.0
+        },
+        "E_path_14k_tokens_text": {
+          "TB": 5.6
+        }
+      }
+    }
+  },
+  "Q4_serving_structure": {
+    "shared_weight_batching": {
+      "E_path": "유지된다. 가중치는 모두 공유. 상태는 프롬프트로 들어온다",
+      "W_path": "부분적으로 깨진다. 세션마다 별도 fast-weight 상태가 HBM에 상주 (NM pair thesis의 decode 절반)",
+      "Theta_path_lora": "delta 단위로 깨진다. 요청마다 사용자 delta를 로드/머지해야 하며, 배치 안의 사용자가 다르면 가중치가 다르다",
+      "Theta_path_direct_edit": "완전히 깨진다. 개인화하려면 모델 전체 사본"
+    },
+    "write_amplification": {
+      "Theta_edit_cost": {
+        "value": 10000,
+        "hours": 7.44,
+        "model": "GPT-J 6B",
+        "source": "[memit §5.2.2; App. B.4] 10,000 편집 총 7.44 hr, A6000",
+        "derived": "편집당 2.6773 sec (note-writer 산술, 논문에 없음)"
+      },
+      "note": "편집당 2.68 sec (note-writer 산술)는 쓰기 비용이 읽기 비용과 자릿수가 다름을 뜻한다. E-경로의 쓰기는 LLM 호출 몇 번, W-경로의 쓰기는 토큰당 RMW"
+    },
+    "traffic_character": {
+      "E": "질의당 1회 검색 + prefill 증가. 읽기 편향",
+      "W": "토큰당 6.44 GB RMW (1.3B 앵커). 쓰기 편향, 공유 불가",
+      "Theta": "요청당 delta 로드(수 MB) + 갱신은 sleep 라운드에만. 읽기 편향, 사용자별"
+    }
+  },
+  "findings": {
+    "F1_corpus_reports_no_bytes": "corpus 전체에서 상태 용량을 바이트로 보고한 논문이 0편이다. 세 경로를 같은 자로 재려면 구성 파라미터에서 복원하는 수밖에 없고, 그 사실 자체가 이 분야의 비교 불가능성을 보여준다.",
+    "F2_three_paths_differ_by_orders_of_magnitude": "8B 앵커에서 사용자당 Θ delta(LoRA r=16, q·v, bf16)는 16.78 MB, E-경로 저장은 56.0 KB, 같은 폭의 TTT류 모델이라면 W-경로 상태는 활성 세션당 17177.6 MB다(반사실 수치 — dense 8B에는 W층이 없다). 수명과 상주 위치가 전부 다르므로 '용량'을 한 숫자로 말할 수 없다.",
+    "F3_theta_density_is_a_dtype_choice_not_a_limit": "저장 바이트당 정보량은 Θ가 bf16에서 1.82 bits/byte, int8에서 3.64, int4에서 7.28다. 3:1 압축을 가정한 텍스트(2.67 bits/byte) 대비 비율은 dtype에 따라 {'bf16': 1.47, 'int8': 0.73, 'int4': 0.37}로 뒤집힌다. 즉 Θ-경로가 바이트 비효율로 보이는 것은 파라미터당 3.64 bits를 16 bits에 담기 때문이지 표현의 한계가 아니다. **delta 양자화는 Θ-경로 배포의 선택 사항이 아니라 전제다** — 그리고 corpus의 어느 논문도 delta 양자화를 논의하지 않는다.",
+    "F4_memory_device_opportunity_is_warm_not_hot": "Θ-경로가 주류가 되면 사용자 10^6명 기준 웜 스토리지가 LoRA r=16 bf16에서 16.777 TB, int4로 내리면 4.194 TB, r=64 bf16이면 67.109 TB다. 직접 편집 방식으로 개인화하면 16000.0 TB로 세 자릿수가 뛴다. 기회의 성격은 HBM 대역폭이 아니라 **요청 지연 안에 delta를 끌어올 수 있는 웜 계층과 그 계층의 쓰기 내구성**이다. 이는 NM이 W-경로에서 짚은 HBM RMW 기회와 다른 자리다.",
+    "F5_edit_vs_delta_is_a_serving_fork": "MEMIT/ROME류 직접 편집은 delta 아티팩트를 만들지 않는다. 공유 가중치를 고치므로 사용자별 개인화가 구조적으로 불가능하고, 하려면 모델 전체 사본이 필요하다. Θ-경로가 서빙에 도달하려면 delta 형태(LoRA류)여야 한다는 제약이 여기서 나온다. 논문들은 이 갈림길을 논의하지 않는다.",
+    "honest_limits": "3.64 bits/param은 무작위 문자열 암기 실험에서 나온 값이고 LoRA delta 적용은 외삽이다. E-경로 바이트는 토큰 수에서 환산한 가정치다. 본문 단정문으로 쓸 것은 자릿수 차이와 밀도의 순서이며, 절대 바이트가 아니다."
+  }
+}
