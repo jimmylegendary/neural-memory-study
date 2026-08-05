@@ -1,333 +1,430 @@
 {
-  "paper_id": "pad-dreaming-elife",
-  "arxiv": "none (journal article; no arXiv ID printed in the vendored text). Preprinted 09 September 2021 [line 39], preprint server not named in the text.",
-  "title": "Learning cortical representations through perturbed and adversarial dreaming [lines 3-4]",
-  "authors": [
-    "Nicolas Deperrois (Department of Physiology, University of Bern; corresponding author, nicolas.deperrois@unibe.ch) [lines 5-8, 22-23]",
-    "Mihai A Petrovici (Department of Physiology, University of Bern; Kirchhoff-Institute for Physics, Heidelberg University) [lines 5-9]",
-    "Walter Senn (Department of Physiology, University of Bern; shared senior authorship) [lines 5-8, 24-27]",
-    "Jakob Jordan (Department of Physiology, University of Bern; shared senior authorship) [lines 5-8, 24-27]"
+ "paper_id": "pad-dreaming-elife",
+ "arxiv": "none (journal article; no arXiv ID printed in the vendored text). Preprinted 09 September 2021 [line 39], preprint server not named in the text.",
+ "title": "Learning cortical representations through perturbed and adversarial dreaming [lines 3-4]",
+ "authors": [
+  "Nicolas Deperrois (Department of Physiology, University of Bern; corresponding author, nicolas.deperrois@unibe.ch) [lines 5-8, 22-23]",
+  "Mihai A Petrovici (Department of Physiology, University of Bern; Kirchhoff-Institute for Physics, Heidelberg University) [lines 5-9]",
+  "Walter Senn (Department of Physiology, University of Bern; shared senior authorship) [lines 5-8, 24-27]",
+  "Jakob Jordan (Department of Physiology, University of Bern; shared senior authorship) [lines 5-8, 24-27]"
+ ],
+ "venue": "eLife 2022;0:e76384, section 'Computational and Systems Biology'. DOI 10.7554/eLife.76384 [lines 68, 74]. Reviewing Editor: Anna C Schapiro, University of Pennsylvania [lines 43-45]. An 'Editor's evaluation' block is printed [lines 32-36]; decision letter and author response exist as separate DOIs .sa1/.sa2 [lines 1858-1859].",
+ "date": "Preprinted 2021-09-09; Received 2021-12-14; Accepted 2022-03-07; Published 2022-04-06 [lines 39-42]",
+ "path": "/home/jimmy/repos/neural-memory-study/papers/stc/STC-T13.txt",
+ "code": "https://github.com/NicoZenith/PAD, archived at swh:1:rev:0a2a4ad4da69f2f8c53fd5ee96e895c72aeb9f26 [line 1867]. 'The current manuscript is a computational study, so no data have been generated' [line 1865].",
+ "axis": "bio",
+ "axis_note": "S0 §3.1 lists this as a 'common ancestor' on the bio axis ('PAD (eLife) -- dreaming의 표현학습 역할'), feeding Part I module T6 (CLS theory and biological sleep). It is a computational neuroscience model, not an LLM paper: no language model, no tokens, no retrieval, no test-time adaptation appears anywhere in it. In the v2 three-layer frame it is nonetheless a genuine (U-E)-then-(U-Theta) system, which is why it can be reduced to the unified notation at all -- see update_layer.",
+ "problem_stated": {
+  "statement": "How do semantic cortical representations -- linearly separable, perturbation-invariant, object-identity-carrying activity in high visual areas -- emerge from unlabeled sensory experience, and what specifically do the two sleep states contribute to that emergence? The paper's own framing: 'Humans and other animals learn to extract general concepts from sensory experience without extensive teaching. This ability is thought to be facilitated by offline states like sleep where previous experiences are systemically replayed. However, the characteristic creative nature of dreams suggests that learning semantic representations may go beyond merely replaying previous experiences.' [Abstract, lines 11-14]",
+  "three_gaps_the_paper_names_in_prior_work": [
+   "Helmholtz machine / Wake-Sleep line (Dayan et al. 1995; Hinton et al. 1995; Bornschein and Bengio 2015): 'these models do not leverage offline states to improve their generative model but are explicitly trained to reproduce sensory inputs during wakefulness' [lines 82-86]. Contrasted against the empirical fact that 'most dreams during REM sleep exhibit realistic imagery beyond past sensory experience' [line 85].",
+   "Cognitive 'trace transformation theory' (Nadel and Moscovitch 1997; Winocur et al. 2010; Lewis and Durrant 2011): 'these models lack a mechanistic implementation compatible with cortical structures and only consider the replay of waking activity during sleep' [lines 87-89].",
+   "Existing functional theories of dreaming (creative problem solving, prospective coding, complexity minimization; Cai et al. 2009; Llewellyn 2015/2016; Hobson et al. 2014; Hoel 2021): 'these theories do not consider the role of dreams for a more basic function, such as the formation of semantic cortical representations' [lines 104-105]."
   ],
-  "venue": "eLife 2022;0:e76384, section 'Computational and Systems Biology'. DOI 10.7554/eLife.76384 [lines 68, 74]. Reviewing Editor: Anna C Schapiro, University of Pennsylvania [lines 43-45]. An 'Editor's evaluation' block is printed [lines 32-36]; decision letter and author response exist as separate DOIs .sa1/.sa2 [lines 1858-1859].",
-  "date": "Preprinted 2021-09-09; Received 2021-12-14; Accepted 2022-03-07; Published 2022-04-06 [lines 39-42]",
-  "path": "/home/jimmy/repos/neural-memory-study/papers/stc/STC-T13.txt",
-  "code": "https://github.com/NicoZenith/PAD, archived at swh:1:rev:0a2a4ad4da69f2f8c53fd5ee96e895c72aeb9f26 [line 1867]. 'The current manuscript is a computational study, so no data have been generated' [line 1865].",
-  "axis": "bio",
-  "axis_note": "S0 §3.1 lists this as a 'common ancestor' on the bio axis ('PAD (eLife) -- dreaming의 표현학습 역할'), feeding Part I module T6 (CLS theory and biological sleep). It is a computational neuroscience model, not an LLM paper: no language model, no tokens, no retrieval, no test-time adaptation appears anywhere in it. In the v2 three-layer frame it is nonetheless a genuine (U-E)-then-(U-Theta) system, which is why it can be reduced to the unified notation at all -- see update_layer.",
-
-  "problem_stated": {
-    "statement": "How do semantic cortical representations -- linearly separable, perturbation-invariant, object-identity-carrying activity in high visual areas -- emerge from unlabeled sensory experience, and what specifically do the two sleep states contribute to that emergence? The paper's own framing: 'Humans and other animals learn to extract general concepts from sensory experience without extensive teaching. This ability is thought to be facilitated by offline states like sleep where previous experiences are systemically replayed. However, the characteristic creative nature of dreams suggests that learning semantic representations may go beyond merely replaying previous experiences.' [Abstract, lines 11-14]",
-    "three_gaps_the_paper_names_in_prior_work": [
-      "Helmholtz machine / Wake-Sleep line (Dayan et al. 1995; Hinton et al. 1995; Bornschein and Bengio 2015): 'these models do not leverage offline states to improve their generative model but are explicitly trained to reproduce sensory inputs during wakefulness' [lines 82-86]. Contrasted against the empirical fact that 'most dreams during REM sleep exhibit realistic imagery beyond past sensory experience' [line 85].",
-      "Cognitive 'trace transformation theory' (Nadel and Moscovitch 1997; Winocur et al. 2010; Lewis and Durrant 2011): 'these models lack a mechanistic implementation compatible with cortical structures and only consider the replay of waking activity during sleep' [lines 87-89].",
-      "Existing functional theories of dreaming (creative problem solving, prospective coding, complexity minimization; Cai et al. 2009; Llewellyn 2015/2016; Hobson et al. 2014; Hoel 2021): 'these theories do not consider the role of dreams for a more basic function, such as the formation of semantic cortical representations' [lines 104-105]."
-    ],
-    "hypothesis": "'we propose that dreams, and in particular their creative combination of episodic memories, play an essential role in forming semantic representations over the course of development' [lines 106-107]. Mechanistically: 'generating new but realistic sensory experiences, instead of merely reconstructing previous observations, requires the brain to understand the composition of its sensorium' [lines 113-115].",
-    "claimed_result": "'generating new, virtual sensory inputs via adversarial dreaming during REM sleep is essential for extracting semantic concepts, while replaying episodic memories via perturbed dreaming during NREM sleep improves the robustness of latent representations' [Abstract, lines 17-20].",
-    "source": "Abstract lines 11-21; Introduction lines 55-121; Results opening lines 184-193"
+  "hypothesis": "'we propose that dreams, and in particular their creative combination of episodic memories, play an essential role in forming semantic representations over the course of development' [lines 106-107]. Mechanistically: 'generating new but realistic sensory experiences, instead of merely reconstructing previous observations, requires the brain to understand the composition of its sensorium' [lines 113-115].",
+  "claimed_result": "'generating new, virtual sensory inputs via adversarial dreaming during REM sleep is essential for extracting semantic concepts, while replaying episodic memories via perturbed dreaming during NREM sleep improves the robustness of latent representations' [Abstract, lines 17-20].",
+  "source": "Abstract lines 11-21; Introduction lines 55-121; Results opening lines 184-193"
+ },
+ "inherited_open_question": {
+  "verdict": "none-stated",
+  "detail": "The paper quotes no prior author's stated open question and has no sentence of the form 'X et al. left open whether ...'. Every lineage statement is the authors' own characterization of a prior literature's limit (the three quoted in problem_stated.three_gaps_the_paper_names_in_prior_work). Per S0 §4 this absence is itself recorded rather than papered over.",
+  "what_it_implicitly_answers": "It answers a question that the Wake-Sleep / Helmholtz line posed only structurally and never in words: if the offline phase is where the generative pathway is trained, what objective should the offline phase optimize? Wake-Sleep answers 'reconstruct the input, using dreams only as a source of (z, x) pairs to fit the recognition model'. PAD answers 'make the dream indistinguishable from waking input, and train the generative pathway ADVERSARIALLY during the offline state itself'. The paper states the contrast in exactly these terms, but as a testable prediction rather than as an inherited question: 'in alternative representation learning models that involve offline states such as the Wake-Sleep algorithm (Hinton et al., 1995), generative pathways are not trained to produce realistic dreams during the sleep phase. Rather, they are trained by reconstruction on real input data during the wake phase.' [lines 1155-1157]",
+  "second_implicit_inheritance": "From the cognitive-science side it supplies the mechanism that trace-transformation theory lacked ('lack a mechanistic implementation compatible with cortical structures' [line 88]) -- but again as the authors' diagnosis, not as a quoted question.",
+  "bridge_in_material_for_the_monograph": "Because there is no inherited quote, the chapter's §N.1 must open from the community gap rather than from a predecessor's future-work paragraph: the CLS/replay tradition (McClelland et al. 1995, cited at line 945) says sleep replays what happened; the dream phenomenology (Fosse et al. 2003, cited at line 85) says REM dreams are NOT what happened. PAD is the first functional model to take the second fact as the computational primitive instead of as noise.",
+  "note_writer_flag": "The absence is a real finding about the relationship between the bio axis and the LLM axes: this paper's open questions were never picked up in words by the LLM sleep-time line either -- see cross_path_citations."
+ },
+ "core_mechanism": {
+  "one_line": "One cycle k writes the encoder's latent for the current mini-batch into a two-slot hippocampal buffer -- that is (U-E) with a degenerate query-free write -- and then runs (U-Theta) three times with three different outer losses on three different self-generated training sets: real inputs at Wake, single-memory replays rendered through the generator and occluded at NREM, and noise-diluted convex mixtures of two memories rendered through the generator at REM, where the generator's gradient sign is inverted so that the offline phase trains the generative pathway adversarially against a discriminator head on the encoder.",
+  "layer_assignment": {
+   "Theta": "the slow weights of this paper are the union of the encoder/discriminator parameters and the generator parameters: Theta = (Theta^{enc}, Theta^{disc}, Theta^{gen}), the paper's theta_E and theta_G [Algorithm 1, line 1287]. Every plasticity event in the paper moves Theta.",
+   "W": "EMPTY. There are no fast weights, no test-time state, no inner loss, no inner learning rate. The reader must be told this explicitly: at evaluation the model is a single frozen forward pass. 'While training the classifier, the connectivity of the network (E and G) is fixed.' [lines 531-532]",
+   "E": "the hippocampal module. 'As a detailed hippocampus model is outside the scope of this study, we mimic hippocampal storage and retrieval by storing and reading latent representations to and from memory.' [lines 1262-1263]. Its contents are the latent mini-batches Z (this cycle) and Z_old (previous cycle) [Algorithm 1, lines 1351, 1423]."
   },
-
-  "inherited_open_question": {
-    "verdict": "none-stated",
-    "detail": "The paper quotes no prior author's stated open question and has no sentence of the form 'X et al. left open whether ...'. Every lineage statement is the authors' own characterization of a prior literature's limit (the three quoted in problem_stated.three_gaps_the_paper_names_in_prior_work). Per S0 §4 this absence is itself recorded rather than papered over.",
-    "what_it_implicitly_answers": "It answers a question that the Wake-Sleep / Helmholtz line posed only structurally and never in words: if the offline phase is where the generative pathway is trained, what objective should the offline phase optimize? Wake-Sleep answers 'reconstruct the input, using dreams only as a source of (z, x) pairs to fit the recognition model'. PAD answers 'make the dream indistinguishable from waking input, and train the generative pathway ADVERSARIALLY during the offline state itself'. The paper states the contrast in exactly these terms, but as a testable prediction rather than as an inherited question: 'in alternative representation learning models that involve offline states such as the Wake-Sleep algorithm (Hinton et al., 1995), generative pathways are not trained to produce realistic dreams during the sleep phase. Rather, they are trained by reconstruction on real input data during the wake phase.' [lines 1155-1157]",
-    "second_implicit_inheritance": "From the cognitive-science side it supplies the mechanism that trace-transformation theory lacked ('lack a mechanistic implementation compatible with cortical structures' [line 88]) -- but again as the authors' diagnosis, not as a quoted question.",
-    "bridge_in_material_for_the_monograph": "Because there is no inherited quote, the chapter's §N.1 must open from the community gap rather than from a predecessor's future-work paragraph: the CLS/replay tradition (McClelland et al. 1995, cited at line 945) says sleep replays what happened; the dream phenomenology (Fosse et al. 2003, cited at line 85) says REM dreams are NOT what happened. PAD is the first functional model to take the second fact as the computational primitive instead of as noise.",
-    "note_writer_flag": "The absence is a real finding about the relationship between the bio axis and the LLM axes: this paper's open questions were never picked up in words by the LLM sleep-time line either -- see cross_path_citations."
-  },
-
-  "core_mechanism": {
-    "one_line": "One cycle k writes the encoder's latent for the current mini-batch into a two-slot hippocampal buffer -- that is (U-E) with a degenerate query-free write -- and then runs (U-Theta) three times with three different outer losses on three different self-generated training sets: real inputs at Wake, single-memory replays rendered through the generator and occluded at NREM, and noise-diluted convex mixtures of two memories rendered through the generator at REM, where the generator's gradient sign is inverted so that the offline phase trains the generative pathway adversarially against a discriminator head on the encoder.",
-
-    "layer_assignment": {
-      "Theta": "the slow weights of this paper are the union of the encoder/discriminator parameters and the generator parameters: Theta = (Theta^{enc}, Theta^{disc}, Theta^{gen}), the paper's theta_E and theta_G [Algorithm 1, line 1287]. Every plasticity event in the paper moves Theta.",
-      "W": "EMPTY. There are no fast weights, no test-time state, no inner loss, no inner learning rate. The reader must be told this explicitly: at evaluation the model is a single frozen forward pass. 'While training the classifier, the connectivity of the network (E and G) is fixed.' [lines 531-532]",
-      "E": "the hippocampal module. 'As a detailed hippocampus model is outside the scope of this study, we mimic hippocampal storage and retrieval by storing and reading latent representations to and from memory.' [lines 1262-1263]. Its contents are the latent mini-batches Z (this cycle) and Z_old (previous cycle) [Algorithm 1, lines 1351, 1423]."
-    },
-
-    "notation_conflicts": [
-      {
-        "paper_symbol": "E, E_z, E_d -- the encoder network, its latent output map and its discriminator output map; 'E(x) = (E_z(x), E_d(x)) = (z, d)' [line 1257]",
-        "reserved_meaning": "E = external store (text/vector/graph memory), STC-STYLE-NOTATION §1.2 'v2 신설'. P2 forbids overwriting a layer symbol with any paper-local symbol.",
-        "remap": "encoder parameters -> Theta^{enc}; discriminator-head parameters -> Theta^{disc}; the maps themselves -> enc(.;Theta^{enc}) and disc(.;Theta^{disc}). The reserved E is reassigned to the paper's HIPPOCAMPAL BUFFER, which the paper never gives a symbol.",
-        "why_it_matters": "This is the single most dangerous collision in the corpus: the paper's E is a slow-weight network, the book's E is the external store, and the paper contains both objects. Any chapter that copies the paper's E verbatim will invert the whole frame."
-      },
-      {
-        "paper_symbol": "G -- the generator / feedback pathway [line 1258]",
-        "reserved_meaning": "no reserved collision; but gen(.; B_s) in (U-Theta) is the procedure that BUILDS the replay set.",
-        "remap": "Theta^{gen} for the parameters, gen_pix(.;Theta^{gen}) for the map from latent to pixel. Note the pun the chapter should make explicit: this network literally is the gen(.) of (U-Theta) -- the replay set R_k is materialized by a forward pass of Theta^{gen}, not read from a store."
-      },
-      {
-        "paper_symbol": "W -- the linear readout weight matrix, 'W in R^{10x256}', y = Wz [lines 1635-1637]",
-        "reserved_meaning": "W = fast weights (NM 승계, 재정의 절대 금지), STC-STYLE-NOTATION §1.2",
-        "remap": "W_ro. This is a post-hoc evaluation probe trained with the network frozen; it is NOT a fast weight and must never be written W in the chapter."
-      },
-      {
-        "paper_symbol": "z, z_old, Z, Z_old, Z_mix, z' -- latent vectors and mini-batches thereof [lines 213-224, 1351, 1391, 1563]",
-        "reserved_meaning": "no reserved collision. hat-c = learned context = the product of offline processing written into E.",
-        "remap": "keep z for the latent vector; the STORED object is hat-c_k = z_k in E, and hat-c_{k-1} = z_old. Declared chapter-local."
-      },
-      {
-        "paper_symbol": "L_img, L_KL, L_real, L_Wake, L_NREM, L_REM, L_fake, L_GAN, L_C -- all objectives [Eqs. 1-9]",
-        "reserved_meaning": "script-l = inner loss; calligraphic-L = outer/task loss (NM 승계). Bare L is sequence length only.",
-        "remap": "all become calligraphic: calL_img, calL_KL, calL_real, calL_wake, calL_nrem, calL_rem, calL_C. Script-l is NOT used in this note: the paper has no inner loop, hence no inner loss. This is a fact worth stating in the chapter, not an omission."
-      },
-      {
-        "paper_symbol": "theta_E, theta_G -- network parameter vectors [Algorithm 1, line 1287]",
-        "reserved_meaning": "Theta = slow weights; lowercase theta with subscripts is reserved-adjacent and eta_t/eta_Theta must not be confused.",
-        "remap": "Theta^{enc}, Theta^{disc}, Theta^{gen}, all sub-blocks of Theta_k."
-      },
-      {
-        "paper_symbol": "learning rate 0.0002 for ADAM [line 1283]",
-        "reserved_meaning": "eta_Theta = outer/sleep learning rate; eta_t = inner rate",
-        "remap": "eta_Theta = 0.0002. There is no eta_t in this paper. NOTE: the SAME eta_Theta is used in all three phases -- wake and sleep share one rate, and 'all losses are weighted equally' [line 1620]."
-      },
-      {
-        "paper_symbol": "eta = 0.2 -- learning rate of the linear readout classifier [line 1663]",
-        "reserved_meaning": "eta_t / eta_Theta",
-        "remap": "eta_ro = 0.2. Belongs to the evaluation probe, not to the model."
-      },
-      {
-        "paper_symbol": "beta_1 = 0.5, beta_2 = 0.999 -- ADAM moment decays [line 1283]",
-        "reserved_meaning": "beta_t = inner-loop momentum decay in (U-W)",
-        "remap": "beta_1^{Adam}, beta_2^{Adam}. Constants of the outer optimizer; per STYLE §1.5 they take no time subscript."
-      },
-      {
-        "paper_symbol": "lambda = 0.5, lambda' = 0.5 -- convex mixing coefficients in Z_mix [line 1563]",
-        "reserved_meaning": "alpha_t = retention gate (남기는 비율) in (U-W)",
-        "remap": "keep lambda, lambda' as chapter-local constants. They are the closest object this paper has to a retention gate, but they gate the MIXTURE of two stored records, not the decay of a state, and they are fixed constants -- so no time subscript."
-      },
-      {
-        "paper_symbol": "b = 64 -- mini-batch size [line 1283]",
-        "reserved_meaning": "C = chunk size (NM 승계); C_cap = capacity",
-        "remap": "b. Do NOT write C for it. In this paper the mini-batch is simultaneously the training batch AND the unit of one wake-sleep cycle, so it is the closest analogue of the book's chunk -- state that in prose, do not overload the symbol."
-      },
-      {
-        "paper_symbol": "d -- the scalar discriminator output, with teaching signal 0 or 1 [lines 1255-1256]",
-        "reserved_meaning": "d = model width in STC-STYLE-NOTATION §1.3",
-        "remap": "d_int/ext, or simply disc(x). Model width is never used in this note."
-      },
-      {
-        "paper_symbol": "epsilon ~ N(0, I) -- spontaneous cortical activity [line 1559]; and epsilon ~ N(0, 0.5*I) in the w/o-REM ablation [line 1727]",
-        "reserved_meaning": "none",
-        "remap": "kept; declared chapter-local. Note the two epsilons have DIFFERENT variances and different roles -- see unfavorable_facts."
-      },
-      {
-        "paper_symbol": "omega, Omega -- binary occlusion mask, applied as elementwise product [lines 1363, 1534-1536, 1546]",
-        "reserved_meaning": "none",
-        "remap": "kept as omega."
-      },
-      {
-        "paper_symbol": "n_z = 256 -- latent dimension [lines 1506, 1635]",
-        "reserved_meaning": "n = number of stored items in STC-STYLE-NOTATION §1.3",
-        "remap": "n_z kept; the book's n (stored items) is 2 mini-batches here, so the two never appear together."
-      },
-      {
-        "paper_symbol": "'epoch' -- 'One training epoch is defined by the number of mini-batches necessary to cover the whole dataset' [lines 1620-1621]; 'A single wake-sleep cycle consists of Wake, NREM, and REM phases' [line 421]",
-        "reserved_meaning": "k = sleep round index (S0 P3)",
-        "remap": "k indexes the WAKE-SLEEP CYCLE, i.e. one mini-batch. An epoch is many k. The paper's x-axes are labelled in epochs, so any chapter figure must convert or state the unit. Getting this wrong makes the sleep budget look ~3 orders of magnitude smaller than it is."
-      }
-    ],
-
-    "equations": [
-      {
-        "id": "(PAD-R) read / evaluation-time inference",
-        "latex": "\\hat y \\;=\\; W_{\\mathrm{ro}}\\, \\mathrm{enc}\\big(x;\\ \\Theta^{\\mathrm{enc}}\\big), \\qquad z = \\mathrm{enc}(x;\\Theta^{\\mathrm{enc}}) \\in \\mathbb{R}^{256}",
-        "frame_relation": "This is frame Eq. (R) with W absent and ret(E,q) absent: hat-y = f(q; Theta, -, -). The store is never read at query time; the fast-weight layer does not exist. Everything the sleep phases achieved is already baked into Theta^{enc}.",
-        "paper_source": "[pad-dreaming-elife Eq. 9-10, lines 1642, 1651-1655]; frozen-encoder condition at lines 531-532; z dimension at line 1635"
-      },
-      {
-        "id": "(PAD-1) Wake write to the external store -- instance of (U-E)",
-        "latex": "E_{k} \\;=\\; \\mathrm{wr}\\big(E_{k-1},\\ \\hat c_k\\big), \\qquad \\hat c_k \\;=\\; S(c_k; B_s) \\;=\\; \\mathrm{enc}\\big(x_k;\\Theta^{\\mathrm{enc}}\\big), \\qquad E_k \\;=\\; \\{\\hat c_k,\\ \\hat c_{k-1}\\}",
-        "frame_relation": "Instance of (U-E) in which S(.;B_s) is a SINGLE forward pass of the encoder (no offline reasoning, no summarization) and wr is a two-slot shift register: the store keeps exactly the current and the previous mini-batch of latents. There is no ret(.,q): reads are by round index only.",
-        "paper_source": "[pad-dreaming-elife Algorithm 1, lines 1300, 1351, 1423] ('Z, D <- E(X)'; 'Z <- {z^(1),...,z^(b)} // mini-batch of latent vectors from Wake'; 'Z_old <- Z // keep current vectors for next iteration'); prose at lines 1463-1464 ('We store the latent vectors Z = E_z(X) corresponding to the current mini-batch for usage during the NREM and REM phases') and at lines 1262-1263"
-      },
-      {
-        "id": "(PAD-2) Wake objective -- instance of (U-Theta) on real data",
-        "latex": "\\mathcal{L}_{\\text{wake}} \\;=\\; \\mathcal{L}_{\\text{img}} + \\mathcal{L}_{\\mathrm{KL}} + \\mathcal{L}_{\\text{real}}",
-        "paper_source": "[pad-dreaming-elife Eq. 1, line 1436]"
-      },
-      {
-        "id": "(PAD-3) reconstruction term",
-        "latex": "\\mathcal{L}_{\\text{img}} \\;=\\; \\frac{1}{b}\\sum_{i=1}^{b}\\big\\| x^{(i)} - \\mathrm{gen}_{\\mathrm{pix}}\\big(\\mathrm{enc}(x^{(i)};\\Theta^{\\mathrm{enc}});\\Theta^{\\mathrm{gen}}\\big)\\big\\|^{2}",
-        "paper_source": "[pad-dreaming-elife Eq. 2, lines 1454-1458]"
-      },
-      {
-        "id": "(PAD-4) latent prior regularizer",
-        "latex": "\\mathcal{L}_{\\mathrm{KL}} \\;=\\; D_{\\mathrm{KL}}\\big(q(Z\\mid X)\\,\\|\\,p(Z)\\big) \\;=\\; \\frac{1}{2 n_z}\\sum_{j=1}^{n_z}\\Big(\\big(\\mu^{(Z)}_j\\big)^{2} + \\big(\\sigma^{(Z)}_j\\big)^{2} - 1 - \\log\\big(\\sigma^{(Z)}_j\\big)^{2}\\Big)",
-        "frame_relation": "p(Z) ~ N(0,1) [line 1473]. CRITICAL detail for the chapter: mu^(Z) and sigma^(Z) are the EMPIRICAL mean and standard deviation OF THE MINI-BATCH of latent vectors, 'the empirical mean mu^(Z) and empirical standard deviation sigma^(Z) of the set of latent vectors E_z(X) = Z' [lines 1504-1511] -- i.e. batch statistics, not a per-sample amortized posterior. The encoder is deterministic; no reparameterization sampling is described anywhere. This is a VAE-shaped term on a non-VAE encoder.",
-        "paper_source": "[pad-dreaming-elife Eq. 3, line 1466; Eq. 4, lines 1475-1500; prose lines 1465-1473, 1504-1511]"
-      },
-      {
-        "id": "(PAD-5) discriminator-on-real term (this is what makes REM adversarial possible)",
-        "latex": "\\mathcal{L}_{\\text{real}} \\;=\\; \\mathcal{L}_{\\mathrm{GAN}}\\big(\\mathrm{disc}(X),\\,1\\big) \\;=\\; -\\frac{1}{b}\\sum_{i=1}^{b}\\log\\,\\mathrm{disc}\\big(x^{(i)}\\big)",
-        "frame_relation": "Binary cross-entropy; 'in principle, L_GAN can be any GAN-specific loss function' [lines 1528-1529]. The paper stresses the causal role: 'The discriminator learning during Wake is essential to drive adversarial learning during REM.' [lines 288-289]",
-        "paper_source": "[pad-dreaming-elife Eq. 5, lines 1514-1523]"
-      },
-      {
-        "id": "(PAD-6) Wake parameter updates",
-        "latex": "\\Theta^{\\mathrm{enc},\\mathrm{disc}}_{k} \\leftarrow \\Theta^{\\mathrm{enc},\\mathrm{disc}}_{k} - \\eta_\\Theta \\nabla\\big(\\mathcal{L}_{\\text{img}}+\\mathcal{L}_{\\mathrm{KL}}+\\mathcal{L}_{\\text{real}}\\big), \\qquad \\Theta^{\\mathrm{gen}}_{k} \\leftarrow \\Theta^{\\mathrm{gen}}_{k} - \\eta_\\Theta \\nabla \\mathcal{L}_{\\text{img}}",
-        "frame_relation": "Note the asymmetry the chapter must reproduce: at Wake the generator sees ONLY the reconstruction term; it never sees the KL or the discriminator term.",
-        "paper_source": "[pad-dreaming-elife Algorithm 1, lines 1336, 1341]"
-      },
-      {
-        "id": "(PAD-7) NREM -- perturbed dreaming, instance of (U-Theta) with R_k built from E",
-        "latex": "\\mathcal{L}_{\\text{nrem}} \\;=\\; \\frac{1}{b}\\sum_{i=1}^{b}\\Big\\| z^{(i)} - \\mathrm{enc}\\big(\\,\\mathrm{gen}_{\\mathrm{pix}}(z^{(i)};\\Theta^{\\mathrm{gen}})\\odot\\omega\\ ;\\Theta^{\\mathrm{enc}}\\big)\\Big\\|^{2}, \\qquad \\Theta^{\\mathrm{enc}}_{k}\\leftarrow\\Theta^{\\mathrm{enc}}_{k}-\\eta_\\Theta\\nabla\\mathcal{L}_{\\text{nrem}}",
-        "frame_relation": "This is (U-Theta) with R_k = { (gen_pix(hat-c)⊙omega, hat-c) : hat-c in E_k }. The store supplies the TARGETS and the generator supplies the INPUTS -- the inverse of a normal replay buffer, where the store supplies inputs and a frozen teacher supplies targets (cf. deep-generative-replay). The generator is NOT updated during NREM: only Theta^{enc} moves.",
-        "paper_source": "[pad-dreaming-elife Eq. 6, lines 1537-1548; Algorithm 1, lines 1359-1377]"
-      },
-      {
-        "id": "(PAD-8) REM latent mixture -- how R_k is drawn from E",
-        "latex": "z^{\\mathrm{mix}}_k \\;=\\; \\lambda'\\big(\\lambda\\,\\hat c_k + (1-\\lambda)\\,\\hat c_{k-1}\\big) + (1-\\lambda')\\,\\epsilon, \\qquad \\lambda=\\lambda'=0.5,\\ \\ \\epsilon\\sim\\mathcal{N}(0,I)",
-        "frame_relation": "With lambda = lambda' = 0.5 this expands to the coefficients drawn in the paper's own figure: z' = (1/4) z + (1/4) z_old + (1/2) epsilon [Figure 2 panel c, lines 213-224]. Half the mixture is noise. On the first iteration the mixture is skipped: 'if first iteration then Z_mix <- Z' [Algorithm 1, lines 1381-1385].",
-        "paper_source": "[pad-dreaming-elife Algorithm 1, line 1391; Methods lines 1556-1563; Figure 2c, lines 213-224, 268-270]"
-      },
-      {
-        "id": "(PAD-9) REM -- adversarial dreaming, the minimax and the sign switch",
-        "latex": "\\min_{\\Theta^{\\mathrm{disc}}}\\ \\max_{\\Theta^{\\mathrm{gen}}}\\ \\mathcal{L}_{\\text{rem}}, \\qquad \\mathcal{L}_{\\text{rem}} \\;=\\; \\mathcal{L}_{\\mathrm{GAN}}\\big(\\mathrm{disc}(\\mathrm{gen}_{\\mathrm{pix}}(z^{\\mathrm{mix}})),\\,0\\big) \\;=\\; -\\frac{1}{b}\\sum_{i=1}^{b}\\log\\Big(1-\\mathrm{disc}\\big(\\mathrm{gen}_{\\mathrm{pix}}(z^{\\mathrm{mix},(i)})\\big)\\Big)",
-        "frame_relation": "The minimax is printed with min over the discriminator and max over the generator [lines 1567-1569]. Implementation is the sign switch, and this is the paper's central biological prediction: 'In our model, the adversarial process is simply described by a full backpropagation of error through E_d and G with a sign switch of weight changes in G.' [lines 1616-1617]",
-        "paper_source": "[pad-dreaming-elife Eq. 7, lines 1567-1569; Eq. 8, lines 1600-1611]"
-      },
-      {
-        "id": "(PAD-10) REM parameter updates -- descent on the encoder, ASCENT on the generator",
-        "latex": "\\Theta^{\\mathrm{disc}}_{k+1} \\leftarrow \\Theta^{\\mathrm{disc}}_{k} - \\eta_\\Theta\\nabla\\mathcal{L}_{\\text{rem}}, \\qquad \\Theta^{\\mathrm{gen}}_{k+1} \\leftarrow \\Theta^{\\mathrm{gen}}_{k} + \\eta_\\Theta\\nabla\\mathcal{L}_{\\text{rem}}",
-        "frame_relation": "The plus sign is the whole biological claim: 'Sign switch indicates that identical local errors lead to opposing weight changes between Wake and REM sleep.' [Figure 7 caption, lines 814-815]. In the unified frame this is a (U-Theta) round whose gradient is sign-inverted on one parameter block -- a form the canonical (U-Theta) does not admit.",
-        "paper_source": "[pad-dreaming-elife Algorithm 1, lines 1409, 1421]"
-      },
-      {
-        "id": "(PAD-11) evaluation probe (not part of the model)",
-        "latex": "\\mathcal{L}_{C}(z,t;W_{\\mathrm{ro}}) = -\\log p_{W_{\\mathrm{ro}}}(Y=t\\mid z), \\qquad p_{W_{\\mathrm{ro}}}(Y=t\\mid z) = \\frac{e^{y_t}}{\\sum_{i=0}^{9} e^{y_i}},\\quad y = W_{\\mathrm{ro}} z",
-        "frame_relation": "Trained by SGD, b=64, eta_ro=0.2, 20 epochs, on the whole training set, with Theta frozen. 'Linear separability' is defined as this probe's test accuracy, following Hjelm et al. 2019.",
-        "paper_source": "[pad-dreaming-elife Eq. 9, line 1642; Eq. 10, lines 1651-1655; training details lines 1662-1663; definition lines 1675-1677]"
-      },
-      {
-        "id": "(PAD-12) FID, the realism metric",
-        "latex": "\\mathrm{FID} = \\|\\mu_{\\text{real}}-\\mu_{\\text{gen}}\\|^{2} + \\mathrm{Tr}\\big(\\Sigma_{\\text{real}}+\\Sigma_{\\text{gen}} - 2(\\Sigma_{\\text{real}}\\Sigma_{\\text{gen}})^{1/2}\\big)",
-        "frame_relation": "Computed on the 2048-dimensional Inception v3 pool3 activations for 10,000 pairs of data samples and generated images; mean and SEM over four differently initialized networks.",
-        "paper_source": "[pad-dreaming-elife Eq. 11, line 1710; lines 1705-1717]"
-      },
-      {
-        "id": "(PAD-13) the modified Wake reconstruction used ONLY in the w/o-REM ablation",
-        "latex": "\\mathcal{L}_{\\text{img}} = \\frac{1}{b}\\sum_{i=1}^{b}\\big\\| x^{(i)} - \\mathrm{gen}_{\\mathrm{pix}}\\big(\\mathrm{enc}(x^{(i)}) + \\epsilon\\big)\\big\\|^{2}, \\qquad \\epsilon\\sim\\mathcal{N}(0,\\,0.5\\,I)",
-        "frame_relation": "Applied only to the ablation arms, not to PAD. See unfavorable_facts -- the ablation baselines are hand-repaired.",
-        "paper_source": "[pad-dreaming-elife Eq. 12, lines 1727-1743]"
-      }
-    ],
-
-    "cycle_summary_in_paper_words": "'each Wake-NREM-REM cycle consists of (1) reconstructing a mini-batch x of images during Wake, (2) reconstructing a mini-batch of latent activities Z = E_z(X) during NREM with perturbation of G(z), and (3) replaying Z convex combined with Z_old and noise from the (n-1)th cycle. In PAD training, all losses are weighted equally and we did not use a schedule for L_KL, as opposed to standard variational autoencoder training.' [lines 1618-1621]",
-
-    "architecture": {
-      "encoder_E_z": "four convolutional layers with 64, 128, 256, 256 channels; 4x4 kernel, padding 1 (0 for last layer), stride 2 (feature size halved per layer); LeakyReLU on all but the last layer; the last conv layer's activity IS z [lines 1250-1253]",
-      "discriminator_head_E_d": "one additional convolutional layer plus sigmoid, attached to the SECOND-TO-LAST layer of the encoder, mapping to a single scalar d with putative teaching signal 0 or 1; E_z and E_d share the first three convolutional layers [lines 1253-1257]",
-      "generator_G": "four deconvolutional layers with 256, 128, 64, 3 channels; 4x4 kernel, padding 1 (0 for the first deconvolutional layer), stride 2 (feature size doubled per layer); LeakyReLU on the first three, tanh on the last [lines 1258-1261]",
-      "hippocampus": "not modeled; a store/retrieve buffer [lines 1262-1263, 893-894]",
-      "deliberately_absent": "'in contrast to previous GAN variants, our model removes many optimization tricks such as batch normalization layers, spectral normalization layers, or optimizing the min-max GAN objective in three steps with different objectives, which are challenging to implement in biological substrates' [lines 997-1000]",
-      "source": "Materials and methods, 'Network architecture', lines 1247-1263; Figure 8, lines 1243-1244"
-    }
-  },
-
-  "outer_vs_inner": {
-    "reader_note": "This paper has NO inner loop. Nothing moves at query time. Every learnable object below is moved by gradient descent between mini-batches, i.e. by (U-Theta) at the sleep-round timescale k. The only 'wake-time movement' in the whole paper is the write of one latent vector into a two-slot buffer, which involves no learning at all.",
-    "columns": ["learnable object", "symbol (unified)", "who learns it", "when it moves", "source"],
-    "rows": [
-      {
-        "object": "encoder / feedforward pathway (4 conv layers)",
-        "symbol": "Theta^{enc}",
-        "who_learns": "outer-loop gradient descent, ADAM, eta_Theta = 0.0002",
-        "when": "ALL THREE PHASES of every cycle k. Wake: on calL_img + calL_KL + calL_real. NREM: on calL_nrem (this is the only thing NREM trains). REM: on calL_rem (descent).",
-        "source": "Algorithm 1 lines 1336, 1377, 1409; optimizer at line 1283"
-      },
-      {
-        "object": "discriminator head (1 conv + sigmoid on the encoder's second-to-last layer; shares the first three conv layers with the encoder)",
-        "symbol": "Theta^{disc}",
-        "who_learns": "outer-loop gradient descent, jointly with the encoder because the parameters are shared up to layer 3",
-        "when": "Wake (target 'external' = 1) and REM (target 'internal' = 0). Not trained during NREM: 'the state-specific modulation provides a high activity target for the discriminator during Wake, which is decreased during REM and entirely gated off during NREM' [lines 866-868].",
-        "source": "lines 1253-1257 (architecture); Eqs. 5 and 8; Algorithm 1 lines 1336, 1409"
-      },
-      {
-        "object": "generator / feedback pathway (4 deconv layers)",
-        "symbol": "Theta^{gen}",
-        "who_learns": "outer-loop gradient DESCENT at Wake on calL_img only; outer-loop gradient ASCENT at REM on calL_rem",
-        "when": "Wake and REM. NOT updated during NREM -- Algorithm 1 has no theta_G line in the NREM block [lines 1359-1377]. 'An oblique arrow indicates that learning occurs in a given pathway' [Figure 2 caption, line 263]; 'The red minus on G indicates the inverted plasticity implementing this adversarial training' [Figure 2 caption, lines 270-271].",
-        "source": "Algorithm 1 lines 1341, 1421; Figure 2 caption lines 260-271"
-      },
-      {
-        "object": "hippocampal latent store, current slot",
-        "symbol": "E, slot hat-c_k",
-        "who_learns": "nobody -- it is a WRITE, not a learning step. wr is a copy of the encoder output.",
-        "when": "WAKE-TIME MOVEMENT. Written once per cycle, read during NREM (as target) and REM (as one term of the mixture).",
-        "source": "Algorithm 1 lines 1300, 1351; lines 1463-1464; lines 1262-1263"
-      },
-      {
-        "object": "hippocampal latent store, previous slot",
-        "symbol": "E, slot hat-c_{k-1}",
-        "who_learns": "nobody -- shifted in at the END of the REM phase ('Z_old <- Z // keep current vectors for next iteration')",
-        "when": "written at the end of cycle k, read during cycle k+1's REM only. Retention is exactly ONE cycle.",
-        "source": "Algorithm 1 line 1423; Methods lines 1556-1563"
-      },
-      {
-        "object": "spontaneous cortical activity (REM noise)",
-        "symbol": "epsilon ~ N(0, I)",
-        "who_learns": "nobody -- resampled every REM phase",
-        "when": "REM only. Contributes half the latent mixture at lambda' = 0.5.",
-        "source": "Methods lines 1556-1563; Algorithm 1 line 1391"
-      },
-      {
-        "object": "occlusion mask (the NREM perturbation)",
-        "symbol": "omega",
-        "who_learns": "nobody -- sampled per mini-batch. Two parameters are drawn: occlusion probability uniformly between 0 and 1, and square size between 1 and 8.",
-        "when": "NREM only. 'For each mini-batch, a probability and square size were randomly picked between 0 and 1, and 1-8, respectively.' [lines 1627-1628]",
-        "source": "Methods 'Image occlusion' lines 1625-1629; Eq. 6; Figure 9 lines 1594-1596"
-      },
-      {
-        "object": "mixing coefficients",
-        "symbol": "lambda = 0.5, lambda' = 0.5",
-        "who_learns": "nobody -- fixed hyperparameters, stated once and never varied",
-        "when": "REM only, every cycle.",
-        "source": "line 1563"
-      },
-      {
-        "object": "linear readout (evaluation probe, NOT part of the model)",
-        "symbol": "W_ro in R^{10x256}",
-        "who_learns": "supervised SGD with labels, eta_ro = 0.2, b = 64, 20 epochs over the whole training set",
-        "when": "AFTER the model is frozen, once per measured epoch. 'While training the classifier, the connectivity of the network (E and G) is fixed.' [lines 531-532]. The paper flags this as a modelling assumption it does not defend: 'In its current form, PAD assumes that training the linear readout does not lead to weight changes in the encoder network.' [lines 1042-1043]",
-        "source": "Methods lines 1632-1663; lines 529-532"
-      },
-      {
-        "object": "the 'conductor' that supplies the discriminator's teaching signal (external!/internal!)",
-        "symbol": "not parameterized",
-        "who_learns": "nobody -- it is a POSTULATED brain-state signal, not an implemented component. 'It also postulates a conductor that orchestrates learning by providing a teaching (nudging) signal to the discriminator neurons during Wake and REM.' [lines 855-856]",
-        "when": "in the simulation this is simply the hard-coded constant target 1 at Wake and 0 at REM.",
-        "source": "lines 854-859, 866-868; Eqs. 5 and 8"
-      }
-    ],
-    "what_moves_at_query_time": "Nothing. hat-y = W_ro enc(x). There is no retrieval, no state update, no adaptation. Every benefit claimed by the paper has already been amortized into Theta^{enc} before the query arrives -- which is precisely the shape S0 §2.3 defines as sleep-time compute, with the difference that here B_s is spent on gradient steps rather than on inference."
-  },
-
-  "update_layer": {
-    "instantiates": "(U-E) then (U-Theta), (U-Theta) -- in that order, three times per cycle k, with three different outer losses.",
-    "order_within_one_cycle_k": [
-      "1. WAKE, (U-E): hat-c_k = enc(x_k) is written into the two-slot store. S(.;B_s) is a single encoder forward pass -- the cheapest possible instance of the (U-E) write.",
-      "2. WAKE, (U-Theta): Theta moves on calL_wake = calL_img + calL_KL + calL_real, using REAL data. R_k here is the actual mini-batch, not a generated set. This step is not sleep-time compute at all; it is ordinary online learning.",
-      "3. NREM, (U-Theta): R_k = {(gen_pix(hat-c)⊙omega, hat-c)} is built entirely from the store plus the generator. Only Theta^{enc} moves.",
-      "4. REM, (U-Theta): R_k = {(gen_pix(z^mix), 'internal')} where z^mix mixes the two stored slots with N(0,I) noise at 1/4 : 1/4 : 1/2. Theta^{disc} descends, Theta^{gen} ASCENDS.",
-      "5. The store shifts: hat-c_{k-1} <- hat-c_k."
-    ],
-    "differences_from_canonical_U_Theta": [
-      "Canonical (U-Theta) has ONE outer loss calL. PAD has three, selected by a global brain-state variable: 'the three brain states only differ in their objective function and the presence or absence of external input' [lines 275-276]. The chapter should present the phase as an argument to calL, i.e. calL^{(phase)}(R_k; Theta_k).",
-      "Canonical (U-Theta) is gradient DESCENT. The REM block on Theta^{gen} is gradient ASCENT on the same loss: Theta^{gen} <- Theta^{gen} + eta_Theta grad calL_rem [Algorithm 1, line 1421]. The canonical form cannot express this without an explicit sign field. This is not a technicality -- it is the paper's headline biological prediction (Figure 7 'sign switch', lines 813-815).",
-      "Canonical R_k = gen(H_k; B_s) presumes an experience history H_k. Here H_k is TWO mini-batches of latents and nothing else. The rest of the 'experience' has already been absorbed into Theta and is unrecoverable. So the store is a working buffer, not a history.",
-      "In NREM the store supplies the TARGETS and the generator supplies the INPUTS. In an ordinary replay scheme (see deep-generative-replay note) the generator supplies inputs and a frozen teacher supplies targets. PAD inverts which side of the pair is authoritative: the stored latent is treated as ground truth about 'what this experience was'.",
-      "In REM the target is not a stored quantity at all: it is the constant label 'internal'. So this (U-Theta) round consumes ZERO information from the store's contents in its target; the store only shapes the input distribution."
-    ],
-    "differences_from_canonical_U_E": [
-      "wr(.) is a plain copy; there is no summarization, compaction, dedup or scoring. S(c_k; B_s) costs one encoder forward pass.",
-      "There is NO ret(E, q). Reads are by round index (current slot, previous slot), never by query. In the v2 path catalogue this makes PAD an E-path system with the retrieval half amputated -- the store exists solely to feed (U-Theta).",
-      "C_cap is bounded at 2 slots by construction: 'Z_old <- Z' overwrites [Algorithm 1, line 1423]. Retention is one cycle. Nothing in the paper accumulates."
-    ],
-    "not_instantiated": [
-      "(U-W): completely absent. No fast weights, no test-time state, no inner loss, no inner learning rate, no chunking. The chapter must say this in one sentence so the reader does not go looking."
-    ],
-    "path_verdict": "Under S0 §1.6's discriminant, PAD executes (U-E) AND (U-Theta), so it is not a pure member of any single path; it is the common ancestor in which the two are not yet separated. That is exactly why S0 §3.1 files it as a 공통조상 rather than under E/W/Theta."
+  "notation_conflicts": [
+   {
+    "paper_symbol": "E, E_z, E_d -- the encoder network, its latent output map and its discriminator output map; 'E(x) = (E_z(x), E_d(x)) = (z, d)' [line 1257]",
+    "reserved_meaning": "E = external store (text/vector/graph memory), STC-STYLE-NOTATION §1.2 'v2 신설'. P2 forbids overwriting a layer symbol with any paper-local symbol.",
+    "remap": "encoder parameters -> Theta^{enc}; discriminator-head parameters -> Theta^{disc}; the maps themselves -> enc(.;Theta^{enc}) and disc(.;Theta^{disc}). The reserved E is reassigned to the paper's HIPPOCAMPAL BUFFER, which the paper never gives a symbol.",
+    "why_it_matters": "This is the single most dangerous collision in the corpus: the paper's E is a slow-weight network, the book's E is the external store, and the paper contains both objects. Any chapter that copies the paper's E verbatim will invert the whole frame."
+   },
+   {
+    "paper_symbol": "G -- the generator / feedback pathway [line 1258]",
+    "reserved_meaning": "no reserved collision; but gen(.; B_s) in (U-Theta) is the procedure that BUILDS the replay set.",
+    "remap": "Theta^{gen} for the parameters, gen_pix(.;Theta^{gen}) for the map from latent to pixel. Note the pun the chapter should make explicit: this network literally is the gen(.) of (U-Theta) -- the replay set R_k is materialized by a forward pass of Theta^{gen}, not read from a store."
+   },
+   {
+    "paper_symbol": "W -- the linear readout weight matrix, 'W in R^{10x256}', y = Wz [lines 1635-1637]",
+    "reserved_meaning": "W = fast weights (NM 승계, 재정의 절대 금지), STC-STYLE-NOTATION §1.2",
+    "remap": "W_ro. This is a post-hoc evaluation probe trained with the network frozen; it is NOT a fast weight and must never be written W in the chapter."
+   },
+   {
+    "paper_symbol": "z, z_old, Z, Z_old, Z_mix, z' -- latent vectors and mini-batches thereof [lines 213-224, 1351, 1391, 1563]",
+    "reserved_meaning": "no reserved collision. hat-c = learned context = the product of offline processing written into E.",
+    "remap": "keep z for the latent vector; the STORED object is hat-c_k = z_k in E, and hat-c_{k-1} = z_old. Declared chapter-local."
+   },
+   {
+    "paper_symbol": "L_img, L_KL, L_real, L_Wake, L_NREM, L_REM, L_fake, L_GAN, L_C -- all objectives [Eqs. 1-9]",
+    "reserved_meaning": "script-l = inner loss; calligraphic-L = outer/task loss (NM 승계). Bare L is sequence length only.",
+    "remap": "all become calligraphic: calL_img, calL_KL, calL_real, calL_wake, calL_nrem, calL_rem, calL_C. Script-l is NOT used in this note: the paper has no inner loop, hence no inner loss. This is a fact worth stating in the chapter, not an omission."
+   },
+   {
+    "paper_symbol": "theta_E, theta_G -- network parameter vectors [Algorithm 1, line 1287]",
+    "reserved_meaning": "Theta = slow weights; lowercase theta with subscripts is reserved-adjacent and eta_t/eta_Theta must not be confused.",
+    "remap": "Theta^{enc}, Theta^{disc}, Theta^{gen}, all sub-blocks of Theta_k."
+   },
+   {
+    "paper_symbol": "learning rate 0.0002 for ADAM [line 1283]",
+    "reserved_meaning": "eta_Theta = outer/sleep learning rate; eta_t = inner rate",
+    "remap": "eta_Theta = 0.0002. There is no eta_t in this paper. NOTE: the SAME eta_Theta is used in all three phases -- wake and sleep share one rate, and 'all losses are weighted equally' [line 1620]."
+   },
+   {
+    "paper_symbol": "eta = 0.2 -- learning rate of the linear readout classifier [line 1663]",
+    "reserved_meaning": "eta_t / eta_Theta",
+    "remap": "eta_ro = 0.2. Belongs to the evaluation probe, not to the model."
+   },
+   {
+    "paper_symbol": "beta_1 = 0.5, beta_2 = 0.999 -- ADAM moment decays [line 1283]",
+    "reserved_meaning": "beta_t = inner-loop momentum decay in (U-W)",
+    "remap": "beta_1^{Adam}, beta_2^{Adam}. Constants of the outer optimizer; per STYLE §1.5 they take no time subscript."
+   },
+   {
+    "paper_symbol": "lambda = 0.5, lambda' = 0.5 -- convex mixing coefficients in Z_mix [line 1563]",
+    "reserved_meaning": "alpha_t = retention gate (남기는 비율) in (U-W)",
+    "remap": "keep lambda, lambda' as chapter-local constants. They are the closest object this paper has to a retention gate, but they gate the MIXTURE of two stored records, not the decay of a state, and they are fixed constants -- so no time subscript."
+   },
+   {
+    "paper_symbol": "b = 64 -- mini-batch size [line 1283]",
+    "reserved_meaning": "C = chunk size (NM 승계); C_cap = capacity",
+    "remap": "b. Do NOT write C for it. In this paper the mini-batch is simultaneously the training batch AND the unit of one wake-sleep cycle, so it is the closest analogue of the book's chunk -- state that in prose, do not overload the symbol."
+   },
+   {
+    "paper_symbol": "d -- the scalar discriminator output, with teaching signal 0 or 1 [lines 1255-1256]",
+    "reserved_meaning": "d = model width in STC-STYLE-NOTATION §1.3",
+    "remap": "d_int/ext, or simply disc(x). Model width is never used in this note."
+   },
+   {
+    "paper_symbol": "epsilon ~ N(0, I) -- spontaneous cortical activity [line 1559]; and epsilon ~ N(0, 0.5*I) in the w/o-REM ablation [line 1727]",
+    "reserved_meaning": "none",
+    "remap": "kept; declared chapter-local. Note the two epsilons have DIFFERENT variances and different roles -- see unfavorable_facts."
+   },
+   {
+    "paper_symbol": "omega, Omega -- binary occlusion mask, applied as elementwise product [lines 1363, 1534-1536, 1546]",
+    "reserved_meaning": "none",
+    "remap": "kept as omega."
+   },
+   {
+    "paper_symbol": "n_z = 256 -- latent dimension [lines 1506, 1635]",
+    "reserved_meaning": "n = number of stored items in STC-STYLE-NOTATION §1.3",
+    "remap": "n_z kept; the book's n (stored items) is 2 mini-batches here, so the two never appear together."
+   },
+   {
+    "paper_symbol": "'epoch' -- 'One training epoch is defined by the number of mini-batches necessary to cover the whole dataset' [lines 1620-1621]; 'A single wake-sleep cycle consists of Wake, NREM, and REM phases' [line 421]",
+    "reserved_meaning": "k = sleep round index (S0 P3)",
+    "remap": "k indexes the WAKE-SLEEP CYCLE, i.e. one mini-batch. An epoch is many k. The paper's x-axes are labelled in epochs, so any chapter figure must convert or state the unit. Getting this wrong makes the sleep budget look ~3 orders of magnitude smaller than it is."
+   }
+  ],
+  "equations": [
+   {
+    "id": "(PAD-R) read / evaluation-time inference",
+    "latex": "\\hat y \\;=\\; W_{\\mathrm{ro}}\\, \\mathrm{enc}\\big(x;\\ \\Theta^{\\mathrm{enc}}\\big), \\qquad z = \\mathrm{enc}(x;\\Theta^{\\mathrm{enc}}) \\in \\mathbb{R}^{256}",
+    "frame_relation": "This is frame Eq. (R) with W absent and ret(E,q) absent: hat-y = f(q; Theta, -, -). The store is never read at query time; the fast-weight layer does not exist. Everything the sleep phases achieved is already baked into Theta^{enc}.",
+    "paper_source": "[pad-dreaming-elife Eq. 9-10, lines 1642, 1651-1655]; frozen-encoder condition at lines 531-532; z dimension at line 1635"
+   },
+   {
+    "id": "(PAD-1) Wake write to the external store -- instance of (U-E)",
+    "latex": "E_{k} \\;=\\; \\mathrm{wr}\\big(E_{k-1},\\ \\hat c_k\\big), \\qquad \\hat c_k \\;=\\; S(c_k; B_s) \\;=\\; \\mathrm{enc}\\big(x_k;\\Theta^{\\mathrm{enc}}\\big), \\qquad E_k \\;=\\; \\{\\hat c_k,\\ \\hat c_{k-1}\\}",
+    "frame_relation": "Instance of (U-E) in which S(.;B_s) is a SINGLE forward pass of the encoder (no offline reasoning, no summarization) and wr is a two-slot shift register: the store keeps exactly the current and the previous mini-batch of latents. There is no ret(.,q): reads are by round index only.",
+    "paper_source": "[pad-dreaming-elife Algorithm 1, lines 1300, 1351, 1423] ('Z, D <- E(X)'; 'Z <- {z^(1),...,z^(b)} // mini-batch of latent vectors from Wake'; 'Z_old <- Z // keep current vectors for next iteration'); prose at lines 1463-1464 ('We store the latent vectors Z = E_z(X) corresponding to the current mini-batch for usage during the NREM and REM phases') and at lines 1262-1263"
+   },
+   {
+    "id": "(PAD-2) Wake objective -- instance of (U-Theta) on real data",
+    "latex": "\\mathcal{L}_{\\text{wake}} \\;=\\; \\mathcal{L}_{\\text{img}} + \\mathcal{L}_{\\mathrm{KL}} + \\mathcal{L}_{\\text{real}}",
+    "paper_source": "[pad-dreaming-elife Eq. 1, line 1436]"
+   },
+   {
+    "id": "(PAD-3) reconstruction term",
+    "latex": "\\mathcal{L}_{\\text{img}} \\;=\\; \\frac{1}{b}\\sum_{i=1}^{b}\\big\\| x^{(i)} - \\mathrm{gen}_{\\mathrm{pix}}\\big(\\mathrm{enc}(x^{(i)};\\Theta^{\\mathrm{enc}});\\Theta^{\\mathrm{gen}}\\big)\\big\\|^{2}",
+    "paper_source": "[pad-dreaming-elife Eq. 2, lines 1454-1458]"
+   },
+   {
+    "id": "(PAD-4) latent prior regularizer",
+    "latex": "\\mathcal{L}_{\\mathrm{KL}} \\;=\\; D_{\\mathrm{KL}}\\big(q(Z\\mid X)\\,\\|\\,p(Z)\\big) \\;=\\; \\frac{1}{2 n_z}\\sum_{j=1}^{n_z}\\Big(\\big(\\mu^{(Z)}_j\\big)^{2} + \\big(\\sigma^{(Z)}_j\\big)^{2} - 1 - \\log\\big(\\sigma^{(Z)}_j\\big)^{2}\\Big)",
+    "frame_relation": "p(Z) ~ N(0,1) [line 1473]. CRITICAL detail for the chapter: mu^(Z) and sigma^(Z) are the EMPIRICAL mean and standard deviation OF THE MINI-BATCH of latent vectors, 'the empirical mean mu^(Z) and empirical standard deviation sigma^(Z) of the set of latent vectors E_z(X) = Z' [lines 1504-1511] -- i.e. batch statistics, not a per-sample amortized posterior. The encoder is deterministic; no reparameterization sampling is described anywhere. This is a VAE-shaped term on a non-VAE encoder.",
+    "paper_source": "[pad-dreaming-elife Eq. 3, line 1466; Eq. 4, lines 1475-1500; prose lines 1465-1473, 1504-1511]"
+   },
+   {
+    "id": "(PAD-5) discriminator-on-real term (this is what makes REM adversarial possible)",
+    "latex": "\\mathcal{L}_{\\text{real}} \\;=\\; \\mathcal{L}_{\\mathrm{GAN}}\\big(\\mathrm{disc}(X),\\,1\\big) \\;=\\; -\\frac{1}{b}\\sum_{i=1}^{b}\\log\\,\\mathrm{disc}\\big(x^{(i)}\\big)",
+    "frame_relation": "Binary cross-entropy; 'in principle, L_GAN can be any GAN-specific loss function' [lines 1528-1529]. The paper stresses the causal role: 'The discriminator learning during Wake is essential to drive adversarial learning during REM.' [lines 288-289]",
+    "paper_source": "[pad-dreaming-elife Eq. 5, lines 1514-1523]"
+   },
+   {
+    "id": "(PAD-6) Wake parameter updates",
+    "latex": "\\Theta^{\\mathrm{enc},\\mathrm{disc}}_{k} \\leftarrow \\Theta^{\\mathrm{enc},\\mathrm{disc}}_{k} - \\eta_\\Theta \\nabla\\big(\\mathcal{L}_{\\text{img}}+\\mathcal{L}_{\\mathrm{KL}}+\\mathcal{L}_{\\text{real}}\\big), \\qquad \\Theta^{\\mathrm{gen}}_{k} \\leftarrow \\Theta^{\\mathrm{gen}}_{k} - \\eta_\\Theta \\nabla \\mathcal{L}_{\\text{img}}",
+    "frame_relation": "Note the asymmetry the chapter must reproduce: at Wake the generator sees ONLY the reconstruction term; it never sees the KL or the discriminator term.",
+    "paper_source": "[pad-dreaming-elife Algorithm 1, lines 1336, 1341]"
+   },
+   {
+    "id": "(PAD-7) NREM -- perturbed dreaming, instance of (U-Theta) with R_k built from E",
+    "latex": "\\mathcal{L}_{\\text{nrem}} \\;=\\; \\frac{1}{b}\\sum_{i=1}^{b}\\Big\\| z^{(i)} - \\mathrm{enc}\\big(\\,\\mathrm{gen}_{\\mathrm{pix}}(z^{(i)};\\Theta^{\\mathrm{gen}})\\odot\\omega\\ ;\\Theta^{\\mathrm{enc}}\\big)\\Big\\|^{2}, \\qquad \\Theta^{\\mathrm{enc}}_{k}\\leftarrow\\Theta^{\\mathrm{enc}}_{k}-\\eta_\\Theta\\nabla\\mathcal{L}_{\\text{nrem}}",
+    "frame_relation": "This is (U-Theta) with R_k = { (gen_pix(hat-c)⊙omega, hat-c) : hat-c in E_k }. The store supplies the TARGETS and the generator supplies the INPUTS -- the inverse of a normal replay buffer, where the store supplies inputs and a frozen teacher supplies targets (cf. deep-generative-replay). The generator is NOT updated during NREM: only Theta^{enc} moves.",
+    "paper_source": "[pad-dreaming-elife Eq. 6, lines 1537-1548; Algorithm 1, lines 1359-1377]"
+   },
+   {
+    "id": "(PAD-8) REM latent mixture -- how R_k is drawn from E",
+    "latex": "z^{\\mathrm{mix}}_k \\;=\\; \\lambda'\\big(\\lambda\\,\\hat c_k + (1-\\lambda)\\,\\hat c_{k-1}\\big) + (1-\\lambda')\\,\\epsilon, \\qquad \\lambda=\\lambda'=0.5,\\ \\ \\epsilon\\sim\\mathcal{N}(0,I)",
+    "frame_relation": "With lambda = lambda' = 0.5 this expands to the coefficients drawn in the paper's own figure: z' = (1/4) z + (1/4) z_old + (1/2) epsilon [Figure 2 panel c, lines 213-224]. Half the mixture is noise. On the first iteration the mixture is skipped: 'if first iteration then Z_mix <- Z' [Algorithm 1, lines 1381-1385].",
+    "paper_source": "[pad-dreaming-elife Algorithm 1, line 1391; Methods lines 1556-1563; Figure 2c, lines 213-224, 268-270]"
+   },
+   {
+    "id": "(PAD-9) REM -- adversarial dreaming, the minimax and the sign switch",
+    "latex": "\\min_{\\Theta^{\\mathrm{disc}}}\\ \\max_{\\Theta^{\\mathrm{gen}}}\\ \\mathcal{L}_{\\text{rem}}, \\qquad \\mathcal{L}_{\\text{rem}} \\;=\\; \\mathcal{L}_{\\mathrm{GAN}}\\big(\\mathrm{disc}(\\mathrm{gen}_{\\mathrm{pix}}(z^{\\mathrm{mix}})),\\,0\\big) \\;=\\; -\\frac{1}{b}\\sum_{i=1}^{b}\\log\\Big(1-\\mathrm{disc}\\big(\\mathrm{gen}_{\\mathrm{pix}}(z^{\\mathrm{mix},(i)})\\big)\\Big)",
+    "frame_relation": "The minimax is printed with min over the discriminator and max over the generator [lines 1567-1569]. Implementation is the sign switch, and this is the paper's central biological prediction: 'In our model, the adversarial process is simply described by a full backpropagation of error through E_d and G with a sign switch of weight changes in G.' [lines 1616-1617]",
+    "paper_source": "[pad-dreaming-elife Eq. 7, lines 1567-1569; Eq. 8, lines 1600-1611]"
+   },
+   {
+    "id": "(PAD-10) REM parameter updates -- descent on the encoder, ASCENT on the generator",
+    "latex": "\\Theta^{\\mathrm{disc}}_{k+1} \\leftarrow \\Theta^{\\mathrm{disc}}_{k} - \\eta_\\Theta\\nabla\\mathcal{L}_{\\text{rem}}, \\qquad \\Theta^{\\mathrm{gen}}_{k+1} \\leftarrow \\Theta^{\\mathrm{gen}}_{k} + \\eta_\\Theta\\nabla\\mathcal{L}_{\\text{rem}}",
+    "frame_relation": "The plus sign is the whole biological claim: 'Sign switch indicates that identical local errors lead to opposing weight changes between Wake and REM sleep.' [Figure 7 caption, lines 814-815]. In the unified frame this is a (U-Theta) round whose gradient is sign-inverted on one parameter block -- a form the canonical (U-Theta) does not admit.",
+    "paper_source": "[pad-dreaming-elife Algorithm 1, lines 1409, 1421]"
+   },
+   {
+    "id": "(PAD-11) evaluation probe (not part of the model)",
+    "latex": "\\mathcal{L}_{C}(z,t;W_{\\mathrm{ro}}) = -\\log p_{W_{\\mathrm{ro}}}(Y=t\\mid z), \\qquad p_{W_{\\mathrm{ro}}}(Y=t\\mid z) = \\frac{e^{y_t}}{\\sum_{i=0}^{9} e^{y_i}},\\quad y = W_{\\mathrm{ro}} z",
+    "frame_relation": "Trained by SGD, b=64, eta_ro=0.2, 20 epochs, on the whole training set, with Theta frozen. 'Linear separability' is defined as this probe's test accuracy, following Hjelm et al. 2019.",
+    "paper_source": "[pad-dreaming-elife Eq. 9, line 1642; Eq. 10, lines 1651-1655; training details lines 1662-1663; definition lines 1675-1677]"
+   },
+   {
+    "id": "(PAD-12) FID, the realism metric",
+    "latex": "\\mathrm{FID} = \\|\\mu_{\\text{real}}-\\mu_{\\text{gen}}\\|^{2} + \\mathrm{Tr}\\big(\\Sigma_{\\text{real}}+\\Sigma_{\\text{gen}} - 2(\\Sigma_{\\text{real}}\\Sigma_{\\text{gen}})^{1/2}\\big)",
+    "frame_relation": "Computed on the 2048-dimensional Inception v3 pool3 activations for 10,000 pairs of data samples and generated images; mean and SEM over four differently initialized networks.",
+    "paper_source": "[pad-dreaming-elife Eq. 11, line 1710; lines 1705-1717]"
+   },
+   {
+    "id": "(PAD-13) the modified Wake reconstruction used ONLY in the w/o-REM ablation",
+    "latex": "\\mathcal{L}_{\\text{img}} = \\frac{1}{b}\\sum_{i=1}^{b}\\big\\| x^{(i)} - \\mathrm{gen}_{\\mathrm{pix}}\\big(\\mathrm{enc}(x^{(i)}) + \\epsilon\\big)\\big\\|^{2}, \\qquad \\epsilon\\sim\\mathcal{N}(0,\\,0.5\\,I)",
+    "frame_relation": "Applied only to the ablation arms, not to PAD. See unfavorable_facts -- the ablation baselines are hand-repaired.",
+    "paper_source": "[pad-dreaming-elife Eq. 12, lines 1727-1743]"
+   }
+  ],
+  "cycle_summary_in_paper_words": "'each Wake-NREM-REM cycle consists of (1) reconstructing a mini-batch x of images during Wake, (2) reconstructing a mini-batch of latent activities Z = E_z(X) during NREM with perturbation of G(z), and (3) replaying Z convex combined with Z_old and noise from the (n-1)th cycle. In PAD training, all losses are weighted equally and we did not use a schedule for L_KL, as opposed to standard variational autoencoder training.' [lines 1618-1621]",
+  "architecture": {
+   "encoder_E_z": "four convolutional layers with 64, 128, 256, 256 channels; 4x4 kernel, padding 1 (0 for last layer), stride 2 (feature size halved per layer); LeakyReLU on all but the last layer; the last conv layer's activity IS z [lines 1250-1253]",
+   "discriminator_head_E_d": "one additional convolutional layer plus sigmoid, attached to the SECOND-TO-LAST layer of the encoder, mapping to a single scalar d with putative teaching signal 0 or 1; E_z and E_d share the first three convolutional layers [lines 1253-1257]",
+   "generator_G": "four deconvolutional layers with 256, 128, 64, 3 channels; 4x4 kernel, padding 1 (0 for the first deconvolutional layer), stride 2 (feature size doubled per layer); LeakyReLU on the first three, tanh on the last [lines 1258-1261]",
+   "hippocampus": "not modeled; a store/retrieve buffer [lines 1262-1263, 893-894]",
+   "deliberately_absent": "'in contrast to previous GAN variants, our model removes many optimization tricks such as batch normalization layers, spectral normalization layers, or optimizing the min-max GAN objective in three steps with different objectives, which are challenging to implement in biological substrates' [lines 997-1000]",
+   "source": "Materials and methods, 'Network architecture', lines 1247-1263; Figure 8, lines 1243-1244"
   }
+ },
+ "outer_vs_inner": {
+  "reader_note": "This paper has NO inner loop. Nothing moves at query time. Every learnable object below is moved by gradient descent between mini-batches, i.e. by (U-Theta) at the sleep-round timescale k. The only 'wake-time movement' in the whole paper is the write of one latent vector into a two-slot buffer, which involves no learning at all.",
+  "columns": [
+   "learnable object",
+   "symbol (unified)",
+   "who learns it",
+   "when it moves",
+   "source"
+  ],
+  "rows": [
+   {
+    "object": "encoder / feedforward pathway (4 conv layers)",
+    "symbol": "Theta^{enc}",
+    "who_learns": "outer-loop gradient descent, ADAM, eta_Theta = 0.0002",
+    "when": "ALL THREE PHASES of every cycle k. Wake: on calL_img + calL_KL + calL_real. NREM: on calL_nrem (this is the only thing NREM trains). REM: on calL_rem (descent).",
+    "source": "Algorithm 1 lines 1336, 1377, 1409; optimizer at line 1283"
+   },
+   {
+    "object": "discriminator head (1 conv + sigmoid on the encoder's second-to-last layer; shares the first three conv layers with the encoder)",
+    "symbol": "Theta^{disc}",
+    "who_learns": "outer-loop gradient descent, jointly with the encoder because the parameters are shared up to layer 3",
+    "when": "Wake (target 'external' = 1) and REM (target 'internal' = 0). Not trained during NREM: 'the state-specific modulation provides a high activity target for the discriminator during Wake, which is decreased during REM and entirely gated off during NREM' [lines 866-868].",
+    "source": "lines 1253-1257 (architecture); Eqs. 5 and 8; Algorithm 1 lines 1336, 1409"
+   },
+   {
+    "object": "generator / feedback pathway (4 deconv layers)",
+    "symbol": "Theta^{gen}",
+    "who_learns": "outer-loop gradient DESCENT at Wake on calL_img only; outer-loop gradient ASCENT at REM on calL_rem",
+    "when": "Wake and REM. NOT updated during NREM -- Algorithm 1 has no theta_G line in the NREM block [lines 1359-1377]. 'An oblique arrow indicates that learning occurs in a given pathway' [Figure 2 caption, line 263]; 'The red minus on G indicates the inverted plasticity implementing this adversarial training' [Figure 2 caption, lines 270-271].",
+    "source": "Algorithm 1 lines 1341, 1421; Figure 2 caption lines 260-271"
+   },
+   {
+    "object": "hippocampal latent store, current slot",
+    "symbol": "E, slot hat-c_k",
+    "who_learns": "nobody -- it is a WRITE, not a learning step. wr is a copy of the encoder output.",
+    "when": "WAKE-TIME MOVEMENT. Written once per cycle, read during NREM (as target) and REM (as one term of the mixture).",
+    "source": "Algorithm 1 lines 1300, 1351; lines 1463-1464; lines 1262-1263"
+   },
+   {
+    "object": "hippocampal latent store, previous slot",
+    "symbol": "E, slot hat-c_{k-1}",
+    "who_learns": "nobody -- shifted in at the END of the REM phase ('Z_old <- Z // keep current vectors for next iteration')",
+    "when": "written at the end of cycle k, read during cycle k+1's REM only. Retention is exactly ONE cycle.",
+    "source": "Algorithm 1 line 1423; Methods lines 1556-1563"
+   },
+   {
+    "object": "spontaneous cortical activity (REM noise)",
+    "symbol": "epsilon ~ N(0, I)",
+    "who_learns": "nobody -- resampled every REM phase",
+    "when": "REM only. Contributes half the latent mixture at lambda' = 0.5.",
+    "source": "Methods lines 1556-1563; Algorithm 1 line 1391"
+   },
+   {
+    "object": "occlusion mask (the NREM perturbation)",
+    "symbol": "omega",
+    "who_learns": "nobody -- sampled per mini-batch. Two parameters are drawn: occlusion probability uniformly between 0 and 1, and square size between 1 and 8.",
+    "when": "NREM only. 'For each mini-batch, a probability and square size were randomly picked between 0 and 1, and 1-8, respectively.' [lines 1627-1628]",
+    "source": "Methods 'Image occlusion' lines 1625-1629; Eq. 6; Figure 9 lines 1594-1596"
+   },
+   {
+    "object": "mixing coefficients",
+    "symbol": "lambda = 0.5, lambda' = 0.5",
+    "who_learns": "nobody -- fixed hyperparameters, stated once and never varied",
+    "when": "REM only, every cycle.",
+    "source": "line 1563"
+   },
+   {
+    "object": "linear readout (evaluation probe, NOT part of the model)",
+    "symbol": "W_ro in R^{10x256}",
+    "who_learns": "supervised SGD with labels, eta_ro = 0.2, b = 64, 20 epochs over the whole training set",
+    "when": "AFTER the model is frozen, once per measured epoch. 'While training the classifier, the connectivity of the network (E and G) is fixed.' [lines 531-532]. The paper flags this as a modelling assumption it does not defend: 'In its current form, PAD assumes that training the linear readout does not lead to weight changes in the encoder network.' [lines 1042-1043]",
+    "source": "Methods lines 1632-1663; lines 529-532"
+   },
+   {
+    "object": "the 'conductor' that supplies the discriminator's teaching signal (external!/internal!)",
+    "symbol": "not parameterized",
+    "who_learns": "nobody -- it is a POSTULATED brain-state signal, not an implemented component. 'It also postulates a conductor that orchestrates learning by providing a teaching (nudging) signal to the discriminator neurons during Wake and REM.' [lines 855-856]",
+    "when": "in the simulation this is simply the hard-coded constant target 1 at Wake and 0 at REM.",
+    "source": "lines 854-859, 866-868; Eqs. 5 and 8"
+   }
+  ],
+  "what_moves_at_query_time": "Nothing. hat-y = W_ro enc(x). There is no retrieval, no state update, no adaptation. Every benefit claimed by the paper has already been amortized into Theta^{enc} before the query arrives -- which is precisely the shape S0 §2.3 defines as sleep-time compute, with the difference that here B_s is spent on gradient steps rather than on inference."
+ },
+ "update_layer": {
+  "instantiates": "(U-E) then (U-Theta), (U-Theta) -- in that order, three times per cycle k, with three different outer losses.",
+  "order_within_one_cycle_k": [
+   "1. WAKE, (U-E): hat-c_k = enc(x_k) is written into the two-slot store. S(.;B_s) is a single encoder forward pass -- the cheapest possible instance of the (U-E) write.",
+   "2. WAKE, (U-Theta): Theta moves on calL_wake = calL_img + calL_KL + calL_real, using REAL data. R_k here is the actual mini-batch, not a generated set. This step is not sleep-time compute at all; it is ordinary online learning.",
+   "3. NREM, (U-Theta): R_k = {(gen_pix(hat-c)⊙omega, hat-c)} is built entirely from the store plus the generator. Only Theta^{enc} moves.",
+   "4. REM, (U-Theta): R_k = {(gen_pix(z^mix), 'internal')} where z^mix mixes the two stored slots with N(0,I) noise at 1/4 : 1/4 : 1/2. Theta^{disc} descends, Theta^{gen} ASCENDS.",
+   "5. The store shifts: hat-c_{k-1} <- hat-c_k."
+  ],
+  "differences_from_canonical_U_Theta": [
+   "Canonical (U-Theta) has ONE outer loss calL. PAD has three, selected by a global brain-state variable: 'the three brain states only differ in their objective function and the presence or absence of external input' [lines 275-276]. The chapter should present the phase as an argument to calL, i.e. calL^{(phase)}(R_k; Theta_k).",
+   "Canonical (U-Theta) is gradient DESCENT. The REM block on Theta^{gen} is gradient ASCENT on the same loss: Theta^{gen} <- Theta^{gen} + eta_Theta grad calL_rem [Algorithm 1, line 1421]. The canonical form cannot express this without an explicit sign field. This is not a technicality -- it is the paper's headline biological prediction (Figure 7 'sign switch', lines 813-815).",
+   "Canonical R_k = gen(H_k; B_s) presumes an experience history H_k. Here H_k is TWO mini-batches of latents and nothing else. The rest of the 'experience' has already been absorbed into Theta and is unrecoverable. So the store is a working buffer, not a history.",
+   "In NREM the store supplies the TARGETS and the generator supplies the INPUTS. In an ordinary replay scheme (see deep-generative-replay note) the generator supplies inputs and a frozen teacher supplies targets. PAD inverts which side of the pair is authoritative: the stored latent is treated as ground truth about 'what this experience was'.",
+   "In REM the target is not a stored quantity at all: it is the constant label 'internal'. So this (U-Theta) round consumes ZERO information from the store's contents in its target; the store only shapes the input distribution."
+  ],
+  "differences_from_canonical_U_E": [
+   "wr(.) is a plain copy; there is no summarization, compaction, dedup or scoring. S(c_k; B_s) costs one encoder forward pass.",
+   "There is NO ret(E, q). Reads are by round index (current slot, previous slot), never by query. In the v2 path catalogue this makes PAD an E-path system with the retrieval half amputated -- the store exists solely to feed (U-Theta).",
+   "C_cap is bounded at 2 slots by construction: 'Z_old <- Z' overwrites [Algorithm 1, line 1423]. Retention is one cycle. Nothing in the paper accumulates."
+  ],
+  "not_instantiated": [
+   "(U-W): completely absent. No fast weights, no test-time state, no inner loss, no inner learning rate, no chunking. The chapter must say this in one sentence so the reader does not go looking."
+  ],
+  "path_verdict": "Under S0 §1.6's discriminant, PAD executes (U-E) AND (U-Theta), so it is not a pure member of any single path; it is the common ancestor in which the two are not yet separated. That is exactly why S0 §3.1 files it as a 공통조상 rather than under E/W/Theta."
+ },
+ "open_questions": [
+  "REM 단계의 latent 혼합 전략이 최적인지 미해결. 저자는 성분 단위 혼합(Beckham et al., 2019)이나 두 개 초과 기억의 혼합을 대안으로 열거만 한다. [Discussion, txt L1030-L1033]",
+  "연속 학습 상황에서 최근 episodic memory의 preferential replay가 유용한 표현을 만든다는 것은 저자의 **가설**이며 검증되지 않았다. 'we hypothesize that for models that learn continuously...' [Discussion, txt L1036-L1038]",
+  "linear readout 학습이 encoder를 바꾸지 않는다는 가정을 푸는 것 — 실제 피질에서는 downstream 과제가 encoder를 형성할 것이라고 저자가 인정한다. [Discussion, txt L1041-L1044]",
+  "sleep 단계의 순서가 성능에 영향을 주려면 단계별 시냅스 변화가 더 커야 한다는 예측이 검증되지 않았다. [Discussion, txt L1050-L1055]",
+  "NREM/REM의 동역학적 특징(cortical oscillation, spindle, slow wave)을 포함한 회로 모델은 미구축. [Discussion, txt L940-L944]"
+ ],
+ "unfavorable_facts": [
+  {
+   "fact": "저자 스스로 **episodic memory 혼합이 필요하지 않을 수 있음**을 보고한다. 'we do not observe significant differences between using a combination of episodic memories with spontaneous activity or only using spontaneous activity'. 이 논문의 이름(adversarial *dreaming from mixed episodes*)이 가리키는 바로 그 성분이 통제 대비 유의한 차이를 내지 못했다.",
+   "location": "[pad-dreaming-elife Discussion, txt L1034-L1036; Appendix 1—figure 4]",
+   "why_it_matters": "LLM 쪽에서 이 논문을 'replay를 섞는 것이 표현학습을 돕는다'의 생물학적 근거로 인용할 때, 논문 자신의 통제 실험은 그 특정 주장을 지지하지 않는다."
+  },
+  {
+   "fact": "**sleep 단계의 순서가 무관하다.** 'our model does not show significant differences in performance when the order of sleep phases is switched'. 저자는 생물학에서 NREM→REM 순서가 중요하다고 가설된다는 점(sequential hypothesis, Giuditta et al., 1995)을 인정하면서, 모델에서 순서 독립성이 나타나는 이유를 단계별 시냅스 변화가 작기 때문으로 **추정**한다.",
+   "location": "[pad-dreaming-elife Discussion, txt L1046-L1055; Appendix 1—figure 5]",
+   "why_it_matters": "wake/sleep 주기를 단계 순서까지 모사하려는 LLM 설계에 대해, 이 논문은 순서의 필요성을 지지하지 않는다."
+  },
+  {
+   "fact": "표현 품질의 유일한 지표가 **linear classifier readout 정확도**이며, 저자가 '명백한 단순화'라고 인정한다. downstream 과제 성능은 측정되지 않았다.",
+   "location": "[pad-dreaming-elife Discussion, txt L1039-L1041]"
+  },
+  {
+   "fact": "절대 성능이 낮다. CIFAR-10 linear separability가 약 **59% test accuracy**에 그친다. 같은 시기 self-supervised 표현학습의 CIFAR-10 linear probe 성능과 비교하면 크게 낮으며, 논문은 그 비교를 수행하지 않는다.",
+   "location": "[pad-dreaming-elife Results, txt L534; Figure 4c]",
+   "why_it_matters": "이 모델은 기제의 존재 증명이지 성능 주장이 아니다. LLM 쪽에서 성능 근거로 인용하면 오용이다."
+  },
+  {
+   "fact": "SVHN 실험에서 표본 분포 불균형 때문에 naive classifier의 최고 성능이 18.9%다. 즉 baseline이 자명하지 않으며, 보고된 향상을 읽을 때 이 기준선을 함께 봐야 한다.",
+   "location": "[pad-dreaming-elife Figure 5 caption, txt L643]"
+  },
+  {
+   "fact": "NREM/REM의 동역학적 특징(oscillation, spindle, slow wave)이 전부 배제된 기능적 모델이다. 저자가 명시한다.",
+   "location": "[pad-dreaming-elife Discussion 'Relation to cognitive theories of sleep', txt L940-L944]"
+  }
+ ],
+ "cross_path_citations": {
+  "verdict": "세 경로 전부에 대해 완전한 침묵이며, 이 침묵은 연대가 강제한 것이다(2022년 eLife). 선택된 침묵이 아니다.",
+  "method": "vendored 전문(127,727 bytes, 참고문헌 포함)에 대한 대소문자 무시 문자열 검색.",
+  "counts": {
+   "transformer": 0,
+   "language model": 0,
+   "large language": 0,
+   "LoRA": 0,
+   "adapter": 0,
+   "test-time": 0,
+   "fast weight": 0,
+   "external memory": 0,
+   "distill": 0,
+   "retriev": 2,
+   "fine-tun": 1,
+   "catastrophic": 1,
+   "continual": 2,
+   "replay": 38
+  },
+  "note": "'RAG' 문자열 20건은 average/storage/fragment 등의 부분일치이며 Retrieval-Augmented Generation과 무관하다(확인함).",
+  "what_it_does_cite": "CLS 계보(McClelland et al., 1995), Norman et al. 2005의 REM 재활성화 모델, Klinzing et al. 2019, Diekelmann & Born 2010, 그리고 GAN 계열 기계학습(Gershman 2019, Hoel 2021, Benjamin & Kording 2021).",
+  "monograph_use": "ch08·ch23에서 '은유의 출처'로 인용하되, 이 논문이 LLM 문헌을 인용할 수 없었던 것과 LLM 문헌이 이 논문을 인용하지 않는 것은 다른 사실임을 구분해 서술한다."
+ },
+ "systems_implications": {
+  "direct": "없음. 이 논문은 LLM도 transformer도 다루지 않으며 지연·바이트·처리량을 측정하지 않는다.",
+  "what_transfers": [
+   "두 단계 분업의 **기능적 구분**: NREM은 개별 기억의 섭동 재생으로 표현을 안정화하고, REM은 혼합 기억의 적대적 생성으로 표현을 의미적으로 조직한다. 이 책의 (U-Θ)에서 R_k를 어떻게 구성하는가에 대응한다.",
+   "표현 조직화의 지표가 downstream 학습 효율이라는 관점 — LLM 쪽 sleep 방법이 무엇을 개선했다고 주장할 때 그 지표가 무엇인지 묻는 근거가 된다."
+  ],
+  "what_does_not_transfer": [
+   "adversarial 목적함수는 LLM sleep 방법 어디에서도 쓰이지 않는다. 이 논문의 기제 자체는 이송되지 않았고 어휘만 이송되었다.",
+   "이 모델의 encoder/decoder는 소형 conv 네트워크이며 파라미터 규모·데이터 규모가 LLM과 자릿수로 다르다."
+  ],
+  "grade": "이 항목 전체가 note-writer의 해석이며 논문의 주장이 아니다."
+ },
+ "figures": [
+  {
+   "figure": "Figure 1",
+   "shows": "PAD의 wake/NREM/REM 세 단계 아키텍처와 각 단계의 데이터 흐름. ch08의 구조 그림으로 최적."
+  },
+  {
+   "figure": "Figure 4c, 4d",
+   "shows": "REM(adversarial dreaming)이 latent 표현의 linear separability를 올린다 — CIFAR-10 / SVHN. 'w/o memory mix' 통제 포함."
+  },
+  {
+   "figure": "Figure 5c, 5d",
+   "shows": "NREM(perturbed dreaming)이 섭동에 대한 강건성을 올린다."
+  },
+  {
+   "figure": "Appendix 1—figure 4",
+   "shows": "episodic memory 혼합 vs 자발 활동만 — 유의한 차이 없음. **불리한 사실의 근거 그림**."
+  },
+  {
+   "figure": "Appendix 1—figure 5",
+   "shows": "sleep 단계 순서 교체 시 유의한 차이 없음. **불리한 사실의 근거 그림**."
+  }
+ ],
+ "todo_verify": [
+  "CIFAR-10 59% 수치의 정확한 조건(에폭 수, 통제군 값)을 Figure 4c 본문에서 재확인할 것. 확인 방법: papers/stc/STC-T13.txt 에서 'linear separability reaching around' 검색.",
+  "Appendix 1—figure 4/5의 '유의한 차이 없음'이 통계 검정에 근거한 것인지 시각적 판단인지 확인할 것. 확인 방법: 같은 파일에서 'Appendix 1—figure 4' 및 'significant' 검색."
+ ],
+ "note_completion": {
+  "status": "3차 패스 보완 완료 (2026-08-06, 편집자 직접 작성)",
+  "why": "deep-read 에이전트가 1·2차 패스만 쓰고 응답 도중 끊겨 open_questions·unfavorable_facts·cross_path_citations·figures·systems_implications·todo_verify가 누락되었다. 원문 대조로 보완했다."
+ }
 }

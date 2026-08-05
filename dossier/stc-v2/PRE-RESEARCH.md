@@ -152,6 +152,9 @@ Nested Learning, Mem0, ReasoningBank)을 구분해 서술한다. 전자는 계�
 | RAG의 학습된 검색기가 FEVER에서 BM25에 진다(논문 인정) | ch10 |
 | model collapse의 헤드라인은 VAE/CelebA에서 성립하지 않는다(증가를 늦출 뿐) | ch06 |
 | PLOS sleep 실험에서 강한 baseline(interleaved)이 방법과 거의 같고, 우월성 주장은 실증이 아니라 이론적이라고 논문이 인정한다 | ch08, ch23 |
+| PAD(eLife)는 **episodic memory 혼합 없이 자발 활동만 써도 유의한 차이가 없다**고 저자가 보고한다 — 논문 제목이 가리키는 성분("dreaming from mixed episodes")이 통제 대비 효과를 보이지 않았다 | ch08, ch23 |
+| PAD는 **sleep 단계 순서를 바꿔도 성능 차이가 없다**. 저자는 생물학의 sequential hypothesis를 인정하면서 모델의 순서 독립성을 단계별 시냅스 변화가 작기 때문으로 추정한다 | ch08, ch23 |
+| PAD의 표현 품질 지표는 linear classifier readout 하나뿐이고(저자가 "명백한 단순화"라고 인정), CIFAR-10 절대 성능은 약 59%다. 성능 근거로 인용하면 오용이다 | ch08, ch23 |
 | 기억 용량 논문은 "3.6 bits-per-parameter"를 여섯 가지 다른 값으로 인쇄한다 | ch09 |
 | 세 경로가 서로를 인용하지 않는 구간이 존재하며, 일부는 연대가 아니라 선택이다 | ch11, ch27 |
 | 상각식 (A)는 $N_q$를 안다고 가정한다. 실서빙 $N_q$ 분포를 보고한 논문이 corpus에 없다 | ch14, ch25 |
@@ -246,4 +249,6 @@ X3·X4는 Part III 집필 직전에 실행한다. 등급 규칙은 NM `experimen
 - [x] 정직성 caveat 표 확정
 - [x] 척추 논지 확정 (A1)
 - [x] ToC + 분량 배정
-- [ ] `pad-dreaming-elife` 노트 3차 패스 보완 (open_questions·unfavorable_facts·cross_path 누락)
+- [x] `pad-dreaming-elife` 노트 3차 패스 보완 (2026-08-06, 원문 대조로 편집자 직접 작성 — 새 caveat 3항이 §4에 추가됨)
+
+**S0 종료.** 미결 항목 없음.
