@@ -1,6 +1,0 @@
-review art-sleep-time-compute-strategic-study-2026: verdict=ready_for_human_review
-  [ok] all drafted claims passed the evidence gate
-  [ok] a PDF artifact exists
-  [ok] confidentiality track = public-source-assisted (boundary=public, visibility=team)
-  [ok] bundle provenance: self-authored (no CAW-02 signature — digest N/A)
-  publish/file is a human-owned transition; run `publish` to run the egress gate (confidentiality decide() + redaction re-sweep)

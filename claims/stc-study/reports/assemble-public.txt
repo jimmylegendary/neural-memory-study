@@ -1,4 +1,0 @@
-assembled inputs at .veridraft-stc-study/workspace/sleep-time-compute-strategic-study-2026/inputs  (target=public)
-  claims: ['STC-C001', 'STC-C002', 'STC-C003', 'STC-C004', 'STC-C005', 'STC-C006', 'STC-C007', 'STC-C008', 'STC-C009', 'STC-C010', 'STC-C011', 'STC-C012', 'STC-C013', 'STC-C014', 'STC-C015', 'STC-C016', 'STC-C017', 'STC-C018', 'STC-C019', 'STC-C020', 'STC-C021', 'STC-C022', 'STC-C023', 'STC-C024', 'STC-C025', 'STC-C026', 'STC-C027', 'STC-C028', 'STC-C029', 'STC-C030', 'STC-C031', 'STC-C032', 'STC-C033', 'STC-C034', 'STC-C035', 'STC-C036', 'STC-C037', 'STC-C038', 'STC-C039', 'STC-C040', 'STC-C041', 'STC-C042', 'STC-C043', 'STC-C044', 'STC-C045', 'STC-C046', 'STC-C047']
-  result refs: ['R-AUDIT-001', 'R-AUDIT-002', 'R-AUDIT-003', 'R-AUDIT-004']
-  artifact: art-sleep-time-compute-strategic-study-2026

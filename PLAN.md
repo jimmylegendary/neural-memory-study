@@ -10,11 +10,28 @@
 - **P4 Veridraft 게이팅 + 조립** ✅ — `claims/bundle.json` 30 claim gate PASS(P2 18 + P1 12); front/back matter; **309→310pp PDF 빌드** (`build/BOOK.pdf`, `build/template.tex`)
 - **P5 한국어판 마무리 QA** ✅ 2026-07-12 — cross-ref dangling 0, 인용 미해결 0, 그림 라벨 겹침 재생성(exp-b/exp-f), 시각 결함 5건 수정; 최종 빌드 310pp/미해결글리프 0/overfull 0. **사용자 결정: 309(310)pp depth 유지, 한국어판 우선.**
 - **P6 영어 제출판** ⬜ (미착수, D1) — `paper-en/` LaTeX 파생 + 추출 논문 후보 재평가
-- **P7 Sleep-Time Compute** 🟡 2026-07-25 — approved design, chronological
-  evidence Wave 01, and audited execution plans under `docs/superpowers/`;
-  research bundle ID `sleep-time-compute-2026`; 297-cell confirmatory design;
-  evidence-gated English paper, Korean companion, systems/scaling-law program,
-  and a non-blocking editable PPTX release track.
+- **P7 Sleep-Time Compute v1** ❌ 2026-08-06 폐기 — 전략 분석 리포트로 완성(70pp Study + 학회형
+  12pp + Training Background 57pp + easy 62pp + 112 slides)했으나, 논문별 심층 해부·통일 표기·
+  bridge 사슬·3층 구분·정직성 caveat이 없어 이 저장소의 모노그래프 기준에 미달. 전량 폐기.
+  git history에서만 참조한다.
+
+---
+
+## Sleep-Time Compute v2 — Neural Memory 방식 전면 적용
+
+**결정 2026-08-06 (Jimmy)**: 집필 주체 = Claude 전량 / v1 = git rm 완전 삭제 /
+규모 = NM 동급 풀세트(본문 300pp+, Part II 논문장 12–15편, easy 10+, 의역 15편 유지·보강,
+seminar 100+ slides) / 로컬 실험 트랙 포함.
+
+| Phase | 내용 | 상태 |
+|---|---|---|
+| S0 Pre-research | 소스 재확보(2605.26099·2504.13171 신규 vendored), 논문별 deep-read notes, 계보·bridge 사슬 확정, training 사전지식 커리큘럼, `dossier/STC-PRE-RESEARCH.md`, 척추 논지 후보 랭킹 | 🟡 |
+| S1 STYLE-NOTATION | `style/STC-STYLE-NOTATION.md` — 통일 표기·master equation·Rosetta 사전·장 템플릿·분량 가이드·정직성 caveat 표 | ⬜ |
+| S2 Part I | training 무경험 독자용 배경 (pre-training/fine-tuning/LoRA/distillation/RL/synthetic data/replay/forgetting/CLS/capacity/외부기억) — 본문 통합, 장마다 worked micro-example + systems bridge | ⬜ |
+| S3 Part II | 논문 12–15편 연대순 장, 8절 고정 템플릿, bridge 사슬 | ⬜ |
+| S4 실험 + Part III | 로컬 실행 실험 → `results.json` warrant + 척추 논지·promising 판정·대안 비교·scaling law·system/device 기회 | ⬜ |
+| S5 게이트·빌드 | veridraft claim bundle PASS + pandoc/lualatex + `build/overflow_gate.py` PASS + source figure 임베드 | ⬜ |
+| S6 파생물 | easy booklet 10+ / 의역 보강 + 신규 / seminar deck (렌더 하네스 재사용, 내용 신규) | ⬜ |
 
 ## 디렉토리
 ```

@@ -1,5 +1,0 @@
-venue=mlsys  policy=DISCLOSURE  disclosure_required=True
-  disclosure (methods):
-    During the preparation of this work the authors used an AI writing assistant (PaperOrchestra, wrapped by Veridraft) to draft and refine the manuscript from evidence-gated claims. All content was reviewed and edited by the authors, who take full responsibility for the accuracy and integrity of the work.
-  - Disclose LLM use in the methods; add the generated disclosure text.
-  - No local detector configured. A low detector score is a RISK proxy, not proof of human authorship; detectors false-flag human (esp. non-native) writing. Run a self-hosted OSS detector (e.g. Binoculars) locally for a RISK band; never send a confidential manuscript to a cloud detector.

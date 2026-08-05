@@ -1,5 +1,0 @@
-  #1 art-sleep-time-compute-strategic-study-2026  None→gated  actor=system
-  #2 art-sleep-time-compute-strategic-study-2026  gated→readiness:mlsys  actor=system reason=disclosure
-  #3 art-sleep-time-compute-strategic-study-2026  gated→readiness:mlsys  actor=system reason=disclosure
-
-hash chain intact: True
