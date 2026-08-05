@@ -1,0 +1,241 @@
+{
+  "artifact_count": 31,
+  "artifacts": [
+    {
+      "bytes": 29321,
+      "category": "analysis",
+      "path": "analysis/Attn-vs-HOPE.xlsx",
+      "sha256": "0c04b122a214b9e2543abf6925260f307ddbdda7bc9cedca7e3d1f92bb7b8267",
+      "source": "research/attn-vs-hope/Attn-vs-HOPE.xlsx"
+    },
+    {
+      "bytes": 648328,
+      "category": "analysis",
+      "path": "analysis/multiarch-report.pdf",
+      "sha256": "6463567a8078d51e7279c2432bab39a79408db349a33ba8c2c6f9e0d12dc96ca",
+      "source": "multiarch/multiarch-report.pdf"
+    },
+    {
+      "bytes": 5523692,
+      "category": "analysis",
+      "path": "analysis/ttt-titans-efficiency-study.pdf",
+      "sha256": "2522465b56b517a9a54460c34198ebce862a1dd1c2b03ed30784462f79e3e6e8",
+      "source": "research/ttt-titans-efficiency-study.pdf"
+    },
+    {
+      "bytes": 556704,
+      "category": "easy",
+      "path": "easy/G00-orientation.pdf",
+      "sha256": "e2220ad371da235324606a02475f5acd09dd72949116fc88096f6be53ec60366",
+      "source": "easy/pdf/G00-orientation.pdf"
+    },
+    {
+      "bytes": 467564,
+      "category": "easy",
+      "path": "easy/G01-training.pdf",
+      "sha256": "0ab852574b66d0ffdfd98de47a2b4e7dbe9287c8f513d1326e1bb7bb68a81e38",
+      "source": "easy/pdf/G01-training.pdf"
+    },
+    {
+      "bytes": 1017756,
+      "category": "easy",
+      "path": "easy/G02-building-blocks.pdf",
+      "sha256": "e82c5302166fa9e33130846419434d5aa3f4eb9d438418212b04fd43bcb7d582",
+      "source": "easy/pdf/G02-building-blocks.pdf"
+    },
+    {
+      "bytes": 744793,
+      "category": "easy",
+      "path": "easy/G03-titans.pdf",
+      "sha256": "643d008096e909d670eb63b4ac41c6b8c55b1328e4d09564520e9b3ed73ca7f3",
+      "source": "easy/pdf/G03-titans.pdf"
+    },
+    {
+      "bytes": 807191,
+      "category": "easy",
+      "path": "easy/G04-miras.pdf",
+      "sha256": "3e56f5ca46fe3485a933c16faaf13104216afe3ea78a7179797f3a790e13d8a4",
+      "source": "easy/pdf/G04-miras.pdf"
+    },
+    {
+      "bytes": 753622,
+      "category": "easy",
+      "path": "easy/G05-atlas.pdf",
+      "sha256": "3efd71ac56de1a0c30aad8b1273dfb2f1cbee65c5a79504311179eb4a27361e5",
+      "source": "easy/pdf/G05-atlas.pdf"
+    },
+    {
+      "bytes": 561546,
+      "category": "easy",
+      "path": "easy/G06-tnt.pdf",
+      "sha256": "d6ce74a6e6c548c6692b5c1d5c445a009ae4eacb889659abf9983b978cd5b904",
+      "source": "easy/pdf/G06-tnt.pdf"
+    },
+    {
+      "bytes": 1154265,
+      "category": "easy",
+      "path": "easy/G07-nested.pdf",
+      "sha256": "0799564ea8cfca738ffef3cf61a221783fb89a008d0481c108cfbb7dfdd120b6",
+      "source": "easy/pdf/G07-nested.pdf"
+    },
+    {
+      "bytes": 885498,
+      "category": "easy",
+      "path": "easy/G08-sleep.pdf",
+      "sha256": "568f9ec96a54cae44b911fe3de1d0783b23face9268080e3f9fd9ab9a3ffd16c",
+      "source": "easy/pdf/G08-sleep.pdf"
+    },
+    {
+      "bytes": 1009495,
+      "category": "easy",
+      "path": "easy/G09-systems.pdf",
+      "sha256": "45c4f11fd296735e8fb5a8946eb402bc2923cd2f9c8fa1ce9ade2adcac5bfb94",
+      "source": "easy/pdf/G09-systems.pdf"
+    },
+    {
+      "bytes": 247831,
+      "category": "easy",
+      "path": "easy/G10-memory-caching.pdf",
+      "sha256": "d76a4be437bcd96eac4ad356869b2ce0939ec65763d98cb85a15f0d5bcde8cf6",
+      "source": "easy/pdf/G10-memory-caching.pdf"
+    },
+    {
+      "bytes": 232897,
+      "category": "easy",
+      "path": "easy/G11-nstm.pdf",
+      "sha256": "1703c79ddb15af8e837374066d28ac8cf776adf13c9975e33c3945d05643098d",
+      "source": "easy/pdf/G11-nstm.pdf"
+    },
+    {
+      "bytes": 385442,
+      "category": "seminar",
+      "path": "seminar/TTT-efficiency-seminar.pdf",
+      "sha256": "6bcfeedd73c20514ed44f1a95b50338aec472db4e231cfe4370e66ee910f6e17",
+      "source": "seminar/TTT-efficiency-seminar.pdf"
+    },
+    {
+      "bytes": 96479,
+      "category": "seminar",
+      "path": "seminar/TTT-efficiency-seminar.pptx",
+      "sha256": "fbab9f2e24662686cfbaccee85a3923c92b210fe058d6578abfc28a006138d99",
+      "source": "seminar/TTT-efficiency-seminar.pptx"
+    },
+    {
+      "bytes": 7297576,
+      "category": "seminar",
+      "path": "seminar/TTT-neural-memory-seminar.pptx",
+      "sha256": "8dc54ad94975d792127fe9316da9b9bc54c731ff4ca9ae6e629a577c7f27d9b6",
+      "source": "seminar/TTT-neural-memory-seminar.pptx"
+    },
+    {
+      "bytes": 5339374,
+      "category": "seminar",
+      "path": "seminar/TTT-seminar.pdf",
+      "sha256": "eb4fdc34cae9a639017c129455c5cd51f1fe077b87945fa2dc7c1f071835003a",
+      "source": "seminar/TTT-seminar.pdf"
+    },
+    {
+      "bytes": 4251546,
+      "category": "seminar",
+      "path": "seminar/TTT-seminar.pptx",
+      "sha256": "f2ff932030c80c92170ae1179e9df7f9e7c6505871e62d31b5f0b2ab2f2938f7",
+      "source": "seminar/TTT-seminar.pptx"
+    },
+    {
+      "bytes": 5835329,
+      "category": "study",
+      "path": "study/BOOK.pdf",
+      "sha256": "8c033858d4a6184feb0d8095406a9668938fdc7f4ec25b30c343c0a27a20c186",
+      "source": "build/BOOK.pdf"
+    },
+    {
+      "bytes": 1306154,
+      "category": "translations",
+      "path": "translations/2501.00663-titans.pdf",
+      "rights": "internal-only",
+      "sha256": "0c8deeaa9c061c1227135b2f0808628519988103f7b999d3e437456b09ca2a6c",
+      "source": "translations-kr/pdf/2501.00663-titans.pdf"
+    },
+    {
+      "bytes": 945067,
+      "category": "translations",
+      "path": "translations/2504.13173-miras.pdf",
+      "rights": "internal-only",
+      "sha256": "4dd197c4adb78c435bf809a2cb43fa99932cf0fea23171e5a8227324ebce6adc",
+      "source": "translations-kr/pdf/2504.13173-miras.pdf"
+    },
+    {
+      "bytes": 1064867,
+      "category": "translations",
+      "path": "translations/2505.23735-atlas.pdf",
+      "rights": "internal-only",
+      "sha256": "e208f28f505e5f768507753229b303a5650d459cbb94e3f56821c274d9dacae7",
+      "source": "translations-kr/pdf/2505.23735-atlas.pdf"
+    },
+    {
+      "bytes": 648296,
+      "category": "translations",
+      "path": "translations/2511.07343-tnt.pdf",
+      "rights": "internal-only",
+      "sha256": "70bff7f7fa664cb39524fb94c7097d80d38438b2d032c7e4d4e669afbab44e0e",
+      "source": "translations-kr/pdf/2511.07343-tnt.pdf"
+    },
+    {
+      "bytes": 834440,
+      "category": "translations",
+      "path": "translations/2512.24695-nested-learning-FULL.pdf",
+      "rights": "internal-only",
+      "sha256": "5eed9893b137b11f77314ffa9dfd2e42536fde4ed192e0016ad90a1084ef089c",
+      "source": "translations-kr/pdf/2512.24695-nested-learning-FULL.pdf"
+    },
+    {
+      "bytes": 1420994,
+      "category": "translations",
+      "path": "translations/2512.24695-nested-learning.pdf",
+      "rights": "internal-only",
+      "sha256": "d316f4b698b644679470de65b3ceadf8d1d25cd9453185fceb77e05ac83a2f84",
+      "source": "translations-kr/pdf/2512.24695-nested-learning.pdf"
+    },
+    {
+      "bytes": 1314986,
+      "category": "translations",
+      "path": "translations/2602.24281-memory-caching.pdf",
+      "rights": "internal-only",
+      "sha256": "e342a9432028c555835b7ec48c78701ed5ef9c0a442212cd5ad662ac568af7ba",
+      "source": "translations-kr/pdf/2602.24281-memory-caching.pdf"
+    },
+    {
+      "bytes": 504134,
+      "category": "translations",
+      "path": "translations/2606.03979-sleep-FULL.pdf",
+      "rights": "internal-only",
+      "sha256": "125fcd6d198ea0c783ad4521e982efb71a34b573234479eb835a3436819947af",
+      "source": "translations-kr/pdf/2606.03979-sleep-FULL.pdf"
+    },
+    {
+      "bytes": 1250478,
+      "category": "translations",
+      "path": "translations/2606.03979-sleep.pdf",
+      "rights": "internal-only",
+      "sha256": "475263c205b09aa1b02e8e2eed8666defe3d9a5874f30d14b1a369d0c368feb9",
+      "source": "translations-kr/pdf/2606.03979-sleep.pdf"
+    },
+    {
+      "bytes": 2285119,
+      "category": "translations",
+      "path": "translations/2607.15271-nstm.pdf",
+      "rights": "internal-only",
+      "sha256": "7eb45d2a4abf80fee8871739a674f05da8741ef3140e979ce3d4756ebd0830ba",
+      "source": "translations-kr/pdf/2607.15271-nstm.pdf"
+    }
+  ],
+  "category_counts": {
+    "analysis": 3,
+    "easy": 12,
+    "seminar": 5,
+    "study": 1,
+    "translations": 10
+  },
+  "project": "neural-memory",
+  "schema_version": 1
+}
