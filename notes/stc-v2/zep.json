@@ -1,0 +1,624 @@
+{
+  "paper_id": "zep",
+  "arxiv": "2501.13956",
+  "arxiv_version_read": "v1 [cs.CL] 20 Jan 2025 (header, txt line 1)",
+  "title": "Zep: A Temporal Knowledge Graph Architecture for Agent Memory",
+  "authors": [
+    "Preston Rasmussen",
+    "Pavlo Paliychuk",
+    "Travis Beauvais",
+    "Jack Ryan",
+    "Daniel Chalef"
+  ],
+  "affiliation": "Zep AI (all five authors; txt lines 6-24). This is a vendor paper describing a commercial product: reference [5] is 'Zep. Zep: Long-term memory for ai agents. https://www.getzep.com, 2024. Commercial memory layer for AI applications.' [References, txt lines 638-639], and reference [6] is the open-source engine Graphiti [txt lines 640-649].",
+  "venue": "arXiv preprint. No conference or journal venue is stated anywhere in the text.",
+  "date": "2025-01-20 (arXiv v1 submission date, txt line 1). Experiments were run 'between December 2024 and January 2025' [§4.3, txt line 330].",
+  "path": "/home/jimmy/repos/neural-memory-study/papers/stc/2501.13956.txt",
+  "axis": "E",
+  "axis_justification": "Pure E-path by the discriminant in STC-STYLE-NOTATION §1.6: only (U-E) executes; $\\Theta$ and $W$ are never touched. Every LLM in the system (gpt-4o-mini-2024-07-18 for graph construction, gpt-4o / gpt-4-turbo / gpt-4o-mini for generation, BGE-m3 for embedding and reranking) is used strictly as a frozen inference engine [§4.1, txt lines 246-252]. The paper reports zero gradient steps. The only place fine-tuning appears is as future work: 'Research has already demonstrated the value of fine-tuned models for LLM-based entity and edge extraction within the GraphRAG paradigm ... Similar models fine-tuned for Graphiti prompts may enhance knowledge extraction' [§5, txt lines 493-494].",
+
+  "problem_stated": {
+    "one_line": "RAG assumes a large but static corpus; agent memory needs a store that absorbs a continuously changing stream of conversation and business data and keeps a record of when each fact was true.",
+    "as_the_paper_puts_it": [
+      "'Current approaches using RAG have focused on broad domain knowledge and largely static corpora—that is, document contents added to a corpus seldom change.' [§1, txt line 48]",
+      "'For agents to become pervasive in our daily lives ... they will need access to a large corpus of continuously evolving data from users' interactions with the agent, along with related business and world data. We view empowering agents with this broad and dynamic \"memory\" as a crucial building block to actualize this vision, and we argue that current RAG approaches are unsuitable for this future.' [§1, txt lines 49-52]",
+      "'Since entire conversation histories, business datasets, and other domain-specific content cannot fit effectively inside LLM context windows, new approaches need to be developed for agent memory.' [§1, txt lines 52-56]",
+      "'existing retrieval-augmented generation (RAG) frameworks for large language model (LLM)-based agents are limited to static document retrieval, enterprise applications demand dynamic knowledge integration from diverse sources including ongoing conversations and business data' [Abstract, txt lines 29-32]"
+    ],
+    "the_specific_technical_gap_claimed": "That no prior LLM-driven KG engine models *when a fact was true* separately from *when the system learned it*. 'Zep implements a bi-temporal model, where timeline T represents the chronological ordering of events, and timeline T' represents the transactional order of Zep's data ingestion. ... This bi-temporal approach represents a novel advancement in LLM-based knowledge graph construction and underlies much of Zep's unique capabilities compared to previous graph-based RAG proposals.' [§2.1, txt lines 97-102]",
+    "engineering_constraints_the_paper_adopts": "'As Zep is a production system, we've focused heavily on the accuracy, latency, and scalability of its memory retrieval mechanisms.' [§1, txt lines 63-64]. Note the scoping to *retrieval* mechanisms; ingestion cost is never measured (see cost_table.B_s).",
+    "note_on_terminology": "The paper never uses the term 'sleep-time compute', 'sleep', 'consolidation', 'offline compute', or 'amortization'. It is placed on the E-path by the monograph's frame, not by its own self-description. Its offline work is called 'graph construction' [§2] and 'ingestion' [§4, txt line 239]."
+  },
+
+  "inherited_open_question": {
+    "verdict": "none-stated",
+    "detail": "The paper quotes no prior work's open question. There is no 'future work' quotation, no 'left open by', no 'as X notes, it remains unclear'. Nothing in §1 (txt lines 39-65) or §2 (txt lines 67-88) attributes an unanswered question to a cited work. Its bridge-in is adversarial-competitive rather than inherited: it names MemGPT as the incumbent to beat and adopts MemGPT's own benchmark as the arena.",
+    "what_it_implicitly_answers_instead": [
+      {
+        "target": "MemGPT [3] (Packer et al., arXiv:2310.08560) — the E-path predecessor, and this monograph's ch E-1.",
+        "how": "Zep does not take up a question MemGPT posed; it contests MemGPT's *score* on MemGPT's *own* metric. 'In the DMR benchmark, which the MemGPT team established as their primary evaluation metric, Zep demonstrates superior performance (94.8% vs 93.4%).' [Abstract, txt lines 34-35]. Also '[we] evaluate these mechanisms' efficacy using two existing benchmarks: a Deep Memory Retrieval task (DMR) from MemGPT[3]' [§1, txt lines 64-65].",
+        "implicit_question_answered": "MemGPT stored memory as *paged text* under LLM-issued function calls. Zep answers the unasked follow-on: what if the paged store is replaced by a typed graph with explicit validity intervals, so that contradiction is representable rather than being an overwrite?"
+      },
+      {
+        "target": "LongMemEval [7] (Wu et al., 2024)",
+        "how": "The paper takes LongMemEval's *empirical finding* — not a stated question — as its motivation for a harder evaluation: 'This inadequacy is further emphasized by findings in [7], which demonstrate rapidly declining LLM performance on the LongMemEval benchmark as conversation length increases.' [§4.2, txt lines 319-320]",
+        "implicit_question_answered": "Can an external store recover the accuracy that long-context models lose as the conversation grows, at lower latency? Answer offered: yes at ~115k tokens (Table 2), untested beyond."
+      },
+      {
+        "target": "GraphRAG [4] (Edge et al., 2024) and AriGraph [9]",
+        "how": "Inherited as *technique* with an explicit design deviation, not as an open question: 'While our community detection approach builds upon the technique described in GraphRAG[4], we employ a label propagation algorithm [13] rather than the Leiden algorithm [14]. This choice was influenced by label propagation's straightforward dynamic extension' [§2.3, txt lines 155-158]; 'our implementation of distinct episodic and semantic subgraphs draws from similar approaches in AriGraph [9]' [§2, txt line 86]."
+      }
+    ],
+    "why_the_absence_is_itself_a_finding": "This is a vendor engineering report, and it inherits benchmarks rather than questions. The E-path in this corpus therefore does not form a question-answer chain the way the $\\Theta$-path does; it forms a *leaderboard* chain. The bridge-in for the Zep chapter must be constructed by the monograph from MemGPT's architecture, not quoted from Zep. Compare letta-stc.json and memgpt.json: MemGPT does quote an inherited question (Liu et al. 2023a, Lost in the Middle); Zep quotes none."
+  },
+
+  "core_mechanism": {
+    "preamble": "The paper contains NO numbered equations. Every formal object is introduced inline in prose. Citations below are therefore by section and txt line, and the phrase '[zep Eq. N]' is unavailable for this paper — that fact must be respected in the chapter (STC-STYLE-NOTATION §2.5 forbids inventing equation numbers). The paper also contains NO figures; see the 'figures' field.",
+    "one_line": "$E$ is a three-tier temporal knowledge graph; each arriving message is an offline write $\\mathrm{wr}$ that appends a lossless episode node and then runs a fixed multi-stage frozen-LLM pipeline $S(\\cdot;B_s)$ producing entity nodes, fact edges stamped with four timestamps on two independent timelines, and community assignments; retrieval $\\mathrm{ret}(E,q)$ is a hybrid search / rerank / string-constructor cascade whose output is a ~1.6k-token context string.",
+    "unified_equations": [
+      {
+        "tag": "z-1",
+        "name": "state of the external store",
+        "latex": "E_k \\;=\\; \\big(\\mathcal{N}_k,\\ \\mathcal{E}_k,\\ \\varphi_k\\big), \\qquad \\mathcal{N} \\;=\\; \\mathcal{N}_e \\,\\cup\\, \\mathcal{N}_s \\,\\cup\\, \\mathcal{N}_c, \\qquad \\varphi:\\mathcal{E}\\to\\mathcal{N}\\times\\mathcal{N}",
+        "gloss": "The store is a single graph with three hierarchical tiers of subgraph: episode ($e$), semantic entity ($s$), community ($c$). $\\varphi$ is the incidence function.",
+        "source": "§2, txt lines 68-80. Paper writes: 'memory is powered by a temporally-aware dynamic knowledge graph G = (N, E, φ), where N represents nodes, E represents edges, and φ : E → N × N represents a formal incidence function. This graph comprises three hierarchical tiers of subgraphs: an episode subgraph, a semantic entity subgraph, and a community subgraph.'",
+        "edge_typing_from_paper": "$\\mathcal{E}_e \\subseteq \\varphi^*(\\mathcal{N}_e\\times\\mathcal{N}_s)$ (episode → entity), $\\mathcal{E}_s \\subseteq \\varphi^*(\\mathcal{N}_s\\times\\mathcal{N}_s)$ (entity → entity, carries the fact), $\\mathcal{E}_c \\subseteq \\varphi^*(\\mathcal{N}_c\\times\\mathcal{N}_s)$ (community → member entity) [§2, txt lines 72, 75-76, 80]."
+      },
+      {
+        "tag": "z-2",
+        "name": "the write — instance of (U-E)",
+        "latex": "E_{k+1} \\;=\\; \\mathrm{wr}\\big(E_k,\\ \\hat c_k\\big), \\qquad \\hat c_k \\;=\\; S\\big(c_k;\\ B_s\\big), \\qquad c_k \\;=\\; \\big(m_k,\\ a_k,\\ t^{\\mathrm{wall}}_{\\mathrm{ref},k},\\ m_{k-4:k-1}\\big)",
+        "gloss": "$k$ indexes one *episode* = one ingested message (STC P3: $k$ = sleep-round index; here the round is per-message, not per-session). The context handed to the offline pipeline is the current message $m_k$, its actor $a_k$, its reference timestamp, and exactly the last four messages. $\\hat c_k$ is not a summary string but a typed tuple of graph deltas — this is the first structural departure from canonical (U-E).",
+        "source": "§2.1 txt lines 90-95 ('Episodes can be one of three core types: message, text, or JSON ... a message consists of relatively short text ... along with the associated actor who produced the utterance. Each message includes a reference timestamp t_ref indicating when the message was sent'); §2.2.1 txt lines 113-116 ('the system processes both the current message content and the last n messages to provide context for named entity recognition. For this paper and in Zep's general implementation, n = 4, providing two complete conversation turns for context evaluation')."
+      },
+      {
+        "tag": "z-3",
+        "name": "decomposition of $S(\\cdot;B_s)$ — the offline pipeline",
+        "latex": "S(c_k;B_s) \\;=\\; \\big(\\Delta\\mathcal{N}_e,\\ \\Delta\\mathcal{E}_e,\\ \\Delta\\mathcal{N}_s,\\ \\Delta\\mathcal{E}_s,\\ \\Delta\\mathcal{N}_c\\big) \\;=\\; \\big(g_{\\mathrm{comm}} \\circ g_{\\mathrm{inval}} \\circ g_{\\mathrm{time}} \\circ g_{\\mathrm{dedupE}} \\circ g_{\\mathrm{fact}} \\circ g_{\\mathrm{resolve}} \\circ g_{\\mathrm{embed}} \\circ g_{\\mathrm{reflect}} \\circ g_{\\mathrm{ner}}\\big)(c_k)",
+        "gloss": "Nine named stages. Six of them are frozen-LLM calls (NER, reflexion, entity resolution, fact extraction, fact resolution, temporal extraction, contradiction/invalidation — seven if reflexion is counted separately from NER); two are index operations (1024-d embedding, hybrid candidate search); one is a graph heuristic (label propagation). The paper never counts these calls, never times them, and never prices them.",
+        "stages": [
+          "$g_{\\mathrm{ner}}$: LLM entity extraction from $m_k$ with $m_{k-4:k-1}$ as context; 'the speaker is automatically extracted as an entity' [§2.2.1, txt lines 115-116]. Prompt reproduced verbatim in Appendix §6.1.1 [txt lines 508-523].",
+          "$g_{\\mathrm{reflect}}$: 'we employ a reflection technique inspired by reflexion[12] to minimize hallucinations and enhance extraction coverage' [§2.2.1, txt line 117]. A second LLM pass. The system 'also extracts an entity summary from the episode' [txt lines 118-119].",
+          "$g_{\\mathrm{embed}}$: 'the system embeds each entity name into a 1024-dimensional vector space' [§2.2.1, txt line 120].",
+          "$g_{\\mathrm{resolve}}$: cosine kNN over existing entity nodes + a separate full-text search over 'existing entity names and summaries'; the union of candidates plus episode context goes to an LLM 'entity resolution prompt'; on a duplicate the LLM 'generates an updated name and summary' [§2.2.1, txt lines 121-123]. Prompt at Appendix §6.1.2 [txt lines 528-551]. Write-back uses 'predefined Cypher queries. We chose this approach over LLM-generated database queries to ensure consistent schema formats and reduce the potential for hallucinations' [txt lines 124-126].",
+          "$g_{\\mathrm{fact}}$: LLM fact extraction between extracted entities, each fact carrying an all-caps predicate; 'the same fact can be extracted multiple times between different entities, enabling Graphiti to model complex multi-entity facts through an implementation of hyper-edges' [§2.2.2, txt lines 129-130]. Prompt at Appendix §6.1.3 [txt lines 553-572].",
+          "$g_{\\mathrm{dedupE}}$: fact embeddings + hybrid edge search *restricted to edges between the same entity pair*: 'This constraint not only prevents erroneous combinations of similar edges between different entities but also significantly reduces the computational complexity of the deduplication process by limiting the search space to a subset of edges relevant to the specific entity pair' [§2.2.2, txt lines 131-136]. Prompt at Appendix §6.1.4 [txt lines 577-590].",
+          "$g_{\\mathrm{time}}$: LLM temporal extraction against $t^{\\mathrm{wall}}_{\\mathrm{ref}}$, resolving absolute ('Alan Turing was born on June 23, 1912') and relative ('I started my new job two weeks ago') dates [§2.2.3, txt lines 140-141]. Prompt at Appendix §6.1.5 [txt lines 591-624], which pins the output format to ISO 8601 and forbids inference from related events.",
+          "$g_{\\mathrm{inval}}$: 'The system employs an LLM to compare new edges against semantically related existing edges to identify potential contradictions' [§2.2.3, txt line 145]. See (z-5).",
+          "$g_{\\mathrm{comm}}$: single-recursive-step label propagation, see (z-6)."
+        ],
+        "source": "§2.2.1 txt lines 113-127; §2.2.2 txt lines 128-136; §2.2.3 txt lines 137-149; §2.3 txt lines 154-169; Appendix §6.1 txt lines 507-624."
+      },
+      {
+        "tag": "z-4",
+        "name": "the temporal record on an edge — the bi-temporal model",
+        "latex": "e \\;=\\; \\big(\\text{fact},\\ \\text{predicate},\\ t^{\\mathrm{wall}}_{\\mathrm{valid}},\\ t^{\\mathrm{wall}}_{\\mathrm{invalid}},\\ t'_{\\mathrm{created}},\\ t'_{\\mathrm{expired}},\\ \\mathrm{emb}\\big), \\qquad t^{\\mathrm{wall}}_{\\mathrm{valid}},t^{\\mathrm{wall}}_{\\mathrm{invalid}}\\in T,\\quad t'_{\\mathrm{created}},t'_{\\mathrm{expired}}\\in T'",
+        "gloss": "THIS IS THE PAPER'S CENTRAL CLAIM TO NOVELTY. Time is represented as FOUR datetime scalars per semantic edge, on TWO independent timelines: $T$ = when the fact was true in the world, $T'$ = when Zep learned/unlearned it. Cost: four datetime fields per edge, plus one LLM call per fact to fill them ($g_{\\mathrm{time}}$), plus one LLM contradiction call per new edge against its semantic neighbourhood ($g_{\\mathrm{inval}}$). Time is *not* an embedding dimension, *not* a decay factor, *not* a recency prior — it is literal structured metadata that is later serialized into the prompt as text.",
+        "source": "§2.1 txt lines 97-102 (timelines $T$, $T'$); §2.2.3 txt lines 141-144: 'the system tracks four timestamps: t'_created and t'_expired ∈ T' monitor when facts are created or invalidated in the system, while t_valid and t_invalid ∈ T track the temporal range during which facts held true. These temporal data points are stored on edges alongside other fact information.'"
+      },
+      {
+        "tag": "z-5",
+        "name": "edge invalidation — non-destructive forgetting",
+        "latex": "\\text{if } \\mathrm{contradict}_{\\mathrm{LLM}}(e_{\\mathrm{new}}, e_{\\mathrm{old}}) \\wedge \\mathrm{overlap}_T(e_{\\mathrm{new}}, e_{\\mathrm{old}}) \\;\\Rightarrow\\; t^{\\mathrm{wall}}_{\\mathrm{invalid}}(e_{\\mathrm{old}}) \\leftarrow t^{\\mathrm{wall}}_{\\mathrm{valid}}(e_{\\mathrm{new}})",
+        "gloss": "The superseded edge is NOT deleted; its validity interval is closed at the moment the new fact became true. This is the paper's answer to 'how does an external store handle a fact that stops being true' — it makes the store append-only with interval closure rather than read-modify-write. Conflict resolution is recency-biased by construction: 'Following the transactional timeline T', Graphiti consistently prioritizes new information when determining edge invalidation.' [§2.2.3, txt lines 147-148]",
+        "source": "§2.2.3, txt lines 145-149: 'The introduction of new edges can invalidate existing edges in the database. ... When the system identifies temporally overlapping contradictions, it invalidates the affected edges by setting their t_invalid to the t_valid of the invalidating edge.'"
+      },
+      {
+        "tag": "z-6",
+        "name": "community assignment — the second, slower write cadence",
+        "latex": "\\mathrm{comm}(n_i) \\;\\leftarrow\\; \\arg\\max_{c\\,\\in\\,\\mathcal{N}_c} \\big|\\{\\,n_j \\in \\mathcal{A}(n_i)\\ :\\ \\mathrm{comm}(n_j)=c\\,\\}\\big| \\qquad (\\text{per new } n_i\\in\\mathcal{N}_s), \\qquad \\mathcal{N}_c \\;\\leftarrow\\; \\mathrm{LP}_{\\mathrm{full}}(\\mathcal{G}_s) \\quad (\\text{periodically})",
+        "gloss": "A cheap incremental heuristic (plurality vote of neighbours $\\mathcal{A}(n_i)$, then a summary regeneration) plus a periodic full label-propagation refresh. The full refresh is the only thing in Zep that matches the classical 'sleep round' shape — a batch job run on idle at a coarser timescale than ingestion. The paper states its cadence nowhere and never runs it in an experiment.",
+        "source": "§2.3, txt lines 159-165: 'When the system adds a new entity node n_i ∈ N_s to the graph, it surveys the communities of neighboring nodes. The system assigns the new node to the community held by the plurality of its neighbors, then updates the community summary and graph accordingly. While this dynamic updating enables efficient community extension as data flows into the system, the resulting communities gradually diverge from those that would be generated by a complete label propagation run. Therefore, periodic community refreshes remain necessary. However, this dynamic updating strategy provides a practical heuristic that significantly reduces latency and LLM inference costs.' Community summaries are 'derived through an iterative map-reduce-style summarization of member nodes' [txt lines 166-167], following GraphRAG [4]."
+      },
+      {
+        "tag": "z-7",
+        "name": "the read — instance of (R)",
+        "latex": "\\hat y \\;=\\; f\\big(q;\\ \\Theta,\\ W,\\ \\mathrm{ret}(E,q)\\big), \\qquad \\mathrm{ret}(E,q) \\;=\\; \\mathrm{cons}\\Big(\\mathrm{rrank}\\big(\\mathrm{srch}(E,q)\\big)\\Big)",
+        "gloss": "The paper's $f(\\alpha)=\\chi(\\rho(\\phi(\\alpha)))=\\beta$ is NOT the model — it is exactly $\\mathrm{ret}(E,q)$ of (R). The generating LLM sits outside the paper's $f$. This is the single most dangerous notation collision in the paper and must be flagged in the chapter.",
+        "source": "§3, txt lines 173-185: 'the Zep graph search API implements a function f : S → S that accepts a text-string query α ∈ S as input and returns a text-string context β ∈ S as output ... we can express f as a composition of these three components: f(α) = χ(ρ(ϕ(α))) = β.'"
+      },
+      {
+        "tag": "z-8",
+        "name": "search stage $\\mathrm{srch}$",
+        "latex": "\\mathrm{srch}(E,q) \\;=\\; \\big(\\mathrm{srch}_{\\cos},\\ \\mathrm{srch}_{\\mathrm{bm25}},\\ \\mathrm{srch}_{\\mathrm{bfs}}\\big)(E,q) \\;\\in\\; \\mathcal{E}_s^{\\,n}\\times\\mathcal{N}_s^{\\,n}\\times\\mathcal{N}_c^{\\,n}",
+        "gloss": "Three parallel retrievers over three different fields. Fields: for semantic edges the *fact* text; for entity nodes the *entity name*; for community nodes the *community name* (generated keyword string, not the summary). BFS is the graph-native one and can be seeded with recent episodes rather than the query.",
+        "source": "§3, txt lines 176-178 (signature); §3.1, txt lines 200-222. Field assignment at txt lines 206-208: 'for Es , we search the fact field; for Ns , the entity name; and for Nc , the community name'. Backends: 'The first two functions utilize Neo4j's implementation of Lucene [15][16]' [txt lines 201-202]. BFS: 'the breadth-first search enhances initial search results by identifying additional nodes and edges within n-hops. Moreover, ϕbfs can accept nodes as parameters for the search ... particularly valuable when using recent episodes as seeds' [txt lines 214-218]. Interpretation the paper gives: 'full-text search identifies word similarities, cosine similarity captures semantic similarities, and breadth-first search reveals contextual similarities' [txt lines 219-221]."
+      },
+      {
+        "tag": "z-9",
+        "name": "rerank stage $\\mathrm{rrank}$",
+        "latex": "\\mathrm{rrank} \\in \\{\\,\\mathrm{RRF},\\ \\mathrm{MMR},\\ \\mathrm{mentions},\\ \\mathrm{dist}(\\cdot\\,;\\,n_{\\mathrm{centroid}}),\\ \\mathrm{crossenc}\\,\\}",
+        "gloss": "Five interchangeable rerankers, two of them graph-native. 'episode-mentions' ranks by mention frequency — a usage-frequency prior. 'node distance' ranks by graph distance from a designated centroid — a locality prior. The cross-encoder is flagged as the expensive one.",
+        "source": "§3.2, txt lines 223-230: 'Zep supports existing reranking approaches such as Reciprocal Rank Fusion (RRF) [20] and Maximal Marginal Relevance (MMR) [21]. Additionally, Zep implements a graph-based episode-mentions reranker that prioritizes results based on the frequency of entity or fact mentions within a conversation ... The system also includes a node distance reranker that reorders results based on their graph distance from a designated centroid node ... The system's most sophisticated reranking capability employs cross-encoders—LLMs that generate relevance scores by evaluating nodes and edges against queries using cross-attention, though this approach incurs the highest computational cost.'"
+      },
+      {
+        "tag": "z-10",
+        "name": "constructor $\\mathrm{cons}$ — how time reaches the model",
+        "latex": "\\mathrm{cons}: \\ e_i \\mapsto \\big(\\text{fact},\\ t^{\\mathrm{wall}}_{\\mathrm{valid}},\\ t^{\\mathrm{wall}}_{\\mathrm{invalid}}\\big), \\quad n_i\\in\\mathcal{N}_s \\mapsto (\\text{name},\\ \\text{summary}), \\quad n_i\\in\\mathcal{N}_c \\mapsto (\\text{summary})",
+        "gloss": "CRUCIAL FOR THE MONOGRAPH: the bi-temporal model is delivered to the LLM as *plain text date ranges inside the prompt*. There is no temporal attention, no time embedding, no filtering by validity at retrieval time — the model is simply told 'FACT (Date range: from - to)' and must reason over it. That is why the paper's own §4.3.2 concedes that weaker models fail to exploit it (see unfavorable_facts).",
+        "source": "§3, txt lines 181-183 ('for each e_i ∈ Es, χ returns the fact and tvalid, tinvalid fields; for each n_i ∈ Ns , the name and summary fields; and for each n_i ∈ Nc , the summary field') and the verbatim context template at txt lines 186-198, whose header reads 'These are the most relevant facts and their valid date ranges. If the fact is about an event, the event takes place during this time. format: FACT (Date range: from - to)'. Note the template exposes only <FACTS> and <ENTITIES> — there is no community block in the printed template."
+      },
+      {
+        "tag": "z-11",
+        "name": "the layers that do NOT move",
+        "latex": "\\Theta_{k+1}=\\Theta_k \\quad \\forall k, \\qquad W \\equiv \\varnothing",
+        "gloss": "No weight is updated anywhere. There is no fast-weight state: the only per-request internal state is the agent LLM's ordinary KV cache for a ~1.6k-token prompt, which the paper never discusses. Zep is the cleanest pure-(U-E) instance in the corpus.",
+        "source": "§4.1, txt lines 246-252 (all models named as frozen checkpoints, with date-pinned versions); absence of any training procedure in the entire paper; §5 txt lines 493-494 (fine-tuning explicitly future work)."
+      }
+    ],
+    "how_it_differs_from_canonical_U_E": [
+      "$\\hat c_k$ is a TYPED GRAPH DELTA, not a text summary. Canonical (U-E) writes $\\hat c = S(c;B_s)$ as an opaque learned context; Zep's $\\hat c$ has a schema (nodes, typed edges, four datetimes, embeddings) enforced by predefined Cypher rather than LLM-generated queries [§2.2.1, txt lines 124-126].",
+      "$\\mathrm{wr}$ is APPEND-ONLY at every tier. Episodes are 'a non-lossy data store' [§2, txt line 71-72] and superseded facts are interval-closed rather than deleted [z-5]. Canonical (U-E) permits overwrite; Zep forbids it. Consequence: $C_{\\mathrm{cap}}$ is monotonically increasing and unbounded — the paper never bounds it.",
+      "$S$ sees a FIXED four-message window, not the whole context $c$. Canonical (U-E) has $S$ process the context $c_k$; Zep's $c_k$ is one message plus $n=4$ predecessors [§2.2.1, txt lines 113-116]. Cross-session synthesis is therefore not performed at write time — it is deferred to retrieval-time graph traversal.",
+      "There are TWO write cadences, not one: per-episode incremental (z-2, z-6 first half) and periodic full community refresh (z-6 second half). Only the second is a 'sleep round' in the ordinary sense, and it is the one the paper never measures.",
+      "The (U-E) budget $B_s$ is spent *per arriving message*, i.e. it is coupled to the wake traffic rate, not scheduled on idle. Zep's offline compute is offline with respect to the *query*, not with respect to the *conversation*."
+    ],
+    "notation_conflicts": [
+      {"paper_symbol": "$E$", "paper_meaning": "the set of edges of the knowledge graph [§2, txt line 68]", "collides_with": "RESERVED $E$ = external store (S0-DESIGN §2.1)", "monograph_symbol": "$\\mathcal{E}$ for the edge set; $E$ remains the store", "severity": "critical"},
+      {"paper_symbol": "$\\rho$", "paper_meaning": "the reranker function, $\\rho:\\phi(\\alpha),\\ldots\\to E_s^n\\times N_s^n\\times N_c^n$ [§3, txt lines 179-180]", "collides_with": "RESERVED $\\rho$ = forgetting/degradation rate (STC-STYLE-NOTATION §1.2)", "monograph_symbol": "$\\mathrm{rrank}$", "severity": "critical"},
+      {"paper_symbol": "$\\alpha$", "paper_meaning": "the query text string, $\\alpha\\in S$ [§3, txt line 174]", "collides_with": "RESERVED $\\alpha_t$ = retention gate in (U-W)", "monograph_symbol": "$q$", "severity": "critical"},
+      {"paper_symbol": "$\\beta$", "paper_meaning": "the output context text string, $\\beta\\in S$ [§3, txt line 174]", "collides_with": "RESERVED $\\beta_t$ = momentum decay in (U-W)", "monograph_symbol": "$\\mathrm{ret}(E,q)$", "severity": "critical"},
+      {"paper_symbol": "$S$", "paper_meaning": "the set of text strings; $f:S\\to S$ [§3, txt line 173]", "collides_with": "RESERVED $S_t$ = momentum term, and $S(c;B_s)$ = the offline processing procedure. STC-STYLE-NOTATION §1.5 already bans bare $S$.", "monograph_symbol": "$\\Sigma^*$ (or simply 'text'); $S(\\cdot;B_s)$ keeps its parenthesised argument", "severity": "critical"},
+      {"paper_symbol": "$f$", "paper_meaning": "the graph search API, $f(\\alpha)=\\chi(\\rho(\\phi(\\alpha)))=\\beta$ — retrieval ONLY, no generation [§3, txt lines 173-185]", "collides_with": "RESERVED $f$ in (R) = the model that produces $\\hat y$", "monograph_symbol": "$\\mathrm{ret}(E,q)$. Zep's $f$ IS $\\mathrm{ret}$, not (R)'s $f$.", "severity": "critical — a reader who maps them naively will conclude Zep generates the answer, which it does not"},
+      {"paper_symbol": "$\\phi$ / $\\varphi$", "paper_meaning": "two different objects rendered with the same Greek letter: $\\varphi:\\mathcal{E}\\to\\mathcal{N}\\times\\mathcal{N}$ is the incidence function [§2, txt line 69]; $\\phi:S\\to E_s^n\\times N_s^n\\times N_c^n$ is the search stage [§3, txt lines 176-178]", "collides_with": "each other (internal to the paper)", "monograph_symbol": "$\\varphi$ = incidence; $\\mathrm{srch}$ = search", "severity": "high — internal ambiguity in the source"},
+      {"paper_symbol": "$\\chi$", "paper_meaning": "the constructor stage [§3, txt lines 181-183]", "collides_with": "nothing reserved", "monograph_symbol": "$\\mathrm{cons}$ (renamed only for symmetry with $\\mathrm{srch}$/$\\mathrm{rrank}$)", "severity": "low"},
+      {"paper_symbol": "$t_{\\mathrm{ref}}, t_{\\mathrm{valid}}, t_{\\mathrm{invalid}}, t'_{\\mathrm{created}}, t'_{\\mathrm{expired}}$", "paper_meaning": "absolute wall-clock datetimes in ISO 8601 [§2.1 txt line 95; §2.2.3 txt lines 141-144; Appendix §6.1.5 txt line 615]", "collides_with": "STC principle P3: subscript $t$ denotes the TOKEN/CHUNK index. Zep's $t$ is not an index at all.", "monograph_symbol": "$t^{\\mathrm{wall}}_{\\cdot}$ throughout, and $k$ retained for the episode/round index", "severity": "critical — this is the exact 'timescale confusion' STC-STYLE-NOTATION §1.1 P3 names as the field's worst descriptive error"},
+      {"paper_symbol": "$T$, $T'$", "paper_meaning": "the two timelines: $T$ = event chronology, $T'$ = ingestion/transaction order [§2.1, txt lines 97-99]", "collides_with": "nothing reserved", "monograph_symbol": "keep $T$, $T'$", "severity": "low"},
+      {"paper_symbol": "$n$", "paper_meaning": "THREE distinct uses: (a) $n=4$, the count of preceding messages given to the extractor [§2.2.1, txt line 115]; (b) '$n$-hops' in BFS [§3.1, txt line 215]; (c) the superscript in $E_s^n\\times N_s^n\\times N_c^n$, i.e. list length [§3, txt line 177]", "collides_with": "RESERVED $n$ = number of stored items (STC-STYLE-NOTATION §1.3)", "monograph_symbol": "$n_{\\mathrm{ctx}}=4$; $h$ for hops; $|\\cdot|$ for list length; $n$ stays = number of stored items", "severity": "high"},
+      {"paper_symbol": "$G$, $G_e$, $G_s$, $G_c$", "paper_meaning": "the graph and its three tier-subgraphs [§2, txt lines 68-80]", "collides_with": "nothing reserved", "monograph_symbol": "$E$ for the whole store; $\\mathcal{G}_e,\\mathcal{G}_s,\\mathcal{G}_c$ for tiers", "severity": "low"},
+      {"paper_symbol": "$N$, $N_e$, $N_s$, $N_c$", "paper_meaning": "node sets [§2, txt lines 68-80]", "collides_with": "$N$ is used in S0/scaling contexts for parameter count; $N_q$ is reserved for queries-per-context", "monograph_symbol": "$\\mathcal{N}_e,\\mathcal{N}_s,\\mathcal{N}_c$", "severity": "medium"},
+      {"paper_symbol": "$e_i$, $n_i$", "paper_meaning": "individual edges and nodes [§2 passim]", "collides_with": "nothing; but note $\\eta$ is nowhere in this paper — there is no learning rate of any kind, inner or sleep", "monograph_symbol": "keep", "severity": "none"}
+    ],
+    "symbols_the_paper_never_uses": "No $\\eta$, no $\\nabla$, no loss of any kind, no $\\Theta$, no $W$. The paper contains not one gradient. This absence is the cleanest possible demonstration of the E-path definition and should be stated flatly in §N.4 of the chapter."
+  },
+
+  "outer_vs_inner": {
+    "headline": "Nothing in Zep is learned. Every learnable object in the system was trained by a third party before Zep ran, and Zep changes none of them. The only thing that moves is $E$, and it moves by frozen-LLM inference plus database writes.",
+    "table": [
+      {"object": "$\\Theta$ of the graph-construction LLM (gpt-4o-mini-2024-07-18)", "who_learns_it": "OpenAI, before the paper", "when_it_moves_in_this_paper": "never", "role": "executes the six-to-seven LLM stages of $S(\\cdot;B_s)$ in (z-3) at ingestion", "source": "§4.1, txt lines 248-249: 'we utilize gpt-4o-mini-2024-07-18 for graph construction'"},
+      {"object": "$\\Theta$ of the answering agent LLM (gpt-4o-mini-2024-07-18, gpt-4o-2024-11-20, gpt-4-turbo-2024-04-09)", "who_learns_it": "OpenAI, before the paper", "when_it_moves_in_this_paper": "never", "role": "the $f$ of (R); consumes $\\mathrm{ret}(E,q)$ as prompt text", "source": "§4.1, txt lines 248-250: 'both gpt-4o-mini-2024-07-18 and gpt-4o-2024-11-20 for the chat agent generating responses to provided context. To ensure direct comparability with MemGPT's DMR results, we also conducted the DMR evaluation using gpt-4-turbo-2024-04-09.'"},
+      {"object": "$\\Theta$ of the embedding model (BGE-m3, BAAI)", "who_learns_it": "BAAI, before the paper", "when_it_moves_in_this_paper": "never", "role": "produces the 1024-d entity-name, fact and community-name embeddings", "source": "§4.1, txt line 247 ('BGE-m3 models from BAAI for both reranking and embedding tasks [23][24]'); dimensionality at §2.2.1, txt line 120"},
+      {"object": "$\\Theta$ of the reranker (BGE-m3)", "who_learns_it": "BAAI, before the paper", "when_it_moves_in_this_paper": "never", "role": "the $\\mathrm{rrank}$ actually used in the experiments — note the paper does NOT say which of the five rerankers of (z-9) this replaces or how it is combined", "source": "§4.1, txt line 247"},
+      {"object": "$W$ (fast weights)", "who_learns_it": "— does not exist —", "when_it_moves_in_this_paper": "never", "role": "Zep has no fast-weight state. The only transient state is the agent LLM's ordinary KV cache for the current ~1.6k-token prompt, which the paper never mentions.", "source": "absence throughout"},
+      {"object": "$E$: episodic nodes $\\mathcal{N}_e$ and episodic edges $\\mathcal{E}_e$", "who_learns_it": "not learned — appended verbatim", "when_it_moves_in_this_paper": "at ingestion, once per message (round $k$)", "role": "lossless raw store; bidirectional index to derived artifacts for citation", "source": "§2, txt lines 71-72; §2.1, txt lines 107-110: 'Episodes and their derived semantic edges maintain bidirectional indices ... semantic artifacts can be traced to their sources for citation or quotation'"},
+      {"object": "$E$: entity nodes $\\mathcal{N}_s$ (name, summary, 1024-d embedding)", "who_learns_it": "not learned — written by frozen-LLM extraction + resolution", "when_it_moves_in_this_paper": "at ingestion, round $k$; a name/summary is REWRITTEN when the resolver declares a duplicate", "role": "the entity tier", "source": "§2.2.1, txt lines 113-126"},
+      {"object": "$E$: semantic edges $\\mathcal{E}_s$ (fact, predicate, four datetimes, embedding)", "who_learns_it": "not learned — written by frozen-LLM extraction, dedup, temporal extraction", "when_it_moves_in_this_paper": "written at round $k$; INVALIDATED at some later round $k'>k$ when a contradicting edge arrives (z-5)", "role": "the fact tier — this is what retrieval mostly returns", "source": "§2.2.2 txt lines 128-136; §2.2.3 txt lines 137-149"},
+      {"object": "$E$: community nodes $\\mathcal{N}_c$ (name, summary, embedding) and edges $\\mathcal{E}_c$", "who_learns_it": "not learned — label propagation heuristic + map-reduce LLM summarization", "when_it_moves_in_this_paper": "TWO cadences: incrementally at each new entity (plurality vote + summary update), and wholesale at unspecified 'periodic community refreshes'", "role": "the highest tier; NOT retrieved in either reported experiment", "source": "§2.3, txt lines 155-169; non-use in experiments at §4, txt lines 239-242"},
+      {"object": "The five construction prompts (entity extraction, entity resolution, fact extraction, fact resolution, temporal extraction)", "who_learns_it": "hand-written by the authors; fixed", "when_it_moves_in_this_paper": "never", "role": "the actual specification of $S(\\cdot;B_s)$", "source": "Appendix §6.1, txt lines 507-624. Note the reproduced prompts are TRUNCATED in this text extraction — §6.1.1 ends mid-sentence at 'DO NOT extract entities mentioned only' [txt line 523]."},
+      {"object": "Cypher write queries", "who_learns_it": "hand-written; deliberately not LLM-generated", "when_it_moves_in_this_paper": "never", "role": "schema enforcement at write time", "source": "§2.2.1, txt lines 124-126"},
+      {"object": "Retrieval configuration ($k$=20 or 10, which rerankers, BFS hops, centroid choice)", "who_learns_it": "hand-set; not tuned by any reported procedure", "when_it_moves_in_this_paper": "never", "role": "determines what reaches the prompt", "source": "§4, txt lines 239-242; §4.2, txt lines 307-308 — and these two locations DISAGREE (see unfavorable_facts)"}
+    ],
+    "answer_to_the_readers_first_question": "'Who learns this?' — nobody. In Zep the entire adaptation budget is spent on frozen-model inference and database writes. The chapter should use this as the clean pole of the three-path comparison: Zep is the configuration in which $B_s$ buys *structure* rather than *parameters*, and therefore the configuration in which $B_s$ is easiest to reason about physically — and yet the paper still does not report it."
+  },
+
+  "update_layer": {
+    "verdict": "(U-E) only. No (U-W). No (U-$\\Theta$). Single layer, two cadences.",
+    "canonical_form_recalled": "$E_{k+1}=\\mathrm{wr}(E_k,\\hat c_k)$, $\\hat c_k = S(c_k;B_s)$",
+    "instantiation": {
+      "k_means": "one ingested episode (= one chat message in these experiments), NOT one session and NOT one idle period. [§2.1, txt lines 90-95]",
+      "c_k_is": "$(m_k, a_k, t^{\\mathrm{wall}}_{\\mathrm{ref},k})$ plus a hard four-message lookback [§2.2.1, txt line 115]",
+      "S_is": "a nine-stage frozen-LLM + index pipeline (z-3)",
+      "wr_is": "a schema-enforced, append-only, four-tier graph write executed through predefined Cypher [§2.2.1, txt lines 124-126]"
+    },
+    "how_the_rule_differs_from_the_canonical_form": [
+      "TYPED OUTPUT: $\\hat c_k$ is $(\\Delta\\mathcal{N}_e,\\Delta\\mathcal{E}_e,\\Delta\\mathcal{N}_s,\\Delta\\mathcal{E}_s,\\Delta\\mathcal{N}_c)$, not a string. The canonical $\\hat c$ (as in Letta STC) is text appended to a context block.",
+      "NON-DESTRUCTIVE $\\mathrm{wr}$: canonical $\\mathrm{wr}$ may replace; Zep's never does. A contradicted fact survives with a closed interval (z-5), and the raw episode survives verbatim regardless [§2, txt lines 71-72]. $E$ therefore grows monotonically in $k$.",
+      "TIME-STAMPED WRITE: the write attaches four wall-clock datetimes on two independent timelines (z-4). No other paper in this corpus writes an explicit *validity interval* into $E$. This is the whole content of the paper's novelty claim [§2.1, txt lines 100-102].",
+      "BOUNDED WRITE CONTEXT: $S$ never sees more than five messages, so cross-session consolidation happens at READ time (BFS, communities), not at WRITE time. Contrast Letta STC, whose $S$ ingests the whole accumulated context.",
+      "COUPLED TO WAKE TRAFFIC: the write fires on message arrival, not on idle. Under the S0 operational definition ('computation consumed before the query $q$ arrives, in idle time') Zep satisfies the 'before $q$' clause but not the 'idle' clause. The chapter must say this explicitly rather than filing Zep as a sleep system by default."
+    ],
+    "the_two_cadences_in_order": [
+      "Cadence 1 — per episode, index $k$: (z-2) through (z-6, first half). Runs on every message. Nine stages. Cost unmeasured.",
+      "Cadence 2 — periodic, index $\\tau$: full label-propagation refresh $\\mathcal{N}_c \\leftarrow \\mathrm{LP}_{\\mathrm{full}}(\\mathcal{G}_s)$ plus map-reduce re-summarization. This is the only true batch/idle job in Zep. Its period is not stated, its cost is not stated, and it is not exercised in any experiment. [§2.3, txt lines 159-167]"
+    ],
+    "read_path_is_not_an_update": "$\\mathrm{ret}(E,q)$ has no side effect on $E$ in the paper's description. The episode-mentions reranker reads a mention count that was accumulated at write time; nothing is written back at query time. [§3.2, txt lines 226-228]"
+  },
+
+  "cost_table": {
+    "B_s": {
+      "value": "absent",
+      "detail": "The paper reports NO ingestion cost of any kind: no token count, no FLOPs, no dollar figure, no wall-clock, no LLM-call count, no throughput. This is the single largest omission in the paper and it is structural, not accidental — the authors scope their own cost contribution to retrieval: 'As Zep is a production system, we've focused heavily on the accuracy, latency, and scalability of its memory retrieval mechanisms' [§1, txt lines 63-64] and 'We have included latency benchmarks for our retrieval mechanisms to begin addressing this gap' [§5, txt lines 503-504]. What IS knowable about $B_s$ from the text is only its shape: per ingested message, $S(\\cdot;B_s)$ runs entity extraction, a reflexion pass, entity embedding, hybrid candidate search, LLM entity resolution, fact extraction, fact embedding + constrained dedup search, LLM temporal extraction, and LLM contradiction/invalidation — i.e. on the order of six to seven gpt-4o-mini-2024-07-18 calls plus several index operations per message, each carrying the current message plus four predecessors as prompt context. Multiply by 60 messages for one DMR conversation and by 500 conversations, and by whatever the message count of a 115k-token LongMemEval conversation is (not stated). None of this is computed by the paper and it must not be computed as a monograph number.",
+      "unquantified_cost_claims_the_paper_does_make": [
+        "'this dynamic updating strategy provides a practical heuristic that significantly reduces latency and LLM inference costs' [§2.3, txt lines 164-165] — no baseline, no number.",
+        "the edge-dedup entity-pair constraint 'significantly reduces the computational complexity of the deduplication process by limiting the search space' [§2.2.2, txt lines 133-136] — no number.",
+        "'Our evaluations demonstrate that Zep achieves state-of-the-art performance on existing memory benchmarks while reducing token costs and operating at significantly lower latencies' [§5, txt lines 488-489] — 'reducing token costs' is stated in the conclusion but the only token figures in the paper are the READ-side Avg Context Tokens of Table 2. No write-side token figure exists.",
+        "cross-encoder reranking 'incurs the highest computational cost' [§3.2, txt line 230] — relative ordering only, no number, and it was not the reranker used (BGE-m3 was, §4.1)."
+      ],
+      "source": "absence throughout; §1 txt lines 63-64; §5 txt lines 502-504"
+    },
+    "L_w": {
+      "value": "present — the paper's strongest reported quantity",
+      "numbers": [
+        "LongMemEval_s, gpt-4o-mini: full-context 31.3 s (IQR 8.76 s) vs Zep 3.20 s (IQR 1.31 s) [Table 2, txt lines 350-391]",
+        "LongMemEval_s, gpt-4o: full-context 28.9 s (IQR 6.01 s) vs Zep 2.58 s (IQR 0.684 s) [Table 2, txt lines 350-391]",
+        "'Zep reducing response times by approximately 90% while maintaining higher accuracy' [§4.3.2, txt lines 478-479]; abstract states 'reducing response latency by 90%' [Abstract, txt lines 36-37]"
+      ],
+      "my_arithmetic_check": "[my computation] $1-3.20/31.3 = 89.78\\%$ and $1-2.58/28.9 = 91.07\\%$. The 'approximately 90%' claim is arithmetically sound at the paper's own precision.",
+      "what_this_L_w_is_NOT": [
+        "NOT TTFT and NOT ms/token. It is end-to-end response latency of the whole question-answering call, retrieval plus generation, and the paper never decomposes it.",
+        "NOT a controlled measurement. 'We performed testing using a consumer laptop from a residential location in Boston, MA, connecting to Zep's service hosted in AWS us-west-2. This distributed architecture introduced additional network latency when evaluating Zep's performance, though this latency was not present in our baseline evaluations.' [§4.3, txt lines 330-336]. The asymmetry is disclosed and works against Zep, but it also means neither number is a clean system measurement.",
+        "NOT decomposed into retrieval-vs-generation. Since baseline and Zep differ by 115k vs 1.6k prompt tokens [Table 2], most of the gap is prefill of the discarded 113.4k tokens; the paper does not say so and reports no prefill/decode split.",
+        "The statistic is unnamed. The table gives a 'Latency' column and a 'Latency IQR' column but never states whether 'Latency' is the mean or the median. Reporting an IQR beside it implies a median; the paper does not say. See todo_verify."
+      ],
+      "source": "Table 2, txt lines 350-391; §4.3 txt lines 330-336; §4.3.2 txt lines 346-349, 478-479"
+    },
+    "C_cap": {
+      "value": "absent in bytes; only READ-side token counts exist, and they are prompt sizes, not state capacity",
+      "detail": "The paper reports no graph size, no node count, no edge count, no bytes per session, no bytes per user, no storage figure, and no growth rate. The only quantities adjacent to capacity are: (a) 'Avg Context Tokens' 115k (full-context baseline) vs 1.6k (Zep) [Table 2, txt lines 388-391] — this is the size of what is READ into the prompt, not the size of what is STORED; (b) the retrieval budget, stated inconsistently as 'the 20 most relevant edges (facts) and entity nodes' [§4, txt lines 239-241] and as 'the top 10 most relevant nodes and edges' [§4.2, txt lines 307-308]; (c) the embedding width, 1024 dimensions per entity name [§2.2.1, txt line 120] — with no dtype, so bytes cannot be computed. Facts and community names are also embedded [§2.2.2 txt line 131; §2.3 txt line 169] but their widths are not separately stated.",
+      "structural_consequence_the_paper_does_not_state": "[inference] Because $\\mathrm{wr}$ is append-only at every tier — episodes are 'a non-lossy data store' [§2, txt lines 71-72] and invalidated edges are interval-closed rather than deleted [§2.2.3, txt lines 145-148] — $C_{\\mathrm{cap}}$ grows monotonically in the number of ingested messages with no stated bound, no eviction policy, and no compaction. There is no rate-distortion tradeoff anywhere in Zep: it never chooses what to forget. That is the exact axis on which the capacity/theory chapters of this monograph interrogate the E-path.",
+      "note_on_symbol": "Written $C_{\\mathrm{cap}}$ per STC-STYLE-NOTATION §1.5. Bare $C$ is chunk size and is not used by this paper.",
+      "source": "Table 2 txt lines 388-391; §2.2.1 txt line 120; §2 txt lines 71-72; §2.2.3 txt lines 145-148; absence elsewhere"
+    },
+    "C": "see C_cap — renamed per STC-STYLE-NOTATION §1.5 (bare $C$ is reserved for chunk size).",
+    "rho": {
+      "value": "absent",
+      "detail": "No degradation rate is measured or defined. Zep has no repeated-sleep loop over the same content, so there is no round index over which $\\rho$ could be measured. Three things in the paper are adjacent to $\\rho$ and none of them is a rate: (1) COMMUNITY DRIFT — 'the resulting communities gradually diverge from those that would be generated by a complete label propagation run. Therefore, periodic community refreshes remain necessary.' [§2.3, txt lines 162-164]. This is a named, acknowledged, unmeasured degradation, with no divergence metric, no refresh period, and no experiment. It is the closest thing to $\\rho$ in the paper. (2) EDGE INVALIDATION — deliberate obsolescence marking, not decay; it is a feature, and its correctness is never audited (no precision/recall on invalidation decisions). (3) The LongMemEval 'knowledge-update' category is the nearest empirical proxy for whether stale facts hurt, and it moves in OPPOSITE directions across the two models: gpt-4o-mini 76.9% → 74.4% (worse than full-context) but gpt-4o 78.2% → 83.3% (better) [Table 3, txt lines 397-477]. A per-round degradation rate cannot be read off a single-shot benchmark score in any case.",
+      "source": "§2.3 txt lines 162-164; §2.2.3 txt lines 145-149; Table 3 txt lines 397-477; absence of any repeated-round experiment"
+    },
+    "amortization_equation_A": {
+      "can_N_q_star_be_computed": "No. Equation (A) is $C_{\\mathrm{avg}} = C_{\\mathrm{wake}} + C_{\\mathrm{sleep}}/N_q$, and $C_{\\mathrm{sleep}} = B_s$ is absent, so no break-even $N_q^*$ can be computed for Zep. The paper never attempts an amortization argument.",
+      "what_N_q_actually_is_in_the_experiments": "DMR: $N_q = 1$ exactly. 'The Deep Memory Retrieval evaluation ... comprises 500 multi-session conversations, each containing 5 chat sessions with up to 12 messages per session. Each conversation includes a question/answer pair for memory evaluation.' [§4.2, txt lines 299-300]. One question per ingested conversation. LongMemEval: the number of questions per conversation is not stated in this paper.",
+      "consequence": "[평가 material] In the DMR experiment the full nine-stage ingestion pipeline is run over up to 60 messages and then amortized over exactly one query. Under (A) with $N_q=1$, $C_{\\mathrm{avg}} = C_{\\mathrm{wake}} + B_s$, so the reported per-query latency advantage says nothing about total system cost. Zep's 90% latency reduction is a WAKE-side claim measured in a regime where amortization cannot help. This is not a criticism of the number; it is a statement about what the number can support. The monograph's obligatory caveat that 'no paper in the corpus reports the real-serving $N_q$ distribution' (STC-STYLE-NOTATION §6.4) holds for Zep too, with the sharper observation that its benchmarks pin $N_q$ at the worst possible value."
+    }
+  },
+
+  "experiments": {
+    "models_used": {
+      "graph_construction": "gpt-4o-mini-2024-07-18 [§4.1, txt lines 248-249]",
+      "answer_generation": "gpt-4o-mini-2024-07-18 and gpt-4o-2024-11-20; additionally gpt-4-turbo-2024-04-09 for DMR only, 'To ensure direct comparability with MemGPT's DMR results' [§4.1, txt lines 248-250]",
+      "embedding_and_reranking": "BGE-m3 from BAAI, for both [§4.1, txt line 247; refs 23, 24]",
+      "judge": "LongMemEval: 'we employed GPT-4o with the question-specific prompts provided in [7], which have demonstrated high correlation with human evaluators' [§4.3, txt line 337]. DMR: 'An LLM judge compared the agent's responses to the provided golden answers' [§4.2, txt line 308] — the judge model is NOT specified for DMR.",
+      "no_model_sizes": "No parameter counts anywhere. All models are closed API endpoints (OpenAI) or an open embedding model (BGE-m3). No training tokens, no FLOPs, no hardware, no batch size. The paper is entirely inference-side."
+    },
+    "retrieval_configuration": {
+      "stated_in_section_4": "'We then retrieve the 20 most relevant edges (facts) and entity nodes (entity summaries) using the techniques described in Section 3. The system reformats this data into a context string, matching the functionality provided by Zep's memory APIs.' [§4, txt lines 239-242]",
+      "stated_in_section_4_2": "'We then evaluated Zep's performance by ingesting the conversations and using its search functions to retrieve the top 10 most relevant nodes and edges.' [§4.2, txt lines 307-308]",
+      "conflict": "20 vs 10. The two statements are irreconcilable from the text. See todo_verify.",
+      "what_was_NOT_retrieved": "Community nodes. Both statements name only edges and entity nodes. The community subgraph $\\mathcal{G}_c$ — a full third of the architecture and the tier inherited from GraphRAG — contributes nothing to either experiment.",
+      "which_search_and_rerank_functions": "Never stated. §3.1 describes three search functions and §3.2 five rerankers; §4 says only 'using the techniques described in Section 3' and adds 'While these experiments demonstrate key retrieval capabilities of Graphiti, they represent a subset of the system's full search functionality' [§4, txt lines 243-245]. Which subset is never identified beyond 'BGE-m3 ... for reranking'."
+    },
+    "benchmark_1_DMR": {
+      "provenance": "Deep Memory Retrieval, introduced by MemGPT [3]; uses a 500-conversation subset of the Multi-Session Chat dataset of 'Beyond Goldfish Memory: Long-Term Open-Domain Conversation' [22] [§4, txt lines 233-235].",
+      "shape": "500 multi-session conversations, each containing 5 chat sessions with up to 12 messages per session; one question/answer pair per conversation [§4.2, txt lines 299-300]. Upper bound therefore 60 messages per conversation, which the paper itself states: 'each conversation contains only 60 messages, easily fitting within current LLM context windows' [§4.2, txt line 311].",
+      "table_1_verbatim": [
+        {"memory": "Recursive Summarization", "model": "gpt-4-turbo", "score": "35.3%", "note": "reported in [3]"},
+        {"memory": "Conversation Summaries", "model": "gpt-4-turbo", "score": "78.6%", "note": "this paper's baseline"},
+        {"memory": "MemGPT", "model": "gpt-4-turbo", "score": "93.4%", "note": "† Results reported in [3]"},
+        {"memory": "Full-conversation", "model": "gpt-4-turbo", "score": "94.4%", "note": "this paper's baseline"},
+        {"memory": "Zep", "model": "gpt-4-turbo", "score": "94.8%", "note": "this paper"},
+        {"memory": "Conversation Summaries", "model": "gpt-4o-mini", "score": "88.0%", "note": "this paper's baseline"},
+        {"memory": "Full-conversation", "model": "gpt-4o-mini", "score": "98.0%", "note": "this paper's baseline"},
+        {"memory": "Zep", "model": "gpt-4o-mini", "score": "98.2%", "note": "this paper"}
+      ],
+      "table_1_source": "Table 1, txt lines 257-296; dagger footnote 'Results reported in [3]' at txt line 296",
+      "margins_at_the_papers_own_precision": "Zep − MemGPT = 94.8% − 93.4% = 1.4 percentage points (gpt-4-turbo). Zep − full-conversation = 94.8% − 94.4% = 0.4 pp (gpt-4-turbo) and 98.2% − 98.0% = 0.2 pp (gpt-4o-mini). No confidence intervals, no seeds, no repeated runs, no significance test anywhere in the paper. [my computation of the differences; the paper states only 'showing marginal improvements over both MemGPT and the respective full-conversation baselines' — §4.2, txt lines 309-310]",
+      "the_paper_beats_MemGPT_but_so_does_the_trivial_baseline": "'Using gpt-4-turbo, the full-conversation baseline achieved 94.4% accuracy, slightly surpassing MemGPT's reported results' [§4.2, txt lines 303-304]. Stuffing the whole 60-message conversation into the prompt beats the system Zep's abstract names as 'the current state-of-the-art'.",
+      "MemGPT_could_not_be_rerun": "'We were unable to reproduce MemGPT's results using gpt-4o-mini due to insufficient methodological details in their published work.' [§4.2, txt lines 304-306]. The 93.4% is therefore a quoted number from [3], not a re-measurement.",
+      "the_authors_own_repudiation_of_this_benchmark": "'these results must be contextualized: each conversation contains only 60 messages, easily fitting within current LLM context windows. The limitations of the DMR evaluation extend beyond its small scale. Our analysis revealed significant weaknesses in the benchmark's design. The evaluation relies exclusively on single-turn, fact-retrieval questions that fail to assess complex memory understanding. Many questions contain ambiguous phrasing, referencing concepts like \"favorite drink to relax with\" or \"weird hobby\" that were not explicitly characterized as such in the conversations. Most critically, the dataset poorly represents real-world enterprise use cases for LLM agents. The high performance achieved by simple full-context approaches using modern LLMs further highlights the benchmark's inadequacy for evaluating memory systems.' [§4.2, txt lines 310-318]"
+    },
+    "benchmark_2_LongMemEval": {
+      "provenance": "LongMemEval [7] (Wu et al., 2024); specifically the LongMemEval_s dataset [§4, txt lines 236-238; §4.3, txt line 324].",
+      "shape": "'conversations averaging approximately 115,000 tokens in length' [§4.3, txt line 325]; also given as 'an extensive conversation context of on average 115,000 tokens' [§4, txt line 238]. Six question types: single-session-user, single-session-assistant, single-session-preference, multi-session, knowledge-update, temporal-reasoning; 'These categories are not uniformly distributed throughout the dataset; for detailed distribution information, we refer readers to [7].' [§4.3, txt lines 328-329]. The paper does not state the number of questions.",
+      "conditions": "Run between December 2024 and January 2025, from a consumer laptop on a residential connection in Boston, MA, against Zep hosted in AWS us-west-2; the added network latency applied to Zep only, not to the baselines [§4.3, txt lines 330-336].",
+      "table_2_verbatim": [
+        {"memory": "Full-context", "model": "gpt-4o-mini", "score": "55.4%", "latency": "31.3 s", "latency_IQR": "8.76 s", "avg_context_tokens": "115k"},
+        {"memory": "Zep", "model": "gpt-4o-mini", "score": "63.8%", "latency": "3.20 s", "latency_IQR": "1.31 s", "avg_context_tokens": "1.6k"},
+        {"memory": "Full-context", "model": "gpt-4o", "score": "60.2%", "latency": "28.9 s", "latency_IQR": "6.01 s", "avg_context_tokens": "115k"},
+        {"memory": "Zep", "model": "gpt-4o", "score": "71.2%", "latency": "2.58 s", "latency_IQR": "0.684 s", "avg_context_tokens": "1.6k"}
+      ],
+      "table_2_source": "Table 2, txt lines 350-391",
+      "headline_improvements_as_stated": "'Using gpt-4o-mini, Zep achieved a 15.2% accuracy improvement over the baseline, while gpt-4o showed an 18.5% improvement.' [§4.3.2, txt lines 346-348]. Abstract: 'accuracy improvements of up to 18.5% while simultaneously reducing response latency by 90%' [Abstract, txt lines 36-37]. These are RELATIVE improvements, not percentage points.",
+      "my_arithmetic_check_of_the_headline": "[my computation] gpt-4o-mini: $(63.8-55.4)/55.4 = 15.16\\%$ — matches the stated 15.2%. gpt-4o: $(71.2-60.2)/60.2 = 18.27\\%$ — the paper states 18.5%. The 0.23 pp discrepancy is not reconcilable from the rounded table values. In percentage POINTS the gains are +8.4 pp and +11.0 pp. A chapter that quotes '18.5%' must state that it is a relative figure over a 60.2% baseline. See todo_verify.",
+      "MemGPT_comparison_on_this_benchmark_failed": "'Given that the current MemGPT framework does not support direct ingestion of existing message histories, we implemented a workaround by adding conversation messages to the archival history. However, we were unable to achieve successful question responses using this approach. We look forward to seeing evaluations of this benchmark by other research teams' [§4.3.1, txt lines 339-344]. So on the harder benchmark there is no MemGPT number at all; the only comparator is a full-context prompt.",
+      "table_3_verbatim_gpt_4o_mini": [
+        {"question_type": "single-session-preference", "full_context": "30.0%", "zep": "53.3%", "delta_as_printed": "77.7%↑"},
+        {"question_type": "single-session-assistant", "full_context": "81.8%", "zep": "75.0%", "delta_as_printed": "9.06%↓"},
+        {"question_type": "temporal-reasoning", "full_context": "36.5%", "zep": "54.1%", "delta_as_printed": "48.2%↑"},
+        {"question_type": "multi-session", "full_context": "40.6%", "zep": "47.4%", "delta_as_printed": "16.7%↑"},
+        {"question_type": "knowledge-update", "full_context": "76.9%", "zep": "74.4%", "delta_as_printed": "3.36%↓"},
+        {"question_type": "single-session-user", "full_context": "81.4%", "zep": "92.9%", "delta_as_printed": "14.1%↑"}
+      ],
+      "table_3_verbatim_gpt_4o": [
+        {"question_type": "single-session-preference", "full_context": "20.0%", "zep": "56.7%", "delta_as_printed": "184%↑"},
+        {"question_type": "single-session-assistant", "full_context": "94.6%", "zep": "80.4%", "delta_as_printed": "17.7%↓"},
+        {"question_type": "temporal-reasoning", "full_context": "45.1%", "zep": "62.4%", "delta_as_printed": "38.4%↑"},
+        {"question_type": "multi-session", "full_context": "44.3%", "zep": "57.9%", "delta_as_printed": "30.7%↑"},
+        {"question_type": "knowledge-update", "full_context": "78.2%", "zep": "83.3%", "delta_as_printed": "6.52%↑"},
+        {"question_type": "single-session-user", "full_context": "81.4%", "zep": "92.9%", "delta_as_printed": "14.1%↑"}
+      ],
+      "table_3_source": "Table 3, txt lines 397-477",
+      "asymmetric_denominator_finding": "[my computation, load-bearing] The printed deltas use DIFFERENT denominators for gains and losses. Every ↑ delta equals $(\\text{zep}-\\text{full})/\\text{full}$: $(53.3-30.0)/30.0=77.67\\%\\to77.7\\%$; $(54.1-36.5)/36.5=48.22\\%\\to48.2\\%$; $(47.4-40.6)/40.6=16.75\\%\\to16.7\\%$; $(92.9-81.4)/81.4=14.13\\%\\to14.1\\%$; $(56.7-20.0)/20.0=183.5\\%\\to184\\%$; $(62.4-45.1)/45.1=38.36\\%\\to38.4\\%$; $(57.9-44.3)/44.3=30.70\\%\\to30.7\\%$; $(83.3-78.2)/78.2=6.52\\%$. Every ↓ delta instead equals $(\\text{full}-\\text{zep})/\\text{zep}$: $(81.8-75.0)/75.0=9.07\\%\\to9.06\\%$ (the symmetric figure would be 8.31%); $(76.9-74.4)/74.4=3.36\\%$ (symmetric: 3.25%); $(94.6-80.4)/80.4=17.66\\%\\to17.7\\%$ (symmetric: 15.01%). The inconsistency happens to ENLARGE the reported regressions rather than shrink them, so it does not flatter Zep — but a monograph that reproduces Table 3 must state the convention, because the ↑ and ↓ columns are not on the same scale and cannot be compared to each other.",
+      "the_papers_own_reading_of_table_3": "'Analysis by question type reveals that gpt-4o-mini with Zep showed improvements in four of the six categories, with the most substantial gains in complex question types: single-session-preference, multi-session, and temporal-reasoning. When using gpt-4o, Zep further demonstrated improved performance in the knowledge-update category, highlighting its effectiveness with more capable models. However, additional development may be needed to improve less capable models' understanding of Zep's temporal data.' [§4.3.2, txt lines 393-396]. And: 'The decrease in performance for single-session-assistant questions—17.7% for gpt-4o and 9.06% for gpt-4o-mini—represents a notable exception to Zep's otherwise consistent improvements, and suggest further research and engineering work is needed.' [§4.3.2, txt lines 484-485]",
+      "context_token_reduction": "115k → 1.6k [Table 2]. [my computation] a factor of 71.875×, i.e. 98.6% of the prompt tokens are discarded. The paper states the mechanism only qualitatively: 'The reduced prompt size also led to significant latency cost reductions' [§4.3.2, txt lines 348-349]."
+    },
+    "ablations": "NONE. There is not a single ablation in the paper. The bi-temporal model, edge invalidation, the reflexion pass, the entity-resolution stage, the community tier, the three search functions, and the five rerankers are all introduced as design and none is isolated. The paper's central novelty claim — bi-temporality [§2.1, txt lines 100-102] — is never tested against a non-temporal variant of the same system.",
+    "reproducibility": "'The experimental notebooks will be made publicly available through our GitHub repository, and relevant experimental prompts are included in the Appendix.' [§4.1, txt lines 251-252] — future tense at publication. The system under test is a hosted commercial service [ref 5, txt lines 638-639], so the ingestion pipeline version cannot be pinned from the paper. The construction prompts in Appendix §6.1 are reproduced only in part; §6.1.1 breaks off mid-guideline at 'DO NOT extract entities mentioned only' [txt line 523]."
+  },
+
+  "scale_ceiling": {
+    "one_line": "One conversation at a time, at most ~115,000 tokens, all English chat, single tenant, no reported graph size, no reported ingestion cost, over a two-month measurement window.",
+    "context_length": "115,000 tokens average (LongMemEval_s), and the paper is explicit that this is not beyond the models: 'This length, while substantial, remains within the context windows of current frontier models, enabling us to establish meaningful baselines' [§4.3, txt lines 325-327]. On DMR the ceiling is 60 messages, 'easily fitting within current LLM context windows' [§4.2, txt line 311]. Both benchmarks are therefore inside the regime where the trivial baseline is viable, and on DMR the trivial baseline wins against the previous SOTA.",
+    "graph_size": "Never reported. No node counts, edge counts, community counts, storage bytes, or index sizes appear anywhere in the paper.",
+    "ingestion_throughput": "Never reported. No messages/second, no ingestion latency, no queue depth, no cost per message.",
+    "users_and_tenancy": "One store per conversation is implied by the protocol ('we integrate the conversation history into a Zep knowledge graph through Zep's APIs' [§4, txt line 239]). No multi-user, multi-tenant, or shared-graph experiment. No cross-user retrieval. Nothing about isolation.",
+    "time_horizon": "Experiments 'between December 2024 and January 2025' [§4.3, txt line 330]. No longitudinal experiment: the graph is built once per conversation and queried once (DMR) or a small number of times (LongMemEval, count unstated). No experiment observes a graph over repeated ingest/refresh cycles, so the acknowledged community drift [§2.3, txt lines 162-164] is never observed.",
+    "modalities_and_episode_types_untested": "Episodes may be 'message, text, or JSON' [§2.1, txt lines 90-91] but 'this paper focuses on the message type, as our experiments center on conversation memory' [§2.1, txt lines 91-92]. The structured-business-data capability advertised in the abstract ('dynamically synthesizes both unstructured conversational data and structured business data' [Abstract, txt lines 32-33]) has zero experiments, and the paper says so: 'Notably, no existing benchmarks adequately assess Zep's capability to process and synthesize conversation history with structured business data.' [§5, txt lines 498-499]",
+    "architecture_tiers_untested": [
+      "Community subgraph $\\mathcal{G}_c$: constructed but never retrieved in either experiment [§4, txt lines 239-242].",
+      "Episodic edges / bidirectional provenance index: 'While these connections are not directly examined in this paper's experiments, they will be explored in future work.' [§2.1, txt lines 109-110]",
+      "Breadth-first search, node-distance reranker, episode-mentions reranker, cross-encoder reranker, RRF, MMR: all described, none identified as used. 'they represent a subset of the system's full search functionality' [§4, txt lines 243-245].",
+      "Periodic full community refresh: described as necessary [§2.3, txt line 164], never run."
+    ],
+    "traditional_RAG_capability_untested": "'While Zep focuses on LLM memory, its traditional RAG capabilities should be evaluated against established benchmarks such as those in [17], [27], and [28].' [§5, txt lines 499-501]"
+  },
+
+  "concept_ledger_delta": {
+    "new": [
+      {"concept": "bi-temporal agent memory", "definition": "two independent timelines on the external store: $T$ = when a fact was true in the world, $T'$ = when the system learned or retracted it; four datetime fields per semantic edge", "source": "§2.1 txt lines 97-102; §2.2.3 txt lines 141-144", "note": "The paper claims this as its novelty: 'This bi-temporal approach represents a novel advancement in LLM-based knowledge graph construction'. It is imported from database practice (transaction time vs valid time), which the paper acknowledges implicitly — 'the T' timeline serves the traditional purpose of database auditing' [§2.1, txt line 99]. So the novelty claimed is the *application*, not the concept."},
+      {"concept": "edge invalidation as interval closure", "definition": "contradiction is handled by setting $t^{\\mathrm{wall}}_{\\mathrm{invalid}}$ of the old edge to $t^{\\mathrm{wall}}_{\\mathrm{valid}}$ of the new one, never by deletion", "source": "§2.2.3, txt lines 145-149", "note": "the E-path's answer to catastrophic-forgetting-by-overwrite: it does not forget, it timestamps."},
+      {"concept": "three-tier store: episodic / semantic / community, with a lossless episodic tier", "definition": "$\\mathcal{G}_e$ raw non-lossy, $\\mathcal{G}_s$ derived entities and facts, $\\mathcal{G}_c$ clustered summaries; bidirectional index between derived artifacts and their sources", "source": "§2 txt lines 68-88; §2.1 txt lines 107-110", "note": "the lossless bottom tier is what distinguishes this from a summarizing memory; it also is what makes $C_{\\mathrm{cap}}$ unbounded."},
+      {"concept": "dynamic label propagation (single recursive step) for incremental community maintenance", "definition": "assign a new entity to the community held by the plurality of its neighbours, update the summary, defer the full run", "source": "§2.3, txt lines 155-165", "note": "an explicit latency/quality trade chosen over Leiden [14] purely for incrementality."},
+      {"concept": "graph-native rerank signals: episode-mentions (frequency prior) and node-distance-from-centroid (locality prior)", "definition": "rank retrieved facts by how often they were mentioned, or by graph distance from a designated node", "source": "§3.2, txt lines 226-229"},
+      {"concept": "episode-seeded breadth-first retrieval", "definition": "$\\mathrm{srch}_{\\mathrm{bfs}}$ may take nodes rather than a query string as its argument, seeded from recent episodes", "source": "§3.1, txt lines 214-218"}
+    ],
+    "extended_or_renamed": [
+      {"concept": "$\\mathrm{ret}(E,q)$", "delta": "decomposed into the reusable triple $\\mathrm{cons}\\circ\\mathrm{rrank}\\circ\\mathrm{srch}$. [해설 material] This monograph should adopt Zep's decomposition as the standard anatomy of $\\mathrm{ret}$ for ALL E-path chapters — it is the paper's most transferable contribution and it costs nothing to import.", "source": "§3, txt lines 173-185"},
+      {"concept": "episodic vs semantic memory", "delta": "imported from psychology [8] as a *storage-tier* distinction rather than a metaphor: 'The dual storage of both raw episodic data and derived semantic entity information mirrors psychological models of human memory.' [§2, txt lines 81-84]", "source": "§2, txt lines 81-86"},
+      {"concept": "memory as a service", "delta": "'a novel memory layer service for AI agents' [Abstract, txt line 27] — $E$ is a network endpoint with its own latency budget and its own failure modes, not an in-process data structure. This is why network RTT appears in the paper's own latency numbers [§4.3, txt lines 330-336]."},
+      {"concept": "hyper-edge by repetition", "delta": "multi-entity facts are represented not by a hyper-edge primitive but by extracting the same fact between several entity pairs: 'the same fact can be extracted multiple times between different entities, enabling Graphiti to model complex multi-entity facts through an implementation of hyper-edges' [§2.2.2, txt lines 129-130]. Cost: duplication of the fact text and its embedding across pairs. [inference] this multiplies $C_{\\mathrm{cap}}$ by the arity of the fact."}
+    ],
+    "retired_or_challenged": [
+      {"concept": "DMR as a discriminating memory benchmark", "delta": "retired by its own successor's paper: 'The high performance achieved by simple full-context approaches using modern LLMs further highlights the benchmark's inadequacy for evaluating memory systems.' [§4.2, txt lines 316-318]. The monograph should treat DMR as dead after this paper.", "source": "§4.2, txt lines 310-318"},
+      {"concept": "the static-corpus assumption of RAG", "delta": "challenged as the framing problem of the paper [§1, txt lines 48-52]"},
+      {"concept": "Leiden community detection for evolving graphs", "delta": "rejected in favour of label propagation on incrementality grounds [§2.3, txt lines 155-158]"},
+      {"concept": "LLM-generated database queries", "delta": "explicitly rejected: 'We chose this approach over LLM-generated database queries to ensure consistent schema formats and reduce the potential for hallucinations.' [§2.2.1, txt lines 124-126]. A small but quotable data point for the reliability-of-generated-writes theme."},
+      {"concept": "ontology-free LLM knowledge graphs", "delta": "flagged as an unexamined default, not retired: 'while current research on LLM-generated knowledge graphs has primarily operated without formal ontologies [9][4][17][19][26], domain-specific ontologies present significant potential.' [§5, txt lines 494-495]"}
+    ]
+  },
+
+  "open_questions": {
+    "stated_by_the_paper": [
+      {"q": "Do fine-tuned extraction models make the write path cheaper and more accurate?", "quote": "'Research has already demonstrated the value of fine-tuned models for LLM-based entity and edge extraction within the GraphRAG paradigm, improving accuracy while reducing costs and latency [19][25]. Similar models fine-tuned for Graphiti prompts may enhance knowledge extraction, particularly for complex conversations.' [§5, txt lines 493-494]", "note": "This is the ONLY place $\\Theta$ enters Zep's own future work — and it enters as a way to make the E-path pipeline cheaper, never as a place to store memory."},
+      {"q": "Do domain-specific ontologies help LLM-built knowledge graphs?", "quote": "'while current research on LLM-generated knowledge graphs has primarily operated without formal ontologies [9][4][17][19][26], domain-specific ontologies present significant potential. Graph ontologies, foundational in pre-LLM knowledge graph work, warrant further exploration within the Graphiti framework.' [§5, txt lines 494-495]"},
+      {"q": "Can LightRAG's high-level key search be hybridized with a temporal graph store?", "quote": "'While developed independently, our community search approach parallels the high-level key search methodology in LightRAG [17]. The hybridization of LightRAG's approach with graph-based systems like Graphiti presents a promising direction for future research.' [§3.1, txt lines 209-211]"},
+      {"q": "What benchmark could actually discriminate memory systems?", "quote": "'Our search for suitable memory benchmarks revealed limited options, with existing benchmarks often lacking robustness and complexity, frequently defaulting to simple needle-in-a-haystack fact-retrieval questions [3]. The field requires additional memory benchmarks, particularly those reflecting business applications like customer experience tasks... Notably, no existing benchmarks adequately assess Zep's capability to process and synthesize conversation history with structured business data.' [§5, txt lines 496-499]"},
+      {"q": "How should production cost and latency be reported at all?", "quote": "'Current literature on LLM memory and RAG systems insufficiently addresses production system scalability in terms of cost and latency. We have included latency benchmarks for our retrieval mechanisms to begin addressing this gap, following the example set by LightRAG's authors in prioritizing these metrics.' [§5, txt lines 502-504]", "note": "The paper poses exactly the question this monograph's cost table asks, and then answers only half of it — the read half. That self-awareness is what makes the missing $B_s$ a finding rather than an oversight."},
+      {"q": "Why does Zep hurt single-session-assistant questions?", "quote": "'The decrease in performance for single-session-assistant questions—17.7% for gpt-4o and 9.06% for gpt-4o-mini—represents a notable exception to Zep's otherwise consistent improvements, and suggest further research and engineering work is needed.' [§4.3.2, txt lines 484-485]"},
+      {"q": "How can weaker models be made to use temporal metadata?", "quote": "'However, additional development may be needed to improve less capable models' understanding of Zep's temporal data.' [§4.3.2, txt lines 395-396]"},
+      {"q": "Can MemGPT be evaluated on LongMemEval by anyone?", "quote": "'We look forward to seeing evaluations of this benchmark by other research teams, as comparative performance data would benefit the broader development of LLM memory systems.' [§4.3.1, txt lines 343-344]"},
+      {"q": "What is the provenance/citation subgraph good for?", "quote": "'While these connections are not directly examined in this paper's experiments, they will be explored in future work.' [§2.1, txt lines 109-110]"},
+      {"q": "How often must communities be fully recomputed?", "quote": "'the resulting communities gradually diverge from those that would be generated by a complete label propagation run. Therefore, periodic community refreshes remain necessary.' [§2.3, txt lines 162-164] — the period is left entirely open."},
+      {"q": "How does Zep do on ordinary RAG?", "quote": "'While Zep focuses on LLM memory, its traditional RAG capabilities should be evaluated against established benchmarks such as those in [17], [27], and [28].' [§5, txt lines 499-501]"}
+    ],
+    "bridge_out_for_this_monograph": [
+      {"to": "Mem0 (2504.19413), the E-3 sibling chapter", "question": "Zep spends six-to-seven LLM calls per message to build typed structure. Mem0 spends far less. Does the temporal-graph structure buy anything once the write budget is equalized? Neither paper reports $B_s$, so this comparison is currently unanswerable from the literature — which is itself the bridge."},
+      {"to": "Letta Sleep-time Compute (2504.13171), chapter E-2", "question": "Letta names and measures the offline budget but writes an unstructured $\\hat c$; Zep writes a richly structured $\\hat c$ and measures no budget. The E-path's two halves have never been reported in the same paper. The obligatory Part III observation is that the E-path has no single work that reports both $B_s$ and the structure it buys. NOTE CHRONOLOGY: Zep (2025-01-20) predates Letta STC (2025-04), so the non-citation is forced, not chosen."},
+      {"to": "ReasoningBank (2509.25140), chapter E-4", "question": "Zep's $\\hat c$ is world-facts-with-validity-intervals. ReasoningBank's $\\hat c$ is reusable procedure. Same layer $E$, different content type, different retrieval key. Does a store need both tiers, and does time-stamping apply to procedure at all?"},
+      {"to": "Rate–Distortion Memory Compaction (2607.08032), capacity chapters", "question": "Zep is the append-only pole of the corpus: it never chooses what to discard, and its $C_{\\mathrm{cap}}$ is unbounded and unreported. It is therefore the ideal foil for a rate-distortion treatment — what would Zep's distortion curve look like if the episodic tier were allowed to be lossy?"},
+      {"to": "Part III, thesis A1 (three-path cost decomposition)", "question": "Zep supplies the sharpest read-side evidence in the corpus (71.9× prompt reduction, ~90% latency reduction, Table 2) and the sharpest demonstration that the E-path's write side is unaccounted. Both halves belong in A1."},
+      {"to": "Part III, the $N_q$ caveat", "question": "Zep's DMR protocol pins $N_q=1$. Any amortization argument for the E-path must first establish that $N_q>1$ in the deployment being argued about, and no paper in the corpus supplies that distribution."}
+    ]
+  },
+
+  "unfavorable_facts": [
+    {
+      "id": "zep-u1",
+      "claim": "No ablation of any kind exists in the paper, so the paper's own novelty claim — bi-temporality — is never isolated.",
+      "detail": "The paper claims 'This bi-temporal approach represents a novel advancement in LLM-based knowledge graph construction and underlies much of Zep's unique capabilities compared to previous graph-based RAG proposals' [§2.1, txt lines 100-102], and never runs Zep-without-timestamps, Zep-without-invalidation, Zep-without-reflexion, Zep-without-entity-resolution, or Zep-without-communities. The end-to-end numbers cannot attribute anything to the temporal machinery.",
+      "source": "§2.1 txt lines 100-102; absence of any ablation table in §4 (txt lines 232-485)"
+    },
+    {
+      "id": "zep-u2",
+      "claim": "On the benchmark where Zep claims to beat the state of the art, a trivial baseline also beats the state of the art, and Zep's margin over that trivial baseline is 0.4 and 0.2 percentage points with no error bars.",
+      "detail": "gpt-4-turbo: MemGPT 93.4%, full-conversation 94.4%, Zep 94.8%. gpt-4o-mini: full-conversation 98.0%, Zep 98.2%. The paper concedes 'showing marginal improvements over both MemGPT and the respective full-conversation baselines' [§4.2, txt lines 309-310]. Over 500 conversations, a 0.2 pp difference is one conversation. No confidence intervals, no repeated runs, no seeds, no significance test appear anywhere in the paper.",
+      "source": "Table 1, txt lines 257-296; §4.2, txt lines 303-310"
+    },
+    {
+      "id": "zep-u3",
+      "claim": "The abstract's headline comparison ('outperforms the current state-of-the-art system, MemGPT') rests on a quoted number the authors could not reproduce, on a benchmark the same paper then declares inadequate.",
+      "detail": "MemGPT's 93.4% is marked '† Results reported in [3]' [Table 1, txt line 296]. 'We were unable to reproduce MemGPT's results using gpt-4o-mini due to insufficient methodological details in their published work.' [§4.2, txt lines 304-306]. And on the harder benchmark: 'we were unable to achieve successful question responses using this approach' [§4.3.1, txt lines 342-343]. So there is NO head-to-head MemGPT comparison on LongMemEval at all.",
+      "source": "Abstract txt lines 27-28; Table 1 txt line 296; §4.2 txt lines 304-306; §4.3.1 txt lines 339-344"
+    },
+    {
+      "id": "zep-u4",
+      "claim": "Zep REGRESSES on single-session-assistant under both models, and regresses on knowledge-update under the weaker model — and knowledge-update is precisely the category the bi-temporal invalidation machinery exists to serve.",
+      "detail": "gpt-4o-mini: single-session-assistant 81.8% → 75.0% (printed 9.06%↓); knowledge-update 76.9% → 74.4% (printed 3.36%↓). gpt-4o: single-session-assistant 94.6% → 80.4% (printed 17.7%↓). The paper acknowledges the assistant regression [§4.3.2, txt lines 484-485] but does not remark that knowledge-update — the category testing whether the store handles facts that change — goes DOWN for gpt-4o-mini.",
+      "source": "Table 3, txt lines 397-477; §4.3.2, txt lines 484-485"
+    },
+    {
+      "id": "zep-u5",
+      "claim": "The benefit of the temporal representation REVERSES with generator capability. It is not a property of the memory system alone.",
+      "detail": "knowledge-update: −3.36% with gpt-4o-mini, +6.52% with gpt-4o [Table 3]. The paper concedes the mechanism: 'additional development may be needed to improve less capable models' understanding of Zep's temporal data' [§4.3.2, txt lines 395-396]. Root cause is architectural, from (z-10): validity intervals are delivered as literal text inside the prompt ('format: FACT (Date range: from - to)', §3 txt line 190), so exploiting them is a reasoning task for the generator, not a retrieval guarantee. Two of the six categories improve for gpt-4o but not gpt-4o-mini.",
+      "source": "Table 3 txt lines 397-477; §4.3.2 txt lines 393-396; §3 txt lines 181-198"
+    },
+    {
+      "id": "zep-u6",
+      "claim": "Zero cost accounting for the write path, alongside three unquantified 'significantly reduces cost' claims.",
+      "detail": "No tokens, FLOPs, dollars, wall-clock, or call counts for ingestion anywhere in the paper — while the pipeline demonstrably runs six-to-seven frozen-LLM calls plus embeddings and index searches per message. Meanwhile: 'this dynamic updating strategy provides a practical heuristic that significantly reduces latency and LLM inference costs' [§2.3, txt lines 164-165]; the dedup constraint 'significantly reduces the computational complexity' [§2.2.2, txt lines 133-135]; 'Zep achieves state-of-the-art performance... while reducing token costs' [§5, txt lines 488-489] — where the only token counts in the paper are read-side prompt sizes. Each of these three is an unfalsifiable efficiency claim.",
+      "source": "§2.2.2 txt lines 133-136; §2.3 txt lines 164-165; §5 txt lines 488-489, 502-504; absence throughout"
+    },
+    {
+      "id": "zep-u7",
+      "claim": "The DMR protocol pins $N_q=1$, so the paper's own evidence is collected in the regime where amortization cannot help.",
+      "detail": "'500 multi-session conversations, each containing 5 chat sessions with up to 12 messages per session. Each conversation includes a question/answer pair' [§4.2, txt lines 299-300]. One question per fully-ingested ≤60-message conversation. Under (A), $C_{\\mathrm{avg}} = C_{\\mathrm{wake}} + B_s/1$. Since $B_s$ is unreported and certainly exceeds one 60-message prompt in LLM calls, the total-compute comparison against the full-conversation baseline is plausibly UNFAVOURABLE to Zep on DMR and the paper does not compute it. LongMemEval's questions-per-conversation is not stated in this paper either.",
+      "source": "§4.2 txt lines 299-300; §4 txt lines 239-242; absence of any total-cost computation"
+    },
+    {
+      "id": "zep-u8",
+      "claim": "The 90% latency result is a prompt-length comparison, not a memory-architecture comparison, and it was measured from a consumer laptop on a residential internet connection.",
+      "detail": "'We performed testing using a consumer laptop from a residential location in Boston, MA, connecting to Zep's service hosted in AWS us-west-2. This distributed architecture introduced additional network latency when evaluating Zep's performance, though this latency was not present in our baseline evaluations.' [§4.3, txt lines 330-336]. The confound is disclosed and runs against Zep, but the deeper issue is that the two arms differ by 115k vs 1.6k prompt tokens [Table 2]; any method that shrinks the prompt by 71.9× would produce a comparable latency drop. The paper never decomposes retrieval time from generation time and never states whether the 'Latency' column is a mean or a median.",
+      "source": "§4.3 txt lines 330-336; Table 2 txt lines 350-391"
+    },
+    {
+      "id": "zep-u9",
+      "claim": "A whole architectural tier — the community subgraph — is built, described, inherited from GraphRAG, and then never used in either experiment.",
+      "detail": "Retrieval in both experiments returns 'edges (facts) and entity nodes (entity summaries)' [§4, txt lines 239-241] / 'nodes and edges' [§4.2, txt lines 307-308]; the printed context template contains only <FACTS> and <ENTITIES> blocks [§3, txt lines 186-198]. So §2.3 (communities, label propagation, map-reduce summaries) and the community search field of §3.1 contribute nothing to any reported number. Likewise the episodic-provenance edges: 'While these connections are not directly examined in this paper's experiments' [§2.1, txt lines 109-110].",
+      "source": "§2.3 txt lines 154-169; §3 txt lines 186-198; §4 txt lines 239-242; §4.2 txt lines 307-308; §2.1 txt lines 109-110"
+    },
+    {
+      "id": "zep-u10",
+      "claim": "The retrieval configuration is stated inconsistently (20 vs 10) and the search/rerank functions actually used are never identified.",
+      "detail": "§4: 'we retrieve the 20 most relevant edges (facts) and entity nodes' [txt lines 239-241]. §4.2: 'using its search functions to retrieve the top 10 most relevant nodes and edges' [txt lines 307-308]. Separately, of the three search functions (§3.1) and five rerankers (§3.2), the paper names only 'BGE-m3 models from BAAI for both reranking and embedding' [§4.1, txt line 247] and admits 'they represent a subset of the system's full search functionality' [§4, txt lines 243-245] without saying which subset. The reported numbers therefore cannot be tied to a specified configuration.",
+      "source": "§4 txt lines 239-245; §4.1 txt line 247; §4.2 txt lines 307-308"
+    },
+    {
+      "id": "zep-u11",
+      "claim": "A headline capability in the abstract has zero experiments, by the authors' own admission.",
+      "detail": "Abstract: Graphiti 'dynamically synthesizes both unstructured conversational data and structured business data' [txt lines 32-33]. §2.1: 'this paper focuses on the message type' [txt lines 91-92]. §5: 'no existing benchmarks adequately assess Zep's capability to process and synthesize conversation history with structured business data' [txt lines 498-499]. The JSON and text episode types are never exercised.",
+      "source": "Abstract txt lines 32-33; §2.1 txt lines 90-92; §5 txt lines 498-499"
+    },
+    {
+      "id": "zep-u12",
+      "claim": "Extraction quality — the foundation of the entire store — is never measured. There is no precision/recall on entity extraction, fact extraction, temporal extraction, or edge invalidation.",
+      "detail": "The reflexion pass is introduced to 'minimize hallucinations and enhance extraction coverage' [§2.2.1, txt line 117] with no measurement of either. Entity resolution rewrites names and summaries [§2.2.1, txt lines 122-123] with no measurement of merge errors. Invalidation is decided by an LLM contradiction check [§2.2.3, txt line 145] with no audit of false invalidations — and a false invalidation is a silent, permanent loss of a true fact from the retrievable set. Every quality claim is end-to-end only.",
+      "source": "§2.2.1 txt lines 113-126; §2.2.3 txt lines 137-149; absence of any component-level evaluation"
+    },
+    {
+      "id": "zep-u13",
+      "claim": "No experiment observes the evolving world the paper is about. Both benchmarks are ingest-once and query-once (or a few times); nothing is measured over repeated rounds.",
+      "detail": "The paper's motivation is 'a large corpus of continuously evolving data' [§1, txt lines 49-51] and the mechanism is designed for fact churn over time. But DMR ingests a ≤60-message conversation and asks one question [§4.2, txt lines 299-300]; LongMemEval ingests one ~115k-token conversation [§4.3, txt line 325]. There is no long-horizon run, no repeated ingest/refresh cycle, and consequently the acknowledged community drift [§2.3, txt lines 162-164] is never observed and $\\rho$ is undefined.",
+      "source": "§1 txt lines 48-52; §4.2 txt lines 299-300; §4.3 txt lines 324-327; §2.3 txt lines 162-164"
+    },
+    {
+      "id": "zep-u14",
+      "claim": "$C_{\\mathrm{cap}}$ is unbounded by construction and never reported.",
+      "detail": "The episodic tier is 'a non-lossy data store' [§2, txt lines 71-72]; contradicted edges are interval-closed, not deleted [§2.2.3, txt lines 145-148]; multi-entity facts are duplicated across entity pairs [§2.2.2, txt lines 129-130]; every entity name, fact and community name carries a 1024-d embedding [§2.2.1 txt line 120; §2.2.2 txt line 131; §2.3 txt line 169]. There is no eviction, no compaction, no TTL, no summarize-and-drop anywhere in the design, and no storage number anywhere in the paper. For a production system paper this is the largest omission after $B_s$.",
+      "source": "§2 txt lines 71-72; §2.2.1 txt line 120; §2.2.2 txt lines 129-131; §2.2.3 txt lines 145-148; §2.3 txt line 169"
+    },
+    {
+      "id": "zep-u15",
+      "claim": "Reported deltas in Table 3 use two different denominators, and the headline 18.5% does not reconcile with Table 2.",
+      "detail": "[my computation] Every ↑ delta is computed against the full-context baseline; every ↓ delta is computed against Zep. E.g. single-session-assistant gpt-4o prints 17.7%↓, which is $(94.6-80.4)/80.4$; the baseline-denominator figure is 15.01%. Separately, §4.3.2 states an 18.5% improvement for gpt-4o, but Table 2's own values give $(71.2-60.2)/60.2 = 18.27\\%$. The abstract propagates 18.5% [txt lines 36-37].",
+      "source": "Table 2 txt lines 350-391; Table 3 txt lines 397-477; §4.3.2 txt lines 346-348; Abstract txt lines 36-37"
+    },
+    {
+      "id": "zep-u16",
+      "claim": "Vendor paper, closed hosted system, code promised in the future tense, judge-model risk unaddressed.",
+      "detail": "All five authors are Zep AI [txt lines 6-24]; the system under test is a commercial hosted service [ref 5, txt lines 638-639] reached over the network [§4.3, txt lines 330-336], so the exact pipeline version behind the numbers cannot be pinned. 'The experimental notebooks will be made publicly available' [§4.1, txt line 251] — future tense. The LongMemEval judge is GPT-4o [§4.3, txt line 337] while one of the two evaluated generators is gpt-4o-2024-11-20, a same-family self-preference risk that is never discussed; for DMR the judge model is not named at all [§4.2, txt line 308].",
+      "source": "txt lines 6-24; §4.1 txt lines 246-252; §4.2 txt line 308; §4.3 txt lines 330-337; refs [5][6] txt lines 638-649"
+    },
+    {
+      "id": "zep-u17",
+      "claim": "The write-time context window is four messages, so any fact whose statement requires longer-range context is structurally unextractable — and this is untested.",
+      "detail": "'the system processes both the current message content and the last n messages... n = 4, providing two complete conversation turns for context evaluation' [§2.2.1, txt lines 113-116]. Cross-session synthesis is thereby pushed entirely onto read-time graph traversal. The paper reports gains on the multi-session category (+16.7% / +30.7%, Table 3) but never tests whether the $n=4$ bound loses facts, and never ablates $n$.",
+      "source": "§2.2.1 txt lines 113-116; Table 3 txt lines 397-477"
+    },
+    {
+      "id": "zep-u18",
+      "claim": "The incremental community heuristic is a documented approximation whose error is acknowledged, unbounded, and unmeasured.",
+      "detail": "'the resulting communities gradually diverge from those that would be generated by a complete label propagation run' [§2.3, txt lines 162-163]. No divergence metric, no bound, no refresh period, no experiment. This is the only place in the paper where a quality/cost trade is made explicitly, and it is the only place with no number at all.",
+      "source": "§2.3, txt lines 159-165"
+    },
+    {
+      "id": "zep-u19-favourable-counterweight",
+      "claim": "HONESTY COUNTERWEIGHT (record so the chapter is not one-sided): unlike Letta STC, Zep did NOT build its own benchmarks.",
+      "detail": "Both DMR [3] and LongMemEval [7] are third-party benchmarks, and DMR is the incumbent's own chosen metric [Abstract, txt lines 34-35]. The author-built components are the two BASELINES (full-conversation, conversation summaries) and the DMR judge configuration. This is a materially stronger evidentiary posture than the corpus's other E-path headline paper, and the monograph's obligatory-caveat table should not blur the two.",
+      "source": "§4 txt lines 233-238; Abstract txt lines 34-35; §4.2 txt lines 302-306"
+    }
+  ],
+
+  "cross_path_citations": {
+    "verdict": "Zep engages the E-path only. It cites ZERO W-path work and ZERO Θ-path work, and zero sleep/consolidation/continual-learning literature. The silence is total and mechanically verifiable.",
+    "bibliography_size": "28 references [txt lines 626-693]",
+    "E_path_engagement": [
+      "[3] MemGPT (Packer, Wooders, Lin, Fang, Patil, Stoica, Gonzalez) — the direct predecessor; cited in the abstract, §1, §4, §4.2, §4.3.1, §5. Both a comparator and a benchmark source.",
+      "[7] LongMemEval (Wu, Wang, Yu, Zhang, Chang, Yu) — the harder benchmark and the source of the 'accuracy declines with conversation length' motivation.",
+      "[9] AriGraph (Anokhin et al.) — acknowledged source of the episodic/semantic subgraph split and a BFS-over-KG precedent.",
+      "[4] GraphRAG (Edge et al.) — source of the community tier and map-reduce summarization; deviated from on the clustering algorithm.",
+      "[17] LightRAG — parallel high-level key search; also credited for prioritizing cost/latency metrics [§5, txt lines 503-504].",
+      "[19] Distill-SynthKG, [25] Triplex, [26] GraphReader, [10] HiQA, [11] HIRO — graph/hierarchical RAG neighbours.",
+      "[22] Beyond Goldfish Memory (Xu, Szlam, Weston) — the Multi-Session Chat dataset underlying DMR."
+    ],
+    "W_path_engagement": {
+      "verdict": "NONE",
+      "evidence": "Case-insensitive whole-file searches over the source text return zero hits for: 'test-time', 'fast weight', 'meta-learn', 'in-context', 'recurren', 'state space', 'hebbian', 'gradient', 'backprop', 'KV', 'cache'. The word 'attention' occurs four times: three in prose about research attention or cross-attention in cross-encoders, and once in the title of reference [1]. Reference [1] (Vaswani et al., Attention is all you need) is the paper's only architecture citation and is used solely to say that transformers exist [§1, txt lines 40-41]."
+    },
+    "Theta_path_engagement": {
+      "verdict": "NONE as a memory site; fine-tuning appears only as a tool for making the E-path pipeline cheaper.",
+      "evidence": "Zero hits for 'lora' (the two apparent matches are the substring inside 'exploration'), 'adapter', 'replay', 'catastrophic', 'forget'. The only fine-tuning discussion is §5, txt lines 493-494, citing [19] Distill-SynthKG and [25] Triplex — both fine-tuned EXTRACTORS for KG construction. So $\\Theta$ enters Zep's world exclusively as a cheaper $S(\\cdot;B_s)$, never as a place where memory is stored. This is a precise and quotable statement of the path boundary."
+    },
+    "sleep_and_CLS_engagement": {
+      "verdict": "NONE",
+      "evidence": "Zero hits for 'sleep', 'consolidat', 'offline', 'amortiz'. The paper's only cognitive-science citation is [8] — 'Wong Gonzalez and Daniela. The relationship between semantic and episodic memory: Exploring the effect of semantic neighbourhood density on episodic memory. PhD thesis, University of Winsor, 2018' [txt lines 651-652] — used once, to justify naming two storage tiers 'episodic' and 'semantic' [§2, txt lines 81-84]. It is a memory-psychology thesis, not consolidation or sleep theory. There is no McClelland, no complementary-learning-systems reference, no biological sleep reference."
+    },
+    "chronological_fairness_note": "Zep is dated 2025-01-20. Letta's Sleep-time Compute (2504.13171) and Mem0 (2504.19413) postdate it, so their absence is forced. But the W-path and Θ-path work Zep does not cite — LoRA (2021), ROME/MEMIT (2022), MemGPT-era model editing, the whole TTT line — was all available. The silence toward those is a choice, not chronology.",
+    "what_the_monograph_should_report": "This is the corpus's cleanest instance of inter-path silence and it should anchor the 분기 장 discussion. Zep's bibliography is drawn entirely from the IR/RAG/KG community: it treats 'memory' as a retrieval-systems problem and never once considers that memory might live in weights or in a recurrent state. The vocabulary gap is total — the paper contains no loss, no gradient, no learning rate, and no training. Conversely, the reader should be told that the Θ-path papers in this corpus are equally silent about graph stores, so the silence is mutual and not a failure of one side."
+  },
+
+  "figures": {
+    "verdict": "THE PAPER CONTAINS NO FIGURES. There is not a single numbered figure, architecture diagram, graph illustration, or plot in the entire twelve-page document. Its only display objects are Tables 1, 2 and 3, plus one verbatim context-string template and five verbatim prompts in the appendix.",
+    "consequence_for_the_chapter": "Every visual in the Zep chapter must be drawn by this monograph. Under STC-STYLE-NOTATION §5, that means captions carry no '원저자 그림' attribution — but the chapter must state plainly that the source paper is figure-free, because a reader who goes to the PDF looking for the architecture diagram will not find one.",
+    "tables_to_reproduce": [
+      "Table 1 (Deep Memory Retrieval, txt lines 257-296) — reproduce in full including both baselines and the † footnote. The chapter's argument depends on the reader SEEING that full-conversation 94.4% sits above MemGPT 93.4% and just below Zep 94.8%.",
+      "Table 2 (LongMemEvals, txt lines 350-391) — the paper's load-bearing table: score, latency, latency IQR, and avg context tokens in one place. This is the E-path's best read-side evidence in the whole corpus.",
+      "Table 3 (LongMemEvals question-type breakdown, txt lines 397-477) — reproduce with an added note on the asymmetric delta denominators (zep-u15), and highlight the two regressing rows."
+    ],
+    "verbatim_blocks_worth_quoting": [
+      "The context-string template [§3, txt lines 186-198] — quote it verbatim. It is the single most informative object in the paper for this monograph's reader, because it shows that the bi-temporal model reaches the model as the literal string 'FACT (Date range: from - to)'. Everything about zep-u5 follows from this block.",
+      "The temporal-extraction prompt [Appendix §6.1.5, txt lines 591-624] — quote the nine numbered guidelines. They show that time normalization is a prompt-engineering artifact (ISO 8601, midnight defaults, January-1st defaults, UTC defaults), not a learned or verified computation. Guideline 5, 'Do not infer dates from related events', is the paper's only stated guard against temporal hallucination."
+    ],
+    "figures_the_monograph_must_draw_itself": [
+      "그림 (Zep-1) — the three-tier store: $\\mathcal{G}_e$ (lossless episodes) → $\\mathcal{G}_s$ (entities + fact edges) → $\\mathcal{G}_c$ (communities), with the bidirectional provenance index drawn back from $\\mathcal{G}_s$ to $\\mathcal{G}_e$. Reconstructed from §2, txt lines 68-88 and §2.1, txt lines 107-110.",
+      "그림 (Zep-2) — the nine-stage write pipeline of (z-3), with the six-to-seven frozen-LLM calls marked. This is the picture of $B_s$ that the paper does not draw and does not price; drawing it is how the chapter makes the missing cost visible.",
+      "그림 (Zep-3) — the bi-temporal timeline: an edge's life plotted on $T$ (valid interval) and $T'$ (transaction interval) simultaneously, with the invalidation rule (z-5) shown as interval closure rather than deletion. Reconstructed from §2.2.3, txt lines 137-149.",
+      "그림 (Zep-4) — $\\mathrm{ret}(E,q) = \\mathrm{cons}\\circ\\mathrm{rrank}\\circ\\mathrm{srch}$, with the three retrievers fanning in and the five rerankers as an option set. Reconstructed from §3, txt lines 173-198 and §3.1-§3.2, txt lines 199-230. This diagram should be reused across all E-path chapters."
+    ]
+  },
+
+  "systems_implications": {
+    "read_side_decode_cost": {
+      "claim": "The prompt shrinks by 71.9× and end-to-end response latency falls by ~90%.",
+      "grounding": "115k → 1.6k Avg Context Tokens and 31.3 s → 3.20 s / 28.9 s → 2.58 s [Table 2, txt lines 350-391]. The 71.875× ratio and the 89.78% / 91.07% reductions are [my computation] from those table values; the paper states only 'approximately 90%' [§4.3.2, txt line 479].",
+      "reader_translation": "For the inference engineer this is almost entirely a PREFILL story. A 115k-token prompt is ~72× the prefill FLOPs and ~72× the KV-cache allocation of a 1.6k-token prompt; the generated answer is the same length in both arms. [inference — the paper never decomposes prefill from decode and never mentions KV cache.] The corollary is that Zep's latency win would shrink toward zero for a workload with long generations and short contexts, and would grow for one with short answers and long histories."
+    },
+    "batching_and_weight_sharing": {
+      "claim": "Zep is perfectly compatible with shared-weight, high-batch serving. Nothing about the accelerator's residency changes.",
+      "grounding": "(z-11): no weight is ever updated [§4.1, txt lines 246-252; absence of any training]. Per-user state lives in a graph database, not in parameters.",
+      "reader_translation": "This is the E-path's decisive systems advantage over the Θ-path and it deserves to be stated once, flatly, in the chapter: the Rosetta row 'batch로 weight 공유 → Θ-경로에서 깨짐' does NOT apply here. A million users share one set of weights and differ only in which rows a database returns. Shorter prompts additionally raise achievable batch size for a fixed KV-cache budget [inference]."
+    },
+    "prefix_caching": {
+      "claim": "The retrieved context is per-query and therefore not prefix-cacheable; only the fixed template header is.",
+      "grounding": "The context string is a fixed header plus variable {facts} and {entities} blocks [§3, txt lines 186-198], and the retrieved set depends on $q$ [§3, txt lines 173-185].",
+      "reader_translation": "[inference] Contrast with the E-path's other shape: Letta-style $\\hat c$ is a stable block that can sit in a prefix cache across many queries. Zep's $\\hat c$ is materialized fresh per query from the store, so it trades cache reuse for selectivity. A serving stack that already relies on prefix caching gets less from Zep than the 71.9× number suggests."
+    },
+    "where_the_traffic_lands": {
+      "claim": "Zep moves the memory traffic completely off the accelerator and onto a networked graph database.",
+      "grounding": "Search backends are 'Neo4j's implementation of Lucene' [§3.1, txt lines 201-202]; deployment is a hosted service in AWS us-west-2 reached over the public internet from the client [§4.3, txt lines 330-336]; retrieval returns text, not tensors [§3, txt lines 181-198].",
+      "reader_translation": "The E-path's state lives in DRAM and on SSD behind a network hop, indexed by HNSW-class vector search and Lucene inverted indexes; the W- and Θ-paths' state lives in HBM next to the GEMMs. That single sentence is the cleanest available statement of the three-path cost divergence, and it is fully warranted by this paper's own deployment description. It also means the E-path's latency floor is a network RTT, not a kernel — visible in the fact that Zep's relative dispersion is WORSE than the baseline's even though its absolute latency is far better: IQR/latency = 1.31/3.20 = 0.409 vs 8.76/31.3 = 0.280 (gpt-4o-mini) and 0.684/2.58 = 0.265 vs 6.01/28.9 = 0.208 (gpt-4o) [my computation from Table 2]."
+    },
+    "write_side_is_another_inference_workload": {
+      "claim": "The E-path's real cost is a second, message-rate inference workload running on the same class of accelerators — and this paper prices none of it.",
+      "grounding": "The stage list of (z-3): six-to-seven gpt-4o-mini-2024-07-18 calls plus at least two embedding calls and at least two index searches per ingested message [§2.2.1 txt lines 113-126; §2.2.2 txt lines 128-136; §2.2.3 txt lines 137-149], with the extractor prompt bounded at current message + 4 predecessors [§2.2.1, txt line 115].",
+      "reader_translation": "[inference, shape only — no number may be quoted] Ingestion is LLM-inference-bound, not I/O-bound. The favourable systems property nobody states: because $S$ sees only five short messages, the write path is a stream of SHORT, uniform, highly batchable prompts — the ideal prefill workload, unlike the 115k-token monolith it replaces. The unfavourable property: it runs at message rate, i.e. proportional to conversation traffic, whereas the read saving is proportional to query traffic. Whether the E-path nets out depends entirely on $N_q$, and this paper's DMR protocol sets $N_q=1$ (zep-u7)."
+    },
+    "bytes_moved": {
+      "claim": "Read-side bytes are bounded and small; write-side bytes and stored bytes are unknowable from the paper.",
+      "grounding": "Read: 10 or 20 edges plus entity nodes, serialized to ~1.6k tokens [§4 txt lines 239-241 / §4.2 txt lines 307-308; Table 2] — on the order of single-digit kilobytes of text per query [inference]. Stored: entity names, facts and community names each carry a 1024-dimensional embedding [§2.2.1 txt line 120; §2.2.2 txt line 131; §2.3 txt line 169] — but NO DTYPE IS STATED, so bytes per embedding cannot be computed, and no node or edge counts are given, so bytes per session cannot be computed. STC-STYLE-NOTATION §1.3 requires a dtype for every byte claim; this paper supplies none, therefore the chapter's $C_{\\mathrm{cap}}$ cell stays '논문에 없음'.",
+      "reader_translation": "A memory-device argument cannot be built on this paper. It supplies the retrieval-side traffic shape and nothing about capacity. Per NM D4 (억지 연결 금지), the chapter must stop here rather than estimate."
+    },
+    "growth_and_operations": {
+      "claim": "Append-only with no eviction means storage grows without bound in messages ingested, and the only maintenance job named — periodic full community refresh — has no stated cadence or cost.",
+      "grounding": "§2 txt lines 71-72 (non-lossy episodes); §2.2.3 txt lines 145-148 (invalidation ≠ deletion); §2.2.2 txt lines 129-130 (fact duplicated per entity pair); §2.3 txt line 164 ('periodic community refreshes remain necessary').",
+      "reader_translation": "[inference] An operator planning capacity for this system has no number to plan with. The one batch job in the design is exactly the one that fits the 'sleep round' shape, and it is the one the paper leaves entirely unspecified — which is where a systems-oriented monograph has something to add rather than report."
+    },
+    "the_configuration_that_would_undo_the_latency_win": {
+      "claim": "Cross-encoder reranking moves the read path back onto the accelerator.",
+      "grounding": "'The system's most sophisticated reranking capability employs cross-encoders—LLMs that generate relevance scores by evaluating nodes and edges against queries using cross-attention, though this approach incurs the highest computational cost.' [§3.2, txt lines 229-230]. The experiments used BGE-m3 [§4.1, txt line 247].",
+      "reader_translation": "The ~90% latency claim is a property of the cheap-reranker configuration. A cross-encoder puts one forward pass per candidate on the query path, restoring an accelerator-resident cost at read time. The paper reports no numbers for that configuration, so the chapter must state that the headline holds for one point in the configuration space (zep-u10)."
+    }
+  },
+
+  "todo_verify": [
+    {"item": "Top-20 or top-10 retrieved items in the experiments?", "why": "§4 txt lines 239-241 says 20; §4.2 txt lines 307-308 says 10. Affects any per-query byte or token estimate.", "how_to_settle": "Search the published PDF for '20 most relevant' and 'top 10 most relevant'; then check the promised evaluation notebooks in github.com/getzep/graphiti for the retrieval limit parameter."},
+    {"item": "Does the 18.5% gpt-4o improvement reconcile with Table 2?", "why": "Table 2 gives 60.2% → 71.2%, which is 18.27% relative [my computation], not 18.5%. The abstract propagates 18.5%.", "how_to_settle": "Search the PDF for '18.5' and check whether unrounded LongMemEval scores appear anywhere; failing that, recompute from the released notebooks. Until settled, the chapter quotes the percentage-point figures (+8.4 pp, +11.0 pp) and attributes '18.5%' to the paper."},
+    {"item": "Is the 'Latency' column of Table 2 a mean or a median?", "why": "An IQR is reported beside it, which implies a median, but the paper never says. Determines whether the ~90% claim is about typical or average latency.", "how_to_settle": "Search the PDF for 'median', 'mean', 'IQR', 'interquartile'. Absent in this text extraction (zero hits for 'median')."},
+    {"item": "The opening sentences of §2.2.1 and §2.2.2 are missing from this text extraction.", "why": "§2.2.1 begins 'ntity extraction represents the initial phase' [txt line 113] — a dropped capital. §2.2.2 begins 'or each fact containing its key predicate' [txt line 129] — this is mid-sentence, so the FIRST paragraph of the fact-extraction description (how facts are extracted, what a fact record contains) is partially lost. The write pipeline description may therefore be incomplete in this note.", "how_to_settle": "Open the arXiv PDF at §2.2.2 'Facts' and read the first paragraph. Search term: '2.2.2 Facts'."},
+    {"item": "Appendix §6.1.1 entity-extraction prompt is truncated.", "why": "It breaks off at 'DO NOT extract entities mentioned only' [txt line 523]. Guideline 6 and any further guidelines are lost.", "how_to_settle": "Open the PDF appendix §6.1.1. Search term: 'DO NOT extract entities mentioned only'."},
+    {"item": "How many questions does LongMemEval_s contain, and how many per conversation?", "why": "Determines $N_q$ for the LongMemEval arm, which is the only place in the paper where amortization could be non-trivial. Zep does not state it.", "how_to_settle": "Read the LongMemEval paper [7] (Wu et al., 2024) — it is the source of the dataset. Search term in that paper: 'LongMemEval_s' and 'number of questions'."},
+    {"item": "Which rerankers, and how many BFS hops, were used in the experiments?", "why": "§4.1 names only 'BGE-m3 ... for reranking', while §3.2 lists five rerankers and §3.1 an n-hop BFS with unspecified n. The reported numbers cannot be attributed to a configuration.", "how_to_settle": "The promised evaluation notebooks. Search terms in the repo: 'rerank', 'bfs', 'num_hops', 'limit'."},
+    {"item": "Were community nodes truly excluded from the retrieved context?", "why": "The claim in zep-u9 rests on §4 naming only edges and entity nodes and on the §3 template showing only <FACTS> and <ENTITIES>. Confirm no community block was appended.", "how_to_settle": "Search the PDF for 'COMMUNIT' outside §2.3 and §3.1; then check the notebooks' context-construction call."},
+    {"item": "dtype and exact width of the fact and community-name embeddings.", "why": "§2.2.1 states 1024 dimensions for entity names only; §2.2.2 and §2.3 say facts and community names are embedded without stating width or dtype. Without dtype no byte figure may be written (STC-STYLE-NOTATION §1.3).", "how_to_settle": "Search the PDF for '1024' and 'dimension'; then check BGE-m3's dense output width and the Graphiti source for the stored vector type. If unresolved, the $C_{\\mathrm{cap}}$ cell stays '논문에 없음'."},
+    {"item": "Reference [8] bibliographic details look garbled.", "why": "'Wong Gonzalez and Daniela ... PhD thesis, University of Winsor, 2018' [txt lines 651-652] — the author name appears inverted and 'Winsor' is likely 'Windsor'. The chapter should not reproduce an incorrect citation.", "how_to_settle": "Search the PDF reference list for 'Winsor'; then verify the thesis record (University of Windsor, 2018)."},
+    {"item": "Does Graphiti write anything back to $E$ at query time?", "why": "The episode-mentions reranker uses mention frequency [§3.2, txt lines 226-228]. This note asserts mentions are accumulated at write time and that reads have no side effect; the paper does not state this explicitly.", "how_to_settle": "Search the PDF for 'mentions'; then check the Graphiti source for a query-time counter increment."}
+  ]
+}

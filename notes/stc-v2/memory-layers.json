@@ -1,0 +1,391 @@
+{
+  "paper_id": "memory-layers",
+  "arxiv": "2412.09764",
+  "title": "Memory Layers at Scale",
+  "authors": "Vincent-Pierre Berges*, Barlas Oğuz*, Daniel Haziza, Wen-tau Yih, Luke Zettlemoyer, Gargi Ghosh — Meta FAIR. '*' = Main authors [memory-layers 표제부]. Correspondence: vincentpierre@meta.com, barlaso@meta.com.",
+  "venue": "vendored 원문에 venue 표기 없음. 표제부는 'arXiv:2412.09764v2 [cs.CL] 20 Dec 2024'와 'Date: December 23, 2024'만 명시 [memory-layers 표제부]. Code: https://github.com/facebookresearch/memory · Blogpost: https://ai.meta.com/blog/meta-fair-updates-agents-robustness-safety-architecture [memory-layers 표제부]. → todo_verify 참조 (arXiv 날짜와 Date 줄이 3일 어긋난다)",
+  "date": "2024-12-20 (arXiv v2 스탬프) / 2024-12-23 (본문 Date 줄)",
+  "path": "papers/stc/2412.09764.txt",
+  "axis": "Theta — 단, 매우 중요한 단서가 붙는다. 이 논문에는 sleep-time compute이 **존재하지 않는다**. $\\Theta$를 움직이는 유일한 시점이 pre-training이고, 배포 후에 $\\Theta$·$W$·$E$ 어느 것도 갱신되지 않는다. v2 corpus에서 이 논문의 지위는 'Θ-경로의 갱신 기제'가 아니라 **'Θ층의 용량 상한이 얼마이며 그 용량이 FLOPs와 분리 가능한가'에 대한 실증 데이터 공급원**이다 (S0 §3.1의 Θ-2 슬롯 + '용량' 축의 교차점).",
+
+  "problem_stated": {
+    "one_line": "dense transformer는 정보를 선형변환의 가중치로 저장하므로 저장 용량을 늘리는 것이 곧 계산·에너지 비용 증가로 직결된다. 단순 연상(association) 저장에 이 결합은 낭비다 — 이를 분리할 수 있는가.",
+    "quotes": [
+      "'For dense deep neural networks, which encode information primarily as weights of linear matrix transforms, this scaling of parameter size is directly coupled to an increase in computational and energy requirements. It is unclear if this is the most efficient solution to all information storage needs of language models.' [memory-layers §1]",
+      "'An important subset of information that language models need to learn are simple associations. For example, LLMs learn birthdays of celebrities, capital cities of countries, or how one concept might relate to another. While feed-forward networks can in principle (given sufficient scale) learn any function (Hornik et al., 1989), including lookup tables of associations, using an associative memory for this purpose would be both more efficient and more natural.' [memory-layers §1]",
+      "'Despite early enthusiasm however, memory layers have not been studied and scaled sufficiently to be useful in modern AI architectures.' [memory-layers §1]",
+      "'In contrast to dense layers which are predominantly FLOP-bound, memory layers with their sparse activation pattern are almost entirely memory bandwidth bound. Such components are rarely used in modern architectures and have not been optimised for hardware accelerators.' [memory-layers §1]"
+    ],
+    "self_declared_contribution": "'This work takes memory layers beyond proof-of-concept, proving their utility at contemporary scale.' [memory-layers Abstract] · 'This represents a two orders of magnitude leap in memory capacity compared to previous memory layers reported in the literature.' [memory-layers §1] · 'Given these findings, we strongly advocate that memory layers should be integrated into all next generation AI architectures.' [memory-layers §1]"
+  },
+
+  "inherited_open_question": {
+    "verdict": "none-stated",
+    "detail": "논문은 어떤 선행 논문의 open question도 인용문으로 복원하지 않는다. §1과 §2 어디에도 'X et al. left open …' 형태의 문장이 없다. 대신 **공동체 전체의 공백**을 두 문장으로 진술하고 거기서 출발한다: (1) 'memory layers have not been studied and scaled sufficiently to be useful in modern AI architectures' [memory-layers §1], (2) 'scaling laws for specific task families and capabilities like factuality remain understudied' [memory-layers §2].",
+    "implicitly_answers": [
+      "**Lample et al. 2019 (product-key memory, 1907.05242)가 남긴 스케일 공백**을 받는다 — 논문은 자신의 기여를 'a two orders of magnitude leap in memory capacity compared to previous memory layers reported in the literature' [memory-layers §1]로 규정하고, product-key lookup 자체는 Lample et al.에서 **그대로 채택**한다('we adopt trainable product-quantized keys from (Lample et al., 2019)' [memory-layers §3.1.1]). 차이는 shared memory pool이다 — 'In contrast to previous work (Lample et al., 2019), we use a shared pool of memory parameters across all memory layers' [memory-layers §3.1.3].",
+      "**Kaplan et al. 2020의 scaling law에서 벗어나는 아키텍처가 있는가**라는 질문. §2가 'It has been difficult to find architectures which substantially deviate from these laws. Mixture-of-experts (MOE) … is a notable exception.' [memory-layers §2]라고 놓은 뒤, memory layer를 두 번째 예외 후보로 제출한다.",
+      "**He 2024 (PEER, Mixture of a Million Experts)와의 경쟁 관계**. PEER를 'forming a bridge between memory architectures and MOE' [memory-layers §2]로 위치시키고 baseline으로 직접 재현한다."
+    ],
+    "bridge_in_material": "**이것 자체가 v2가 보고해야 할 사실이다.** 2412.09764는 sleep-time compute 라인의 어떤 논문도 인용하지 않고, 어떤 논문의 open question도 상속하지 않는다. 이 논문은 **아키텍처 공동체의 내부 계보**(Weston 2015 → Sukhbaatar 2015 → Graves 2014/2016 → Lample 2019 → He 2024) 위에 있고, 지속학습·에이전트 기억·test-time learning 어느 공동체와도 접점이 없다. 따라서 Part II에서 이 장의 bridge-in은 '전작의 open question'이 아니라 **'Θ층에 얼마나 쓸 수 있는가'라는 용량 질문을 다른 공동체가 독립적으로 답해 놓았다**는 형태로 써야 한다."
+  },
+
+  "core_mechanism": {
+    "summary": "transformer의 FFN 층 하나(또는 셋)를 **학습 가능한 key-value lookup**으로 교체한다. key와 value는 activation이 아니라 $\\Theta$의 일부이고, 토큰마다 top-$k_{\\mathrm{top}}$개의 value 행만 읽힌다. 결과적으로 파라미터 수는 늘고 FLOPs는 거의 늘지 않는다. **읽기만 있는 기제다** — test-time에 움직이는 상태가 없다.",
+    "unified_reduction_of_read_equation": "표준형 $\\hat y = f(q;\\ \\Theta,\\ W,\\ \\mathrm{ret}(E,q))$ [S0 (R)]가 이 논문에서는 $\\hat y = f(q;\\ \\Theta)$ 로 붕괴한다. $W$(fast weights)와 $E$(external store)는 존재하지 않는다. 다만 이 논문의 $\\Theta$는 **두 부분으로 분할된다**: dense-compute 파라미터 $\\Theta_{\\mathrm{d}}$(attention·잔여 FFN·정규화)와 sparse-capacity 파라미터 $\\Theta_{\\mathrm{m}} = \\{K_1, K_2, V\\}$. 후자는 파라미터 수에 계상되지만 토큰당 극히 일부만 활성화된다. 이 분할이 이 논문이 v2에 기여하는 개념 전부다.",
+    "equations": [
+      {
+        "id": "ML-1",
+        "latex": "I \\;=\\; \\mathrm{TopK}_{k_{\\mathrm{top}}}\\!\\big(K\\,q\\big), \\qquad a \\;=\\; \\mathrm{softmax}\\big(K_I\\, q\\big), \\qquad y \\;=\\; a\\, V_I",
+        "orig": "[memory-layers Eq. 1]",
+        "gloss": "memory layer의 읽기. 원문 표기: $I = \\mathrm{SelectTopkIndices}(Kq)$, $s = \\mathrm{Softmax}(K_Iq)$, $y = sV_I$. 여기서 $K \\in \\mathbb{R}^{n_{\\mathrm{mem}}\\times d}$, $V \\in \\mathbb{R}^{n_{\\mathrm{mem}}\\times d}$는 **학습 가능한 파라미터**, 즉 $\\{K,V\\}\\subset\\Theta$이며 KV cache가 **아니다**. $q$는 직전 attention 층의 출력 토큰 임베딩이다 — 'Each token embedding (for us, the output of the previous attention layer) goes through this memory lookup independently, similar to the FFN operation that we replace.' [memory-layers §3]. 원문 $s$는 예약기호 $S_t$(momentum)와 충돌하므로 $a$(attention weight)로 옮긴다."
+      },
+      {
+        "id": "ML-2",
+        "latex": "K_1, K_2 \\in \\mathbb{R}^{\\sqrt{n_{\\mathrm{mem}}}\\times d/2}, \\qquad q = (q^{(1)}, q^{(2)}), \\qquad (I_1,a_1) = \\mathrm{TopK}(K_1 q^{(1)}),\\ (I_2,a_2) = \\mathrm{TopK}(K_2 q^{(2)})",
+        "orig": "[memory-layers §3.1.1]",
+        "gloss": "product-key 분해. 전체 key 집합 $K$($n_{\\mathrm{mem}}\\times d$)는 **한 번도 실체화되지 않는다** — 'The full set of keys of size $N\\times n$, which is never instantiated, consists of the product of these two sets.' [memory-layers §3.1.1]. Lample et al. 2019에서 그대로 가져온 부분."
+      },
+      {
+        "id": "ML-3",
+        "latex": "I \\;=\\; \\operatorname*{arg\\,max}_{i_1\\in I_1,\\ i_2\\in I_2}\\ a_1[i_1] + a_2[i_2]",
+        "orig": "[memory-layers §3.1.1]",
+        "gloss": "두 반쪽 key의 top-$k_{\\mathrm{top}}$ 후보의 곱집합에서 점수 합이 최대인 인덱스를 고른다. $\\sqrt{n_{\\mathrm{mem}}}$개만 비교하면 되므로 비용이 $O(n_{\\mathrm{mem}})$에서 $O(\\sqrt{n_{\\mathrm{mem}}})$로 떨어진다. **논문은 이 argmax가 top-$k_{\\mathrm{top}}$개를 뽑는 연산임을 수식으로 쓰지 않고 argmax로만 쓴다** — 표기상의 부정확이다."
+      },
+      {
+        "id": "ML-4",
+        "latex": "\\mathrm{output} \\;=\\; \\big(y \\odot \\mathrm{silu}(x^{\\top} P_1)\\big)^{\\top} P_2, \\qquad \\mathrm{silu}(z) = z\\,\\sigma(z)",
+        "orig": "[memory-layers Eq. 2]",
+        "gloss": "Memory+ 블록의 입력의존 gating. **원문 표기는 $W_1, W_2$이며 이는 예약기호 $W$(fast weights)와 정면 충돌한다** — 본서에서는 $P_1, P_2$로 옮기고 $\\{P_1,P_2\\}\\subset\\Theta$임을 명시한다. $x$는 층 입력, $\\odot$는 원소별 곱. [memory-layers Fig. 3]가 좌(regular memory layer)/우(Memory+)를 대조한다."
+      },
+      {
+        "id": "ML-5",
+        "latex": "\\Theta_{j+1} \\;=\\; \\Theta_j \\;-\\; \\eta_\\Theta\\, \\nabla_\\Theta\\, \\mathcal{L}\\big(\\mathcal{D}_{\\mathrm{pre}};\\ \\Theta_j\\big), \\qquad \\mathrm{supp}\\big(\\nabla_{V}\\mathcal{L}\\big) \\subseteq \\bigcup_{t\\in \\mathrm{batch}} I_t",
+        "orig": "[memory-layers §3.1.4, §4] (논문에 명시적 수식 번호 없음 — 본서 재구성)",
+        "gloss": "유일한 쓰기 규칙. $j$는 **sleep 라운드가 아니라 평범한 pre-training step**이다(그래서 예약기호 $k$를 쓰지 않는다). $\\mathcal{D}_{\\mathrm{pre}}$는 Llama2/Llama3 유사 사전학습 혼합이며 생성된 집합이 아니다. 두 번째 식이 이 논문의 핵심 구조적 성질이다 — value gradient의 support가 그 배치에서 실제로 선택된 인덱스 합집합으로 제한된다. 논문이 이를 'sparse updates'라 부르고 §6에서 후속 연구의 근거로 든다."
+      }
+    ],
+    "notation_conflicts": [
+      { "paper": "$K, V$", "paper_meaning": "학습 가능한 memory key/value 행렬 ($N\\times n$)", "unified": "$\\{K, V\\}\\subset\\Theta_{\\mathrm{m}}$", "note": "**KV cache가 아니다.** 독자가 가장 먼저 오독할 지점. KV cache는 activation이고 세션마다 다르지만, 여기 $K,V$는 배포 가중치이고 전 사용자 공유다. 논문 자신이 경계를 긋는다: 'the keys and values in memory layers are trainable parameters, as opposed to activations' [memory-layers §3]." },
+      { "paper": "$W_1, W_2$", "paper_meaning": "Memory+ 블록의 gating·출력 투영 행렬 [memory-layers Eq. 2]", "unified": "$P_1, P_2 \\subset \\Theta$", "note": "**예약기호 $W$(fast weights)와 정면 충돌.** 본서 본문에서 $W_1,W_2$ 표기 사용 금지. §1.7 대응표에 필수 등재." },
+      { "paper": "$N$", "paper_meaning": "key-value 쌍의 개수 (수백만~6,400만)", "unified": "$n_{\\mathrm{mem}}$", "note": "STC-STYLE §1.3은 $n$을 '저장된 항목 수'로 예약했다. 논문의 $N$이 바로 그것이므로 $n_{\\mathrm{mem}}$으로 옮기고, 논문의 $n$과 구분한다." },
+      { "paper": "$n$", "paper_meaning": "key/value 임베딩 차원 ($q\\in\\mathbb{R}^n$)", "unified": "$d$ (모델 폭)", "note": "STC-STYLE §1.3의 $d$가 정확히 이것이다. 기본 설정에서 value dim = base model dim: 1.3b는 2048, 373m은 1024, 8B는 4096. [memory-layers §5.4 'By default, the memory value dimension is chosen to be the same as the base model dimension' · Table 4 캡션 'the 373m model size, which uses a latent dimension of 1024']" },
+      { "paper": "$k$", "paper_meaning": "top-$k$ lookup의 $k$", "unified": "$k_{\\mathrm{top}}$", "note": "**예약기호 $k$(sleep 라운드 첨자)와 충돌.** 게다가 논문은 $k_{\\mathrm{top}}$의 **수치를 끝까지 밝히지 않는다** → todo_verify." },
+      { "paper": "$s$", "paper_meaning": "softmax 점수 벡터 ($s\\in\\mathbb{R}^k$)", "unified": "$a$", "note": "예약기호 $S_t$(momentum/surprise)·$S(c;B_s)$(오프라인 처리 절차)와 혼동 위험. STC-STYLE §1.5가 '첨자 없는 맨 $S$ 금지'를 명시하므로 $a$로 옮긴다." },
+      { "paper": "$q$", "paper_meaning": "직전 attention 층 출력 토큰 임베딩 = memory lookup의 query", "unified": "$q_t$", "note": "질의 문장 $q$(식 (R)의 사용자 질의)와 구분해야 한다. 이 논문의 $q$는 토큰 단위 은닉상태다. 본서에서는 토큰 첨자 $t$를 반드시 단다." },
+      { "paper": "$I$, $I_1$, $I_2$", "paper_meaning": "선택된 인덱스 집합", "unified": "$I_t$", "note": "충돌 없음. 토큰 의존이므로 첨자 $t$ 부착." },
+      { "paper": "$y$", "paper_meaning": "memory lookup 출력 벡터", "unified": "$y_t$", "note": "$\\hat y$(모델 최종 출력, 식 (R))와 구분. 본서에서는 memory 층 출력에 $y_t^{\\mathrm{mem}}$을 쓴다." },
+      { "paper": "$x$", "paper_meaning": "Memory+ 블록의 층 입력 [memory-layers Eq. 2]", "unified": "$x_t$", "note": "충돌 없음." },
+      { "paper": "'memory'", "paper_meaning": "학습 가능한 key-value 테이블", "unified": "$\\Theta_{\\mathrm{m}}$ (capacity parameters)", "note": "STC-STYLE §1.5의 '\"memory\"를 수식어 없이 쓰지 않는다' 규칙 적용 대상. 이 논문의 memory는 $E$가 **아니다**(모델 밖이 아니라 가중치 안). HBM/DRAM과도 구분해야 한다." }
+    ]
+  },
+
+  "outer_vs_inner": {
+    "headline": "학습되는 것은 전부 outer-loop pre-training에서 학습되고, test-time에 움직이는 것은 **인덱스 선택뿐**이다. sleep 라운드는 존재하지 않는다.",
+    "table": [
+      { "object": "$K_1, K_2$ — product sub-key 행렬 ($\\sqrt{n_{\\mathrm{mem}}}\\times d/2$ 두 벌)", "who_learns": "outer-loop pre-training. 'we adopt trainable product-quantized keys'", "when": "pre-training 중에만. 배포 후 불변", "source": "[memory-layers §3.1.1]" },
+      { "object": "$V$ — value 임베딩 테이블 ($n_{\\mathrm{mem}}\\times d$, 최대 $6.4\\times10^7 \\times 2048$)", "who_learns": "outer-loop pre-training. **gradient가 구조적으로 희소** — 그 step에서 선택된 행만 갱신된다", "when": "pre-training 중에만. 배포 후 불변", "source": "[memory-layers Eq. 1, §3.1.4 backward 논의, §6 'the sparse updates made possible by memory layers']" },
+      { "object": "Query MLP — 층 입력을 lookup query로 사영하는 작은 MLP", "who_learns": "outer-loop pre-training", "when": "pre-training 중에만", "source": "[memory-layers Fig. 3] (블록도에 'Query MLP' 명시. 본문에 별도 수식 없음)" },
+      { "object": "$P_1, P_2$ — Memory+의 gating·출력 투영 (원문 $W_1, W_2$)", "who_learns": "outer-loop pre-training", "when": "pre-training 중에만", "source": "[memory-layers Eq. 2, Fig. 3]" },
+      { "object": "나머지 transformer — self-attention, 교체되지 않은 FFN, RMSNorm, 임베딩, 출력 head", "who_learns": "outer-loop pre-training (Llama2/Llama3 레시피)", "when": "pre-training 중에만", "source": "[memory-layers §4 'we follow closely the Llama series of dense transformers']" },
+      { "object": "$I_t$ — 토큰별 top-$k_{\\mathrm{top}}$ 인덱스 집합", "who_learns": "**학습되지 않는다.** 매 토큰 forward마다 새로 계산되는 이산 선택", "when": "학습·추론 양쪽에서 토큰마다. 이것이 이 논문에서 wake-time에 '움직이는' 유일한 것이다", "source": "[memory-layers Eq. 1, §3 'Each token embedding … goes through this memory lookup independently']" },
+      { "object": "qk-normalization", "who_learns": "학습되는 파라미터가 아니라 **필요할 때 켜는 안정화 장치**", "when": "학습 중, 'when needed'. 어느 실험에서 켰는지 논문이 밝히지 않는다", "source": "[memory-layers §3.1.4] 'We find that for large memory layers, training can become unstable, especially for small base models. We use qk-normalization (Team, 2024) when needed to alleviate this issue.'" },
+      { "object": "sleep-round 산출물 $\\mathcal{R}_k$, learned context $\\hat c$, fast weights $W$", "who_learns": "**존재하지 않음**", "when": "—", "source": "논문 전체. 배포 후 어떤 상태도 갱신되지 않는다" }
+    ],
+    "readers_first_question": "'이 값은 누가 학습하는가?'에 대한 답은 이 논문에서 단조롭다 — **전부 사전학습이 학습한다**. 그래서 이 장은 v2에서 유일하게 '쓰기 시점'이 하나뿐인 장이며, 그 단조로움 자체가 대조군 역할을 한다: 용량을 $10^2$배 늘리는 데 성공했지만 그 용량에 **배포 후 다시 쓸 방법은 이 논문에 없다**."
+  },
+
+  "update_layer": {
+    "instantiates": "(U-$\\Theta$) 단독, 그것도 **pre-training 1회**. (U-W)·(U-E)는 전혀 실행되지 않는다. 순서 문제도 없다(단일 층, 단일 시점).",
+    "canonical_form": "$\\Theta_{k+1} = \\Theta_k - \\eta_\\Theta \\nabla_\\Theta \\mathcal{L}(\\mathcal{R}_k;\\Theta_k)$, $\\mathcal{R}_k = \\mathrm{gen}(\\mathcal{H}_k; B_s)$ [S0 (U-$\\Theta$)]",
+    "differences": [
+      "**차이 1 — 라운드가 없다.** 첨자 $k$는 sleep 라운드가 아니라 사전학습 step으로 붕괴한다. 라운드 반복이 없으므로 누적 열화($\\rho$)라는 개념이 제기되지조차 않는다. 논문에는 continual/지속학습 실험이 0건이다.",
+      "**차이 2 — $\\mathcal{R}_k$가 생성되지 않는다.** 학습 집합은 'a pretraining data mix that is similar to that of Llama2' (134m–1.3b) 및 'a better optimized data mix similar to Llama3' (8B)로, 사람이 만든 고정 코퍼스다 [memory-layers §4]. $\\mathrm{gen}(\\cdot;B_s)$가 항등이므로 **$B_s$라는 knob 자체가 없다**.",
+      "**차이 3 — gradient의 support가 구조적으로 희소하다.** 표준형 (U-$\\Theta$)는 $\\nabla_\\Theta$가 dense함을 암묵 전제하지만, 여기서는 $\\nabla_V \\mathcal{L}$이 그 배치에서 선택된 인덱스 합집합 위에서만 0이 아니다 (식 ML-5). 이 성질이 §3.1.4의 backward 커널 설계 전체를 지배하고, §6이 향후 continual learning의 근거로 지목하는 지점이다: 'we believe the sparse updates made possible by memory layers might have deep implications to how models learn and store information' [memory-layers §6].",
+      "**차이 4 — 갱신 대상이 $\\Theta$의 부분집합으로 명시적으로 분할된다.** LoRA가 $\\Theta$ 변화량을 저랭크로 제약했다면, 이 논문은 $\\Theta$ 자체를 $\\Theta_{\\mathrm{d}}$(FLOP-bound)와 $\\Theta_{\\mathrm{m}}$(bandwidth-bound)로 나누고 후자만 $10^2$배 키운다. 두 논문은 같은 (U-$\\Theta$)를 서로 직교하는 방향으로 제약한다 — Part II에서 대조할 값어치가 있는 짝이다.",
+      "**차이 5 — 배포 아티팩트의 변화가 '사용자별'이 아니라 '모델별'이다.** STC-STYLE §3 Rosetta의 'batch로 weight 공유 → Θ-경로에서 깨짐' 항목이 이 논문에는 **적용되지 않는다**. $\\Theta_{\\mathrm{m}}$은 전 사용자 공유이므로 shared-weight batching이 성립한다. 이것이 이 논문을 v2의 Θ-경로 안에서 예외적 위치에 놓는다."
+    ]
+  },
+
+  "cost_table": {
+    "B_s": {
+      "value": "absent — 논문에 sleep-time compute 개념 자체가 없으므로 $B_s$가 정의되지 않는다. 질의 도착 전 오프라인 추론이 0회다.",
+      "what_the_paper_does_report": [
+        "사전학습 토큰 수: 134m/373m/720m/1.3b 전부 **1 trillion tokens** [memory-layers §4]. 8B base는 **200 billion**과 **1 trillion** 두 지점 [memory-layers §5.3, Table 2].",
+        "상대 FLOPs 진술만 존재하고 절대값은 없다: 'outperform dense models with more than twice the computation budget' [Abstract] · 'match the performance of dense models that have been trained on 4x more compute' [§1] · 'performance falling generally between dense models with 2x-4x higher compute' [§5.1] · Figure 1 캡션 'a 7B model trained on 2 trillion tokens with 10x more FLOPs' · §5.2 'the Llama2 7B model, that has been trained on 2x more tokens using 10x more FLOPs'.",
+        "'Models with the same base model configuration have negligible differences in FLOPs.' [memory-layers §5.1] — memory 파라미터를 $10^2$배 늘려도 FLOPs가 사실상 불변이라는 것이 이 논문의 회계 전제다."
+      ],
+      "absent_parts": "총 학습 FLOPs 절대값, GPU 수, GPU-hour, wall-clock, 에너지, batch size, learning rate, optimizer, LR schedule, warmup — **전부 논문에 없음**. 하드웨어는 커널 절(§3.1.4)의 'our H100 specification' 언급이 유일한 단서이며 학습 클러스터 규모는 밝히지 않는다."
+    },
+    "L_w": {
+      "value": "absent — 추론 지연·처리량 측정이 논문 전체에 **0건**이다. ms/token, TTFT, ITL, tokens/s 어느 것도 보고하지 않는다.",
+      "adjacent_numbers_that_are_not_L_w": [
+        "forward 커널이 **3TB/s**의 메모리 대역폭을 달성하며 이는 'close to our H100 specification of 3.35TB/s'이고, PyTorch 구현은 'less than 400GB/s' [memory-layers §3.1.4]. (3/3.35 = 89.6% — [note-writer 산술])",
+        "'our custom kernels make the embedding bag operation end-to-end **6x faster** compared to PyTorch's EmbeddingBag for our use cases' [memory-layers §3.1.4].",
+        "backward: 'the \"atomics\" approach is already up to **5x faster** than the existing PyTorch operator'이고 'the \"reverse_indices\" and \"lock\" approaches can be faster when the embedding dimension exceeds **128**, as long as the embeddings are roughly balanced' [memory-layers §3.1.4].",
+        "**이 셋은 전부 커널 마이크로벤치이고, backward가 포함되므로 학습 맥락의 수치다.** wake-time 지연으로 옮겨 쓸 수 없다."
+      ],
+      "paper_own_admission": "'there still remains a substantial engineering task to make them efficient enough for large scale production uses… While we believe it's in principle possible to make memory layers as fast, or even faster than regular FFN layers on current hardware, we acknowledge that this needs non-trivial effort.' [memory-layers §6] — 즉 저자 스스로 $L_w$가 미해결임을 명시한다."
+    },
+    "C_cap": {
+      "value": "**파라미터 수 단위로는 이 corpus에서 가장 풍부한 값을 제공하지만, 바이트 단위로는 absent다.** dtype이 논문 어디에도 없다.",
+      "reported_parameter_counts": [
+        "최대 memory 크기: '**64 million keys (128 billion memory parameters)**' — 1.3b base 위에서 [memory-layers §5.2]. Figure 1의 x축은 $1024^2, 2048^2, 4096^2, 8192^2$ memory parameters (×2048).",
+        "Table 1 총 파라미터: Memory+ 1m values = **3.377b**, 4m = **9.823b**, 16m = **35.618b**, 64m = **138.748b** (전부 1.3b base) [memory-layers Table 1].",
+        "8B scale: '40962 memory values (64B memory parameters)' = $4096^2 = 16{,}777{,}216$개 value [memory-layers §5.3]; Table 2 캡션은 '16 million memory values (64 billion extra parameters)'.",
+        "기본 설정에서 §5.1은 half key 수를 $2^{10}$으로 고정하여 value 수 $2^{20}$(약 1 million)을 얻는다 [memory-layers §5.1].",
+        "value 차원 = base model 차원 (1.3b→2048, 373m→1024, 8B→4096) [memory-layers §5.4, Table 4 캡션, §5.3].",
+        "**shared pool 덕에 memory 층을 3개로 늘려도 파라미터 수와 메모리 발자국은 불변**: 'memory layers share parameters, thus have identical memory footprint to a single memory layer' [memory-layers §5.1]."
+      ],
+      "absent_parts": "dtype(bf16/fp16/fp8/int8) 미표기 → 바이트 환산 불가. optimizer state 크기 미표기(§3.1.2가 'associated optimizer states'가 무겁다고만 언급). **per-session·per-user 상태량은 정의 자체가 없다** — $\\Theta_{\\mathrm{m}}$은 전 사용자·전 세션 공유이므로 S0 §2.4가 요구하는 'bytes/세션 또는 bytes/사용자' 의미의 $C_{\\mathrm{cap}}$은 이 논문에서 **0**이다([해설]이지 논문 수치가 아님)."
+    },
+    "rho": {
+      "value": "absent — 망각·열화율 측정이 **0건**이다. 지속학습 실험, 반복 갱신 실험, 이전 지식 보존 평가가 전무하다.",
+      "detail": "$\\rho$가 정의되려면 반복되는 sleep 라운드가 있어야 하는데 이 논문에는 라운드가 없다(update_layer 차이 1). 논문이 forgetting을 언급하는 유일한 곳은 **희망 서술**이다: 'we hope that new learning methods can be developed to push the effectiveness of these layers even further, enabling less forgetting, fewer hallucinations, and continual learning' [memory-layers §6]. 이 문장은 근거가 아니라 future work다."
+    },
+    "amortization_eq_A": "식 (A) $C_{\\mathrm{avg}} = C_{\\mathrm{wake}} + C_{\\mathrm{sleep}}/N_q$는 이 논문에서 $C_{\\mathrm{sleep}} = 0$이므로 $C_{\\mathrm{avg}} = C_{\\mathrm{wake}}$로 붕괴한다. 손익분기 $N_q^*$는 **정의되지 않는다**. 이 논문이 제공하는 것은 상각 논증이 아니라 그 논증의 **분모 쪽 상수** — 즉 '한 번 써넣은 $\\Theta_{\\mathrm{m}}$이 얼마나 많은 사실을 담는가'다."
+  },
+
+  "experiments": {
+    "hardware": "학습 하드웨어는 명시되지 않는다. 유일한 하드웨어 언급은 커널 절의 'our H100 specification of 3.35TB/s' [memory-layers §3.1.4]와 Figure 2의 2-GPU 'Memory Group' 도해다. GPU 수·클러스터 구성·학습 시간 전부 absent.",
+    "setup": {
+      "base_models": "134m, 373m, 720m, 1.3b (scaling law 실험) + 8B (별도) [memory-layers §4]",
+      "tokenizer_and_data": "134m–1.3b: Llama2 tokenizer(32k), 'a pretraining data mix that is similar to that of Llama2', **1T tokens**. 8B: Llama3 configuration과 tokenizer(128k), 'a better optimized data mix similar to Llama3' [memory-layers §4].",
+      "memory_config_fixed_size": "half key 수 $2^{10}$ → value 수 $2^{20}$(≈1 million) [memory-layers §5.1].",
+      "vanilla_Memory": "memory 층 1개, transformer의 **중간 FFN 층**을 교체 [memory-layers §5.1].",
+      "Memory_plus": "memory 층 **3개**, centered placement, stride **4** (134m) / **8** (그 외); custom swilu 비선형성; key 차원 = value 차원의 **절반** [memory-layers §5.1].",
+      "baselines": "Dense(Llama 계열), MOE, PEER. MOE 전문가 수는 'the lowest number of experts such that the parameter count exceeds that of Memory' → **16, 8, 6, 4** (134m/373m/720m/1.3b) [memory-layers §5.1]. MOE는 expert choice로 학습하고 **top-1 routing으로 평가** [memory-layers §4.1]. PEER는 half-key **768**개로 'slightly more total parameters than Memory' [memory-layers §5.1]; 'requires twice the number of parameters for the same number of keys' [memory-layers §4.1].",
+      "benchmarks": "NaturalQuestions(EM), TriviaQA(F1), HotpotQA(F1), MMLU, HellaSwag, OBQA, PIQA(정확도), HumanEval·MBPP(pass@1). ablation은 'negative log-likelihood (nll) of the correct answer'를 쓴다 — 'For some bencmarks, the performance of small models can be very low, and accuracy numbers noisy.' [memory-layers §4.2]"
+    },
+    "table1_fixed_memory_1M_values": {
+      "note": "메트릭: NQ·PIQA·OBQA 정확도, TQA·HotpotQA F1 [memory-layers Table 1 캡션]. 아래는 vendored 텍스트 추출에서 **행·열이 확정되는 셀만** 적는다. 확정 불가 셀은 unassigned_cells에 원값 그대로 보존했다(todo_verify 참조). 반올림 없음.",
+      "rows": [
+        { "base": "134m", "model": "Dense",   "total_params": "134m",   "NQ": "0.91", "TQA": "7.7",   "PIQA": "62.13", "OBQA": "16.40", "HotPot": "5.18" },
+        { "base": "134m", "model": "MOE",     "total_params": "984m",   "NQ": "2.49", "TQA": "13.08", "PIQA": "65.78", "OBQA": "18.80", "HotPot": "7.80" },
+        { "base": "134m", "model": "PEER",    "total_params": "1.037b", "NQ": "2.46", "TQA": "16.34", "PIQA": "66.65", "OBQA": "17.40", "HotPot": "8.82" },
+        { "base": "134m", "model": "Memory",  "total_params": "937m",   "NQ": "2.1",  "TQA": "16.31", "PIQA": "65.94", "OBQA": "17.80", "HotPot": "9.28" },
+        { "base": "134m", "model": "Memory+", "total_params": "937m",   "NQ": "3.16", "TQA": "18.77", "PIQA": "67.25 (행 배정 미확정)", "OBQA": "17.60", "HotPot": "9.35" },
+
+        { "base": "373m", "model": "Dense",   "total_params": "373m",   "NQ": "2.58", "TQA": "17.68", "PIQA": "67.47", "OBQA": "미확정", "HotPot": "10.06" },
+        { "base": "373m", "model": "MOE",     "total_params": "1.827b", "NQ": "3.99", "TQA": "19.94", "PIQA": "68.88", "OBQA": "미확정", "HotPot": "12.50" },
+        { "base": "373m", "model": "PEER",    "total_params": "1.575b", "NQ": "5.1",  "TQA": "26.39", "PIQA": "70.19", "OBQA": "미확정", "HotPot": "12.96" },
+        { "base": "373m", "model": "Memory",  "total_params": "1.441b", "NQ": "4.95", "TQA": "24.24", "PIQA": "69.37", "OBQA": "미확정", "HotPot": "12.53" },
+        { "base": "373m", "model": "Memory+", "total_params": "1.434b", "NQ": "5.76", "TQA": "28.10", "PIQA": "71.22", "OBQA": "미확정", "HotPot": "미확정" },
+
+        { "base": "720m", "model": "Dense",   "total_params": "720m",   "NQ": "3.77", "TQA": "24.85", "PIQA": "71.33", "OBQA": "미확정", "HotPot": "미확정" },
+        { "base": "720m", "model": "MOE",     "total_params": "2.768b", "NQ": "7.04", "TQA": "28.08", "PIQA": "70.08", "OBQA": "미확정", "HotPot": "미확정" },
+        { "base": "720m", "model": "PEER",    "total_params": "2.517b", "NQ": "7.92", "TQA": "33.26", "PIQA": "71.98", "OBQA": "미확정", "HotPot": "미확정" },
+        { "base": "720m", "model": "Memory",  "total_params": "2.316b", "NQ": "7.2",  "TQA": "34.8",  "PIQA": "71.82", "OBQA": "미확정", "HotPot": "미확정" },
+        { "base": "720m", "model": "Memory+", "total_params": "2.316b", "NQ": "9.39", "TQA": "36.67", "PIQA": "72.42", "OBQA": "미확정", "HotPot": "미확정" },
+
+        { "base": "1.3b", "model": "Dense",   "total_params": "1.3b",   "NQ": "7.76",  "TQA": "32.64", "PIQA": "72.74", "OBQA": "23.40", "HotPot": "13.92" },
+        { "base": "1.3b", "model": "MOE",     "total_params": "3.545b", "NQ": "8.14",  "TQA": "31.46", "PIQA": "73.72", "OBQA": "25.20", "HotPot": "15.15" },
+        { "base": "1.3b", "model": "PEER",    "total_params": "3.646b", "NQ": "12.33", "TQA": "42.46", "PIQA": "73.34", "OBQA": "26.60", "HotPot": "15.39" },
+        { "base": "1.3b", "model": "Memory",  "total_params": "3.377b", "NQ": "9.83",  "TQA": "39.47", "PIQA": "72.29", "OBQA": "25.80", "HotPot": "15.46" },
+        { "base": "1.3b", "model": "Memory+", "total_params": "3.377b", "NQ": "13.68", "TQA": "42.89", "PIQA": "75.35", "OBQA": "26.80", "HotPot": "16.72" },
+
+        { "base": "1.3b", "model": "Memory+ 4m",  "total_params": "9.823b",   "NQ": "14.43", "TQA": "51.18", "PIQA": "75.03", "OBQA": "27.80", "HotPot": "20.65" },
+        { "base": "1.3b", "model": "Memory+ 16m", "total_params": "35.618b",  "NQ": "20.14", "TQA": "58.67", "PIQA": "76.39", "OBQA": "26.80", "HotPot": "미확정" },
+        { "base": "1.3b", "model": "Memory+ 64m", "total_params": "138.748b", "NQ": "20.78", "TQA": "62.14", "PIQA": "77.31", "OBQA": "30.00", "HotPot": "20.47" },
+
+        { "base": "llama2 7B (2T)", "model": "Dense", "total_params": "7b", "NQ": "25.10", "TQA": "64.00", "PIQA": "78.40", "OBQA": "33.20", "HotPot": "25.00" }
+      ],
+      "unassigned_cells": {
+        "설명": "열은 확정되지만 행 배정이 텍스트 추출에서 확정되지 않은 값들. 개수 회계는 정확히 맞는다(PIQA 1 + OBQA 7 + HotPot 6 = 14).",
+        "PIQA_134m_Memory+_후보": ["67.25"],
+        "OBQA_373m_4개_+_720m_3개": ["22.20", "21.60", "20.40", "22.00", "22.60", "20.80", "25.00", "(추가로 373m 열에 제자리 추출된 18.80 1개가 있으나 행 미상)"],
+        "HotPot_373m_Memory+_1개_+_720m_4개_+_16m_1개": ["13.34", "12.90", "14.10", "14.03", "14.92", "18.59", "(추가로 720m 열에 제자리 추출된 14.94 1개가 있으나 행 미상)"]
+      },
+      "paper_own_reading": [
+        "'Memory models improve drastically over the dense baselines, and generally match the performance of models with twice the number of dense parameters on QA tasks.' [memory-layers §5.1]",
+        "'Memory+ improves further over Memory, with performance falling generally between dense models with 2x-4x higher compute.' [memory-layers §5.1]",
+        "'The PEER architecture performs similarly to Memory for the same number of parameters, while lagging behind Memory+. MOE models underperform the memory variants by large margins.' [memory-layers §5.1]"
+      ]
+    },
+    "table1_memory_scaling_curve": {
+      "setting": "1.3b base, 1T tokens, Memory+ [memory-layers §5.2, Figure 1, Table 1]",
+      "series": [
+        { "values": "1m",  "total_params": "3.377b",   "NQ": "13.68", "TQA": "42.89" },
+        { "values": "4m",  "total_params": "9.823b",   "NQ": "14.43", "TQA": "51.18" },
+        { "values": "16m", "total_params": "35.618b",  "NQ": "20.14", "TQA": "58.67" },
+        { "values": "64m", "total_params": "138.748b", "NQ": "20.78", "TQA": "62.14" }
+      ],
+      "note_writer_arithmetic": "4× 증분당 NQ 변화 +0.75 / +5.71 / +0.64, TQA 변화 +8.29 / +7.49 / +3.47 — [note-writer 산술]. 마지막 4× 구간(16m→64m, 파라미터 +103b)에서 NQ는 **+0.64점**만 오른다. 이 수열을 §5.2의 'keeps increasing predictably'와 대조하는 것이 이 장의 정직성 의무다."
+    },
+    "table2_8B_scale": {
+      "setting": "8B base (Llama3 config·tokenizer), Memory+ with 16 million memory values = 64 billion extra parameters [memory-layers §5.3, Table 2 캡션]. 메트릭: HellaSwag·PIQA·OBQA·MMLU·NQ 정확도, TQA·HotpotQA F1, HumanEval·MBPP pass@1.",
+      "rows": [
+        { "model": "llama3.1 8B (15T)", "HellaS": "60.05", "Hotpot": "27.85", "HumanE": "37.81", "MBPP": "48.20", "MMLU": "66.00", "NQ": "29.45", "OBQA": "34.60", "PIQA": "79.16", "TQA": "70.36" },
+        { "model": "dense (200B)",      "HellaS": "53.99", "Hotpot": "20.41", "HumanE": "21.34", "MBPP": "30.80", "MMLU": "41.35", "NQ": "18.61", "OBQA": "31.40", "PIQA": "78.02", "TQA": "51.741" },
+        { "model": "Memory+ (200B)",    "HellaS": "54.33", "Hotpot": "21.75", "HumanE": "23.17", "MBPP": "29.40", "MMLU": "50.14", "NQ": "19.36", "OBQA": "30.80", "PIQA": "79.11", "TQA": "57.64" },
+        { "model": "dense (1T)",        "HellaS": "58.90", "Hotpot": "25.26", "HumanE": "29.88", "MBPP": "44.20", "MMLU": "59.68", "NQ": "25.24", "OBQA": "34.20", "PIQA": "80.52", "TQA": "63.62" },
+        { "model": "Memory+ (1T)",      "HellaS": "60.29", "Hotpot": "26.06", "HumanE": "31.71", "MBPP": "42.20", "MMLU": "63.04", "NQ": "27.06", "OBQA": "34.40", "PIQA": "79.82", "TQA": "68.15" }
+      ],
+      "note_writer_arithmetic": "Memory+ − dense, 200B: HellaS +0.34 / Hotpot +1.34 / HumanE +1.83 / MBPP **−1.40** / MMLU +8.79 / NQ +0.75 / OBQA **−0.60** / PIQA +1.09 / TQA +5.899. 1T: HellaS +1.39 / Hotpot +0.80 / HumanE +1.83 / MBPP **−2.00** / MMLU +3.36 / NQ +1.82 / OBQA +0.20 / PIQA **−0.70** / TQA +4.53. [note-writer 산술] — 9개 벤치 중 200B에서 2개, 1T에서 2개가 **음수**다.",
+      "paper_own_reading": "'The gains are more pronounced earlier in training (200B tokens), suggesting that memory helps models learn facts faster. At only 1 trillion tokens of training, our Memory+ model approaches the performance of Llama3.1 8B, which was trained on 15 trillion tokens.' [memory-layers §5.3]"
+    },
+    "table3_left_memory_layer_placement": {
+      "setting": "shared memory pool 하에서 memory 층 수·배치 변경. 메트릭은 전부 log likelihood: 'nll'(학습 집합), 'NQ nll'(NQ 정답), 'TQA nll'(TQA 정답) [memory-layers Table 3 캡션].",
+      "rows": [
+        { "layers": "12",                 "nll": "2.11", "NQ_nll": "12.13", "TQA_nll": "8.34" },
+        { "layers": "12,16,20",           "nll": "2.11", "NQ_nll": "12.24", "TQA_nll": "8.17" },
+        { "layers": "8,12,16",            "nll": "2.11", "NQ_nll": "12.05", "TQA_nll": "8.09" },
+        { "layers": "4,12,20",            "nll": "2.11", "NQ_nll": "12.36", "TQA_nll": "8.09" },
+        { "layers": "5,8,11,14,17,21",    "nll": "2.11", "NQ_nll": "12.19", "TQA_nll": "8.04" }
+      ],
+      "paper_own_reading": "'as we add more memory layers, performance initially increases. However, as we're effectively removing dense parameters from the model for each added memory layer, eventually the model performance degrades, revealing a sweet spot at around 3 memory layers… We find that centred placements with larger strides are better, and we adopt this for our Memory+ architecture.' [memory-layers §5.4]",
+      "extraction_caveat": "행 순서와 열 배정은 vendored 텍스트의 등장 순서에 따른 재구성이다. 값 자체는 원문 그대로이나 행 대응은 todo_verify 대상."
+    },
+    "table3_right_memory_layer_variants": {
+      "rows": [
+        { "variant": "PK base",         "nll": "2.11", "NQ_nll": "12.13", "TQA_nll": "8.34" },
+        { "variant": "+gated",          "nll": "2.08", "NQ_nll": "11.60", "TQA_nll": "7.54" },
+        { "variant": "+swilu",          "nll": "2.07", "NQ_nll": "11.79", "TQA_nll": "7.64" },
+        { "variant": "+random values",  "nll": "2.06", "NQ_nll": "11.32", "TQA_nll": "7.20" },
+        { "variant": "+softmax sink",   "nll": "2.11", "NQ_nll": "11.79", "TQA_nll": "7.73" }
+      ],
+      "paper_own_reading": "'We find that the swilu non-linearity consistently improves results, and we adopt this improvement into our model. Simple gating improves performance only in some cases, and swilu already covers this behaviour to some extent, so we decide not to do additional gating. For key sampling improvements, including the random keys and the fixed (sink) key, we see minor improvements, however these have some negative impact on training speed in our implementation, and the gains were not consistent for larger model sizes, therefore we excluded them from our experiments, leaving this direction open for future exploration.' [memory-layers §5.4]",
+      "extraction_caveat": "행 대응은 재구성. 값은 원문 그대로."
+    },
+    "table4_key_and_value_dim": {
+      "setting": "**373m 모델, latent dimension 1024**에서 수행. 메트릭 전부 log likelihood, 'on the training set, NQ answers and TQA answers' [memory-layers Table 4 캡션].",
+      "left_value_dim_fixed_total_params": {
+        "row_labels": "v_dim 64 / 256 / 1024 / 2048 ↔ #values 16m / 4m / 1m / 512k",
+        "reported_triples_in_extraction_order": [
+          "(2.11, 12.13, 8.34)", "(2.12, 12.32, 8.15)", "(2.11, 12.37, 8.25)", "(2.09, 11.98, 7.83)"
+        ],
+        "paper_conclusion": "'we find that the default configuration is optimal' [memory-layers §5.4]. 기본 설정 = value 차원이 base model 차원과 같음 = 373m에서 v_dim 1024, #values 1m.",
+        "extraction_caveat": "**행 대응 미확정.** 세 표(Table 3 좌·우, Table 4 우)에서 기준선이 (2.11, 12.13, 8.34)로 반복되는데, Table 4 좌에서 그 값이 어느 행인지가 추출 순서만으로는 결정되지 않는다. todo_verify."
+      },
+      "right_key_dim": {
+        "row_labels": "key_dim 256 / 512 / 1024 / 2048 ('key_dim is the sum of the dimension of the sub-keys' [Table 4 캡션])",
+        "reported_triples_in_extraction_order": [
+          "(2.15, 12.86, 8.75)", "(2.14, 12.63, 8.49)", "(2.11, 12.13, 8.34)", "(2.14, 12.49, 8.53)"
+        ],
+        "paper_conclusion": "'We find unsurprisingly that increasing the key dim is beneficial. However, increasing the key dim does add more dense parameters to the model, and thus we cannot increase it indefinitely without breaking our fair comparisons. We pick a key dimension of half the base model dim for our experiments.' [memory-layers §5.4]",
+        "extraction_caveat": "행 대응 미확정. 다만 네 triple 중 최저 nll이 (2.11, 12.13, 8.34)이고 다른 세 개가 모두 그보다 나쁘다는 사실은 배정과 무관하게 성립한다 — 즉 **key_dim은 단조 개선이 아니다**."
+      }
+    },
+    "kernel_results": {
+      "forward": "3TB/s (H100 사양 3.35TB/s 대비), PyTorch 구현은 400GB/s 미만 [memory-layers §3.1.4]",
+      "end_to_end": "PyTorch EmbeddingBag 대비 6x [memory-layers §3.1.4]",
+      "backward_strategies": "'atomics' up to 5x faster than PyTorch operator; 'reverse_indices'와 'lock'은 embedding dim > 128이고 임베딩이 대체로 균형일 때 더 빠름 [memory-layers §3.1.4]"
+    },
+    "unreported_hyperparameters": "**top-$k_{\\mathrm{top}}$의 수치가 논문 전체에 없다.** batch size, learning rate, optimizer, weight decay, LR schedule, sequence length, seed 수, 신뢰구간·오차막대도 전부 없다. 모든 표는 단일 실행값으로 보이며 논문이 반복 실행을 언급하지 않는다."
+  },
+
+  "scale_ceiling": "실증 상한은 두 축에서 서로 다른 지점에 있고, **둘이 만난 적이 없다**. (a) **memory 용량 축의 상한**: 1.3b base 위 64 million values = 128 billion memory parameters, 총 138.748b 파라미터, 1T tokens [memory-layers §5.2, Table 1]. (b) **base model 축의 상한**: 8B base(Llama3 config, 128k tokenizer), 1T tokens, 그러나 memory는 16 million values(64B extra params)에 그친다 [memory-layers §5.3, Table 2]. 즉 **가장 큰 memory는 가장 작은 축(1.3b base)에서만, 가장 큰 base는 중간 크기 memory에서만** 검증되었다. 추가 상한: 학습 토큰 1T (비교 대상 Llama3.1 8B는 15T), instruction tuning·post-training 없음, long-form generation 미평가('We use short-form QA tasks in this work to demonstrate the effectiveness of memory layers and leave the long-form generation tasks for future work' [memory-layers §2]), 추론 서빙 측정 없음, 지속학습·배포 후 갱신 없음, ablation은 전부 **373m 단일 크기**에서만 수행 [memory-layers Table 4 캡션]. MOE·PEER 대조군은 **1m values 설정에서만** 존재하며 4m/16m/64m 및 8B scale에는 대조군이 없다 [memory-layers Table 1, Table 2].",
+
+  "concept_ledger_delta": {
+    "신설": [
+      "**memory layer at scale** — transformer FFN 층을 학습 가능한 key-value lookup으로 교체하고 그것을 $10^8$ 항목 규모까지 키운 구성 [memory-layers §3, §5.2]",
+      "**Memory+ 블록** — product-key lookup + swilu gating + 최적화된 key 차원의 조합 [memory-layers Eq. 2, Fig. 3, §5.1]",
+      "**shared memory pool** — 여러 memory 층이 하나의 파라미터 풀을 공유하여 파라미터 수와 메모리 발자국을 고정한 채 층 수만 늘리는 축 [memory-layers §3.1.3]",
+      "**parallel EmbeddingBag / 'Memory Group'** — embedding 차원으로 샤딩하고 인덱스를 프로세스 그룹 전체에 공유한 뒤 부분 임베딩을 교환하는 병렬화. 다른 병렬화(tensor/context/pipeline)와 독립된 자체 process group [memory-layers §3.1.2, Fig. 2]",
+      "**희소 backward의 세 전략** — atomics / row-level lock / reverse_indices [memory-layers §3.1.4]",
+      "**'sparse updates'라는 개념적 미끼** — 저자가 §6에서 continual learning·less forgetting의 근거 후보로 지목하지만 실험은 없다 [memory-layers §6]"
+    ],
+    "확장·개명": [
+      "**$\\Theta$의 2분할**: v2의 $\\Theta$층을 $\\Theta_{\\mathrm{d}}$(FLOP-bound dense 파라미터)와 $\\Theta_{\\mathrm{m}}$(bandwidth-bound capacity 파라미터)로 나누는 하위 축을 신설한다. S0 §2.1의 3층 표는 $\\Theta$를 단일 덩어리로 두었는데, 이 논문이 그 안에 유의미한 이질성이 있음을 보인다.",
+      "**'parameter ≠ compute' 축의 확장**: MoE가 유일한 예외였던 자리에 두 번째 후보를 세운다. 논문은 MoE를 'more closely resemble dense networks and are thus easier to scale' [memory-layers §1]로 재규정하여, MoE의 우위를 성능이 아니라 **엔지니어링 용이성**으로 축소한다.",
+      "**associative memory의 층 이동**: E-경로의 vector store와 형태적으로 같은 연산(query→top-k→가중합)을 **가중치 안**에서 수행한다. STC-STYLE §3 Rosetta의 'vector DB 조회 ↔ $\\mathrm{ret}(E,q)$' 행에 대한 정확한 대조군 — 같은 연산이지만 $E$가 아니라 $\\Theta$다.",
+      "**Rosetta '모델 재배포' 행의 예외**: Θ-경로는 배포 아티팩트가 바뀌므로 shared-weight batching이 깨진다는 것이 v2의 일반 규칙인데, 이 논문의 $\\Theta_{\\mathrm{m}}$은 전 사용자 공유이므로 batching이 유지된다. 규칙에 조건절이 필요함을 드러낸다.",
+      "product-key lookup(Lample et al. 2019)을 그대로 승계하되 shared pool·병렬화·swilu로 확장 [memory-layers §3.1.1, §3.1.3]"
+    ],
+    "폐기": [
+      "명시적 폐기 선언은 없다.",
+      "자기 후보의 자진 폐기는 둘 있다 — random key-value 추가와 softmax sink는 ablation에서 개선을 보였으나 학습 속도 비용과 대형 모델에서의 비일관성을 이유로 배제되었다 [memory-layers §5.4]. gating도 swilu에 흡수된다는 이유로 배제된다.",
+      "[해설] '용량을 늘리려면 FLOPs를 늘려야 한다'는 dense scaling의 암묵 전제를 폐기 대상으로 삼지만, 폐기를 선언하는 대신 **경험적 반례**로 대응한다."
+    ]
+  },
+
+  "open_questions": {
+    "stated_by_the_paper": [
+      "**프로덕션 효율은 미해결이다.** 'While the memory layer implementation presented here is orders of magnitude more scalable than previous works, there still remains a substantial engineering task to make them efficient enough for large scale production uses.' [memory-layers §6]",
+      "**FFN만큼 빠르게 만들 수 있는가.** 'While we believe it's in principle possible to make memory layers as fast, or even faster than regular FFN layers on current hardware, we acknowledge that this needs non-trivial effort.' [memory-layers §6]",
+      "**희소 갱신으로 지속학습이 가능한가 — 이것이 v2의 bridge-out이다.** 'we believe the sparse updates made possible by memory layers might have deep implications to how models learn and store information. In particular, we hope that new learning methods can be developed to push the effectiveness of these layers even further, enabling less forgetting, fewer hallucinations, and continual learning.' [memory-layers §6]",
+      "**증거의 수준이 낮음을 자인한다.** 'We have so far presented only high level empirical evidence that memory layers improve factuality of models.' [memory-layers §6]",
+      "**long-form generation 미평가.** 'We use short-form QA tasks in this work to demonstrate the effectiveness of memory layers and leave the long-form generation tasks for future work.' [memory-layers §2]",
+      "**key sampling 개선의 재탐색.** random key-value 추가와 softmax sink에 대해 '…therefore we excluded them from our experiments, leaving this direction open for future exploration.' [memory-layers §5.4]",
+      "**task-family별 scaling law.** 'scaling laws for specific task families and capabilities like factuality remain understudied.' [memory-layers §2]"
+    ],
+    "posed_by_this_book_for_bridge_out": [
+      "[평가] §6의 'sparse updates → continual learning' 가설은 이 논문 안에 **검증 시도조차 없다**. Θ-경로의 다음 장들(SEAL, Nested Learning, `Language Models Need Sleep`, SCM)은 전부 dense $\\Theta$ 또는 저랭크 delta에 쓴다 — **memory layer의 희소 행에 sleep 라운드로 쓰는 시도는 v2 corpus 어디에도 없다**. 이 공백이 Part III의 후보 논지 A2(쓰기 용량이 새 병목)를 위한 가장 큰 미탐색 영역이다.",
+      "[평가] 배포 후 $\\Theta_{\\mathrm{m}}$에 쓰려면 **어느 행에 쓸지**를 정해야 하는데, 이 논문의 인덱스 선택 $I_t$는 학습된 key와의 내적으로 결정된다. 새 사실을 넣을 빈 행을 어떻게 할당하는가 — 이 논문은 답하지 않는다.",
+      "[평가] 용량 포화점. 16m→64m 구간에서 NQ가 +0.64점에 그친 것이 (a) 데이터에 그 이상의 사실이 없어서인지 (b) 1T tokens라는 학습 예산이 부족해서인지 (c) 아키텍처 상한인지 논문이 분리하지 않는다. `How much do LMs memorize`(2505.24832)의 파라미터당 bits 상한과 대조해야 할 지점이다."
+    ]
+  },
+
+  "unfavorable_facts": [
+    "**이 논문에는 sleep-time compute이 없다 — 배포 후 어떤 층도 갱신되지 않는다.** $\\Theta$가 움직이는 시점은 pre-training 뿐이고, $W$·$E$는 존재하지 않는다. 따라서 이 논문은 sleep-time compute의 근거가 아니라 **그것이 쓰일 대상($\\Theta_{\\mathrm{m}}$)의 용량 실측치**로만 인용할 수 있다. §6의 continual learning 언급은 실험이 아니라 'we hope' 문장이다. [memory-layers §6]",
+    "**채택한 변형이 자기 ablation 표에서 최고가 아니다.** [memory-layers Table 3 우]에서 `+random values`가 (nll 2.06, NQ nll 11.32, TQA nll 7.20)로 세 지표 전부 최고인데, 채택된 `+swilu`는 (2.07, 11.79, 7.64)다. `+gated`(2.08, 11.60, 7.54)조차 NQ nll·TQA nll에서 `+swilu`를 앞선다. 저자는 학습 속도 비용과 '**the gains were not consistent for larger model sizes**'를 이유로 배제하지만 [memory-layers §5.4], **그 대형 모델 수치를 논문에 싣지 않는다**. 즉 배제 근거가 보고되지 않은 실험에 있다.",
+    "**'3층 sweet spot'과 '결국 성능이 나빠진다'는 서술이 그 표에서 확인되지 않는다.** [memory-layers Table 3 좌]에서 다섯 배치 설정의 학습 집합 nll이 전부 **2.11로 동일**하고, 6개 층 설정(5,8,11,14,17,21)이 TQA nll **8.04**로 최저다. NQ nll 최저는 3층 설정(8,12,16)의 12.05다. 즉 '층을 더 늘리면 나빠진다'는 열화가 제시된 표에서는 보이지 않는다. [memory-layers §5.4 vs Table 3 좌]",
+    "**'centred placements with larger strides are better'가 같은 표와 상충한다.** [memory-layers §5.4]. Table 3 좌에서 stride 8인 (4,12,20)의 NQ nll은 12.36으로 다섯 설정 중 **최악**이고, stride 4인 (8,12,16)이 12.05로 최선이다. 그런데 Memory+는 134m을 제외한 전 크기에서 **stride 8**을 채택한다 [memory-layers §5.1].",
+    "**'increasing the key dim is beneficial'이 단조적이지 않다.** [memory-layers §5.4]. Table 4 우의 네 triple 중 최저 nll은 하나뿐이고(2.11, 12.13, 8.34) 나머지 셋은 (2.15,12.86,8.75) · (2.14,12.63,8.49) · (2.14,12.49,8.53)로 모두 그보다 나쁘다 — 행 배정과 무관하게 **최대 key_dim이 최선이 아니다**.",
+    "**모든 ablation이 단일 모델 크기(373m, latent dim 1024)에서, 그리고 학습 집합 log likelihood로만 수행된다.** 'Metrics are all log likelihood, **on the training set**, NQ answers and TQA answers.' [memory-layers Table 3·Table 4 캡션]. downstream accuracy로 재확인한 ablation이 하나도 없다.",
+    "**'Llama2 7B에 근접한다'는 서술이 다섯 열 전부에서의 미달을 가린다.** §5.2는 'a 1.3b Memory model approaches the performance of the Llama2 7B model'이라 쓰지만 [memory-layers Table 1]에서 Memory+ 64m은 llama2 7B에 NQ **20.78 vs 25.10**, TQA **62.14 vs 64.00**, PIQA **77.31 vs 78.40**, OBQA **30.00 vs 33.20**, HotPot **20.47 vs 25.00** — **보고된 다섯 열 전부에서 뒤진다**.",
+    "**'keeps increasing predictably'와 실제 수열이 어긋난다.** §5.2는 memory 크기에 따라 factual QA가 예측 가능하게 계속 오른다고 쓰지만, 1.3b base NQ는 1m→4m→16m→64m에서 13.68 → 14.43 → 20.14 → **20.78**로, 마지막 4× 증분(파라미터 +103b)이 **+0.64점**에 그친다 [memory-layers Table 1, note-writer 산술]. TQA 증분도 +8.29 → +7.49 → +3.47로 감쇠한다.",
+    "**8B/1T에서 Memory+는 Llama3.1 8B에 9개 벤치 중 7개에서 뒤진다.** §5.3의 'approaches the performance of Llama3.1 8B' [memory-layers §5.3]에 대해, Table 2 기준 앞서는 것은 HellaSwag(60.29 vs 60.05)와 PIQA(79.82 vs 79.16) **둘뿐**이고, Hotpot(26.06 vs 27.85)·HumanEval(31.71 vs 37.81)·MBPP(42.20 vs 48.20)·MMLU(63.04 vs 66.00)·NQ(27.06 vs 29.45)·OBQA(34.40 vs 34.60)·TQA(68.15 vs 70.36)에서 뒤진다. (Llama3.1 8B가 15배 토큰을 받았다는 점은 논문이 밝히지만, '근접'이라는 표현은 방향을 흐린다.)",
+    "**memory 추가가 항상 이득은 아니다 — dense 대비 음의 델타가 존재한다.** [memory-layers Table 2] 1T 지점에서 MBPP는 Memory+ 42.20 vs dense 44.20(**−2.00**), PIQA는 79.82 vs 80.52(**−0.70**). 200B 지점에서 MBPP 29.40 vs 30.80(**−1.40**), OBQA 30.80 vs 31.40(**−0.60**). [note-writer 산술]",
+    "**vanilla Memory는 PEER에 진다.** [memory-layers Table 1] 1.3b에서 Memory NQ 9.83 vs PEER 12.33, TQA 39.47 vs PEER 42.46. §5.1의 'The PEER architecture performs similarly to Memory'는 이 격차(NQ에서 25% 상대 차이)를 완곡화한 서술이다. 즉 이 논문의 우위는 memory layer 자체가 아니라 **Memory+의 추가 장치(3층 공유·swilu·key 차원)**에서 나온다.",
+    "**MOE·PEER 대조군이 좁은 구간에만 존재한다.** Abstract의 'as well as mixture-of-expert models when matched for both compute and parameters'는 **1 million values, base 134m–1.3b**라는 한 설정에서만 검증되었다 [memory-layers §5.1, Table 1]. 4m/16m/64m memory에도, 8B base에도 MOE·PEER 대조군이 없다 [memory-layers Table 2].",
+    "**파라미터 매칭이 대칭적이지 않다.** MOE는 'the lowest number of experts such that the parameter count **exceeds** that of Memory' [memory-layers §5.1], PEER는 'slightly more total parameters than Memory'로 잡힌다. 373m 구간에서 MOE 1.827b vs Memory 1.441b는 **약 27% 더 많은 파라미터**다 [memory-layers Table 1, note-writer 산술]. 방향은 Memory에 유리하지만 '매칭'이라 부르기에는 크다.",
+    "**MOE 기준선의 학습/평가 불일치.** 'MOE models are trained with expert choice (Zhou et al., 2022), and evaluated with top-1 routing.' [memory-layers §4.1] — 이 불일치가 MOE 성능을 얼마나 떨어뜨리는지 논문이 측정하지 않는다. MOE가 'by large margins' 뒤진다는 결론이 이 선택에 얼마나 의존하는지 알 수 없다.",
+    "**학습 불안정을 인정하면서 대응을 조건부로만 기술한다.** 'We find that for large memory layers, training can become unstable, especially for small base models. We use qk-normalization when needed to alleviate this issue.' [memory-layers §3.1.4] — 어느 실험에서 켰는지 표에 표기가 없다. 재현성 결함이자, 표 간 비교의 전제가 흔들리는 지점이다.",
+    "**핵심 하이퍼파라미터가 보고되지 않는다.** top-$k_{\\mathrm{top}}$의 수치가 논문 전체에 **없다**. batch size, learning rate, optimizer, LR schedule, sequence length, 학습 하드웨어 규모, 시드 수, 오차막대·신뢰구간도 전부 없다. 모든 표가 단일 실행으로 보인다. $k_{\\mathrm{top}}$ 없이는 독자가 FLOPs·대역폭 회계를 검증할 수 없다.",
+    "**추론 측정이 0건이다.** 논문이 제시하는 속도 수치(forward 3TB/s, end-to-end 6x, backward atomics 5x)는 전부 학습 맥락의 **커널 마이크로벤치**다 [memory-layers §3.1.4]. decode latency·throughput·TTFT·배치 스케일링은 측정되지 않았고, 저자 스스로 프로덕션 효율이 미해결이라고 쓴다 [memory-layers §6]. 즉 **'FLOPs가 안 는다'는 주장과 '실제로 빠르다'는 주장 사이의 간극이 논문 안에서 메워지지 않는다.**",
+    "**dtype이 어디에도 없다.** 따라서 128 Gi 파라미터가 실제로 몇 바이트를 차지하는지, 어느 메모리 계층에 들어가는지를 **논문만으로는 계산할 수 없다**. S0 §2.4가 요구하는 bytes 단위 $C_{\\mathrm{cap}}$이 이 논문에서 비어 있는 이유다.",
+    "**'over 100% 개선'은 낮은 절대치 위의 상대 개선이다.** §1의 'improve the factual accuracy of language models by over 100% as measured by factual QA benchmarks'에 해당하는 실제 값은 예컨대 134m NQ 0.91 → 3.16, 1.3b NQ 7.76 → 13.68이다 [memory-layers Table 1]. 절대 정확도는 여전히 한 자리~십몇 % 대이며, 최대 설정(64m)에서도 NQ 20.78이다.",
+    "**표 조판의 정밀도 불일치.** [memory-layers Table 2]의 dense(200B) TQA만 **51.741**로 소수 셋째 자리까지 적혀 있고 나머지 칸은 두 자리다. 사소하지만 표가 자동 생성·검수되지 않았음을 시사한다. (본서는 원문 그대로 51.741로 인용한다.)",
+    "**Memory+ 64m 설정에 MOE·PEER·dense 동급 대조군이 없다.** 138.748b 파라미터 모델의 유일한 비교 대상이 **다른 데이터·다른 토크나이저로 학습된 Llama2 7B**다 [memory-layers Figure 1 캡션, §5.2]. 통제된 비교가 아니다."
+  ],
+
+  "cross_path_citations": {
+    "verdict": "**세 경로 어느 쪽과도 접점이 없다.** 참고문헌 44항목을 전부 확인한 결과, sleep-time compute·에이전트 기억·지속학습·test-time learning 문헌이 **0건**이다. 이 논문은 아키텍처 공동체의 내부 계보(Weston 2015 → Sukhbaatar 2015 → Graves 2014/2016 → Lample 2019 → He 2024) 위에만 서 있다.",
+    "checked_for": [
+      "**E-경로**: MemGPT·Letta·Mem0·Zep·agent memory·external store — **0건**. 인접한 것은 RAG 계열뿐이며(Lewis 2021 RAG, Karpukhin 2020 DPR, Lee 2019 ORQA, Guu 2020 REALM, Khandelwal 2020 kNN-LM), 이들도 대조 실험이 아니라 §2의 한 문장에서 '다른 접근'으로만 언급된다: 'A tested way of ensuring more factuality is through retrieval augmented generation' [memory-layers §2]. **RAG와의 실험적 비교는 없다.** (시기상 Letta STC(2025-04)·Mem0(2025-04)는 이 논문(2024-12) 이후이므로 부재가 자연스럽지만, MemGPT(2310.08560, 2023-10)는 **선행함에도 부재**한다.)",
+      "**W-경로**: fast weights·test-time training·linear attention·state-space model·Titans/Miras 계열 — **0건**. Graves 2014/2016(NTM·DNC)이 'external trainable memory'로 인용되지만 [memory-layers §2] 이는 계보적 언급이고, NM 라인의 어떤 논문도 없다.",
+      "**Θ-경로(같은 축인데도 부재)**: LoRA(2021)·ROME(2022)·MEMIT(2022)·EWC(2016)·replay·catastrophic forgetting — **0건**. **이 넷은 전부 이 논문보다 선행하므로 부재가 시기 문제가 아니다.** 논문이 §6에서 'less forgetting'과 'continual learning'을 직접 거론하면서도 그 문헌을 한 편도 인용하지 않는 것은 실질적 단절이다.",
+      "**생물/CLS 축**: McClelland·complementary learning systems·sleep·consolidation·dreaming — **0건**.",
+      "**용량 이론 축**: 'How much do LMs memorize'류의 파라미터당 정보량 상한 문헌 — **0건**. Roberts et al. 2020('How much knowledge can you pack into the parameters of a language model?')이 유일한 인접 인용이나, 이는 용량 상한 이론이 아니라 closed-book QA 실증이다."
+    ],
+    "what_it_does_cite": "인접 문헌은 네 덩어리다. (1) **memory/외부기억 아키텍처 계보** — Weston 2015(Memory Networks), Sukhbaatar 2015(End-to-end memory networks), Graves 2014(NTM)·2016(DNC), Lample 2019(product keys), He 2024(PEER), Johnson 2019(FAISS). (2) **MoE·scaling** — Shazeer 2017, Lepikhin 2020(GShard), Zhou 2022(expert choice), Jiang 2024(Mixtral), OpenAI 2024(GPT-4), Gemini Team 2024, Kaplan 2020, Wei 2022, Ganguli 2022, Schaeffer 2023, Brown 2020. (3) **factuality·retrieval·hallucination** — Roberts 2020, Chen 2017, Chen&Yih 2020, Petroni 2021(KILT), Ji 2023(hallucination survey), Lewis 2021, Karpukhin 2020, Lee 2019, Guu 2020, Khandelwal 2020. (4) **모델·벤치마크·구성요소** — Touvron 2023(Llama 2), Dubey 2024(Llama 3), Vaswani 2023, Bahdanau 2016, Hendrycks&Gimpel 2023(GELU/SiLU), Chameleon Team 2024(qk-norm), Hornik 1989, 그리고 벤치마크 원논문(NQ, TriviaQA, HotpotQA, MMLU, HellaSwag, OBQA, PIQA, HumanEval, MBPP).",
+    "monograph_note": "[평가] S0 §5가 '경로가 서로를 인용하지 않는 지점은 그 자체가 발견'이라 했는데, 이 논문은 그 단절의 **가장 깨끗한 표본**이다. Θ층의 용량을 $10^2$배 늘린 논문이, 같은 Θ층에 쓰는 방법을 연구해 온 공동체(LoRA·모델 편집·지속학습)와 한 줄도 교환하지 않는다. Part III의 A2(쓰기 용량이 새 병목) 논지는 이 단절을 메우는 형태로 세워야 한다."
+  },
+
+  "figures": [
+    { "figure": "Figure 1", "what": "1.3b base·1T tokens에서 memory 크기($1024^2$/$2048^2$/$4096^2$/$8192^2$ ×2048 파라미터)에 따른 좌: factual QA 정확도(NQ exact match, TQA F1), 우: task NLL. 점선은 2T tokens·10× FLOPs로 학습된 7B 모델.", "why": "**이 장의 정본 그림이자 v2 전체의 용량 곡선.** '파라미터를 얼마나 넣으면 사실을 얼마나 회수하는가'라는 질문에 corpus 전체에서 가장 직접적으로 답한다. 반드시 재현하되, 캡션에 점선이 통제된 baseline이 아니라 Llama2 7B라는 사실과 16m→64m 구간의 포화를 병기한다." },
+    { "figure": "Figure 2", "what": "2-GPU 'Memory Group'의 parallel EmbeddingBag — 각 GPU가 그룹 전체 인덱스를 공유받아 자기 샤드(임베딩 차원 절반)에서 lookup·집계한 뒤, 자기 담당 인덱스의 부분 임베딩만 모은다.", "why": "**독자(inference·아키텍처 엔지니어)의 모국어로 쓰인 유일한 그림.** '128 Gi 파라미터 테이블을 어떻게 여러 GPU에 얹는가'와 '그 결과 어떤 collective가 임계경로에 들어오는가'를 한 장으로 보여준다. Part II §N.7의 근거 그림." },
+    { "figure": "Figure 3", "what": "좌: 일반 memory layer 블록(RMSNorm → Self-Attention → RMSNorm → Query MLP → Sub Key1/Sub Key2 → top-k → softmax → Values). 우: Memory+ 블록(추가 투영 $P_1$·gating·silu·$P_2$).", "why": "식 (ML-1)~(ML-4)를 그림 하나로 잇는다. 특히 'query가 어디서 오는가'(직전 attention 출력)와 'sub-key가 둘인 이유'를 눈으로 확인시킨다. 재작도 시 원문 $W_1,W_2$를 $P_1,P_2$로 바꾸고 그 사실을 캡션에 밝힌다." },
+    { "figure": "Figure 4", "what": "base 파라미터(134m~1.3b)에 따른 NaturalQuestions 정확도와 TriviaQA F1, Memory+ / MOE / Dense 세 계열. Memory+는 1 million memory embeddings 설정.", "why": "'memory의 이득이 base 크기와 함께 유지되는가'를 보여준다. 다만 재현 시 PEER 계열이 이 그림에 없다는 점(Table 1에는 있다)과 우측 패널 x축 첫 눈금이 '124m'으로 적힌 오식을 밝혀야 한다." }
+  ],
+
+  "systems_implications": [
+    "**논문의 'billion'은 정확히 $2^{30}$이다 — 이 사실이 모든 용량 회계를 맞춘다.** [note-writer 산술] 64 million values = $8192^2 = 2^{26}$개, value 차원 2048 = $2^{11}$ → $2^{37} = 137{,}438{,}953{,}472$ 파라미터 = **정확히 $128 \\times 2^{30}$**. §5.2의 '128 billion memory parameters'는 근사가 아니라 gibi 단위의 정확값이다. 8B 사례도 같다: $4096^2 = 2^{24}$개 × 4096 = $2^{36} = 64\\times2^{30}$ → §5.3의 '64B memory parameters'. Table 1의 총 파라미터 138.748b도 $137.44\\text{b} + \\text{base}$로 정합한다. **본서는 이 단위 규약을 명시하고 인용해야 한다** — 그러지 않으면 독자가 수치 불일치로 읽는다.",
+    "**바이트 환산은 조건부로만 가능하다.** [note-writer 추론, 논문에 dtype 없음] $2^{37}$ 파라미터를 bf16(2 bytes)로 두면 **274.9 GB**, fp8이면 137.4 GB다. H100 80GB 한 장에 들어가지 않으며, 이것이 §3.1.2의 memory-parallel 샤딩이 선택이 아니라 **필수**인 이유다. 논문은 dtype을 밝히지 않으므로 이 수치는 본서의 조건부 계산이지 논문 값이 아니다.",
+    "**decode 임계경로에 collective가 들어간다.** [note-writer 추론, 근거: memory-layers §3.1.2, Fig. 2] 샤딩된 memory에서 한 토큰을 읽으려면 (1) 인덱스를 process group 전체에 공유하고 (2) 각 워커가 자기 샤드에서 lookup·집계한 뒤 (3) 자기 담당 인덱스의 부분 임베딩을 모으는 두 번의 통신이 필요하다. 논문은 이를 **학습 맥락**에서만 기술하고 추론 배치·시퀀스 축의 비용을 측정하지 않는다. 3개 memory 층이 공유 풀을 쓰므로 층마다 이 왕복이 반복된다 [memory-layers §3.1.3, §5.1].",
+    "**배칭이 gather를 상각하지 못한다.** [note-writer 추론, 근거: memory-layers §3 'Each token embedding … goes through this memory lookup independently' + §1 'almost entirely memory bandwidth bound'] dense GEMM은 배치가 커질수록 가중치 읽기가 상각되어 arithmetic intensity가 오르지만, memory layer는 토큰마다 다른 행을 건드리므로 접근 행 수가 $\\min(B\\cdot k_{\\mathrm{top}},\\ n_{\\mathrm{mem}})$까지 **배치와 함께 증가**한다. 즉 decode 배칭의 통상적 이득이 이 층에서는 성립하지 않는다. 논문은 이 축을 측정하지 않는다 — corpus 전체에서 가장 아쉬운 공백이다.",
+    "**토큰당 이동 바이트를 논문에서 계산할 수 없다.** 필요한 수는 $3 \\times k_{\\mathrm{top}} \\times d \\times \\mathrm{sizeof(dtype)}$(3 = memory 층 수, key 읽기 별도)인데, 논문은 $k_{\\mathrm{top}}$과 dtype **둘 다** 밝히지 않는다. **비용 모델에서 빠진 항이 곧 이 논문의 가장 실질적인 결함이다** — 'FLOPs가 안 는다'는 주장의 이면을 독자가 검산할 수 없다.",
+    "**메모리 계층에서의 위치: HBM 무작위 gather.** 논문 직접 진술 — 'In contrast to dense layers which are predominantly FLOP-bound, memory layers with their sparse activation pattern are almost entirely memory bandwidth bound. Such components are rarely used in modern architectures and have not been optimised for hardware accelerators.' [memory-layers §1] · 'As the number of floating-point operations is negligible, we expect this operation to be solely limited by the GPU memory bandwidth' [memory-layers §3.1.4]. forward 커널이 3TB/s(H100 사양 3.35TB/s의 89.6% [note-writer 산술])에 도달한다는 것은 **이 층이 실제로 대역폭 한계에서 돈다**는 실측 근거다.",
+    "**쓰기 경로는 이미 커널로 존재한다.** 미래에 sleep 라운드로 $\\Theta_{\\mathrm{m}}$에 쓰려 한다면 필요한 것은 새 커널이 아니라 §3.1.4의 backward 경로다 — 'multiple output gradients have to be propagated to the same weight gradient'이고, atomics / row-level lock / reverse_indices 세 전략 중 뒤 둘이 **embedding dim > 128**이고 임베딩이 균형일 때 더 빠르다 [memory-layers §3.1.4]. value 차원이 2048~4096인 이 논문의 설정은 그 조건 안에 있다. [해설] 이것이 Θ-경로의 '쓰기 비용'을 커널 수준에서 논할 수 있는 corpus 내 유일한 지점이다.",
+    "**shared weight batching이 유지된다 — Θ-경로의 예외.** $\\Theta_{\\mathrm{m}}$은 전 사용자·전 세션 공유이므로 STC-STYLE §3 Rosetta의 'per-user delta가 생기면 shared-weight batching이 성립하지 않는다'가 **적용되지 않는다**. 대가는 대칭적이다: per-user 지식을 넣을 자리도 없다. per-session $C_{\\mathrm{cap}}$ = 0.",
+    "**학습 측 상태량이 별도의 병목이다.** 'Memory layers are naturally memory-intensive, mostly due to the large number of trainable parameters and associated optimizer states.' [memory-layers §3.1.2] — 논문은 optimizer state 크기를 수치로 주지 않지만, $2^{37}$ 파라미터에 Adam을 쓰면 상태만으로 파라미터의 2배가 추가된다 [note-writer 추론]. sleep 라운드를 이 층에 도입하려는 설계는 이 항을 반드시 회계해야 한다.",
+    "**NM pair thesis와의 연결에는 제동이 필요하다.** [평가] 이 논문의 트래픽은 NM이 다룬 decode-state read-modify-write가 **아니라** 읽기 전용 대용량 테이블 gather다. 두 트래픽은 방향(RW vs R)과 지역성이 다르므로, memory-centric 기회를 논할 때 같은 논증을 재사용하면 NM D4가 금지한 억지 연결이 된다. 이 논문이 지지하는 것은 좁게 한 문장이다 — 'provide practitioners with an attractive new direction to trade-off memory with compute' [memory-layers §6].",
+    "**용량 대 정확도의 실측 환산표(본서가 인용할 핵심 수).** 1.3b base·1T tokens·Memory+ 기준: $2^{31}$급(1m values, 총 3.377b) → NQ 13.68 / TQA 42.89; $2^{33}$급(4m, 9.823b) → 14.43 / 51.18; $2^{35}$급(16m, 35.618b) → 20.14 / 58.67; $2^{37}$(64m, 138.748b) → 20.78 / 62.14 [memory-layers Table 1]. 이 네 점이 v2 Part I의 T7 모듈(기억 용량과 rate–distortion)이 필요로 하는 유일한 대규모 실측 앵커다."
+  ],
+
+  "todo_verify": [
+    { "claim": "[memory-layers Table 1]의 OBQA·HotpotQA 열에서 373m·720m 블록의 행 배정, 그리고 134m Memory+의 PIQA 값", "how": "원본 PDF의 Table 1을 눈으로 읽는다. vendored 텍스트는 볼드 셀을 별도 그룹으로 뽑아내어 행 대응이 끊긴다. 미배정 값은 노트의 experiments.table1_fixed_memory_1M_values.unassigned_cells에 원값 그대로 보존했다. 검색어: 'Table 1 Comparing memory augmented architectures with baseline models on QA tasks'" },
+    { "claim": "[memory-layers Table 3] 좌·우와 [Table 4] 좌·우의 행-값 대응", "how": "원본 PDF 확인. 값 자체는 원문 그대로이나 행 순서는 추출 순서에 근거한 재구성이다. 특히 Table 4 좌에서 기준선 (2.11, 12.13, 8.34)이 v_dim 64인지 1024인지가 결정되지 않았다. 검색어: 'Table 3 Ablation studies: on the left, number of memory layers' / 'Table 4 Ablation studies: on the left, varying the value embedding dim'" },
+    { "claim": "top-$k_{\\mathrm{top}}$의 수치", "how": "논문 본문에는 없다(grep 'top-k' 결과 전부 정성 서술). 코드 저장소 https://github.com/facebookresearch/memory 의 설정 파일에서 확인. 검색어: 'knn', 'topk', 'n_heads' in config" },
+    { "claim": "학습 정밀도(dtype)와 memory 파라미터의 저장 dtype", "how": "논문에 'bf16'·'fp16'·'precision'·'bytes' 문자열이 전무하다. 코드 저장소 또는 blogpost 확인. 검색어: 'bf16', 'dtype', 'mixed precision'" },
+    { "claim": "8B Memory+가 memory 층 3개·stride 8이라는 Memory+ 기본 설정을 그대로 썼는지", "how": "§5.3은 base 모델과 memory 크기만 밝히고 층 수·배치를 명시하지 않는다. 검색어: '5.3 Results at 8B scale', 'Memory+ model with an 8B base model'" },
+    { "claim": "[memory-layers Table 2] dense(200B) TQA의 '51.741' 표기가 원문 그대로인지(다른 칸은 소수 둘째 자리)", "how": "원본 PDF Table 2 확인. 검색어: 'Table 2 Results with an 8B base model'" },
+    { "claim": "[memory-layers Figure 4] 우측 패널 x축 첫 눈금 '124m'이 오식인지(좌측은 '134m')", "how": "원본 PDF Figure 4 확인. 검색어: 'Figure 4 Accuracy vs. Base Parameters'" },
+    { "claim": "arXiv 스탬프(2024-12-20 v2)와 본문 Date 줄(December 23, 2024)의 3일 불일치", "how": "arXiv abs 페이지의 v1/v2 제출 이력 확인. 검색어: 'arXiv:2412.09764'" },
+    { "claim": "최종 게재처(venue)", "how": "vendored 텍스트에 'conference', 'published as', 'proceedings' 문자열이 없다. arXiv abs 페이지의 Journal reference 또는 OpenReview 확인. 검색어: 'Memory Layers at Scale' + venue" },
+    { "claim": "qk-normalization을 실제로 켠 실험 목록", "how": "§3.1.4의 'when needed'가 어느 표의 어느 행에 해당하는지 논문에 없다. 코드 저장소의 설정 파일 또는 저자 문의. 검색어: 'qk_norm', 'qk-normalization'" },
+    { "claim": "MOE 기준선의 expert-choice 학습 / top-1 routing 평가 불일치가 성능에 미치는 영향", "how": "논문에 ablation이 없다. Zhou et al. 2022(2202.09368)의 top-1 평가 성능 손실 보고를 참조하거나 재현 실험이 필요하다. 검색어: 'expert choice', 'top-1 routing'" },
+    { "claim": "학습 클러스터 규모·GPU-hour·wall-clock", "how": "논문에 전무하다. blogpost(https://ai.meta.com/blog/meta-fair-updates-agents-robustness-safety-architecture) 또는 저장소 README 확인." }
+  ]
+}

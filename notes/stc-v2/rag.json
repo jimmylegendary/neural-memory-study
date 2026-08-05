@@ -1,0 +1,855 @@
+{
+  "paper_id": "rag",
+  "arxiv": "2005.11401",
+  "arxiv_version_read": "v4 (header line 6 of the vendored text: 'arXiv:2005.11401v4 [cs.CL] 12 Apr 2021')",
+  "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+  "authors": [
+    "Patrick Lewis",
+    "Ethan Perez",
+    "Aleksandra Piktus",
+    "Fabio Petroni",
+    "Vladimir Karpukhin",
+    "Naman Goyal",
+    "Heinrich Kuettler",
+    "Mike Lewis",
+    "Wen-tau Yih",
+    "Tim Rocktaeschel",
+    "Sebastian Riedel",
+    "Douwe Kiela"
+  ],
+  "affiliation": "Facebook AI Research; University College London; New York University (title block, lines 10-13). Corresponding: plewis@fb.com",
+  "venue": "NOT STATED IN THE VENDORED TEXT. The vendored plate carries only the arXiv v4 stamp (line 6). No 'NeurIPS'/'Proceedings of' line appears anywhere in the 1450-line file. See todo_verify #1 - do not write a venue in the chapter until settled.",
+  "date": "arXiv v4 stamp: 12 Apr 2021 (line 6). v1 date not recoverable from this plate; the arXiv id 2005.* places v1 in May 2020.",
+  "path": "papers/stc/2005.11401.txt",
+  "axis": "E",
+  "role_in_monograph": "Origin of the external-store answer. Part I module T8 ('external memory - RAG, vector/graph store, retrieval cost') rests on this paper. In Part II it is the head of the E-path chain E-0 -> MemGPT -> Letta STC -> Mem0/Zep -> ReasoningBank. It is the paper that makes ret(E,q) in equation (R) a first-class, learnable, deployed object - and, equally important, the paper that leaves wr(E, c-hat) entirely to humans.",
+
+  "problem_stated": {
+    "one_line": "Pre-trained LMs hold factual knowledge implicitly in their parameters, but that store cannot be expanded, revised, or inspected; the paper proposes to attach an explicit, human-readable, replaceable text index to a pre-trained seq2seq generator and fine-tune the pair end-to-end for knowledge-intensive generation, not just extraction.",
+    "verbatim_anchors": [
+      {
+        "quote": "their ability to access and precisely manipulate knowledge is still limited, and hence on knowledge-intensive tasks, their performance lags behind task-specific architectures. Additionally, providing provenance for their decisions and updating their world knowledge remain open research problems.",
+        "source": "[rag Abstract, lines 17-19]"
+      },
+      {
+        "quote": "They cannot easily expand or revise their memory, can't straightforwardly provide insight into their predictions, and may produce “hallucinations”",
+        "source": "[rag Sec.1 Introduction, lines 37-38]"
+      },
+      {
+        "quote": "Pre-trained models with a differentiable access mechanism to explicit non-parametric memory have so far been only investigated for extractive downstream tasks.",
+        "source": "[rag Abstract, lines 19-20]"
+      },
+      {
+        "quote": "REALM [20] and ORQA [31], two recently introduced models that combine masked language models [8] with a differentiable retriever, have shown promising results, but have only explored open-domain extractive question answering. Here, we bring hybrid parametric and non-parametric memory to the “workhorse of NLP,” i.e. sequence-to-sequence (seq2seq) models.",
+        "source": "[rag Sec.1, lines 41-43 + 116-117] - this is the paper's own statement of the gap it fills"
+      },
+      {
+        "quote": "Crucially, by using pre-trained access mechanisms, the ability to access knowledge is present without additional training.",
+        "source": "[rag Sec.1, lines 132-133] - contrasted with memory networks / stack-augmented nets / memory layers trained from scratch per task"
+      },
+      {
+        "quote": "knowledge-intensive tasks—tasks that humans could not reasonably be expected to perform without access to an external knowledge source",
+        "source": "[rag Sec.1, lines 134-135] - the paper's operational definition of its task class"
+      }
+    ],
+    "framing_metaphor": "Parametric memory (the generator's weights) vs non-parametric memory (a dense vector index of Wikipedia). The paper explicitly names both: 'We refer to the document index as the non-parametric memory' [rag Sec.2.2, line 231] and 'We refer to the BART generator parameters theta as the parametric memory henceforth' [rag Sec.2.3, line 241]. NOTE for the monograph: STC-STYLE-NOTATION Sec.2.4 forbids the parametric/non-parametric dichotomy as imprecise; render them as Theta and E respectively.",
+    "what_it_is_NOT_about": "The paper contains no notion of idle time, offline pre-computation per context, budget amortization, consolidation, sleep, forgetting, or model-authored memory writes. Searching the vendored text for 'sleep', 'consolidat', 'offline', 'amortiz', 'idle' returns nothing. RAG is the E-path's READ machinery, five years before the sleep-time framing existed."
+  },
+
+  "inherited_open_question": {
+    "verdict": "none-stated",
+    "detail": "The paper never quotes an open question from a named predecessor. It states a *scope gap* in prior work and fills it. The closest thing to an inherited question is the observation that the differentiable-retriever line had only been applied to extraction: 'REALM [20] and ORQA [31] ... have shown promising results, but have only explored open-domain extractive question answering' [rag Sec.1, lines 41-43 / 116-117]. That is the authors' characterization of REALM/ORQA, not a question REALM or ORQA posed.",
+    "second_anchor": {
+      "quote": "There has been extensive previous work proposing architectures to enrich systems with non-parametric memory which are trained from scratch for specific tasks, e.g. memory networks [64, 55], stack-augmented networks [25] and memory layers [30]. In contrast, we explore a setting where both parametric and non-parametric memory components are pre-trained and pre-loaded with extensive knowledge.",
+      "source": "[rag Sec.1, lines 129-132]",
+      "reading": "The second gap is 'trained from scratch per task' vs 'pre-trained and reusable'. Again a gap the authors assert, not a question they were handed."
+    },
+    "what_it_implicitly_answers": [
+      "How does one make E a first-class read path that a *generator* (not an extractor) can condition on, and train the read path by task loss alone with no supervision over which document is correct? Answer: treat z as a latent variable and marginalize over top-K [rag Sec.2.1, Sec.2.4].",
+      "Can an external store substitute for parameters? The paper answers with a parameter-count argument: 626M trainable parameters beat T5-11B on NQ (44.5 vs 34.5) and T5-large 770M scores 28.9 EM [rag App. G, lines 1423-1427; Table 1].",
+      "Can world knowledge be updated without touching Theta? Answer: replace the index. 'we demonstrate that the non-parametric memory can be replaced to update the models' knowledge as the world changes' [rag Sec.1, line 143; Sec.4.5 index hot-swapping, lines 627-796]. THIS is the sentence the whole E-path descends from."
+    ],
+    "monograph_finding": "The un-inherited question is itself the finding. RAG originates in the IR/open-domain-QA community and inherits nothing from the continual-learning or fast-weight communities. Its bibliography confirms this (see cross_path_citations). The E-path therefore does not begin as an answer to a memory-consolidation question; it begins as an answer to an information-retrieval question, and only later gets re-read as a memory architecture. The bridge-in for the E-path chapter cannot be a quoted predecessor question - it must be the assertion of a scope gap in REALM/ORQA plus the index-hot-swap demonstration."
+  },
+
+  "core_mechanism": {
+    "summary_one_line": "Read-only E-path: E is a frozen dense index of 21M Wikipedia text chunks; ret(E,q) is a top-K MIPS lookup whose scores are a learned distribution over latent documents, and equation (R) is realized by marginalizing the generator's output over those K documents either once per sequence or once per token.",
+    "equation_numbering_note": "CRITICAL: this paper's displayed equations are UNNUMBERED. There is no 'Eq. (1)' anywhere in the text. Cite them by section and position, e.g. '[rag Sec.2.1, RAG-Sequence display]', '[rag Sec.2.2, retriever display]'. The instruction to cite 'original equation number' cannot be honoured because none exist; the convention below is the substitute and must be used consistently in the chapter.",
+    "state_decomposition": {
+      "Theta": "Two learnable blocks, both slow weights in the unified sense: (i) the generator parameters, BART-large, called theta in the paper - 400M [rag Sec.2.3, line 237] / 406M [rag App. G, line 1376]; (ii) the query encoder BERT_q, BERT-BASE, 110M [rag App. G, line 1375]. Both move only in the fine-tuning outer loop.",
+      "Theta_frozen": "The document encoder BERT_d, BERT-BASE, 110M, is NOT trained: 'we ... keep the document encoder (and index) fixed, only fine-tuning the query encoder BERT_q and the BART generator' [rag Sec.2.4, lines 254-255]. It is used once, offline, to build E.",
+      "W": "EMPTY. RAG has no fast weights. Nothing in the model changes state within or across a query. The KV cache of the generator is ordinary decoding scratch, not a W in the (U-W) sense. This is the cleanest instance in the corpus of a paper that touches Theta and E and leaves W untouched.",
+      "E": "A dense vector index over 21M documents: one December 2018 Wikipedia dump, each article split into disjoint 100-word chunks [rag Sec.3, lines 280-283]. Physically 21M vectors of 728 dimensions = 15.3B values, storable at 8-bit [rag App. G, lines 1427-1429], held in CPU memory, ~100 GB uncompressed / 36 GB after FAISS compression [rag App. C, lines 1300-1304]. FAISS + Hierarchical Navigable Small World for approximate search [rag Sec.3, lines 283-284; ref 37].",
+      "E_is_shared_and_read_only": "E is global, corpus-level, and identical for every user and every query. There is no per-session or per-user state anywhere in the paper. Consequence for the chapter: RAG's C_cap is per-corpus, not per-session - the opposite of every later E-path paper."
+    },
+    "equations": [
+      {
+        "unified": "\\hat y \\;=\\; f\\big(q;\\ \\Theta,\\ \\varnothing,\\ \\mathrm{ret}(E,q)\\big)",
+        "gloss": "The read equation (R) with W = empty set. RAG is (R) minus the fast-weight slot.",
+        "paper_form": "p(y|x) with x the input and z ~ p_eta(.|x) the retrieved documents",
+        "source": "[rag Sec.2, lines 149-152; Figure 1 caption, lines 112-115]"
+      },
+      {
+        "unified": "\\mathrm{ret}(E,q) \\;=\\; \\operatorname*{top-}K_{\\,e\\in E}\\; \\exp\\!\\big(\\phi_d(e)^{\\top}\\phi_q(q)\\big), \\qquad \\phi_d = \\mathrm{BERT}_d,\\ \\ \\phi_q = \\mathrm{BERT}_q",
+        "gloss": "The retrieval operator of the unified frame, instantiated as a DPR bi-encoder inner product, resolved by Maximum Inner Product Search. phi_d is frozen; phi_q is part of Theta.",
+        "paper_form": "p_eta(z|x) proportional to exp( d(z)^T q(x) ),  d(z) = BERT_d(z),  q(x) = BERT_q(x)",
+        "source": "[rag Sec.2.2, lines 221-231]"
+      },
+      {
+        "unified": "\\hat y \\;=\\; \\arg\\max_y \\sum_{e\\,\\in\\,\\mathrm{ret}(E,q)} p(e\\mid q)\\prod_{i=1}^{N} p_\\Theta\\big(y_i \\mid q, e, y_{1:i-1}\\big)",
+        "gloss": "RAG-Sequence. One document is held responsible for the whole answer; marginalization happens once, outside the token product.",
+        "paper_form": "p_RAG-Sequence(y|x) approx sum_{z in top-k} p_eta(z|x) prod_i p_theta(y_i|x,z,y_{1:i-1})",
+        "source": "[rag Sec.2.1, RAG-Sequence display, lines 176-195]"
+      },
+      {
+        "unified": "\\hat y \\;=\\; \\arg\\max_y \\prod_{i=1}^{N} \\sum_{e\\,\\in\\,\\mathrm{ret}(E,q)} p(e\\mid q)\\, p_\\Theta\\big(y_i \\mid q, e, y_{1:i-1}\\big)",
+        "gloss": "RAG-Token. Marginalization is inside the token product, so a different element of E may be responsible for each token. This is what lets one answer splice facts from several records; Figure 2 is the evidence.",
+        "paper_form": "p_RAG-Token(y|x) approx prod_i sum_{z in top-k} p_eta(z|x) p_theta(y_i|x,z,y_{1:i-1})",
+        "source": "[rag Sec.2.1, RAG-Token display, lines 202-213]"
+      },
+      {
+        "unified": "\\Theta_{k+1} \\;=\\; \\Theta_k \\;-\\; \\eta_\\Theta\\, \\nabla_\\Theta\\, \\mathcal{L}(\\mathcal{D};\\ \\Theta_k), \\qquad \\mathcal{L}(\\mathcal{D};\\Theta) = -\\sum_j \\log p\\big(y_j \\mid q_j;\\ \\Theta,\\ \\mathrm{ret}(E,q_j)\\big)",
+        "gloss": "Ordinary supervised fine-tuning with Adam. IMPORTANT: this has the SHAPE of (U-Theta) but not its content - the training set D is a fixed human-labelled corpus of (x_j, y_j) pairs, NOT gen(H_k; B_s). There is one such round (k = 0 -> 1), performed before deployment. No sleep round exists.",
+        "paper_form": "minimize sum_j -log p(y_j|x_j) with stochastic gradient descent using Adam [28]",
+        "source": "[rag Sec.2.4, lines 246-251]"
+      },
+      {
+        "unified": "p'_\\Theta(y_i \\mid q, y_{1:i-1}) \\;=\\; \\sum_{e\\,\\in\\,\\mathrm{ret}(E,q)} p(e\\mid q)\\, p_\\Theta(y_i \\mid q, e, y_{1:i-1})",
+        "gloss": "RAG-Token decoding: the marginalized transition probability is plugged straight into a standard beam decoder. This is the cheap decode path.",
+        "paper_form": "p'_theta(y_i|x,y_{1:i-1}) = sum_{z in top-k} p_eta(z_i|x) p_theta(y_i|x,z_i,y_{1:i-1})",
+        "source": "[rag Sec.2.5, lines 261-263]"
+      },
+      {
+        "unified": "Y = \\bigcup_{e \\in \\mathrm{ret}(E,q)} \\mathrm{beam}(q,e), \\qquad p(y\\mid q) = \\sum_{e} p(e\\mid q)\\, p_\\Theta(y\\mid q,e) \\ \\ \\text{with an extra forward pass wherever } y \\notin \\mathrm{beam}(q,e)",
+        "gloss": "RAG-Sequence 'Thorough Decoding'. The expensive decode path: one beam search per retrieved element PLUS one extra forward pass per (hypothesis, element) pair missing from that element's beam. 'Fast Decoding' sets p_Theta(y|q,e) = 0 for those pairs instead, buying back the passes.",
+        "paper_form": "see Sec.2.5, 'Thorough Decoding' / 'Fast Decoding'",
+        "source": "[rag Sec.2.5, lines 264-273]"
+      },
+      {
+        "unified": "E_{k+1} \\;=\\; \\mathrm{wr}(E_k,\\ \\hat c_k) \\quad\\text{with}\\quad \\hat c_k = c_k \\ \\ \\text{(identity)},\\ \\ B_s = 0 \\ \\text{per context}",
+        "gloss": "The degenerate (U-E). What is written into E is the raw 100-word text chunk itself, embedded once by a frozen encoder. No offline inference S(c; B_s) is performed over the context before it is stored. The write is executed by the corpus pipeline, not by the model, and only ever as a wholesale index replacement (index hot-swapping). THIS DEGENERACY IS THE CHAPTER'S POINT: everything the later E-path adds is content for c-hat and an agent for wr.",
+        "paper_form": "index hot-swapping: 'we can update RAG's world knowledge by simply replacing its non-parametric memory'",
+        "source": "[rag Sec.4.5 Index hot-swapping, lines 627-796; Sec.5 Memory-based Architectures, lines 912-915 'human-writable, enabling us to dynamically update the model's memory by editing the document index']"
+      }
+    ],
+    "notation_conflicts": [
+      {
+        "paper_symbol": "eta",
+        "paper_meaning": "the retriever's parameters (query and document encoders): 'a retriever p_eta(z|x) with parameters eta' [rag Sec.2, lines 151-152]",
+        "reserved_meaning": "eta_t = inner learning rate; eta_Theta = sleep/outer learning rate [STC-STYLE Sec.1.2]",
+        "mapping": "paper eta -> unified Theta (the trainable query-encoder half) plus a frozen offline encoder used to build E. HARD CONFLICT: eta must never appear in the chapter body as a parameter set. Write 'the query encoder, part of Theta'."
+      },
+      {
+        "paper_symbol": "theta",
+        "paper_meaning": "the generator (BART-large) parameters, named 'the parametric memory' [rag Sec.2.3, line 241]",
+        "reserved_meaning": "Theta = slow weights",
+        "mapping": "paper theta -> unified Theta (generator block). Lower-case/upper-case collision only; safe to absorb."
+      },
+      {
+        "paper_symbol": "k and K",
+        "paper_meaning": "number of retrieved documents; 'top-K', 'we consider k in {5,10} for training' [rag Sec.2.1; Sec.3, lines 284-286]",
+        "reserved_meaning": "k = sleep round index [STC-STYLE Sec.1.2, P3]",
+        "mapping": "paper k/K -> write as K_ret (retrieval fan-out) in the chapter. HARD CONFLICT: the subscript k in Theta_k, E_k means sleep round and must not be reused for fan-out."
+      },
+      {
+        "paper_symbol": "q(x)",
+        "paper_meaning": "the query ENCODER function, q(x) = BERT_q(x) [rag Sec.2.2, line 224]",
+        "reserved_meaning": "q = the query itself, the argument of ret(E,q) and of f in equation (R)",
+        "mapping": "paper q(.) -> unified phi_q(.); paper x -> unified q. HARD CONFLICT: the paper's q is a function, the frame's q is a vector. Never carry q(x) into the chapter."
+      },
+      {
+        "paper_symbol": "d(z)",
+        "paper_meaning": "the document ENCODER function, d(z) = BERT_d(z) [rag Sec.2.2, line 224]",
+        "reserved_meaning": "d = model width [STC-STYLE Sec.1.3]",
+        "mapping": "paper d(.) -> unified phi_d(.). HARD CONFLICT: keep d for width only."
+      },
+      {
+        "paper_symbol": "z",
+        "paper_meaning": "a retrieved text passage, treated as a latent variable",
+        "reserved_meaning": "unassigned",
+        "mapping": "paper z -> unified e, an element of E; the retrieved set is ret(E,q). Safe, but use e for consistency with the E layer."
+      },
+      {
+        "paper_symbol": "x, y",
+        "paper_meaning": "input sequence and target sequence",
+        "reserved_meaning": "y-hat = model output in (R)",
+        "mapping": "paper x -> unified q; paper y -> unified y-hat (prediction) or y (target). Safe."
+      },
+      {
+        "paper_symbol": "N",
+        "paper_meaning": "the length of the target sequence, the upper limit of the token product in the RAG-Sequence display [rag Sec.2.1, lines 190-195]",
+        "reserved_meaning": "n = number of stored items; N_q = number of queries sharing a context [STC-STYLE Sec.1.2-1.3]",
+        "mapping": "paper N -> unified T (output length). MEDIUM CONFLICT: N_q in this book is a query count, not a length."
+      },
+      {
+        "paper_symbol": "'parametric memory' / 'non-parametric memory'",
+        "paper_meaning": "generator weights / document index [rag Sec.2.2 line 231, Sec.2.3 line 241]",
+        "reserved_meaning": "Theta / E",
+        "mapping": "Forbidden phrasing per STC-STYLE Sec.2.4 ('parametric/non-parametric - the dichotomy is imprecise'). Translate on sight. Permitted only inside a direct quotation, because this paper is where the dichotomy enters the literature - the chapter should say so explicitly and then retire the terms."
+      }
+    ]
+  },
+
+  "outer_vs_inner": {
+    "headline_for_the_reader": "Nothing in RAG learns at test time. Every learnable object is fixed before the first query arrives. At wake time exactly one thing moves, and it is not a parameter: the identity of the K documents pulled out of E. If you have never trained a model, the honest one-line summary is: RAG is a normal fine-tuned model whose prompt is assembled by a lookup that was itself tuned during that same fine-tuning run.",
+    "rows": [
+      {
+        "object": "BART-large generator parameters (paper: theta; unified: Theta_gen)",
+        "size": "400M [rag Sec.2.3, line 237] / 406M [rag App. G, line 1376] - the paper gives both figures",
+        "who_learns_it": "outer loop, supervised fine-tuning",
+        "when": "once, before deployment, jointly with the query encoder, by minimizing the negative marginal log-likelihood of the target with Adam [rag Sec.2.4]",
+        "moves_at_test_time": "no"
+      },
+      {
+        "object": "Query encoder BERT_q (paper: part of eta; unified: Theta_q)",
+        "size": "110M, BERT-BASE [rag App. G, line 1375]",
+        "who_learns_it": "outer loop, same fine-tuning run; initialized from DPR's pre-trained bi-encoder [rag Sec.2.2, lines 228-231]",
+        "when": "once, before deployment. Gradients reach it through the marginalization - there is no supervision on which document is correct: 'We jointly train the retriever and generator components without any direct supervision on what document should be retrieved' [rag Sec.2.4, lines 246-247]",
+        "moves_at_test_time": "no"
+      },
+      {
+        "object": "Document encoder BERT_d (paper: part of eta)",
+        "size": "110M, BERT-BASE [rag App. G, line 1375]",
+        "who_learns_it": "NOBODY, in this paper. Initialized from DPR and frozen: 'Updating the document encoder BERT_d during training is costly as it requires the document index to be periodically updated as REALM does during pre-training [20]. We do not find this step necessary for strong performance, and keep the document encoder (and index) fixed' [rag Sec.2.4, lines 252-255]",
+        "when": "used once, offline, to embed the corpus",
+        "moves_at_test_time": "no",
+        "note": "This is why Figure 1's caption phrase 'fine-tune end-to-end' [line 113] is only half true - see unfavorable_facts."
+      },
+      {
+        "object": "The document index E itself (21M vectors)",
+        "size": "21M x 728 dims = 15.3B values [rag App. G, lines 1427-1429]; ~100 GB CPU RAM, 36 GB compressed [rag App. C, lines 1300-1304]",
+        "who_learns_it": "nobody. It is *built*, not learned: encode each 100-word chunk once with the frozen BERT_d and index with FAISS/HNSW [rag Sec.3, lines 280-284]",
+        "when": "offline, once per corpus snapshot. Replaced wholesale when the world changes (index hot-swapping) [rag Sec.4.5]",
+        "moves_at_test_time": "no - and, decisively, it is never written by the model. There is no model-authored wr(E, c-hat) in this paper."
+      },
+      {
+        "object": "K, the number of retrieved documents",
+        "size": "k in {5,10} at training; 15 (RAG-Token) and 50 (RAG-Sequence) for open-domain QA at test; 10 for MS-MARCO and Jeopardy [rag Sec.3, lines 284-286; App. A, lines 1273-1279]",
+        "who_learns_it": "not learned - a hyperparameter chosen on dev data",
+        "when": "set at test time, independently of training: 'We have the flexibility to adjust the number of retrieved documents at test time' [rag Sec.4.5, lines 798-799]",
+        "moves_at_test_time": "yes, if the operator turns the dial. This is the only wake-time knob in the system, and it is a pure quality/cost trade."
+      },
+      {
+        "object": "The retrieved set ret(E,q) = the top-K documents",
+        "size": "K text chunks of 100 words each",
+        "who_learns_it": "computed, not learned",
+        "when": "at wake time, once per query, by MIPS over E",
+        "moves_at_test_time": "YES - this is the entire wake-time movement in RAG. Everything the system 'remembers' about the world at query time is this set of K text chunks."
+      },
+      {
+        "object": "Null-document logit (three variants: a learned null embedding, a static learned bias, a small network)",
+        "size": "not reported",
+        "who_learns_it": "would have been the outer loop",
+        "when": "never - dropped: 'We did not find that these improved performance, so in the interests of simplicity, we omit them' [rag App. F, lines 1359-1368]",
+        "moves_at_test_time": "n/a"
+      }
+    ],
+    "the_one_sentence_for_a_reader_who_has_never_trained": "Outer loop = one supervised fine-tuning run over (question, answer) pairs that moves 516M of the 626M nominally-trainable parameters (generator 406M + query encoder 110M) while the 110M document encoder and the 21M-vector index sit frozen; sleep round = does not exist; wake-time movement = a single approximate nearest-neighbour lookup that swaps K passages into the prompt."
+  },
+
+  "update_layer": {
+    "instantiates": "(U-E), in its degenerate form - and only its READ half is model-owned.",
+    "canonical_form": "E_{k+1} = wr(E_k, c-hat_k),  c-hat_k = S(c_k; B_s)",
+    "how_it_differs": [
+      {
+        "difference": "c-hat is the identity map on the context. S(c; B_s) performs no inference: the stored object is the raw 100-word Wikipedia chunk, embedded once by a frozen BERT-BASE. No summary, no reasoning, no derived fact.",
+        "source": "[rag Sec.3, lines 280-283; Sec.5 Memory-based Architectures, lines 912-914: 'A key feature of our memory is that it is comprised of raw text rather distributed representations']",
+        "consequence": "Per-context B_s in the sleep-time sense is zero. There is a one-time corpus-level encoding cost, but it is not indexed by k and is not a budget the system trades against wake cost."
+      },
+      {
+        "difference": "wr is not executed by the model. Writes are performed by the corpus pipeline or by a human editing the index, and only ever as a full-index replacement, never as an incremental record insert triggered by an interaction.",
+        "source": "[rag Sec.4.5 Index hot-swapping, lines 627-631, 792-796; Sec.5, lines 913-915 'human-writable, enabling us to dynamically update the model's memory by editing the document index']",
+        "consequence": "The round index k is degenerate: E is a static snapshot, and the paper's only demonstration of E_k -> E_{k+1} is Dec-2016-dump -> Dec-2018-dump."
+      },
+      {
+        "difference": "ret(E,q) is *learned* - the scoring function's query side is trained by the task loss with the documents as latent variables. This is the part of (U-E) RAG genuinely advances, and it is on the read side, not the write side.",
+        "source": "[rag Sec.2.1 marginalization displays; Sec.2.4, lines 246-251]",
+        "consequence": "In the unified frame, RAG's contribution belongs to equation (R), not to (U-E)."
+      },
+      {
+        "difference": "A (U-Theta)-shaped step exists but is not a sleep round: the training set is a fixed human-annotated corpus of (x_j, y_j) pairs, not gen(H_k; B_s). It runs exactly once, before deployment, and no experience accumulates into H_k.",
+        "source": "[rag Sec.2.4, lines 246-251; Table 7 dataset sizes, lines 1379-1421]",
+        "consequence": "Do not count RAG as a Theta-path paper. Its Theta move is ordinary fine-tuning; the frame's (U-Theta) requires a self-generated R_k."
+      },
+      {
+        "difference": "(U-W) is absent entirely. RAG has no fast weights.",
+        "source": "no mechanism in the paper touches a test-time-mutable weight state",
+        "consequence": "RAG is the corpus's cleanest W = empty-set baseline; the W-path chapters can use it as the zero point."
+      }
+    ],
+    "layers_touched_in_order": "1) Offline, once per corpus snapshot: build E by encoding 21M chunks with a frozen BERT_d and indexing with FAISS/HNSW - this is (U-E) with c-hat = identity and no model agency. 2) Offline, once: a (U-Theta)-shaped supervised fine-tuning round that moves Theta_gen and Theta_q jointly through the marginalization, with E held fixed. 3) At wake, per query: ret(E,q) only - equation (R) with W = empty set. No layer is written at wake time. 4) On world change: replace E wholesale; Theta untouched, no retraining [rag Sec.4.5].",
+    "the_gap_this_leaves": "Model-authored wr(E, c-hat) with a non-trivial c-hat is exactly the hole MemGPT and Letta STC fill. State this in the E-path bridge-out: RAG hands the next chapter a store that only humans can write to, containing only text that was already written."
+  },
+
+  "cost_table": {
+    "preamble": "Rule applied strictly: only quantities the paper itself states. The paper reports no wall-clock, no throughput, no FLOPs, and no latency anywhere. Its cost reporting is entirely in bytes and parameter counts. A missing number here is a finding, not an omission of this note.",
+    "B_s": {
+      "value": "absent",
+      "what_is_stated_instead": [
+        "Training hardware: 'distributing training across 8, 32GB NVIDIA V100 GPUs, though training and inference can be run on one GPU', mixed precision, Fairseq [rag App. C, lines 1297-1299]. No GPU-hours, no step count, no epoch count.",
+        "Index construction: 'We use the document encoder to compute an embedding for each document, and build a single MIPS index using FAISS ... with a Hierarchical Navigable Small World approximation' over 21M documents [rag Sec.3, lines 280-284]. No time, no cost, no FLOPs given for this pass.",
+        "The paper explicitly names index maintenance as the cost it is avoiding: 'Updating the document encoder BERT_d during training is costly as it requires the document index to be periodically updated as REALM does during pre-training' [rag Sec.2.4, lines 252-253]. Costly is asserted, never quantified."
+      ],
+      "note_writer_reading": "In the sleep-time frame the per-context B_s is zero by construction: no offline inference is performed over a context before storage. The only offline compute is a corpus-level, one-time encoding of 21M chunks, amortized over every query the deployment ever serves. Do not report this as a B_s number - the paper gives none."
+    },
+    "L_w": {
+      "value": "absent",
+      "what_is_stated_instead": [
+        "Retrieval is claimed sub-linear but never timed: MIPS 'can be approximately solved in sub-linear time [23]' [rag Sec.2.2, lines 227-228].",
+        "'We find that doing Maximum Inner Product Search with FAISS is sufficiently fast on CPU, so we store document index vectors on CPU' [rag App. C, lines 1299-1300]. 'Sufficiently fast' is the paper's entire latency statement.",
+        "Wake-time work is described structurally in Sec.2.5: RAG-Token plugs a marginalized transition into a standard beam decoder; RAG-Sequence Thorough Decoding runs 'beam search for each document z' and then 'an additional forward pass for each document z for which y does not appear in the beam'. 'For longer output sequences, |Y| can become large, requiring many forward passes' [rag Sec.2.5, lines 264-273]. Fast Decoding removes those extra passes by approximation.",
+        "Test-time fan-out, which sets the decode multiplier: 15 retrieved documents for RAG-Token and 50 for RAG-Sequence on open-domain QA; 10 for both on Open-MSMarco and Jeopardy; beam size 4 for the generation tasks, greedy decoding for QA [rag App. A, lines 1273-1279].",
+        "The paper acknowledges the runtime axis exists and then declines to plot it: retrieving more documents at test time 'can affect performance and runtime' [rag Sec.4.5, line 799] - Figure 3 sweeps K from 10 to 50 on three quality axes and on none of runtime."
+      ],
+      "note_writer_reading": "L_w is unreported but structurally large: the generator's prefill is over K concatenated (query, 100-word passage) contexts, K up to 50, plus a CPU-side ANN search off the GPU critical path. The chapter must say 'the paper reports no latency' and then reason about the shape only."
+    },
+    "C_cap": {
+      "value": "REPORTED - this is the one cost cell RAG fills, and it fills it in bytes.",
+      "numbers": [
+        "'requiring ~ 100 GB of CPU memory for all of Wikipedia' for the uncompressed index vectors [rag App. C, lines 1300-1301].",
+        "'We also compress the document index using FAISS's compression tools, reducing the CPU memory requirement to 36GB' [rag App. C, lines 1303-1304].",
+        "'The non-parametric memory index does not consist of trainable parameters, but does consists of 21M 728 dimensional vectors, consisting of 15.3B values. These can be easily be stored at 8-bit floating point precision to manage memory and disk footprints.' [rag App. G, lines 1427-1429].",
+        "Corpus granularity: December 2018 Wikipedia dump, 'Each Wikipedia article is split into disjoint 100-word chunks, to make a total of 21M documents' [rag Sec.3, lines 280-283].",
+        "Model-side state: 626M trainable parameters total = 110M query encoder + 110M document encoder + 406M BART-large [rag App. G, lines 1374-1377]."
+      ],
+      "units_warning": "This C_cap is per-CORPUS, shared by all users and all sessions. The paper reports no per-session or per-user state because none exists. Every later E-path paper reports per-user state. The chapter must flag the unit change or the comparison is meaningless.",
+      "internal_arithmetic_check": "21e6 x 728 = 15.288e9, consistent with the stated 15.3B. See todo_verify #2 on 728 vs the DPR-standard dimensionality."
+    },
+    "rho": {
+      "value": "absent as a per-round degradation rate - there are no repeated rounds to degrade over. The nearest measured quantity is a staleness penalty under index/world mismatch.",
+      "nearest_measured_quantity": {
+        "setup": "82 world leaders whose office-holder changed between the December 2016 and December 2018 dumps, probed with the template 'Who is {position}?' (e.g. 'Who is the President of Peru?'), against the NQ RAG model [rag Sec.4.5 Index hot-swapping, lines 627-796]",
+        "matched": "70% correct using the 2016 index for 2016 world leaders; 68% using the 2018 index for 2018 world leaders",
+        "mismatched": "12% with the 2018 index and 2016 leaders; 4% with the 2016 index and 2018 leaders",
+        "source": "[rag Sec.4.5, lines 792-795]",
+        "reading": "A two-year-stale store costs 68% -> 4% on the facts that actually changed. That is the E-path's degradation law, and it is a property of the store's freshness, not of any consolidation process."
+      },
+      "second_degradation_mode": "Retrieval collapse: on some tasks such as story generation, 'the retrieval component would \"collapse\" and learn to retrieve the same documents regardless of the input. In these cases, once retrieval had collapsed, the generator would learn to ignore the documents, and the RAG model would perform equivalently to BART' [rag App. H, lines 1435-1441]. No numbers are reported for this failure."
+    },
+    "amortization_N_q": {
+      "value": "absent",
+      "detail": "The paper never writes an amortization argument and never reports how many queries share a retrieved context. Its economics are argued in parameters instead: 626M trainable parameters vs T5-11B, and T5-large at 770M scoring 28.9 EM on NQ against RAG-Sequence's 44.5 [rag App. G, lines 1423-1427].",
+      "why_it_does_not_apply": "Equation (A) needs a per-context sleep cost to divide by N_q. RAG has none: the offline cost is per-corpus and effectively amortized over the entire deployment lifetime, so N_q* is unbounded and the break-even question is vacuous. This is the structural reason RAG is cheap and the reason the later E-path, which pays per-context, has to argue amortization at all. Say so explicitly in the chapter."
+    }
+  },
+
+  "experiments": {
+    "models_evaluated": [
+      "RAG-Token and RAG-Sequence, both built from BART-large as generator and a DPR bi-encoder as retriever",
+      "Generator: BART-large, 'a pre-trained seq2seq transformer [58] with 400M parameters' [rag Sec.2.3, line 237]; App. G states '406M trainable parameters from BART-large, 406M parameters' [rag App. G, line 1376]. Both figures are the paper's own.",
+      "Retriever: DPR bi-encoder, BERT-BASE query encoder and BERT-BASE document encoder, 110M parameters each [rag App. G, lines 1374-1375]",
+      "Total: 'a total of 626M trainable parameters' [rag App. G, lines 1376-1377]",
+      "Baselines trained by the authors: a BART-large baseline for Jeopardy question generation and for Open MS-MARCO [rag Sec.3.3, line 330; App. A, lines 1277-1278]"
+    ],
+    "models_not_evaluated": "Nothing above BART-large. No multi-billion-parameter generator, no ablation of generator size, no retriever larger than BERT-BASE. The comparison to T5-11B is to published numbers [52], not to a re-run.",
+    "training_setup": {
+      "framework": "Fairseq [45], mixed precision floating point [40] [rag App. C, lines 1297-1298]",
+      "hardware": "'distributing training across 8, 32GB NVIDIA V100 GPUs, though training and inference can be run on one GPU' [rag App. C, lines 1298-1299]",
+      "optimizer": "Adam [28], minimizing sum_j -log p(y_j|x_j) [rag Sec.2.4, lines 250-251]",
+      "training_tokens": "absent - the paper reports dataset instance counts (Table 7), never token counts, and performs no pre-training of its own",
+      "retrieval_fan_out_in_training": "'We consider k in {5, 10} for training and set k for test time using dev data' [rag Sec.3, lines 284-286]",
+      "transfer_initialization": "'As CT and WQ are small, we follow DPR [26] by initializing CT and WQ models with our NQ RAG model' [rag Sec.3.1, lines 298-300]"
+    },
+    "corpus": "A single December 2018 Wikipedia dump, following Lee et al. [31] and Karpukhin et al. [26]; articles split into disjoint 100-word chunks giving 21M documents; FAISS index with HNSW approximation [rag Sec.3, lines 279-284]. A second index from the DrQA [5] December 2016 dump is built only for the hot-swap experiment [rag Sec.4.5, lines 629-631].",
+    "dataset_sizes_train_dev_test": {
+      "source": "[rag Table 7, App. I, lines 1379-1421] - '*A hidden subset of this data is used for evaluation'",
+      "Natural Questions": "79169 / 8758 / 3611",
+      "TriviaQA": "78786 / 8838 / 11314",
+      "WebQuestions": "3418 / 362 / 2033",
+      "CuratedTrec": "635 / 134 / 635",
+      "Jeopardy Question Generation": "97392 / 13714 / 26849",
+      "MS-MARCO": "153726 / 12468 / 101093*",
+      "FEVER-3-way": "145450 / 10000 / 10000",
+      "FEVER-2-way": "96966 / 6666 / 6666",
+      "prose_cross_check": "Sec.3.3 describes the Jeopardy splits as 'with 100K train, 14K dev, and 27K test examples' [line 329] - the rounded form of Table 7's 97392 / 13714 / 26849."
+    },
+    "benchmarks": [
+      {
+        "name": "Open-domain QA, Exact Match, test sets (Table 1)",
+        "source": "[rag Table 1, lines 376-448]",
+        "table_caveat": "The vendored plate's Table 1 is column-scrambled by the PDF-to-text conversion. The RAG rows are contiguous and unambiguous; the REALM and DPR rows required reconstruction. Reconstruction is flagged below and in todo_verify #3.",
+        "rows_verbatim_and_unambiguous": {
+          "RAG-Token": "NQ 44.1, TQA 55.2/66.1, WQ 45.5, CT 50.0",
+          "RAG-Sequence": "NQ 44.5, TQA 56.8/68.0, WQ 45.2, CT 52.2",
+          "T5-11B (Closed Book)": "NQ 34.5, TQA -/50.1, WQ 37.4, CT -",
+          "T5-11B+SSM (Closed Book)": "NQ 36.6, TQA -/60.5, WQ 44.7, CT -"
+        },
+        "rows_reconstructed_from_scrambled_text": {
+          "REALM": "NQ 40.4, TQA -, WQ 40.7, CT 46.8",
+          "DPR": "NQ 41.5, TQA 57.9/-, WQ 41.1, CT 50.6"
+        },
+        "column_convention": "'For TQA, left column uses the standard test set for Open-Domain QA, right column uses the TQA-Wiki test set' [rag Table 1 caption, lines 376-380]",
+        "paper_claim": "'On all four open-domain QA tasks, RAG sets a new state of the art (only on the T5-comparable split for TQA)' [rag Sec.4.1, lines 364-365]"
+      },
+      {
+        "name": "Generation and classification, test sets (Table 2)",
+        "source": "[rag Table 2, lines 376-458]. Columns: Jeopardy B-1, Jeopardy QB-1, MS-MARCO R-L, MS-MARCO B-1, FEVER-3 Label Acc., FEVER-2 Label Acc. '*Uses gold context/evidence.'",
+        "BART": "Jeopardy B-1 15.1, QB-1 19.7; MS-MARCO R-L 38.2, B-1 41.6; FVR3 64.0; FVR2 81.1",
+        "RAG-Token": "Jeopardy B-1 17.3, QB-1 22.2; MS-MARCO R-L 40.1, B-1 41.5; FVR3 72.5; FVR2 89.5",
+        "RAG-Sequence": "Jeopardy B-1 14.7, QB-1 21.4; MS-MARCO R-L 40.8, B-1 44.2; FVR3 72.5; FVR2 89.5 (FEVER shared: the two RAG variants are equivalent for single-token classification [rag Sec.2.1, lines 215-216; Table 6 caption])",
+        "SotA": "MS-MARCO R-L 49.8*, B-1 49.9*; FVR3 76.8; FVR2 92.2*. 'MS-MARCO SotA is [4], FEVER-3 is [68] and FEVER-2 is [57]' [rag Table 2 caption, lines 376-380]",
+        "internal_consistency_check": "Sec.4.2 states 'RAG-Sequence outperforms BART on Open MS-MARCO NLG by 2.6 Bleu points and 2.6 Rouge-L points' [lines 467-468]: 44.2-41.6 = 2.6 and 40.8-38.2 = 2.6. Sec.4.4 states RAG is 'within 4.3%' of FEVER-3 SotA (76.8-72.5 = 4.3) and 'within 2.7%' on FEVER-2 (92.2-89.5 = 2.7) [lines 504-604]. The column assignment above is therefore verified against the prose."
+      },
+      {
+        "name": "Human evaluation, Jeopardy question generation (Table 4)",
+        "source": "[rag Table 4, lines 634-657; Sec.4.3, lines 479-485]",
+        "sample": "'over 452 pairs of generations from BART and RAG-Token' [rag Sec.4.3, line 480]; pairwise comparative evaluation with four options - A better, B better, both good, neither good [rag Sec.3.3, lines 336-338]",
+        "factuality": "BART better 7.1%, RAG better 42.7%, Both good 11.7%, Both poor 17.7%, No majority 20.8% (sums to 100.0%)",
+        "specificity": "BART better 16.8%, RAG better 37.4%, Both good 11.8%, Both poor 6.9%, No majority 20.1% (sums to 93.0%, NOT 100% - reported verbatim)",
+        "prose_table_disagreement": "Sec.4.3 says 'both RAG and BART were factual in a further 17% of cases' [line 483], but Table 4's 'Both good' under Factuality is 11.7%; 17.7% is 'Both poor'. Prose and table do not agree. Reported, not resolved."
+      },
+      {
+        "name": "Generation diversity - ratio of distinct to total tri-grams (Table 5)",
+        "source": "[rag Table 5, lines 634-676; Sec.4.5, lines 613-618]",
+        "MS-MARCO": "Gold 89.6%, BART 70.7%, RAG-Token 77.8%, RAG-Sequence 83.5%",
+        "Jeopardy QGen": "Gold 90.0%, BART 32.4%, RAG-Token 46.8%, RAG-Sequence 53.8%",
+        "claim": "'RAG-Sequence's generations are more diverse than RAG-Token's, and both are significantly more diverse than BART without needing any diversity-promoting decoding' [rag Sec.4.5, lines 616-618]"
+      },
+      {
+        "name": "Retrieval ablations, DEV set (Table 6)",
+        "source": "[rag Table 6, lines 678-790]. Caption: 'Ablations on the dev set. As FEVER is a classification task, both RAG models are equivalent.' Columns: NQ, TQA, WQ, CT (Exact Match); Jeopardy-QGen B-1, QB-1; MSMarco R-L, B-1; FVR-3, FVR-2 (Label Accuracy).",
+        "RAG-Token-BM25": "29.7, 41.5, 32.1, 33.1, 17.5, 22.3, 55.5, 48.4, FVR-3 75.1, FVR-2 91.6",
+        "RAG-Sequence-BM25": "31.8, 44.1, 36.6, 33.8, 11.1, 19.5, 56.5, 46.9, (FEVER shared 75.1 / 91.6)",
+        "RAG-Token-Frozen": "37.8, 50.1, 37.1, 51.1, 16.7, 21.7, 55.9, 49.4, FVR-3 72.9, FVR-2 89.4",
+        "RAG-Sequence-Frozen": "41.2, 52.1, 41.8, 52.6, 11.8, 19.6, 56.7, 47.3, (FEVER shared 72.9 / 89.4)",
+        "RAG-Token": "43.5, 54.8, 46.5, 51.9, 17.9, 22.6, 56.2, 49.4, FVR-3 74.5, FVR-2 90.6",
+        "RAG-Sequence": "44.0, 55.8, 44.9, 53.4, 15.3, 21.5, 57.2, 47.5, (FEVER shared 74.5 / 90.6)",
+        "dev_vs_test_gap": "MS-MARCO dev R-L values (55.5-57.2) are far above the test values in Table 2 (40.1, 40.8). The paper offers no explanation; the tables are simply different splits. Do not compare them.",
+        "paper_claims": "'learned retrieval improves results for all tasks' (the frozen-retriever ablation) and 'For FEVER, BM25 performs best, perhaps since FEVER claims are heavily entity-centric and thus well-suited for word overlap-based retrieval. Differentiable retrieval improves results on all other tasks, especially for Open-Domain QA, where it is crucial.' [rag Sec.4.5, lines 619-626]"
+      },
+      {
+        "name": "Answer generated without the answer being retrieved",
+        "source": "[rag Sec.4.1, lines 460-462]",
+        "number": "'RAG can generate correct answers even when the correct answer is not in any retrieved document, achieving 11.8% accuracy in such cases for NQ, where an extractive model would score 0%.'"
+      },
+      {
+        "name": "Retrieval quality against FEVER gold evidence",
+        "source": "[rag Sec.4.4, lines 605-608]",
+        "numbers": "'the top retrieved document is from a gold article in 71% of cases, and a gold article is present in the top 10 retrieved articles in 90% of cases'"
+      },
+      {
+        "name": "Index hot-swapping (world-leader probe)",
+        "source": "[rag Sec.4.5, lines 627-796]",
+        "numbers": "82 world leaders who changed between Dec 2016 and Dec 2018; template 'Who is {position}?'; 70% correct with the 2016 index on 2016 leaders, 68% with the 2018 index on 2018 leaders, 12% with the 2018 index on 2016 leaders, 4% with the 2016 index on 2018 leaders"
+      },
+      {
+        "name": "Effect of K at test time (Figure 3)",
+        "source": "[rag Sec.4.5, lines 797-803; Figure 3, lines 805-879]",
+        "findings": "Models trained with 5 or 10 documents show no significant difference. 'retrieving more documents at test time monotonically improves Open-domain QA results for RAG-Sequence, but performance peaks for RAG-Token at 10 retrieved documents' (Fig. 3 left, NQ EM, K swept to 50). 'retrieving more documents leads to higher Rouge-L for RAG-Token at the expense of Bleu-1, but the effect is less pronounced for RAG-Sequence' (Fig. 3 right, MS-MARCO). Fig. 3 centre plots NQ answer recall@K for RAG-Tok, RAG-Seq, Fixed DPR and BM25."
+      },
+      {
+        "name": "Parameter-efficiency comparison",
+        "source": "[rag App. G, lines 1423-1427]",
+        "number": "'The T5 model with the closest number of parameters to our models is T5-large (770M parameters), which achieves a score of 28.9 EM on Natural Questions [52], substantially below the 44.5 that RAG-Sequence achieves'"
+      }
+    ],
+    "test_time_configurations": "Open-domain QA: 15 retrieved documents for RAG-Token, 50 for RAG-Sequence with Thorough Decoding, greedy decoding ('we did not find beam search improved results'). Open-MSMarco and Jeopardy: ten retrieved documents for both variants, beam size four, Fast Decoding for RAG-Sequence ('Thorough Decoding did not improve performance'). [rag App. A, lines 1273-1279]",
+    "released_artifacts": "Code open-sourced in HuggingFace Transformers [66] (examples/rag) and an interactive demo at huggingface.co/rag [rag footnote 1, lines 153-155; App. C, lines 1301-1307]. The HuggingFace port 'achieves equivalent performance to the previous version' [rag App. C, lines 1301-1303].",
+    "negative_results_reported": [
+      "Null document mechanism, three variants (a learned null-document embedding, a static learnt bias term, a neural network predicting the logit): 'We did not find that these improved performance, so in the interests of simplicity, we omit them.' No numbers given. [rag App. F, lines 1359-1368]",
+      "Retrieval collapse on story generation [11]: retriever collapses to input-independent retrieval, generator learns to ignore documents, 'the RAG model would perform equivalently to BART'. No numbers given. [rag App. H, lines 1435-1441]",
+      "Beam search did not improve QA results over greedy decoding [rag App. A, lines 1275-1276]",
+      "Thorough Decoding did not improve performance on the generation tasks [rag App. A, lines 1278-1279]",
+      "Two annotators were removed from the human evaluation for failing embedded gold-sentence checks [rag App. B, lines 1289-1291]"
+    ]
+  },
+
+  "scale_ceiling": {
+    "largest_generator": "BART-large, 400M [rag Sec.2.3, line 237] / 406M [rag App. G, line 1376]. Nothing larger is trained or evaluated.",
+    "largest_trainable_total": "626M [rag App. G, lines 1376-1377]",
+    "largest_retriever": "BERT-BASE, 110M per tower [rag App. G, lines 1374-1375]",
+    "largest_store": "21M documents = one December 2018 Wikipedia dump in disjoint 100-word chunks; 21M x 728-dimensional vectors = 15.3B values; ~100 GB CPU memory uncompressed, 36 GB compressed [rag Sec.3, lines 280-283; App. C, lines 1300-1304; App. G, lines 1427-1429]",
+    "largest_retrieval_fan_out": "50 documents (RAG-Sequence, open-domain QA test; Figure 3 sweeps K to 50) [rag App. A, lines 1273-1275; Figure 3]",
+    "training_hardware_ceiling": "8 x 32GB NVIDIA V100, mixed precision; the paper notes training and inference fit on one GPU [rag App. C, lines 1297-1299]",
+    "largest_evaluation_set": "MS-MARCO test 101093 (a hidden subset used for evaluation), Jeopardy test 26849, TriviaQA test 11314, FEVER-3 test 10000 [rag Table 7, App. I]",
+    "smallest_evaluation_set": "CuratedTrec: 635 train / 134 dev / 635 test [rag Table 7]. The world-leader hot-swap probe is smaller still: 82 items [rag Sec.4.5].",
+    "training_tokens": "absent - never reported; the paper performs no pre-training",
+    "deployment_gap": "The store is a single static public encyclopedia snapshot with no per-user partition, no access control, no incremental writes, no multi-corpus mixing, and no privacy boundary. Modern E-path deployments are per-user, incrementally written, and continuously updated. Every one of those properties is outside this paper's evidence."
+  },
+
+  "concept_ledger_delta": {
+    "new_concepts_introduced": [
+      {
+        "term": "retrieval-augmented generation (RAG)",
+        "definition": "a general-purpose fine-tuning recipe combining a pre-trained parametric seq2seq generator with a pre-trained non-parametric dense index, trained jointly through a latent-document marginalization",
+        "source": "[rag Abstract, lines 21-24; Sec.1, lines 118-122]"
+      },
+      {
+        "term": "non-parametric memory",
+        "definition": "the document index. 'We refer to the document index as the non-parametric memory.'",
+        "source": "[rag Sec.2.2, line 231]",
+        "monograph_action": "This is where the parametric/non-parametric dichotomy enters the literature. Name it, attribute it, then retire it in favour of Theta / E per STC-STYLE Sec.2.4."
+      },
+      {
+        "term": "parametric memory",
+        "definition": "the generator's weights. 'We refer to the BART generator parameters theta as the parametric memory henceforth.'",
+        "source": "[rag Sec.2.3, line 241]"
+      },
+      {
+        "term": "RAG-Sequence vs RAG-Token",
+        "definition": "marginalize the latent document once per output sequence, or once per output token",
+        "source": "[rag Sec.2.1, lines 171-213]"
+      },
+      {
+        "term": "Thorough Decoding / Fast Decoding",
+        "definition": "two approximations for arg max under RAG-Sequence: exact scoring of the union of per-document beams with extra forward passes, versus assuming zero probability for hypotheses outside a document's own beam",
+        "source": "[rag Sec.2.5, lines 264-273]"
+      },
+      {
+        "term": "index hot-swapping",
+        "definition": "replacing the non-parametric memory to update world knowledge without retraining",
+        "source": "[rag Sec.4.5, lines 627-631, 792-796]",
+        "monograph_action": "This is the E-path's founding cost claim: a knowledge update whose price is an index rebuild, not a gradient step or a redeploy of Theta."
+      },
+      {
+        "term": "retrieval collapse",
+        "definition": "the learned retriever degenerating to input-independent retrieval, after which the generator ignores the store",
+        "source": "[rag App. H, lines 1435-1441]",
+        "monograph_action": "The E-path's first named failure mode. Carry it forward: it is the read-side analogue of the write-side failures the later E-path papers hit."
+      },
+      {
+        "term": "knowledge-intensive task",
+        "definition": "'tasks that humans could not reasonably be expected to perform without access to an external knowledge source'",
+        "source": "[rag Sec.1, lines 134-135]"
+      },
+      {
+        "term": "human-readable and human-writable memory",
+        "definition": "'A key feature of our memory is that it is comprised of raw text rather distributed representations, which makes the memory both (i) human-readable, lending a form of interpretability to our model, and (ii) human-writable, enabling us to dynamically update the model's memory by editing the document index.'",
+        "source": "[rag Sec.5 Memory-based Architectures, lines 912-915]",
+        "monograph_action": "Note the missing third property: machine-writable. That absence is the E-path's entire subsequent research programme."
+      }
+    ],
+    "extended_or_renamed": [
+      {
+        "from": "external memory / memory networks [64, 55], stack-augmented networks [25], memory layers [30]",
+        "to": "a pre-trained, pre-loaded, task-agnostic index",
+        "the_shift": "'we explore a setting where both parametric and non-parametric memory components are pre-trained and pre-loaded with extensive knowledge. Crucially, by using pre-trained access mechanisms, the ability to access knowledge is present without additional training.'",
+        "source": "[rag Sec.1, lines 129-133]"
+      },
+      {
+        "from": "differentiable retrieval for extraction (REALM [20], ORQA [31])",
+        "to": "differentiable retrieval for generation",
+        "source": "[rag Sec.1, lines 41-43, 116-119]"
+      }
+    ],
+    "deprecated_by_this_paper": [
+      {
+        "what": "the re-ranker + extractive reader pipeline for open-domain QA",
+        "claim": "'RAG demonstrates that neither a re-ranker nor extractive reader is necessary for state-of-the-art performance.'",
+        "source": "[rag Sec.4.1, lines 370-371]"
+      },
+      {
+        "what": "specialized retrieval-oriented pre-training objectives",
+        "claim": "'Unlike REALM and T5+SSM, RAG enjoys strong results without expensive, specialized \"salient span masking\" pre-training [20].'",
+        "source": "[rag Sec.4.1, lines 367-368]"
+      },
+      {
+        "what": "the null-document mechanism inherited from REALM",
+        "claim": "tried in three variants, dropped for lack of gain; on Open MS-MARCO 'the model learns to always retrieve a particular set of documents for questions that are less likely to benefit from retrieval, suggesting that null document mechanisms may not be necessary for RAG'",
+        "source": "[rag App. F, lines 1359-1368]"
+      }
+    ],
+    "concepts_this_paper_does_NOT_have": "sleep, idle-time compute, consolidation, replay, forgetting rate, per-session state, per-user state, memory write policy, memory eviction, capacity budget per user, amortization over N_q. None of these words appear. The E-path chapter must introduce them as things RAG lacks, not as things RAG has in embryo."
+  },
+
+  "open_questions": [
+    {
+      "question": "Can the parametric and non-parametric components be jointly pre-trained from scratch rather than assembled from separately pre-trained pieces?",
+      "verbatim": "In future work, it may be fruitful to investigate if the two components can be jointly pre-trained from scratch, either with a denoising objective similar to BART or some another objective.",
+      "source": "[rag Sec.6 Discussion, lines 936-938]",
+      "bridge_out": "Explicit and stated. Taken up by the retrieval-pretraining line (Atlas, RETRO), which is outside this monograph's corpus - note the divergence."
+    },
+    {
+      "question": "How do parametric and non-parametric memories interact, and how are they best combined?",
+      "verbatim": "Our work opens up new research directions on how parametric and non-parametric memories interact and how to most effectively combine them",
+      "source": "[rag Sec.6 Discussion, lines 938-940]",
+      "bridge_out": "This is the sentence the whole monograph answers. In unified terms: what is the correct division of labour between Theta and E - and, later, W. Figure 2 is the paper's only evidence on the question."
+    },
+    {
+      "question": "Why does the retriever collapse on some tasks, and how is it prevented?",
+      "verbatim": "The collapse could be due to a less-explicit requirement for factual knowledge in some tasks, or the longer target sequences, which could result in less informative gradients for the retriever.",
+      "source": "[rag App. H, lines 1438-1441]",
+      "bridge_out": "Left entirely open, with two speculative causes and no experiment."
+    },
+    {
+      "question": "Can RAG produce the evidence-sentence output FEVER's second sub-task requires?",
+      "verbatim": "As FEVER uses a different Wikipedia dump to us, directly tackling this task is not straightforward. We hope to address this in future work.",
+      "source": "[rag App. E, lines 1351-1353]",
+      "bridge_out": "Provenance was named in the abstract as an open problem RAG addresses; the sub-task that would actually measure provenance is deferred."
+    },
+    {
+      "question": "Does the retrieve-and-generate recipe extend to retrieve-and-edit settings (machine translation, semantic parsing)?",
+      "verbatim": "This said, RAG techniques may work well in these settings, and could represent promising future work.",
+      "source": "[rag Sec.5 Retrieve-and-Edit approaches, lines 923-925]"
+    },
+    {
+      "question": "IMPLICIT, and the one the E-path actually inherits: who writes to E? The paper establishes that the store is human-writable and demonstrates only a wholesale human/pipeline replacement. It never asks whether the model itself should author records.",
+      "source": "[rag Sec.5, lines 912-915; Sec.4.5, lines 792-796] - the absence is throughout",
+      "bridge_out": "This is the bridge into MemGPT: giving the model an interface and a policy for wr(E, c-hat). And thence into Letta STC: making c-hat the product of offline inference rather than a copy of raw text."
+    },
+    {
+      "question": "IMPLICIT: what does retrieval cost at serving time? The paper names runtime as a consequence of K and never measures it.",
+      "source": "[rag Sec.4.5, line 799 'which can affect performance and runtime'; Figure 3 plots quality only]",
+      "bridge_out": "The cost axis of the E-path is opened as an acknowledged variable and immediately left unmeasured. Every cost claim the later E-path makes inherits this silence."
+    }
+  ],
+
+  "unfavorable_facts": [
+    {
+      "fact": "The learned differentiable retriever is beaten by BM25 on FEVER. RAG-Token-BM25 scores FVR-3 75.1 and FVR-2 91.6 against full RAG-Token's 74.5 and 90.6. The paper concedes it: 'For FEVER, BM25 performs best'.",
+      "source": "[rag Table 6, lines 699-790; Sec.4.5, lines 622-626]",
+      "why_it_matters": "The central claim - that learning to retrieve is the contribution - reverses on one of the five task families. A word-overlap retriever with no parameters wins there."
+    },
+    {
+      "fact": "The claim 'learned retrieval improves results for all tasks' is not literally true in the table it cites: on MS-MARCO Bleu-1, RAG-Token-Frozen and RAG-Token both score 49.4 - an exact tie, not an improvement.",
+      "source": "[rag Sec.4.5, lines 619-621 vs Table 6, lines 730-790]"
+    },
+    {
+      "fact": "The retriever is not learned from scratch: it is initialized from DPR, 'which uses retrieval supervision on Natural Questions and TriviaQA' - two of the four open-domain QA benchmarks on which RAG then claims state of the art. The authors flag this themselves.",
+      "source": "[rag Sec.4.1, lines 368-370; Sec.2.2, lines 228-231]",
+      "why_it_matters": "The headline SotA numbers on NQ and TQA sit on a retriever that saw retrieval supervision for those very datasets."
+    },
+    {
+      "fact": "'End-to-end' is partial. The document encoder and the index are frozen throughout: 'we ... keep the document encoder (and index) fixed, only fine-tuning the query encoder BERT_q and the BART generator.' Figure 1's caption says 'fine-tune end-to-end' while the figure's own label reads 'End-to-End Backprop through q and p_theta' - excluding d(z).",
+      "source": "[rag Sec.2.4, lines 252-255; Figure 1 caption, line 113; figure label, line 98]"
+    },
+    {
+      "fact": "On an entire task family the mechanism fails outright: for story generation the retriever collapses to input-independent retrieval, the generator learns to ignore the documents, and 'the RAG model would perform equivalently to BART'. This is reported in an appendix with no numbers, no dataset detail, and no attempted fix.",
+      "source": "[rag App. H, lines 1435-1441]"
+    },
+    {
+      "fact": "The TriviaQA state-of-the-art claim is split-dependent, and the authors say the favourable split is the easier one: 'On all four open-domain QA tasks, RAG sets a new state of the art (only on the T5-comparable split for TQA)'; and 'We find that our performance is much higher using the official Wiki test set, rather than the more conventional open-domain test set, which we attribute to the official Wiki test set questions being simpler to answer from Wikipedia.' The headline 68.0 is the easier split; on the conventional split RAG-Sequence scores 56.8 against DPR's 57.9.",
+      "source": "[rag Sec.4.1, lines 364-365; App. D, lines 1338-1341; Table 1]"
+    },
+    {
+      "fact": "The MS-MARCO comparison is not like-for-like and the paper says so: the authors discard the ten supplied gold passages and treat the task as open-domain, then compare against a SotA marked '*Uses gold context/evidence'. They also note 'MSMARCO has some questions that cannot be answered in a way that matches the reference answer without access to the gold passages' and 'some MSMARCO questions cannot be answered using Wikipedia alone'.",
+      "source": "[rag Sec.3.2, lines 308-317; Table 2 caption, lines 376-380]"
+    },
+    {
+      "fact": "Jeopardy question generation is a task the authors propose, with an evaluation the authors design and a baseline the authors train: 'As this is a new task, we train a BART model for comparison.' The human study is on 452 pairs, judged pairwise, with two annotators discarded for failing gold checks; no annotator count, no inter-annotator agreement, no confidence interval is reported.",
+      "source": "[rag Sec.3.3, lines 329-338; Sec.4.3, line 480; App. B, lines 1287-1291]"
+    },
+    {
+      "fact": "Table 4's Specificity column sums to 93.0%, not 100% (16.8 + 37.4 + 11.8 + 6.9 + 20.1). The Factuality column sums to 100.0%. The paper does not comment.",
+      "source": "[rag Table 4, lines 634-657]"
+    },
+    {
+      "fact": "The prose and Table 4 disagree on the factuality tie rate: Sec.4.3 says 'both RAG and BART were factual in a further 17% of cases', while Table 4 gives Both good = 11.7% and Both poor = 17.7%.",
+      "source": "[rag Sec.4.3, line 483 vs Table 4, lines 634-657]"
+    },
+    {
+      "fact": "The paper reports no latency, no throughput, no FLOPs, and no index-build time anywhere. It acknowledges the runtime axis - varying K 'can affect performance and runtime' - and then plots K against quality only, in all three panels of Figure 3.",
+      "source": "[rag Sec.4.5, lines 797-803; Figure 3, lines 805-879; App. C reports only memory footprint]",
+      "why_it_matters": "The E-path's founding paper introduces a per-query cost multiplier of up to 50 forward contexts and never measures it. Every downstream E-path cost claim inherits this gap."
+    },
+    {
+      "fact": "The expensive decode path's cost is described only qualitatively. Thorough Decoding runs a beam search per retrieved document and then 'an additional forward pass for each document z for which y does not appear in the beam', and 'For longer output sequences, |Y| can become large, requiring many forward passes'. No count of |Y|, no measurement, and the cheaper Fast Decoding is adopted for the generation tasks because Thorough Decoding 'did not improve performance'.",
+      "source": "[rag Sec.2.5, lines 264-273; App. A, lines 1278-1279]"
+    },
+    {
+      "fact": "The parameter accounting is inconsistent. Sec.2.3 says BART-large has 400M parameters; App. G says 406M. App. G's total of '626M trainable parameters' is obtained by adding the 110M document encoder, which the same sentence says is not trained ('although we do not train the document encoder ourselves'). The genuinely trained count is 516M.",
+      "source": "[rag Sec.2.3, line 237; App. G, lines 1374-1377]"
+    },
+    {
+      "fact": "The knowledge-staleness result rests on an 82-item, template-generated, author-built probe ('Who is {position}?' over world leaders whose office changed), and even with a matched index accuracy is only 70% and 68%.",
+      "source": "[rag Sec.4.5, lines 790-796]"
+    },
+    {
+      "fact": "Everything is measured on a single corpus: one December 2018 Wikipedia dump (plus a December 2016 dump used solely for the hot-swap probe). No noisy web corpus, no domain corpus, no multi-corpus mixing, no private or per-user partition is tested - despite the Broader Impact section proposing exactly that use ('by endowing it with a medical index').",
+      "source": "[rag Sec.3, lines 279-284; Sec.4.5, lines 629-631; Broader Impact, lines 947-950]"
+    },
+    {
+      "fact": "The null-document mechanism was tried in three forms and none helped; the paper reports this without a single number, so the size of the deficit under unanswerable queries is unknown.",
+      "source": "[rag App. F, lines 1359-1368]"
+    },
+    {
+      "fact": "Scale is far below deployment: the largest generator is 400M/406M parameters and the largest retriever tower is BERT-BASE. The parametric baseline it out-scores, T5-11B, is taken from published numbers rather than re-run, and no RAG variant is built on a multi-billion-parameter generator, so the paper cannot say whether the retrieval advantage survives generator scaling.",
+      "source": "[rag Sec.2.3, line 237; App. G, lines 1374-1427; Table 1]"
+    },
+    {
+      "fact": "Untested composition: RAG is never combined with any weight-update mechanism, any test-time state, or any model-authored write. The store is static and the weights are static after fine-tuning. Nothing in the paper licenses a claim about how E composes with Theta updates or with W.",
+      "source": "absence throughout; the closest engagement is the Discussion's hope that 'the two components can be jointly pre-trained from scratch' [rag Sec.6, lines 936-938]"
+    },
+    {
+      "fact": "RAG-Sequence and RAG-Token do not order consistently: RAG-Token wins Jeopardy B-1 (17.3 vs 14.7) and QB-1 (22.2 vs 21.4) while RAG-Sequence wins MS-MARCO (R-L 40.8 vs 40.1, B-1 44.2 vs 41.5), NQ (44.5 vs 44.1) and CT (52.2 vs 50.0), and RAG-Token wins WQ (45.5 vs 45.2). There is no rule for choosing between them; the paper offers a post-hoc story for Jeopardy only ('RAG-Token may perform best because it can generate responses that combine content from several documents').",
+      "source": "[rag Table 1 and Table 2; Sec.4.3, lines 486-487]"
+    }
+  ],
+
+  "cross_path_citations": {
+    "verdict": "RAG engages the E-path only. The W-path is absent from the bibliography entirely. The Theta-path appears three times and every appearance is instrumental - as a baseline to beat or a contrast to draw - never as a line of work whose question RAG takes up.",
+    "bibliography_scope": "68 references, all from the 2015-2020 NLP/IR window (a handful older). Full list at [rag References, lines 967-1263].",
+    "E_path_and_ancestors_cited": [
+      "REALM [20] Guu et al. 2020 - the direct predecessor; cited for its differentiable retriever, its salient-span-masking pre-training, its periodic index refresh, and its null-document mechanism [rag Sec.1, Sec.2.4, Sec.4.1, App. F]",
+      "ORQA [31] Lee et al. 2019 - latent retrieval for weakly supervised open-domain QA [rag Sec.1, Sec.5]",
+      "DPR [26] Karpukhin et al. 2020 - the retriever RAG is initialized from [rag Sec.2.2]",
+      "kNN-LM [27] Khandelwal et al. 2020 - 'Generalization through memorization' [rag Sec.5 Single-Task Retrieval]",
+      "Memory networks [64] Weston et al., [55] Sukhbaatar et al. - 'Our document index can be seen as a large external memory for neural networks to attend to, analogous to memory networks' [rag Sec.5 Memory-based Architectures]",
+      "Entities as Experts [14] Fevry et al. 2020, KNN-based composite memory [13] Fan et al. 2020 [rag Sec.5]",
+      "FAISS [23] and HNSW [37] - the retrieval substrate [rag Sec.2.2, Sec.3]"
+    ],
+    "Theta_path_contacts": [
+      {
+        "reference": "[52] Roberts, Raffel, Shazeer, 'How much knowledge can you pack into the parameters of a language model?'",
+        "how_it_is_used": "purely as the closed-book baseline (T5-11B, T5-11B+SSM) and as the source of the T5-large 28.9 EM comparison point",
+        "source": "[rag Sec.3.1, Table 1, App. G]",
+        "reading": "The capacity-of-parameters question - the axis S0 assigns to the 'capacity' theory chapters - is present in RAG's bibliography and is used only as a scoreboard entry. RAG does not engage the capacity argument; it sidesteps it."
+      },
+      {
+        "reference": "[57] Thorne and Vlachos, 'Avoiding catastrophic forgetting in mitigating model biases in sentence-pair classification with elastic weight consolidation'",
+        "how_it_is_used": "as the FEVER-2-way state of the art (92.2*, using gold evidence) and as the source of the 2-way task formulation",
+        "source": "[rag Sec.3.4, lines 353-354; Sec.4.4, lines 602-604; Table 2 caption]",
+        "reading": "THE NEAR-MISS OF THIS PAPER. An elastic-weight-consolidation paper - EWC being one of S0's two named common ancestors of the Theta-path - sits in RAG's bibliography, and its catastrophic-forgetting content is used for nothing. It is cited as a number in a table. This is the sharpest available illustration of the two communities passing each other: the E-path's founding paper had a continual-learning paper open on the desk and took the benchmark score out of it."
+      },
+      {
+        "reference": "[30] Lample et al., 'Large memory layers with product keys'",
+        "how_it_is_used": "cited in the Introduction as an example of non-parametric memory 'trained from scratch for specific tasks', in contrast to RAG's pre-trained components",
+        "source": "[rag Sec.1, lines 129-132]",
+        "reading": "The memory-layer ancestor of the Theta-path's Memory Layers branch appears, but as a foil."
+      }
+    ],
+    "W_path_contacts": "NONE. No test-time training, no fast weights, no meta-learning, no Hebbian or associative memory, no linear-attention-as-memory, no recurrence-as-state. Not one reference in the 68 addresses a state that moves at test time. This is not a chronology artefact alone: fast-weight and meta-learning literature existed in 2020 and is simply absent.",
+    "biology_and_CLS_contacts": "NONE. No complementary learning systems, no consolidation, no sleep, no replay-for-forgetting. The metaphor RAG uses is a database, not a brain.",
+    "chronology_caveat": "RAG (2020) predates every sleep-time-compute paper in the corpus by four to six years, so it could not cite them. The correct direction of the silence test for this paper is the reverse: whether the W-path and Theta-path papers cite RAG. Record that check against each of those notes, not this one. What IS attributable to RAG is the composition of its own bibliography - a pure IR/open-domain-QA lineage - and that composition is a choice, not a date.",
+    "monograph_finding": "The E-path does not branch off a shared memory-consolidation trunk; it starts in a different building. Its founding paper's question is retrieval quality, its baselines are QA pipelines, and the one continual-learning paper it cites is reduced to a benchmark row. The three-path split in this monograph is therefore not a taxonomy imposed after the fact - it reproduces an institutional separation visible in the first paper of the first path."
+  },
+
+  "figures": [
+    {
+      "id": "Figure 1 (p.2, lines 112-115)",
+      "what_it_shows": "The whole architecture on one line: query -> Query Encoder -> MIPS over the Document Index -> top-K z_i -> Generator -> marginalize; with the backprop path labelled 'End-to-End Backprop through q and p_theta' and four task instantiations (QA, Jeopardy generation, fact verification) hanging off it.",
+      "why_reproduce": "It is the canonical picture of ret(E,q) inside equation (R), and its backprop label is the visual proof that the document encoder is outside the gradient path. Redraw in unified notation: q, E, ret(E,q), Theta.",
+      "priority": "must"
+    },
+    {
+      "id": "Figure 2 (p.7, lines 563-564)",
+      "what_it_shows": "RAG-Token document posterior p(z_i|x,y_i,y_-i) per generated token for the input 'Hemingway' with 5 retrieved documents: document 1 dominates while 'A Farewell to Arms' is generated, document 2 while 'The Sun Also Rises' is generated, and the posterior flattens after the first token of each title.",
+      "why_reproduce": "The only direct evidence in the paper of Theta and E dividing labour within a single output: E selects the entity, Theta completes the string. The authors confirm it by feeding BART-only the partial decodings [rag Sec.4.3, lines 486-499]. This is the figure the monograph's 'how do the layers interact' argument needs.",
+      "priority": "must"
+    },
+    {
+      "id": "Figure 3 (p.7, lines 805-879)",
+      "what_it_shows": "Three panels against K in [10,50]: left, NQ Exact Match for RAG-Tok and RAG-Seq (RAG-Seq monotone up, RAG-Tok peaking at 10); centre, NQ answer recall@K for RAG-Tok, RAG-Seq, Fixed DPR and BM25; right, MS-MARCO Bleu-1 and Rouge-L for both variants (R-L up, B-1 down for RAG-Token).",
+      "why_reproduce": "The paper's only quality-vs-retrieval-budget curve, and the place to make the cost point: three panels sweep the one knob that sets serving cost, and none of them has a cost axis. Reproduce it and annotate the missing axis.",
+      "priority": "must"
+    },
+    {
+      "id": "Figure 4 (App. B, lines 1285-1286)",
+      "what_it_shows": "The annotation interface used for the human factuality evaluation.",
+      "why_reproduce": "Do not reproduce. Cite only if the chapter discusses the human-evaluation protocol's weaknesses.",
+      "priority": "skip"
+    },
+    {
+      "id": "Table 6 (p.8, lines 678-790)",
+      "what_it_shows": "The BM25 and frozen-retriever ablations across all task families.",
+      "why_reproduce": "Not a figure, but the chapter's obligatory unfavorable-fact table: it is where the FEVER reversal is visible.",
+      "priority": "must (as a table)"
+    }
+  ],
+
+  "systems_implications": {
+    "grounded_in_paper": [
+      {
+        "claim": "The generator's prefill is multiplied by the retrieval fan-out. Each of the K retrieved passages is simply concatenated with the input ('To combine the input x with the retrieved content z when generating from BART, we simply concatenate them'), and K at test time is 15 for RAG-Token and 50 for RAG-Sequence on open-domain QA, 10 for the generation tasks.",
+        "source": "[rag Sec.2.3, lines 237-238; App. A, lines 1273-1279]",
+        "reader_translation": "K=50 means fifty independent (question + 100-word passage) contexts through a 400M encoder-decoder per query. Passages are 100 words each [rag Sec.3], so the added prompt mass is bounded and small per passage but linear in K."
+      },
+      {
+        "claim": "The two model variants have structurally different decode costs. RAG-Token's marginalized transition plugs into one standard beam decoder; RAG-Sequence needs one beam search per document plus extra forward passes for hypotheses absent from a document's beam.",
+        "source": "[rag Sec.2.5, lines 261-273]",
+        "reader_translation": "RAG-Token = one decode loop with a K-way mixture at each step. RAG-Sequence Thorough = K decode loops plus up to |Y| x K rescoring forwards. The paper adopts Fast Decoding for the long-output tasks precisely to avoid the second term."
+      },
+      {
+        "claim": "The store lives in CPU DRAM, not on the accelerator: ~100 GB uncompressed, 36 GB compressed with FAISS, 21M x 728 values storable at 8 bits.",
+        "source": "[rag App. C, lines 1299-1304; App. G, lines 1427-1429]",
+        "reader_translation": "This is a host-memory-resident, read-mostly structure sitting outside HBM, searched by an HNSW graph walk on CPU while the GPU holds a 400M-parameter model. In the memory hierarchy, E is DRAM/NVMe territory and Theta is HBM territory - and RAG is the paper that first pins them to different devices."
+      },
+      {
+        "claim": "Search is claimed sub-linear and 'sufficiently fast on CPU', which is why the vectors were placed there in the first place.",
+        "source": "[rag Sec.2.2, lines 227-228; App. C, lines 1299-1300]",
+        "reader_translation": "The design decision is stated; the latency it implies is not. Take the placement as fact and the speed as an unquantified author judgement."
+      },
+      {
+        "claim": "Updating world knowledge costs an index rebuild and no gradient step: 'we can update RAG's world knowledge by simply replacing its non-parametric memory', measured as 68% correct on the fresh index versus 4% on the two-year-stale one.",
+        "source": "[rag Sec.4.5, lines 627-631, 792-796]",
+        "reader_translation": "In the reader's vocabulary: the deployment artefact does not change. No checkpoint is rewritten, no serving weights are swapped, no per-user delta appears. Contrast the Theta-path, where a knowledge update is a redeploy."
+      },
+      {
+        "claim": "K is a test-time dial: 'We have the flexibility to adjust the number of retrieved documents at test time, which can affect performance and runtime.'",
+        "source": "[rag Sec.4.5, lines 798-799]",
+        "reader_translation": "A quality/cost knob that requires no retraining - and, per Figure 3, one whose quality return is monotone for RAG-Sequence and non-monotone for RAG-Token (peak at 10). An operator can trade SLA for accuracy per request."
+      },
+      {
+        "claim": "Training fits on 8 x 32GB V100 with mixed precision, and 'training and inference can be run on one GPU'.",
+        "source": "[rag App. C, lines 1297-1299]"
+      },
+      {
+        "claim": "The index is built once with a frozen encoder specifically to avoid the periodic re-embedding REALM requires: 'Updating the document encoder BERT_d during training is costly as it requires the document index to be periodically updated'.",
+        "source": "[rag Sec.2.4, lines 252-255]",
+        "reader_translation": "The paper's one explicit systems trade: freeze the document tower, accept a slightly stale embedding function, and buy a static index. It reports no measurement of the accuracy given up."
+      }
+    ],
+    "note_writer_inferences": [
+      {
+        "inference": "Shared-weight batching survives intact. E is global and read-only and Theta is fixed after fine-tuning, so every request in a batch uses the same weights and the same index; only the retrieved passages differ, and those enter as prompt tokens. This is the property the Theta-path loses the moment per-user weight deltas appear (STC-STYLE Sec.3 Rosetta row 'batch로 weight 공유').",
+        "grounding": "Inference from the architecture as described [rag Sec.2, Sec.2.4]; the paper never discusses batching."
+      },
+      {
+        "inference": "Batching is nonetheless perturbed in a different way: the effective sequence count per request is K, not 1, so a batch of B requests is B x K generator contexts. Continuous-batching schedulers see a request whose token cost is set by a retrieval hyperparameter rather than by the user's prompt.",
+        "grounding": "Inference from Sec.2.3's concatenation and App. A's K values; no throughput number in the paper."
+      },
+      {
+        "inference": "There is a CPU-GPU round trip on the critical path of every query: embed the query on GPU (or CPU), search HNSW on CPU, ship K passages back, then prefill. TTFT therefore contains a host-side ANN traversal that scales with index size, not with prompt length.",
+        "grounding": "Placement is stated [rag App. C]; the round trip and its latency consequence are the note writer's inference. The paper measures neither."
+      },
+      {
+        "inference": "The bytes moved per query are dominated by index traffic, not by model weights: an HNSW walk touches a data-dependent set of 728-dimensional vectors scattered across tens of gigabytes of DRAM, which is a random-access, low-arithmetic-intensity workload - the opposite of the dense GEMMs the reader is used to. This is the E-path's characteristic memory signature and the reason retrieval sits on CPU here at all.",
+        "grounding": "Inference. The paper gives the vector count, dimensionality, and footprint [rag App. G, App. C] but no access counts and no bandwidth measurement."
+      },
+      {
+        "inference": "Because per-context sleep cost is zero and the index is amortized across the whole deployment, RAG's cost model has no break-even point to compute. Equation (A) degenerates: C_avg = C_wake, with C_wake inflated by the factor K. The E-path's later papers move cost from the amortized corpus-level term into a per-context term, and that is precisely when amortization arguments become necessary.",
+        "grounding": "Inference from the unified frame applied to the paper's mechanism; the paper contains no amortization discussion."
+      }
+    ],
+    "the_readers_question": "So what does it change at decode? Three things, and only three. (1) Prefill mass is multiplied by K - up to 50 concatenated passage contexts per query [App. A], with no latency number attached. (2) A host-side approximate-nearest-neighbour search over 36-100 GB of DRAM enters the critical path before the first token [App. C]. (3) Nothing about the deployment artefact changes when knowledge changes - the fix is to rebuild an index, not to retrain or redeploy [Sec.4.5]. Everything else the reader knows about serving still holds: weights are shared, batching is unbroken, no per-user state exists."
+  },
+
+  "todo_verify": [
+    {
+      "item": "Venue. The vendored plate carries no venue line; RAG is commonly cited as NeurIPS 2020 but that cannot be confirmed from this file.",
+      "how_to_settle": "grep -in 'neurips\\|advances in neural\\|conference on neural' papers/stc/2005.11401.txt (returns nothing in the body); otherwise check the arXiv abstract page comments field for 2005.11401v4."
+    },
+    {
+      "item": "Embedding dimensionality 728 vs 768. App. G states '21M 728 dimensional vectors, consisting of 15.3B values'. The arithmetic is internally consistent (21e6 x 728 = 15.29e9), but DPR's standard BERT-BASE output width is 768, which would give 16.1B values. Either the paper has a typo that propagated into its own product, or the index really is 728-wide.",
+      "how_to_settle": "Check the published PDF's Appendix G text for '728'; cross-check the DPR paper (2004.04906) for the bi-encoder output dimension. Do not print a dimensionality in the chapter until resolved - print the footprint (100 GB / 36 GB) instead, which is unambiguous."
+    },
+    {
+      "item": "Table 1 REALM and DPR rows. The PDF-to-text conversion scrambled Table 1's columns; the REALM row (NQ 40.4, WQ 40.7, CT 46.8) and DPR row (NQ 41.5, TQA 57.9, WQ 41.1, CT 50.6) in this note are reconstructions from dislocated fragments at lines 402-448.",
+      "how_to_settle": "Read Table 1 in the published PDF. The RAG and T5 rows are contiguous in the text dump and need no check; only the REALM/DPR rows do."
+    },
+    {
+      "item": "Table 6 column order for MS-MARCO. The header reads 'MSMarco R-L B-1' and the values (e.g. 56.2, 49.4) are far above Table 2's test values (40.1, 41.5). Assumed to be a dev/test split difference, not a column swap.",
+      "how_to_settle": "Read Table 6 in the published PDF and confirm the caption 'Ablations on the dev set' applies to the MS-MARCO columns too."
+    },
+    {
+      "item": "Whether Table 6's FEVER values are single shared rows across the RAG-Token/RAG-Sequence pairs (as assumed here, on the strength of the caption 'As FEVER is a classification task, both RAG models are equivalent') or two separate rows that the text dump collapsed.",
+      "how_to_settle": "Read Table 6 in the published PDF; count FEVER entries per block."
+    },
+    {
+      "item": "'8-bit floating point precision' in App. G - whether this means an fp8 format or is loose phrasing for 8-bit quantization of the index (the more likely reading for a 2020 FAISS pipeline).",
+      "how_to_settle": "grep -n '8-bit' papers/stc/2005.11401.txt (line 1428 is the only occurrence, and it is not elaborated); check the HuggingFace RAG index documentation for the compression scheme that yields 36 GB."
+    },
+    {
+      "item": "Whether the 36 GB compressed figure and the ~100 GB uncompressed figure refer to the same 21M-vector index (App. C implies yes, but the compressed number is introduced alongside the HuggingFace port).",
+      "how_to_settle": "Re-read App. C lines 1297-1307 in the published PDF for the antecedent of 'the document index'."
+    },
+    {
+      "item": "The genuinely-trained parameter count. This note states 516M (406M generator + 110M query encoder) against the paper's stated 626M total 'trainable'. Confirm no other trainable component exists (e.g. a projection layer).",
+      "how_to_settle": "grep -n 'trainable\\|parameters' papers/stc/2005.11401.txt, lines 1374-1377 and Sec.2.2-2.3; cross-check the HuggingFace RagModel implementation."
+    },
+    {
+      "item": "Whether any later corpus paper on the W-path or Theta-path cites RAG (the reverse-direction silence test that this note cannot perform).",
+      "how_to_settle": "grep -il 'retrieval-augmented\\|2005.11401\\|Lewis et al' across papers/stc/*.txt and record the result in each of those notes' cross_path_citations."
+    }
+  ]
+}

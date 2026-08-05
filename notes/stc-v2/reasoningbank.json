@@ -1,0 +1,692 @@
+{
+  "paper_id": "reasoningbank",
+  "arxiv": "2509.25140",
+  "arxiv_version_read": "v2 [cs.AI] 16 Mar 2026 (stamp on p.1, line 7 of vendored txt)",
+  "title": "ReasoningBank: Scaling Agent Self-Evolving with Reasoning Memory",
+  "authors": "Siru Ouyang (UIUC, work done while interning at Google Cloud AI Research), Jun Yan, I-Hung Hsu, Yanfei Chen, Ke Jiang, Zifeng Wang, Rujun Han, Long T. Le, Samira Daruki, Xiangru Tang (Yale), Vishy Tirumalashetty, George Lee, Mahsan Rofouei, Hangfei Lin, Jiawei Han (UIUC), Chen-Yu Lee, Tomas Pfister. Corresponding: Jun Yan, Chen-Yu Lee.",
+  "affiliations": "1 University of Illinois Urbana-Champaign, 2 Google Cloud AI Research, 3 Yale University, 4 Google Cloud AI (lines 3-9)",
+  "venue": "arXiv preprint. No venue is stated anywhere in the vendored text. Code released at https://github.com/google-research/reasoning-bank (abstract, line 26).",
+  "date": "arXiv v2 stamped 16 Mar 2026; arXiv ID 2509 implies v1 Sep 2025. The vendored text does not state the v1 date.",
+  "path": "papers/stc/2509.25140.txt (2481 lines; all source locations below are 'section, txt:line-range')",
+  "axis": "E",
+
+  "problem_stated": {
+    "one_line": "LLM agents deployed in persistent roles meet a continuous stream of tasks but do not learn from accumulated interaction history; existing agent memory stores raw trajectories or success-only workflows, which are neither transferable nor able to exploit failures.",
+    "verbatim_quotes": [
+      {
+        "quote": "As these agents are increasingly deployed in persistent, long-running roles, they naturally encounter a continuous stream of tasks and interactions. However, a critical limitation persists: they largely fail to learn from this accumulated experience. By approaching each new task in isolation, they are doomed to (i) repeat similar errors observed in the past, (ii) discard valuable insights gained from related problems, and, most importantly, (iii) lack self-evolving capabilities that make the agent system more capable over time.",
+        "location": "§1 Introduction, txt:34-39"
+      },
+      {
+        "quote": "They suffer from two fundamental drawbacks. First, they lack the ability to distill higher-level, transferable reasoning patterns. Second, by over-emphasizing successful experiences, they leave the valuable lessons from an agent's own failures largely underexplored (Zhang et al., 2024). Consequently, existing memory designs often remain limited to passive record-keeping rather than providing actionable, generalizable guidance for future decisions.",
+        "location": "§1 Introduction, txt:146-150"
+      },
+      {
+        "quote": "This streaming setting highlights two key challenges: (i) how to extract and preserve useful memory from past trajectories, and (ii) how to effectively leverage such memory for future queries to avoid redundantly re-discovering already successful strategies or repeating past mistakes.",
+        "location": "§3.1 Test-Time Learning, txt:310-312"
+      },
+      {
+        "quote": "no ground truth is available during test-time, so the agent must continually evolve by only leveraging its own past trajectories and any self-verification without relying on external labels.",
+        "location": "§3.1 Test-Time Learning, txt:308-309"
+      }
+    ],
+    "second_problem": "A separate, secondary problem is claimed for MaTTS: test-time scaling has not been studied jointly with agent memory. 'We found that none of these efforts considers the role of agent memory in scaling, where an agent can learn from past experiences to guide future decisions.' [§2 Agent Test-Time Scaling, txt:215-216]"
+  },
+
+  "inherited_open_question": {
+    "status": "none-stated",
+    "evidence": "The paper never quotes, cites, or paraphrases an open question left by a specific prior paper. Its §1 and §2 state gaps in the author's own voice ('They suffer from two fundamental drawbacks…' txt:146; 'We found that none of these efforts considers the role of agent memory in scaling' txt:215). There is no 'X et al. left open…' construction anywhere in §1, §2, §3 or Appendix D.",
+    "what_it_implicitly_answers": [
+      "It implicitly answers the limitation of Agent Workflow Memory (AWM, Wang et al. 2025d, ICML 2025) and Synapse (Zheng et al. 2024, ICLR 2024) — its only two memory baselines — namely that a memory built exclusively from successful trajectories/workflows cannot use failures and does not abstract to transferable strategy. The paper makes this the explicit contrast: 'Different from previous works that emphasize reusing successful trajectories …, procedural workflows …, or instance-level concepts …, ReasoningBank stores high-level strategies and reasoning hints.' [§2 Memory for LLM Agents, txt:199-202]",
+      "It implicitly answers the agent-side version of the test-time-scaling question raised by Snell et al. (2025) and Zhu et al. (2025) — whether extra test-time compute helps in multi-turn agentic settings — by routing the extra compute's *by-product* (diverse trajectories) into E rather than only into the current answer. [§2 Agent Test-Time Scaling, txt:206-219; §3.3, txt:353-364]",
+      "It does NOT inherit from the sleep-time-compute lineage at all. 'Sleep-time compute' (Letta, 2504.13171) is not cited; the word 'sleep' does not occur anywhere in the paper (verified by grep over the full text). MemGPT (Packer et al. 2023) is cited only once, as an example of plain-text memory storage [§2, txt:188-189]."
+    ],
+    "finding_for_the_monograph": "This is a real bridge break. ReasoningBank is the E-path paper closest to consolidation, yet it takes up no stated question from MemGPT or from Letta's Sleep-time Compute. Its inherited question comes from the *agent-memory* community (AWM/Synapse/ExpeL), not from the sleep-time-compute community. Chapter E-4's bridge-in must be built from AWM/Synapse, and the absence of a Letta link must be stated as such."
+  },
+
+  "core_mechanism": {
+    "preface": "The paper contains NO numbered equations. The only display formulas in the whole text are the definitions of SR and AS in Appendix B.1 (txt:2032-2040), and they are unnumbered. Therefore every equation below is a reconstruction in the unified notation, and each is cited to a section/figure location rather than to an equation number. This absence of formalism is itself a fact about the paper: the mechanism is specified entirely by prose plus four verbatim prompts (Figures 9, 10, 11, 12).",
+
+    "state": "Three layers in the unified frame: $\\Theta$ = the frozen backbone LLM (Gemini-2.5-Flash / Gemini-2.5-Pro / Claude-3.7-Sonnet / Gemma-3-12B-Instruct), never updated; $W$ = absent — the paper defines no fast-weight state at all; $E$ = ReasoningBank, a JSON pool of records, each record = {task query, original trajectory, memory items}, each memory item = {title, description, content} [§3.2 Memory Schema, txt:327-332; App A.2 'ReasoningBank Storage', txt:1937-1942].",
+
+    "equations": [
+      {
+        "id": "RB-1 (read)",
+        "latex": "\\hat y \\;=\\; f\\big(q_k;\\ \\Theta,\\ \\mathrm{ret}(E_k, q_k)\\big), \\qquad W \\ \\text{unused}",
+        "gloss": "The agent policy is the frozen backbone conditioned on retrieved memory injected as extra system instruction. Standard form (R) with the $W$ argument empty.",
+        "paper_location": "§3.1 Agent Configuration: 'The agent policy $\\pi_L(\\cdot|M,A)$ is parameterized by the backbone LLM $L$, conditioned on a memory module $M$, and the action space $A$' … 'For implementation, the memory module $M$ contributes relevant memories as additional system instruction for $\\pi_L$.' [txt:293-304]"
+      },
+      {
+        "id": "RB-2 (retrieval)",
+        "latex": "\\mathrm{ret}(E_k, q_k) \\;=\\; \\bigcup_{e \\,\\in\\, \\mathrm{TopN}_{n_{\\mathrm{ret}}}\\!\\left(\\cos\\!\\big(\\phi(q_k),\\, \\phi(q_e)\\big)\\right)} \\mathrm{items}(e), \\qquad n_{\\mathrm{ret}} = 1 \\ \\text{(default)}",
+        "gloss": "Cosine top-$n_{\\mathrm{ret}}$ over *query* embeddings, not item embeddings; the whole item set of the matched past experience is pulled in. $\\phi$ = gemini-embedding-001 via Vertex AI. The embedding is precomputed per query and stored in a separate JSON file.",
+        "paper_location": "App A.2 'Memory Retrieval and Response Generation', txt:1869-1874; storage in App A.2 'ReasoningBank Storage', txt:1937-1942"
+      },
+      {
+        "id": "RB-3 (self-judge)",
+        "latex": "j_k \\;=\\; \\mathrm{Judge}\\big(q_k,\\ \\mathcal{H}^{\\Delta}_k,\\ \\text{final page state},\\ \\text{response};\\ \\Theta\\big) \\in \\{\\text{success}, \\text{failure}\\}",
+        "gloss": "An LLM-as-a-Judge on the SAME backbone $\\Theta$, temperature 0.0, produces the binary proxy label with no ground truth. This label is the gate that selects which extraction prompt runs.",
+        "paper_location": "§3.2, txt:341-346; App A.1 Figure 10 (verbatim judge prompt), txt:1820-1854; App A.2, txt:1864-1868 ('decoding temperature setting to 0.0 for determinism')"
+      },
+      {
+        "id": "RB-4 (write / offline summarisation)",
+        "latex": "\\hat c_k \\;=\\; S\\big(\\mathcal{H}^{\\Delta}_k;\\ B_s,\\ j_k\\big) \\;=\\; \\begin{cases} S_{+}(\\mathcal{H}^{\\Delta}_k) & j_k=\\text{success} \\\\ S_{-}(\\mathcal{H}^{\\Delta}_k) & j_k=\\text{failure}\\end{cases}, \\qquad |\\hat c_k| \\le 3",
+        "gloss": "The paper's central move: $S(\\cdot)$ is *label-conditional*. $S_{+}$ is prompted to say why the trajectory succeeded and extract validated strategies; $S_{-}$ is prompted to reflect on why it failed and extract preventative lessons. Both are capped at 3 memory items and both are instructed 'Do not mention specific websites, queries, or string contents' — the abstraction constraint is enforced by prompt, not by architecture. Extractor runs on the same backbone $\\Theta$ at temperature 1.0.",
+        "paper_location": "§3.2, txt:341-349; App A.1 Figure 9 (both prompts verbatim), txt:1749-1805; App A.2 'Memory Extraction', txt:1857-1868"
+      },
+      {
+        "id": "RB-5 (consolidation) — this is the paper's (U-E)",
+        "latex": "E_{k+1} \\;=\\; \\mathrm{wr}\\big(E_k,\\ \\hat c_k\\big) \\;=\\; E_k \\,\\cup\\, \\hat c_k",
+        "gloss": "Pure set union. No merge, no dedup across records, no eviction, no decay, no rewrite. The paper calls this 'a simple addition operation' and 'a minimal consolidation strategy: newly generated items are directly added without additional pruning.' Consequently $|E|$ grows monotonically at up to 3 items per task.",
+        "paper_location": "§3.2, txt:347-349; App A.2 'Memory Consolidation', txt:1932-1936"
+      },
+      {
+        "id": "RB-6 (MaTTS-parallel)",
+        "latex": "\\hat c_k \\;=\\; S_{\\parallel}\\big(\\mathcal{H}^{\\Delta,1}_k, \\ldots, \\mathcal{H}^{\\Delta,m}_k;\\ B_s\\big), \\qquad |\\hat c_k| \\le 5",
+        "gloss": "$m$ independent trajectories are rolled out for the SAME query under the same retrieved memory; a single self-contrast prompt sees all $m$ at once and emits up to 5 items. This replaces the per-trajectory judge: 'Instead of relying on the LLM to act as an external judge of quality, the model is guided to directly compare and contrast trajectories.' The final answer is chosen by a separate Best-of-N selector prompt on the same backbone.",
+        "paper_location": "§3.3 Parallel Scaling, txt:366-370, 452-455; App A.3 Figure 11 left panel (verbatim), txt:1881-1903; BoN selector Figure 12, txt:1953-1978"
+      },
+      {
+        "id": "RB-7 (MaTTS-sequential)",
+        "latex": "\\mathcal{H}^{\\Delta,(i+1)}_k \\;=\\; \\mathrm{Refine}\\big(\\mathcal{H}^{\\Delta,(i)}_k;\\ \\Theta\\big),\\ i=1..m; \\qquad \\hat c_k \\;=\\; S\\big(\\{\\mathcal{H}^{\\Delta,(i)}_k\\}_{i=1}^{m};\\ B_s\\big)",
+        "gloss": "One trajectory is re-examined $m$ times with a fixed 'Let's check again' instruction; the intermediate refinement notes — not only the final trajectory — are fed to the extractor. Self-refinement in the sense of Madaan et al. (2023).",
+        "paper_location": "§3.3 Sequential Scaling, txt:458-464; App A.3 Figure 11 right panel (verbatim check instructions), txt:1905-1918"
+      },
+      {
+        "id": "RB-8 (round schedule)",
+        "latex": "\\text{for } k = 1..N: \\quad \\mathrm{ret}(E_k,q_k) \\rightarrow \\text{act} \\rightarrow j_k \\rightarrow \\hat c_k \\rightarrow E_{k+1}",
+        "gloss": "One sleep round per task, executed immediately after the task ends and before the next task's query is revealed. Tasks arrive strictly sequentially with no lookahead and no ground truth. Note that under the S0 operational definition this qualifies as sleep-time compute (the budget is spent before the NEXT query arrives) but the idle window is degenerate — the paper never separates a wake phase from an idle phase, and never mentions latency or scheduling.",
+        "paper_location": "§3.1 Test-Time Learning, txt:305-312; §3.2 closed loop, txt:349-352; Figure 2, txt:284-288"
+      }
+    ],
+
+    "how_it_differs_from_canonical_U_E": [
+      "Canonical (U-E) summarises the *context* $c_k$ of a future query before that query arrives. ReasoningBank summarises the agent's own *trajectory* from a past query. The object written is experience, not context — this is exactly what makes it the closest E-path analogue of consolidation.",
+      "$S(\\cdot; B_s)$ is gated by a self-produced binary label $j_k$; the canonical form has no such gate. The failure branch $S_{-}$ has no counterpart in the canonical write at all.",
+      "$\\mathrm{wr}$ is pure union. There is no compaction operator, so the rate-distortion question that $C_{\\text{cap}}$ exists to ask is never posed.",
+      "In MaTTS, $B_s$ is spent generating *new experience* ($m$ rollouts) rather than on processing existing experience — a budget mode the canonical (U-E) does not contemplate. The rollouts are simultaneously wake-time compute for the current task and sleep-time material for the next."
+    ],
+
+    "notation_conflicts": [
+      {"paper_symbol": "$M$", "paper_meaning": "the memory module (= ReasoningBank), §3.1 txt:294-299", "unified": "$E$", "note": "Must not be confused with the reserved $\\mathcal{M}(\\cdot;W)$ (memory read function, NM-inherited). Never write bare $M$ in the chapter."},
+      {"paper_symbol": "$L$", "paper_meaning": "the backbone LLM, §3.1 txt:294", "unified": "$\\Theta$ (frozen)", "note": "HARD COLLISION with two reserved symbols: $\\mathcal{L}$ (outer/task loss) and $L$ (number of layers, §1.3). The chapter must never use bare $L$ for the backbone."},
+      {"paper_symbol": "$\\pi_L(\\cdot\\,|\\,M,A)$", "paper_meaning": "agent policy", "unified": "$f(q;\\Theta,\\cdot,\\mathrm{ret}(E,q))$", "note": "The policy is not learned; it is $\\Theta$ plus a prompt. Writing it as $\\pi$ invites the reader to think RL. The paper itself invites this ('resemble the learning dynamics of RL', §5 txt:1175-1186) without any policy-gradient step existing."},
+      {"paper_symbol": "$\\mathcal{H}$ (script H, Figure 2)", "paper_meaning": "'experience/trajectory' — a SINGLE trajectory of one task, txt:239, 267", "unified": "$\\mathcal{H}^{\\Delta}_k$ (the round-$k$ increment)", "note": "Reserved $\\mathcal{H}_k$ is the ACCUMULATED experience up to round $k$. The paper's $\\mathcal{H}$ is the increment only. Superscript $\\Delta$ is a chapter-local disambiguator."},
+      {"paper_symbol": "$k$ (MaTTS)", "paper_meaning": "scaling factor: number of parallel trajectories, or number of sequential refinement steps, §3.3 txt:462", "unified": "$m$", "note": "COLLISION with reserved $k$ = sleep round index. In this chapter $k$ indexes tasks and $m$ is the MaTTS scaling factor. Chapter-local row for §1.7."},
+      {"paper_symbol": "$k$ (retrieval)", "paper_meaning": "top-$k$ most similar experiences, default 1, App A.2 txt:1871-1872", "unified": "$n_{\\mathrm{ret}}$", "note": "The paper overloads $k$ THREE ways (MaTTS factor, retrieval top-k, pass@k). All three must be renamed. $n$ is already reserved for stored item count (§1.3), so $n_{\\mathrm{ret}}$ for retrieved count."},
+      {"paper_symbol": "$t$", "paper_meaning": "step index inside one agent trajectory (one ReAct observe-think-act cycle), §3.1 txt:296-301", "unified": "$t$ (kept), but the tick is an environment interaction step, not a token or chunk", "note": "Reserved $t$ = token/chunk index. Here one $t$ is one full LLM call plus one environment transition. State the tick explicitly wherever $t$ appears in this chapter."},
+      {"paper_symbol": "$N$", "paper_meaning": "number of test tasks in the stream, §3.1 txt:306", "unified": "$N$ (task-stream length)", "note": "Reserved $N_q$ = number of queries sharing ONE context. In ReasoningBank each task is its own context, so $N_q = 1$ per context and reuse happens across contexts. Do not equate $N$ with $N_q$."},
+      {"paper_symbol": "$q_i$, $Q$", "paper_meaning": "task query, query stream", "unified": "$q_k$", "note": "Compatible; the only change is that the index is the sleep-round index."},
+      {"paper_symbol": "$\\mathcal{A}$ / $A$", "paper_meaning": "action space (web navigation ops, or bash commands)", "unified": "$A$", "note": "No conflict."},
+      {"paper_symbol": "$T(s_{t+1}|s_t,a_t)$", "paper_meaning": "environment transition function", "unified": "unchanged", "note": "No conflict; $T$ is not reserved."},
+      {"paper_symbol": "SR, AS", "paper_meaning": "success rate, average steps (App B.1, txt:2027-2047)", "unified": "SR, AS", "note": "AS is the paper's only proxy for wake-time cost. It is a step count, not $L_w$ and not $B_t$."}
+    ]
+  },
+
+  "outer_vs_inner": {
+    "reader_answer_one_line": "Nothing is trained. Every learnable-looking object in this paper is either a frozen pre-trained checkpoint or a piece of text produced by prompting that same checkpoint.",
+    "table": [
+      {"object": "Backbone LLM weights $\\Theta$ (Gemini-2.5-Flash/Pro, Claude-3.7-Sonnet, Gemma-3-12B-Instruct)", "who_learns_it": "Nobody, in this paper. Pre-trained by the vendor; accessed through the Vertex AI API.", "when": "Never during the experiments. No gradient, optimizer, LoRA, or fine-tune appears anywhere in the paper (verified by grep: no occurrence of 'gradient', 'LoRA', 'fine-tuning of the agent', 'backprop').", "location": "§4.1 txt:474-476; App B.1 Implementation Details, txt:2020-2026"},
+      {"object": "Fast weights $W$", "who_learns_it": "Does not exist in this system.", "when": "n/a", "location": "no mention in the paper"},
+      {"object": "Memory items {title, description, content} in $E$", "who_learns_it": "Generated by the backbone $\\Theta$ acting as an extractor, under a fixed hand-written prompt.", "when": "Sleep round: immediately after each task finishes, before the next task's query is revealed. Temperature 1.0.", "location": "§3.2 txt:341-349; App A.1 Fig. 9; App A.2 txt:1857-1863"},
+      {"object": "Success/failure label $j_k$", "who_learns_it": "Generated by the backbone $\\Theta$ acting as LLM-as-a-Judge, fixed prompt, no ground truth.", "when": "Sleep round, immediately before extraction. Temperature 0.0.", "location": "§3.2 txt:341-346; App A.1 Fig. 10; App A.2 txt:1864-1868"},
+      {"object": "Query embeddings $\\phi(q)$", "who_learns_it": "gemini-embedding-001, a frozen off-the-shelf embedder (Lee et al., 2025). Not trained or adapted here.", "when": "Precomputed once per query and persisted in a separate JSON.", "location": "App A.2 txt:1869-1872, 1937-1942"},
+      {"object": "Retrieval policy", "who_learns_it": "Nobody. Fixed cosine similarity, fixed $n_{\\mathrm{ret}}=1$.", "when": "Wake time, once per task, before the first action.", "location": "App A.2 txt:1869-1874"},
+      {"object": "Consolidation policy $\\mathrm{wr}$", "who_learns_it": "Nobody. Hard-coded append.", "when": "Sleep round.", "location": "App A.2 txt:1932-1936"},
+      {"object": "Extraction / judge / self-contrast / BoN prompts", "who_learns_it": "Human authors, offline, once. These are the real 'weights' of the method.", "when": "Before any experiment.", "location": "App A.1 Figs. 9-10, App A.3 Figs. 11-12"},
+      {"object": "Agent trajectory (observations, thoughts, actions)", "who_learns_it": "Not learned — this is wake-time movement inside the context window.", "when": "Wake time, up to 30 steps per WebArena query, temperature 0.7.", "location": "§3.1 txt:296-304; App B.1 txt:2022-2026"},
+      {"object": "MaTTS rollouts / refinements", "who_learns_it": "Not learned. Wake-time compute whose by-product is sleep-time material.", "when": "Wake time for task $k$; consumed in the sleep round of task $k$.", "location": "§3.3 txt:353-464; App A.3 txt:1943-1990"}
+    ],
+    "prose": "For the reader who has never trained a model: an outer loop (gradient descent on $\\Theta$) does not occur in this paper at any point. What the paper calls 'learning', 'self-evolving' and 'test-time learning' is entirely the growth of a text file. The only thing that changes between task 1 and task 187 is the contents of $E$ and hence the system prompt. This is the defining property of the E-path and it is why the paper can claim continual improvement without any of the machinery (replay buffers, EWC, LoRA merging, checkpoint management) that the $\\Theta$-path requires."
+  },
+
+  "update_layer": {
+    "which": "(U-E) only. $\\Theta$ is frozen and $W$ does not exist in this system.",
+    "order": "Single layer, so no ordering question arises across layers. Within the round the order is: $\\mathrm{ret}(E_k,q_k)$ (read) → wake-time rollout → $j_k$ (self-judge) → $S(\\cdot;B_s,j_k)$ (extract) → $\\mathrm{wr}$ (append). One round per task.",
+    "differences_from_canonical_U_E": [
+      "Argument of $S$: the canonical $\\hat c_k = S(c_k;B_s)$ processes a *context*; here $S$ processes the agent's own trajectory, i.e. $\\hat c_k = S(\\mathcal{H}^{\\Delta}_k; B_s, j_k)$. Experience, not context.",
+      "Label gate: $S$ branches on a self-produced binary $j_k$, with a distinct prompt per branch. The failure branch is the paper's headline novelty and has no analogue in the canonical form.",
+      "Write operator: $\\mathrm{wr}(E_k,\\hat c_k) = E_k \\cup \\hat c_k$, a pure union. No merge, no eviction, no decay. The paper states this is deliberate to isolate the contribution of content quality [App A.2 txt:1932-1936; App E 'Simplicity in memory retrieval and consolidation' txt:2461-2465].",
+      "Cardinality bound: $|\\hat c_k| \\le 3$ (single trajectory) or $\\le 5$ (MaTTS parallel over $m$ trajectories) — the only capacity control in the entire system, and it bounds the write rate, not the pool size.",
+      "MaTTS variant: $B_s$ is partly spent *manufacturing* the experience to be summarised ($m$ rollouts), not only on summarising it. Written in the unified frame: $\\mathcal{H}^{\\Delta}_k = \\mathrm{gen}(q_k, \\mathrm{ret}(E_k,q_k); B_s^{\\text{roll}})$ followed by $\\hat c_k = S(\\mathcal{H}^{\\Delta}_k; B_s^{\\text{sum}})$. This borrows the $\\mathrm{gen}(\\cdot;B_s)$ idea from (U-$\\Theta$) but feeds the result to (U-E) instead of to a gradient step."
+    ],
+    "the_theta_path_it_does_not_take": "The structure $\\mathcal{R}_k = \\mathrm{gen}(\\mathcal{H}_k;B_s)$ followed by a $\\Theta$ update is exactly what ReasoningBank stops one step short of: it builds $\\mathcal{R}_k$ (a self-generated, self-labelled, success/failure-partitioned corpus of distilled strategies) and then, instead of running $\\eta_\\Theta \\nabla_\\Theta \\mathcal{L}$, it prepends the corpus to the prompt. Naming this is the chapter's main bridge-out to the $\\Theta$-path."
+  },
+
+  "cost_table": {
+    "B_s": {
+      "status": "partially present — the only hard number in the corpus for an E-path sleep budget, but stated in tokens per task and only for the non-scaled configuration",
+      "value": "Per task, averaged: LLM-as-a-Judge = 2186.3 tokens, Memory Extraction = 1562.1 tokens. Sum = 3748.4 tokens of offline compute per task. Action Generation (wake) = 49306.1 tokens; Total = 53054.5 tokens.",
+      "source": "Table 5 'Breakdown results of total token consumption required for each task', §C.2 Inference Cost Study, txt:2140-2192. Column order per the table header is Action Generation / LLM-as-a-Judge / Memory Extraction / Total; the three ReasoningBank components sum exactly to the stated total (49306.1+2186.3+1562.1 = 53054.5), which confirms the assignment.",
+      "derived_ratio": "$B_s / B_{\\text{total}}$ = 3748.4 / 53054.5 = 7.07% (my arithmetic on the paper's numbers). The paper instead reports the overhead against the No-Memory baseline: 'compared with \"No memory\", while the total token consumption is increased only by around 4.3%, the overall performance is boosted by 20.5%' [§C.2, txt:2153-2166]. 53054.5/50847.4 = 1.0434, confirming 4.3%.",
+      "not_stated": [
+        "No FLOPs anywhere.",
+        "No wall-clock time for the sleep round.",
+        "No dollar cost.",
+        "No token split between prompt and completion for any component.",
+        "The benchmark/subset/backbone for Table 5 is never stated — §C.2 says only 'for each trajectory'. See todo_verify.",
+        "The retrieval/embedding cost (gemini-embedding-001 calls) is NOT a column in Table 5 and is nowhere accounted.",
+        "MaTTS has NO token accounting at all. Its rollout cost is ~$m\\times$ the action-generation term ($m=5$ in Table 1), i.e. on the order of 5 x 49306.1 tokens per task, and the paper's 'cost-effectiveness' claim in §C.2 is made only for the non-scaled ReasoningBank."
+      ]
+    },
+    "L_w": {
+      "status": "absent",
+      "detail": "No latency figure of any kind appears in the paper — no ms, no TTFT, no ITL, no wall-clock. Verified by grep for 'latency', 'second', 'ms', 'wall-clock'.",
+      "proxies_the_paper_does_report": [
+        "Average Steps (AS) = mean number of ReAct observe-think-act cycles per task. Definition in App B.1, txt:2034-2040. WebArena overall: Gemini-2.5-flash 9.7 (No Memory) -> 8.3 (ReasoningBank); Gemini-2.5-pro 8.8 -> 7.4; Claude-3.7-sonnet 8.0 -> 7.3 [Table 1].",
+        "SWE-Bench-Verified AS: Gemini-2.5-flash 30.3 -> 27.5; Gemini-2.5-pro 21.1 -> 19.8 [Table 2, txt:754-786].",
+        "Action-generation tokens fall from 50847.4 (No Memory) to 49306.1 (ReasoningBank), i.e. -3.03% [Table 5]. This is the closest thing to a wake-cost number in the paper and it is negative — the wake path gets cheaper, not more expensive."
+      ]
+    },
+    "C_cap": {
+      "status": "absent",
+      "detail": "No byte count, no item count after N tasks, no embedding dimension, no pool-size curve. The paper states only the storage FORM: 'We maintain ReasoningBank in a JSON format, and each entry consists of a task query, the original trajectory, and the corresponding memory items. All memory items are stored with the schema {title, description, content}. The embedding is pre-computed for each given query and stored in another JSON file' [App A.2 'ReasoningBank Storage', txt:1937-1942].",
+      "structural_bounds_the_paper_does_state": [
+        "At most 3 memory items per trajectory [App A.1 Fig. 9 'You can extract at most 3 memory items from the trajectory'; App A.2 txt:1862].",
+        "At most 5 memory items per query in MaTTS-parallel over all m trajectories combined [App A.3 Fig. 11 left panel, txt:1893].",
+        "Item content is 1-3 sentences (1-5 in the MaTTS parallel prompt) [Fig. 9 output format; Fig. 11].",
+        "The pool is persisted per independent run and never pruned [App A.2 txt:1932-1942]."
+      ],
+      "inference_marked_as_inference": "[INFERENCE, not in the paper] The pool grows at up to 3 items/task, so after the 187-task Shopping stream $|E| \\le 561$ items plus 187 full raw trajectories (the entry keeps the ORIGINAL trajectory, not only the distilled items — App A.2 txt:1937-1939). Since a WebArena trajectory averages ~8 steps and the whole task costs ~50k tokens, the raw-trajectory part of the store dominates the distilled part by roughly three orders of magnitude. The paper never notes this and never measures it."
+    },
+    "rho": {
+      "status": "absent",
+      "detail": "No forgetting rate, no per-round degradation measurement, no interference metric, no re-evaluation of earlier tasks after the pool has grown. The word 'forgetting' appears once, only as future work: 'more advanced consolidation mechanisms (e.g., merging, forgetting) can be incorporated in future work' [App A.2, txt:1935-1936].",
+      "nearest_related_evidence": "§C.1 measures degradation with respect to the number of RETRIEVED experiences, not with respect to pool age: SR = 39.0 (0 experiences), 49.7 (1), 46.0 (2), 45.5 (3), 44.4 (4) on WebArena-Shopping / Gemini-2.5-flash [Figure 13, txt:2077-2111]. The paper's reading: 'while memory provides valuable guidance, excessive experiences may introduce conflicts or noise.' This is retrieval interference at a fixed pool, and must NOT be reported as $\\rho$.",
+      "why_this_matters": "$\\rho$ is the quantity that decides whether repeated sleep rounds are sustainable. With an append-only store and a monotone degradation curve in the number of injected experiences, the paper has assembled exactly the ingredients for measuring $\\rho$ and does not measure it."
+    },
+    "amortisation_equation_A": {
+      "can_it_be_computed": "No.",
+      "why": "Equation (A) needs $N_q$, the number of queries that share one context. In ReasoningBank each task is its own context ($N_q=1$); the reuse is across tasks, mediated by a top-1 cosine retrieval. The paper never reports how often any stored item is retrieved, nor the hit-rate distribution, nor how many future tasks benefit from a given item. Without a retrieval-count distribution the break-even $N_q^*$ is undefined.",
+      "what_can_be_computed_instead": "A per-task overhead ratio: sleep cost / wake cost = 3748.4 / 49306.1 = 7.60% (my arithmetic on Table 5), against a +20.5% relative SR gain on WebArena overall with Gemini-2.5-flash [§C.2, txt:2163-2166]. This is a one-round accounting, not an amortisation over $N_q$."
+    }
+  },
+
+  "experiments": {
+    "reconstruction_caveat": "The vendored txt is a column-interleaved PDF text extraction; Table 1's cells appear as separate runs of numbers. I reconstructed the column assignment and then VERIFIED it against the paper's own prose deltas: overall SR gains of +8.3 (flash), +7.2 (pro), +4.6 (claude) [§4.2 txt:737-738] and the Multi-subset gain of +4.6 averaged over the strongest baseline [§4.2 txt:744-746]. All three reproduce exactly from the reconstruction below. Any cell I could not verify is flagged in todo_verify.",
+
+    "models": [
+      {"name": "Gemini-2.5-Flash", "size": "not disclosed (closed)", "access": "Vertex AI API", "location": "§4.1 txt:474-476; App B.1 txt:2020-2022"},
+      {"name": "Gemini-2.5-Pro", "size": "not disclosed (closed)", "access": "Vertex AI API", "location": "same"},
+      {"name": "Claude-3.7-Sonnet", "size": "not disclosed (closed)", "access": "Vertex AI API", "location": "same"},
+      {"name": "Gemma-3-12B-Instruct", "size": "12B", "access": "open weights, HuggingFace google/gemma-3-12b-it", "location": "§C.4, txt:2243-2257"},
+      {"name": "gemini-embedding-001", "size": "not disclosed; embedding dimension NOT stated in the paper", "access": "Vertex AI", "location": "App A.2 txt:1869-1872"}
+    ],
+    "token_counts_for_training": "None. No model is trained, so there is no training token count. The only token counts in the paper are inference token counts (Table 5).",
+
+    "benchmarks": [
+      {"name": "WebArena", "size": "684 test instances total; Shopping 187, Admin 182, Gitlab 180, Reddit 106, Multi 29", "note": "Map domain EXCLUDED due to website issues, following Miyai et al. (2025)", "harness": "BrowserGym, ReAct style, max 30 steps per query, decoding temperature 0.7", "location": "§4.1 txt:468-478; footnote 3 txt:482; App B.1 txt:2006-2026"},
+      {"name": "Mind2Web", "size": "1341 test instances; Cross-Task 252, Cross-Website 177, Cross-Domain 912", "note": "static offline step-wise evaluation with predefined fixed steps; metrics EA / AF1 / SSR / SR", "location": "App B.1 txt:2004-2009, 2040-2047"},
+      {"name": "SWE-Bench-Verified", "size": "500 manually verified instances", "note": "mini-SWE-Agent setting, Bash-only, no tools, no scaffold, simple ReAct loop; AWM excluded because the open-ended bash action space prevents fixed-workflow extraction (footnote 8)", "location": "App B.2 txt:2054-2070; footnote 8 txt:2146-2147"}
+    ],
+    "baselines": "No Memory (vanilla backbone); Synapse (Zheng et al. 2024, trajectory-as-exemplar in-context memory); AWM (Wang et al. 2025d, Agent Workflow Memory). 'To ensure a fair comparison, the baselines are implemented with the same Memory Retrieval and Memory Consolidation mechanisms. The only difference is about Memory Extraction' [App B.1 txt:2017-2019].",
+
+    "table1_webarena_reconstructed": {
+      "caption": "Table 1 | Experiment results of ReasoningBank and MaTTS (parallel scaling, k=5, pass@1) on WebArena benchmark. Success rate (SR up) and the number of steps (Step down) are reported on 5 subsets for 3 different backbone LLMs. [txt:488-490]",
+      "row_order": ["No Memory", "Synapse", "AWM", "ReasoningBank", "+MaTTS"],
+      "Gemini-2.5-flash": {
+        "Shopping_SR": [39.0, 40.6, 44.4, 49.7, 53.0], "Shopping_Step": [8.2, 7.0, 7.0, 6.1, 6.3],
+        "Admin_SR": [44.5, 45.1, 46.7, 51.1, 53.8], "Admin_Step": [9.5, 9.1, 8.8, 8.2, 7.6],
+        "Gitlab_SR": [33.9, 35.6, 37.2, 40.6, 42.8], "Gitlab_Step": [13.3, 13.0, 13.2, 12.3, 11.9],
+        "Reddit_SR": [55.7, 59.4, 62.3, 67.0, 70.8], "Reddit_Step": [6.7, 6.5, 6.1, 5.6, 5.4],
+        "Multi_SR": [10.3, 10.3, 3.4, 13.8, 17.2], "Multi_Step": [10.0, 10.5, 7.7, 8.8, 8.0],
+        "Overall_SR": [40.5, 42.1, 44.1, 48.8, 51.8], "Overall_Step": [9.7, 9.2, 9.0, 8.3, 7.9]
+      },
+      "Gemini-2.5-pro": {
+        "Shopping_SR": [45.5, 46.5, 48.1, 51.9, 54.0], "Shopping_Step": [7.6, 6.6, 6.4, 6.0, 5.9],
+        "Admin_SR": [51.1, 52.2, 49.3, 56.6, 58.2], "Admin_Step": [8.7, 8.9, 9.8, 7.7, 7.4],
+        "Gitlab_SR": [35.0, 38.3, 40.0, 44.4, 46.7], "Gitlab_Step": [11.6, 11.3, 11.2, 9.8, 9.1],
+        "Reddit_SR": [71.7, 68.9, 68.9, 80.2, 83.0], "Reddit_Step": [6.0, 5.9, 6.4, 5.1, 5.3],
+        "Multi_SR": [6.9, 6.9, 3.4, 13.8, 20.7], "Multi_Step": [8.8, 9.0, 9.3, 8.2, 7.2],
+        "Overall_SR": [46.7, 47.7, 47.6, 53.9, 56.3], "Overall_Step": [8.8, 8.5, 8.7, 7.4, 7.1]
+      },
+      "Claude-3.7-sonnet": {
+        "Shopping_SR": [38.5, 39.6, 39.6, 44.9, 47.1], "Shopping_Step": [6.1, 5.8, 7.2, 5.6, 5.8],
+        "Admin_SR": [49.5, 50.5, 47.8, 53.3, 55.5], "Admin_Step": [8.4, 8.5, 9.3, 7.6, 7.4],
+        "Gitlab_SR": [36.7, 38.0, 34.6, 41.1, 43.3], "Gitlab_Step": [10.6, 10.0, 10.9, 9.5, 9.4],
+        "Reddit_SR": [53.8, 53.8, 52.8, 57.5, 60.4], "Reddit_Step": [5.5, 6.1, 7.0, 5.2, 5.0],
+        "Multi_SR": [0.0, 0.0, 0.0, 3.4, 10.3], "Multi_Step": [11.6, 11.8, 12.4, 10.5, 9.1],
+        "Overall_SR": [41.7, 42.6, 40.8, 46.3, 48.8], "Overall_Step": [8.0, 7.9, 8.9, 7.3, 7.2]
+      },
+      "verification": "Overall SR deltas ReasoningBank - No Memory: 48.8-40.5 = +8.3; 53.9-46.7 = +7.2; 46.3-41.7 = +4.6. These reproduce the paper's §4.2 sentence exactly [txt:737-738]. Multi subset: ReasoningBank mean over 3 backbones = (13.8+13.8+3.4)/3 = 10.33; strongest baseline mean = (10.3+6.9+0.0)/3 = 5.73; difference = +4.6, reproducing §4.2 [txt:744-746]."
+    },
+
+    "headline_numbers": [
+      {"claim": "up to 20% relative improvement", "exact": "WebArena Overall SR, Gemini-2.5-flash: 40.5 -> 48.8 = +20.5% relative", "location": "§1 txt:169-170 and §C.2 txt:2163-2166"},
+      {"claim": "up to 16% fewer interaction steps", "exact": "WebArena Overall Step, Gemini-2.5-pro: 8.8 -> 7.4 = -15.9%", "location": "§1 txt:170; Table 1"},
+      {"claim": "lowers the average step count by up to 1.4 compared with No Memory, and 1.6 compared with other memory baselines", "exact": "1.4 = pro Overall 8.8->7.4; 1.6 = Claude Shopping AWM 7.2 -> ReasoningBank 5.6", "location": "§4.2 txt:940-942"},
+      {"claim": "SWE-Bench-Verified average step smaller by 2.8 and 1.3 steps", "exact": "flash 30.3 -> 27.5 = 2.8; pro 21.1 -> 19.8 = 1.3 (both vs No Memory)", "location": "§4.2 txt:942-944; Table 2"}
+    ],
+
+    "table2_swebench_verified": {
+      "caption": "Table 2 | ReasoningBank on SWE-Bench-Verified for issue-resolving in a given repository. [txt:754-756]",
+      "Gemini-2.5-flash": {"No Memory": {"resolve_rate": 34.2, "AS": 30.3}, "Synapse": {"resolve_rate": 35.4, "AS": 30.7}, "ReasoningBank": {"resolve_rate": 38.8, "AS": 27.5}},
+      "Gemini-2.5-pro": {"No Memory": {"resolve_rate": 54.0, "AS": 21.1}, "Synapse": {"resolve_rate": 53.4, "AS": 21.0}, "ReasoningBank": {"resolve_rate": 57.4, "AS": 19.8}},
+      "notes": "No AWM row (excluded, footnote 8, txt:2146-2147). No MaTTS row. Synapse is BELOW No Memory on Gemini-2.5-pro (53.4 vs 54.0)."
+    },
+
+    "table3_mind2web": {
+      "caption": "Table 3 | Results on Mind2Web for cross-task, cross-website, cross-domain generalization. EA = element accuracy, AF1 = action F1, SSR = step success rate, SR = task-level success rate. [txt:791-792]",
+      "row_order": ["No Memory", "Synapse", "AWM", "ReasoningBank"],
+      "Gemini-2.5-flash": {
+        "CrossTask": {"EA": [46.0, 47.0, 46.3, 52.1], "AF1": [59.1, 59.5, 56.1, 60.4], "SSR": [40.3, 41.2, 41.0, 44.9], "SR": [3.3, 3.5, 3.5, 4.8]},
+        "CrossWebsite": {"EA": [39.8, 40.3, 39.1, 44.3], "AF1": [45.1, 46.0, 42.2, 52.6], "SSR": [31.7, 32.1, 31.7, 33.9], "SR": [1.7, 1.9, 2.1, 2.3]},
+        "CrossDomain": {"EA": [35.8, 36.3, 33.3, 40.6], "AF1": [37.9, 38.5, 36.5, 41.3], "SSR": [31.9, 32.4, 30.1, 36.6], "SR": [1.0, 1.1, 0.7, 1.6]}
+      },
+      "Gemini-2.5-pro": {
+        "CrossTask": {"EA": [49.3, 50.1, 48.6, 53.6], "AF1": [60.2, 61.0, 61.2, 62.7], "SSR": [44.4, 44.7, 44.4, 45.6], "SR": [3.5, 3.6, 3.7, 5.1]},
+        "CrossWebsite": {"EA": [41.2, 41.8, 41.9, 46.1], "AF1": [49.8, 51.2, 47.9, 54.8], "SSR": [34.8, 35.0, 34.8, 36.9], "SR": [3.4, 3.2, 2.3, 3.8]},
+        "CrossDomain": {"EA": [37.9, 38.5, 37.3, 42.8], "AF1": [37.7, 39.8, 38.1, 45.2], "SSR": [35.0, 35.6, 34.4, 38.1], "SR": [1.4, 1.5, 1.2, 1.7]}
+      },
+      "note": "Task-level SR is at the floor throughout: the largest cross-domain SR gain is 1.0 -> 1.6 (flash) and 1.4 -> 1.7 (pro), i.e. fractions of a percentage point on 912 instances. No MaTTS row on Mind2Web."
+    },
+
+    "figure4_maTTS_scaling": {
+      "setting": "WebArena-Shopping subset, Gemini-2.5-flash only. k = 1..5 (k=1 = no scaling). Parallel metric is Best-of-N. [§4.3, txt:946-954]",
+      "numbers_stated_in_prose": {
+        "MaTTS parallel": "49.7 (k=1) -> 55.1 (k=5)",
+        "MaTTS sequential": "49.7 (k=1) -> 54.5 (k=5)",
+        "MaTTS w/o memory parallel": "fluctuates between 39.0 and 42.2",
+        "MaTTS w/o memory sequential": "fluctuates between 37.4 and 40.6",
+        "vanilla TTS (MaTTS w/o aggregation) at k=5": "parallel 52.4, sequential 51.9"
+      },
+      "location": "§4.3, txt:955-978, 1038-1044",
+      "author_reading": "'Sequential scaling shows short-term advantage, but parallel dominates at larger scales for ReasoningBank' — sequential saturates 'once the model either succeeds or fails decisively'. [txt:982-1044]",
+      "note": "The per-k values in the figure OCR (54.0, 53.5, 52.9, 52.4, 51.9, 51.3, 50.8, 50.3, 41.7, 40.6, 40.1, 39.4, 38.5, 37.4 ...) cannot be assigned to specific k with confidence from the vendored text; only the prose-stated values above are safe to quote."
+    },
+
+    "figure5_synergy": {
+      "setting": "WebArena-Shopping, Gemini-2.5-flash, MaTTS parallel k=5. Pass@1 = one randomly selected trajectory; Best-of-5 = BoN. [§4.4, txt:1045-1052]",
+      "BoN": {"No Memory": "39.0 -> 42.2", "Synapse": "-> 44.4", "AWM": "-> 47.6", "ReasoningBank": "49.7 -> 55.1"},
+      "Pass@1": {"Synapse": "40.6 -> 41.2", "AWM": "44.4 -> 45.5", "ReasoningBank": "49.7 -> 53.0"},
+      "location": "§4.4, txt:1056-1104 (BoN) and txt:1151-1160 (Pass@1)"
+    },
+
+    "figure7_failure_ablation": {
+      "setting": "WebArena-Shopping, Gemini-2.5-flash. Success-only memory vs success+failure memory. No memory reference = 39.0.",
+      "Synapse": "40.6 (success only) -> 41.7 (with failures)",
+      "AWM": "44.4 (success only) -> 42.2 (with failures) — DEGRADES",
+      "ReasoningBank": "46.5 (success only) -> 49.7 (with failures)",
+      "location": "§5, txt:1268-1276 and Figure 7, txt:1171-1201",
+      "significance": "This is the paper's cleanest isolation of its own contribution: of ReasoningBank's +10.7 points over No Memory on Shopping/flash, +7.5 comes from strategy-level distillation of successes and +3.2 from adding failures."
+    },
+
+    "figure8_judge_calibration": {
+      "measured_judge_accuracy": "72.7% against ground-truth labels, WebArena-Shopping, Gemini-2.5-flash as judge [§5, txt:1293-1297]",
+      "method": "simulated verifiers: 'A 90% accurate verifier is simulated by using the correct (ground-truth) label 90% of the time and the incorrect (flipped) label 10% of the time', extended down to 50% = random guess [§5, txt:1300-1310]",
+      "result_as_stated": "'the judge's accuracy does not significantly impact the performance of ReasoningBank, as all variants achieve similar success rates within reasonable accuracy range (70%-90%). Intuitively, the 100% (ground-truth) accuracy setting yields the best performance.' [§5, txt:1310-1314]",
+      "figure_values_present_in_text": "52.4, 51.8, 50.6, 49.4, 49.7, 49.7, 48.7, 48.2, 47.6, 47.6 — ten values for six x-positions (100/90/80/70/60/50); per-point assignment is NOT recoverable from the vendored text. See todo_verify."
+    },
+
+    "table4_step_split": {
+      "caption": "Table 4 | Average number of steps on successful and failed test instances across four WebArena domains. [txt:1213-1215]",
+      "No Memory": {"Shopping": {"successful": 6.8, "failed": 8.7}, "Admin": {"successful": 8.4, "failed": 10.4}, "Gitlab": {"successful": 8.6, "failed": 15.7}, "Reddit": {"successful": 6.1, "failed": 7.6}},
+      "ReasoningBank": {"Shopping": {"successful": 4.7, "failed": 7.3}, "Admin": {"successful": 7.0, "failed": 9.5}, "Gitlab": {"successful": 7.6, "failed": 15.5}, "Reddit": {"successful": 5.0, "failed": 6.8}},
+      "deltas_printed_in_table": {"Shopping": "-2.1 / -1.4", "Admin": "-1.4 / -0.9", "Gitlab": "-1.0 / -0.2", "Reddit": "-1.1 / -0.8"},
+      "author_claim": "'the reduction is particularly pronounced on successful cases, reaching up to 2.1 fewer steps (a 26.9% relative reduction) than on failed ones' [§5, txt:1325-1327]",
+      "arithmetic_check": "2.1/6.8 = 30.9%, not 26.9%. No cell pair in Table 4 yields 26.9%. Recorded under unfavorable_facts.",
+      "backbone": "Not stated in the caption or the surrounding text; the surrounding analyses are all Gemini-2.5-flash. See todo_verify."
+    },
+
+    "table5_token_cost": {
+      "caption": "Table 5 | Breakdown results of total token consumption required for each task. Columns: Action Generation / LLM-as-a-Judge / Memory Extraction / Total. [§C.2, txt:2153-2192]",
+      "No Memory": {"action_generation": 50847.4, "total": 50847.4},
+      "Synapse": {"two_component_values_printed": [55920.5, 2594.2], "total": 58514.7, "note": "only two component numbers are printed, so which of the judge/extraction columns 2594.2 occupies is ambiguous in the vendored text; 55920.5 + 2594.2 = 58514.7 checks out"},
+      "AWM": {"action_generation": 53819.6, "llm_as_judge": 2479.1, "memory_extraction": 3074.1, "total": 59372.8},
+      "ReasoningBank": {"action_generation": 49306.1, "llm_as_judge": 2186.3, "memory_extraction": 1562.1, "total": 53054.5},
+      "author_claim": "'compared with \"No memory\", while the total token consumption is increased only by around 4.3%, the overall performance is boosted by 20.5%. Other memory baselines such as Synapse and AWM will greatly increase the computation overhead while achieving less performance gains' [§C.2, txt:2153-2192]",
+      "key_observation": "ReasoningBank's action-generation term (49306.1) is BELOW No Memory's (50847.4). The wake path is cheaper in tokens, not only in steps; the entire net overhead is the sleep round."
+    },
+
+    "figure13_number_of_retrieved_experiences": {
+      "setting": "WebArena-Shopping, Gemini-2.5-flash",
+      "values": {"0": 39.0, "1": 49.7, "2": 46.0, "3": 45.5, "4": 44.4},
+      "location": "§C.1, txt:2077-2138",
+      "author_reading": "'while memory provides valuable guidance, excessive experiences may introduce conflicts or noise. Hence, the relevance and quality of memory are more crucial than sheer quantity'"
+    },
+
+    "figure14_pass_at_k": {
+      "setting": "Pass@k under parallel scaling, WebArena-Shopping, Gemini-2.5-flash",
+      "stated_values": {"MaTTS w/o aggregation k=2": 50.8, "MaTTS w/o memory k=2": 47.6, "MaTTS k=2": 51.3, "MaTTS k=5": 62.1, "MaTTS w/o memory k=5": 52.4},
+      "location": "§C.3, txt:2198-2241",
+      "author_reading": "vanilla TTS 'already makes test-time learning behave similarly to RL training: instead of inflating pass@k at large k, it improves sample efficiency by guiding exploration' (citing Yue et al., 2025)"
+    },
+
+    "table6_small_open_model": {
+      "setting": "Gemma-3-12B-Instruct, WebArena-Shopping [§C.4, txt:2243-2288]",
+      "success_rate_pct": {"No memory": 17.1, "Synapse": 16.0, "AWM": 21.4, "ReasoningBank": 24.1},
+      "average_steps": {"No memory": 13.7, "Synapse": 14.0, "AWM": 12.5, "ReasoningBank": 11.8},
+      "note": "Synapse (16.0) falls BELOW No memory (17.1). Step mapping is confirmed by the prose 'requiring the fewest average interaction steps (11.8 steps)' [txt:2250-2251]."
+    },
+
+    "case_studies": [
+      {"figure": "Figure 15", "content": "'first purchase date' task: No Memory reads only the Recent Orders table and answers 3/11/23; ReasoningBank follows a stored hint to the full order history and answers March 2, 2022", "location": "§C.5 Effectiveness, txt:2286-2334"},
+      {"figure": "Figure 16", "content": "Men's-shoe filtering task: baseline takes 29 steps, ReasoningBank 10 steps", "location": "§C.5 Efficiency, txt:2335-2339, 2350-2402"},
+      {"figure": "Figure 17", "content": "Sony Bluetooth headphones task: the failed trajectory 'spent endless steps on page next, which exhausts the interaction limits'; the distilled lessons are 'search query optimization', 'adjust number of items displayed per page', 'use filters available'", "location": "§C.5 Reflection on Successes and Failures, txt:2340-2344, 2432-2455"},
+      {"figure": "Figure 6", "content": "a single hand-picked memory item ('User-Specific Information Navigation') tracked over the test-time-learning timeline through four stages: procedural/execution strategy -> atomic self-reflection -> evolved adaptive check -> generalized complex/effective strategy", "location": "§5 Emergent behaviors, txt:1123-1207"}
+    ],
+
+    "hyperparameters": {
+      "agent_decoding_temperature": "0.7 for WebArena and Mind2Web [App B.1, txt:2025-2026]",
+      "extractor_temperature": "1.0 [App A.2, txt:1861-1862]",
+      "judge_temperature": "0.0 [App A.2, txt:1867-1868]",
+      "retrieval": "cosine over gemini-embedding-001 query embeddings, top-1 by default [App A.2, txt:1869-1872]",
+      "max_steps": "30 per WebArena query [App B.1, txt:2022-2024]",
+      "MaTTS k in Table 1": "5, parallel, pass@1 [Table 1 caption, txt:488-489]",
+      "memory_injection_prompt": "'Below are some memory items that I accumulated from past interaction from the environment that may be helpful to solve the task. You can use it when you feel it's relevant. In each step, please first explicitly discuss if you want to use each memory item or not, and then take action.' [App A.2, txt:1928-1930]"
+    }
+  },
+
+  "scale_ceiling": {
+    "one_line": "Three closed frontier APIs plus one 12B open model, driven over task streams of at most a few hundred instances, with a memory pool that never exceeds a few hundred short text items and is never measured in bytes, and with zero weight updates.",
+    "dimensions": [
+      {"axis": "model", "ceiling": "Gemini-2.5-Pro / Claude-3.7-Sonnet (parameter counts undisclosed). Floor is Gemma-3-12B-Instruct, tested only on WebArena-Shopping [§C.4]."},
+      {"axis": "task-stream length (the true 'number of sleep rounds')", "ceiling": "WebArena subsets are 187 / 182 / 180 / 106 / 29 instances; SWE-Bench-Verified is 500; Mind2Web cross-domain is 912 but is a static step-wise benchmark. Figure 1's x-axis reaches only ~40 tested tasks [txt:139-145]. Whether the WebArena memory pool is shared across the five domain subsets or reset per subset is NOT stated — see todo_verify."},
+      {"axis": "memory pool", "ceiling": "at most 3 items per task (5 per task in MaTTS-parallel); no pruning; no reported final pool size, item count, or byte count."},
+      {"axis": "test-time scaling", "ceiling": "k <= 5, and only on WebArena-Shopping with Gemini-2.5-flash. Table 1's +MaTTS column is parallel-only at k=5."},
+      {"axis": "episode length", "ceiling": "30 environment steps per WebArena query; ~20-30 steps per SWE-Bench instance."},
+      {"axis": "modality", "ceiling": "text only — accessibility trees for web, code snippets for SWE. The paper further approximates observations by the model's own thinking text: 'We use the thinking process of pi_L as the approximation of o_{0:t} due to lengthy observation representations' [footnote 1, txt:318-321]."},
+      {"axis": "multi-user / multi-session", "ceiling": "not attempted. The pool is per independent run [App A.2, txt:1941-1942]. No notion of user identity, privacy, or cross-user sharing anywhere."},
+      {"axis": "deployment realism", "ceiling": "no wall-clock, no dollars, no throughput, no concurrency, no storage sizing. §C.2 is explicitly framed as 'to facilitate real-world deployment' but reports only tokens."}
+    ]
+  },
+
+  "concept_ledger_delta": {
+    "new": [
+      {"concept": "reasoning memory / memory item = {title, description, content}", "definition": "A strategy-level, environment-agnostic text unit distilled from one trajectory, deliberately stripped of site names, queries and literal strings by prompt instruction.", "why_new": "It is a third point on the E-path content spectrum, after raw trajectory (Synapse) and procedural workflow (AWM). The paper's whole empirical case is that content form, not memory architecture, is the binding constraint. [§3.2 Memory Schema, txt:327-332; App E 'Focus on memory content', txt:2456-2460]"},
+      {"concept": "failure-derived memory (counterfactual item)", "definition": "A memory item produced by a distinct extraction prompt that first reflects on why a trajectory failed and then states a preventative strategy.", "why_new": "It makes the write operation in (U-E) label-conditional. Prior E-path work writes only what worked. [§3.2, txt:344-346; App A.1 Fig. 9 right panel]"},
+      {"concept": "self-judged write gate (LLM-as-a-Judge as signal provider)", "definition": "A binary success/failure label produced by the same frozen backbone with no ground truth, used solely to route the extraction prompt.", "why_new": "It is the E-path's substitute for the verification step that the Theta-path needs before writing to weights, and it is far cheaper (2186.3 tokens/task) than any verifier the Theta-path could afford. [§3.2, txt:341-346; Table 5]"},
+      {"concept": "MaTTS — memory-aware test-time scaling", "definition": "Spending wake-time budget on m rollouts (parallel) or m self-refinements (sequential) for the SAME query, then harvesting the contrast between them into E via a single aggregation prompt.", "why_new": "It couples B_t and B_s: the same tokens serve the current answer and the next round's write. No other paper in the corpus does this. [§3.3, txt:353-464]"},
+      {"concept": "memory-driven experience scaling as a scaling dimension", "definition": "The claim that quality improves along an axis of accumulated, distilled experience, distinct from parameters, data, and test-time compute.", "why_new": "This is the paper's framing contribution and the E-path's answer to the A3 spine candidate in S0 §6. Note it is asserted, not fitted — the paper reports no exponent, no saturation point, and no functional form. [abstract txt:24-25; §1 txt:166-167]"},
+      {"concept": "experience depth vs breadth", "definition": "'Instead of scaling experience through breadth by adding more tasks, we focus on scaling experience through depth by tackling each single task with more exploration.' [§1, txt:160-162]", "why_new": "A clean vocabulary for splitting the B_s budget: more rounds vs richer rounds."}
+    ],
+    "extended_or_renamed": [
+      {"concept": "consolidation", "in_this_paper": "pure set union with no merge, prune, or decay: 'a simple addition operation' / 'a minimal consolidation strategy: newly generated items are directly added without additional pruning' [§3.2 txt:347-349; App A.2 txt:1932-1936]", "ledger_note": "MUST be flagged in the monograph. Everywhere else in the corpus (CLS, SCM, Language Models Need Sleep) 'consolidation' means lossy integration into a bounded store. Here it means append. Using the same word for both is the single biggest terminological hazard in the E-path chapters."},
+      {"concept": "test-time learning", "in_this_paper": "streaming task adaptation with a growing external text store; explicitly cited to Wang et al. 2025c and Wu et al. 2024a (StreamBench) [§3.1, txt:305-307]", "ledger_note": "This is NOT the TTT/W-path sense inherited from Neural Memory. Same phrase, different referent. The chapter must disambiguate on first use."},
+      {"concept": "self-evolving", "in_this_paper": "growth of E while Theta is frozen [abstract, §1, citing Gao et al. 2026 survey]", "ledger_note": "No artifact is redeployed; nothing about the served model changes. Contrast with the Theta-path where 'self-evolving' means the deployment artifact changes."},
+      {"concept": "experience replay", "in_this_paper": "cited only as 'Contextual experience replay' (Liu et al., 2025b) — an in-context construct [§2 reference list, txt:1472-1477]", "ledger_note": "Not gradient replay. The word 'replay' in this chapter must be marked as in-context replay to avoid collision with T5/EWC/DGR."},
+      {"concept": "emergent behavior", "in_this_paper": "the observed drift of a single memory item from procedural to compositional strategy over the timeline [§5, Figure 6, txt:1175-1207]", "ledger_note": "Qualitative, one hand-picked item, explicitly called 'a human case study'. Not a measured phenomenon."}
+    ],
+    "discarded_or_rejected": [
+      {"concept": "success-only memory", "status": "empirically rejected by Figure 7 for ReasoningBank's own content form (46.5 -> 49.7 by adding failures), while the same addition HURTS AWM (44.4 -> 42.2)."},
+      {"concept": "ground-truth supervision at test time", "status": "explicitly excluded by the problem setup [§3.1, txt:307-309]."},
+      {"concept": "more retrieved experiences is better", "status": "rejected by §C.1 (49.7 at 1 experience down to 44.4 at 4)."},
+      {"concept": "scaling compute alone", "status": "rejected: 'scaling alone is insufficient; only when paired with good memory mechanism does it contribute to curation of more effective memory' [§4.4, txt:1158-1160]."}
+    ]
+  },
+
+  "open_questions": {
+    "stated_by_the_paper": [
+      {"q": "Compositional memory: how to combine complementary items into higher-level strategies or reusable macros, and how to retrieve by composition rather than by task similarity.", "verbatim": "'Our current framework distills each experience into multiple memory items, and when a new query arrives, we retrieve similar experiences and reuse all associated items independently. This design highlights the effect of memory content but does not consider how items could be composed into higher-level strategies.'", "location": "App D 'Modular and Compositional Memory', txt:2405-2413"},
+      {"q": "Typed memory: extracting memory with respect to 'planning memory', 'tool-use memory', 'operational memory', 'user-centric memory'.", "verbatim": "'In this way, memory extracted would be more fine-grained and memory retrieval could unlock compositional and complementary power, not just task similarity.'", "location": "App D, txt:2410-2413"},
+      {"q": "A layered memory stack with decay/refresh policies — the closest the paper comes to posing the $\\rho$ question.", "verbatim": "'a natural next step is to build a layered, product-level memory stack that integrates mature paradigms — e.g., episodic traces (Fountas et al., 2025) for per-task context, short-term \"working\" memory (Lumer et al., 2025) for within-session state, and long-term (Wang et al., 2025b) consolidated knowledge with decay/refresh policies.'", "location": "App D 'Advanced Memory Architectures', txt:2414-2418"},
+      {"q": "Retrieval beyond cosine similarity: reasoning-intensive controllers that decompose queries, plan multi-hop lookups across tiers, and condition selection on uncertainty, recency, and cost; plus learning-based routers and consolidation policies.", "verbatim": "'the current memory retrieval could also move beyond embedding-based similarities to reasoning-intensive controllers (Shao et al., 2025) that decompose queries, plan multi-hop lookups across tiers, and condition selection on uncertainty, recency, and cost. Learning-based routers and consolidation policies could also automate this process.'", "location": "App D, txt:2418-2424"},
+      {"q": "Merging and forgetting in consolidation.", "verbatim": "'more advanced consolidation mechanisms (e.g., merging, forgetting) can be incorporated in future work.'", "location": "App A.2 Memory Consolidation, txt:1935-1936"},
+      {"q": "Combining content-level memory (this paper) with architecture-level memory (episodic, hierarchical).", "verbatim": "'we did not extensively compare with other memory architectures such as episodic or hierarchical memory. These designs address orthogonal concerns (memory form/structure), while our contribution targets what should be stored and reused. Exploring their combination would be an interesting future direction.'", "location": "App E 'Focus on memory content', txt:2456-2460"},
+      {"q": "Stronger correctness signals.", "verbatim": "'future work could incorporate stronger verifiers, human-in-the-loop feedback, or ensemble judgment to enhance the reliability of memory induction.'", "location": "App E 'Dependence on LLM-as-a-judge', txt:2466-2471"}
+    ],
+    "bridge_out_for_the_monograph": [
+      "'decay/refresh policies' (App D) is the paper's own name for $\\rho$, and it is listed as future work. This is the exact handoff to the Theta-path chapters on algorithmic forgetting (SCM) and to the rate-distortion capacity chapter: the E-path arrives at the same question from the opposite direction and does not answer it.",
+      "The paper builds $\\mathcal{R}_k$ — a self-generated, self-labelled, success/failure-partitioned corpus — and then declines to run $\\eta_\\Theta \\nabla_\\Theta \\mathcal{L}$ on it. SEAL's self-edit and the Theta-path 'dreaming' chapters take precisely that next step. This is the sharpest available bridge between E-4 and the Theta-path, and it must be made by this book because the paper does not make it.",
+      "The MaTTS finding that extra rollouts only pay off when memory is good ('scaling alone is insufficient', §4.4) is a constraint any Theta-path synthetic-data pipeline inherits: the quality of $\\mathrm{gen}(\\mathcal{H}_k;B_s)$ is bounded by the quality of what the generator already knows."
+    ]
+  },
+
+  "unfavorable_facts": [
+    {
+      "fact": "Consolidation is a bare append. There is no merging, pruning, deduplication, eviction, decay, or overwrite anywhere in the system, and the store keeps the full raw trajectory alongside the distilled items. So the 'consolidation' in the paper's closed loop is not consolidation in the sense the rest of this corpus uses the word, and the store grows without bound.",
+      "location": "§3.2 txt:347-349; App A.2 'Memory Consolidation' txt:1932-1936; 'ReasoningBank Storage' txt:1937-1942",
+      "severity": "structural — it is why $C_{\\text{cap}}$ and $\\rho$ are both absent"
+    },
+    {
+      "fact": "More memory monotonically hurts. Injecting 1 retrieved experience gives 49.7 SR; 2 gives 46.0; 3 gives 45.5; 4 gives 44.4. The default configuration is therefore the minimum non-zero setting, and the reported gains are gains from ONE retrieved experience (at most 3 items). The paper does not test whether the same degradation appears with a larger pool at fixed retrieval count.",
+      "location": "§C.1 Figure 13, txt:2077-2138",
+      "severity": "high — it bounds the method's headroom and contradicts the 'scaling dimension' framing"
+    },
+    {
+      "fact": "The §4.4 prose contradicts its own numbers. The paper writes 'scaling actually reduces performance for weaker memories, where Synapse slightly increases from 40.6 to 41.2, and AWM from 44.4 to 45.5.' Both quoted numbers are increases, not reductions.",
+      "location": "§4.4 'Scaling yields better memory curation', txt:1151-1156",
+      "severity": "medium — the asymmetry claim ('This asymmetry highlights that scaling alone is insufficient') rests on a difference in magnitude (+0.6, +1.1 vs +3.3), not on a sign flip as stated"
+    },
+    {
+      "fact": "Table 4's relative-reduction figure does not check out. The paper claims 'up to 2.1 fewer steps (a 26.9% relative reduction)'. 2.1/6.8 = 30.9%. No pair of cells in Table 4 produces 26.9%.",
+      "location": "§5 txt:1325-1327 against Table 4 txt:1213-1266",
+      "severity": "low individually, but it is an arithmetic error in the paper's own headline efficiency claim"
+    },
+    {
+      "fact": "The Multi subset, which carries the paper's generalization claim ('+4.6 averaged SR over the strongest baseline'), has only 29 instances. One task is worth 3.4 points. On Claude-3.7-Sonnet the entire column reads No Memory 0.0, Synapse 0.0, AWM 0.0, ReasoningBank 3.4, +MaTTS 10.3 — i.e. 0, 0, 0, 1 and 3 solved tasks.",
+      "location": "Table 1 Multi column; subset size in App B.1 txt:2007-2008; claim in §4.2 txt:744-746",
+      "severity": "high — the most-cited generalization result is a 29-instance result"
+    },
+    {
+      "fact": "The LLM-as-a-Judge that gates every write is only 72.7% accurate against ground truth, and the robustness study does not use real judges. Different accuracy levels are SIMULATED by flipping ground-truth labels with a given probability, which produces independent symmetric noise. Real judge error is neither independent nor symmetric — a judge tends to fail systematically on a class of ambiguous tasks, and those are exactly the tasks whose memory items matter.",
+      "location": "§5 'robustness to LLM-as-a-Judge calibration', txt:1280-1314",
+      "severity": "high — this is the paper's only defence of its central unverified signal"
+    },
+    {
+      "fact": "The same robustness study consumes ground-truth labels to build its simulated verifiers, including a 100% setting that 'uses the ground-truth labels directly' — inside a method whose stated premise is that no ground truth is available at test time. The 100% point is therefore an oracle, not an achievable configuration.",
+      "location": "§5 txt:1300-1313 against the setup in §3.1 txt:307-309",
+      "severity": "medium"
+    },
+    {
+      "fact": "Every scaling result is from one subset and one backbone. Figures 4, 5, 7, 8, 13 and 14 are all WebArena-Shopping with Gemini-2.5-flash. The MaTTS column of Table 1 is parallel-only at k=5; sequential MaTTS is never reported outside Shopping. There is no MaTTS row on Mind2Web or SWE-Bench-Verified.",
+      "location": "§4.3 txt:946-954; §4.4 txt:1049-1052; §5 txt:1268-1272, 1288-1292; §C.1 txt:2084-2088; §C.3 txt:2203-2206; Tables 2 and 3",
+      "severity": "high — the paper's second headline contribution rests on one 187-instance subset"
+    },
+    {
+      "fact": "MaTTS has no cost accounting. Table 5 covers only the non-scaled configuration. At k=5 the agent runs five rollouts per task, so wake compute is roughly 5x the 49306.1-token action-generation term, plus the self-contrast aggregation and the Best-of-N selector call. The 'cost-effectiveness' conclusion of §C.2 does not cover any MaTTS number in Table 1.",
+      "location": "§C.2 Table 5 txt:2140-2192; MaTTS setting in Table 1 caption txt:488-489 and App A.3 txt:1986-1990",
+      "severity": "high — this is exactly the cell the monograph needs and it is missing"
+    },
+    {
+      "fact": "Table 5 does not state which benchmark, subset, or backbone it measures, and it omits the retrieval/embedding cost entirely. The Synapse row prints only two component values, so the column assignment for that row cannot be recovered.",
+      "location": "§C.2 txt:2140-2192",
+      "severity": "medium"
+    },
+    {
+      "fact": "On Mind2Web the task-level success rate is at the floor and stays there. Cross-domain flash: 1.0 -> 1.6; cross-domain pro: 1.4 -> 1.7; cross-website flash: 1.7 -> 2.3. The paper describes these as gains that are 'especially pronounced in the cross-domain setting, which requires the highest level of generalization'.",
+      "location": "Table 3 txt:791-934; claim in §4.2 txt:748-752",
+      "severity": "medium — sub-point gains on a near-zero metric are the basis of the cross-domain generalization claim"
+    },
+    {
+      "fact": "Mind2Web is a static, step-wise offline benchmark with predefined fixed steps; the agent predicts an action per step and cannot alter the trajectory. Memory therefore cannot exercise the paper's actual mechanism (fewer steps, better exploration) there, yet Mind2Web supplies the generalization evidence.",
+      "location": "App B.1 Evaluation Metrics, txt:2040-2047",
+      "severity": "medium"
+    },
+    {
+      "fact": "No variance, seeds, confidence intervals, or repeated runs are reported anywhere in the paper, at any temperature. The agent decodes at temperature 0.7 and the extractor at 1.0, so every reported number is a single stochastic draw unless stated otherwise, and many reported deltas on the small subsets (Multi = 29, Reddit = 106) are within one or two tasks.",
+      "location": "App B.1 txt:2025-2026; App A.2 txt:1861-1862; absence verified across §4, §5, App C",
+      "severity": "high"
+    },
+    {
+      "fact": "Memory baselines can be worse than no memory at all, in several places: AWM on WebArena-Multi with Gemini-2.5-flash (3.4 vs No Memory 10.3) and with Gemini-2.5-pro (3.4 vs 6.9); AWM on Claude Gitlab (34.6 vs 36.7) and Claude Overall (40.8 vs 41.7); Synapse on SWE-Bench-Verified with Gemini-2.5-pro (53.4 vs 54.0); Synapse on Gemma-3-12B Shopping (16.0 vs 17.1). The paper reports these but does not discuss the failure mode, which is the same mechanism (prompt pollution) that §C.1 documents for its own method.",
+      "location": "Table 1; Table 2 txt:754-786; Table 6 txt:2263-2284",
+      "severity": "medium — it establishes that E-path writes carry a real downside risk"
+    },
+    {
+      "fact": "MaTTS trades steps for success rate in several cells, so the efficiency claim does not extend to the scaled configuration: Gemini-2.5-flash Shopping Step 6.1 -> 6.3, Gemini-2.5-pro Reddit 5.1 -> 5.3, Claude Shopping 5.6 -> 5.8 when moving from ReasoningBank to +MaTTS.",
+      "location": "Table 1",
+      "severity": "low"
+    },
+    {
+      "fact": "No claim is ever verified about the memory actually being used. Retrieval matches on the embedding of the task QUERY, not on item content; the injected instruction leaves usage to the model's discretion ('You can use it when you feel it's relevant'); and no retrieval hit-rate, item-reuse count, or attribution analysis is reported. The causal chain from a stored item to a behaviour change is supported only by hand-picked case studies (Figures 6, 15, 16, 17).",
+      "location": "App A.2 txt:1869-1874, 1928-1930; case studies §5 txt:1175-1207 and §C.5 txt:2255-2344",
+      "severity": "high — it is what prevents computing $N_q$ and hence equation (A)"
+    },
+    {
+      "fact": "The emergent-behaviour result — the paper's most quoted qualitative claim, that memory items evolve from procedural rules to compositional strategies — is one hand-selected memory item, presented as 'a human case study', with no quantification, no counts, and no control.",
+      "location": "§5 Emergent behaviors, txt:1175-1207; Figure 6 txt:1123-1150",
+      "severity": "medium"
+    },
+    {
+      "fact": "The agent's observations are not the environment observations. 'We use the thinking process of pi_L as the approximation of o_{0:t} due to lengthy observation representations', following AWM. So what is judged, distilled and stored is the model's own narration of what it saw, not what it saw.",
+      "location": "footnote 1, txt:318-321",
+      "severity": "medium — self-narration in, self-narration out; error modes where the model misreads the page are invisible to both the judge and the extractor"
+    },
+    {
+      "fact": "The WebArena Map domain is excluded, so 'WebArena' here is a 684-instance subset of the benchmark, not the full benchmark.",
+      "location": "footnote 3, txt:482",
+      "severity": "low"
+    },
+    {
+      "fact": "The store is per independent run and has no user, session, or tenant model, no privacy discussion, and no contamination discussion — even though the items are free text distilled by an LLM from trajectories that in a real deployment would contain user data. The judge and extractor also run on the same backbone as the agent, so a systematically biased backbone biases the labels, the items, and the actions in a single closed loop with no external check.",
+      "location": "App A.2 txt:1861-1868, 1941-1942; App E txt:2466-2471",
+      "severity": "medium"
+    },
+    {
+      "fact": "The efficiency comparison is not compute-matched. ReasoningBank pays an extra judge call and an extra extraction call per task that No Memory does not pay; the paper's step-count and token comparisons against No Memory are therefore comparisons at different total budgets. The paper does report the 4.3% total-token gap, but the SR comparison in Table 1 is never budget-normalised.",
+      "location": "Table 1 against Table 5 §C.2 txt:2153-2192",
+      "severity": "medium"
+    },
+    {
+      "fact": "The paper reports no absolute storage or latency quantity of any kind — no bytes, no ms, no dollars, no throughput — while §C.2 is explicitly framed as being 'to facilitate real-world deployment'.",
+      "location": "§C.2 txt:2141-2144; absence verified by grep over the full text",
+      "severity": "high for this monograph specifically — three of the four cost cells are empty"
+    }
+  ],
+
+  "cross_path_citations": {
+    "summary": "ReasoningBank engages ONLY the E-path, and only its agent-memory wing. It cites nothing from the W-path and nothing from the Theta-path. Within the E-path it does not cite the paper that named this line.",
+    "E_path": {
+      "verdict": "engaged, but narrowly",
+      "cited": [
+        "MemGPT (Packer et al., 2023, arXiv 2310.08560) — one citation, as an example of plain-text memory storage. §2, txt:188-189. No engagement with its OS/paging argument.",
+        "Mem0 (Chhikara et al., 2025, arXiv 2504.19413) — one citation, grouped under 'structured graphs' with MemOS (Li et al. 2025b) and A-Mem (Xu et al. 2025). §2, txt:189-190.",
+        "Synapse (Zheng et al., 2024, ICLR 2024) — baseline, trajectory memory.",
+        "AWM / Agent Workflow Memory (Wang et al., 2025d, ICML 2025) — baseline, workflow memory; also the source of the observation-approximation trick (footnote 1) and of the LLM-classifier protocol (App A.2 txt:1865).",
+        "ExpeL (Zhao et al., 2024), Dynamic Cheatsheet (Suzgun et al., 2025), AgentKB (Tang et al., 2025b), Memp (Fang et al., 2025), MemoryBank (Zhong et al., 2024), Reflective Memory Management (Tan et al., 2025), Contextual Experience Replay (Liu et al., 2025b) — the agent-memory neighbourhood."
+      ],
+      "NOT_cited": [
+        "Sleep-time Compute (Letta, arXiv 2504.13171) — ABSENT. The phrase 'sleep-time compute' does not occur; the string 'sleep' does not occur anywhere in the paper (verified by grep over all 2481 lines).",
+        "Zep (arXiv 2501.13956) — absent."
+      ]
+    },
+    "W_path": {
+      "verdict": "not engaged",
+      "detail": "No Titans, no test-time training, no fast weights, no linear-attention state, no RNN/SSM memory. The strings 'fast weight', 'test-time training', 'Titans' do not occur. The two nearest citations are memoryLLM/M+ (Wang et al., 2025b, ICML 2025), cited once as 'latent embeddings' among memory FORMS (§2 txt:189) and once as 'long-term consolidated knowledge' in future work (App D txt:2417), and EM-LLM (Fountas et al., 2025, ICLR 2025), cited once in App D as 'episodic traces'. Neither is engaged as an update rule; both appear as items in a taxonomy of storage forms.",
+      "note": "The paper's own phrase 'test-time learning' (§3.1, txt:305-307) is cited to Wang et al. 2025c ('Inducing programmatic skills for agentic tasks') and Wu et al. 2024a (StreamBench) — i.e. to the streaming-agent literature, not to the TTT literature. Same words, disjoint reference sets."
+    },
+    "Theta_path": {
+      "verdict": "not engaged at all",
+      "detail": "No LoRA, no PEFT, no model editing (ROME/MEMIT), no SEAL, no EWC, no generative replay, no distillation into weights, no catastrophic forgetting. Verified by grep for 'LoRA', 'fine-tun', 'gradient', 'catastrophic', 'EWC', 'distill' — 'distill' occurs only in the sense of prompting an LLM to summarise text, never in the knowledge-distillation sense. RL appears only as (a) related work on RL-based memory MANAGEMENT (Yu et al. 2025a; Zhou et al. 2025, §2 txt:192-194), (b) an analogy for the observed strategy evolution ('resemble the learning dynamics of RL', §5 txt:1175-1186, citing Wang et al. 2025a), and (c) a sample-efficiency framing in §C.3 citing Yue et al. (2025). No gradient is ever taken."
+    },
+    "bio_CLS": {"verdict": "not engaged", "detail": "No McClelland/CLS, no sleep neuroscience, no memory-consolidation biology. The word 'consolidation' is used purely as an engineering term for appending to a JSON file."},
+    "what_the_monograph_should_report": "This is the corpus's clearest instance of the S0 §5 'silence between paths' finding, and it runs in three directions at once. (1) The E-path's most-cited 2025-26 agent-memory paper does not cite the paper that gave sleep-time compute its name, even though both write summaries of past context to an external store before the next query. (2) It shares no vocabulary with the W-path despite both claiming 'test-time learning'. (3) It builds the exact training corpus that the Theta-path consumes and never mentions that the Theta-path exists. The three communities in this monograph are, as of this paper, not in contact."
+  },
+
+  "figures": [
+    {"figure": "Figure 1", "reproduce": "yes — the chapter's opening image", "one_line": "Cumulative number of successful tasks vs number of tested tasks on WebArena-Admin for No Memory / Trajectory Memory / ReasoningBank, annotated with the task names that flip; it shows the E-path's amortisation visually (the curves separate as the stream advances), and it is the only place in the paper where the time axis of the sleep rounds is drawn. Note the x-axis reaches only ~40 tasks. [txt:94-145]"},
+    {"figure": "Figure 2", "reproduce": "yes — redraw in unified notation", "one_line": "The three-step closed loop (i) memory retrieval, (ii) memory extraction via LLM-as-a-Judge into success-insights / failure-reflection, (iii) memory consolidation; redraw with $\\mathrm{ret}(E,q)$, $S(\\mathcal{H}^{\\Delta}_k;B_s,j_k)$ and $\\mathrm{wr}$ labelled on the arrows. [txt:284-288]"},
+    {"figure": "Figure 3", "reproduce": "yes", "one_line": "Vanilla TTS (a) vs MaTTS-parallel with self-contrast (b) vs MaTTS-sequential with self-refine (c); it is the cleanest picture in the corpus of a sleep budget spent on generating experience rather than on compressing it. [txt:449-451]"},
+    {"figure": "Figure 4", "reproduce": "yes", "one_line": "SR vs scaling factor k for MaTTS / MaTTS w/o aggregation / MaTTS w/o memory, parallel and sequential; carries the sequential-saturates-parallel-keeps-climbing result and the k<=5 ceiling. [txt:1040-1041]"},
+    {"figure": "Figure 5", "reproduce": "yes — the synergy claim lives here", "one_line": "Pass@1 vs Best-of-5 bars across No Memory / Synapse / AWM / ReasoningBank at k=5; the bidirectional claim (better memory -> better scaling, and scaling -> better memory) is entirely this one chart, on one subset. [txt:1087-1104]"},
+    {"figure": "Figure 6", "reproduce": "yes, but as an illustration explicitly labelled anecdotal", "one_line": "One memory item's evolution along the test-time-learning timeline through procedural strategy -> atomic self-reflection -> evolved adaptive check -> generalized strategy, with the actual item text at each stage. [txt:1123-1150]"},
+    {"figure": "Figure 7", "reproduce": "yes — the most important ablation in the paper", "one_line": "Success-only vs success+failure memory for Synapse (40.6->41.7), AWM (44.4->42.2, degrades) and ReasoningBank (46.5->49.7); it separates the two halves of the paper's contribution and shows the failure signal is toxic to workflow memory. [txt:1171-1201]"},
+    {"figure": "Figure 8", "reproduce": "yes, with the simulation caveat printed alongside", "one_line": "SR vs simulated LLM-as-a-Judge accuracy from 100% down to 50%, against a measured real-judge accuracy of 72.7%. [txt:1280-1314]"},
+    {"figure": "Figure 9 and Figure 10", "reproduce": "quote the prompts verbatim rather than redraw", "one_line": "The two extraction system instructions (success branch and failure branch) and the judge instruction — these prompts ARE the mechanism, and the constraint 'Do not mention specific websites, queries, or string contents' is where the abstraction the paper claims actually comes from. [txt:1749-1805, 1829-1854]"},
+    {"figure": "Figure 13", "reproduce": "yes — pair it with Figure 1", "one_line": "SR vs number of retrieved experiences (0:39.0, 1:49.7, 2:46.0, 3:45.5, 4:44.4) — the E-path's interference curve, and the paper's implicit capacity limit. [txt:2137-2138]"},
+    {"figure": "Figure 14", "reproduce": "optional", "one_line": "Pass@k under parallel scaling; the RL-like 'sample efficiency instead of pass@k inflation' reading. [txt:2239-2241]"},
+    {"figure": "Table 5", "reproduce": "yes — reproduce as a table, it is the cost data", "one_line": "Per-task token breakdown across Action Generation / LLM-as-a-Judge / Memory Extraction / Total; the only $B_s$ number in the E-path corpus. [txt:2153-2192]"},
+    {"figure": "Figures 15, 16, 17", "reproduce": "at most one, as a sidebar", "one_line": "Case studies for effectiveness (first-purchase-date), efficiency (29 steps -> 10 steps) and failure reflection (Sony headphones); Figure 16's 29->10 is the most vivid single number in the paper. [txt:2286-2344, 2350-2402, 2432-2455]"}
+  ],
+
+  "systems_implications": [
+    {
+      "claim": "The wake path gets CHEAPER, not more expensive, despite injecting memory into the system prompt.",
+      "grounding": "PAPER NUMBER. Action-generation tokens fall from 50847.4 (No Memory) to 49306.1 (ReasoningBank), -3.03%, and WebArena overall steps fall 9.7 -> 8.3 (flash), 8.8 -> 7.4 (pro), 8.0 -> 7.3 (claude). [Table 5 §C.2; Table 1]",
+      "why": "In a ReAct loop the context is re-sent and re-prefilled every step, and it grows with the trajectory. Removing one step removes not just one decode but one full prefill of an already-long context. Injecting ~3 short items into the system prompt costs a fixed handful of tokens per step; removing 1.4 steps saves a whole step's worth of accumulated context. [INFERENCE from the ReAct definition in App B.1 txt:2036-2038, grounded in the two numbers above.]"
+    },
+    {
+      "claim": "The entire net serving overhead of this method is 3748.4 tokens per task, of which 58% is the judge and 42% is the extractor.",
+      "grounding": "PAPER NUMBER. Table 5: judge 2186.3 + extraction 1562.1 = 3748.4; total overhead vs No Memory = +4.3%. [§C.2 txt:2153-2192]",
+      "why": "Both are single-shot, offline, batchable calls with no interactivity requirement and no latency SLA. In a real deployment they are the ideal filler workload for idle accelerators: known input length, no user waiting, fully parallel across tasks. This is the E-path's structural advantage over the Theta-path, where the equivalent step is a training job with optimizer state and a checkpoint write."
+    },
+    {
+      "claim": "Nothing per-user lands in weights, so shared-weight batching survives intact.",
+      "grounding": "PAPER FACT that $\\Theta$ is never updated (§4.1, App B.1: models are consumed through the Vertex AI API). [INFERENCE] Therefore all users share one weight copy; the per-user state is a JSON blob plus an embedding vector, and the only per-request divergence is prompt content.",
+      "why": "This is the decisive serving contrast with the Theta-path, where a per-user delta breaks weight sharing across a batch. It is the Rosetta row 'batch로 weight 공유 / Θ-경로에서 깨짐' seen from the E side."
+    },
+    {
+      "claim": "Prefix caching is degraded, not helped, by the memory injection.",
+      "grounding": "[INFERENCE, not in the paper.] Retrieved items are concatenated into the SYSTEM instruction [App A.2 txt:1869-1874], i.e. at the very front of the prompt. Because the retrieved set differs per task, the shared system prefix that would otherwise be identical across all tasks is broken at position ~0, so a served fleet loses cross-task prefix-cache reuse of the system block. Placing memory after the static system block would preserve it. The paper does not discuss prompt layout or caching at all.",
+      "why": "Worth stating explicitly in the chapter because it is a real, avoidable serving cost that the token accounting in Table 5 does not capture (Table 5 counts tokens, not cache hits)."
+    },
+    {
+      "claim": "Retrieval is a linear scan over a growing JSON store with precomputed embeddings — host-side, not accelerator-side.",
+      "grounding": "PAPER FACT: 'Similarity search is conducted over the memory pool using cosine distance'; embeddings 'pre-computed for each given query and stored in another JSON file' [App A.2 txt:1869-1872, 1937-1942]. No index structure is mentioned. [INFERENCE] Cost is one embedding API call plus an O(n) dot-product sweep, n = number of stored experiences; at n in the hundreds this is microseconds of CPU and is invisible next to a 50k-token LLM task.",
+      "why": "The state lives in host DRAM / disk, not in HBM. Unlike the W-path, where the fast-weight state must be resident and moved with the model, the E-path's state touches the accelerator only as prompt tokens. This is why E-path capacity is cheap and E-path READ bandwidth is expensive (every retrieved byte becomes a prefilled token)."
+    },
+    {
+      "claim": "The read cost of E is paid in prefill tokens on every step, not once per session.",
+      "grounding": "[INFERENCE from App A.2 txt:1869-1874 (items concatenated into the system instruction) and App B.1 txt:2036-2038 (a step is a full observe-think-act LLM call).] In a ReAct loop the system prompt is re-submitted every step, so an item of $b$ tokens costs $b \\times$ (number of steps) prefill tokens per task, i.e. ~8x on WebArena. The paper never separates prompt from completion tokens, so this cannot be quantified from Table 5.",
+      "why": "It is the E-path's real bandwidth story and it changes the design conclusion: item BREVITY matters more than item count. It also explains §C.1's degradation curve as a cost as well as a quality effect."
+    },
+    {
+      "claim": "The store keeps full raw trajectories, so the bytes are dominated by material that is never read.",
+      "grounding": "PAPER FACT: 'each entry of ReasoningBank consists of a task query, the original trajectory, and the corresponding memory items' [App A.2 txt:1937-1939], while retrieval injects only titles and contents [txt:1872-1874]. [INFERENCE] The distilled part is at most 3 items of 1-3 sentences (order 100 tokens); the raw trajectory is order 10k tokens. So >98% of the store is cold. A deployment could tier the raw trajectories to cold storage with no behavioural change.",
+      "why": "It is a concrete, checkable systems consequence that the paper leaves on the table, and it is the E-path's version of the capacity question."
+    },
+    {
+      "claim": "MaTTS is a throughput problem, not a latency problem, and it is the one configuration that would hurt a real deployment.",
+      "grounding": "PAPER FACT: k=5 parallel rollouts per task plus a self-contrast call plus a Best-of-N selector call over all 5 trajectories [Table 1 caption; App A.3 txt:1943-1990]. [INFERENCE] Wake compute is ~5x, and the BoN selector's prompt contains all five full trajectories, so its prefill is ~5x a single trajectory — the single largest prompt in the system. Under a fixed-QPS serving budget this is a 5x capacity cost bought for +2.1 to +3.3 SR points (e.g. flash Shopping 49.7 -> 53.0 pass@1).",
+      "why": "The chapter's judgement material for Part III: on this evidence, MaTTS is an offline-quality knob, not a serving configuration."
+    },
+    {
+      "claim": "Step reduction is the metric that would actually show up in a production dashboard, and it is where the method's gain is largest in relative terms.",
+      "grounding": "PAPER NUMBERS. Table 4: on successful WebArena-Shopping instances, 6.8 -> 4.7 steps. Figure 16 case study: 29 -> 10 steps. SWE-Bench-Verified: 30.3 -> 27.5 (flash), 21.1 -> 19.8 (pro).",
+      "why": "Each removed step is one full LLM round trip plus one environment round trip. For an agent product the step count, not the token count, sets both wall-clock and the number of chances to break something. The paper never converts steps into seconds, so $L_w$ stays absent."
+    },
+    {
+      "claim": "The write path has no durability, concurrency, or consistency story.",
+      "grounding": "PAPER FACT: 'We persist the memory pool for each independent run' into JSON files [App A.2 txt:1937-1942]. [INFERENCE] A single-writer JSON file cannot support concurrent agents sharing a bank, which is exactly the deployment the paper's future-work section proposes ('a deployable memory service that scales across domains and teams', App D txt:2422-2424). Append-only union semantics happen to be conflict-free, which is the one thing that would make sharding easy.",
+      "why": "Names the gap between the artifact evaluated and the service proposed."
+    }
+  ],
+
+  "todo_verify": [
+    {
+      "item": "Whether the WebArena memory pool is shared across the five domain subsets or reset per subset. This determines the true sleep-round count (29-187 per subset vs 684 overall) and therefore the scale ceiling.",
+      "how_to_settle": "grep -n -i 'per subset\\|reset\\|independent run\\|memory pool' papers/stc/2509.25140.txt ; if inconclusive, check github.com/google-research/reasoning-bank for the run harness."
+    },
+    {
+      "item": "Which benchmark, subset and backbone Table 5's token numbers come from.",
+      "how_to_settle": "grep -n -A20 'Inference Cost Study' papers/stc/2509.25140.txt (currently txt:2140-2192; the setting is not stated in that block). Cross-check against the code repo."
+    },
+    {
+      "item": "Which column the Synapse value 2594.2 occupies in Table 5 (LLM-as-a-Judge or Memory Extraction).",
+      "how_to_settle": "Read Table 5 in the original PDF; the vendored text prints only two component numbers for that row."
+    },
+    {
+      "item": "The per-point mapping of Figure 8's SR values to simulated judge accuracies 100/90/80/70/60/50.",
+      "how_to_settle": "Read Figure 8 in the original PDF. The vendored text at txt:1280-1305 contains ten values (52.4, 51.8, 50.6, 49.4, 49.7, 49.7, 48.7, 48.2, 47.6, 47.6) for six x-positions."
+    },
+    {
+      "item": "The per-k values in Figure 4 for k=2,3,4 in each of the six curves.",
+      "how_to_settle": "Read Figure 4 in the original PDF; only k=1 and k=5 are stated in prose (§4.3, txt:955-978)."
+    },
+    {
+      "item": "Which backbone Table 4 (successful/failed step split) uses.",
+      "how_to_settle": "grep -n -B5 -A30 'Average number of steps on successful' papers/stc/2509.25140.txt — the caption at txt:1213-1215 does not say, and the surrounding analyses are Gemini-2.5-flash."
+    },
+    {
+      "item": "Whether any configuration was run more than once (seeds / variance).",
+      "how_to_settle": "grep -n -i 'seed\\|variance\\|std\\|error bar\\|averaged over.*runs\\|three runs' papers/stc/2509.25140.txt — no hit found in this pass; confirm against the PDF and the repo."
+    },
+    {
+      "item": "The embedding dimension of gemini-embedding-001 as used here (needed for any $C_{\\text{cap}}$ estimate).",
+      "how_to_settle": "Not in the paper (grep 'dimension' returns nothing relevant). Would have to come from the Gemini embedding model card, which is outside the paper and therefore may not be used as a paper-sourced number."
+    },
+    {
+      "item": "Whether the MaTTS rows in Table 1 include the BoN selector call in their step counts.",
+      "how_to_settle": "grep -n -A15 'Best-of-N Calculation Details' papers/stc/2509.25140.txt (txt:1986-1990); the definition of AS in App B.1 counts agent-env cycles, which would exclude the selector, but this is not stated."
+    },
+    {
+      "item": "Source of the 26.9% figure in §5's efficiency claim.",
+      "how_to_settle": "grep -n '26.9' papers/stc/2509.25140.txt — single occurrence at txt:1327; no cell pair in Table 4 reproduces it. Treat as an error in the paper unless the PDF shows different Table 4 values."
+    },
+    {
+      "item": "Whether v1 (Sep 2025) and v2 (16 Mar 2026) differ in results. All numbers above are from the v2 text.",
+      "how_to_settle": "Compare against arXiv v1 listing for 2509.25140."
+    }
+  ]
+}

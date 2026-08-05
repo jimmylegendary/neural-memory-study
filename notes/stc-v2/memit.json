@@ -1,0 +1,604 @@
+{
+  "paper_id": "memit",
+  "arxiv": "2210.07229",
+  "title": "MASS-EDITING MEMORY IN A TRANSFORMER (MEMIT)",
+  "authors": "Kevin Meng (MIT CSAIL; Northeastern University), Arnab Sen Sharma (Northeastern University), Alex Andonian (MIT CSAIL), Yonatan Belinkov (Technion – IIT), David Bau (Northeastern University). 원문 표제부의 저자 블록은 vendored 텍스트에서 순서가 뒤섞여 있다(3–10행: 'Arnab Sen Sharma2 Alex Andonian1 Yonatan Belinkov†3 / 1 MIT CSAIL 2 Northeastern University 3 Technion – IIT / Kevin Meng1,2 / David Bau2'). 교신저자 mengk@mit.edu, davidbau@northeastern.edu [memit p.1 각주]. Belinkov는 Technion Viterbi Fellowship 지원 [memit p.1 †각주].",
+  "venue": "ICLR 2023 (모든 페이지 running header가 'Published as a conference paper at ICLR 2023')",
+  "date": "arXiv:2210.07229v2 [cs.CL] 1 Aug 2023 [memit p.1 좌측 세로 표기]. v1 날짜는 vendored 텍스트에 없다.",
+  "path": "/home/jimmy/repos/neural-memory-study/papers/stc/2210.07229.txt",
+  "axis": "Theta",
+
+  "problem_stated": {
+    "one_line": "가중치를 직접 고쳐서 딥네트워크에 memory를 몇 개나 넣을 수 있는가 — 즉 Θ-경로의 **쓰기 용량**을 실증적으로 재는 것이 이 논문의 문제다.",
+    "verbatim": "'How many memories can we add to a deep network by directly editing its weights?' [memit §1 첫 문장]",
+    "why_it_matters_per_paper": [
+      "LLM은 특화 지식이 없고, 갱신하지 않으면 obsolete information을 회상한다 [memit §1].",
+      "재학습은 비용상 금지적이다 — 'Because re-training a large model can be prohibitive (Patterson et al., 2021) we seek methods that can update knowledge directly.' [memit §1]",
+      "선행 편집 기법은 규모가 안 난다: 'this body of work is typically limited to updating at most a few dozen facts; a recent study evaluates on a maximum of 75 (Mitchell et al., 2022) whereas others primarily focus on single-edit cases.' [memit §1]",
+      "그리고 선행 기법을 순차 적용하는 naive한 우회도 실패한다: 'a naive sequential application of current state-of-the-art knowledge-editing methods fails to scale up (Section 5.2).' [memit §1]"
+    ],
+    "success_criteria_defined_by_paper": "단순한 '효과 있음(effective)'만으로는 부족하고 generalization(재구문화 프롬프트에서도 새 사실을 회상), specificity(편집하지 않은 유사 주어의 답이 오염되지 않음), fluency(반복 붕괴가 없음) 세 축을 함께 봐야 한다고 §3에서 정의한다. 'Achieving these goals is challenging, even for a few edits ... We investigate whether they can be attained at the scale of thousands of edits.' [memit §3]",
+    "scope_restriction_stated_upfront": "지식은 (subject s, relation r, object o) 삼중항으로만 다룬다 [memit §3]. 편집 요청 집합에는 충돌 금지 제약이 걸린다 [memit Eq. 5]."
+  },
+
+  "inherited_open_question": {
+    "verdict": "none-stated",
+    "evidence": "논문 전체에서 선행 연구의 open question·future work를 **인용으로 물려받는 문장이 없다**. §1은 자기 질문('How many memories can we add...')으로 시작하고, §2 Related Work는 선행 기법의 도달 규모를 서술할 뿐 '그들이 남긴 문제'라고 귀속하지 않는다. §2 마지막 문장이 계보상 가장 가까운 진술이다: 'Our method is closely related to Meng et al. (2022), which also updates GPT as an explicit associative memory. Unlike the single-edit approach taken in that work, we modify a sequence of layers and develop a way for thousands of modifications to be performed simultaneously.' [memit §2 Direct model editing] — 이는 인용이 아니라 저자들의 대비 서술이다.",
+    "what_it_implicitly_answers": "ROME(Meng et al. 2022)이 **구조적으로 답하지 못한 것**에 답한다: ROME의 갱신은 단일 연관에 대한 hard equality 제약으로 유도되므로 u개의 새 연관을 동시에 강제하는 문제로 확장되지 않는다. MEMIT는 그 제약을 soft least-squares로 완화하고(§4.2 Eq. 9), 갱신을 여러 층에 분산해(§4.3) 'u ≫ 1' 배치를 성립시킨다. 즉 물려받은 것은 **문장이 아니라 방법의 한계**다.",
+    "prior_scale_ceilings_the_paper_cites": [
+      "De Cao et al. (2021) Knowledge Editor: Hase et al. (2021)가 'it fails to scale beyond a few edits'를 확인했고, 개선된 objective로 **10 beliefs**까지 확장 [memit §2].",
+      "SERAC (Mitchell et al., 2022): 'they demonstrate scaling up to **75 edits**' [memit §2].",
+      "'a recent study evaluates on a maximum of **75**' [memit §1] — 위 SERAC과 같은 수치."
+    ],
+    "bridge_in_material_for_the_monograph": "이 장의 bridge-in은 선행 논문의 인용문이 아니라 **숫자 세 개(1 → 10 → 75 → 10,000)**로 열어야 한다. Θ-경로에서 '한 번에 몇 개를 쓸 수 있는가'라는 축이 이 논문에서 처음으로 log-scale sweep의 대상이 된다.",
+    "note_for_frame": "이 '물려받은 open question 없음'은 S0 §5의 경로 간 침묵과 같은 종류의 발견이다 — 모델 편집 공동체는 자기 계보 안에서도 open question을 문장으로 넘기지 않고 벤치마크 수치로 넘긴다."
+  },
+
+  "core_mechanism": {
+    "summary": "질의가 오기 전 오프라인에, u개의 (s,r,o) 편집 요청을 (1) 각 편집마다 목표 은닉벡터 $z_i$를 gradient descent로 찾고, (2) 임계 MLP 층 집합 $\\Lambda$의 출력 행렬 $\\Theta^{(l)}_{\\mathrm{out}}$에 대해 '기존 연관을 보존하면서 새 연관을 최소제곱으로 끼워넣는' **닫힌형 정규방정식 해** $\\Delta^{(l)}$를 층마다 순차 적용해 $\\Theta$에 직접 쓴다. gradient descent는 활성값 공간($z_i$)에서만 돌고, **가중치 갱신 자체에는 학습률도 손실 역전파도 없다**.",
+    "unified_reduction_of_read_equation": "$\\hat y = f(q;\\ \\Theta,\\ W,\\ \\mathrm{ret}(E,q))$ [S0 (R)]가 이 논문에서는 $\\hat y = f(q;\\ \\Theta')$ 로 붕괴한다. $W$(fast weights)와 $E$(external store)는 이 논문에 존재하지 않으며, 편집 후 추론은 편집 전과 완전히 동일한 실행 경로를 탄다. 편집 결과는 오직 $\\Theta \\to \\Theta'$ 라는 배포 아티팩트의 변화로만 존재한다.",
+    "equations": [
+      {
+        "id": "M-1",
+        "latex": "P\\big(x_{[t]} \\mid x_{[1]},\\dots,x_{[T_{\\mathrm{end}}]}\\big) \\;\\triangleq\\; G\\big([x_{[1]},\\dots,x_{[T_{\\mathrm{end}}]}]\\big) \\;=\\; \\mathrm{softmax}\\big(\\Theta_y\\, h^{L}_{[T_{\\mathrm{end}}]}\\big)",
+        "orig": "[memit Eq. 1]",
+        "gloss": "원문 $W_y$(unembedding) → 통일표기에서 $W$는 fast weights 예약이므로 $\\Theta_y$로 개명. 원문 $D$(층 수) → 통일표기 $L$. 원문 $E$(마지막 토큰 인덱스) → 통일표기 $E$는 external store 예약이므로 $T_{\\mathrm{end}}$로 개명."
+      },
+      {
+        "id": "M-2",
+        "latex": "h^{l}_{[t]}(x) \\;=\\; h^{l-1}_{[t]}(x) \\;+\\; a^{l}_{[t]}(x) \\;+\\; m^{l}_{[t]}(x)",
+        "orig": "[memit Eq. 2]",
+        "gloss": "attention과 MLP를 **병렬**로 쓴 형태(GPT-J·GPT-NeoX 관행). 'we have written attention and MLPs in parallel as done in Black et al. (2021) and Wang & Komatsuzaki (2021)' [memit §3]. 이 병렬 가정이 §4.1의 residual stream 논증(M-5)의 전제다."
+      },
+      {
+        "id": "M-3",
+        "latex": "a^{l} \\;=\\; \\mathrm{attn}^{l}\\big(h^{l-1}_{[1]}, h^{l-1}_{[2]},\\dots,h^{l-1}_{[t]}\\big)",
+        "orig": "[memit Eq. 3]",
+        "gloss": "그대로."
+      },
+      {
+        "id": "M-4",
+        "latex": "m^{l}_{[t]} \\;=\\; \\Theta^{(l)}_{\\mathrm{out}}\\ \\sigma\\!\\big(\\Theta^{(l)}_{\\mathrm{in}}\\ \\gamma(h^{l-1}_{[t]})\\big)",
+        "orig": "[memit Eq. 4]",
+        "gloss": "$\\gamma$ = layernorm, $\\sigma$ = MLP 비선형성. **MEMIT가 쓰는 대상은 오직 $\\Theta^{(l)}_{\\mathrm{out}}$** (원문 $W^l_{out}$)이다. $\\Theta^{(l)}_{\\mathrm{in}}$·attention·embedding·unembedding은 불변."
+      },
+      {
+        "id": "M-5",
+        "latex": "\\mathcal{E}_{\\mathrm{edit}} \\;=\\; \\{(s_i,\\varrho_i,o_i)\\mid i\\}\\quad \\text{s.t.}\\quad \\nexists\\, i,j.\\ (s_i=s_j)\\wedge(\\varrho_i=\\varrho_j)\\wedge(o_i\\neq o_j)",
+        "orig": "[memit Eq. 5]",
+        "gloss": "편집 요청 집합. 원문 기호 $E$는 external store 예약과 충돌하므로 $\\mathcal{E}_{\\mathrm{edit}}$으로 개명. 원문 relation $r$은 통일표기 $r$(LoRA rank) 예약과 충돌하므로 $\\varrho$로 개명. 제약은 '같은 (s,r)에 서로 다른 o를 요구하는 모순 요청 금지'. **CounterFact 실험에서는 이 조건을 위반하는 사실을 실제로 필터링해 제거한다** [memit §5.2.2]."
+      },
+      {
+        "id": "M-6",
+        "latex": "h^{L}_i \\;=\\; h^{0}_i \\;+\\; \\sum_{l=1}^{L} a^{l}_i \\;+\\; \\sum_{l=1}^{L} m^{l}_i",
+        "orig": "[memit Eq. 6]",
+        "gloss": "residual stream 전개. 이 식이 MEMIT의 **분산 쓰기 정당화**다 — 각 MLP가 $h^{L}_i$에 **덧셈으로** 기여하므로, 원하는 변화량을 임계 층들에 나눠 실을 수 있다. 'when writing new memories into G, we can spread the desired changes across all the critical layers' [memit §4.1]. $h^l_i \\triangleq h^l_{[t_S]}(p_i)$ 축약(마지막 subject token) [memit §4]."
+      },
+      {
+        "id": "M-7",
+        "latex": "\\Theta_0^{\\mathrm{out}} \\;\\triangleq\\; \\arg\\min_{\\hat\\Theta}\\ \\sum_{i=1}^{n} \\big\\lVert \\hat\\Theta\\, k_i - m_i \\big\\rVert^2",
+        "orig": "[memit Eq. 7]",
+        "gloss": "linear associative memory 관점 (Kohonen 1972; Anderson 1972). $k_i$ = subject를 인코딩한 key, $m_i$ = 기억된 값. **가정**: pre-training이 $\\Theta^{(l)}_{\\mathrm{out}}$를 이 최소제곱 최적해로 놓았다고 본다 ('Suppose that pre-training sets a transformer MLP's weights to the optimal solution' [memit §4.2]) — 이 가정은 검증되지 않는다."
+      },
+      {
+        "id": "M-8",
+        "latex": "\\Theta_0^{\\mathrm{out}} K_0 K_0^{\\mathsf T} \\;=\\; M_0 K_0^{\\mathsf T}",
+        "orig": "[memit Eq. 8]",
+        "gloss": "M-7의 정규방정식. $K_0=[k_1|\\cdots|k_n]$, $M_0=[m_1|\\cdots|m_n]$ = 사전학습이 이미 저장한 (key, value) 쌍. 실제로는 접근 불가."
+      },
+      {
+        "id": "M-9",
+        "latex": "\\Theta_1^{\\mathrm{out}} \\;\\triangleq\\; \\arg\\min_{\\hat\\Theta}\\Big(\\sum_{i=1}^{n}\\big\\lVert\\hat\\Theta k_i - m_i\\big\\rVert^2 \\;+\\; \\sum_{i=n+1}^{n+n_{\\mathrm{edit}}}\\big\\lVert\\hat\\Theta k_i - m_i\\big\\rVert^2\\Big)",
+        "orig": "[memit Eq. 9]",
+        "gloss": "**핵심 완화**. ROME은 '새 연관 1개를 정확히 만족'이라는 hard equality 제약으로 풀지만, MEMIT는 옛것과 새것을 **하나의 제곱오차 합**으로 놓는다. 'Unlike Meng et al. (2022), we cannot solve our problem with a constraint that adds only a single new association, so we define an expanded objective' [memit §4.2]. 원문 $u$(새 연관 개수) → $n_{\\mathrm{edit}}$."
+      },
+      {
+        "id": "M-10",
+        "latex": "\\Delta \\;=\\; \\mathrm{Res}\\; K_1^{\\mathsf T}\\big(\\Gamma_0 + K_1 K_1^{\\mathsf T}\\big)^{-1},\\qquad \\mathrm{Res} \\;\\triangleq\\; M_1 - \\Theta_0^{\\mathrm{out}} K_1,\\qquad \\Gamma_0 \\;\\triangleq\\; K_0 K_0^{\\mathsf T}",
+        "orig": "[memit Eq. 14] (유도는 Eq. 10–13)",
+        "gloss": "MEMIT의 쓰기 primitive. 원문 $R$(residual 행렬)은 원문이 같은 기호를 임계 층 집합에도 쓰므로(§4.1) **논문 내부 충돌**이며, 통일표기 $\\mathcal{R}_k$(sleep 학습집합)와도 충돌 → $\\mathrm{Res}$로 개명. 원문 $C_0$는 통일표기 $C$(chunk)·$C_{\\mathrm{cap}}$(용량)과 충돌 → $\\Gamma_0$로 개명. 유도의 관건은 Eq. 12에서 Eq. 8을 빼면 접근 불가능한 $M_0$가 소거되고 **$K_0$의 2차 통계만 남는다**는 것이다."
+      },
+      {
+        "id": "M-11",
+        "latex": "\\Gamma_0 \\;=\\; \\lambda \\cdot \\mathbb{E}_k\\big[k k^{\\mathsf T}\\big]",
+        "orig": "[memit Eq. 15]",
+        "gloss": "$K_0$·$M_0$에 접근할 수 없으므로 옛 key들을 '입력의 무작위 표본'으로 모델링해 uncentered covariance로 대체한다. 'We assume that the set of previously memorized keys can be modeled as a random sample of inputs' [memit §4.2] — **검증되지 않은 가정**. $\\lambda$는 새것 대 옛것의 가중을 조절하는 hyperparameter이며 'a typical value is $\\lambda = 1.5\\times10^4$' [memit §4.2]. 구조적으로 $\\lambda$는 (U-$\\Theta$)에 대한 **retention gate**로 작동한다 — $\\lambda\\to\\infty$면 $\\Delta\\to 0$."
+      },
+      {
+        "id": "M-12",
+        "latex": "z_i \\;=\\; h^{l^\\ast}_i \\;+\\; \\arg\\min_{\\delta_i}\\ \\frac{1}{N_{\\mathrm{pref}}}\\sum_{j=1}^{N_{\\mathrm{pref}}} -\\log P_{G(h^{l^\\ast}_i \\mathrel{+}= \\delta_i)}\\big[o_i \\mid x_j \\oplus p(s_i,\\varrho_i)\\big]",
+        "orig": "[memit Eq. 16]",
+        "gloss": "**이 논문에서 gradient descent가 도는 유일한 곳.** 가중치가 아니라 활성값 $\\delta_i$에 대해 돈다(hooking). 무작위 prefix $x_j$를 붙여 문맥 일반화를 유도한다. 원문 $L \\triangleq \\max(R)$(목표 층)은 통일표기 $L$(층 수)과 충돌 → $l^\\ast$로 개명. 원문 $P$(prefix 개수)는 확률 $P$와 논문 내부에서 충돌 → $N_{\\mathrm{pref}}$."
+      },
+      {
+        "id": "M-13",
+        "latex": "\\{\\Delta^{(l)}\\}_{l\\in\\Lambda} \\;=\\; \\arg\\min\\ \\sum_i \\big\\lVert z_i - \\hat h^{l^\\ast}_i \\big\\rVert^2,\\qquad \\hat h^{l^\\ast}_i = h^0_i + \\sum_{l=1}^{l^\\ast} a^l_i + \\sum_{l=1}^{l^\\ast}\\big(\\Theta^{(l)}_{\\mathrm{out}}\\!+\\!\\Delta^{(l)}\\big)\\sigma\\!\\big(\\Theta^{(l)}_{\\mathrm{in}}\\gamma(h^{l-1}_i)\\big)",
+        "orig": "[memit Eq. 17–18]",
+        "gloss": "층별 delta를 '목표 $z_i$에 최대한 가깝게'로 정의한 전체 목적. 원문 $R$(임계 층 집합) → $\\Lambda$로 개명. 이 목적을 직접 풀지 않고 M-15의 균등분배 heuristic으로 근사한다."
+      },
+      {
+        "id": "M-14",
+        "latex": "k^{l}_i \\;=\\; \\frac{1}{N_{\\mathrm{pref}}}\\sum_{j=1}^{N_{\\mathrm{pref}}} \\sigma\\!\\big(\\Theta^{(l)}_{\\mathrm{in}}\\gamma\\big(h^{l-1}_i(x_j+s_i)\\big)\\big)",
+        "orig": "[memit Eq. 19]",
+        "gloss": "key = $\\Theta^{(l)}_{\\mathrm{out}}$의 **입력**, 즉 MLP 중간 활성. prefix 평균으로 안정화한다. 통일표기에서 $k$는 sleep 라운드 첨자로도 예약되어 있으므로, 본문에서는 반드시 층·항목 첨자를 붙인 $k^l_i$ 형태로만 쓴다."
+      },
+      {
+        "id": "M-15",
+        "latex": "m^{l}_i \\;=\\; \\Theta^{(l)}_{\\mathrm{out}} k^{l}_i \\;+\\; r^{(l)}_i,\\qquad r^{(l)}_i \\;=\\; \\frac{z_i - h^{l^\\ast}_i}{\\,l^\\ast - l + 1\\,}",
+        "orig": "[memit Eq. 20]",
+        "gloss": "**MEMIT 고유의 분배 규칙**. 목표 잔차를 남은 층 수로 나눠 균등하게 싣는다. 'the denominator of $r_i$ spreads the residual out evenly' [memit §4.3]. 동기는 Zhu et al. (2020)의 관찰 — 'robustness is improved when parameter change magnitudes are minimized' [memit §4.3]. 원문 $r^l_i$(잔차 벡터)는 원문 relation $r$·통일표기 rank $r$과 삼중 충돌 → $r^{(l)}_i$로 첨자를 붙여 구분."
+      },
+      {
+        "id": "M-16",
+        "latex": "\\text{for } l \\in \\Lambda \\text{ (오름차순): } \\quad \\text{re-collect } h^{l-1}_i \\;\\to\\; K^{(l)},\\, \\mathrm{Res}^{(l)} \\;\\to\\; \\Delta^{(l)} \\;\\to\\; \\Theta^{(l)}_{\\mathrm{out}} \\mathrel{+}= \\Delta^{(l)}",
+        "orig": "[memit Algorithm 1, lines 5–15]",
+        "gloss": "**순서가 본질이다.** 한 층을 고치면 아래층 활성이 전부 바뀌므로, 오름차순으로 한 층씩 고치고 **매번 활성을 다시 수집**한다. 'Because edits to any layer will influence all following layers' activations, we calculate $\\Delta^l$ iteratively in ascending layer order' [memit §4.3]. 이것이 MEMIT를 $|\\Lambda|$회의 순차 pass로 만드는 원인이며, 배치화가 불가능한 유일한 축이다."
+      }
+    ],
+    "two_stage_structure": {
+      "stage_1": "활성 공간 목표 산출 — 모든 $i$에 대해 $z_i$를 gradient descent로 구한다(M-12). 편집 간 **완전 독립** → 'embarrassingly parallel' [memit §5.2.2]. GPT-J 10,000 편집에서 이 단계가 23,546.65 sec ≈ 6.54 hr [memit App. B.4].",
+      "stage_2": "가중치 공간 투영 — $\\Lambda$의 층을 오름차순으로 돌며 닫힌형 $\\Delta^{(l)}$을 계산·적용(M-10, M-16). $z_i$가 이미 있으면 3,226.35 sec ≈ 0.90 hr [memit App. B.4]. 최대 비용 항목은 '큰 정사각 행렬의 역행렬'(Eq. 14) [memit App. B.4].",
+      "why_it_matters": "sleep-time 비용의 88.0%가 병렬화 가능한 stage 1에 있고(23,546.65 / 26,773.0 = 0.8795, note-writer 산술), 나머지 12%는 층 순차성 때문에 원리적으로 직렬이다."
+    },
+    "layer_selection_procedure": {
+      "method": "causal mediation analysis (Pearl 2001; Vig et al. 2020; Meng et al. 2022)를 GPT-J에 적용해 임계 MLP 층 범위 $\\Lambda$를 고른다 [memit §4.1, App. A].",
+      "protocol": "GPT-J가 올바르게 예측하는 참인 진술 **501개** 표본, subject token 인코딩에 표준편차 $3\\sigma$의 Gaussian noise 주입($\\sigma^2$ = 임베딩 활성의 경험 분산), 노이즈 표본 **10개** 평균 [memit App. A].",
+      "criterion": "단일 상태 복원 효과(보라)와 MLP를 절단한 상태의 효과(초록) 사이 **간극이 가장 큰 층들**을 고른다. 'this gap diminishes after layer 8' [memit §4.1]. Attention을 절단해도 곡선이 움직이지 않으므로 attention은 결정적 매개자가 아니다 [memit App. A].",
+      "result": "GPT-J: $\\Lambda=\\{3,4,5,6,7,8\\}$ [memit §4.1, App. B.4]. GPT-NeoX: $\\Lambda=\\{6,7,8,9,10\\}$ [memit App. B.4]. **모델마다 사람이 다시 정해야 한다.**",
+      "contrast_with_rome": "'Unlike Meng et al. (2022) who use this test to identify a single edit layer, we select the whole range of critical MLP layers' [memit §4.1]."
+    },
+    "notation_conflicts": [
+      {"paper_symbol": "$W_y$, $W^l_{out}$, $W^l_{in}$, $W_0$, $W_1$, $\\hat W$", "paper_meaning": "가중치 행렬 일반", "reserved_meaning": "$W$ = fast weights (NM 승계, 재정의 절대 금지)", "mapping": "$\\Theta_y$, $\\Theta^{(l)}_{\\mathrm{out}}$, $\\Theta^{(l)}_{\\mathrm{in}}$, $\\Theta^{\\mathrm{out}}_0$, $\\Theta^{\\mathrm{out}}_1$, $\\hat\\Theta$", "severity": "치명. 이 논문의 $W$는 전부 slow weights의 부분집합이다. 본문에서 원문 $W$를 그대로 쓰면 3층 프레임이 즉시 무너진다."},
+      {"paper_symbol": "$E$ (Eq. 5)", "paper_meaning": "편집 요청 집합 $\\{(s_i,r_i,o_i)\\}$", "reserved_meaning": "$E$ = external store", "mapping": "$\\mathcal{E}_{\\mathrm{edit}}$", "severity": "치명. 이 논문은 external store를 갖지 않는데 하필 그 기호를 쓴다."},
+      {"paper_symbol": "$E$ (Eq. 1)", "paper_meaning": "마지막 토큰 인덱스 ($x_{[E]}$, $h^D_{[E]}$)", "reserved_meaning": "$E$ = external store", "mapping": "$T_{\\mathrm{end}}$", "severity": "치명 + **논문 내부 이중사용**(같은 논문에서 $E$가 두 가지 뜻)."},
+      {"paper_symbol": "$D$", "paper_meaning": "transformer decoder 층 수", "reserved_meaning": "$L$ = 층 수, $d$ = 모델 폭", "mapping": "$L$", "severity": "중. 단순 개명."},
+      {"paper_symbol": "$L \\triangleq \\max(R)$", "paper_meaning": "목표 층(임계 범위의 마지막 층)", "reserved_meaning": "$L$ = 층 수", "mapping": "$l^\\ast$", "severity": "치명. 원문 $D$/$L$과 통일표기 $L$이 서로 엇갈려 있어 개명 없이는 식 M-6/M-13이 읽히지 않는다."},
+      {"paper_symbol": "$R$ (§4.1)", "paper_meaning": "임계 MLP 층 집합", "reserved_meaning": "$\\mathcal{R}_k$ = sleep 라운드 학습집합", "mapping": "$\\Lambda$", "severity": "높음."},
+      {"paper_symbol": "$R$ (§4.2)", "paper_meaning": "잔차 행렬 $M_1 - W_0K_1$", "reserved_meaning": "$\\mathcal{R}_k$", "mapping": "$\\mathrm{Res}$", "severity": "높음 + **논문 내부 이중사용**($R$이 층 집합과 잔차 행렬 양쪽)."},
+      {"paper_symbol": "$C_0$, $C^l$", "paper_meaning": "옛 key의 uncentered covariance $K_0K_0^{\\mathsf T}$", "reserved_meaning": "$C$ = chunk 크기, $C_{\\mathrm{cap}}$ = 상태 용량", "mapping": "$\\Gamma_0$, $\\Gamma^{(l)}$", "severity": "치명. STC-STYLE §1.5가 명시적으로 금지한 충돌."},
+      {"paper_symbol": "$r$ (in $(s,r,o)$)", "paper_meaning": "relation", "reserved_meaning": "$r$ = LoRA rank", "mapping": "$\\varrho$", "severity": "높음. Θ-경로 장에서 LoRA와 나란히 놓이면 즉시 사고가 난다."},
+      {"paper_symbol": "$r^l_i$", "paper_meaning": "층 $l$에 실을 잔차 벡터", "reserved_meaning": "$r$ = rank", "mapping": "$r^{(l)}_i$ (첨자 필수)", "severity": "중 + **논문 내부 삼중사용**(relation $r$, 잔차 $r^l_i$, 그리고 rank는 이 논문엔 없음)."},
+      {"paper_symbol": "$S$ (§4)", "paper_meaning": "마지막 subject token", "reserved_meaning": "$S_t$ = momentum(surprise), $S(c;B_s)$ = 오프라인 처리 절차", "mapping": "$t_S$", "severity": "치명. STC-STYLE §1.5의 '첨자 없는 맨 $S$ 금지'에 정면 충돌."},
+      {"paper_symbol": "$S$ (§5.2.2)", "paper_meaning": "Editing Score (ES·PS·NS의 조화평균)", "reserved_meaning": "동상", "mapping": "$\\mathrm{Score}$", "severity": "치명 + **논문 내부 이중사용**."},
+      {"paper_symbol": "$S$ (Algorithm 1 Data 줄)", "paper_meaning": "'layers to edit S' — 그러나 §4.1·§4.3·Algorithm 1 line 5는 같은 대상을 $R$이라 부른다", "reserved_meaning": "동상", "mapping": "$\\Lambda$", "severity": "**논문 자체의 표기 오류**로 기록. Algorithm 1 헤더와 본문이 불일치한다."},
+      {"paper_symbol": "$P$ (Eq. 16, 19)", "paper_meaning": "무작위 prefix 개수", "reserved_meaning": "확률 $P_G[\\cdot]$와 같은 페이지에서 충돌", "mapping": "$N_{\\mathrm{pref}}$", "severity": "중 + **논문 내부 충돌**."},
+      {"paper_symbol": "$k_i$, $k^l_i$", "paper_meaning": "subject를 인코딩한 key 벡터", "reserved_meaning": "$k$ = sleep 라운드 첨자; $k_t$ = (U-W)의 key", "mapping": "$k^{(l)}_i$ — 항상 첨자를 달아 라운드 첨자와 구분", "severity": "중."},
+      {"paper_symbol": "$m_i$, $m^l_i$", "paper_meaning": "MLP가 residual stream에 더하는 '기억된 값'", "reserved_meaning": "예약 없음", "mapping": "그대로 사용 가능", "severity": "낮음. 단 $\\mathcal{M}(\\cdot;W)$(memory 읽기 함수)와 혼동하지 않게 소문자·첨자 유지."},
+      {"paper_symbol": "$u$", "paper_meaning": "동시에 넣을 새 연관 개수", "reserved_meaning": "$n$ = 저장된 항목 수", "mapping": "$n_{\\mathrm{edit}}$ (그리고 실험 절의 문제 크기는 원문 그대로 $n$)", "severity": "중. 원문은 $n$을 '이미 저장된 연관 수'(Eq. 7)로도, '편집 개수'(§5.2.2)로도 쓴다 — **논문 내부 이중사용**."},
+      {"paper_symbol": "$\\lambda$", "paper_meaning": "covariance adjustment factor (옛것 대 새것의 가중)", "reserved_meaning": "예약 없음", "mapping": "그대로", "severity": "낮음. 다만 기능적으로 $\\alpha_t$(retention gate)의 Θ-경로 대응물임을 본문에서 밝힌다."},
+      {"paper_symbol": "$\\sigma$", "paper_meaning": "본문에서는 MLP 비선형성 [Eq. 4], App. A에서는 임베딩 활성의 표준편차", "reserved_meaning": "예약 없음", "mapping": "비선형성은 $\\sigma$, 잡음 크기는 $\\sigma_{\\mathrm{emb}}$", "severity": "중 + **논문 내부 이중사용**."},
+      {"paper_symbol": "$\\delta_i$, $z_i$", "paper_meaning": "층 $l^\\ast$에서의 목표 잔차 벡터·목표 은닉 상태", "reserved_meaning": "예약 없음", "mapping": "그대로", "severity": "낮음."},
+      {"paper_symbol": "$G$", "paper_meaning": "generator (편집 대상 LM)", "reserved_meaning": "예약 없음", "mapping": "$f(\\cdot;\\Theta)$로 환원하거나 $G$ 유지", "severity": "낮음."},
+      {"paper_symbol": "$\\gamma$", "paper_meaning": "layernorm", "reserved_meaning": "예약 없음", "mapping": "그대로", "severity": "낮음."}
+    ]
+  },
+
+  "outer_vs_inner": {
+    "reader_answer_first": "이 논문에서 **역전파로 학습되는 가중치는 하나도 없다.** gradient descent는 활성값 $\\delta_i$에만 쓰이고, 가중치 변화 $\\Delta^{(l)}$은 연립방정식을 풀어 **계산**된다. 그리고 편집이 끝나면 test-time에 움직이는 것은 아무것도 없다 — 추론은 평범한 GPT-J 추론이다.",
+    "table": [
+      {"object": "$\\Theta$ — GPT-J(6B) / GPT-NeoX(20B) 사전학습 가중치 전체", "who_learns": "이 논문 밖의 pre-training. 논문 안에서는 아무도 학습하지 않는다", "when": "논문 범위 밖", "source": "[memit §5.1]"},
+      {"object": "$\\Theta^{(l)}_{\\mathrm{out}}$, $l \\in \\Lambda$ — 편집 대상 6개(GPT-J) / 5개(GPT-NeoX) MLP 출력 행렬", "who_learns": "**아무도 '학습'하지 않는다.** 닫힌형 정규방정식 해 $\\Delta^{(l)}$(M-10)을 계산해 더한다. 학습률·손실 역전파 없음", "when": "sleep 라운드(오프라인 편집 시점) 1회. 층 오름차순으로 순차 적용, 매 층마다 활성 재수집", "source": "[memit §4.3, Eq. 14, Algorithm 1 lines 5–15]"},
+      {"object": "$\\delta_i$ / $z_i$ — 편집 $i$의 목표 은닉 벡터", "who_learns": "**gradient descent** (논문에서 유일). 활성값에 대한 최적화이며 가중치는 건드리지 않는다", "when": "sleep 라운드의 stage 1. 편집마다 독립 → 병렬 가능", "source": "[memit Eq. 16, App. B.4] GPT-J: 25 steps, lr $5\\times10^{-1}$, $\\lVert\\delta_i\\rVert_2 < \\tfrac34\\lVert h^{l^\\ast}_i\\rVert$로 clamp. GPT-NeoX: 20 steps, lr $5\\times10^{-1}$, clamp $\\tfrac{3}{10}\\lVert h^{l^\\ast}_i\\rVert$"},
+      {"object": "$\\Gamma^{(l)}$ — 층별 key covariance $\\lambda\\mathbb{E}[kk^{\\mathsf T}]$", "who_learns": "학습이 아니라 **추정**. Wikitext 표본에서 1회 수집해 캐시", "when": "편집보다 먼저, 모델마다 1회", "source": "[memit Eq. 15, App. B.4] GPT-J: Wikitext 100,000 표본, fp32. GPT-NeoX: 50,000 표본, fp16 수집 후 fp32 저장"},
+      {"object": "$\\lambda$ — covariance adjustment factor", "who_learns": "학습되지 않음. 사람이 고르는 hyperparameter", "when": "편집 전. GPT-J 15,000, GPT-NeoX 20,000. 본문 서술은 'a typical value is $\\lambda=1.5\\times10^4$'", "source": "[memit §4.2, App. B.4, App. F.3]"},
+      {"object": "$\\Lambda$ — 편집할 층 집합", "who_learns": "학습되지 않음. **causal tracing 결과를 사람이 보고 고른다**", "when": "모델마다 1회, 편집 전. GPT-J $\\{3,\\dots,8\\}$, GPT-NeoX $\\{6,\\dots,10\\}$", "source": "[memit §4.1, App. A, App. B.4]"},
+      {"object": "$N_{\\mathrm{pref}}$ — 무작위 prefix 집합 $\\{x_j\\}$", "who_learns": "학습되지 않음. 샘플링", "when": "$z_i$·$k^{(l)}_i$ 계산 시", "source": "[memit Eq. 16, Eq. 19]. **개수와 길이가 MEMIT에 대해서는 명시되지 않는다** — ROME 기준선에 대해서만 '10 prefixes of length 5 and 10 prefixes of length 10' [memit App. B.3]. todo_verify 참조"},
+      {"object": "$W$ (통일표기 fast weights)", "who_learns": "**이 논문에 존재하지 않는다**", "when": "해당 없음. 편집 후 추론에서 상태가 변하는 지점이 없다", "source": "논문 전체에 test-time 상태 갱신 서술이 없다. 검색어 'test-time', 'fast weight' → 0건"},
+      {"object": "$E$ (통일표기 external store)", "who_learns": "**이 논문에 존재하지 않는다**", "when": "해당 없음", "source": "검색어 'retriev' → 0건. SERAC은 §2·§5.1에서 언급만 되고 비교 실험이 없다"},
+      {"object": "KV cache", "who_learns": "학습 대상 아님", "when": "wake-time의 유일한 상태이지만 논문은 한 번도 언급하지 않는다", "source": "[note-writer 확인] 검색어 'KV' → 0건, 'cache' → 1건(‘pre-compute and cache $z_i$ values’, App. B.4)"},
+      {"object": "편집 요청 $\\mathcal{E}_{\\mathrm{edit}}$ 자체", "who_learns": "생성되지 않는다. **사람이 만든 데이터셋에서 가져온다** (zsRE, CounterFact)", "when": "편집 전 입력", "source": "[memit §5.2.1, §5.2.2] — 통일표기 $\\mathrm{gen}(\\mathcal{H}_k;B_s)$가 항등이라는 뜻이다"}
+    ],
+    "test_time_summary": "편집 이후 wake-time에 갱신되는 객체는 **없다**. MEMIT는 (U-$\\Theta$)를 한 번 실행하고 끝난다. 이 점이 W-경로·E-경로와의 결정적 차이이며, 동시에 이 논문이 $\\rho$(라운드당 열화)를 측정할 수 없는 이유다."
+  },
+
+  "update_layer": {
+    "instantiates": "(U-$\\Theta$) **단독**. (U-W)·(U-E)는 실행되지 않는다. 순서 문제는 층 간에만 존재한다.",
+    "canonical_form": "$\\Theta_{k+1} = \\Theta_k - \\eta_\\Theta \\nabla_\\Theta \\mathcal{L}(\\mathcal{R}_k;\\Theta_k)$, $\\mathcal{R}_k = \\mathrm{gen}(\\mathcal{H}_k;B_s)$ [S0 (U-$\\Theta$)]",
+    "differences": [
+      "**차이 1 — gradient가 아니다.** $\\eta_\\Theta$가 존재하지 않는다. $\\Theta_{k+1}-\\Theta_k = \\Delta^{(l)} = \\mathrm{Res}\\,K_1^{\\mathsf T}(\\Gamma_0+K_1K_1^{\\mathsf T})^{-1}$ 라는 **닫힌형 해**다 [memit Eq. 14]. Θ-경로의 쓰기가 반드시 SGD여야 하는 것은 아니라는 존재증명이다.",
+      "**차이 2 — $\\mathcal{L}$이 task loss가 아니다.** outer loss 자리에 들어가는 것은 '옛 연관 보존 + 새 연관 삽입'의 제곱오차 합 [memit Eq. 9]이고, 옛 항은 접근 불가능한 $(K_0,M_0)$ 대신 **2차 통계 $\\Gamma_0$ 하나**로 대체된다 [memit Eq. 15]. 즉 replay 데이터 없이 replay 효과를 통계로 근사한다 — Θ-경로에서 $\\mathcal{R}_k$를 **명시적 데이터 없이** 대체한 드문 사례.",
+      "**차이 3 — $\\mathrm{gen}(\\cdot;B_s)$가 항등이다.** 학습집합은 사람이 만든 zsRE/CounterFact의 (s,r,o) 삼중항이다. 자기 생성·합성·distillation이 없다. 따라서 **$B_s$를 조절하는 knob 자체가 없고**, 유일하게 예산처럼 움직이는 값은 $\\delta_i$ 최적화 스텝 수(GPT-J 25, GPT-NeoX 20)다.",
+      "**차이 4 — $\\Theta$의 극히 일부만 움직인다.** GPT-J 28개 층 중 6개 층의 $\\Theta_{\\mathrm{out}}$만. attention·embedding·unembedding·$\\Theta_{\\mathrm{in}}$은 불변. 대상 선정은 학습이 아니라 causal tracing에 근거한 **사람의 결정**이다 [memit §4.1].",
+      "**차이 5 — 2단계 구조.** 표준형에 없는 '활성 공간에서 목표를 먼저 정하고(M-12), 그 목표를 가중치 공간으로 사영한다(M-10)'는 분리가 있다. 목표는 gradient로, 사영은 대수로 구한다.",
+      "**차이 6 — 층에 걸친 순차성.** $\\Lambda$를 오름차순으로 돌며 매 층 후 활성을 재수집한다 [memit §4.3, Algorithm 1]. 표준형에는 없는 내부 순서이며, 이것이 (U-$\\Theta$) 1회를 $|\\Lambda|$회의 직렬 sub-pass로 만든다.",
+      "**차이 7 — 잔차 균등분배.** $r^{(l)}_i = (z_i-h^{l^\\ast}_i)/(l^\\ast-l+1)$ [memit Eq. 20]. '변화량을 작게 유지하면 robust해진다'(Zhu et al. 2020)는 관찰에 기댄 heuristic이며, M-13의 최적화 문제를 실제로 풀지 않고 근사한다.",
+      "**차이 8 — retention gate의 위치.** (U-W)에서 $\\alpha_t$가 하던 '얼마나 남길 것인가'를 여기서는 $\\lambda$가 한다. $\\lambda\\to\\infty$면 $\\Delta\\to0$(아무것도 안 씀), $\\lambda\\to0$이면 옛 연관 보존 항이 사라진다. App. F.3의 ablation이 정확히 이 tradeoff를 보여준다.",
+      "**차이 9 — $k$가 1에서 멈춘다.** 이 논문은 sleep 라운드를 **한 번만** 돈다. $k=1,2,3,\\dots$ 반복 적용 실험이 없다(순차 반복 실험은 ROME 기준선에만 있고, 그것은 붕괴한다). 따라서 (U-$\\Theta$)의 반복 안정성은 이 논문이 답하지 않는다."
+    ],
+    "ordering": "단일 경로. sleep 라운드 안의 내부 순서만 존재한다: (a) $\\Gamma^{(l)}$ 사전 추정(모델당 1회) → (b) 모든 $i$에 대해 $z_i$ 산출(병렬 가능) → (c) $l=\\min\\Lambda \\to \\max\\Lambda$ 오름차순으로 $K^{(l)}$·$\\mathrm{Res}^{(l)}$ 재수집 후 $\\Delta^{(l)}$ 적용. (c)의 순서를 바꾸면 활성 재수집 전제가 깨진다."
+  },
+
+  "cost_table": {
+    "preface": "이 논문은 비용을 **wall-clock 초**로만 보고한다. FLOPs·토큰·에너지·바이트는 전부 논문에 없다(검색어 'FLOP' 0건, 'energy' 1건이나 §7 윤리 서술, 'bytes' 0건, 'latency' 0건, 'throughput' 0건).",
+    "B_s": {
+      "value_reported": "GPT-J(6B), 10,000 편집 기준 wall-clock. **총 7.44 hr** [memit §5.2.2]. 분해 [memit App. B.4]: $z_i$ 벡터 10,000개 산출 = 23,546.65 sec ≈ 6.54 hr (현재 구현은 직렬); $z_i$가 이미 계산되어 있으면 나머지 갱신 = 3,226.35 sec ≈ 0.90 hr. 기준선 동일 조건: MEND 98.25 sec [App. B.2] (§5.2.2 본문은 '98 sec'), FT 1,716.21 sec ≈ 0.48 hr [App. B.1] (§5.2.2 본문은 'around 29 min'), ROME 44,248.26 sec ≈ 12.29 hr ≈ 'approximately 4 seconds per edit' [App. B.3].",
+      "hardware": "NVIDIA A6000 워크스테이션. GPT-J는 48GB A6000 한 장에 들어가고, GPT-NeoX는 최소 두 장이 필요하다 — 'one 48GB GPU for running the model in float16, and another slightly smaller GPU for executing the editing method' [memit §9 Reproducibility]. GPU 개수·정확한 구성은 GPT-J에 대해 명시되지 않는다.",
+      "derived_note_writer": "23,546.65 + 3,226.35 = 26,773.00 sec = 7.4369 hr → 편집당 **2.6773 sec** (note-writer 산술). ROME 대비 편집당 약 1.65×만 빠르다(4 / 2.6773). $z_i$ 단계가 총 시간의 87.95%를 차지한다. **이 세 값은 논문이 쓰지 않은 note-writer 산술이며 본문 인용 시 그 사실을 밝혀야 한다.**",
+      "gpt_neox_cost": "absent — GPT-NeoX 20B에 대한 실행 시간은 논문 어디에도 없다.",
+      "unpriced_terms": [
+        "covariance $\\Gamma^{(l)}$ 추정 비용: GPT-J는 Wikitext 100,000 표본 fp32, GPT-NeoX는 50,000 표본 fp16 [App. B.3, B.4]. **시간·FLOPs 모두 absent**이고, 7.44 hr에 포함되는지 여부도 명시되지 않는다.",
+        "causal tracing(501 진술 × 10 노이즈 표본, 층·토큰 전수 복원) 비용: absent [App. A].",
+        "Eqn. 14의 대형 정사각 행렬 역행렬 — 'the most computationally expensive step' [App. B.4]이라고 지목하지만 **개별 시간이 absent**.",
+        "총 FLOPs, 총 처리 토큰 수, 에너지: absent."
+      ],
+      "absent_parts": "FLOPs, tokens, 에너지, GPU 시간(GPU-hour), GPT-NeoX 실행 시간, covariance/tracing 전처리 비용"
+    },
+    "L_w": {
+      "value_reported": "**absent.** 논문은 편집 후 모델의 추론 지연을 단 한 번도 측정하지 않는다. 'latency', 'throughput', 'TTFT', 'tokens/s'가 본문에 전혀 없다.",
+      "note_writer_inference": "[note-writer 추론] 갱신은 $\\Theta^{(l)}_{\\mathrm{out}} \\mathrel{+}= \\Delta^{(l)}$ 라는 **동일 shape의 in-place 덧셈**이므로 [memit Algorithm 1 line 14], 편집 후 모델의 아키텍처·파라미터 수·연산 그래프가 전혀 바뀌지 않는다. 따라서 $L_w = 0$(추가 지연 없음)이다. **논문이 이 사실을 주장조차 하지 않는다** — LoRA가 'no additional inference latency'를 abstract 수준의 셀링 포인트로 삼은 것과 대조된다.",
+      "absent_parts": "ms/token, TTFT, ITL, decode 처리량, 편집 전후 비교 실측 — 전부 없음"
+    },
+    "C_cap": {
+      "value_reported_in_bytes": "**absent.** 논문은 바이트를 한 번도 말하지 않는다. $\\Delta^{(l)}$의 크기를 계산하려면 GPT-J의 $d_{\\mathrm{model}}$·$d_{\\mathrm{ff}}$가 필요한데 **논문에 그 값이 없다**(검색어 '4096' 0건, '16384' 0건). 그러므로 이 칸을 채우려면 논문 밖 모델 config가 필요하다 → todo_verify.",
+      "value_reported_in_edits": "**논문이 실제로 보고하는 용량은 '편집 개수'다.** GPT-J(6B): 10,000 편집에서 CounterFact Score 85.8 [memit Table 2], zsRE Score 50.7 [memit Table 1]. GPT-NeoX(20B): 10,000 편집에서 CounterFact Score 82.0 [memit Table 2]. **이것이 Θ-경로의 용량 상한에 대한 이 논문의 유일한 정량 진술이다.**",
+      "degradation_shape": "10,000 편집 시점에서 편집하지 않은 모델 대비: GPT-J의 specificity NS 83.5 → 73.7 (−9.8pt), fluency GE 622.4 → 619.9 (−2.5), consistency RS 29.4 → 40.1 (+10.7, 편집이 의도한 방향). GPT-NeoX: NS 81.6 → 70.8 (−10.8), GE 620.4 → 606.4 (−14.0), RS 29.3 → 36.9 (+7.6) [memit Table 2].",
+      "no_ceiling_identified": "**MEMIT가 붕괴하는 $n$은 이 논문에 없다.** log-scale sweep이 $n=10{,}000$에서 끝나고 그 지점에서도 MEMIT가 모든 기준선을 앞선다. 즉 10,000은 '한계'가 아니라 '실증된 하한'이다. 대조적으로 기준선의 붕괴점은 명시된다: ROME은 $n=32$부터 열화, MEND는 $n=6$부터 급락하고 $n=1{,}000$ 전에 efficacy를 전부 잃는다 [memit §5.2.2].",
+      "state_form": "상태는 per-user·per-session delta가 아니라 **모델 전역 가중치 1벌**이다. 편집은 원본 가중치에 흡수되므로 별도 저장 아티팩트가 없다 — LoRA가 35MB adapter를 따로 들고 다니는 것과 반대 극단.",
+      "absent_parts": "bytes/edit, bytes/user, checkpoint 증가분, $\\Delta^{(l)}$의 rank·norm 통계, 편집 개수 대 파라미터 수 비율"
+    },
+    "rho": {
+      "value_reported": "**라운드당 열화율은 absent.** 이 논문은 sleep 라운드를 한 번만 돌기 때문에 $\\rho$를 정의할 실험이 없다. 반복 편집 실험은 **ROME 기준선에만** 있고(‘a sequential version of ROME ... iteratively updates one fact at a time’ [memit §5.1]), 그 결과는 zsRE Specificity 0.9 (±0.1) / Score 2.6 [memit Table 1]로 붕괴한다 — 즉 이 논문이 보여주는 유일한 반복 열화 증거는 **경쟁 기법의 것**이다.",
+      "surrogate": "$\\rho$의 대체물로 쓸 수 있는 것은 '라운드 수'가 아니라 '한 라운드에 넣은 편집 수 $n$'에 대한 열화 곡선이다 [memit Fig. 5]. 다만 Fig. 5의 개별 $n$에서의 수치는 그림에만 있고 vendored 텍스트에 없다 → todo_verify.",
+      "catastrophic_forgetting_language": "'catastrophic', 'forgetting', 'continual', 'replay'라는 단어가 논문에 **0회** 등장한다(‘forgetfulness’ 1회, FT-W 기준선 설명 [memit §5.1]). 지속학습 공동체의 어휘를 전혀 쓰지 않는다.",
+      "absent_parts": "라운드 반복 실험, 일반 능력(perplexity·downstream benchmark) 열화 측정, 편집 누적에 따른 시간축 열화"
+    },
+    "amortization_A": {
+      "can_we_compute_N_q_star": "계산할 수 없다. 식 (A) $C_{\\mathrm{avg}} = C_{\\mathrm{wake}} + C_{\\mathrm{sleep}}/N_q$를 쓰려면 $C_{\\mathrm{wake}}$(편집 후 질의당 비용)가 필요한데, MEMIT는 **$C_{\\mathrm{wake}}$를 바꾸지 않는다**(가중치 shape 불변). 따라서 이 논문에서 상각은 '손익분기 $N_q^\\ast$'가 아니라 '**한 번 지불하고 무한히 상각**'ㅡ즉 $N_q \\to \\infty$ 극한ㅡ의 형태가 된다.",
+      "the_real_denominator": "Θ-경로에서 상각의 분모는 질의 수 $N_q$가 아니라 **한 번의 sleep 라운드에 묶어 넣은 편집 수 $n$**이다. MEMIT의 진짜 기여는 이 분모를 1 → 10,000으로 키운 것이다: 편집당 2.6773 sec (note-writer 산술)는 ROME의 4 sec/edit보다 낮고, 무엇보다 ROME은 그 규모에서 품질이 붕괴한다.",
+      "caveat": "단, 이 상각 논증은 편집이 **전역적**(모든 사용자에게 같은 사실)일 때만 성립한다. 사용자별 편집이면 가중치 1벌을 공유할 수 없다 — 논문은 이 구분을 전혀 다루지 않는다."
+    }
+  },
+
+  "experiments": {
+    "models": [
+      {"name": "GPT-J", "size": "6B parameters", "source": "[memit §5.1] (Wang & Komatsuzaki 2021). 편집 층 $\\Lambda=\\{3,4,5,6,7,8\\}$, $\\lambda=15{,}000$ [App. B.4]"},
+      {"name": "GPT-NeoX", "size": "20B parameters", "source": "[memit §5.1] (Black et al. 2022). 편집 층 $\\Lambda=\\{6,7,8,9,10\\}$, $\\lambda=20{,}000$ [App. B.4]"},
+      {"name": "GPT-2 XL", "size": "언급만 — ROME의 causal tracing 대상이었고 MEMIT는 GPT-J에서 tracing을 다시 수행", "source": "[memit §4, App. A]"}
+    ],
+    "token_counts": "**absent.** 학습 토큰 수·편집 토큰 수를 보고하지 않는다. 데이터 규모는 '사실 개수'로만 주어진다.",
+    "baselines": [
+      {"name": "FT-W", "detail": "weight decay를 쓰는 naive fine-tuning. GPT-J **층 21** 하나만 갱신(Meng et al. 2022가 단일 편집에서 최적으로 찾은 층). soft weight decay $5\\times10^{-4}$, 최대 25 steps, lr $5\\times10^{-4}$, loss $10^{-2}$ 도달 시 early stopping", "source": "[memit §5.1, App. B.1, Fig. 9]"},
+      {"name": "MEND", "detail": "hypernetwork 편집기. Meng et al. (2022)가 학습한 GPT-J용 MEND hypernetwork 사용, learning rate scale 기본값 1.0. 모든 편집 예제의 gradient를 누적해 한 번에 hypernetwork에 통과", "source": "[memit §5.1, App. B.2]"},
+      {"name": "ROME (sequential)", "detail": "한 번에 한 사실씩 반복 적용. GPT-J 층 5, 20 steps, weight decay 0.5, KL factor 0.0625, lr $5\\times10^{-1}$, prefix 10개(길이 5) + 10개(길이 10), covariance는 Wikitext 100,000 표본 fp32", "source": "[memit §5.1, App. B.3]"},
+      {"name": "SERAC", "detail": "**비교하지 않음** — 'does not yet have public code, so we cannot compare with it at this time' [memit §5.1]. 그런데 선행 최대 규모 주장(75 edits)의 출처가 바로 이 방법이다"}
+    ],
+    "benchmark_zsre": {
+      "dataset": "zsRE (Levy et al. 2017), question-answering. '10,000 real-world facts'를 추출 [memit §5.2.1]. 생성 과제가 없으므로 예측 기반 지표만 평가.",
+      "metrics": "Efficacy = top-1 정확도 [Eq. 21], Paraphrase = 재구문 프롬프트 정확도 [Eq. 22], Specificity = neighborhood 프롬프트 정확도 [Eq. 23], Score = 셋의 조화평균 [App. C.1]",
+      "table_1_gpt_j_10000_edits": [
+        {"editor": "GPT-J (편집 없음)", "Score": "26.4", "Efficacy": "26.4 (±0.6)", "Paraphrase": "25.8 (±0.5)", "Specificity": "27.0 (±0.5)"},
+        {"editor": "FT-W", "Score": "42.1", "Efficacy": "69.6 (±0.6)", "Paraphrase": "64.8 (±0.6)", "Specificity": "24.1 (±0.5)"},
+        {"editor": "MEND", "Score": "20.0", "Efficacy": "19.4 (±0.5)", "Paraphrase": "18.6 (±0.5)", "Specificity": "22.4 (±0.5)"},
+        {"editor": "ROME", "Score": "2.6", "Efficacy": "21.0 (±0.7)", "Paraphrase": "19.6 (±0.7)", "Specificity": "0.9 (±0.1)"},
+        {"editor": "MEMIT", "Score": "50.7", "Efficacy": "96.7 (±0.3)", "Paraphrase": "89.7 (±0.5)", "Specificity": "26.6 (±0.5)"}
+      ],
+      "source": "[memit Table 1]",
+      "paper_reading": "'MEMIT performs best at 10,000 edits; most memories are recalled with generalization and minimal bleedover. Interestingly, simple fine-tuning FT-W performs better than the baseline knowledge editing methods MEND and ROME at this scale, likely because its objective is applied only once.' [memit §5.2.1]"
+    },
+    "benchmark_counterfact": {
+      "dataset": "CounterFact (Meng et al. 2022), **21,919개** factual statement. Eq. 5의 논리 조건을 위반하는 충돌 사실을 먼저 제거한다 [memit §5.2.2]. WikiData의 참인 사실에서 유도되었으므로 원래 정답 $o^c_i$가 항상 알려져 있다 [memit §5.2.2 각주 2].",
+      "problem_sizes": "$n \\in \\{1, 2, 3, 6, 10, 18, 32, 56, 100, 178, 316, 562, 1000, 1778, 3162, 5623, 10000\\}$ — 'These values come from a log-scale curve: $n_i = \\exp(\\ln(10{,}000)\\ast\\frac{i}{16})$, for non-negative integers $i$.' [memit §5.2.2 각주 1]",
+      "metrics": "ES(Efficacy Success) [Eq. 24], PS(Paraphrase Success) [Eq. 25], NS(Neighborhood Success) [Eq. 26], S = ES·PS·NS의 조화평균, RS(Reference Score, 생성문과 $o$의 위키 참조문 간 TF-IDF 코사인 유사도), GE(Generation Entropy, bi-gram·tri-gram 분포 엔트로피의 가중합 $-\\left(\\frac23\\sum_k f_2(k)\\log_2 f_2(k) + \\frac43\\sum_k f_3(k)\\log_2 f_3(k)\\right)$) [Eq. 27, App. C.2]",
+      "table_2_10000_edits": [
+        {"editor": "GPT-J (편집 없음)", "S": "22.4", "ES": "15.2 (0.7)", "PS": "17.7 (0.6)", "NS": "83.5 (0.5)", "GE": "622.4 (0.3)", "RS": "29.4 (0.2)"},
+        {"editor": "FT-W", "S": "67.6", "ES": "99.4 (0.1)", "PS": "77.0 (0.7)", "NS": "46.9 (0.6)", "GE": "293.9 (2.4)", "RS": "15.9 (0.3)"},
+        {"editor": "MEND", "S": "23.1", "ES": "15.7 (0.7)", "PS": "18.5 (0.7)", "NS": "83.0 (0.5)", "GE": "618.4 (0.3)", "RS": "31.1 (0.2)"},
+        {"editor": "ROME", "S": "50.3", "ES": "50.2 (1.0)", "PS": "50.4 (0.8)", "NS": "50.2 (0.6)", "GE": "589.6 (0.5)", "RS": "3.3 (0.0)"},
+        {"editor": "MEMIT", "S": "85.8", "ES": "98.9 (0.2)", "PS": "88.6 (0.5)", "NS": "73.7 (0.5)", "GE": "619.9 (0.3)", "RS": "40.1 (0.2)"},
+        {"editor": "GPT-NeoX (편집 없음)", "S": "23.7", "ES": "16.8 (1.9)", "PS": "18.3 (1.7)", "NS": "81.6 (1.3)", "GE": "620.4 (0.6)", "RS": "29.3 (0.5)"},
+        {"editor": "MEMIT (GPT-NeoX)", "S": "82.0", "ES": "97.2 (0.8)", "PS": "82.2 (1.6)", "NS": "70.8 (1.4)", "GE": "606.4 (1.0)", "RS": "36.9 (0.6)"}
+      ],
+      "source": "[memit Table 2]",
+      "scaling_statements": [
+        "'ROME performs well up to $n=10$ but degrades starting at $n=32$.' [memit §5.2.2]",
+        "'MEND performs well at $n=1$ but rapidly declines at $n=6$, losing all efficacy before $n=1{,}000$ and, curiously, having negligible effect on the model at $n=10{,}000$ (the high specificity score is achieved by leaving the model nearly unchanged).' [memit §5.2.2]",
+        "'At small $n$, ROME achieves better generalization at the cost of slightly lower specificity, which means that ROME's edits are more robust under rephrasings, likely due to that method's hard equality constraint for weight updates, compared to MEMIT's soft error minimization.' [memit §5.2.2]",
+        "'FT-W does well on probability-based metrics but suffers from complete generation failure, indicating significant model damage.' [memit §5.2.2] — GE 293.9 vs 편집 없음 622.4가 그 근거."
+      ]
+    },
+    "category_experiment": {
+      "setup": "CounterFact에서 **300 케이스 이상을 가진 27개 관계 카테고리**를 골라 각각 **300개 편집**을 수행 [memit §5.3, Fig. 6].",
+      "findings": [
+        "'MEMIT achieves better overall scores compared to FT and MEND in all categories.' [memit §5.3]",
+        "관계마다 난이도가 다르다 — '각 알고리즘이 athlete plays sport를 바꾸는 데 어려움을 겪었다' [memit §5.3].",
+        "MEMIT도 일부 관계에서 generalization/specificity tradeoff를 보인다: **P127 (product owned by company)**, **P641 (athlete plays sport)** [memit §5.3, Fig. 6b]. Fig. 6b에는 P30 (located in continent)도 표시된다.",
+        "'FT consistently fails to achieve good specificity.' MEND는 tradeoff가 뚜렷하다 [memit §5.3]."
+      ],
+      "relations_listed_in_fig6a": "P27 citizen of country, P103 native language, P449 show originally aired in, P495 country of origin, P17 located in country, P364 language of a show, P37 official language, P413 plays position in sport, P176 produced by, P937 works in location, P1412 language spoken by, P20 died in location, P106 works as occupation, P19 was born in, P159 headquartered in, P108 works for, P740 was founded in, P140 follow religion, P1303 plays instrument, P127 owned by company, P190 has twin city, P178 developed by, P101 specializes in field, P136 has the genre, P39 holds the position of, P30 located in continent, P641 plays sport of [memit Fig. 6a 축 레이블 — 총 27개]"
+    },
+    "mixing_experiment": {
+      "setup": "서로 다른 두 관계를 섞은 편집 집합 $\\mathcal{E}_{\\mathrm{mix}}$를 만들어, 주어 타입·목적어 타입의 유사/상이 4조합에서 성능을 본다. 각 관계의 편집 수는 같게 맞춘다. **편집 수 100–700 구간**만 본다 [memit §5.4, App. D, Fig. 7, Fig. 10].",
+      "four_scenarios": [
+        "(a) 주어 다름·목적어 다름: (Person, P27 citizen of, Country) + (Country, P37 official language, Language)",
+        "(b) 주어 같음·목적어 다름: (Person, P413 plays position in sport, Sport position) + (Person, P1412 native language, Language)",
+        "(c) 주어 다름·목적어 같음: (Place, P17 located in, Country) + (Item/Product, P495 country of origin, Country)",
+        "(d) 주어 같음·목적어 같음: (Person, P27 citizen of, Country) + (Person, P937 works in, City/Country)"
+      ],
+      "result": "'In all of the four cases, MEMIT's performance on $\\mathcal{E}_{mix}$ is close to the average of the performance of each relation without mixing. This provides support to the hypothesis that the scaling of MEMIT is neither positively nor negatively affected by the diversity of the memories being edited.' [memit §5.4]. 'the presence of diversity in the edits (or lack thereof) does not tangibly influence MEMIT's performance.' [memit App. D]",
+      "statistics": "각 데이터 점은 **10회 실험의 평균**, 음영은 **90% 신뢰구간** [memit Fig. 10 캡션]. (본문 Fig. 5의 음영은 **95%** 신뢰구간 [memit Fig. 5 캡션] — 두 그림의 구간이 다르다.)"
+    },
+    "demonstrations_appendix_E": [
+      {
+        "name": "Knowledge freshness — 2022 미국 중간선거",
+        "detail": "2022년 11월 8일 미 선거: **435개 하원 의석, 36개 주지사, 35개 상원 의석**. (congressperson, elected from, district) 및 (governor/senator, elected from, state) 형태로 GPT-J에 주입. 결과는 11월 14일 이전에 확보 [memit App. E 각주 4].",
+        "headline": "'The MEMIT edit attained **100% efficacy (ES)** and **94% generalization (PS)**.' [memit App. E]",
+        "caveat": "specificity·fluency는 보고하지 않는다. 편집 개수도 명시하지 않는다(435+36+35 = 506은 note-writer 산술이며 실제 편집 수가 그 값인지 논문이 말하지 않는다)."
+      },
+      {
+        "name": "특화 도메인 — 아마추어 천문학",
+        "detail": "WikiData에서 100회 이상 참조된 별 이름을 18개 별자리(Andromeda, Aquarius, Cancer, Cassiopeia, Gemini, Hercules, Hydra, Indus, Leo, Libra, Orion, Pegasus, Perseus, Pisces, Sagittarius, Ursa Major, Ursa Minor, Virgo)에서 수집해 **289개** (star, belongs to, constellation) 삼중항 확보.",
+        "headline": "편집 전 GPT-J의 별자리 회상 정확도 **53%** → MEMIT 이후 **86%** [memit App. E].",
+        "caveat": "86%는 100%가 아니다 — 289개라는 작은 규모에서도 완전 삽입이 안 된다. 논문은 이 격차를 논평하지 않는다."
+      }
+    ],
+    "ablations_appendix_F": [
+      {"id": "F.1 편집 층의 개수·위치", "setup": "$\\Lambda$의 5개 구성 — 4개는 causal effect가 높은 구간, 1개는 causal effect가 낮은 후반부 MLP [memit App. F.1, Fig. 11]", "finding": "'using more layers yields higher efficacy and generalization while also improving specificity. Moreover, edits at the late-layer MLPs are considerably worse. These results confirm the importance of the causal analysis to MEMIT's performance.' — **세 지표가 동시에 좋아지는 유일한 ablation**"},
+      {"id": "F.2 대상 모듈 — attention 편집", "setup": "초기/후기 attention 모듈 편집을 MLP 편집과 비교 [memit App. F.2, Fig. 12]", "finding": "'attention edits perform considerably worse.'"},
+      {"id": "F.3 covariance 계수 $\\lambda$", "setup": "$\\lambda$를 변화시키며 지표 관찰 [memit App. F.3, Fig. 13]", "finding": "'Specificity and fluency increase monotonically with $\\lambda$ ... However, at the same time, efficacy and generalization fall when $\\lambda$ is increased. We can see that around $\\approx 10^4$, the aggregated score reaches a maximum.' — **명백한 역전 관계**. 모든 축에서 좋은 $\\lambda$는 없다."},
+      {"id": "(iii) 마지막 subject token 위치", "setup": "이 논문에서는 ablation하지 않음", "finding": "'Choice (iii) was already demonstrated by Meng et al. (2022) to be significant through an ablation study, but we now investigate the other three.' [memit App. F] — 즉 4개 설계 선택 중 1개는 **선행 논문의 ablation에 위임**한다."}
+    ],
+    "causal_tracing_appendix_A": {
+      "sample": "GPT-J가 올바르게 예측하는 참인 진술 **501개**",
+      "noise": "subject token 인코딩에 표준편차 $3\\sigma$ Gaussian noise ($\\sigma^2$ = 임베딩 활성의 경험 분산), **노이즈 표본 10개**에 대해 평균",
+      "restoration": "Fig. 8(a)는 개별 $h^l_t$ 복원, (b)(c)는 **10개 층 구간**의 MLP 출력 $m^l_t$ / attention $a^l_t$ 복원",
+      "finding": "'These measurements confirm that GPT-J has a causal structure that is similar to the structure reported by Meng et al. (2022) in their study of GPT2-XL.' 단 GPT-J에서는 마지막 subject token의 **초기 attention 층에서 강한 causal effect**가 새로 관측되며, 저자들은 이를 n-gram subject 이름의 chunking으로 해석한다. 그럼에도 path-dependent 실험(Fig. 3)은 attention이 결정적 매개자가 아님을 시사한다 [memit App. A].",
+      "source": "[memit App. A, Fig. 3, Fig. 8]"
+    },
+    "runtime_table_note": "§5.2.2는 'Appendix B provides a runtime analysis of all four methods on 10,000 edits'라고 하지만, App. B에는 **표가 없고** 각 방법 소절에 문장으로 흩어져 있다. 위 B_s 칸이 그 값을 모은 것이다."
+  },
+
+  "scale_ceiling": {
+    "headline": "**10,000 편집 / GPT-NeoX 20B**가 이 논문의 실증 상한이다. 그 이상은 시도되지 않았고, 10,000에서 MEMIT가 붕괴하지 않으므로 **진짜 상한은 미측정**이다.",
+    "dimensions": [
+      {"axis": "편집 개수", "ceiling": "10,000 (CounterFact·zsRE 모두). 혼합 다양성 실험은 **700**, 카테고리별 실험은 **300**, 데모는 **289**(천문)와 미명시(선거)까지만 [memit §5.2–5.4, App. E]"},
+      {"axis": "모델 크기", "ceiling": "20B (GPT-NeoX). 단 **GPT-NeoX는 10,000 편집 1점만** 있고 scaling curve가 없다 [memit Table 2]"},
+      {"axis": "라운드 수", "ceiling": "**1**. 반복 sleep 라운드 실험 없음"},
+      {"axis": "지식 형태", "ceiling": "방향성 (s, r, o) 삼중항. 저자 스스로 열거한 미포함 항목: spatial·temporal reasoning, mathematical knowledge, linguistic knowledge, procedural knowledge, **대칭 관계조차 미포함** [memit §6]"},
+      {"axis": "평가 범위", "ceiling": "편집 지표(ES/PS/NS/S) + 생성 지표 2종(RS/GE)뿐. **일반 능력 평가가 없다** — perplexity 0건, downstream benchmark 0건"},
+      {"axis": "데이터셋", "ceiling": "zsRE(10,000 추출) + CounterFact(21,919 중 충돌 제거 후 사용). 둘 다 기존 공개 데이터셋이며 **저자 제작 벤치마크가 아니다** — 이 점은 Letta STC와 대조적으로 이 논문에 유리한 사실이다"},
+      {"axis": "하드웨어", "ceiling": "NVIDIA A6000 워크스테이션. GPT-J 48GB 1장, GPT-NeoX 2장 이상 [memit §9]"}
+    ],
+    "capacity_bound_for_the_monograph": "Θ-경로 용량의 인용 가능한 수치는 **'GPT-J 6B에 10,000개 (s,r,o) 연관을 한 번에 써 넣고 CounterFact Score 85.8, specificity는 83.5→73.7로 9.8pt 하락'**이다 [memit Table 2]. 붕괴점이 아니라 **관측된 하한**이라는 점을 반드시 병기해야 한다."
+  },
+
+  "concept_ledger_delta": {
+    "new": [
+      {"concept": "mass editing (배치 편집)", "definition": "단일 연관이 아니라 $n_{\\mathrm{edit}} \\gg 1$개의 (s,r,o)를 **한 번의 갱신으로 동시에** 가중치에 쓰는 것 [memit §1, Eq. 9]", "why_it_matters": "Θ-경로에서 '쓰기 처리량'이라는 축을 처음으로 정의한다"},
+      {"concept": "critical path of MLP layers ($\\Lambda$)", "definition": "causal mediation analysis로 식별한, 사실 회상을 매개하는 연속 MLP 층 범위 [memit §4.1]", "why_it_matters": "ROME의 '단일 편집 층'을 '층 범위'로 확장. 쓰기를 어디에 할지가 해석가능성 실험으로 결정된다"},
+      {"concept": "residual spreading (잔차 균등분배)", "definition": "목표 잔차를 남은 층 수로 나눠 층마다 조금씩 싣는 규칙 $r^{(l)}_i=(z_i-h^{l^\\ast}_i)/(l^\\ast-l+1)$ [memit Eq. 20]", "why_it_matters": "'작은 변화 여러 개가 큰 변화 하나보다 robust하다'는 원리의 구현. Θ-경로 쓰기의 국소성 제어 knob"},
+      {"concept": "covariance-preserving closed-form write", "definition": "$\\Delta = \\mathrm{Res}\\,K_1^{\\mathsf T}(\\Gamma_0+K_1K_1^{\\mathsf T})^{-1}$ — 옛 지식을 **데이터가 아니라 2차 통계로** 보존하며 새 지식을 삽입하는 쓰기 primitive [memit Eq. 14–15]", "why_it_matters": "replay 없이 replay 효과를 얻는 방식. Part I T5(replay·catastrophic forgetting)와 대조할 재료"},
+      {"concept": "$\\lambda$ = old-vs-new balance", "definition": "$\\Gamma_0 = \\lambda\\mathbb{E}[kk^{\\mathsf T}]$의 스칼라. 클수록 원 모델 보존, 작을수록 편집 강도 증가 [memit Eq. 15, App. F.3]", "why_it_matters": "(U-W)의 $\\alpha_t$(retention gate)에 대응하는 **Θ-경로의 유일한 명시적 retention 손잡이**"},
+      {"concept": "편집 desiderata 4종 + 조화평균 집계", "definition": "efficacy·generalization(paraphrase)·specificity(neighborhood)·fluency, 앞 셋의 조화평균이 Score [memit §3, App. C]", "why_it_matters": "'편집이 잘 됐다'를 반증 가능하게 만든 정의. 다만 집계 방식 자체가 저자의 선택이다"},
+      {"concept": "편집 요청 무모순 제약", "definition": "$\\nexists i,j.\\ (s_i=s_j)\\wedge(\\varrho_i=\\varrho_j)\\wedge(o_i\\neq o_j)$ [memit Eq. 5]", "why_it_matters": "배치 쓰기에는 '쓰기 충돌 검출'이 선행해야 한다는 것을 형식화. E-경로의 write conflict와 대응"}
+    ],
+    "extended_or_renamed": [
+      {"from": "linear associative memory (Kohonen 1972, Anderson 1972)", "to": "transformer MLP의 $\\Theta^{(l)}_{\\mathrm{out}}$", "note": "고전 개념을 그대로 승계하되 대상만 바꾼다. 'we adopt the classical view of a linear layer as an associative memory' [memit §2]"},
+      {"from": "ROME의 rank-1 hard-equality 갱신", "to": "rank-$n_{\\mathrm{edit}}$ soft least-squares 갱신", "note": "제약을 목적함수로 흡수한 것이 배치화의 결정적 단계 [memit §4.2]"},
+      {"from": "transformer FFN = key–value memory (Geva et al. 2021)", "to": "쓰기 가능한 key–value memory", "note": "읽기 해석을 쓰기 인터페이스로 전환"},
+      {"from": "capacity(용량)", "to": "**연관 개수**로 측정되는 용량", "note": "이 corpus의 다른 용량 논문들(bits/parameter)과 **단위가 다르다**. 비교 시 반드시 환산 불가를 명시해야 한다"}
+    ],
+    "retired": [
+      {"concept": "단일 편집(single-edit) 패러다임", "note": "이 논문 이후 Θ-경로 편집의 기본 단위가 '1개'에서 '배치'로 바뀐다"},
+      {"concept": "편집 기법의 순차 반복 적용", "note": "'a naive sequential application ... fails to scale up' [memit §1]. 순차 ROME은 zsRE Specificity 0.9로 붕괴 [Table 1]"},
+      {"concept": "hypernetwork로 대규모 편집", "note": "MEND는 $n=6$부터 급락하고 $n=10{,}000$에서는 모델을 거의 바꾸지 못한다 [memit §5.2.2]"}
+    ]
+  },
+
+  "open_questions": {
+    "explicit_from_paper": [
+      {"question": "'might interpretability-based methods become a commonplace alternative to traditional opaque fine-tuning approaches?'", "source": "[memit §6 Discussion and Conclusion] — 논문이 유일하게 물음표로 남긴 문장"},
+      {"question": "방향성 (s,r,o) 밖의 지식을 어떻게 편집할 것인가 — spatial·temporal reasoning, mathematical knowledge, linguistic knowledge, procedural knowledge, 그리고 **대칭 관계**. 'the association that “Tim Cook is CEO of Apple” must be processed separately from the opposite association that “The CEO of Apple is Tim Cook.”'", "source": "[memit §6]"},
+      {"question": "왜 어떤 관계는 robust한 specificity로 편집하기 어려운가. 'certain relations are more difficult to edit with robust specificity'", "source": "[memit §6, §5.3]"},
+      {"question": "$z_i$ 최적화를 배치화하면 실제로 얼마나 빨라지는가. 'These computations are actually “embarrassingly parallel” and thus could be batched.'", "source": "[memit §5.2.2, App. B.4] — 주장만 있고 실행되지 않았다"}
+    ],
+    "implicit_left_open": [
+      "$n > 10{,}000$에서 MEMIT는 언제 무너지는가. sweep이 10,000에서 끝나므로 **용량 상한이 미측정**이다.",
+      "(U-$\\Theta$)를 $k=1,2,3,\\dots$ 반복하면 누적 열화 $\\rho$는 얼마인가. MEMIT의 반복 적용 실험이 없다.",
+      "편집이 일반 능력을 얼마나 해치는가. perplexity·downstream benchmark 평가가 전무하고, fluency는 n-gram 엔트로피 GE 하나로만 대리된다.",
+      "$\\Gamma_0$의 '옛 key = 입력의 무작위 표본' 가정이 실제로 성립하는가 [memit §4.2]. 검증 실험이 없다.",
+      "$\\Lambda$를 causal tracing 없이 자동으로 고를 수 있는가. 현재는 모델마다 사람이 다시 정한다(GPT-J $\\{3..8\\}$ vs GPT-NeoX $\\{6..10\\}$).",
+      "SERAC과의 비교는 어떻게 되는가 — 공개 코드가 없어 미수행 [memit §5.1].",
+      "편집을 사용자별로 두면 어떻게 되는가. 논문은 전역 편집만 다루며, per-user delta·weight-sharing 파괴 문제를 제기조차 하지 않는다.",
+      "$\\lambda$를 데이터로 정할 수 있는가. 현재는 손으로 고르는 스칼라이고 모든 축을 동시에 만족하는 값이 없다 [memit App. F.3]."
+    ],
+    "bridge_out": {
+      "to_lora_as_knowledge_memory_and_capacity_papers": "MEMIT는 용량을 **연관 개수**로 재고, 용량 이론 논문들은 **bits/parameter**로 잰다. 두 단위를 잇는 것이 Part II 용량 절의 과제다.",
+      "to_seal_and_lm_need_sleep": "MEMIT는 $\\mathcal{R}_k$를 사람이 준다. 이후 Θ-경로 논문들(SEAL, `Language Models Need Sleep`)이 하는 일은 정확히 **그 $\\mathcal{R}_k$를 모델이 스스로 만들게 하는 것**이다. MEMIT는 '무엇을 쓸지 이미 안다'는 전제 위에서 '어떻게 많이 쓸지'만 푼다.",
+      "to_continual_facts_in_weights": "MEMIT의 10,000이 상한이 아니라는 사실과, 반복 라운드가 미검증이라는 사실이 그 반증 축 논문의 출발점이다.",
+      "to_scm_and_forgetting": "MEMIT에는 삭제·망각 연산이 없다. $\\lambda$는 보존 강도일 뿐 알고리즘적 망각이 아니다."
+    }
+  },
+
+  "unfavorable_facts": [
+    {
+      "fact": "**zsRE에서 MEMIT의 Score는 50.7에 그친다** — CounterFact의 85.8과 거리가 멀다. 원인은 Specificity 26.6인데, 이는 편집하지 않은 GPT-J의 27.0보다도 **낮다**. 조화평균이 이 낮은 항에 지배된다. 논문은 이 격차를 '편집 없는 모델의 zsRE specificity 자체가 27.0으로 낮다'는 사실과 연결해 설명하지 않고 'minimal bleedover'라고만 쓴다.",
+      "source": "[memit Table 1, §5.2.1]"
+    },
+    {
+      "fact": "**specificity는 실제로 무너진다.** CounterFact 10,000 편집에서 NS 83.5 → 73.7 (GPT-J, −9.8pt), 81.6 → 70.8 (GPT-NeoX, −10.8pt). 즉 편집하지 않은 이웃 주어의 정답률이 10pt 가까이 떨어진다. 이것이 Θ-경로 대량 쓰기의 실측 부작용이다.",
+      "source": "[memit Table 2]"
+    },
+    {
+      "fact": "**naive 기준선 FT-W가 efficacy에서 MEMIT를 앞선다** — CounterFact 10,000 편집에서 ES 99.4 vs MEMIT 98.9. 게다가 FT-W는 1,716.21 sec로 MEMIT(26,773.00 sec)보다 **약 15.6× 빠르다**(note-writer 산술). MEMIT의 우위는 efficacy가 아니라 specificity(73.7 vs 46.9)와 fluency(619.9 vs 293.9)에 있다.",
+      "source": "[memit Table 2, App. B.1, App. B.4]"
+    },
+    {
+      "fact": "**ROME이 작은 $n$에서 generalization으로 MEMIT를 이긴다.** 'At small $n$, ROME achieves better generalization at the cost of slightly lower specificity ... likely due to that method's hard equality constraint'. 즉 MEMIT의 soft least-squares 완화는 **공짜가 아니다** — 배치화의 대가로 개별 편집의 견고성을 일부 내준다.",
+      "source": "[memit §5.2.2]"
+    },
+    {
+      "fact": "**가장 강한 선행 규모 주장(SERAC, 75 edits)과는 비교하지 않았다.** 'The recent SERAC model editor (Mitchell et al., 2022) does not yet have public code, so we cannot compare with it at this time.' 초록의 'exceeding prior work by orders of magnitude'는 MEND·ROME·FT-W 세 기준선에만 근거한다.",
+      "source": "[memit §5.1, Abstract]"
+    },
+    {
+      "fact": "**FT-W 기준선의 hyperparameter를 $n=10{,}000$ 한 점에서만 튜닝했다.** 'the optimal amount of regularization depends strongly on the number of edits (more edits require higher-norm edits), so we tune this hyperparameter for the $n=10{,}000$ case' / 'to evaluate scaling behavior cost-efficiently, we tune it only on $n=10{,}000$'. 따라서 **Fig. 5의 FT-W 전 구간 곡선은 자기 최적점이 아닌 설정으로 그려진 것**이며, 작은 $n$에서 기준선에 불리하다.",
+      "source": "[memit §5.2.2 각주 3, App. B.1]"
+    },
+    {
+      "fact": "**$\\lambda$ ablation은 역전 관계다.** 'Specificity and fluency increase monotonically with $\\lambda$ ... However, at the same time, efficacy and generalization fall when $\\lambda$ is increased.' 모든 축에서 좋은 $\\lambda$는 존재하지 않으며, 보고된 운용점은 **조화평균이라는 저자의 집계 선택**이 최대가 되는 지점일 뿐이다. 집계 함수를 바꾸면 최적 $\\lambda$가 바뀐다.",
+      "source": "[memit App. F.3, Fig. 13]"
+    },
+    {
+      "fact": "**일반 능력 평가가 전혀 없다.** perplexity 0건, downstream benchmark 0건. 모델 손상의 유일한 대리 지표가 Generation Entropy(bi/tri-gram 엔트로피)인데, 이것은 **반복 붕괴 탐지기**이지 품질 측정이 아니다. FT-W의 GE 293.9는 붕괴를 잡아내지만, MEMIT의 619.9가 편집 없는 622.4 대비 '안전한' 수준인지 판단할 임계값 분석이 없다.",
+      "source": "[memit App. C.2 Eq. 27, Table 2; 검색어 'perplexity'·'MMLU' 0건]"
+    },
+    {
+      "fact": "**옛 지식 보존 항은 검증되지 않은 가정 위에 서 있다.** $K_0$·$M_0$에 접근할 수 없으므로 'We assume that the set of previously memorized keys can be modeled as a random sample of inputs'로 대체한다. 이 가정이 틀리면 보존 항이 보존하는 것은 사전학습 지식이 아니라 Wikitext 입력 분포다. 검증 실험이 없다.",
+      "source": "[memit §4.2, Eq. 15]"
+    },
+    {
+      "fact": "**반복 라운드가 미검증이다.** MEMIT를 두 번 이상 적용한 실험이 없다. 논문 안의 유일한 반복 편집 증거는 경쟁 기법(순차 ROME)의 것이고, 그것은 zsRE Specificity 0.9 (±0.1) / Score 2.6으로 **완전히 붕괴한다**. 즉 '반복 쓰기는 위험하다'는 증거만 있고 'MEMIT는 안전하다'는 증거는 없다.",
+      "source": "[memit Table 1, §5.1]"
+    },
+    {
+      "fact": "**혼합 다양성 결론은 headline 규모의 1/14에서만 확인됐다.** '$\\mathcal{E}_{mix}$의 성능이 다양성에 영향받지 않는다'는 §5.4의 결론은 **100–700 편집 구간**에서만 측정됐다. 10,000 편집에서 다양성이 무해한지는 미검증이다.",
+      "source": "[memit §5.4, Fig. 7, Fig. 10]"
+    },
+    {
+      "fact": "**어떤 관계는 MEMIT에서도 tradeoff가 남는다.** 'it also exhibits a trade-off in editing some relations such as P127 (“product owned by company”) and P641 (“athlete plays sport”)'. 카테고리 실험은 관계당 300 편집에서만 수행됐다.",
+      "source": "[memit §5.3, Fig. 6b]"
+    },
+    {
+      "fact": "**층 선택이 모델마다 사람 손을 탄다.** $\\Lambda$는 causal tracing 결과를 보고 고르며(GPT-J 501개 진술 표본), GPT-J $\\{3,\\dots,8\\}$와 GPT-NeoX $\\{6,\\dots,10\\}$가 다르다. $\\lambda$도 15,000 vs 20,000, $\\delta$ clamp도 $\\frac34$ vs $\\frac{3}{10}$, covariance 표본도 100,000 fp32 vs 50,000 fp16으로 전부 다르다. **새 모델에 적용하려면 tracing + 4개 hyperparameter 재조정이 필요하다.**",
+      "source": "[memit §4.1, App. A, App. B.4]"
+    },
+    {
+      "fact": "**설계 선택 4개 중 1개는 이 논문에서 ablation하지 않았다.** 'Choice (iii) [마지막 subject token] was already demonstrated by Meng et al. (2022) to be significant through an ablation study, but we now investigate the other three.' 선행 논문의 ablation을 다른 모델·다른 방법에 그대로 승계한다.",
+      "source": "[memit App. F]"
+    },
+    {
+      "fact": "**비용 모델에서 빠진 항이 많다.** covariance 추정(Wikitext 100,000 표본), causal tracing(501 진술 × 10 노이즈 × 전 층 복원), Eqn. 14의 대형 역행렬(‘the most computationally expensive step’이라 지목하면서도 개별 시간 미보고) — 어느 것도 7.44 hr에 포함되는지 명시되지 않는다. FLOPs·에너지·GPU-hour는 전부 없다.",
+      "source": "[memit §5.2.2, App. A, App. B.3, App. B.4]"
+    },
+    {
+      "fact": "**GPT-NeoX(20B)는 데이터 점이 하나뿐이다.** scaling curve(Fig. 5), 카테고리 실험, 혼합 실험, ablation, 실행 시간 — 전부 GPT-J에서만 수행됐다. 20B 결과는 Table 2의 10,000 편집 한 줄이 전부다. 즉 **모델 크기에 대한 scaling 주장은 두 점, 그 중 한 점은 단일 측정이다.**",
+      "source": "[memit Table 2, §5.2–5.4, App. F]"
+    },
+    {
+      "fact": "**데모의 보고가 선택적이다.** 선거 데모는 ES 100%·PS 94%만 보고하고 specificity·fluency·편집 개수를 보고하지 않는다. 천문 데모는 289개라는 작은 규모에서도 정확도가 53% → **86%**에 그치는데(100%가 아님), 논문은 이 잔여 격차를 논평하지 않는다.",
+      "source": "[memit App. E]"
+    },
+    {
+      "fact": "**논문 자체의 표기가 불일치한다.** Algorithm 1의 Data 줄은 편집 층 집합을 'layers to edit $S$'라 쓰지만 §4.1·§4.3·Algorithm 1 line 5는 같은 대상을 $R$이라 쓴다. 또 $R$은 §4.2에서 잔차 행렬로도, $E$는 Eq. 1에서 마지막 토큰 인덱스로 Eq. 5에서 편집 집합으로, $n$은 Eq. 7에서 기존 연관 수로 §5.2.2에서 편집 수로 이중 사용된다. 재현 시 혼동의 원인이다.",
+      "source": "[memit Eq. 1, Eq. 5, Eq. 7, §4.1, §4.2, §5.2.2, Algorithm 1]"
+    },
+    {
+      "fact": "**저자 스스로 지식 범위의 한계를 명시한다.** 'The knowledge representation we study is also limited in scope to working with directional (s, r, o) relations: it does not cover spatial or temporal reasoning, mathematical knowledge, linguistic knowledge, procedural knowledge, or even symmetric relations.' 즉 '10,000개 memory'는 **10,000개 (s,r,o) 삼중항**이지 일반적 의미의 기억 10,000개가 아니다.",
+      "source": "[memit §6]"
+    },
+    {
+      "fact": "**$L_w$를 한 번도 측정하지 않았다.** 편집 후 추론 지연·처리량에 관한 수치가 전무하다. 방법의 성격상 0일 것이 거의 확실하지만(가중치 shape 불변), 논문이 그 주장을 하지도, 실측하지도 않았다는 사실 자체를 기록해야 한다.",
+      "source": "[memit 전문; 검색어 'latency'·'throughput' 0건]"
+    }
+  ],
+
+  "cross_path_citations": {
+    "verdict": "**W-경로·E-경로 어느 쪽과도 교류하지 않는다.** 단 이 침묵은 부분적으로 연대순이 강제한 것이다 — MEMIT(2022-10 / v2 2023-08)는 MemGPT(2023-10), Letta STC(2025), SEAL, Nested Learning보다 **먼저** 나왔다. 따라서 이 장에서 보고할 단절은 'MEMIT가 그들을 인용하지 않았다'가 아니라 '**MEMIT가 지속학습·수면·fast weight 어휘를 전혀 쓰지 않고 자기 문제를 정의했다**'는 것이다.",
+    "E_path": {
+      "engaged": "부분적. 그러나 이 corpus가 말하는 E-경로(agent memory·vector store·retrieval)와는 다른 계보다.",
+      "what_it_cites": "고전적 상징 knowledge base·knowledge graph 계보를 §2 첫 문단에 통째로 인용한다: Cyc (Lenat 1995), WordNet (Miller 1995), DBpedia (Auer 2007), Freebase (Bollacker 2007), YAGO (Suchanek 2007), ConceptNet (Havasi 2007), NELL (Carlson 2010), Knowledge Vault (Dong 2014), Wikidata (Vrandečić 2014), COMET (Bosselut 2019). 그리고 'LMs as knowledge bases' 계보 (Petroni 2019/2020, Roberts 2020, Jiang 2020, Shin 2020, AlKhamissi 2022, Safavi & Koutra 2021).",
+      "closest_to_E_path": "SERAC (Mitchell et al. 2022) — 'a system that routes rewritten facts through a different set of parameters while keeping the original weights unmodified' [memit §2]. **원 가중치를 건드리지 않고 편집 사실을 따로 보관**한다는 점에서 E-경로적 해법이지만, MEMIT는 이를 '다른 파라미터 집합으로의 라우팅'으로만 서술하고 external store로 개념화하지 않는다. 그리고 공개 코드가 없어 **비교 실험도 하지 않는다** [memit §5.1].",
+      "absent": "retrieval·RAG·vector database·embedding 검색·agent memory에 관한 언급이 **0건**이다(검색어 'retriev' 0건, 'agent' 0건, 'in-context' 0건). 편집을 '문맥에 넣기'와 비교하는 baseline조차 없다.",
+      "finding_for_the_monograph": "MEMIT의 문제의식은 **symbolic KB의 갱신 가능성을 LLM 가중치로 옮기는 것**이다. 즉 '구조화 KB는 정확히 질의·측정·갱신할 수 있지만 커버리지가 희소하고, LLM은 반대'라는 §2의 대비가 이 논문의 진짜 축이다. 이는 이 corpus의 E-경로(에이전트 세션 기억)와 **문제 자체가 다르다** — 같은 'external memory'라는 말을 쓰지만 대상이 세계 지식 대 사용자 문맥으로 갈린다. Part III에서 이 구분을 명시해야 한다."
+    },
+    "W_path": {
+      "engaged": "아니다.",
+      "absent": "fast weight·test-time learning·TTT·RNN/SSM·Hebbian·delta rule에 관한 언급이 **0건**(검색어 'fast weight' 0, 'test-time' 0, 'test time' 0, 'Hebbian' 0, 'Schmidhuber' 0, 'KV' 0). 편집 후 test-time에 상태가 변하는 설계를 상상조차 하지 않는다.",
+      "nearest_kinship": "meta-learning 편집기 계보 — Sinitsin et al. (2019) Editable Neural Networks, De Cao et al. (2021) KE, Mitchell et al. (2021) MEND. 'MEND also adopts meta-learning, inferring weight updates from the gradient of the inserted fact' [memit §2]. inner/outer loop 구조를 공유하지만 이들도 **fast weight를 test-time에 유지하지 않는다** — 편집 후 가중치는 다시 정적이다. MEMIT는 이 계보를 명시적으로 **거부**한다: 'Rather than meta-learning, our method employs direct parameter updates based on an explicitly computed mapping.' [memit §2]",
+      "shared_ancestor_worth_reporting": "**Kohonen (1972) correlation matrix memories와 Anderson (1972) simple neural network generating an interactive memory.** MEMIT는 이 둘을 §2와 Eq. 7에서 명시적으로 인용하며 'we adopt the classical view of a linear layer as an associative memory'라고 선언한다. 이 두 문헌은 Neural Memory 모노그래프의 fast-weight/linear-attention 계보의 공통 조상이기도 하다. **즉 W-경로와 Θ-경로는 서로를 인용하지 않지만 같은 1972년 조상을 공유한다** — 이것이 이 장에서 bridge로 쓸 수 있는 유일한 실제 연결점이다."
+    },
+    "bio_and_continual_learning": {
+      "engaged": "전혀 아니다.",
+      "evidence": "'sleep' 0건, 'consolidat' 0건, 'replay' 0건, 'catastrophic' 0건, 'continual' 0건, 'forgetting' 0건. 'forgetfulness'가 1회 등장하는데 FT-W 기준선이 weight decay를 쓰는 이유를 설명하는 문장이다 [memit §5.1]. CLS·McClelland·EWC·생물학적 수면에 대한 인용이 전무하다.",
+      "finding_for_the_monograph": "**Θ-경로의 핵심 쓰기 기법이 지속학습 공동체의 어휘를 하나도 쓰지 않고 만들어졌다.** MEMIT의 $\\Gamma_0$ 보존 항은 기능적으로 EWC의 Fisher 정칙화와 같은 자리에 있지만(옛 지식을 2차 통계로 보호), 논문은 EWC를 인용하지 않는다. 이 단절은 S0 §5가 요구하는 '경로 간 침묵'의 가장 선명한 사례이며, 여기서는 **경로 간이 아니라 같은 Θ층 안에서의 공동체 간 침묵**이라는 점에서 더 강한 발견이다."
+    },
+    "peft_path": {
+      "engaged": "아니다. 'LoRA' 0건, 'adapter' 0건, 'low-rank' 0건. 같은 Θ-경로의 대표 기법인 PEFT 계보를 전혀 언급하지 않는다. fine-tuning은 오직 naive 기준선(FT-W)으로만 등장한다.",
+      "note": "MEMIT의 $\\Delta^{(l)} = \\mathrm{Res}\\,K_1^{\\mathsf T}(\\cdots)^{-1}$은 구조상 rank $\\le n_{\\mathrm{edit}}$인 갱신이다(note-writer 관찰). LoRA가 rank를 **설계 변수**로 고정하는 반면 MEMIT는 rank가 **편집 개수의 부산물**로 결정된다. 두 논문은 서로를 모르지만 같은 저랭크 쓰기 공간을 다른 방향에서 채운다 — Part II Θ-1 장의 핵심 대비."
+    }
+  },
+
+  "figures": [
+    {"figure": "Fig. 1", "reproduce": "권장", "one_line": "LM을 (s,r,o) 튜플의 knowledge base로 보는 관점 (a) → MEMIT 편집 (b) → 10,000 편집으로의 확장 (c). 이 장의 첫 그림으로 문제 설정을 한 장에 세운다."},
+    {"figure": "Fig. 2", "reproduce": "**필수**", "one_line": "임계 MLP 경로의 해부도 — 초기 attention이 subject를 모으고(a), $\\Lambda$의 MLP가 residual stream에 memory를 더하고(b), 마지막 토큰 attention이 읽는다(c). MEMIT가 쓰는 정확한 위치(d)를 보여주는 유일한 그림."},
+    {"figure": "Fig. 3", "reproduce": "**필수**", "one_line": "층별 평균 indirect causal effect 막대그래프 — 단일 상태 복원 대 MLP 절단의 **간극**이 $\\Lambda$를 정의하고 층 8 이후 사라진다. '어디에 쓸지를 실험으로 정한다'는 이 논문의 방법론적 주장의 증거."},
+    {"figure": "Fig. 4", "reproduce": "**필수**", "one_line": "MEMIT 갱신 절차 — 먼저 $z_i$를 최적화하고(i), 잔차를 층에 나눠 실으며 매 층 후 활성을 재수집한다(ii-a,b,c). 2단계 구조와 층 순차성을 동시에 보여준다."},
+    {"figure": "Fig. 5", "reproduce": "**필수**", "one_line": "편집 개수(log scale) 대 성능 — 이 장의 용량 곡선. ROME은 $n=32$부터, MEND는 $n=6$부터 무너지고 MEMIT만 10,000까지 간다. 점선이 편집 전 GPT-J 기준선, 음영은 95% 신뢰구간."},
+    {"figure": "Fig. 6(b)", "reproduce": "권장", "one_line": "관계별 specificity 대 generalization 산점도 — MEMIT에도 P127·P641에서 tradeoff가 남는다는 불리한 사실의 근거."},
+    {"figure": "Fig. 13", "reproduce": "권장", "one_line": "$\\lambda$ 변화에 따른 지표 역전 — specificity·fluency는 단조 증가, efficacy·generalization은 감소. Θ-경로 retention gate의 tradeoff를 한 장으로 보여준다."},
+    {"figure": "Fig. 11", "reproduce": "선택", "one_line": "편집 층 집합 ablation — 층을 늘리면 efficacy·generalization·specificity가 **동시에** 좋아지고, 후반부 MLP 편집은 확연히 나쁘다."},
+    {"figure": "Fig. 7 / Fig. 10", "reproduce": "선택", "one_line": "관계 다양성 4조합에서 혼합 편집 성능이 개별 평균에 근접 — 단 100–700 편집 구간에서만."},
+    {"figure": "Fig. 8", "reproduce": "선택", "one_line": "GPT-J causal tracing 히트맵 — $\\Lambda$ 선택의 원자료. Fig. 3을 이미 실었다면 생략 가능."},
+    {"figure": "Fig. 9", "reproduce": "인용만", "one_line": "FT-W weight decay 튜닝 곡선 — 기준선 hyperparameter를 $n=10{,}000$에서만 골랐다는 불리한 사실의 출처."},
+    {"figure": "Fig. 12", "reproduce": "인용만", "one_line": "attention 층 편집이 MLP 편집보다 확연히 나쁨."},
+    {"figure": "Fig. 14", "reproduce": "권장", "one_line": "CounterFact 레코드 1건의 실제 JSON(case_id 15, Percy Snow, P413, linebacker→goaltender). 독자가 '편집 1건'이 무엇인지 손으로 만져볼 수 있게 하는 유일한 자료 — paraphrase 2개, neighborhood 10개, generation 10개 프롬프트 구조가 그대로 보인다."},
+    {"figure": "Table 1 / Table 2", "reproduce": "**필수**", "one_line": "10,000 편집에서의 zsRE·CounterFact 전 지표 비교. 이 장의 수치 근거 전부."}
+  ],
+
+  "systems_implications": [
+    {
+      "claim": "**decode 비용이 정확히 0만큼 변한다.** 갱신은 $\\Theta^{(l)}_{\\mathrm{out}} \\mathrel{+}= \\Delta^{(l)}$ 라는 동일 shape의 in-place 덧셈이므로, 편집 후 모델의 파라미터 수·연산 그래프·메모리 트래픽이 편집 전과 동일하다.",
+      "grounding": "[memit Algorithm 1 line 14] + [note-writer 추론 — 논문은 이 결과를 주장조차 하지 않는다]"
+    },
+    {
+      "claim": "**Rosetta: 이것은 '모델 재배포 1회'다.** Θ-경로의 결정적 성질 — 배포 아티팩트가 바뀐다. checkpoint를 교체하는 것과 운영상 동등하며, 롤백은 이전 checkpoint로 되돌리는 것 외에 방법이 없다(MEMIT에는 편집 취소 연산이 없다).",
+      "grounding": "[note-writer 추론, STC-STYLE §3 Rosetta 표 '모델 재배포 = (U-$\\Theta$) 1회']"
+    },
+    {
+      "claim": "**shared-weight batching은 살아남는다 — 편집이 전역일 때만.** 10,000개 사실이 모든 사용자에게 같은 사실이면 가중치 1벌을 계속 공유할 수 있다. 사용자별 편집을 하는 순간 per-user $\\Theta$가 생기고 batching이 깨진다. 논문은 전역 편집만 다루며 이 구분을 제기하지 않는다.",
+      "grounding": "[note-writer 추론 — 논문 침묵]"
+    },
+    {
+      "claim": "**sleep 비용의 87.95%가 embarrassingly parallel이다.** $z_i$ 산출 23,546.65 sec / 총 26,773.00 sec. 나머지 3,226.35 sec는 $|\\Lambda|$개 층을 오름차순으로 돌며 매번 활성을 재수집해야 하므로 **원리적으로 직렬**이다. 즉 sleep 라운드를 클러스터에 뿌리면 이론상 0.90 hr + (병렬화된 $z$ 단계)로 줄지만, 6개 층 sweep은 축소되지 않는다.",
+      "grounding": "[memit App. B.4] 수치 + [memit §4.3] 순차성 + note-writer 산술(23,546.65/26,773.00 = 0.8795)"
+    },
+    {
+      "claim": "**$z_i$ 산출은 편집당 전체 모델의 forward+backward를 25회(GPT-J) 요구한다.** 손실이 출력 로짓에 정의되어 있으므로(Eq. 16) $l^\\ast$까지가 아니라 모델 끝까지 통과해야 하고, 각 스텝은 $N_{\\mathrm{pref}}$개 prefix에 대해 평균된다. 이것이 6.54 hr의 정체다 — compute-bound이며 배치 크기를 키우면 바로 줄어든다.",
+      "grounding": "[memit Eq. 16, App. B.4] + [note-writer 추론 — 논문은 스텝 수만 주고 FLOPs를 주지 않는다]"
+    },
+    {
+      "claim": "**가장 비싼 단일 연산은 대형 정사각 행렬의 역행렬이다.** $(\\Gamma^{(l)} + K^{(l)}K^{(l)\\mathsf T})^{-1}$의 크기는 $\\Theta^{(l)}_{\\mathrm{out}}$의 입력 차원(=MLP 은닉 폭)이며, 저자들이 'the most computationally expensive step'으로 지목한다. **논문이 $d_{\\mathrm{ff}}$를 주지 않으므로 바이트·FLOPs를 계산할 수 없다.**",
+      "grounding": "[memit App. B.4] + todo_verify (모델 config 필요)"
+    },
+    {
+      "claim": "**편집 파이프라인은 추론과 정밀도 요구가 다르다.** covariance 통계를 fp32로 수집·저장하고(GPT-NeoX는 fp16으로 수집하되 fp32로 저장), 모델은 float16으로 돌린다. 즉 sleep 라운드는 서빙과 같은 커널·같은 dtype으로 돌지 않는다.",
+      "grounding": "[memit App. B.3, App. B.4, §9]"
+    },
+    {
+      "claim": "**sleep 라운드는 서빙 GPU와 자원을 공유할 수 없다.** GPT-NeoX 편집에는 모델용 48GB GPU 외에 '편집 방법 실행용' GPU가 **추가로** 필요하다. 즉 편집기의 peak memory 발자국이 모델과 같은 급이다.",
+      "grounding": "[memit §9 Reproducibility] 'one 48GB GPU for running the model in float16, and another slightly smaller GPU for executing the editing method'"
+    },
+    {
+      "claim": "**covariance는 모델당 1회 상각되는 정적 자산이다.** Wikitext 100,000 표본(GPT-J)에서 층별로 한 번 만들어 캐시한다. 편집 배치가 여러 번이면 이 비용은 분모가 커진다. 저장 바이트는 논문에 없다.",
+      "grounding": "[memit App. B.4]"
+    },
+    {
+      "claim": "**E-경로와의 비용 위치가 정반대다.** MEMIT 이후 질의는 retrieval 대역폭을 0 지불한다 — 지식이 이미 가중치 안에 있다. E-경로는 질의마다 $\\mathrm{ret}(E,q)$의 대역폭·지연을 지불한다. 반대로 MEMIT는 지식 하나를 바꾸는 데 편집당 2.6773 sec의 오프라인 비용을 지불하고, E-경로는 레코드 하나 쓰는 데 거의 0을 지불한다. **쓰기가 비싸고 읽기가 공짜인 층 대 쓰기가 싸고 읽기가 유료인 층** — 이것이 Part III 3경로 비용 분해의 핵심 대비다.",
+      "grounding": "[note-writer 추론 + memit App. B.4의 시간 수치]"
+    },
+    {
+      "claim": "**갱신 주기는 '일' 단위다.** 10,000 사실에 7.44 hr(GPT-J 6B, A6000 기준). 선거 데모도 11월 8일 선거 → 11월 14일 이전 결과 확보라는 며칠 단위 서술이다. 뉴스 신선도용으로는 하루 1회 배치가 현실적 상한이며, 실시간 갱신은 이 방법의 범위 밖이다.",
+      "grounding": "[memit §5.2.2, App. E 각주 4]"
+    },
+    {
+      "claim": "**가중치가 바뀌면 기존 prefix/prompt cache의 KV가 전부 무효화된다.** MEMIT는 층 3–8의 MLP를 고치므로 그 층 이후의 모든 캐시된 KV가 stale해진다. 논문은 KV cache를 한 번도 언급하지 않는다 — Θ-경로 배포의 숨은 운영 비용이다.",
+      "grounding": "[note-writer 추론 — 검색어 'KV' 0건, 'cache' 1건($z_i$ 캐시 문맥)]"
+    },
+    {
+      "claim": "**상태 용량 회계가 이 논문에서는 '무료'로 보인다 — 그것이 함정이다.** 편집이 원 가중치에 흡수되므로 별도 저장 아티팩트가 없다. 그러나 그 대가로 (a) 편집을 되돌릴 수 없고, (b) 편집 집합이 다른 두 배포본은 완전히 별개의 checkpoint가 되며(LoRA의 35MB adapter와 정반대), (c) 사용자별 개인화가 불가능하다.",
+      "grounding": "[note-writer 평가 — 논문은 (a)(b)(c) 어느 것도 다루지 않는다]"
+    }
+  ],
+
+  "todo_verify": [
+    {"item": "Fig. 5 scaling curve의 $n$별 실제 수치(특히 $n=1{,}000$·$3{,}162$에서 MEMIT의 NS·S). vendored .txt는 그림을 벡터 텍스트로 흘려 담아 축 눈금만 남아 있다.", "how": "원 PDF(arXiv:2210.07229v2) Fig. 5를 직접 보거나 memit.baulab.info의 결과 JSON을 받는다. 텍스트 검색으로는 판정 불가."},
+    {"item": "MEMIT의 $N_{\\mathrm{pref}}$(무작위 prefix 개수·길이). ROME 기준선에 대해서만 '10 prefixes of length 5 and 10 prefixes of length 10'이 명시된다.", "how": "검색어 'prefix' — App. B.3에만 등장한다. MEMIT 값은 원 코드(memit.baulab.info) hparams 파일에서 확인해야 한다."},
+    {"item": "7.44 hr에 covariance 추정과 causal tracing이 포함되는지.", "how": "검색어 'Covariance statistics are collected' (App. B.3, B.4) — 두 곳 모두 시간을 말하지 않는다. 원 코드의 캐시 로직 확인 필요."},
+    {"item": "$\\Delta^{(l)}$의 바이트 크기와 역행렬 차원. GPT-J의 $d_{\\mathrm{model}}$·$d_{\\mathrm{ff}}$가 논문에 없다.", "how": "검색어 '4096'·'16384' → 0건 확인 완료. 값은 GPT-J-6B config(논문 밖)에서 가져와야 하며, 가져오면 **논문 수치가 아님을 명시**해야 한다."},
+    {"item": "선거 데모의 실제 편집 개수. 435+36+35=506은 note-writer 산술이며 논문이 편집 수를 말하지 않는다.", "how": "검색어 '435' / 'elected from' — App. E. 원문에 편집 수 표기 없음을 재확인했다."},
+    {"item": "GPT-NeoX의 편집 소요 시간.", "how": "검색어 'NeoX' 전수 확인 — 실행 시간 서술 없음. 원 코드 로그 필요."},
+    {"item": "v1(2022-10-13)과 v2(2023-08-01)의 차이. vendored 텍스트에 변경 이력 각주가 없다.", "how": "arXiv abs 페이지의 version history 비교."},
+    {"item": "MEMIT를 2회 이상 순차 적용했을 때의 거동. 논문에 실험이 없다.", "how": "검색어 'sequential' → 2건, 둘 다 ROME 기준선 문맥. 이 논문으로는 판정 불가 — 후속 문헌 또는 자체 실험 필요."},
+    {"item": "Table 1·Table 2의 OCR 전사 정확도.", "how": "[note-writer 검증 완료] 각 행의 Score가 세 지표의 조화평균과 ±0.15 안에서 일치함을 산술로 확인했다(예: MEMIT/CounterFact 98.9·88.6·73.7 → 85.79 vs 표기 85.8; FT-W 99.4·77.0·46.9 → 67.61 vs 67.6; ROME/zsRE 21.0·19.6·0.9 → 2.48 vs 표기 2.6은 표시 반올림 범위 내). 전사는 신뢰할 수 있다."}
+  ]
+}

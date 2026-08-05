@@ -1,0 +1,833 @@
+{
+  "paper_id": "memorizing-transformers",
+  "arxiv": "2203.08913",
+  "arxiv_version_read": "v1 [cs.LG] 16 Mar 2022 (line 7 of the vendored text)",
+  "title": "Memorizing Transformers",
+  "authors": [
+    "Yuhuai Wu",
+    "Markus N. Rabe",
+    "DeLesley Hutchins",
+    "Christian Szegedy"
+  ],
+  "affiliation": "Google (all four authors give @google.com addresses, line 5). No affiliation line beyond the email block.",
+  "venue": "ICLR 2022 (running header, line 1: 'Published as a conference paper at ICLR 2022')",
+  "date": "2022-03-16",
+  "path": "papers/stc/2203.08913.txt",
+  "axis": "E",
+  "axis_note": "E-path, but an atypical instance and the earliest one in this corpus. E here holds the model's own internal (key, value) activations, not text/vector/graph records, and it is read by an attention head rather than spliced into the prompt. It therefore sits functionally where W sits (inside the forward pass, at one layer, mixed into the residual stream by a learned gate) while having E's storage semantics (outside the parameters, non-differentiable, unbounded, per-document, clearable). The monograph should place it as the E-path's representation-level ancestor: the paper that established that a non-differentiable external store read by attention beats making the differentiable context bigger, four years before the agent-memory line rediscovered the same argument in text space.",
+
+  "problem_stated": {
+    "one_line": "Acquiring new knowledge currently requires moving Theta (train or finetune); the paper proposes acquiring it instead by writing into a non-differentiable external store at inference time, read back by attention.",
+    "verbatim_anchors": [
+      {
+        "quote": "Language models typically need to be trained or finetuned in order to acquire new knowledge, which involves updating their weights. We instead envision language models that can simply read and memorize new data at inference time, thus acquiring new knowledge immediately.",
+        "source": "Abstract, lines 10-13"
+      },
+      {
+        "quote": "transformer performance on many of these tasks is limited by the context length of attention, which is typically short.",
+        "source": "Sec. 1 Introduction, lines 29-30"
+      },
+      {
+        "quote": "Attention over long sequences is also useful as a form of rapid learning. Facts and information which are stored in the form of weight matrices must be slowly trained over hundreds of thousands of training steps. By using attention, however, a model can simply memorize facts (e.g. function definitions) by storing them as (key, value) pairs in long-term memory, and then retrieve those facts later by creating a query that attends to them. In this case, attention acts as a form of information retrieval, allowing the model to look up facts that it has seen previously.",
+        "source": "Sec. 1, lines 35-40"
+      },
+      {
+        "quote": "gradients are not backpropagated into the external memory, which is critical to the scalability of our technique. The keys and values are a function of model parameters, so attempting to backpropagate gradients into external memory would necessarily involve computing all of the keys and values with the current model parameters on every training step. However, if the external memory is not differentiable, then we can instead instead reuse keys and values that were previously computed on prior training steps, which drastically reduces the amount of computation for large memories.",
+        "source": "Sec. 1, lines 48-52 (the doubled 'instead instead' is in the source text)"
+      },
+      {
+        "quote": "unlike some other approaches, kNN lookup does not do averaging or summarization of tokens at long distances, but retrieves exact values even from the distant context.",
+        "source": "Sec. 1, lines 46-47"
+      }
+    ],
+    "framing_metaphor": "Attention as information retrieval. The paper repeatedly identifies attention-over-memory with IR ('attention acts as a form of information retrieval', line 39; 'a simple model that unifies attention and retrieval', line 202), and identifies weights with slow storage ('stored in the form of weight matrices must be slowly trained', lines 36-37). This is the Theta-vs-E tradeoff stated explicitly in March 2022, with no sleep/consolidation vocabulary anywhere in the paper (zero occurrences of 'sleep', 'consolidat', 'replay', 'catastrophic', 'continual')."
+  },
+
+  "inherited_open_question": {
+    "verdict": "none-stated",
+    "detail": "The paper inherits no quoted open question from any prior work. Sec. 2 (Related Work, lines 93-205) is a positioning survey written entirely in the third person and the present tense; it contains no quotation, no 'X leaves open', no 'as asked by', and no restatement of anyone's future-work paragraph. Every comparison is a contrast the authors draw themselves ('In contrast, we use a very large cache without compression', line 183; '(We use kNN lookup to approximate attention to previous tokens, not to replace the FFN.)', lines 190-191; 'Instead, we focus on language modeling using a decoder-only model', line 201).",
+    "what_it_implicitly_answers": [
+      {
+        "question": "Transformer-XL (Dai et al. 2019) and Compressive Transformer (Rae et al. 2020) both carry a non-differentiable cache across steps. How far can such a cache be scaled, and must the carried state be compressed?",
+        "answer_given": "To 262K (key, value) pairs, and no: compression is unnecessary if you replace dense attention over the cache with approximate top-k_nn retrieval.",
+        "source": "Sec. 2 lines 113-124 (the description of truncated BPTT -> neural caches -> Transformer-XL -> Rae et al.), Sec. 2 line 183, Table 5 (lines 510-561)"
+      },
+      {
+        "question": "Sun et al. (2021), 'Do long-range language models actually use long-range context?', is the standing negative result on whether long-context models exploit what they are given.",
+        "answer_given": "The paper does not quote the question, but Sec. 4.6 is built as an answer to it and cites it as corroboration: 'This result is in keeping with the prior analysis of long-context Transformers on PG19 (Sun et al., 2021), which found similar lookup patterns.' It also cites Sun et al. to justify dropping the position bias on retrieved memories.",
+        "source": "Sec. 4.6, lines 645-646; Sec. 3.1 Position bias, lines 281-282"
+      },
+      {
+        "question": "Khandelwal et al. (2020, kNN-LM) and Yogatama et al. (2021) put a non-differentiable store at the output softmax. Can non-differentiable memory instead be placed inside the stack?",
+        "answer_given": "Yes, at a single mid-to-upper attention layer, with a learned per-head gate. The paper marks the distinction itself but does not attribute the question to those authors.",
+        "source": "Sec. 2, lines 192-196; Sec. 3.1, lines 247-250; Sec. 4.2, line 480"
+      }
+    ],
+    "why_this_matters_for_the_monograph": "An un-inherited question. The paper opens by naming the Theta alternative in its first sentence ('trained or finetuned ... updating their weights', line 10) and then cites nobody at all for it: no PEFT, no adapter, no continual-learning, no model-editing, no catastrophic-forgetting reference appears anywhere in the 145-entry bibliography (lines 778-923). The E-path therefore begins by defining itself against a literature it does not read. The same asymmetry persists downstream: MemGPT (2310.08560), Letta STC and the rest of the agent-memory line in this corpus do not cite this paper back (corpus-wide grep for 'Memorizing Transformer' returns only two later hits, both 2607.x)."
+  },
+
+  "core_mechanism": {
+    "summary_one_line": "One attention layer near the top of a frozen-topology decoder reads a per-document, per-head, non-differentiable FIFO store E of raw (k_t, v_t) pairs via approximate top-k_nn dot-product retrieval, and mixes that read into the local-attention output with a single learned per-head scalar gate; E is written by verbatim append of the same (k_t, v_t) the forward pass just computed, so the write costs nothing beyond the read.",
+    "equation_numbering_note": "The paper numbers only two equations, (1) and (2), both in Sec. 3.1 (lines 264-270). Everything else is prose. Citations below give the original number where one exists and the line range otherwise. Equation labels mt-N are this note's, not the paper's.",
+    "state_decomposition": {
+      "Theta": "All transformer parameters: token embeddings, 12 layers of dense self-attention + FFN (d=1024, 8 heads x 128, d_ff=4096), the T5 relative position bias used for local attention, the output softmax, and the per-head gate bias b_g of Eq. (1). Trained by outer loop only. [Sec. 3 lines 211-216; Sec. 4.2 lines 478-482; Sec. 3.1 lines 264-277]",
+      "W": "Empty. There is no fast-weight state in the NM sense anywhere in this paper: no inner loss, no test-time gradient, no fixed-size compressed state that is updated by a rule. The Transformer-XL cache (previous step's k,v prepended, sliding-window causal mask) is a bounded lossless KV carry, not W: it has no alpha_t, no S_t, and no eta_t. [Sec. 3 lines 239-242]",
+      "E": "Per-document, per-head FIFO of exact (k_i, v_i) pairs in R^{d_head=128}, capacity n_E = M in {1536, 8192, 65536, 131072, 262144}. Non-differentiable. Cleared at the start of each new document; one separate E per batch element. [Sec. 3.1 lines 251-255, 283-285]",
+      "E_parts": {
+        "E_knn": "The kNN store proper. Written at every chunk boundary, read only at the single kNN-augmented layer (layer 9 of 12 by default), only by top-k_nn retrieval. [Sec. 3.1 lines 247-261; Sec. 4.2 line 480]",
+        "E_xl": "The Transformer-XL cache: the previous chunk's (k, v) at *every* layer, prepended and attended densely under a sliding-window causal mask so each token sees the previous 512 (or 2048) tokens. Same physical content, different read rule and different residence. The paper treats these as complementary and shows additive gains. [Sec. 3 lines 239-242; Sec. 4.3 lines 573-576]"
+      },
+      "what_is_NOT_in_any_layer": "There is no text, no summary, no embedding of a document, no learned index, no importance score, and no consolidation step. S(c; B_s) is the identity map in representation space -- the paper's own phrasing is 'does not do averaging or summarization of tokens at long distances, but retrieves exact values' (lines 46-47) and 'we use a very large cache without compression' (line 183)."
+    },
+    "equations": [
+      {
+        "label": "mt-1",
+        "latex": "E_t \\;=\\; \\mathrm{wr}\\big(E_{t-1},\\ \\hat c_t\\big), \\qquad \\hat c_t \\;=\\; S\\big(c_t;\\ B_s\\big) \\;=\\; \\big\\{(k_i, v_i)\\big\\}_{i \\in c_t}, \\qquad \\mathrm{wr} = \\text{append-then-FIFO-evict to } n_E \\le M",
+        "source": "[memorizing-transformers Sec. 3.1, lines 251-255] -- 'after each training step, the (key, value) pairs in the local context are appended to the end of the external memory. If the document is very long, old (key, value) pairs will be dropped from the memory to make room for new ones. Thus, for each head, the external memory keeps a cache of the prior M (key, value) pairs, where M is the memory size.'",
+        "reading": "This is (U-E) with S set to the identity on the chunk's own key/value activations. c_t is the chunk of C = 512 (or 2048) tokens that the forward pass just consumed; the (k_i, v_i) are exactly the tensors that attention layer already materialised. Two consequences the monograph must state: (i) the write is a by-product, so its marginal budget is zero; (ii) the time index is t, the chunk index, not k, the sleep-round index -- this is (U-E) executed synchronously at wake, never offline."
+      },
+      {
+        "label": "mt-2",
+        "latex": "\\mathrm{ret}(E, q_t) \\;=\\; \\mathrm{Top}\\text{-}k_{nn}\\Big(\\big\\{\\langle q_t, k_i\\rangle : (k_i,v_i) \\in E\\big\\}\\Big), \\qquad k_{nn} = 32,\\ \\ \\text{recall} \\approx 90\\%",
+        "source": "[memorizing-transformers Sec. 3.1, lines 256-261; Sec. 4.2 line 480 ('we used k = 32'); Sec. 3.3 lines 311-313 ('a recall of about 90%, i.e. 90% of the true top k are returned in the approximate top k')]",
+        "reading": "The retrieval key space is the model's own attention key space -- the same q_t is used for local attention and for the store ('The same queries are used for both the local context, and for the external memory. The keys and values also belong to the same distribution', lines 251-252). Unlike a text-retrieval E, there is no encoder, no separate embedding model, and no similarity threshold: ret is literally the argmax of the same dot product attention already computes."
+      },
+      {
+        "label": "mt-3",
+        "latex": "V_m \\;=\\; \\mathrm{softmax}\\big(q_t K_{\\mathrm{ret}}^{\\top}\\big)\\, V_{\\mathrm{ret}}, \\qquad (K_{\\mathrm{ret}}, V_{\\mathrm{ret}}) = \\mathrm{ret}(E, q_t) \\in \\mathbb{R}^{k_{nn} \\times d_{\\mathrm{head}}}",
+        "source": "[memorizing-transformers Sec. 3.1, lines 256-261] -- 'we first construct an attention matrix by computing the dot product of each query against the retrieved keys, then apply softmax, and finally return a weighted sum of the retrieved values. Unlike standard dense attention, the retrieved memories contain a different set of (key, value) pairs for each query.'",
+        "reading": "Per-query K/V. This one sentence is the whole systems story of the paper: the K and V operands are no longer shared across the queries of a sequence, so the layer stops being a GEMM and becomes a gather. No position bias is applied here: 'We don't use a position bias for the retrieved memories' (line 280)."
+      },
+      {
+        "label": "mt-4",
+        "latex": "g \\;=\\; \\sigma(b_g), \\qquad b_g \\in \\Theta \\ \\ \\text{(one scalar per head)}",
+        "source": "[memorizing-transformers Eq. (1), line 264; description lines 272-276]",
+        "reading": "The gate is content-independent by construction: 'the value of the gate g does not depend on the content of the token at each position, although that would be a trivial extension to implement' (lines 275-276). It is a per-head architectural preference, learned once in the outer loop, not a routing decision made at test time."
+      },
+      {
+        "label": "mt-5",
+        "latex": "V_a \\;=\\; V_m \\odot g \\;+\\; V_c \\odot (1-g)",
+        "source": "[memorizing-transformers Eq. (2), lines 265-267; symbol definitions lines 272-274]",
+        "reading": "V_c is ordinary dense attention over the local chunk plus the prepended XL cache; V_a is what continues up the residual stream. The reported outcome: 'We did observe that over time, most heads learned to attend almost exclusively to external memory' (line 277) -- i.e. sigma(b_g) -> 1 for most heads, so at convergence the kNN layer is largely an E-read layer rather than a mixture."
+      },
+      {
+        "label": "mt-6",
+        "latex": "\\hat y \\;=\\; f\\big(q;\\ \\Theta,\\ \\varnothing,\\ \\mathrm{ret}(E, q)\\big) \\quad\\text{with } \\mathrm{ret} \\text{ entering at exactly one layer}",
+        "source": "[memorizing-transformers Sec. 3.1, lines 247-250; Sec. 4.2 line 480; architecture Fig. 2, lines 126-182]",
+        "reading": "Standard form (R) with W = empty and the E-read injected mid-stack rather than at the input. The paper's own surprise at how little this costs: 'This is surprising, because the external memory is not differentiable, and is added only to one layer of the Transformer, whereas increasing the context size is differentiable and affects all layers. We conclude that the lower layers of a Transformer don't necessarily need long-range context, and having a differentiable memory is not as important as one might suspect.' (lines 579-582)"
+      },
+      {
+        "label": "mt-7",
+        "latex": "\\text{staleness: } (k_i, v_i) = \\phi(\\Theta_{s(i)}) \\ \\ \\text{with } s(i) < \\text{current step}; \\quad \\text{mitigation: } \\hat k = k/\\lVert k\\rVert,\\ \\hat q = q/\\lVert q\\rVert",
+        "source": "[memorizing-transformers Sec. 3.2, lines 290-306]",
+        "reading": "During training only, E holds activations produced by *older* Theta. 'The model parameters that produce the queries change over time, and will thus have shifted since the keys and values were stored. For very large memories, older records may become \"stale.\"' (lines 291-293). The fix is key/query normalisation (Henry et al. 2020): 'Normalization does not eliminate staleness, but it at least ensures that older keys and newer keys do not differ in magnitude.' (lines 299-301). At pure inference with frozen Theta this term vanishes -- the monograph should say so, because it is the one asymmetry between this paper's training-time and deploy-time behaviour."
+      }
+    ],
+    "notation_conflicts": [
+      {
+        "paper_term": "M -- 'memory size', the number of (key, value) pairs kept per head",
+        "collision": "NM reserves $\\mathcal{M}(\\cdot; W)$ for the memory *read function*. Bare M as a capacity count would read as that operator.",
+        "mapping": "Write n_E for the item count (n is the reserved symbol for 'number of stored items', STC-STYLE §1.3) and C_cap for the byte capacity. Never bare M."
+      },
+      {
+        "paper_term": "k -- the number of retrieved neighbours, k = 32 (Sec. 4.2 line 480)",
+        "collision": "Double collision: k is reserved for the sleep-round index (STC-STYLE §1.2) and k_t is reserved for the key vector at step t.",
+        "mapping": "k_nn for the neighbour count. Reserve k for the sleep-round index and k_t for keys. This paper has no sleep round at all, so k never appears in its own right."
+      },
+      {
+        "paper_term": "g -- the learned per-head gate, g = sigma(b_g) (Eq. 1)",
+        "collision": "Reads like alpha_t, the retention gate of (U-W).",
+        "mapping": "g is a *read-time mixing* coefficient between two attention outputs at one layer; alpha_t is a *write-time retention* coefficient on W. They are not the same object and must not be conflated. Keep g, but always as 'the read gate g'. b_g belongs to Theta."
+      },
+      {
+        "paper_term": "'context' / 'context size' = 512 or 2048, the subsequence fed per training step",
+        "collision": "Maps exactly onto the reserved chunk size C, which is also the symbol that collides with capacity.",
+        "mapping": "C = 512 or 2048 (chunk). Capacity is always C_cap. Table 4's 'Context' column is C; Table 4's 'Memory' column is n_E; Table 4's 'XL cache' column is the size of E_xl."
+      },
+      {
+        "paper_term": "'external memory'",
+        "collision": "Same words as the E-path of the Letta/MemGPT line, but a different substance: internal activations, not text.",
+        "mapping": "E, with the standing qualifier 'representation-level E'. When the monograph compares against MemGPT/Mem0, say 'E holding activations' vs 'E holding text'."
+      },
+      {
+        "paper_term": "V_m, V_c, V_a -- attention outputs from memory, local context, and their combination",
+        "collision": "V collides with nothing reserved, but v_t is the reserved value vector.",
+        "mapping": "Keep V_m/V_c/V_a for the layer outputs; v_i for a stored value vector. Do not write V_i."
+      },
+      {
+        "paper_term": "Delta_i = cross-entropy_8192(x_i) - cross-entropy_32K(x_i), Sec. 4.6 lines 651-652",
+        "collision": "None; Delta is not reserved.",
+        "mapping": "Keep as Delta_i, but state the sign convention ('Positive values show an improvement in loss', line 652)."
+      },
+      {
+        "paper_term": "'training step' as the unit at which E is written",
+        "collision": "The paper's write cadence is stated in *training* steps, which reads as an outer-loop event.",
+        "mapping": "It is a chunk boundary, not a learning event. Index with t. The write happens identically at inference; the paper says 'training step' only because all its measurements are training measurements."
+      }
+    ]
+  },
+
+  "outer_vs_inner": {
+    "headline_for_the_reader": "Nothing whatsoever is learned at test time. The only thing that moves at test time is E, and it moves by memcpy, not by gradient. Every learnable object in this paper -- including the gate that decides how much the memory matters -- is fixed by ordinary pre-training before deployment. This is the cleanest separation in the whole corpus: outer loop moves Theta, wake-time movement touches only E, and there is no third thing.",
+    "rows": [
+      {
+        "object": "Transformer weights (embeddings, 12 x (attention + FFN), output projection)",
+        "who_learns": "outer loop",
+        "when": "500K steps from scratch (100K for Isabelle, stopped early on overfitting), Adafactor, lr = 1.0 chosen from {3.0, 1.0, 3e-1}, linear warmup 1000 steps then square-root decay, 32 TPU cores, JAX/Flax",
+        "moves_at_test_time": "no",
+        "source": "Sec. 4.2, lines 478-489"
+      },
+      {
+        "object": "T5 relative position bias (Raffel et al. 2020)",
+        "who_learns": "outer loop",
+        "when": "with the rest of Theta",
+        "moves_at_test_time": "no -- and it is applied only to local dense attention, never to retrieved memories: 'We don't use a position bias for the retrieved memories.'",
+        "source": "Sec. 3.1 Position bias, lines 278-282"
+      },
+      {
+        "object": "Gate bias b_g -- one learned scalar per head at the kNN layer",
+        "who_learns": "outer loop",
+        "when": "with the rest of Theta; converges to near-1 for most heads ('most heads learned to attend almost exclusively to external memory')",
+        "moves_at_test_time": "no. Also content-independent by design; making it content-dependent is called 'a trivial extension' and is never tested.",
+        "source": "Sec. 3.1, Eq. (1) line 264, lines 272-277"
+      },
+      {
+        "object": "E_knn contents -- the (key, value) pairs in the external memory",
+        "who_learns": "nobody. Zero gradient ever flows into E: 'gradients are not backpropagated into the external memory'.",
+        "when": "written at every chunk boundary by verbatim append; FIFO-evicted at capacity n_E; cleared at every document boundary",
+        "moves_at_test_time": "yes -- this is the only moving state",
+        "source": "Sec. 1 line 48; Sec. 3.1 lines 251-255, 285"
+      },
+      {
+        "object": "E_xl contents -- the Transformer-XL cache",
+        "who_learns": "nobody",
+        "when": "replaced each step with the previous chunk's (k, v), at every layer",
+        "moves_at_test_time": "yes",
+        "source": "Sec. 3 lines 239-242"
+      },
+      {
+        "object": "The approximate kNN index",
+        "who_learns": "nobody. It is a fixed TPU approximation at ~90% recall, not a learned index; the paper names ScaNN and Faiss as drop-in alternatives.",
+        "when": "n/a",
+        "moves_at_test_time": "yes, as a data structure over E",
+        "source": "Sec. 3.3, lines 311-315; Sec. 1 lines 42-44"
+      },
+      {
+        "object": "Choice of which layer is kNN-augmented (layer 9 of 12 by default)",
+        "who_learns": "nobody -- a hyperparameter, swept once in the appendix",
+        "when": "fixed before training",
+        "moves_at_test_time": "no",
+        "source": "Sec. 4.2 line 480; App. A.1 Table 14, lines 957-975"
+      },
+      {
+        "object": "n_E itself (the memory size)",
+        "who_learns": "nobody, but it is the one hyperparameter that can be changed *after* training: 'models trained with a small memory show gains from using a much larger memory at inference time'",
+        "when": "set at train time, then optionally raised and briefly finetuned (20K steps) or, per Sec. 1, simply raised at inference",
+        "moves_at_test_time": "it is a deploy-time knob, which is unusual and is one of the paper's real contributions",
+        "source": "Sec. 1 lines 82-84; Sec. 4.5 lines 599-605; Table 5 lines 510-561"
+      },
+      {
+        "object": "A pre-existing vanilla (memory-free) checkpoint",
+        "who_learns": "outer loop, in a second phase",
+        "when": "20K finetuning steps closes 85% of the gap to a from-scratch Memorizing Transformer; 100K steps closes it entirely (1B model, memory 65K)",
+        "moves_at_test_time": "no",
+        "source": "Sec. 4.5, lines 628-635; Fig. 6, lines 610-627"
+      }
+    ]
+  },
+
+  "update_layer": {
+    "instantiates": "(U-E) only. Theta is frozen after training; W does not exist in this architecture. There is no ordering question because there is only one rule.",
+    "canonical_form": "E_{k+1} = wr(E_k, hat c_k),  hat c_k = S(c_k; B_s)",
+    "how_it_differs": [
+      {
+        "difference": "S is the identity, in representation space",
+        "detail": "hat c_t is literally {(k_i, v_i)} for the tokens of chunk c_t -- the tensors the forward pass already produced at that layer. No summarisation, no compression, no LLM call, no encoder. 'kNN lookup does not do averaging or summarization of tokens at long distances, but retrieves exact values even from the distant context' (lines 46-47); 'we use a very large cache without compression' (line 183).",
+        "consequence": "B_s^marginal = 0. This is the degenerate corner of the E-path and the correct reference point for costing every later E-path paper: whatever Letta STC or Mem0 spend on hat c, this paper spends nothing, and it still gets the gain. The monograph's amortisation equation (A) collapses to C_avg = C_wake here."
+      },
+      {
+        "difference": "The time index is t (chunk), not k (sleep round)",
+        "detail": "The write fires at every chunk boundary, synchronously, inside the wake pass. There is no idle period, no separate offline job, no batching of writes.",
+        "consequence": "Strictly, this is not sleep-time compute under the S0 operational definition (compute spent *before* the query arrives, from a budget B_s). It is the limiting case where the sleep budget has been driven to zero by making the sleep output identical to a by-product of wake. The monograph should use it as the origin of the B_s axis, not as a point on it."
+      },
+      {
+        "difference": "wr is append + FIFO eviction, with no merge, rewrite, dedup, or importance score",
+        "detail": "'If the document is very long, old (key, value) pairs will be dropped from the memory to make room for new ones' (lines 253-254). There is no analogue of MemGPT's working_context.replace or Mem0's ADD/UPDATE/DELETE.",
+        "consequence": "E is monotone-within-window and amnesic beyond it. The paper never isolates the cost of eviction; nothing in the experiments distinguishes 'the item was evicted' from 'the item lost the top-k_nn race'."
+      },
+      {
+        "difference": "E is scoped per document and per batch element, and cleared at document boundaries",
+        "detail": "'Each subsequence in the batch comes from a different document, and thus requires a separate external memory, which is cleared at the start of each new document.' (lines 284-285)",
+        "consequence": "Amortisation is intra-document only. N_q, the number of queries sharing one context, is here the number of remaining tokens in the same document -- and the paper does report the shape of that distribution, in the appendix histograms (Figs. 9-13), which is more than any later E-path paper in this corpus does."
+      },
+      {
+        "difference": "ret is dot-product top-k_nn in the model's own key space, at one layer, entering the residual stream",
+        "detail": "Not a prompt splice. The retrieved values are mixed into V_a by the gate (Eq. 2) at layer 9 of 12; layers 1-8 never see E.",
+        "consequence": "The read has no token cost. Where the text-based E-path pays for retrieval by lengthening the prompt (and thus quadratically in attention), this pays for it in a gather of k_nn=32 x d_head=128 vectors per query per head at one layer."
+      },
+      {
+        "difference": "Theta is trained *with* the read in the loop, so the read is not a bolt-on",
+        "detail": "The gate b_g and the whole stack co-adapt to the presence of E during the 500K training steps. The paper shows the bolt-on case works too, but only after 20K-100K finetuning steps (Sec. 4.5, lines 628-635).",
+        "consequence": "Unlike prompt-level E, this E cannot be attached to an arbitrary frozen checkpoint for free. That is the price of putting the read inside the stack."
+      }
+    ],
+    "layers_touched_in_order": "(U-E) at every chunk boundary t, and nothing else. Theta moves only in the outer loop, before deployment. W is absent."
+  },
+
+  "cost_table": {
+    "preamble": "This paper is a 2022 language-modelling paper and reports no serving numbers at all. Its only wall-clock measurement is a training step time, given once, in one sentence, for the smallest model. Three of the four required cells are therefore 'absent'. That absence is itself the finding: the paper that establishes the E-path's representation-level mechanism never states what it costs to serve.",
+    "B_s": {
+      "value": "absent as a separate quantity -- and structurally zero",
+      "detail": "There is no offline pass, so there is no separable sleep budget. hat c_t is the (k, v) the wake forward pass already computed (Sec. 3.1 lines 251-253), so the marginal cost of the write is the memcpy plus index insertion, which the paper never measures. The only wall-clock figure in the paper is a *combined* read+write training step time: 'For a model with around 200M trainable parameters the step time increased from 0.2s to 0.25s when we added a memory of size 8K, and to 0.6s when we added a memory of size 65K (measured on TPUv3).' That is +25% at n_E = 8192 and 3x at n_E = 65536, and it bundles the kNN search, the extra attention, and the write together; it is a training step, not an inference step; and it is reported only at ~200M parameters.",
+      "source": "Sec. 4.2, lines 496-498 (step times); Sec. 3.1, lines 251-253 (write is a by-product); Sec. 1, lines 48-52 (non-differentiability is what makes reuse of prior-step k,v possible)"
+    },
+    "L_w": {
+      "value": "absent",
+      "detail": "No inference latency, no TTFT, no ITL, no tokens/second, no decode measurement of any kind appears in the paper. The word 'latency' does not occur. The 0.2/0.25/0.6 s figures are training step times on 32 TPU cores (Sec. 4.2 line 488) at batch 2^17 tokens (lines 490-492) and cannot be read as per-token wake latency. The claim that 131K/262K memories run 'on a single TPU device, while maintaining a reasonable step time' (Sec. 1, lines 78-79) is qualitative -- 'reasonable' is never given a number.",
+      "source": "Sec. 4.2, lines 488-498; Sec. 1, lines 78-79; absence throughout"
+    },
+    "C_cap": {
+      "value": "stated in items, never in bytes",
+      "detail": "Capacity is reported only as n_E, the number of (key, value) pairs per head per document: 1536, 8192, 65K (=65536), 131K (=131072), 262K (=262144). 'for each head, the external memory keeps a cache of the prior M (key, value) pairs, where M is the memory size' (lines 254-255). The scope is per head (8 heads), at one layer (layer 9 of 12), per document, per batch element -- 'Each subsequence in the batch comes from a different document, and thus requires a separate external memory' (lines 284-285). Head dimension is 128 (Sec. 4.2 line 479). The paper never multiplies these out, never states a dtype, and never gives a bytes figure or a per-device memory footprint. Byte capacity: absent. See systems_implications for a derived figure, explicitly marked as this note's arithmetic.",
+      "source": "Sec. 3.1, lines 253-255, 283-285; Sec. 4 line 325; Sec. 4.2 lines 478-479; Table 4 (lines 367-464); Table 5 (lines 510-561)"
+    },
+    "rho": {
+      "value": "absent as a number; the phenomenon is named and hedged",
+      "detail": "The paper has one degradation mechanism, staleness, and it is a *training-time* artifact: keys stored under older Theta drift from queries produced by newer Theta (Sec. 3.2, lines 290-306). It is never quantified. The reported symptom is hedged three times over: 'In some of our experiments, we observed that training models from scratch with a large memory sometimes resulted in worse performance than pretraining the model with a small memory of size 8192, and then finetuning it on a larger memory. This training instability could be due to staleness.' (lines 302-304); and again 'In some cases, training was unstable when using large memories, possibly due to distributional shift early in the training' (lines 599-600). No unstable run is shown anywhere in the paper. Round-over-round forgetting in the (U-Theta) sense does not apply -- Theta never moves after deployment -- and eviction-induced loss from the FIFO is never isolated.",
+      "source": "Sec. 3.2, lines 290-306; Sec. 4.5, lines 599-601"
+    },
+    "amortization_N_q": {
+      "value": "collapses -- and this is the one paper in the corpus where it legitimately does",
+      "detail": "Equation (A), C_avg = C_wake + C_sleep/N_q, has C_sleep = 0 here because the sleep output is a by-product of wake. There is no break-even N_q* to compute; the E-write pays for itself at N_q = 1. What the paper *does* have, and no later E-path paper in this corpus has, is the distribution of the context that N_q would be drawn from: the appendix histograms of document length (Figs. 9-13, lines 928-943), with arXiv papers up to ~1.6M tokens and Github repositories up to just over 9M tokens.",
+      "source": "Sec. 3.1 lines 251-253; App. A, Figs. 9-13, lines 928-943"
+    },
+    "cost_the_paper_pays_instead": {
+      "value": "read-side, not write-side",
+      "detail": "The kNN search cost is asserted scalable by citation rather than measured: 'A number of extremely scalable implementations of kNN lookup are available, such as ScaNN (Guo et al., 2020) and Faiss (Johnson et al., 2021)' (lines 43-44); 'There are various other efficient approximate kNN algorithms available for CPU and GPU/TPU ... which can scale into the billions' (lines 314-315). No FLOP count, no index build time, no memory bandwidth figure for the gather. The only empirical handle on read cost is the 0.2 -> 0.25 -> 0.6 s step-time sequence.",
+      "source": "Sec. 1 lines 42-44; Sec. 3.3 lines 311-315; Sec. 4.2 lines 496-498"
+    }
+  },
+
+  "experiments": {
+    "models": [
+      {
+        "name": "base (~200M)",
+        "config": "12-layer decoder-only transformer, embedding size 1024, 8 attention heads of dimension 128, FFN hidden layer 4096, sentencepiece vocabulary 32K, k_nn = 32, kNN-augmented layer = layer 9 unless stated otherwise",
+        "param_count": "'around 200M trainable parameters' -- the only figure given; no exact count anywhere",
+        "source": "Sec. 4.2, lines 478-482; param phrase at line 496; Fig. 1 x-axis tick '200M' (line 70)"
+      },
+      {
+        "name": "1B",
+        "config": "8 layers, 32 heads with head dimension 128, d_model 2048, d_ff 16384",
+        "param_count": "'1 billion parameter model'",
+        "source": "Sec. 4.4, lines 587-588"
+      },
+      {
+        "name": "8B",
+        "config": "64 heads, 16 layers, d_model 4096, d_ff 32768 (head dimension not stated)",
+        "param_count": "'8 billion parameter model'",
+        "source": "Sec. 4.4, lines 588-589"
+      }
+    ],
+    "training": {
+      "optimizer": "Adafactor (Shazeer & Stern 2018)",
+      "learning_rate": "1.0, selected by search over {3.0, 1.0, 3e-1}",
+      "schedule": "linear warmup for the first 1000 steps, then square root decay",
+      "steps": "500K steps from scratch on all datasets except Isabelle; Isabelle stopped at 100K steps 'when the model began to overfit'",
+      "hardware": "32 TPU cores; JAX (Bradbury et al. 2018) + Flax (Heek et al. 2020); step times measured on TPUv3",
+      "batch": "held at 2^17 tokens per batch across context lengths: context 512 -> batch 256 documents, context 2048 -> batch 64 documents",
+      "derived_token_count": "DERIVED BY THIS NOTE, not stated in the paper: 2^17 x 500,000 = 65,536,000,000 = 65.536B tokens per 500K-step run. The paper never states a token count.",
+      "source": "Sec. 4.2, lines 483-492, 496-498"
+    },
+    "datasets": [
+      {
+        "name": "arXiv Math",
+        "provenance": "AUTHOR-CONSTRUCTED. Papers downloaded via arXiv Bulk Data Access, filtered to articles labelled 'Mathematics' with LaTeX source available. 'The number of tokens per paper in this dataset is roughly comparable to the number of tokens per book in PG19, because LATEX source has many special characters and the tokenizer tends to output small subwords.' Length histogram truncated at 500K tokens; maximum paper 'almost 1.6M tokens'.",
+        "source": "Sec. 4.1, lines 332-336; Fig. 9 caption, lines 932-933"
+      },
+      {
+        "name": "Github",
+        "provenance": "AUTHOR-CONSTRUCTED, and constructed in a way that maximises the need for long-range lookup. BigQuery corpus of open-source repositories, filtered by file ending to C, C++, Java, Python (incl. Jupyter notebooks), Go, TypeScript. 'we created one long document for each Github repository by traversing the directory tree, and concatenating all of the files within it. The order in which files are traversed within the repository is random, but each subdirectory is processed as a unit'. Maximum repository 'just over 9M tokens'.",
+        "source": "Sec. 4.1, lines 337-346; Fig. 10 caption, lines 935-936"
+      },
+      {
+        "name": "Isabelle (Formal Math)",
+        "provenance": "AUTHOR-CONSTRUCTED. 'all 627 theories available on The Archive of Formal Proofs (as of October 6, 2021) and an additional 57 theories from the Isabelle standard library to create a corpus of 684 theories'. Files of a theory concatenated into one document, 'ordered according to their import dependencies, so that later files use sub-theorems that are proved in earlier files' -- i.e. the concatenation order is chosen so that the answer always precedes the question.",
+        "source": "Sec. 4.1, lines 347-352, 465-466"
+      },
+      {
+        "name": "C4(4K+)",
+        "provenance": "Public C4 (Raffel et al. 2020), filtered: 'We filtered out all documents that have less than 4096 tokens to focus on documents where memory can have an impact.'",
+        "source": "Sec. 4.1, lines 467-469"
+      },
+      {
+        "name": "PG-19",
+        "provenance": "Public (Rae et al. 2020; Sun et al. 2021). English-language books published prior to 1919 from Project Gutenberg.",
+        "source": "Sec. 4.1, lines 470-473"
+      }
+    ],
+    "metric": "Average token-level perplexity. This is the only quantitative metric in the entire paper. No downstream task, no accuracy, no generation quality measure.",
+    "table_4": {
+      "caption": "Table 4: Average token-level perplexities of each model when trained for 500k steps. (line 464 -- note this caption contradicts Sec. 4.2 line 487-488 for the Isabelle column, which was trained 100K steps)",
+      "columns": "Context (C) | Memory (n_E) | XL cache | arXiv | PG19 | C4(4K+) | GitHub | Isabelle",
+      "source_lines": "367-464",
+      "rows": [
+        {"context": 512, "memory": "None", "xl": "None", "arXiv": 3.29, "PG19": 13.71, "C4_4K": 17.20, "GitHub": 3.05, "Isabelle": 3.09},
+        {"context": 2048, "memory": "None", "xl": "None", "arXiv": 2.69, "PG19": 12.37, "C4_4K": 14.81, "GitHub": 2.22, "Isabelle": 2.39},
+        {"context": 512, "memory": "None", "xl": 512, "arXiv": 2.67, "PG19": 12.34, "C4_4K": 15.38, "GitHub": 2.26, "Isabelle": 2.46},
+        {"context": 2048, "memory": "None", "xl": 2048, "arXiv": 2.42, "PG19": 11.88, "C4_4K": 14.03, "GitHub": 2.10, "Isabelle": 2.16},
+        {"context": 512, "memory": 1536, "xl": "None", "arXiv": 2.61, "PG19": 12.50, "C4_4K": 14.97, "GitHub": 2.20, "Isabelle": 2.33},
+        {"context": 512, "memory": 8192, "xl": "None", "arXiv": 2.49, "PG19": 12.29, "C4_4K": 14.42, "GitHub": 2.09, "Isabelle": 2.19},
+        {"context": 512, "memory": 8192, "xl": 512, "arXiv": 2.37, "PG19": 11.93, "C4_4K": 14.04, "GitHub": 2.03, "Isabelle": 2.08},
+        {"context": 512, "memory": "65K", "xl": 512, "arXiv": 2.31, "PG19": 11.62, "C4_4K": 14.04, "GitHub": 1.87, "Isabelle": 2.06},
+        {"context": 2048, "memory": 8192, "xl": 2048, "arXiv": 2.33, "PG19": 11.84, "C4_4K": 13.80, "GitHub": 1.98, "Isabelle": 2.06},
+        {"context": 2048, "memory": "65K", "xl": 2048, "arXiv": 2.26, "PG19": 11.37, "C4_4K": 13.64, "GitHub": 1.80, "Isabelle": 1.99}
+      ],
+      "column_order_verified_by": "Sec. 4.3 lines 564-565 names four C4(4K+) values -- 17.20, 14.42, 15.38, 14.04 -- which match rows 1, 6, 3, 7 of the C4 column exactly. Column assignment confirmed.",
+      "headline_claims_from_this_table": [
+        {"claim": "'on C4(4K+) dataset, adding memory of size 8192 improves the perplexity of the vanilla Transformer (with context size 512) from 17.20 to 14.42, and improves Transformer-XL from 15.38 to 14.04.'", "source": "Sec. 4.3, lines 564-565"},
+        {"claim": "'The best perplexities for all datasets and architectures were obtained with a memory size of 65K.' -- verified against the table: row 10 (2048/65K/2048) is the minimum in all five columns (2.26, 11.37, 13.64, 1.80, 1.99).", "source": "Sec. 4.3, lines 566-567"},
+        {"claim": "'Transformer-XL with context size 2048 already has a theoretical receptive field that is quite large. Each token in a higher layer can attend up to 2048 tokens away in the layer below, so the total receptive field is 2048 x 12 (layers) ~ 25K. Nevertheless, we still saw a substantial gain when adding an external memory of size 8192 to this model.' (2.42 -> 2.33 on arXiv)", "source": "Sec. 4.3, lines 568-572"},
+        {"claim": "'in a vanilla Transformer, using even a small external memory of size 1536 provides a gain in perplexity which is almost as good as using a local context of size 2048 but no memory'. Checked per dataset: memory-1536 (row 5) beats context-2048 (row 2) on arXiv (2.61 vs 2.69), GitHub (2.20 vs 2.22) and Isabelle (2.33 vs 2.39), but loses on PG19 (12.50 vs 12.37) and C4(4K+) (14.97 vs 14.81). The claim holds in 3 of 5 columns and reverses in 2.", "source": "Sec. 4.3, lines 577-579; per-column check is this note's, against Table 4"},
+        {"claim": "'This is surprising, because the external memory is not differentiable, and is added only to one layer of the Transformer, whereas increasing the context size is differentiable and affects all layers. We conclude that the lower layers of a Transformer don't necessarily need long-range context, and having a differentiable memory is not as important as one might suspect.'", "source": "Sec. 4.3, lines 579-582"}
+      ]
+    },
+    "table_5": {
+      "caption": "Table 5: Finetuning for 20K steps to make use of a larger memory on the arXiv data set. (line 562)",
+      "columns": "Context | Pretrain (n_E) | Fine-tune (n_E) | Perplexity",
+      "source_lines": "510-561",
+      "rows": [
+        {"context": 512, "pretrain": 8192, "finetune": "None", "ppl": 2.37},
+        {"context": 512, "pretrain": "65K", "finetune": "None", "ppl": 2.31},
+        {"context": 512, "pretrain": 8192, "finetune": "65K", "ppl": 2.32},
+        {"context": 512, "pretrain": 8192, "finetune": "131K", "ppl": 2.30},
+        {"context": 512, "pretrain": 8192, "finetune": "262K", "ppl": 2.26},
+        {"context": 2048, "pretrain": 8192, "finetune": "None", "ppl": 2.33},
+        {"context": 2048, "pretrain": "65K", "finetune": "None", "ppl": 2.26},
+        {"context": 2048, "pretrain": "65K", "finetune": "131K", "ppl": 2.23},
+        {"context": 2048, "pretrain": "65K", "finetune": "262K", "ppl": 2.21}
+      ],
+      "cross_check_by_this_note": "The four no-finetune rows of Table 5 (2.37, 2.31, 2.33, 2.26) reproduce exactly the four corresponding XL-cache rows of Table 4 (rows 7, 8, 9, 10, arXiv column). Table 5's configurations therefore carry an XL cache equal to the context size, which the table itself does not say.",
+      "headline_claims": [
+        {"claim": "'for memories of 131K or more tokens, we first pretrain the model with a memory size of 8192 or 65K for 500K steps, and then finetune it with the larger memory for an additional 20K steps'", "source": "Sec. 4.5, lines 600-602"},
+        {"claim": "'Increasing the size of external memory provided consistent gains up to a size of 262K. Note that 262K tokens is longer than almost all of the documents in arXiv, and thus we would not expect to see any gain past this point'", "source": "Sec. 4.5, lines 603-605"}
+      ],
+      "internal_tension": "At context 512, training directly with 65K (2.31) is slightly better than pretraining at 8192 and finetuning to 65K (2.32) -- the opposite direction from the instability story of Sec. 3.2 lines 302-304, in the only place where the two protocols are compared at the same memory size."
+    },
+    "scaling_result": {
+      "setup": "context 2048, memory 8192, no XL cache, arXiv Math only; model sizes 200M / 1B / 8B",
+      "claim": "'External memory provides a consistent improvement to the model as it is scaled up. Remarkably, we found that the smaller Memorizing Transformer with just 8k tokens in memory can match the perplexity of a larger vanilla Transformer which has 5X more trainable parameters.'",
+      "restated_in_conclusion": "'it is comparable to a vanilla transformer that has 5 times the number of parameters' (lines 743-744)",
+      "evidence": "Figure 1 only (lines 55-77, y-axis 'Perplexity (arXiv Math)' spanning 1.8 to 2.8, x-axis ticks 200M / 1B / 8B). No table of the 1B or 8B perplexities appears anywhere in the paper.",
+      "source": "Sec. 4.4, lines 585-594; Fig. 1 caption line 77 ('Adding a memory of 8K tokens improves perplexity across different model sizes'); Sec. 1 lines 88-91; Sec. 5 lines 742-744"
+    },
+    "finetune_a_memoryless_model": {
+      "setup": "a pre-trained 1B vanilla Transformer, finetuned to use external memory of size 65K",
+      "result": "'Within 20K steps (4% of the pre-training time) the fine-tuned model has already closed 85% of the gap between it and the 1B Memorizing Transformer, and after 100k steps it has closed the gap entirely.'",
+      "evidence": "Figure 6 only (lines 610-627, x-axis 0 / 300K / 500K / 600K training steps). No numbers tabulated.",
+      "source": "Sec. 4.5, lines 628-635"
+    },
+    "information_retrieval_study": {
+      "delta_loss_analysis": {
+        "setup": "one randomly chosen arXiv math paper, 22K tokens long; Delta_i = cross-entropy_8192(x_i) - cross-entropy_32K(x_i), positive = larger memory helped",
+        "findings": [
+          "'For the first 8192 tokens, the difference between the two models is zero, since the larger capacity of the 32K memory isn't being used yet.' (lines 653-655)",
+          "'The benefit is not universal, since the predictions for some tokens become worse, possibly due to the fact that a relevant retrieved memory no longer makes it into the top-k when the size of the external memory is increased.' (lines 655-658)",
+          "'the benefit of external memory is somewhat sparse. The improvement in perplexity seems to be mainly driven by a small percentage of tokens that obtain a large improvement in cross-entropy loss when using the larger memory.' (lines 658-660)",
+          "'we found that the model gained the most when looking up rare words, such as proper names, references, citations, and function names, where the first use of a name is too far away from subsequent uses to fit in the local context.' (lines 643-645)"
+        ],
+        "architecture_caveat": "'For this experiment, we used a slightly older version of the architecture without the gating mechanism.' (line 647) -- a different model from the one in Table 4.",
+        "source": "Sec. 4.6, lines 640-660; Fig. 7 caption lines 671-673"
+      },
+      "isabelle_case_study": {
+        "result": "'We manually checked 10 examples where the model made a prediction of lemma names, and 8 out of 10 times model found the body of the lemma it needs to predict. In the other two cases, the model also looked up materials in the immediate vicinity.'",
+        "claim": "'To the best of our knowledge, this is the first demonstration that attention is capable of looking up definitions and function bodies from a large corpus.'",
+        "config_caveat": "'The Isabelle case study used a model with two memory layers of size 32K.' (lines 730-731) -- again a different configuration from Table 4, and one that App. A.1 says brings no benefit (lines 955-956).",
+        "n": "10 hand-checked examples",
+        "source": "Sec. 4.6 Retrieving mathematical definitions, lines 720-731; Table 8 examples lines 674-718; App. B lines 1014-1206"
+      }
+    },
+    "ablations_appendix_A1": {
+      "shared_setup": "'Unless otherwise specified, we carried out these experiments with a memorizing transformer with context size 512, XL cache 512 with a memory size of 8192.' Dataset not named in App. A.1; the perplexity range (2.36-2.43) matches the arXiv column of Table 4.",
+      "source": "App. A.1, lines 949-1008",
+      "multiple_knn_layers": {
+        "result": "'We experimented with using two kNN layers, rather than just one. However, we did not see further benefits brought by more than multiple retrieval layers.'",
+        "numbers": "none reported",
+        "source": "lines 955-956"
+      },
+      "layer_index": {
+        "table": "Table 14 (lines 961-975)",
+        "results": [{"layer": 3, "ppl": 2.40}, {"layer": 6, "ppl": 2.36}, {"layer": 9, "ppl": 2.37}, {"layer": 12, "ppl": 2.43}],
+        "authors_reading": "'We found that adding memory to the middle of the layer stack will obtain the best result, whereas adding memory to layers either too close to the input or to the output obtained less gains.' (lines 958-960)",
+        "note_by_this_note": "The best value in the sweep is layer 6 (2.36), but layer 9 (2.37) is the default used everywhere else in the paper (Sec. 4.2 line 480). The whole spread is 2.36-2.43, i.e. 0.07 perplexity, against a seed standard deviation of 0.005 for this model (Table 16)."
+      },
+      "number_of_neighbours": {
+        "table": "Table 15 (lines 980-992)",
+        "results": [{"k_nn": 32, "ppl": 2.38}, {"k_nn": 128, "ppl": 2.37}, {"k_nn": 256, "ppl": 2.37}],
+        "authors_reading": "'We found that even with 32 number of neighbors, we can already obtain a comparable results with 128 or 256 neighbors.' (lines 977-979)",
+        "note_by_this_note": "Table 15's k_nn = 32 row reports 2.38 for the configuration Table 4 reports as 2.37 (row 7, arXiv). Unreconciled 0.01 gap, about 2 sigma given Table 16's +/- 0.005."
+      },
+      "random_seeds": {
+        "table": "Table 16 (lines 999-1008)",
+        "results": [{"model": "Transformer XL", "ppl": "2.67 +/- 0.01"}, {"model": "Memorizing Transformer", "ppl": "2.37 +/- 0.005"}],
+        "protocol": "3 runs with 3 random seeds each, standard deviation of perplexity after 500K training steps",
+        "authors_reading": "'We saw the standard deviation between different runs of the same experiment appears to be much smaller than the gap between different models.' (lines 997-998)",
+        "note_by_this_note": "This is the paper's only variance estimate and it covers exactly two configurations (Transformer-XL 512 and Memorizing Transformer with memory 8192). No error bars appear on any other number in the paper, including Fig. 1 and Fig. 6."
+      }
+    },
+    "approximate_knn_quality": {
+      "recall": "'a recall of about 90%, i.e. 90% of the true top k are returned in the approximate top k'",
+      "robustness_claim": "'We experimented with multiple implementations of approximate kNN lookup with different tradeoffs between quality and computational cost. We did not observe a significant degradation of the model quality when switching to lower quality approximations of kNN, so the model appears to be quite robust with respect to the quality of kNN retrieval.' -- no numbers given, no implementations named, no recall levels compared.",
+      "source": "Sec. 3.3, lines 311-315; Sec. 4.2, lines 493-495"
+    }
+  },
+
+  "scale_ceiling": {
+    "largest_model": "8B parameters (64 heads, 16 layers, d_model 4096, d_ff 32768), but only on arXiv Math, only at memory 8192, only at context 2048, only without XL cache, and only as a point in Figure 1 -- no perplexity for the 8B model is written down anywhere in the paper. [Sec. 4.4, lines 587-591; Fig. 1, lines 55-77]",
+    "largest_state": "n_E = 262,144 (key, value) pairs per head per document, at 8 heads at one layer, reached only by finetuning for 20K steps on top of a 500K-step pretrain, and only on arXiv. Best value 2.21 at context 2048 pretrained at 65K. [Table 5, lines 510-561]. The paper itself marks this as the natural ceiling: '262K tokens is longer than almost all of the documents in arXiv, and thus we would not expect to see any gain past this point' [lines 604-605].",
+    "largest_training_run": "500K steps at 2^17 tokens per batch on 32 TPU cores = 65.536B tokens (token count DERIVED by this note; the paper states only steps and batch size). Isabelle was trained for 100K steps only, because of overfitting. [Sec. 4.2, lines 486-492]",
+    "largest_document": "Github repository of 'just over 9M tokens' [Fig. 10 caption, line 936]; arXiv paper of 'almost 1.6M tokens' [Fig. 9 caption, line 933]. These are corpus statistics, not evaluated context lengths -- the model still only ever sees 512 or 2048 tokens at a time with at most 262K in E.",
+    "evaluation_ceiling": "Perplexity on five language-modelling corpora, plus a 10-example hand-checked retrieval study on Isabelle. There is no downstream task anywhere: no QA, no summarisation, no code completion pass@k, no instruction following, no long-context benchmark. The strongest capability claim in the paper -- 'the model is capable of making use of newly defined functions and theorems during test time' (Abstract, lines 20-21) -- rests on that 8-out-of-10 manual inspection.",
+    "baseline_ceiling": "The only baselines are the authors' own vanilla Transformer and Transformer-XL, at the same 12-layer/1024-width configuration. No retrieval baseline is run: kNN-LM (Khandelwal et al. 2020), Compressive Transformer (Rae et al. 2020), REALM, RAG, Routing Transformer, Big Bird and the rest are discussed in Sec. 2 (lines 93-205) and never reproduced.",
+    "deployment_gap": "Serving is entirely out of scope. Every measurement is a training measurement; the paper contains no inference latency, no throughput, no memory footprint in bytes, no batching study at serving time, and no multi-user or multi-session scenario. The store is per document and cleared at document boundaries, so nothing in the paper speaks to a store that persists across sessions -- which is exactly what the later E-path assumes.",
+    "temporal_ceiling": "March 2022. The corpus, the tokenizer (32K sentencepiece), the model scale and the hardware (TPUv3) are all pre-LLM-era; the largest model is smaller than any model in the later E-path papers of this corpus, all of which use frozen API models of unknown but far larger size."
+  },
+
+  "concept_ledger_delta": {
+    "new_concepts_introduced": [
+      "kNN-augmented attention layer -- a single transformer layer that runs both dense local self-attention and approximate top-k_nn retrieval into an external store, combined by a learned gate [Sec. 3.1, lines 243-277]",
+      "non-differentiable external memory of internal (key, value) representations, written by verbatim append of the current chunk's activations [Sec. 3.1, lines 251-255]",
+      "the non-differentiability argument for scalability: because no gradient flows into E, keys and values computed under earlier parameters can be reused instead of recomputed every step [Sec. 1, lines 48-52]",
+      "staleness / distributional shift of stored keys, and key-query normalisation as its mitigation [Sec. 3.2, lines 290-306]",
+      "per-head learned scalar gate b_g between local and long-range attention, with the observation that most heads converge to memory [Eq. (1)-(2), lines 264-277]",
+      "memory-size generalisation -- train with a small n_E, deploy with a large one, optionally with 20K steps of finetuning [Sec. 1 lines 82-84; Sec. 4.5, Table 5]",
+      "retrofitting memory onto an existing memory-free checkpoint as a cheap finetune [Sec. 4.5, lines 628-635]",
+      "clearability of E as a privacy property, contrasted explicitly against Theta [Ethics, lines 763-769]",
+      "the per-token Delta cross-entropy diagnostic for locating where memory helps [Sec. 4.6, lines 648-660; Fig. 7]"
+    ],
+    "extended_or_renamed": [
+      "'external memory' -- inherited from the neural-cache / Transformer-XL / memory-network line, but narrowed here to a per-head, per-document store of raw attention keys and values. In the v2 frame this is E, and the monograph must carry the standing qualifier 'representation-level E' to keep it distinct from the text-level E of MemGPT/Mem0/Letta.",
+      "'attention' -> 'information retrieval'. The paper's rhetorical move is to identify the two: 'attention acts as a form of information retrieval' (line 39), 'a simple model that unifies attention and retrieval' (line 202). This identification is what licenses the whole E-path argument at representation level.",
+      "'memory size' is redefined from bytes to tokens/pairs. Every capacity statement in this paper and in its descendants inherits this unit choice, which is exactly why the corpus has no byte numbers.",
+      "Transformer-XL's cache is re-cast as the *short-range complement* of E rather than a competitor: 'The XL cache provides additional local short-range context at the start of a sequence, which complements the long-range context provided by external memory.' (lines 575-576)"
+    ],
+    "contested_or_retired": [
+      "The necessity of differentiable memory. Retired explicitly: 'having a differentiable memory is not as important as one might suspect' (lines 581-582).",
+      "The necessity of compressing the carried state, as in Compressive Transformer (Rae et al. 2020). Retired by construction: 'In contrast, we use a very large cache without compression, combined with an approximate kNN attention mechanism over it.' (lines 183-184). The rate-distortion paper in this corpus later re-contests exactly this point.",
+      "The assumption that all layers need long-range context. Contested from one observation: a memory at one layer nearly matches a 4x longer differentiable context at all layers (Table 4, rows 2 and 5).",
+      "The assumption that acquiring knowledge requires moving Theta. Contested in the paper's first two sentences, without citing anyone who holds that assumption."
+    ],
+    "concepts_conspicuously_absent": [
+      "sleep, consolidation, replay, catastrophic forgetting, continual learning -- zero occurrences in the whole document (verified by case-insensitive grep: 'sleep' 0, 'consolidat' 0, 'replay' 0, 'catastrophic' 0, 'continual' 0)",
+      "fast weights, Hebbian update, meta-learning, inner loop -- zero occurrences ('fast weight' 0, 'hebbian' 0, 'meta-learn' 0)",
+      "LoRA, adapter, PEFT, model editing -- zero occurrences ('adapter' 0, 'editing' 0; the single 'lora' substring hit is inside the word 'Exploration' in a bibliography entry, line 900)",
+      "any budget, amortisation, or cost-per-query vocabulary. The word 'amortiz/amortis' does not appear."
+    ]
+  },
+
+  "open_questions": [
+    {
+      "question": "What should a huge external memory actually be filled with? The paper stops at 'the same document' and hands the general case to future work.",
+      "source": "Sec. 5 Conclusion, lines 749-751: 'Unlike other forms of attention, kNN retrieval can be easily scaled up to huge memory sizes, and is thus potentially able to leverage vast knowledge bases or code repositories. How to make the best use of this capability is a topic for future work.'",
+      "who_takes_it_up": "Nobody in the E-path of this corpus takes it up at representation level. The agent-memory line answers the same question in text space (MemGPT, Mem0, ReasoningBank) without citing this paper."
+    },
+    {
+      "question": "Should the read gate be content-dependent? The paper names the extension and does not run it.",
+      "source": "Sec. 3.1, lines 275-276: 'In our experiments, the value of the gate g does not depend on the content of the token at each position, although that would be a trivial extension to implement.'"
+    },
+    {
+      "question": "Is staleness actually the cause of the large-memory training instability, and what is its rate? Normalisation mitigates but does not eliminate it, and the causal claim is left hedged.",
+      "source": "Sec. 3.2, lines 299-306: 'Normalization does not eliminate staleness, but it at least ensures that older keys and newer keys do not differ in magnitude. ... This training instability could be due to staleness. However, models seem to be able to cope with a limited degree of staleness (with the small memory) by adjusting their queries accordingly.'"
+    },
+    {
+      "question": "Where exactly is the point of diminishing returns in n_E, and is it set by document length or by retrieval interference?",
+      "source": "Sec. 5, lines 744-745 ('Perplexity continues to improve with increasing memory size, although there is a point of diminishing returns'); Sec. 4.5 lines 604-605 attributes the arXiv ceiling to document length, while Sec. 4.6 lines 655-658 attributes per-token regressions to top-k crowding. The two explanations are never reconciled."
+    },
+    {
+      "question": "Why do the lower layers not need long-range context? Asserted as a conclusion from one comparison, not investigated.",
+      "source": "Sec. 4.3, lines 581-582: 'We conclude that the lower layers of a Transformer don't necessarily need long-range context, and having a differentiable memory is not as important as one might suspect.'"
+    },
+    {
+      "question": "Should deletability of knowledge be an architectural requirement? The Ethics section poses the E-vs-Theta asymmetry that the entire Theta-path must later answer, and answers it only for itself.",
+      "source": "Ethics, lines 763-769: 'one advantage of using an external memory is that the memory can be easily cleared of all such information, as we do at the end of each document that we train on. The same is not true of differentiable model parameters, which is what most existing architectures use to store facts and information that they are trained on.'",
+      "bridge_out": "This is the sharpest bridge-out in the paper for the monograph's Part III: it is a 2022 statement of the exact objection that Theta-path sleep-time compute has to survive."
+    },
+    {
+      "question": "Can this be composed with weight-level knowledge acquisition at all? Never asked. The paper sets E against Theta as alternatives and never contemplates running both.",
+      "source": "Abstract lines 10-13 frames them as alternatives; no composition experiment or discussion appears anywhere.",
+      "bridge_out": "Every hybrid in the later corpus (learned context feeding a Theta update, W folded from E) is an untaken option here."
+    }
+  ],
+
+  "unfavorable_facts": [
+    {
+      "fact": "Perplexity is the only quantitative metric in the paper. There is no downstream task of any kind -- no QA, no code completion, no summarisation, no long-context benchmark. The abstract's capability claim ('the model is capable of making use of newly defined functions and theorems during test time') is supported by a manual inspection of 10 examples, 8 of which the authors judged successful.",
+      "source": "Sec. 4 throughout; Abstract lines 20-21; Sec. 4.6 lines 726-728"
+    },
+    {
+      "fact": "The headline scaling claim -- memory worth 5X the parameters -- has no table behind it. No perplexity value for the 1B or 8B model is written down anywhere in the paper. It rests entirely on Figure 1, on one dataset (arXiv Math), at one memory size (8192), one context (2048), no XL cache, and with no error bars.",
+      "source": "Sec. 4.4 lines 585-594; Fig. 1 lines 55-77; restated in Sec. 1 lines 88-91 and Sec. 5 lines 742-744"
+    },
+    {
+      "fact": "Both qualitative studies use architectures that differ from the one all the quantitative results come from. The per-token Delta-loss analysis 'used a slightly older version of the architecture without the gating mechanism'; the Isabelle definition-retrieval case study 'used a model with two memory layers of size 32K' -- while the ablation section reports that two kNN layers give no benefit. Neither configuration appears in Table 4 or Table 5.",
+      "source": "Sec. 4.6 line 647; Sec. 4.6 lines 730-731; App. A.1 lines 955-956"
+    },
+    {
+      "fact": "The layer placement used throughout the paper is not the best one in the paper's own ablation. Layer 9 is the stated default and scores 2.37; layer 6 scores 2.36. The full sweep spans only 2.36-2.43, against a seed standard deviation of 0.005 for this model -- so the ablation resolves a 0.07 effect with a single run per point.",
+      "source": "Sec. 4.2 line 480 (default = layer 9); App. A.1 Table 14 lines 961-975; Table 16 lines 999-1008"
+    },
+    {
+      "fact": "Every ablation is run at one point in configuration space: context 512, XL cache 512, memory 8192, ~200M parameters, one dataset. No ablation is repeated at 65K memory, at context 2048, or at 1B/8B. The neighbour-count, layer-index and multi-layer conclusions are therefore single-configuration evidence.",
+      "source": "App. A.1, lines 953-954"
+    },
+    {
+      "fact": "The 'a small memory is almost as good as 4x the context' claim reverses on two of five datasets. Memory 1536 at context 512 beats context 2048 on arXiv (2.61 vs 2.69), GitHub (2.20 vs 2.22) and Isabelle (2.33 vs 2.39), but loses on PG19 (12.50 vs 12.37) and C4(4K+) (14.97 vs 14.81). The claim is stated without the per-dataset breakdown.",
+      "source": "Sec. 4.3 lines 577-579 vs Table 4 rows 2 and 5 (lines 367-464)"
+    },
+    {
+      "fact": "The staleness / instability story has no experiment behind it. It is hedged in every statement ('In some of our experiments', 'sometimes resulted in worse performance', 'could be due to staleness', 'In some cases, training was unstable', 'possibly due to distributional shift'), no unstable run is plotted or tabulated, and in the one place where the two protocols are compared at equal memory, direct training at 65K (2.31) slightly beats pretrain-8192-then-finetune-65K (2.32).",
+      "source": "Sec. 3.2 lines 302-306; Sec. 4.5 lines 599-601; Table 5 rows 2 and 3 (context 512)"
+    },
+    {
+      "fact": "Three of the five corpora are built by the authors, and two of them are built by concatenation procedures that manufacture the long-range dependency being measured. The Github corpus concatenates an entire repository into one document by random directory traversal; the Isabelle corpus concatenates theory files 'according to their import dependencies, so that later files use sub-theorems that are proved in earlier files' -- i.e. the definition is guaranteed to precede the reference. The largest reported gains (GitHub 3.05 -> 1.80, Isabelle 3.09 -> 1.99) are on exactly these two constructed corpora.",
+      "source": "Sec. 4.1 lines 337-352, 465-466; Table 4"
+    },
+    {
+      "fact": "Table 4's caption says all models were 'trained for 500k steps', but Sec. 4.2 says Isabelle training was stopped at 100K steps because the model began to overfit. One of the five columns is therefore trained under a different protocol than the caption states.",
+      "source": "Table 4 caption line 464 vs Sec. 4.2 lines 486-488"
+    },
+    {
+      "fact": "Table 15 reports 2.38 for k_nn = 32 on the configuration Table 4 reports as 2.37. Given Table 16's +/- 0.005 seed spread for this exact model, the 0.01 gap is about 2 sigma and is never reconciled or mentioned.",
+      "source": "App. A.1 Table 15 lines 980-992 vs Table 4 row 7 arXiv column"
+    },
+    {
+      "fact": "No retrieval baseline is ever run. kNN-LM (Khandelwal et al. 2020), Compressive Transformer (Rae et al. 2020), RETRO-class retrieval, Routing Transformer, Reformer, Big Bird, Expire-span and Yogatama et al. 2021 are all discussed in Related Work and none is reproduced. The only baselines are the authors' own vanilla Transformer and Transformer-XL at the same configuration, so every reported gain is measured against the authors' own code only.",
+      "source": "Sec. 2 lines 93-205; Table 4 rows 1-4"
+    },
+    {
+      "fact": "The scalability of the kNN search itself -- the paper's central efficiency argument -- is asserted by citation, not measured. ScaNN and Faiss are named as evidence that lookup 'can scale into the billions'; no index build time, no query latency, no FLOP count, no memory-bandwidth figure for the search or the gather appears. The one wall-clock number (0.2 -> 0.25 -> 0.6 s step time) shows a 3x step-time increase at 65K memory and is reported for the ~200M model only.",
+      "source": "Sec. 1 lines 42-44; Sec. 3.3 lines 311-315; Sec. 4.2 lines 493-498"
+    },
+    {
+      "fact": "Approximate retrieval is run at ~90% recall throughout, and the claim that quality is robust to worse approximations is given with no numbers, no named implementations and no recall levels. Every headline perplexity therefore carries an unmeasured retrieval-quality confound.",
+      "source": "Sec. 3.3 line 313; Sec. 4.2 lines 493-495"
+    },
+    {
+      "fact": "Larger memory makes some tokens worse, and the paper's own explanation is unverified. 'The benefit is not universal, since the predictions for some tokens become worse, possibly due to the fact that a relevant retrieved memory no longer makes it into the top-k when the size of the external memory is increased.' The competing explanation -- FIFO eviction -- is never separated from top-k crowding, because eviction is never ablated anywhere in the paper.",
+      "source": "Sec. 4.6 lines 655-658; Sec. 3.1 lines 253-254 (eviction policy stated, never studied)"
+    },
+    {
+      "fact": "The benefit is sparse and concentrated. 'the benefit of external memory is somewhat sparse. The improvement in perplexity seems to be mainly driven by a small percentage of tokens that obtain a large improvement in cross-entropy loss.' Averaged perplexity therefore hides the shape of the win, and the fraction of tokens involved is never quantified.",
+      "source": "Sec. 4.6 lines 658-660; Fig. 7"
+    },
+    {
+      "fact": "Capacity is never converted to bytes or to a device footprint, even though the paper's own design multiplies it out four ways: per head (8), per document, per batch element (256 documents at context 512), at one layer. The interaction between batch size and memory size -- which is the whole serving question -- is stated as an architectural fact and never costed.",
+      "source": "Sec. 3.1 lines 253-255, 283-285; Sec. 4.2 lines 490-492; absence of any bytes figure in the paper"
+    },
+    {
+      "fact": "Corpus-external, but load-bearing for Part III: the one later paper in this corpus that engages this mechanism analytically rejects its compression claim. 'The shared caveat, in the formalism's terms, is that these methods sparsify retrieval but not storage. The full KV still lives somewhere, so the true rate(Z) is unchanged and the compression is of compute, not memory.' Attribution: Colaco et al., 'What to Keep, What to Forget: A Rate-Distortion View of Memory Compaction in LLMs and Agents', papers/stc/2607.08032.txt lines 1032-1036, where Memorizing Transformers is classified as reference [121] and grouped under the reversible-loss (P-rev) strand at lines 1022-1027.",
+      "source": "papers/stc/2607.08032.txt, lines 1022-1036 (not a statement of 2203.08913 itself -- attribute it correctly in the chapter)"
+    }
+  ],
+
+  "cross_path_citations": {
+    "verdict": "One-way engagement with the E-path's retrieval ancestry, and total silence toward the W-path and the Theta-path. The bibliography (lines 778-923) is a long-range-attention bibliography with a retrieval annex. Verified by case-insensitive grep over the full text: 'fast weight' 0, 'hebbian' 0, 'meta-learn' 0, 'catastrophic' 0, 'continual' 0, 'consolidat' 0, 'sleep' 0, 'replay' 0, 'adapter' 0, 'editing' 0 occurrences. The single 'lora' substring match is inside 'Exploration' in a bibliography title (line 900).",
+    "E_path": {
+      "engagement": "yes, with the pre-agentic retrieval line",
+      "cited": "kNN-LM (Khandelwal et al. 2020) [lines 192-195], Yogatama et al. 2021 adaptive semiparametric LMs [lines 195-196], REALM (Guu et al. 2020), MARGE (Lewis et al. 2020a), RAG (Lewis et al. 2020b), kNN composite memory for dialog (Fan et al. 2021) [lines 197-199], large memory layers with product keys (Lample et al. 2019) and persistent memory (Sukhbaatar et al. 2019) [lines 185-190], Faiss (Johnson et al. 2021) and ScaNN (Guo et al. 2020) [lines 203-205]",
+      "how_it_positions_itself": "'The knowledge base consists of text snippets and is static and typically separate from the inputs and outputs of the models. Instead, we focus on language modeling using a decoder-only model, and propose a simple model that unifies attention and retrieval.' [lines 200-202]",
+      "downstream": "The agentic E-path does NOT cite back. Corpus-wide grep for 'Memorizing Transformer' returns hits in only two files besides the paper itself: papers/stc/2607.05969.txt (MemDefrag, cites it in passing for 'the key-value (KV) cache as a form of latent storage', line 1615) and papers/stc/2607.08032.txt (the rate-distortion paper, which engages it substantively at lines 1022-1036). MemGPT (2310.08560), Mem0 (2504.19413), Zep (2501.13956), ReasoningBank (2509.25140) and Letta STC do not cite it at all."
+    },
+    "W_path": {
+      "engagement": "none, and the near-miss is worth reporting",
+      "detail": "No fast-weight, Hebbian, meta-learning or test-time-training reference appears. The closest neighbours cited are recurrence and cache papers, which are not W in this monograph's sense: truncated BPTT (Williams & Peng 1990) [lines 113-117, 907-908], neural caches (Grave et al. 2017) [lines 117-118], Transformer-XL (Dai et al. 2019) [lines 118-120], Compressive Transformer (Rae et al. 2020) [lines 121-122], Feedback Transformers (Fan et al. 2020) [lines 110-112], Expire-span (Sukhbaatar et al. 2021) [line 107].",
+      "chronology_caveat": "The W-path papers of this corpus all post-date March 2022, so their absence is chronologically forced and must not be reported as a choice. What IS elective is the absence of the pre-2022 fast-weight literature.",
+      "near_miss": "The acknowledgments thank 'Imanol Schlag for his proofread and detailed comments' [line 756]. Annotation by this note, not a claim of the paper: Schlag is an author of the fast-weight-programmer line that would have connected this work to the W-path. The fast-weights community is in the acknowledgments and absent from the bibliography."
+    },
+    "Theta_path": {
+      "engagement": "none, and this is elective",
+      "detail": "The paper's opening sentence defines its contribution against weight updating -- 'Language models typically need to be trained or finetuned in order to acquire new knowledge, which involves updating their weights' [lines 10-11] -- and cites nobody for that claim. There is no PEFT, adapter, LoRA (available since June 2021), model-editing, continual-learning, catastrophic-forgetting, EWC or replay reference in the bibliography. The Ethics section restates the contrast a second time -- 'The same is not true of differentiable model parameters, which is what most existing architectures use to store facts' [lines 767-769] -- again with no citation.",
+      "monograph_consequence": "The E-path opens by taking a position on the Theta-path without reading it, and the Theta-path papers of this corpus do not cite this one back. Report the break in both directions."
+    },
+    "bio_CLS": {
+      "engagement": "none",
+      "detail": "No McClelland, no complementary learning systems, no consolidation, no biological memory reference of any kind. This is the corpus's clearest example of a paper that builds a two-timescale memory system (slow weights + fast external store) in the complete absence of the CLS vocabulary that the rest of the corpus uses to motivate exactly that design."
+    },
+    "what_it_is_a_bibliography_of": "Efficient/long-range attention. Tay et al. surveys [line 97], Longformer, Linformer, Performer, H-transformer-1d, Combiner, Big Bird, Routing Transformer, Reformer, ETC, ReadTwice, Expire-span, Transformer-XL, Compressive Transformer, Feedback Transformers [Sec. 2 lines 97-122], plus the retrieval annex above, plus infrastructure (JAX, Flax, Adafactor, sentencepiece, T5) and application papers (theorem proving, program synthesis). [lines 778-923]"
+  },
+
+  "figures": [
+    {
+      "id": "Figure 1",
+      "line_range": "55-77",
+      "why": "Reproduce it, and reproduce the caveat with it. Perplexity on arXiv Math versus model size (200M / 1B / 8B) for Transformer vs Memorizing Transformer with 8K memory. It is the sole evidence for the paper's most-quoted claim (memory worth 5X parameters) and the paper publishes no table behind it."
+    },
+    {
+      "id": "Figure 2",
+      "line_range": "126-182",
+      "why": "The architecture, and the one figure the monograph's Sec. N.3 needs: a single kNN-augmented layer near the top of the stack, the external memory of cached (key, value) pairs alongside it, and the annotation 'Will be added to external memory after the current training step' -- the write path drawn as a by-product of the read path."
+    },
+    {
+      "id": "Figure 3",
+      "line_range": "225-238",
+      "why": "The data pipeline: documents split into subsequences, one document per batch row. This is the figure that makes the serving consequence visible -- each batch row needs its own external memory, so capacity multiplies by batch size."
+    },
+    {
+      "id": "Figure 6",
+      "line_range": "610-627",
+      "why": "Retrofit curve: a pre-trained 1B memory-free Transformer finetuned to use 65K memory closes 85% of the gap in 20K steps and all of it by 100K. The E-path's cheapest-adoption argument in one plot."
+    },
+    {
+      "id": "Figure 7",
+      "line_range": "671-673",
+      "why": "Per-token Delta cross-entropy on a 22K-token paper, 8K memory vs 32K memory. Shows three things at once: the flat zero before token 8192, the sparsity of the benefit, and that some tokens get worse with more memory. The honest picture of what an averaged perplexity gain is made of."
+    },
+    {
+      "id": "Table 4",
+      "line_range": "367-464",
+      "why": "The main result grid: 10 configurations x 5 datasets. The monograph should reproduce it whole, because the interesting reversals (memory-1536 vs context-2048) are only visible column by column."
+    },
+    {
+      "id": "Table 5",
+      "line_range": "510-561",
+      "why": "The memory-size scaling ladder up to 262K via 20K-step finetuning, and the one place where train-at-65K and pretrain-then-finetune-to-65K can be compared."
+    },
+    {
+      "id": "Table 8",
+      "line_range": "674-718",
+      "why": "Three Isabelle retrieval traces showing a lemma reference retrieving its own definition body from tens of thousands of tokens earlier. The qualitative core of the paper's capability claim -- print it with the n=10, 8/10 caveat attached."
+    },
+    {
+      "id": "Figures 9-13",
+      "line_range": "928-943",
+      "why": "Document-length histograms for all five corpora (arXiv max ~1.6M tokens, Github max just over 9M). These ground the 'no gain expected past 262K' argument and are the only place in the whole corpus where the length distribution that N_q would be drawn from is actually published."
+    },
+    {
+      "id": "Table 14 / Table 15 / Table 16",
+      "line_range": "961-1008",
+      "why": "Optional, as a single compact box: layer index (2.36-2.43), neighbour count (2.37-2.38), and the only variance estimate in the paper (XL 2.67 +/- 0.01, Memorizing 2.37 +/- 0.005). Together they show how narrow the ablated region is."
+    }
+  ],
+
+  "systems_implications": {
+    "grounded_in_paper": [
+      {
+        "claim": "A 65K-pair memory triples the training step time at ~200M parameters; an 8K memory costs +25%.",
+        "ground": "Sec. 4.2, lines 496-498: 'the step time increased from 0.2s to 0.25s when we added a memory of size 8K, and to 0.6s when we added a memory of size 65K (measured on TPUv3).' Note this is a training step at 2^17 tokens per batch on 32 TPU cores, not a decode step."
+      },
+      {
+        "claim": "The retrieved K and V are not shared across the queries of a sequence. Each query gets its own k_nn = 32 pairs.",
+        "ground": "Sec. 3.1, lines 260-261: 'Unlike standard dense attention, the retrieved memories contain a different set of (key, value) pairs for each query.'"
+      },
+      {
+        "claim": "State is per head, per document, per batch element, at one layer, and is destroyed at document boundaries.",
+        "ground": "Sec. 3.1, lines 254-255 ('for each head, the external memory keeps a cache of the prior M (key, value) pairs') and lines 284-285 ('Each subsequence in the batch comes from a different document, and thus requires a separate external memory, which is cleared at the start of each new document'); Sec. 4.2 line 480 (one kNN layer)."
+      },
+      {
+        "claim": "The write costs nothing beyond the store: it appends tensors the forward pass already produced.",
+        "ground": "Sec. 3.1, lines 251-253; Sec. 1, lines 50-52 ('if the external memory is not differentiable, then we can instead reuse keys and values that were previously computed on prior training steps, which drastically reduces the amount of computation for large memories')."
+      },
+      {
+        "claim": "Capacity is a deploy-time knob. A model trained with a small memory gains from a larger one at inference, with or without a short finetune.",
+        "ground": "Sec. 1, lines 82-84 ('models trained with a small memory show gains from using a much larger memory at inference time'); Table 5 (lines 510-561)."
+      },
+      {
+        "claim": "Retrieval quality is not a tight constraint: ~90% recall is enough, and the authors report no significant degradation from worse approximations.",
+        "ground": "Sec. 3.3, lines 311-313; Sec. 4.2, lines 493-495 (qualitative only)."
+      },
+      {
+        "claim": "Per-user/per-document state is deletable in O(1), and the paper offers this as the architectural argument against storing knowledge in weights.",
+        "ground": "Ethics, lines 763-769."
+      },
+      {
+        "claim": "The write cadence is one chunk, not one token. E is updated 'after each training step', i.e. after each 512- (or 2048-) token subsequence.",
+        "ground": "Sec. 3.1, lines 251-253; Fig. 2 annotation lines 161-164 ('Will be added to external memory after the current training step')."
+      }
+    ],
+    "inferences_by_this_note": [
+      {
+        "inference": "Byte capacity, which the paper never states. Assuming bf16 (2 bytes/elem -- the paper never states a dtype), and using its own shape (8 heads x d_head 128, keys and values both stored, one kNN layer): n_E = 1536 -> 6 MiB; 8192 -> 32 MiB; 65,536 -> 256 MiB; 262,144 -> 1 GiB. Per document.",
+        "arithmetic": "65536 x 8 x 128 x 2 (k and v) x 2 bytes = 268,435,456 bytes = 256 MiB",
+        "sanity_check": "A full 12-layer KV cache for 65,536 tokens at d_model 1024 in bf16 would be 3 GiB; the kNN store is 1/12 of that because it lives at one layer. The two figures are consistent.",
+        "status": "INFERENCE. dtype assumed."
+      },
+      {
+        "inference": "Aggregate footprint at the paper's own batch sizes. Context 512 uses batch 256 documents, so at n_E = 8192 the store is 256 x 32 MiB = 8 GiB and at n_E = 65,536 it is 256 x 256 MiB = 64 GiB. Context 2048 uses batch 64, so 65,536 gives 16 GiB. The paper reports the batch sizes and the memory sizes on adjacent pages and never multiplies them.",
+        "ground_for_the_inputs": "Sec. 4.2 lines 490-492 (batch sizes); Sec. 3.1 lines 284-285 (one memory per batch element)",
+        "status": "INFERENCE"
+      },
+      {
+        "inference": "The post-retrieval gather moves 128 KiB per token per kNN layer (k_nn 32 x d_head 128 x 2 tensors x 2 bytes x 8 heads = 131,072 bytes), i.e. 64 MiB per 512-token chunk per batch element, independent of n_E. A dense scan of the whole store would move n_E x 8 x 128 x 2 x 2 bytes. The two are equal at n_E = C x k_nn = 512 x 32 = 16,384 pairs. Below that, retrieval reads MORE bytes than simply attending to everything; above it, retrieval wins, and the advantage grows linearly. The paper's smallest memory (1536) and its 8192 setting both sit below that break-even, which is a plausible byte-level reason the 8K-vs-65K step-time gap (0.25 s vs 0.6 s) is so much smaller than the 8x capacity ratio.",
+        "status": "INFERENCE. The break-even identity is exact given the shapes; the attribution of the step-time pattern to it is speculation and must be marked as such in the chapter, or dropped."
+      },
+      {
+        "inference": "Shared-weight batching survives intact. Because nothing per-user is written into Theta, requests keep sharing one weight copy and the per-request state behaves exactly like a KV cache -- allocate on document start, grow to a cap, free on document end. This is the property the Theta-path forfeits. The Rosetta entry to use is 'KV cache', not 'model redeploy'.",
+        "ground_for_the_inputs": "Sec. 3.1 lines 284-285; absence of any per-user parameter anywhere in the paper",
+        "status": "INFERENCE"
+      },
+      {
+        "inference": "At 256 MiB per document per kNN layer the store does not live in on-chip SRAM; it lands in HBM, and for the billion-scale case the paper gestures at (ScaNN/Faiss, line 315) it lands in host DRAM or on disk behind an ANN index. The traffic profile is therefore a random gather over a large, mostly-cold region -- the opposite of the streaming, fully-read KV-cache access pattern the reader is used to at decode.",
+        "ground_for_the_inputs": "Sec. 3.3 lines 314-315; byte figure above",
+        "status": "INFERENCE"
+      },
+      {
+        "inference": "Because the write fires only at chunk boundaries, a generating model cannot retrieve anything it produced within the current chunk -- up to 512 (or 2048) tokens of self-generated text are invisible to E until the chunk closes. The paper never runs generation, so this never surfaces, but it is a hard constraint for any decode-time use.",
+        "ground_for_the_inputs": "Sec. 3.1 lines 251-253",
+        "status": "INFERENCE"
+      },
+      {
+        "inference": "Decode-time read cost is O(search) + O(k_nn x d_head) per token per head, not O(n_E) as full attention over the store would be. The search term is whatever the ANN index costs and is the only unbounded term; the paper measures neither, and its entire scalability claim rests on that unmeasured term.",
+        "ground_for_the_inputs": "Sec. 3.3 lines 311-315; Sec. 4.2 lines 496-498",
+        "status": "INFERENCE"
+      }
+    ],
+    "what_the_reader_should_take_away": "This is the E-path with the sleep budget set to zero. It buys long-range recall by paying in read-side gather bandwidth and per-request bytes rather than in offline compute, and it keeps the two serving properties the Theta-path gives up -- shared weights across requests, and O(1) deletion of a user's knowledge. Everything the reader would need to size it (bytes, decode latency, index cost) has to be derived; the paper supplies shapes and one step-time triple."
+  },
+
+  "todo_verify": [
+    {
+      "item": "Head dimension of the 8B model. Sec. 4.4 gives '64 heads, 16 layers, d_model 4096, d_ff 32768' but no head dimension, and 4096/64 = 64 would break the pattern (128 elsewhere).",
+      "how_to_settle": "Search papers/stc/2203.08913.txt for 'For the 8 billion parameter model'. Not resolvable from the text; would need the ICLR OpenReview version or the released code."
+    },
+    {
+      "item": "Whether Table 5's configurations carry an XL cache. This note infers yes from exact numeric agreement (2.37 / 2.31 / 2.33 / 2.26) with Table 4's XL rows, but Table 5 has no XL column.",
+      "how_to_settle": "Search for 'Finetuning for 20K steps' (Table 5 caption, line 562) and Sec. 4.5 lines 599-605; if the caption in the published version names the cache, use that. Otherwise keep it as a cross-check, not a fact."
+    },
+    {
+      "item": "Which dataset the appendix ablations (Tables 14, 15, 16) were run on. App. A.1 never names one.",
+      "how_to_settle": "Search 'Unless otherwise specified, we carried out these experiments' (line 953). The perplexity range 2.36-2.43 matches Table 4's arXiv column and nothing else, but the paper does not say so."
+    },
+    {
+      "item": "Storage dtype of the (key, value) pairs. Every byte figure in systems_implications depends on it.",
+      "how_to_settle": "Search the text for 'bfloat', 'float32', 'precision', 'dtype', 'quantiz' -- all absent. Would need the released code."
+    },
+    {
+      "item": "Exact parameter count of the base model. 'around 200M trainable parameters' (line 496) and the Fig. 1 tick '200M' are the only figures.",
+      "how_to_settle": "Search '200M'. Not stated exactly anywhere; derivable from Sec. 4.2 lines 478-482 plus vocab 32K if the chapter wants a number, but that would be this note's arithmetic, not the paper's."
+    },
+    {
+      "item": "The perplexity values behind Figure 1 (1B and 8B) and Figure 6 (retrofit curve). Neither is tabulated.",
+      "how_to_settle": "Search 'Scaling plots are shown in Figure 1' (line 591) and 'The fine-tuning result is shown in Figure 6' (line 632). Values are only recoverable by reading the plotted curves in the PDF at papers/stc/2203.08913.pdf."
+    },
+    {
+      "item": "Which pair of model sizes the '5X more trainable parameters' claim compares. The Fig. 1 ticks are 200M / 1B / 8B, so a 5x step is 200M -> 1B, but the text never names the pair.",
+      "how_to_settle": "Search '5X' (line 594) and '5 times' (line 744). Settle by reading Figure 1 in the PDF."
+    },
+    {
+      "item": "Whether 'memory size in tokens' and 'M (key, value) pairs per head' are the same count. The abstract says '262K tokens' (line 19) and Sec. 3.1 says 'M (key, value) pairs' per head (lines 254-255); these agree only if exactly one pair per token is stored per head.",
+      "how_to_settle": "Search 'memory size' and 'per head'. Consistent with everything in the text, but never stated as an identity."
+    },
+    {
+      "item": "Whether the 2.38 (Table 15, k_nn=32) vs 2.37 (Table 4, row 7) discrepancy is a seed difference or a configuration difference.",
+      "how_to_settle": "Not settleable from the text. Search 'Number of neighbors' (line 977) and compare with Sec. 4.2's stated default 'For all of our experiments, we used k = 32' (line 480)."
+    },
+    {
+      "item": "Whether any Letta/MemGPT-line paper outside this vendored corpus cites Memorizing Transformers.",
+      "how_to_settle": "Corpus grep already run: only papers/stc/2607.05969.txt and papers/stc/2607.08032.txt cite it. To extend beyond the corpus, check Semantic Scholar citations of arXiv:2203.08913 filtered to the agent-memory venues."
+    },
+    {
+      "item": "Whether the 'slightly older version of the architecture without the gating mechanism' used in Sec. 4.6 differs from Table 4's models in any way besides the gate.",
+      "how_to_settle": "Search 'slightly older version' (line 647). The paper says nothing further."
+    }
+  ]
+}

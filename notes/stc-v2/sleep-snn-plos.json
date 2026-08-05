@@ -1,0 +1,890 @@
+{
+  "paper_id": "sleep-snn-plos",
+  "arxiv": "none -- journal article only, no arXiv preprint referenced in the vendored text",
+  "doi": "10.1371/journal.pcbi.1010628",
+  "title": "Sleep prevents catastrophic forgetting in spiking neural networks by forming a joint synaptic weight representation",
+  "authors": [
+    "Ryan Golden (Neurosciences Graduate Program, UCSD; Dept. of Medicine, UCSD) -- equal contribution",
+    "Jean Erik Delanois (Dept. of Medicine, UCSD; Dept. of Computer Science and Engineering, UCSD) -- equal contribution",
+    "Pavel Sanda (Institute of Computer Science of the Czech Academy of Sciences, Prague)",
+    "Maxim Bazhenov (Neurosciences Graduate Program, UCSD; Dept. of Medicine, UCSD) -- corresponding, mbazhenov@ucsd.edu"
+  ],
+  "venue": "PLoS Computational Biology 18(11): e1010628 [citation block L26-31]. Editor: Daniel Bush, University College London [L32-33].",
+  "date": "Received 2022-04-22; Accepted 2022-10-03; Published 2022-11-18 [L34-36]",
+  "path": "/home/jimmy/repos/neural-memory-study/papers/stc/STC-T04.txt",
+  "funding": "ONR N00014-16-1-2829; DARPA/MTO Lifelong Learning Machines HR0011-18-2-0021; NSF EFRI BRAID 2223839; NIH 1RF1MH117155, 1R01MH125557, 1R01NS109553 -- all to MB [L80-84]",
+  "axis": "bio",
+  "axis_note": "Assigned axis is bio per S0-DESIGN §3.1 (listed as a 공통조상 under '생물'). The object of study is a spiking neural network simulation, not an animal, so the paper is a COMPUTATIONAL model of a biological hypothesis, not an in-vivo measurement. Its biological warrant is entirely by citation to the sleep-consolidation literature [L627-635, L671-682], not by new biological data. Mechanically the paper is a Θ-path paper -- the deployed weight matrix is what changes -- but its role in the monograph is the biological grounding of the whole line (Part I module T6), and the strongest single existence proof in the corpus that an offline phase does something a wake phase cannot: it produces a two-task weight state that no amount of additional single-task wake training produces.",
+
+  "problem_stated": {
+    "statement": "Artificial neural networks trained sequentially on tasks overwrite the synaptic weights learned during the previous task, leaving the network incapable of performing the earlier task -- catastrophic forgetting [L54-57, L100-102]. The historical fix, interleaved training, works but 'imposes the stringent constraint that the original training data be perpetually stored for later use and combined with new data to retrain the network' [L109-111]. Hence the paper's operative problem, stated in one sentence: 'Thus, the challenge is to understand how the biological brain enables memory reactivation during sleep without access to past training data.' [L111-113]",
+    "operational_question": "'Can we implement a sleep like phase to our model to protect an old task and still accomplish new task learning without explicit re-training of the old task?' [L290-292]",
+    "hypothesis_tested": "That a spiking network's local learning rules plus spike-based communication 'allow previously learned memory traces to reactivate spontaneously and modify synaptic weights without interference during off-line processing--sleep' [L114-117].",
+    "claimed_answer": "Yes, and the geometric characterisation is the paper's actual contribution: sleep 'mitigated catastrophic forgetting by constraining the network synaptic weight state to the previously learned manifold, while allowing the weight configuration to converge towards the intersection of the manifolds representing old and new tasks' [Abstract L60-62].",
+    "source": "Abstract L54-63; Introduction L97-140; Results L272-311"
+  },
+
+  "inherited_open_question": {
+    "primary": {
+      "from": "Hayes TL, Krishnan GP, Bazhenov M, Siegelmann HT, Sejnowski TJ, Kanan C. 'Replay in Deep Learning: Current Approaches and Missing Biological Elements.' Neural Computation 2021;33(11):2908-50 [ref 9, L1257-1260]",
+      "quote": "'While proposed approaches are capable of mitigating catastrophic forgetting in certain circumstances, a general solution which can achieve human level performance for continual learning is still an open question [9].' [L103-105]",
+      "note": "This is a review co-authored by Bazhenov (this paper's corresponding author) and Sejnowski. The inherited question is therefore SELF-INHERITED at one remove -- the reviewing paper that declares the gap shares an author with the paper that answers it. Record this; it is a real feature of how this community propagates problems, and it is the opposite of the arms-length inheritance the E-path shows."
+    },
+    "secondary": {
+      "from": "Gonzalez OC, Sokolov Y, Krishnan GP, Delanois JE, Bazhenov M. 'Can sleep protect memories from catastrophic forgetting?' eLife 2020;9 [ref 41, L1438-1441]",
+      "quote": "'We previously showed that sleep replay improves memory in a thalamocortical network [38-40] and when a network was trained to learn interfering tasks sequentially, sleep prevented the old task memory from catastrophic forgetting [41]. Can we implement a sleep like phase to our model to protect an old task and still accomplish new task learning without explicit re-training of the old task?' [L287-292]",
+      "note": "Again self-inherited (Delanois and Bazhenov are authors of both). The DELTA over ref 41 is that here the network is a reinforcement-learning foraging agent with rewarded STDP rather than a thalamocortical model, and that new-task learning must succeed simultaneously with old-task protection."
+    },
+    "tertiary": {
+      "from": "McClelland JL, McNaughton BL, O'Reilly RC 1995 (CLS) [ref 11, L1268-1272]; French 1999 [ref 1]; McCloskey & Cohen 1989 [ref 2]; Hasselmo 2017 [ref 4]",
+      "quote": "'In fact, interleaved training was originally construed to be an approximation to what the brain may be doing during sleep to consolidate memories; spontaneously reactivating memories from multiple interfering tasks in an interleaved manner [11].' [L107-108]",
+      "note": "This is the bridge-in the monograph should actually use: the paper takes CLS's interleaving prescription and removes its data-storage precondition. CLS is cited as the SOURCE of the interleaving idea, and the data-storage requirement is framed as the residue CLS left behind [L109-113]."
+    },
+    "honesty_caveat": "No prior paper's own open question is quoted verbatim by this paper. The three items above are the paper's own formulations of what it inherits, each with an explicit citation attached. The paper never states an open question posed by a machine-learning paper in the sense the E-path or W-path papers do."
+  },
+
+  "core_mechanism": {
+    "equations_unnumbered": true,
+    "equation_numbering_note": "THE PAPER NUMBERS NO EQUATIONS. Every equation in the Methods is displayed without a tag. All citations below are therefore of the form '[sleep-snn-plos Methods: <subsection>, L<start>-<end>]'. The monograph must not invent equation numbers for this paper.",
+    "one_line": "One weight block, the hidden-to-output matrix, is written by (U-Θ) twice on two different schedules: at wake by reward-modulated Hebbian updates driven by the environment, and at sleep by the SAME update machinery with the reward signal pinned to a constant and the input driven by noise instead of sensory data -- so the sleep round's training set R_k is generated by the network replaying itself through Θ_k, and H_k is stored nowhere but in Θ_k.",
+
+    "notation_conflicts": [
+      {
+        "paper_symbol": "W_ij, W_i, W_j, W_i0, W_j0, WI_ij -- all synaptic weights",
+        "reserved_meaning": "W = fast weights, the test-time-mobile state (STC-STYLE-NOTATION §1.2, inherited from NM §1.2). Reserved and NOT redefinable.",
+        "remap": "The paper's synaptic weights are the deployed parameters of the network that produces the answer, so they map to Θ, not to W. Write Θ^{I→H} for the input-to-hidden excitatory block and Θ^{H→O} for the hidden-to-output excitatory block. The paper's inhibitory block becomes Θ^{H→O,-}. This paper has NO W layer and NO E layer at all.",
+        "source": "Methods: Network structure L742-758; Methods: Synaptic plasticity L861-963"
+      },
+      {
+        "paper_symbol": "S_rp -- scaling factor for reward/punishment",
+        "reserved_meaning": "S_t = inner momentum/surprise buffer; S(c; B_s) = the offline processing procedure. STC-STYLE-NOTATION §1.5 forbids a bare S.",
+        "remap": "Write r for the paper's S_rp (r ∈ {1, -0.001, -0.0001} at wake, r ≡ 0.5 during sleep). Never write S_rp in monograph body text; quote it only in the correspondence table.",
+        "source": "Methods: Synaptic plasticity L927, L932-937"
+      },
+      {
+        "paper_symbol": "k -- index over stored STDP traces in the weight-update sum",
+        "reserved_meaning": "k = sleep-round index (STC-STYLE-NOTATION §1.2, P3).",
+        "remap": "Write m for the trace index. Reserve k for the sleep round (one interleaved sleep interval = one k).",
+        "source": "Methods: Synaptic plasticity L879-901"
+      },
+      {
+        "paper_symbol": "R = 0.12, the coefficient of variability in synaptic release",
+        "reserved_meaning": "R_k (calligraphic) = the sleep round's training set.",
+        "remap": "Write the release-variability coefficient as r_rel, or avoid it -- it is a nuisance parameter and need not appear in the monograph.",
+        "source": "Methods: Neuron models L853-859"
+      },
+      {
+        "paper_symbol": "H -- the hidden layer of neurons",
+        "reserved_meaning": "H_k (calligraphic) = the experience accumulated up to round k.",
+        "remap": "Keep 'layer H' in prose and typeset the frame quantity as calligraphic H_k. In this paper the two are almost the same object conceptually -- the accumulated experience IS what layer H's outgoing weights encode -- which is exactly why the collision is dangerous. Do not let them share a glyph in any equation.",
+        "source": "Methods: Network structure L744-746"
+      },
+      {
+        "paper_symbol": "M_T1, M_T2, M_{T1∩T2} -- task solution manifolds in synaptic weight space",
+        "reserved_meaning": "M(·; W) (calligraphic M) = the memory read function, inherited from NM.",
+        "remap": "Write the manifolds as blackboard-bold or as 'Man_{T1}'. Do not use calligraphic M for a manifold anywhere in the monograph.",
+        "source": "Results L552-583; Methods: Distance from solution manifolds L1012-1035"
+      },
+      {
+        "paper_symbol": "α = 3.65 -- nonlinearity parameter of the map-based neuron",
+        "reserved_meaning": "α_t = retention gate (the fraction of W kept).",
+        "remap": "Write the neuron parameter as α_neu, or omit -- the map-neuron parameters play no role in the monograph's argument.",
+        "source": "Methods: Neuron models L810-811, L833"
+      },
+      {
+        "paper_symbol": "β_n, σ_n -- external-current input variables of the neuron model",
+        "reserved_meaning": "β_t = momentum decay in (U-W).",
+        "remap": "Same treatment: β_neu. Do not carry into monograph equations.",
+        "source": "Methods: Neuron models L808-810"
+      },
+      {
+        "paper_symbol": "c = 1 epoch -- constant in the trace-decay denominator",
+        "reserved_meaning": "C = chunk size (NM inheritance); C_cap = state capacity. STC-STYLE-NOTATION §1.5 makes the bare C chunk size only.",
+        "remap": "The paper's lowercase c is a time offset, not a chunk. Rename to t_off if it must appear.",
+        "source": "Methods: Synaptic plasticity L927"
+      },
+      {
+        "paper_symbol": "n -- used for TWO different things: the discrete 0.5 ms timestep index in the neuron model, and the dimensionality (6272) of synaptic weight space in the distance function",
+        "reserved_meaning": "n = number of stored items (STC-STYLE-NOTATION §1.3).",
+        "remap": "Timestep index → s. Weight-space dimensionality → d_Θ = 6272. Flag the paper's own internal reuse of n in the correspondence table; a reader who greps for n in this paper WILL be confused.",
+        "source": "Methods: Neuron models L806-807; Methods: Distance from solution manifolds L1034-1035"
+      },
+      {
+        "paper_symbol": "epoch = 600 simulation timesteps ≈ 300 ms = one movement cycle; aeon = 100 epochs",
+        "reserved_meaning": "'epoch' in ML means one pass over a training set. The two senses are unrelated.",
+        "remap": "Always write 'movement cycle' for the paper's epoch and 'aeon (= 100 movement cycles)' for its aeon. NEVER write 'epoch' unqualified when discussing this paper. Time subscript t in the frame = one movement cycle here.",
+        "source": "Methods: Policy L769, L776-783; Fig 1B caption L199"
+      },
+      {
+        "paper_symbol": "I -- the input layer of neurons; also I_n -- the slow dynamical variable of the neuron model; also I^syn_n -- synaptic current",
+        "reserved_meaning": "no frame conflict, but the paper triple-loads I within itself.",
+        "remap": "layer I → 'layer I' in prose only; the neuron variable → u_s. Mentioned here because it defeats naive search.",
+        "source": "Methods: Neuron models L800-809; Methods: Network structure L744-748"
+      },
+      {
+        "paper_symbol": "T_c = 40 ms, STDP time constant; K = ±0.04, maximum trace value; γ, synaptic relaxation rate; μ = 0.0005; δ, smoothing rate of Avg_tr; Δ_tar, homeostatic step size",
+        "reserved_meaning": "no direct frame collision",
+        "remap": "Carry as-is if quoted; none of these belong in monograph body equations. Note that δ and Δ_tar are NEVER GIVEN NUMERIC VALUES in the vendored text (see todo_verify).",
+        "source": "Methods: Synaptic plasticity L866-875, L915-945"
+      }
+    ],
+
+    "equations": [
+      {
+        "id": "(T04-R) read / wake decision -- instantiation of frame Eq. (R)",
+        "latex": "\\hat y_t \\;=\\; f\\big(q_t;\\ \\Theta,\\ W,\\ \\mathrm{ret}(E,q_t)\\big) \\;=\\; \\arg\\max_{o\\in O}\\ \\#\\mathrm{sp}_o\\Big(q_t;\\ \\Theta^{I\\to H},\\ \\Theta^{H\\to O}_k,\\ \\Theta^{H\\to O,-}_k\\Big), \\qquad W=\\varnothing,\\ E=\\varnothing",
+        "source": "Methods: Policy L784-789 -- 'The neuron in layer O which spiked the greatest number of times during the first half of the epoch defined the direction of movement for that epoch.' Ties broken at random; if no O neuron spikes the agent repeats its previous direction [L787-789].",
+        "comment": "q_t is the 7x7 binary visual field at movement cycle t; the forward pass is 600 timesteps of spiking simulation, ~300 ms of simulated time [L769]. There is no state carried between movement cycles other than the weights themselves and the slow homeostatic scalars. So W = ∅ and E = ∅ hold strictly for this paper. Exploration noise: 1% chance per move of ignoring layer O entirely, incremented by 1% for each movement cycle without acquiring a particle [L790-794]."
+      },
+      {
+        "id": "(T04-1) STDP trace",
+        "latex": "\\mathrm{tr}_m \\;=\\; K\\,e^{-|t_r - t_p|/T_c}, \\qquad T_c = 40\\ \\mathrm{ms}, \\qquad K = \\begin{cases}+0.04 & \\text{pre before post}\\\\ -0.04 & \\text{post before pre}\\end{cases}",
+        "source": "Methods: Synaptic plasticity L866-875. Pairing window: each new post-(pre-)synaptic spike is compared to all pre-(post-)synaptic spikes within 120 iterations [L864-865].",
+        "comment": "This is the ONLY correlation signal in the model. It is local, online, and antisymmetric in spike order. Nothing here is a derivative of a loss."
+      },
+      {
+        "id": "(T04-2) wake write -- (U-Θ) with a reward-modulated Hebbian surrogate for the gradient",
+        "latex": "\\Theta^{H\\to O}_{ij} \\;\\leftarrow\\; \\Theta^{H\\to O}_{ij}\\,\\frac{\\Theta^{0}_{i\\cdot}}{\\Theta_{i\\cdot}}\\Big(1+\\sum_{m}^{\\text{traces}}\\Delta_m\\Big), \\qquad \\Delta_m \\;=\\; r\\,\\frac{\\mathrm{tr}_m}{t-t_m+c}\\Big/\\frac{\\mathrm{Sum_{tr}}}{\\mathrm{Avg_{tr}}}",
+        "source": "Methods: Synaptic plasticity L879-901 (weight update), L909-925 (Sum_tr and Avg_tr).",
+        "comment": "Θ_{i·} = Σ_j Θ^{H→O}_{ij} is the total outgoing strength of hidden neuron i; Θ^0_{i·} is a CONSTANT fixed to its value at simulation start [L928-930]. The factor Θ^0/Θ 'helped to keep the output weight sum close to the initial target value. The effect of these rules was that neurons with lower total output strength could increase their output strength more easily.' [L930-931]. Sum_tr = Σ_m tr_m/(t - t_m + c); Avg_tr ← (1-δ)Avg_tr + δ·Sum_tr [L909-925]. WARNING: the vendored OCR does not resolve whether Sum_tr/Avg_tr divides or multiplies Δ_m -- see todo_verify item 1. The written form above is the reading consistent with a normalisation term; the alternative is a multiplication. This does not change any qualitative claim but the monograph must not print the formula until it is checked against the published PDF.",
+        "trace_storage": "Traces on I→H synapses are applied immediately. Traces on H→O synapses are STORED for 6 movement cycles before being erased, and take effect whenever a rewarding or punishing event occurs during that window [L876-879]. This 6-cycle eligibility trace is what makes the rule a three-factor (reward-modulated) rule rather than plain Hebb."
+      },
+      {
+        "id": "(T04-3) reward signal at wake",
+        "latex": "r \\;=\\; \\begin{cases} +1 & \\text{agent moves onto a task-rewarded particle}\\\\ -0.001 & \\text{agent moves onto a task-punished particle}\\\\ -0.0001 & \\text{agent moves onto an empty location}\\end{cases}",
+        "source": "Methods: Synaptic plasticity L932-936. Rewarded = horizontal in Task 1, vertical in Task 2; punished = negative diagonal in Task 1, positive diagonal in Task 2 [L932-935, and Results L225-227].",
+        "comment": "Note the three-order-of-magnitude asymmetry between reward and punishment. The agent is overwhelmingly driven by positive reward."
+      },
+      {
+        "id": "(T04-4) sleep write -- (U-Θ) with the SAME machinery, r pinned constant, q replaced by noise",
+        "latex": "\\Theta^{H\\to O}_{k+1} \\;=\\; \\Pi\\Big[\\ \\Theta^{H\\to O}_{k}\\ \\text{updated by (T04-2) with } r\\equiv 0.5,\\ q_t\\equiv\\varnothing,\\ \\text{layer }H\\text{ driven by }\\mathrm{Poisson}(\\bar f_i)\\ \\Big]",
+        "source": "Methods: Simulated sleep L965-986; the constant sleep reward is Methods: Synaptic plasticity L936-937 -- 'During periods of sleep the network received a constant reward of Srp = 0.5 on each movement cycle.' Π denotes the normalisation projection of (T04-5)/(T04-6).",
+        "comment": "The four changes at sleep, verbatim [L966-980]: (i) 'we inactive the sensory receptors (i.e. the input layer of network)'; (ii) 'cut off all sensory signals (i.e. remove all particles from the environment)'; (iii) 'decouple output layer activity from motor control (i.e. the output layer can spike but no longer causes the agent to move)'; (iv) 'We also change the learning rule between the hidden and output layer from rewarded to unsupervised STDP ... as there is no way to evaluate decision-making without sensory input or motor output.' The Poisson drive: 'we provided noise to each neuron in the hidden layer in a way which ensured that the spiking statistics of each neuron was conserved across awake and sleep phases. To determine these spiking rates, we recorded average spiking rates of neurons in the hidden layer H during preceding training of both Task 1 and Task 2; these task specific spiking rates were then averaged to generate target spiking rates for hidden layer neurons.' [L981-985]. [INFERENCE, flagged as such] Statements (iv) and the r ≡ 0.5 line are consistent rather than contradictory: a reward held CONSTANT removes the differential modulation and leaves plain Hebbian potentiation scaled by 0.5, which is what 'unsupervised STDP' names. The monograph must state both source sentences, because a reader told only 'unsupervised STDP' will not expect a positive scalar multiplying every trace."
+      },
+      {
+        "id": "(T04-5) homeostatic scaling of the output layer -- a slow scalar per output neuron",
+        "latex": "\\Theta^{0}_{\\cdot j} \\;\\leftarrow\\; \\begin{cases}\\Theta^{0}_{\\cdot j}\\,(1+\\Delta_{\\mathrm{tar}}) & \\text{spike rate} < \\text{target rate}\\\\ \\Theta^{0}_{\\cdot j}\\,(1-\\Delta_{\\mathrm{tar}}) & \\text{spike rate} > \\text{target rate}\\end{cases}",
+        "source": "Methods: Synaptic plasticity L938-945. Applied every movement cycle [L939-940].",
+        "comment": "Θ^0_{·j} is the TARGET total synaptic input to output neuron j -- 'a slow variable which varied over many epochs depending on the activity of the given neuron in layer O' [L941]. Eight such scalars exist (one per functional output neuron). This is the only genuinely slow-moving auxiliary state in the model."
+      },
+      {
+        "id": "(T04-6) heterosynaptic normalisation -- the projection Π",
+        "latex": "\\Theta^{H\\to O}_{ij} \\;\\leftarrow\\; \\Theta^{H\\to O}_{ij}\\ \\frac{\\Theta^{0}_{\\cdot j}}{\\sum_{i'}\\Theta^{H\\to O}_{i'j}}, \\qquad \\Theta^{H\\to O,-}_{ij} \\;\\leftarrow\\; -\\frac{1}{|j|}\\sum_{j}\\Theta^{H\\to O}_{ij}",
+        "source": "Methods: Synaptic plasticity L946-963. Applied after EVERY STDP event, to all excitatory synapses of the affected output neuron, 'To ensure that the net synaptic input Wj to any neuron was unaffected by plasticity events at the individual synapses at distinct timesteps and equal to Wj0' [L946-948].",
+        "comment": "THIS IS THE LOAD-BEARING PIECE AND THE MONOGRAPH MUST NOT SKIP IT. The column sums of Θ^{H→O} are held fixed. Therefore every potentiation is paid for by depression elsewhere in the same column: the update is a projected, zero-sum update, not free growth. The paper's own explanation of why sleep beats freezing rests on this -- 'the sleep phase results in a large cluster of weights being renormalized around an intermediate value of synaptic strength in the network' [L511-512]. Replay of surviving old-task synapses does not merely restore them; it actively demotes new-task synapses to an intermediate value rather than to zero [Fig 6D right, L500-502]. Inhibitory weights are not free parameters at all: each is set to the negative mean of the source hidden neuron's outgoing excitatory weights after each STDP event [L956-963]."
+      },
+      {
+        "id": "(T04-7) distance to a solution manifold -- the analysis metric",
+        "latex": "d_{d_\\Theta}\\big(p_t,\\ \\mathrm{Man}_\\tau\\big) \\;=\\; \\min_{x\\in \\mathrm{Man}_\\tau} d_{d_\\Theta}\\big(p_t,\\ x\\big), \\qquad d_\\Theta = 6272",
+        "source": "Methods: Distance from solution manifolds L1012-1035. d is the n-dimensional Euclidean distance; n = 6272 is the number of excitatory H→O synapses [L1034-1035].",
+        "comment": "Man_τ is a POINT SET, not a fitted manifold. How those point sets were assembled is the single most important methodological caveat in the paper -- see unfavorable_facts item 11."
+      }
+    ],
+
+    "reduction_to_frame": "Frame (U-Θ) reads Θ_{k+1} = Θ_k - η_Θ ∇_Θ L(R_k; Θ_k) with R_k = gen(H_k; B_s). This paper instantiates it as follows. (a) Θ = the 6272 excitatory hidden-to-output synapses (plus the derived inhibitory block and the frozen input-to-hidden block). (b) There is no L and no ∇: the descent direction is replaced by the local three-factor product of (T04-2), followed by the projection Π of (T04-6) onto the constant-column-sum set. (c) η_Θ has no separate existence -- the step size is folded into r, into K = ±0.04, and into Δ_tar. (d) R_k is not a dataset. It is the stream of spontaneous spike sequences that the network emits when layer H is driven by Poisson noise and layer O is left free to respond through Θ^{H→O}_k. Therefore gen(H_k; B_s) is literally 'run the network forward on noise for B_s movement cycles', and H_k -- the accumulated experience -- is stored NOWHERE except inside Θ_k itself. That is the claim the whole paper exists to demonstrate: 'Sleep makes this possible by replaying old memory traces without the explicit usage of the old task data.' [L94-95, restated L727]. (e) One extra scalar per hidden neuron does cross the wake→sleep boundary: the target Poisson rate \\bar f_i, measured from wake firing statistics [L982-985]. The Uniform-Noise Sleep control collapses these 784 scalars to a single population mean and the result survives [S4E/F, L355-362, L1145-1150], so the irreducible carried state is 1 scalar.",
+
+    "why_offline_is_necessary": "The paper's mechanistic account, in its own words: 'Each episode of new Task 2 training improves Task 2 performance but damages synaptic connectivity responsible for old Task 1. If continuous Task 2 training is long enough, the damage to Task 1 becomes irreversible. Having a sleep phase after a short period of Task 2 training enables spontaneous forward replay between hidden and output layers (H->O) that preferentially benefits the strongest synapses. Thus, if Task 1 synapses are still strong enough to maintain replay, they are replayed and weights are increased.' [L307-311]. The offline phase is necessary because the replay it enables is IMPOSSIBLE during wake: during wake the input layer imposes the current task's statistics on layer H, so the H→O correlations that form are the new task's. Only when the sensory drive is removed and replaced by unstructured noise does the H→O weight matrix get to select which correlations appear -- i.e. the strongest surviving synapses win. That selection is a property of the weight matrix alone, which is exactly why no wake-time procedure reproduces it."
+  },
+
+  "outer_vs_inner": {
+    "readers_first_answer": "NOTHING in this paper is learned by an outer loop, and there is no gradient descent anywhere. There is no differentiable loss, no backward pass, no optimizer, no meta-learning. Every object that moves does so by a local, online rule evaluated during either a wake movement cycle or a sleep movement cycle. The only things chosen by a human are hyperparameters. A reader coming from the rest of the corpus should hold this contrast fixed: in every other Θ-path paper the sleep round runs an optimizer over a constructed dataset; here the sleep round runs the network's own dynamics and lets a Hebbian rule plus a normalisation constraint do the work.",
+    "columns": ["object", "symbol in frame notation", "size", "who moves it", "when", "source"],
+    "rows": [
+      {
+        "object": "input-to-hidden excitatory synapses (unsupervised STDP; the 'developmental critical period' / convolutional analogue)",
+        "symbol": "Θ^{I→H}",
+        "size": "784 hidden neurons x 9 randomly selected input neurons each = 7056 synapses",
+        "who_moves_it": "unsupervised (non-rewarded) STDP",
+        "when": "ONLY during the initial unsupervised training period, when all four particle orientations are present at equal density. Explicitly FROZEN during every reinforcement-learning period [L205-207]. During sleep the input layer is silenced [L966-967], so no pre-synaptic spikes exist and no I→H trace can form -- [INFERENCE from mechanism, not stated in so many words; see todo_verify item 10].",
+        "source": "Results L153-157, L170-173, L205-207; Methods: Network structure L750-753"
+      },
+      {
+        "object": "hidden-to-output EXCITATORY synapses -- the object of the entire paper",
+        "symbol": "Θ^{H→O}",
+        "size": "784 x 8 = 6272 (the 3x3 output layer has a nonfunctional centre neuron)",
+        "who_moves_it": "rewarded STDP at wake; the same rule with r ≡ 0.5 at sleep; plus the heterosynaptic projection after every event",
+        "when": "BOTH. Wake movement cycles and sleep movement cycles, at exactly the same nominal rate (100 cycles each per interval).",
+        "source": "Results L153-158, L205-207; Methods: Synaptic plasticity L861-963; Methods: Simulated sleep L978-980; dimensionality L995, L1035"
+      },
+      {
+        "object": "hidden-to-output INHIBITORY synapses",
+        "symbol": "Θ^{H→O,-}",
+        "size": "784 x 8 = 6272, but ZERO degrees of freedom -- fully determined",
+        "who_moves_it": "nobody; it is recomputed, not learned. Each outgoing inhibitory weight of a hidden neuron is set to the negative mean of that neuron's outgoing excitatory weights after each STDP event.",
+        "when": "after every STDP event, wake and sleep alike",
+        "source": "Methods: Synaptic plasticity L956-963; connectivity L753-755"
+      },
+      {
+        "object": "target total synaptic input per output neuron (homeostatic set-point)",
+        "symbol": "Θ^0_{·j}",
+        "size": "8 scalars",
+        "who_moves_it": "homeostatic synaptic scaling, driven by the neuron's own firing rate vs a fixed target rate",
+        "when": "every movement cycle. [INFERENCE] The Methods do not suspend it during sleep and sleep intervals are counted in movement cycles, so it moves at sleep too -- see todo_verify item 4.",
+        "source": "Methods: Synaptic plasticity L938-945"
+      },
+      {
+        "object": "target total OUTGOING strength per hidden neuron",
+        "symbol": "Θ^0_{i·}",
+        "size": "784 scalars",
+        "who_moves_it": "nobody -- 'a constant that is set to the initial value(target value) of Wi at the beginning of the simulation'",
+        "when": "never; fixed at t=0",
+        "source": "Methods: Synaptic plasticity L928-930"
+      },
+      {
+        "object": "running average of trace sums (the normaliser inside Δ_m)",
+        "symbol": "Avg_tr",
+        "size": "1 scalar (per synapse or global -- not disambiguated in the text; see todo_verify item 5)",
+        "who_moves_it": "exponential smoothing, Avg_tr ← (1-δ)Avg_tr + δ·Sum_tr",
+        "when": "whenever traces are evaluated -- wake and sleep",
+        "source": "Methods: Synaptic plasticity L909-925"
+      },
+      {
+        "object": "target Poisson firing rate of each hidden neuron, used to drive sleep",
+        "symbol": "\\bar f_i",
+        "size": "784 scalars in the main configuration; 1 scalar in the Uniform-Noise Sleep control",
+        "who_moves_it": "not learned -- MEASURED from wake. 'we recorded average spiking rates of neurons in the hidden layer H during preceding training of both Task 1 and Task 2; these task specific spiking rates were then averaged'",
+        "when": "computed from the wake phases preceding sleep; held fixed during sleep",
+        "source": "Methods: Simulated sleep L981-985; the uniform-noise variant Results L355-362 and S4E/F L1145-1150"
+      },
+      {
+        "object": "all model hyperparameters -- α=3.65, μ=0.0005, σ=0.06, β_e=0.133, σ_e=1, R=0.12, γ, T_c=40 ms, K=±0.04, c=1 movement cycle, the three r values, Δ_tar, δ, the 6-cycle eligibility window, the 120-iteration STDP pairing window",
+        "symbol": "--",
+        "size": "~15 scalars",
+        "who_moves_it": "hand-set by the authors; NO outer loop, no sweep reported",
+        "when": "never",
+        "source": "Methods: Neuron models L806-859; Methods: Synaptic plasticity L861-945"
+      },
+      {
+        "object": "SVM (RBF kernel) over flattened 6272-dim weight vectors; PCA / kPCA embeddings",
+        "symbol": "--",
+        "size": "6272 input features",
+        "who_moves_it": "fitted post hoc by the authors as ANALYSIS instruments; not part of the model and never seen by the network",
+        "when": "after the simulations, on the last fifth of each training phase",
+        "source": "Methods: Support vector machine training L988-997; Fig 4D-E L394-398; Fig 7A-C L593-596"
+      }
+    ]
+  },
+
+  "update_layer": {
+    "instantiates": "(U-Θ) ONLY -- twice per interleaved period, on the same parameter block, in alternation.",
+    "not_instantiated": [
+      "(U-W): there is no fast-weight state. Nothing is carried between movement cycles except the weights themselves and the homeostatic scalars. W = ∅ throughout.",
+      "(U-E): there is no external store. The paper's entire point is to eliminate the stored-data buffer that interleaved training requires [L108-113, L673-677]. E = ∅ by construction, and the paper argues that E should be ∅."
+    ],
+    "order_within_one_interleaved_period": "The protocol is strictly alternating with a 1:1 duty cycle. One period k = [100 movement cycles of new-task wake training under (T04-2) with the environment present and r ∈ {1, -0.001, -0.0001}] followed by [100 movement cycles of sleep under (T04-4) with the environment empty, the input layer silent, layer H noise-driven, and r ≡ 0.5]. Both halves write the SAME Θ^{H→O}. The paper calls the composite protocol Interleaved_{S,T2} (sleep alternated with Task 2 training) or Interleaved_{S,T1} (sleep alternated with Task 1 training). [Results L300-306; Methods: Simulated sleep L985-986]",
+    "difference_from_canonical": [
+      "The descent direction is not a gradient. ∇_Θ L is replaced by a local eligibility-trace-gated Hebbian product (T04-2). There is no loss function anywhere in the paper.",
+      "The update is PROJECTED after every event onto the set {Σ_i Θ_ij = Θ^0_{·j}} by heterosynaptic normalisation (T04-6). Canonical (U-Θ) has no such constraint. This projection is what makes the sleep round zero-sum and is, on the paper's own account, why sleep outperforms synapse freezing [L509-517].",
+      "R_k is generated by running the network itself on noise rather than by sampling, distilling or synthesising a dataset. gen(·; B_s) here = 'simulate B_s movement cycles of noise-driven spontaneous activity'. H_k has no storage location outside Θ_k -- there is no replay buffer, no generative model, no summary, no text.",
+      "The wake phase is ALSO (U-Θ). This is the structural fact that separates this paper from every deployment-oriented paper in the corpus: there is no frozen serving artefact. In LLM terms, wake-time inference here would be continuously fine-tuning the served weights.",
+      "η_Θ has no independent existence; there is no learning-rate schedule and no decay. The paper explicitly contrasts this with classical interleaved training, which 'can be ameliorated with a learning rate decay schedule' [L658-659]."
+    ],
+    "path_assignment_for_the_monograph": "Θ-path by mechanism, bio by role. When the monograph writes the three-path table, this paper belongs in the Θ column -- the deployed weights change and nothing else exists -- but it must be introduced as a common ancestor, before the paths separate, alongside CLS and Deep Generative Replay."
+  },
+
+  "cost_table": {
+    "preamble": "This is a 2022 computational-neuroscience paper. It reports NO computational cost of any kind: no FLOPs, no wall-clock, no CPU/GPU hours, no memory footprint, no energy. Three of the four cost cells are therefore 'absent'. That absence is itself the finding the monograph should report: the biological grounding of the sleep-time-compute line comes with zero cost accounting, so nothing in the amortization argument of frame Eq. (A) can be sourced to this paper.",
+    "B_s": {
+      "value": "PARTIAL -- stated only as simulated duration, never as compute.",
+      "detail": "One sleep interval lasts 100 movement cycles, exactly equal to the new-task training interval that precedes it: 'alternating periods of training on Task 2 (new task) lasting 100 movement cycles and periods of \"sleep\" of the same duration' [L301-303], restated in Methods as 'alternating intervals of this sleep phase and training on Task 1, with each interval lasting 100 movement cycles (although no movement occurred)' [L985-986]. So the sleep:wake duty ratio is exactly 1:1 in simulated time. One movement cycle = one 'epoch' = 600 simulation timesteps [L769] at 0.5 ms per timestep [L807], i.e. ~300 ms of simulated time [L769]. ARITHMETIC ON STATED NUMBERS (not an estimate): one sleep interval = 100 x 600 = 60,000 neuron-update timesteps = ~30 s of simulated time. ABSENT: FLOPs, wall-clock, CPU-hours, energy, and -- importantly -- the NUMBER of interleaved periods run. The total duration of an Interleaved phase is never stated numerically in the text; the only time-axis number given is the annotation that Interleaved_{S,T1} begins at 240,000 aeons in the Fig 6A protocol [L453], with 1 aeon = 100 movement cycles [L199, L782-783] and 'Each simulation consisted of millions of these movement cycles / epochs' [L781].",
+      "source": "Results L300-306; Methods: Policy L769, L776-783; Methods: Neuron models L807; Methods: Simulated sleep L985-986; Fig 6A L453",
+      "single_point_warning": "B_s is a SINGLE POINT. There is no sweep over sleep duration, over the sleep:wake ratio, or over the number of interleavings. The paper reasons qualitatively about the regime boundary -- 'a single long episode of new task learning would push the network far away from the old task manifold making it impossible to recover by subsequent sleep' [L651-653] -- but never measures where that boundary is."
+    },
+    "L_w": {
+      "value": "absent",
+      "detail": "No latency, throughput, time-to-first-anything or per-decision cost is reported anywhere in the paper. [INFERENCE, clearly marked] Structurally the wake path is unchanged by the existence of a sleep phase: a decision is one movement cycle of 600 timesteps through the fixed three-layer feedforward architecture [Methods: Policy L769-789], and sleep changes only the VALUES in Θ^{H→O}, never the architecture, the layer sizes or the per-decision work. So the sleep-time compute of this paper contributes exactly zero to wake-time latency -- but the paper never says this and never measures it.",
+      "source": "absence throughout; structural basis Methods: Policy L768-796 and Methods: Simulated sleep L965-986"
+    },
+    "C_cap": {
+      "value": "absent in bytes -- no dtype, no byte count, no memory footprint is stated anywhere in the paper.",
+      "detail": "What the paper DOES state, in counts: 842 spiking map-based neurons in total [L743], arranged as a 7x7 input layer I (49 neurons, of which 48 receive a unique location input [L771]), a 28x28 hidden layer H (784 neurons), and a 3x3 output layer O with a nonfunctional centre neuron, i.e. 8 functional outputs [L744-746]. Each H neuron receives excitatory synapses from 9 randomly selected I neurons [L751] -- 784 x 9 = 7056 I→H synapses (arithmetic on stated numbers). Each H neuron connects to every O neuron with one excitatory and one inhibitory synapse [L753-755]. The excitatory H→O block is stated explicitly twice as 6272 dimensions [SVM training L995; distance function L1035]. The inhibitory block is the same size but carries zero degrees of freedom, being recomputed as the negative mean of each source neuron's excitatory outgoing weights [L956-963]. Auxiliary state: 8 homeostatic set-point scalars [L938-945], 784 fixed outgoing-sum targets [L928-930], and 784 measured target firing rates for the sleep drive [L982-985] -- the last collapsing to 1 scalar in the Uniform-Noise Sleep control [S4E/F L1145-1150].",
+      "the_capacity_claim_that_matters": "ZERO bytes of past-task data are retained. This is the paper's headline capacity result and it is stated three times: 'without the need to store and train on previous task data or environments' [L611]; 'the data intensive process of storing old data and using them for retraining can be avoided in SNN by implementing periods of noise-induced spontaneous reactivation during new task training' [L674-677]; 'Sleep makes this possible by replaying old memory traces without explicit usage of the old training data.' [L727]. The state that crosses the wake→sleep boundary is 784 scalars, reducible to 1.",
+      "source": "L743-758, L771, L928-945, L956-963, L982-985, L995, L1035, L1108; capacity claim L611, L674-677, L727"
+    },
+    "rho": {
+      "value": "PARTIAL -- endpoint accuracies for ONE interfering task, never a per-round decay rate, and never more than two tasks.",
+      "detail": "Chance performance is 0.5 [L167]. Baseline after Task 1 training alone: Task 1 = 0.70 ± 0.02, Task 2 = 0.53 ± 0.02 [L228-229]. Under sequential T1→T2 the old task decays to chance: Task 1 = 0.52 ± 0.02 [L275]. Under Interleaved_{S,T2} the old task does not decay at all: Task 1 = 0.70 ± 0.03 [L304-305]. So over one interfering task, ρ(sequential) = 0.70 → 0.52, i.e. the entire 0.20-wide band between chance and trained performance is lost; ρ(sleep-interleaved) = 0.70 → 0.70, i.e. zero measured loss. A multi-round ρ -- the quantity the monograph actually needs, degradation per repeated sleep round over many tasks -- is ABSENT: the paper never runs a third task and never runs a second Interleaved phase.",
+      "source": "L167, L228-229, L275-276, L304-305; the two-task ceiling is stated at L164-165 and holds throughout"
+    },
+    "amortization_A": {
+      "value": "not computable from this paper",
+      "detail": "Frame Eq. (A), C_avg = C_wake + C_sleep/N_q, requires N_q, the number of queries sharing one context. This paper has no query stream, no notion of a context, and no user. The agent emits one decision per movement cycle forever. The nearest quantity is the 1:1 sleep:wake duty ratio, which in Eq. (A) terms would say C_sleep = C_wake per period, but there is no N_q to divide by. The monograph must state that the biological ancestor of the line supplies NO amortization evidence.",
+      "source": "structural; duty ratio from L301-303 and L985-986"
+    }
+  },
+
+  "experiments": {
+    "trial_protocol": "'All reported results are based on at least 10 trials with different random network initialization.' [L168-169]. All reported numbers are mean ± standard deviation across those trials. NO statistical test, no p-value, and no confidence interval appears anywhere in the paper, although the word 'significantly' is used at least three times [L418, L444, L506].",
+    "task_definition": "Two complementary complex foraging tasks in a 50x50 grid with 10% particle density [L731, L739]. Particles are two pixels long in one of four orientations: vertical, horizontal, positive diagonal, negative diagonal [L731-732]. Task 1: horizontal rewarded, negative diagonal punished. Task 2: vertical rewarded, positive diagonal punished [L225-226, L231-232, L932-935]. During training and testing only the two task-relevant orientations are present [L226-227, L734-735]. The performance metric is 'pattern discriminability (ratio of rewarded vs punished particles consumed)', with chance = 0.5 [L166-167]. The agent sees a 7x7 egocentric visual field and can move to any of eight adjacent squares [L739-740].",
+    "runs": [
+      {
+        "id": "E1 -- Task 1 is learnable",
+        "section": "Results L228-231, Fig 1B/1D",
+        "setup": "unsupervised period (all four orientations at equal density) → Task 1 reinforcement training. I→H frozen during RL.",
+        "numbers": "Task 1 = 0.70 ± 0.02; untrained Task 2 = 0.53 ± 0.02 (chance level) [L228-229]",
+        "claim": "'The naive agent moved randomly through the environment (Fig 1D, left), but after task training, moved to seek out horizontal patterns and largely avoid negative diagonal ones' [L229-231]"
+      },
+      {
+        "id": "E2 -- Task 2 is learnable (the complementary task)",
+        "section": "Results L231-237, Fig 1C/1E; the number itself is quoted at L276 and L305",
+        "setup": "unsupervised period → Task 2 reinforcement training",
+        "numbers": "Task 2 = 0.69 ± 0.03 [L276, restated L305]. The paper also writes 'single Task 1 (0.70 ± 002)' at L305 -- the standard deviation is misprinted in the source; the correct value from L228 is 0.70 ± 0.02.",
+        "claim": "'These results demonstrate that the network is capable of learning and performing either one of the two complementary complex foraging tasks.' [L232-233]"
+      },
+      {
+        "id": "E3 -- CATASTROPHIC FORGETTING: sequential T1 → T2",
+        "section": "Results L274-278, Fig 3A/3B",
+        "setup": "Task 1 training, then Task 2 training with no interleaving and no sleep",
+        "numbers": "Task 1 = 0.52 ± 0.02 ('down to no better than chance'); Task 2 = 0.69 ± 0.03 [L275-276]",
+        "claim": "'sequential training on a complementary task caused the network to undergo catastrophic forgetting of the task trained earlier, remembering only the most recent task' [L276-278]",
+        "note": "This is the negative control the whole paper is measured against."
+      },
+      {
+        "id": "E4 -- BASELINE: classical interleaved training Interleaved_{T1,T2} (requires stored old-task data)",
+        "section": "Results L279-286, Fig 3C/3D",
+        "setup": "after Task 1 training, alternate short presentations of Task 1 and Task 2 every 100 movement cycles",
+        "numbers": "Task 1 = 0.68 ± 0.03; Task 2 = 0.65 ± 0.04 [L282]",
+        "claim": "'interleaved training allowed the network to learn new Task 2 without forgetting previously learned Task 1. However ... it imposes the stringent constraint that all the original training data (in our case explicit access to the Task 1 environment) be stored' [L282-286]",
+        "note": "THIS IS THE STRONG BASELINE. It is data-hungry but it works, and its numbers are close to the sleep numbers."
+      },
+      {
+        "id": "E5 -- HEADLINE RESULT: Interleaved_{S,T2} (sleep alternated with new-task training, NO old-task data)",
+        "section": "Results L300-306, Fig 3E/3F",
+        "setup": "Task 1 training, then alternating 100-movement-cycle periods of Task 2 training and 100-movement-cycle periods of sleep. 'Importantly, no training on Task 1 was performed at any time during InterleavedS,T2.' [L303-304]",
+        "numbers": "Task 2 = 0.68 ± 0.05; Task 1 = 0.70 ± 0.03 [L304-305]",
+        "claim": "'comparable to single Task 1 (0.70 ± 002) or Task 2 (0.69 ± 0.03) performances (Fig 1B and 1C) and exceeding those achieved through InterleavedT1,T2 training (Fig 3C and 3D)' [L305-306]",
+        "note": "The 'exceeding' claim rests on 0.70 vs 0.68 on Task 1 and 0.68 vs 0.65 on Task 2, against standard deviations of 0.03-0.05, with no significance test reported. See unfavorable_facts."
+      },
+      {
+        "id": "E6 -- CONTROL: does the sleep noise itself teach the task? Naive network + Interleaved_{S,T1} using Task 2 firing-rate statistics",
+        "section": "Results L346-352; S4A/S4B, L1132-1139",
+        "setup": "A completely naive network is given Interleaved_{S,T1}, but the hidden-layer target firing rates used to shape the sleep noise were taken from a DIFFERENT experiment's post-Task-2 statistics -- deliberately leaking Task 2 information into the noise.",
+        "numbers": "Task 1 = 0.60 ± 0.03; Task 2 = 0.49 ± 0.05 [L1136-1137]",
+        "claim": "'the network learns Task 1 but Task 2 performance remained at baseline' [L351-352]. Sleep noise carrying Task 2 rate statistics does not teach Task 2.",
+        "note": "Note that Task 1 reaches only 0.60 ± 0.03 here, below the 0.70 of E1 -- the paper does not comment on this shortfall."
+      },
+      {
+        "id": "E7 -- CONTROL: Interleaved_{S,T1} applied after Task 1 training",
+        "section": "Results L352-354; S4C/S4D, L1139-1144",
+        "setup": "unsupervised → Task 1 training → Interleaved_{S,T1}",
+        "numbers": "after Task 1 training: Task 1 = 0.70 ± 0.02, Task 2 = 0.53 ± 0.02. After Interleaved_{S,T1}: Task 1 = 0.71 ± 0.02, Task 2 = 0.51 ± 0.02 [L1141-1143]",
+        "claim": "'it maintained performance on Task 1 but again without any performance gain for Task 2' [L353-354]",
+        "note": "The cleanest statement in the paper of what sleep does NOT do: it does not create knowledge that was never trained."
+      },
+      {
+        "id": "E8 -- CONTROL: Uniform-Noise Sleep (US) -- one population-mean rate for all hidden neurons",
+        "section": "Results L355-362; S4E/S4F, L1144-1150",
+        "setup": "Same as E5 but 'we used the same input firing rate for all hidden layer neurons determined by the mean firing of the entire hidden layer population as opposed to the private spiking history of individual H neurons' [L357-359]",
+        "numbers": "after Task 1 training: Task 1 = 0.70 ± 0.02, Task 2 = 0.53 ± 0.02. After the uniform-noise interleaved phase: Task 1 = 0.67 ± 0.05, Task 2 = 0.69 ± 0.03 [L1148-1150]",
+        "claim": "'these results suggest that the properties of the input that drives firing during sleep are not essential to enable replay, any similar to awake random activity in layers H and O is sufficient to prevent forgetting' [L360-362]",
+        "note": "This is the control that reduces the wake→sleep carried state from 784 scalars to 1. It is the most important control in the paper for the monograph's capacity argument. Naming discrepancy: the Results text calls it Interleaved_{US,T1} [L359] while the S4 caption calls it Interleaved_{US,T2} [L1146]; the numbers show Task 2 was the trained task, so the Results label appears to be a typo."
+      },
+      {
+        "id": "E9 -- BASELINE: freeze the top-x% of Task-1-relevant synapses instead of sleeping",
+        "section": "Results L503-517; S6A-C, L1181-1189",
+        "setup": "Task 1 training, then Task 2 training with the strongest x% of post-Task-1 synapses held frozen. In all three cases the post-Task-1 baseline was Task 1 = 0.70 ± 0.02, Task 2 = 0.53 ± 0.02 [L1184].",
+        "numbers": "freeze 1%: Task 1 = 0.54 ± 0.02, Task 2 = 0.68 ± 0.03. freeze 5%: Task 1 = 0.65 ± 0.02, Task 2 = 0.61 ± 0.01. freeze 10%: Task 1 = 0.70 ± 0.03, Task 2 = 0.53 ± 0.03 [L1184-1187]",
+        "claim": "'in all cases, some degree of retroactive or prospective interference was observed highlighting the fact that the sleep-like phase performs a significantly more sophisticated modification to the weight matrix than simply freezing (or amplifying) task relevant synapses.' [L509-511]. The paper explicitly links freezing to Elastic Weight Consolidation: 'freezing a fraction of synaptic weights that are most relevant to old tasks (however, implemented in more complex form) is one of the approaches in machine learning to avoid catastrophic forgetting--Elastic Weight Consolidation [7].' [L517-547]",
+        "note": "This is the paper's cleanest quantitative win: freezing traces out a strict trade-off curve (1% → new task only; 10% → old task only; 5% → 0.65/0.61) whereas sleep reaches 0.70/0.68, dominating every freezing point on both axes simultaneously. EWC itself is NOT run -- only this hand-rolled freezing proxy."
+      },
+      {
+        "id": "E10 -- Neuronal dropout / distributed-coding check",
+        "section": "Results L238-242; S2, L1105-1113",
+        "setup": "progressively remove hidden-layer neurons at random during the testing period, starting from 784 and decreasing to 0 [L1108-1109]",
+        "numbers": "Main text: performance stays steady 'until around 70% of the hidden layer was pruned' [L240-241]. S2 caption: 'The testing performance remains high until ~25% of neurons are left, after which it starts to drop.' [L1109-1110]",
+        "claim": "'Such high resiliency suggests the network utilizes a highly distributed coding strategy to develop its policy.' [L241-242]",
+        "note": "The two statements correspond to 70% removed vs 75% removed. Both are hedged ('around', '~'); report both, do not average them."
+      },
+      {
+        "id": "E11 -- SVM decision-boundary analysis of the weight state",
+        "section": "Results L404-419, Fig 4D; Methods L988-997",
+        "setup": "RBF-kernel SVM trained to classify flattened 6272-dimensional excitatory H→O weight matrices as Task-1-like or Task-2-like, using the last fifth of each single-task training phase [L989-995]. Protocol under test: T1 → T2 → Interleaved_{S,T1}.",
+        "numbers": "mean signed distance to the decision boundary: Task 1 = -0.069, Task 2 = 0.069, Interleaved_{S,T1} = -0.0047 [L394-396]. For the S5 analogue with Interleaved_{T1,T2}: Task 1 = -0.069, Task 2 = 0.069, Interleaved_{T1,T2} = 0.016 [L1165-1167].",
+        "claim": "'the synaptic weight matrices which result from InterleavedS,T1 training are a mixture of Task 1 and Task 2 states' [L418-419]",
+        "note": "-0.0047 is 6.8% of the 0.069 single-task magnitude; 0.016 is 23%. Taken at face value the sleep-interleaved state sits closer to the boundary (more balanced) than the data-replay-interleaved state -- but the two runs are different protocols and the paper does not compare these two numbers directly."
+      },
+      {
+        "id": "E12 -- Task-relevant weight-distribution structure",
+        "section": "Results L364-403, Fig 4C; S5C for the interleaved analogue",
+        "setup": "'task-relevant' synapses are defined as those in the top 10% of the distribution following training on that task [L365-367]. Protocol: T1 → T2 → Interleaved_{S,T1}.",
+        "numbers": "no numbers -- distributions only",
+        "claim": "the Task-1-relevant structure is 'destroyed following Task 2 training (top-middle) but partially recovered following InterleavedS,T1 training (top-right)', and the Task-2-relevant structure 'was partially retained following InterleavedS,T1 training' [L374-379]. The word throughout is PARTIALLY."
+      },
+      {
+        "id": "E13 -- Two-cluster synaptic dynamics during sleep-interleaved training",
+        "section": "Results L450-485, Fig 6A/6B",
+        "setup": "traces of all synapses projecting to a single representative output neuron under T1 → T2 → Interleaved_{S,T1}",
+        "numbers": "at the onset of Interleaved_{S,T1} (annotated 240,000 aeons) the strong Task-2 cluster ranges from ~0.08 to ~0.4 with the rest grouped near 0 [L453-455]",
+        "claim": "'As InterleavedS,T1 training progressed, Task 1 specific synapses moved to the strong cluster and some, presumably less important, Task 2 synapses moved to the weak cluster. After a period of time the rate of transfer decreased and the total number of synapses in each group stabilized, showing that the network approached equilibrium' [L455-485]"
+      },
+      {
+        "id": "E14 -- Two-dimensional weight histograms: overwriting vs renormalisation",
+        "section": "Results L486-502, Fig 6C/6D; Methods L999-1010",
+        "setup": "per-synapse scatter of weight at time slice 1 (x) vs time slice 2 (y), binned. Scale bar: brown = 50 synapses/bin, blue = 1 synapse/bin [L532, L1003-1004].",
+        "numbers": "no scalar numbers",
+        "claim": "under T1→T2, 'many strongly trained by Task 1 synapses were depressed down to zero' -- 'complete overwriting of the synaptic weight matrix' [L494-497]. Under T2→Interleaved_{S,T1}, 'many synapses that were strong following Task 2 training were not depressed to zero but rather were pushed to an intermediate strength' [L500-501].",
+        "note": "This figure is the microscopic evidence for the projection Π of (T04-6): sleep moves weights to an intermediate value rather than to zero."
+      },
+      {
+        "id": "E15 -- Solution-manifold geometry and distance-to-manifold curves",
+        "section": "Results L552-583, Fig 7A-I; Methods L1012-1035",
+        "setup": "kPCA embeddings of weight configurations from 10 networks; Euclidean distance in the full 6272-dimensional space from the current weight state to the point sets Man_T1, Man_T2 and Man_{T1∩T2}",
+        "numbers": "no scalar numbers; curves only",
+        "claim": "'both InterleavedT1,T2 and InterleavedS,T1/T2 training cause synaptic weight configurations to smoothly converge towards MT1∩T2, while Sequential training avoids this intersection entirely' [L573-575]",
+        "note": "The manifolds are point sets built partly FROM the interleaved runs -- see unfavorable_facts item 11. The authors themselves note under-sampling: '(Note, that we certainly under sampled MT1 and MT2, which may explains initial distance increase.)' [L572-573]"
+      },
+      {
+        "id": "E16 -- Receptive fields and the Particle Responsiveness Metric",
+        "section": "Results L243-262 (single task, Fig 2), L431-446 (post-sleep, Fig 5); S3A-D; Methods: PRM L1037-1095",
+        "setup": "output-neuron receptive fields computed as the H-to-O-weighted average of hidden-neuron receptive fields [L243-247]; PRM is an author-defined scalar summarising how strongly a particle orientation drives output activity in the matching movement direction",
+        "numbers": "no scalar values are printed in the text -- only bar plots in S3",
+        "claim": "after Interleaved_{S,T1} a single upper-left output neuron 'responded to both horizontal (rewarded for Task 1) and vertical (rewarded for Task 2) orientations' [L434-437], and the underlying hidden neurons split into two disjoint task-selective sets [L437-443]",
+        "note": "This is the paper's mechanistic picture of what a 'joint representation' is: not a blended feature, but two disjoint hidden-neuron subsets multiplexed onto the same decision neuron."
+      }
+    ],
+    "protocol_variants_glossary": {
+      "Sequential (T1→T2 or T2→T1)": "no interleaving [Fig 3A, Fig 7D-F]",
+      "Interleaved_{T1,T2}": "old and new task alternated every 100 movement cycles; requires the old environment [L279-282]",
+      "Interleaved_{S,T2}": "sleep alternated with NEW task (Task 2) training after Task 1; the headline protocol [L300-306, Fig 3E/3F]",
+      "Interleaved_{S,T1}": "sleep alternated with Task 1 training, run AFTER T1→T2 has already erased Task 1; used for all the weight-space analyses [Fig 4, Fig 6]",
+      "Interleaved_{US,T2}": "Uniform-Noise Sleep variant of Interleaved_{S,T2} [S4E/F L1144-1150; called Interleaved_{US,T1} at L359]"
+    }
+  },
+
+  "scale_ceiling": {
+    "model_size": "842 spiking map-based model neurons in total [L743]: 49 input (7x7), 784 hidden (28x28), 8 functional output (3x3 with a nonfunctional centre) [L744-746]. Plastic parameter count: 7056 input-to-hidden synapses (784 x 9, arithmetic on stated fan-in [L751]) trained once and frozen, plus 6272 excitatory hidden-to-output synapses [L995, L1035] which are the only continuously plastic block. The inhibitory hidden-to-output block is the same size but fully determined [L956-963].",
+    "token_count": "N/A -- no language, no tokens, no text. The input is a 7x7 binary egocentric visual field of a 50x50 grid world with 10% particle density [L731, L739-740].",
+    "task_count": "TWO. This is the hard ceiling of the paper. Both tasks are drawn from the same four-orientation particle vocabulary and are deliberately symmetric complements of one another: Task 1 rewards horizontal and punishes negative diagonal, Task 2 rewards vertical and punishes positive diagonal [L225-226, L231-232]. The paper itself stresses the similarity: 'The similarity between these tasks is evident in their definition (symmetrical particle orientations...), through the similar performances attained by the network on each task ... and through the similar levels of activity induced in the network when training each task' [L233-237]. No three-task sequence, no dissimilar task pair, no task-incremental or class-incremental benchmark.",
+    "performance_band": "Chance is 0.5 and the best single-task performance ever reported is 0.70 ± 0.02 [L167, L228]. The entire dynamic range being protected is therefore 0.20 wide, and the reported standard deviations are 0.02-0.05, i.e. 10-25% of the band.",
+    "benchmark_provenance": "AUTHOR-BUILT. The foraging environment and the rewarded-STDP learning rules are inherited from the same group's prior papers, Sanda, Skorheim & Bazhenov 2017 [ref 14] and Skorheim, Lonjers & Bazhenov 2014 [ref 15] [L862, L799]. The evaluation metric (pattern discriminability) and the secondary metric (PRM) are both defined in this paper [L166-167, L257-259, L1037-1095]. No standard continual-learning benchmark is used -- no permuted MNIST, no split MNIST/CIFAR, no CORe50.",
+    "compute": "NOT STATED. No wall-clock, no CPU-hours, no FLOPs, no code repository in the vendored text. Data Availability says only 'All relevant data are within the paper and its Supporting Information files' [L50-52].",
+    "learning_algorithm_ceiling": "The mechanism is demonstrated ONLY for local spike-timing-dependent plasticity with reward modulation, homeostatic synaptic scaling and heterosynaptic normalisation in a three-layer feedforward spiking network. It is never demonstrated for gradient descent, for a deep network, for a recurrent network, or for anything trained by backpropagation. The authors point to their own prior transfer of the idea into feedforward ANNs [refs 54-56, L677-679] but run none of it here.",
+    "summary": "Largest demonstration: 2 complementary 4-orientation foraging tasks, 842 neurons, 6272 continuously plastic synapses, 8 actions, 10 trials, one sleep-interleaved phase, performance band 0.50-0.70. Distance to LLM deployment scale is roughly nine orders of magnitude in parameters and infinite in kind, since no gradient is ever computed."
+  },
+
+  "concept_ledger_delta": {
+    "new": [
+      {
+        "term": "solution manifold (Man_T1, Man_T2) in synaptic weight space",
+        "definition": "'a subspace of synaptic weight space that guarantees high performance on that task' [L126-127]; operationally, the point set of weight configurations capable of supporting robust performance on that task [L1013-1015]",
+        "source": "Introduction L126-127; Results L552-566; Methods L1012-1035"
+      },
+      {
+        "term": "manifold intersection Man_{T1∩T2} / 'joint synaptic weight representation'",
+        "definition": "the region of weight space supporting both tasks simultaneously; the paper's proposed target of consolidation and the object named in its title",
+        "source": "Title L5-7; Abstract L60-63; Results L556-583; Discussion L721-727"
+      },
+      {
+        "term": "Interleaved_{S,T} protocol",
+        "definition": "alternation of new-task training intervals with equal-duration sleep intervals, with NO old-task data present at any point",
+        "source": "Results L300-304; Methods: Simulated sleep L985-986"
+      },
+      {
+        "term": "Uniform-Noise Sleep (US)",
+        "definition": "sleep in which every hidden neuron receives Poisson drive at the same rate, the population mean, rather than at its own recorded rate",
+        "source": "Results L355-359"
+      },
+      {
+        "term": "task-relevant synapses",
+        "definition": "the synapses in the top 10% of the weight distribution following training on that specific task",
+        "source": "Results L365-367"
+      },
+      {
+        "term": "renormalization of task-relevant synapses",
+        "definition": "the observed outcome by which sleep pushes previously-strong new-task synapses to an intermediate strength rather than to zero, while promoting weak old-task synapses back into the strong cluster",
+        "source": "Results heading L448-449; L500-502, L511-513"
+      },
+      {
+        "term": "spontaneous forward replay (H→O)",
+        "definition": "noise-driven propagation through the hidden-to-output weight matrix that 'preferentially benefits the strongest synapses' -- the paper's mechanistic name for replay without stored data",
+        "source": "Results L309-311"
+      },
+      {
+        "term": "Particle Responsiveness Metric (PRM)",
+        "definition": "an author-defined scalar quantifying how strongly a given particle orientation drives output-layer activity in that neuron's direction of motion",
+        "source": "Results L257-262; Methods L1037-1095"
+      },
+      {
+        "term": "aeon",
+        "definition": "unit of simulated time, 1 aeon = 100 movement cycles (= 100 'epochs' in the paper's sense)",
+        "source": "Fig 1B caption L199; Methods: Policy L781-783"
+      }
+    ],
+    "extended_or_renamed": [
+      {
+        "term": "interleaved training → sleep-interleaved training",
+        "note": "The paper takes CLS-era interleaved training [refs 4, 10, 11] and removes its data-storage precondition, arguing that the two are 'effectively equivalent': 'interleaving new task training with sleep was effectively equivalent to explicit interleaved training of the old and new tasks without the need to store and train on previous task data or environments' [L610-611]",
+        "source": "Introduction L106-113; Discussion L610-611, L671-677"
+      },
+      {
+        "term": "replay",
+        "note": "The paper uses 'replay' in the biological reactivation sense (spontaneous, generated by the network) and explicitly distinguishes it from the deep-learning sense reviewed in ref 9, which involves 'storing a subset of previous veridical inputs and mixing them with more recent inputs' [L673-674]. The monograph must keep these two senses apart; the whole Θ-path hinges on which one is meant.",
+        "source": "Discussion L671-677; ref 9 L1257-1260"
+      },
+      {
+        "term": "catastrophic forgetting → a geometric event",
+        "note": "recast from 'the old task's accuracy dropped' to 'the weight state jumped from one solution manifold to another while avoiding their intersection' [L644-646, L578-583]. This is the paper's conceptual contribution and the reason it belongs in the monograph rather than merely in a citation list.",
+        "source": "Discussion L643-653; Fig 7G-I"
+      }
+    ],
+    "retired_or_argued_against": [
+      {
+        "term": "perpetual storage of original training data",
+        "note": "framed as 'the stringent constraint' that interleaved training imposes and that this paper exists to remove [L109-111, L284-286, L674-677]",
+        "source": "Introduction L106-113; Results L283-286; Discussion L671-677"
+      },
+      {
+        "term": "synapse freezing (and by explicit extension the EWC family) as a sufficient mechanism",
+        "note": "empirically dominated by sleep on both axes at every tested freezing fraction, and argued to be qualitatively the wrong shape of intervention: 'the sleep-like phase performs a significantly more sophisticated modification to the weight matrix than simply freezing (or amplifying) task relevant synapses' [L509-511]. EWC [ref 7] is named as the machine-learning instance of the freezing idea [L517-547].",
+        "source": "Results L503-517; S6 L1181-1189"
+      },
+      {
+        "term": "the claim that sleep's benefit depends on structured, task-specific replay cues",
+        "note": "retired by the paper's own control: uniform population-mean noise works as well as per-neuron rate-matched noise [L355-362, S4E/F L1144-1150]",
+        "source": "Results L355-362"
+      }
+    ]
+  },
+
+  "open_questions": [
+    {
+      "q": "Does the mechanism survive past two tasks? The paper never runs a third task, so the per-round degradation rate ρ over repeated sleep rounds is entirely unmeasured. The paper's geometric story predicts progressive shrinkage of the intersection region as tasks accumulate, but it neither states nor tests that prediction.",
+      "source": "task set fixed at two throughout, L164-165, L225-232; no multi-task experiment exists in the paper or supplement"
+    },
+    {
+      "q": "How much uninterrupted new-task training is survivable? The paper identifies a failure regime and never locates its boundary: 'a single episode of new task training using reinforcement learning could quickly erase old memories to the point that they cannot be recovered by subsequent sleep' [L639-640] and 'a single long episode of new task learning would push the network far away from the old task manifold making it impossible to recover by subsequent sleep' [L651-653]. The 100-movement-cycle interval is asserted, never justified or swept.",
+      "source": "Discussion L639-642, L649-653; protocol L300-303"
+    },
+    {
+      "q": "Is the general continual-learning problem solved? The paper opens by declaring it open [L103-105] and does not close it. Its own scope statement restricts the claim: 'at least for procedural memories that are directly encoded to the cortical network connectivity during new training' [L722-723].",
+      "source": "Introduction L103-105; Discussion L721-727"
+    },
+    {
+      "q": "Does the mechanism transfer to gradient-trained networks? The authors assert transfer by citation to their own prior work -- 'we recently successfully implemented a similar approach in feedforward ANNs, where sleep-like phase prevented catastrophic forgetting and improved generalization and adversarial robustness [54-56]' [L677-679] -- but run no such experiment here. Whether the local-plasticity ingredients (heterosynaptic normalisation, homeostatic scaling, eligibility traces) are load-bearing or incidental is left open.",
+      "source": "Discussion L677-679; refs 54-56 L1512-1523"
+    },
+    {
+      "q": "Are mixed-task replays real in this model? The theoretical argument for sleep's superiority over classical interleaving rests on them -- 'Sleep, on the other hand, can support not only replays of the old task, but also support replays which are a mixture of both tasks [41,52,53]. Thus, through unsupervised plasticity during sleep replay, the system is able to perform approximate optimization for the desired dual-task (or multi-task) state.' [L668-670] -- but no analysis of replay content is performed. The claim is imported by citation, not demonstrated.",
+      "source": "Discussion L654-670"
+    },
+    {
+      "q": "Only REM-like sleep is modelled. 'to simulate REM sleep-like activity in the model, the rewarded STDP rule was replaced by unsupervised STDP' [L293-295] and the justification is that REM cortical activity is 'low-synchronized and similar to baseline awake activity' [L292-293]. NREM, characterised by 'complex patterns of synchronized neuronal activity' [L719], is not modelled at all -- yet the literature the paper cites assigns declarative-memory consolidation to NREM [L120-122, L627-629]. What NREM-like synchronised replay would add is left open.",
+      "source": "Results L292-297; Discussion L627-635, L709-720"
+    },
+    {
+      "q": "The biological prediction is untested. 'Our study predicts synaptic level mechanisms of how sleep-based memory reactivation can protect old memory traces during training of a new interfering memory task.' [L721-722] No in-vivo or in-vitro validation accompanies the paper.",
+      "source": "Discussion L721-727"
+    },
+    {
+      "q": "Is the freezing baseline fairly represented? Only three freezing fractions (1%, 5%, 10%) with a single selection criterion (top-magnitude after Task 1) are tested, and EWC -- named as the machine-learning member of this family [L546-547] -- is never actually run. Whether a properly implemented importance-weighted regulariser closes the gap is open.",
+      "source": "Results L503-517; S6 L1181-1189"
+    },
+    {
+      "q": "Does the result depend on the reward asymmetry? Reward is +1 and punishment is -0.001, three orders of magnitude smaller [L932-936]. During sleep the constant is +0.5 -- half the magnitude of the wake reward. No sensitivity analysis over these constants appears.",
+      "source": "Methods: Synaptic plasticity L932-937"
+    }
+  ],
+
+  "unfavorable_facts": [
+    {
+      "fact": "The strong baseline nearly matches the method, and the paper's own superiority claim is admitted to be theoretical rather than empirical. Interleaved_{T1,T2} (which requires stored old-task data) reaches 0.68 ± 0.03 / 0.65 ± 0.04; sleep reaches 0.70 ± 0.03 / 0.68 ± 0.05. The paper writes 'exceeding those achieved through InterleavedT1,T2 training' [L305-306] on gaps of 0.02 and 0.03 against standard deviations of 0.03-0.05, and then concedes in the Discussion: 'Although classical interleaved training of the old and new tasks showed similar performance results in our model as interleaving new task training with sleep, we believe the latter to be superior on the following theoretical grounds.' [L654-655]. The demonstrated advantage of sleep in this paper is the ELIMINATION OF STORED DATA, not accuracy.",
+      "source": "L282, L304-306, L654-670"
+    },
+    {
+      "fact": "No statistical test appears anywhere in the paper. All numbers are mean ± std over 'at least 10 trials' [L168-169]. The word 'significantly' is used at least three times -- 'fell significantly closer to the decision boundary' [L418], 'significantly below that seen after InterleavedS,T2' [L506], 'significantly driven by these rewarded food particle orientations' [L444] -- with no test named and no p-value reported.",
+      "source": "L168-169, L418, L444, L506"
+    },
+    {
+      "fact": "The manifold result is partly definitional. Methods states that the point sets Man_T1 and Man_T2 'included the synaptic weight states from the last fifth of training on a particular task ... and all of the synaptic weight states from the last fifth of both InterleavedT1,T2 and InterleavedS,T1/T2 training', and that 'The intersection of the two solution manifolds (i.e. the point-set MT1∩T2) was defined solely by the synaptic weight states from the last fifth of both InterleavedT1,T2 and InterleavedS,T1 training.' [L1013-1019]. The intersection point set is therefore CONSTRUCTED FROM the interleaved runs whose convergence toward it is then plotted in Fig 7F. This does not make the accuracy results wrong, but the geometric headline -- 'sleep pushes the weight state toward the intersection of the manifolds' -- is not an independent measurement of those trajectories. The monograph must state this when it reproduces Fig 7.",
+      "source": "Methods: Distance from solution manifolds L1012-1035; Fig 7D-F L567-575"
+    },
+    {
+      "fact": "The authors themselves flag under-sampling of the manifolds: '(Note, that we certainly under sampled MT1 and MT2, which may explains initial distance increase.)' [L572-573]. The minimum-distance estimator of (T04-7) is biased upward under sparse sampling in 6272 dimensions.",
+      "source": "Results L572-573; Methods L1030-1035"
+    },
+    {
+      "fact": "The sleep phase is not fully information-free with respect to wake. The Poisson drive rates during sleep are computed from firing statistics recorded during preceding training of BOTH tasks: 'we recorded average spiking rates of neurons in the hidden layer H during preceding training of both Task 1 and Task 2; these task specific spiking rates were then averaged to generate target spiking rates' [L982-985]. The paper runs three controls to argue this is not training in disguise [L346-362, S4], and the Uniform-Noise control reduces the carried state to one population-mean scalar [L355-362, L1144-1150] -- but the MAIN configuration whose numbers are the headline does consume 784 wake-derived scalars.",
+      "source": "Methods: Simulated sleep L981-985; controls Results L341-362 and S4 L1132-1150"
+    },
+    {
+      "fact": "Results and Methods describe the sleep-time learning rule in two different vocabularies. Results: 'the rewarded STDP rule was replaced by unsupervised STDP' [L294-295], restated in Methods: Simulated sleep as 'We also change the learning rule between the hidden and output layer from rewarded to unsupervised STDP' [L978-979]. Methods: Synaptic plasticity: 'During periods of sleep the network received a constant reward of Srp = 0.5 on each movement cycle.' [L936-937]. Both sentences are in the paper. A reader given only the first will not expect a positive scalar multiplying every trace during sleep. [The two are reconcilable -- constant modulation is unmodulated Hebbian learning up to scale -- but that reconciliation is MY INFERENCE, not the paper's statement.]",
+      "source": "L294-295, L936-937, L978-980"
+    },
+    {
+      "fact": "Two tasks only, and they are deliberately symmetric complements from the same four-orientation vocabulary. The paper stresses the similarity as a feature [L233-237]. There is no dissimilar-task pair, no task sequence longer than two, and hence no measurement of ρ over repeated sleep rounds -- the exact quantity the monograph's cost table needs.",
+      "source": "L164-165, L225-237"
+    },
+    {
+      "fact": "The performance band being protected is narrow. Chance is 0.5 and the trained ceiling is 0.70 ± 0.02 [L167, L228-229]. Every claim in the paper lives inside a 0.20-wide interval with per-condition standard deviations of 0.02-0.05.",
+      "source": "L166-167, L228-229"
+    },
+    {
+      "fact": "Author-built task, author-built metric, no standard benchmark. The foraging environment and the rewarded-STDP rules come from the same group's prior work [refs 14, 15, cited at L799 and L862], and both evaluation metrics (pattern discriminability and PRM) are defined in this paper [L166-167, L1037-1095]. No permuted-MNIST, split-MNIST/CIFAR or any other community continual-learning benchmark is run.",
+      "source": "L166-167, L257-262, L799, L862, L1037-1095"
+    },
+    {
+      "fact": "Sleep preserves; it does not restore. The mechanism is explicitly conditional on the old trace surviving: 'if Task 1 synapses are still strong enough to maintain replay, they are replayed and weights are increased' [L310-311], and 'a single episode of new task training using reinforcement learning could quickly erase old memories to the point that they cannot be recovered by subsequent sleep' [L639-640]. This bounds the claim sharply: the offline phase does something a wake phase cannot only within a window where the wake damage is still partial.",
+      "source": "Results L307-311; Discussion L636-653"
+    },
+    {
+      "fact": "Freezing is dominated but the comparison is only three points wide, and EWC is cited rather than run. Freeze-1%: 0.54/0.68. Freeze-5%: 0.65/0.61. Freeze-10%: 0.70/0.53 [L1184-1187]. Only top-magnitude-after-Task-1 selection is tested. EWC [ref 7] is named as the ML instance of this family [L517-547] and never implemented.",
+      "source": "Results L503-517; S6 L1181-1189"
+    },
+    {
+      "fact": "The paper contains at least three internal inconsistencies a careful reader will hit. (i) Naming: the uniform-noise experiment is 'InterleavedUS,T1' at L359 but 'InterleavedUS,T2' in the S4 caption at L1146; the reported numbers (Task 1 0.67 ± 0.05, Task 2 0.69 ± 0.03) show Task 2 was the trained task. (ii) Dropout threshold: 'around 70% of the hidden layer was pruned' [L241] versus 'remains high until ~25% of neurons are left' [L1109-1110]. (iii) A misprinted standard deviation: 'single Task 1 (0.70 ± 002)' [L305], correct value 0.70 ± 0.02 from L228.",
+      "source": "L241, L305, L359, L1109-1110, L1146-1150"
+    },
+    {
+      "fact": "Zero cost accounting. No FLOPs, no wall-clock, no CPU-hours, no memory footprint, no energy, no code link. B_s exists only as a simulated-time duration and is a single unswept point (100 movement cycles, 1:1 duty with wake).",
+      "source": "absence throughout; Data Availability L50-52; duty ratio L301-303, L985-986"
+    },
+    {
+      "fact": "Only 6272 synapses of the final layer are consolidated. The input-to-hidden block is trained once during the 'developmental critical period' and then frozen for every reinforcement-learning phase [L205-207]; during sleep the input layer is silenced so no I→H plasticity can occur at all [L966-967]. All of the paper's claims about sleep are claims about one fully-connected output layer.",
+      "source": "L153-157, L205-207, L966-967"
+    },
+    {
+      "fact": "The authors state the blank-slate limitation themselves. 'In our model, and indeed in all neural network models, the system begins as a \"blank slate\" without knowledge of any previous learning or competing demands. In contrast, animals under experimental training paradigms have a wealth of experiences which would serve as priors' [L685-689], and they therefore restrict the claim: 'Due to this stark differences, we focus our attention on the interference phenomena which follow training on an initial task as opposed to initial learning.' [L696-697]",
+      "source": "Discussion L683-697"
+    },
+    {
+      "fact": "The equations are unnumbered and one of them is not fully recoverable from the vendored text. The precise algebraic form of Δ_m (whether Sum_tr/Avg_tr divides or multiplies) cannot be resolved from L879-925 as rendered. Two other constants, δ and Δ_tar, are introduced without numeric values.",
+      "source": "Methods: Synaptic plasticity L879-945"
+    }
+  ],
+
+  "not_evidence_for_llms": {
+    "preamble": "This paper is the corpus's strongest DIRECT evidence that an offline phase produces a weight state no wake phase produces. That claim must be stated precisely, because it is easy to over-transfer. What follows is the boundary.",
+    "what_it_IS_evidence_for": [
+      "That a network can be made to replay its own past task WITHOUT any stored past data, and that the replay is sufficient to hold old-task performance at its trained value (0.70 ± 0.03 versus 0.70 ± 0.02) while a new task is learned to its own trained value (0.68 ± 0.05 versus 0.69 ± 0.03) [L228-229, L276, L304-305].",
+      "That the replay source can be structureless: uniform population-mean Poisson noise works as well as per-neuron rate-matched noise [L355-362, S4E/F L1144-1150]. The wake→sleep carried state can be one scalar.",
+      "That the offline phase is not equivalent to any static protection of the old parameters: every tested freezing fraction is dominated on both axes simultaneously [S6 L1181-1189 versus L304-305].",
+      "That interleaving GRANULARITY matters and there is a regime boundary: short training episodes alternated with sleep succeed where one long episode is unrecoverable [L307-311, L639-642, L649-653].",
+      "That the resulting weight state is genuinely intermediate, by three independent readouts -- SVM distance to the decision boundary (-0.0047 versus ±0.069) [L394-396], PC-space location [Fig 4E], and per-synapse 2-D histograms showing old-task synapses pushed to intermediate rather than zero strength [Fig 6D right, L500-502]."
+    ],
+    "what_it_is_NOT_evidence_for": [
+      "NOT evidence about gradient-trained networks. There is no loss function, no derivative, no optimizer, and no backward pass anywhere in this paper. The write rule is a local eligibility-gated Hebbian product followed by a hard normalisation projection [(T04-2), (T04-6)]. Nothing licenses the inference that an SGD/AdamW sleep round on an LLM inherits these dynamics.",
+      "NOT evidence about transformers, language, or sequence modelling. The network is a three-layer feedforward spiking classifier over a 7x7 binary field with 8 actions. No attention, no recurrence, no tokens.",
+      "NOT evidence at deployment scale. 6272 continuously plastic synapses versus 10^9-10^12 parameters. Two tasks versus open-ended task streams.",
+      "NOT evidence that the replay content is semantically correct. The paper never inspects what is replayed; the mixed-task-replay argument is imported by citation [L668-670, refs 41/52/53]. In an LLM the analogous failure -- replay that is fluent but false -- is the central risk of the Θ-path and this paper says nothing about it.",
+      "NOT evidence that sleep beats data replay on quality. Classical interleaved training with stored data performs within one standard deviation [L282 versus L304-305]. If the old data is available, this paper gives no accuracy reason to prefer sleep.",
+      "NOT evidence about ρ over repeated rounds. Two tasks, one Interleaved phase. Any statement about how many sleep rounds a model can sustain is unsupported by this paper.",
+      "NOT evidence about serving cost. No FLOPs, no latency, no bytes, no batching, no hardware. The 1:1 sleep:wake duty ratio is a modelling choice in simulated time, not a compute budget.",
+      "CRITICALLY: the mechanism depends on machinery transformers do not have -- spike timing as the correlation signal, per-neuron firing-rate homeostasis with target rates, heterosynaptic normalisation enforcing constant column sums, balanced feedforward inhibition, and a 6-movement-cycle eligibility trace [L861-963]. The paper's own account of why sleep beats freezing rests on the normalisation constraint [L509-517]. Remove the constraint and the argument has no stated substitute."
+    ],
+    "the_one_transferable_structural_claim": "R_k in frame Eq. (U-Θ) does not have to be a dataset. It can be a stream generated by running the model on noise, with H_k stored nowhere but in Θ_k. This paper demonstrates that this is sufficient for retention in at least one system, and that the auxiliary state required to seed the generation can be a single scalar. Every other transfer to LLMs is an analogy and must be marked as one."
+  },
+
+  "cross_path_citations": {
+    "verdict": "Total silence toward the E path and the W path, and the silence is chronologically forced rather than chosen. The paper was published 2022-11-18 [L36], before every E-path paper in the corpus (MemGPT 2023, Letta STC 2025) and every W-path paper. Its 77 references are neuroscience, psychology, spiking-network modelling, and the classical connectionist forgetting literature. A grep of the full text for 'transformer', 'language model', 'attention' (in the architectural sense), 'LoRA', 'retrieval', 'generative replay', 'fast weight', 'test-time' and 'prompt' returns nothing but false positives on ordinary English usage. There is no arXiv preprint of this paper and no code link in the vendored text.",
+    "Theta_path": {
+      "engaged": "Yes, but only its pre-2020 continual-learning wing.",
+      "citations": [
+        "Kirkpatrick et al. 2017, Elastic Weight Consolidation, PNAS [ref 7, L1248-1251] -- cited once, at L546-547, as the machine-learning form of the freezing idea the paper's S6 control dominates.",
+        "McClelland, McNaughton & O'Reilly 1995, CLS [ref 11, L1268-1272] -- the origin of interleaved training [L107-108].",
+        "Hayes, Krishnan, Bazhenov, Siegelmann, Sejnowski & Kanan 2021, 'Replay in Deep Learning' [ref 9, L1257-1260] -- the review that states the inherited open question [L103-105] and that supplies the paper's characterisation of DL replay as storing veridical inputs [L673-674].",
+        "Kemker et al. 2017 [ref 6] and Kemker & Kanan FearNet 2017 [ref 8] -- cited only in the opening sweep at L102-103.",
+        "French 1999 [ref 1], McCloskey & Cohen 1989 [ref 2], Ratcliff 1990 [ref 3], Hasselmo 2017 [ref 4], Flesch et al. 2018 [ref 10] -- the catastrophic-forgetting canon.",
+        "Javed & White 2019, 'Meta-Learning Representations for Continual Learning' [ref 51, L1496-1500] -- cited once at L647-648 as 'a similar idea was recently proposed in the machine learning literature to minimize catastrophic interference by learning representations that accelerate future learning'. This is the paper's ONLY citation to the meta-learning community.",
+        "Krishnan/Tadros/Ramyaa/Bazhenov, 'Biologically inspired sleep algorithm' [refs 54-56, L1512-1523] -- the same group's transfer of this mechanism into feedforward ANNs, cited at L677-679 but not evaluated here."
+      ],
+      "note": "Deep Generative Replay (Shin et al. 2017) is NOT cited, despite being the closest Θ-path relative in the monograph's corpus and despite the reviews cited (ref 9) covering it. That is a real gap the monograph should record: the two data-free-replay ideas -- generate the data with a learned generative model, versus generate the activity by running the network on noise -- develop in parallel without citing each other in this direction."
+    },
+    "W_path": {
+      "engaged": "No. Zero citations.",
+      "citations": [],
+      "note": "No fast weights, no test-time training, no memory-augmented networks, no MAML, no RNN/SSM state, no attention. The single nearest neighbour is Javed & White 2019 [ref 51], which is meta-learning for continual learning, not fast-weight memory. Nothing in this paper's vocabulary distinguishes a state that moves at test time from a weight that is trained -- and it does not need to, because W = ∅ here."
+    },
+    "E_path": {
+      "engaged": "No -- and the paper argues against the E path's founding premise.",
+      "citations": [],
+      "note": "The only external store that appears is 'the original training data ... perpetually stored for later use' [L109-111] and the DL replay buffer of 'storing a subset of previous veridical inputs' [L673-674]. Both are named as the cost this paper exists to remove. There is no vector store, no retrieval, no knowledge base, no agent memory. Chronology makes this unremarkable -- MemGPT postdates this paper by eleven months -- but the ARGUMENT is not merely absent, it is adverse: the paper's stated value proposition is that the external store is unnecessary."
+    },
+    "bio_and_theory": {
+      "engaged": "Overwhelmingly -- this is the paper's citation base.",
+      "citations": [
+        "Rasch & Born 2013, 'About sleep's role in memory' [ref 16] -- cited more than any other reference, the backbone of the sleep-consolidation claim.",
+        "Ji & Wilson 2007 [ref 17], Euston et al. 2007 [ref 18], Peyrache et al. 2009 [ref 19], Barnes & Wilson 2014 [ref 20] -- the replay-during-sleep electrophysiology.",
+        "Mednick et al. 2011 [ref 21], Stickgold 2013 [ref 22], Stickgold, James & Hobson 2000 [ref 46], McDevitt, Duggan & Mednick 2015 [ref 50] -- REM/NREM division of labour and REM rescuing learning from interference.",
+        "Zwaka et al. 2015 [ref 24], Melnattur et al. 2021 [ref 25], Donlea et al. 2011 [ref 26], Tainton-Heap et al. 2021 [ref 64], Kaiser & Steiner-Kaiser 1983 [ref 65], Sauer et al. 2003 [ref 66] -- insect sleep, used to justify the mushroom-body analogy and REM-like activity in invertebrates.",
+        "Wei, Krishnan & Bazhenov 2016/2018/2020 [refs 38-40] and Gonzalez et al. 2020 [ref 41] -- the group's own thalamocortical sleep-replay line, the direct predecessor.",
+        "Bi & Poo 1998 [ref 28], Markram et al. 1997 [ref 29] -- STDP; Farries & Fairhall 2007, Florian 2007, Izhikevich 2007, Legenstein et al. 2008 [refs 30-33] -- rewarded STDP.",
+        "Rulkov et al. [refs 67, 68, 76], Komarov et al. 2018 [ref 77] -- the map-based neuron model.",
+        "LeCun, Bengio & Hinton 2015 [ref 34] -- the only general deep-learning citation, used as an analogy for the convolutional and fully-connected layers [L160-161, L704]."
+      ]
+    },
+    "finding_for_the_monograph": "This paper is the biological ancestor that NONE of the three paths inherits from in writing within this corpus's own citation graph as seen from this end. It states its problem in the vocabulary of 1995 CLS and 2017 EWC, it answers it with 2007-era spiking machinery, and it hands the result forward without ever naming a language model. When the monograph writes its bridge chain, the honest statement is: the Θ path's later members carry this paper's METAPHOR (sleep, replay, consolidation) but this paper carries none of their MACHINERY, and the transfer of authority from here to there has to be justified by the later papers, not by this one."
+  },
+
+  "figures": [
+    {
+      "figure": "Fig 1",
+      "location": "caption L183-203; panels described L153-161 (A), L170-173 and L197-200 (B/C), L225-231 (D/E)",
+      "shows": "Architecture (7x7 → 28x28 → 3x3, fan-in 9, balanced excitation/inhibition) plus the performance timeline of unsupervised → task training → testing, and example agent trajectories before and after training.",
+      "worth_reproducing": "yes -- panel A only, redrawn. It is the cheapest way to show the reader that the consolidated block is one 784x8 fully-connected layer."
+    },
+    {
+      "figure": "Fig 3 (A-F)",
+      "location": "caption L320-337; text L272-306",
+      "shows": "THE core result in one figure: (A/B) sequential T1→T2 destroys Task 1 to chance; (C/D) Interleaved_{T1,T2} with stored data preserves both; (E/F) Interleaved_{S,T2} with sleep and no stored data preserves both.",
+      "worth_reproducing": "yes -- ESSENTIAL. This is the figure the whole Part I T6 module should be built around. Reproduce with the three baselines' numbers printed on it so the near-tie with Interleaved_{T1,T2} is visible."
+    },
+    {
+      "figure": "Fig 4C",
+      "location": "caption L388-399; text L364-403",
+      "shows": "Distributions of task-relevant synaptic weights across the T1 → T2 → Interleaved_{S,T1} protocol: Task-1 structure destroyed by Task 2 and partially recovered by sleep; Task-2 structure partially retained.",
+      "worth_reproducing": "yes -- it is the only place the word 'partially' is made visual, and it disciplines the reader against reading 'sleep restores the old task' as 'sleep restores the old weights'."
+    },
+    {
+      "figure": "Fig 4D",
+      "location": "caption L394-396",
+      "shows": "SVM signed distance to the Task-1/Task-2 decision boundary: -0.069, +0.069, and -0.0047 for the sleep-interleaved state.",
+      "worth_reproducing": "optional -- the three numbers can be quoted in prose without the box plot."
+    },
+    {
+      "figure": "Fig 4E",
+      "location": "caption L396-398",
+      "shows": "Trajectory of the hidden-to-output weights through PC space; sleep-interleaved weights cluster between the Task 1 and Task 2 clusters.",
+      "worth_reproducing": "optional -- superseded by Fig 7 for the same point."
+    },
+    {
+      "figure": "Fig 6C and 6D",
+      "location": "caption L528-536; text L486-502; method L999-1010",
+      "shows": "Per-synapse 2-D histograms. 6C: under sequential training strongly-trained Task-1 synapses collapse onto the axis, i.e. complete overwriting. 6D: under sleep-interleaved training strong Task-2 synapses are pushed to an intermediate strength instead of to zero.",
+      "worth_reproducing": "yes. This is the microscopic evidence for the normalisation projection (T04-6) and it is the single most convincing panel in the paper that sleep is not freezing."
+    },
+    {
+      "figure": "Fig 7G-I",
+      "location": "caption L593-603; text L576-583",
+      "shows": "The thesis cartoon: two solution manifolds as orthogonal elliptic paraboloid volumes with an ellipsoidal intersection; sequential training jumps between them avoiding the intersection, sleep-interleaved training stays near the old manifold and converges into it.",
+      "worth_reproducing": "yes -- redraw. This is the picture the monograph's Θ-path chapters will refer back to. Caption MUST carry the caveat that the intersection point set was constructed from the interleaved runs [L1013-1019]."
+    },
+    {
+      "figure": "Fig 7D-F",
+      "location": "caption L596-598; text L567-575",
+      "shows": "Euclidean distance in the full 6272-dimensional space from the current weight state to Man_T1, Man_T2 and Man_{T1∩T2} under sequential, data-interleaved and sleep-interleaved training.",
+      "worth_reproducing": "yes, with the two caveats attached (definitional construction of the point sets; author-acknowledged under-sampling [L572-573])."
+    },
+    {
+      "figure": "Fig 2 versus Fig 5",
+      "location": "Fig 2 caption L208-214; Fig 5 caption L466-482; text L243-262 and L431-446",
+      "shows": "Receptive field of the same upper-left decision neuron after single-task training (responds to horizontal only) versus after sleep-interleaved training (responds to horizontal AND vertical, via two disjoint sets of hidden neurons).",
+      "worth_reproducing": "yes -- as a side-by-side pair. It is what 'joint representation' concretely means in this paper: multiplexing, not blending."
+    },
+    {
+      "figure": "S6 (A-C)",
+      "location": "caption L1181-1189; text L503-517",
+      "shows": "The freezing baseline trade-off curve: 1% → 0.54/0.68, 5% → 0.65/0.61, 10% → 0.70/0.53.",
+      "worth_reproducing": "yes -- as a small table rather than a figure. It is the paper's cleanest quantitative argument and the numbers are more legible than the bars."
+    },
+    {
+      "figure": "S4 (E-F)",
+      "location": "caption L1144-1150; text L355-362",
+      "shows": "Uniform-Noise Sleep works: Task 1 = 0.67 ± 0.05, Task 2 = 0.69 ± 0.03 with one population-mean drive rate.",
+      "worth_reproducing": "yes -- as numbers in the capacity discussion. This is the control that makes the 'one scalar of carried state' claim."
+    },
+    {
+      "figure": "S1D",
+      "location": "caption L1098-1103; text L298-299",
+      "shows": "Spike raster during sleep: hidden and output layers active, input layer completely silent.",
+      "worth_reproducing": "optional -- but it is the fastest way to make 'offline' concrete for a reader who has never seen a raster."
+    }
+  ],
+
+  "systems_implications": {
+    "framing_warning": "The paper contains NO hardware, NO cost model and NO serving context. Everything in this section is either (a) a count the paper states, or (b) an inference explicitly marked as mine. Per the NM D4 rule inherited by S0-DESIGN, no memory-hierarchy argument is licensed by this paper and the monograph must not manufacture one.",
+    "decode_cost": "Unchanged by sleep. [PAPER-STATED basis] a decision is one movement cycle of 600 simulation timesteps through the fixed 7x7 → 28x28 → 3x3 feedforward path [L744-746, L769, L776-789]; sleep alters only the values in Θ^{H→O} [L978-980]. [INFERENCE] Therefore the sleep-time compute of this paper buys retention at exactly zero wake-time cost -- the ideal shape for the amortization argument -- but the paper measures neither side, so it contributes no number to Eq. (A).",
+    "state_bytes": "[PAPER-STATED counts, NO dtype and NO byte figure anywhere] 6272 excitatory hidden-to-output synapses [L995, L1035]; 6272 inhibitory synapses that are fully determined by the excitatory ones and are therefore not independent state [L956-963]; 8 homeostatic set-point scalars [L938-945]; 784 fixed outgoing-sum targets [L928-930]; 784 measured sleep-drive rates [L982-985], reduced to 1 by the Uniform-Noise control [L1144-1150]. [PAPER-STATED, and the number that matters] ZERO bytes of past-task data [L611, L674-677, L727].",
+    "the_capacity_result_worth_carrying": "[INFERENCE from paper-stated facts] The state that must cross the wake→sleep boundary is O(1) scalars, not O(dataset). If that property survives transfer to a gradient-trained model -- which this paper does not establish -- it would mean a Θ-path sleep round needs no per-user replay buffer at all, only the weights themselves. That is the single systems claim the monograph is entitled to draw from here, and it must be drawn as a hypothesis, not a result.",
+    "batching_consequence": "[INFERENCE -- the paper has one agent and never discusses serving] Because both wake and sleep write the same deployed weight block, this architecture has no frozen serving artefact. Translated into the Rosetta table of STC-STYLE-NOTATION §3, 'batch with shared weights' breaks completely: every agent's weights diverge from the first movement cycle. This is the extreme end of the Θ-path's per-user-delta problem, and it is worth stating precisely because it shows the problem is intrinsic to the path and not an artefact of LoRA-style implementations.",
+    "duty_cycle": "[PAPER-STATED] Sleep and wake intervals are both 100 movement cycles, a 1:1 ratio in simulated time [L301-303, L985-986]. [INFERENCE] In Eq. (A) terms this is C_sleep = C_wake per period with N_q undefined, so no break-even N_q* can be computed. The monograph should say so explicitly rather than leaving the cell blank.",
+    "where_the_traffic_lands": "Not addressed and not inferable. The paper reports no memory footprint, no arithmetic intensity, no data movement, and no hardware target. Any statement placing this workload in HBM, DRAM or anywhere else would be invented.",
+    "the_shape_of_the_sleep_workload": "[INFERENCE from Methods] The sleep round is: (i) generate independent Poisson spike trains for 784 hidden units; (ii) propagate through a dense 784x8 matrix for 60,000 timesteps; (iii) apply local trace updates and, after every event, a column-wise renormalisation of the same 784x8 matrix. It is small, dense, sequential in time, and dominated by the per-event normalisation rather than by the matrix product. That profile is the OPPOSITE of an LLM sleep round (large, batched, gradient-dominated) and the monograph should use the contrast to make the point that 'offline compute' names a schedule, not a workload shape.",
+    "the_one_number_a_systems_reader_can_take_away": "0.70 → 0.52 without sleep, 0.70 → 0.70 with a 1:1 sleep duty cycle and zero stored data [L228-229, L275, L304-305]. Everything else in this paper is mechanism, not cost."
+  },
+
+  "todo_verify": [
+    {
+      "item": "Exact algebraic form of the rewarded-STDP weight update Δ_m -- whether the Sum_tr/Avg_tr term divides or multiplies.",
+      "where": "Methods: Synaptic plasticity, vendored text L879-901; the OCR layout does not resolve the fraction structure.",
+      "search_term": "In the published PDF/HTML at doi.org/10.1371/journal.pcbi.1010628, Methods → 'Synaptic plasticity', search 'Srp' and 'Sumtr'. Do not print the formula in the monograph until resolved.",
+      "blocking": "yes for any displayed equation; no for any claim in this note"
+    },
+    {
+      "item": "Numeric values of Δ_tar (homeostatic step) and δ (Avg_tr smoothing rate).",
+      "where": "Methods: Synaptic plasticity L915-945 -- both symbols are introduced without values in the vendored text.",
+      "search_term": "search 'Dtar' / 'Δtar' / 'delta' in the published Methods; also check S1 Text if one exists.",
+      "blocking": "no"
+    },
+    {
+      "item": "The 'target rate' for output-layer homeostatic scaling is never given a numeric value.",
+      "where": "Methods: Synaptic plasticity L938-945",
+      "search_term": "search 'target rate' in the published Methods",
+      "blocking": "no"
+    },
+    {
+      "item": "Whether Avg_tr is a per-synapse or a global running average.",
+      "where": "Methods: Synaptic plasticity L909-925 -- the indexing is ambiguous in the vendored text.",
+      "search_term": "search 'Avgtr' in the published Methods and check the subscripts",
+      "blocking": "no"
+    },
+    {
+      "item": "Whether homeostatic scaling and heterosynaptic normalisation remain active during the sleep phase.",
+      "where": "Methods: Simulated sleep L965-986 lists four changes at sleep and does NOT mention suspending either mechanism; this note infers they stay on.",
+      "search_term": "search 'Simulated sleep' section for 'homeostatic' / 'scaling'; if absent in the published text the inference stands but must stay marked as an inference.",
+      "blocking": "yes for the claim in outer_vs_inner row 4"
+    },
+    {
+      "item": "Total number of interleaved periods and total simulated duration of each phase.",
+      "where": "The only time annotation in the text is '240,000 aeons' at the onset of Interleaved_{S,T1} in the Fig 6A protocol [L453].",
+      "search_term": "read the x-axis tick labels of Fig 3A/3C/3E, Fig 4A and Fig 6A/6B in the published figures; search '240,000' and 'aeon'.",
+      "blocking": "yes for any B_s number beyond the per-interval 100 movement cycles"
+    },
+    {
+      "item": "Label of the uniform-noise experiment -- Interleaved_{US,T1} [L359] or Interleaved_{US,T2} [S4 caption L1146].",
+      "where": "Results L355-362 versus S4 caption L1144-1150",
+      "search_term": "compare the S4E/S4F panel labels in the published supplement",
+      "blocking": "no -- the numbers disambiguate (Task 2 was trained)"
+    },
+    {
+      "item": "Dropout threshold -- 70% pruned [L241] versus ~25% remaining [L1109-1110].",
+      "where": "Results L238-242 versus S2 caption L1105-1113",
+      "search_term": "read the S2 gradient bar and x-axis in the published supplement",
+      "blocking": "no -- report both verbatim"
+    },
+    {
+      "item": "Whether the supplementary experiments (S4, S6) also used ≥10 trials.",
+      "where": "L168-169 states the ≥10-trial protocol globally; the S4 and S6 captions do not restate it.",
+      "search_term": "search 'ten trials' / 'trials' in the S4 and S6 captions of the published supplement",
+      "blocking": "no"
+    },
+    {
+      "item": "Confirmation that no I→H plasticity can occur during sleep.",
+      "where": "Methods: Simulated sleep L966-967 silences the input layer; L205-207 freezes I→H during RL. The combination implies no I→H updates at sleep, but this is not stated.",
+      "search_term": "search the published 'Simulated sleep' section for 'I to H' / 'input layer' / 'frozen'",
+      "blocking": "yes for the parenthetical in outer_vs_inner row 1"
+    },
+    {
+      "item": "Simulation code availability.",
+      "where": "Data Availability Statement L50-52 says only 'All relevant data are within the paper and its Supporting Information files'. No repository URL appears in the vendored text.",
+      "search_term": "search the published article for 'github' / 'zenodo' / 'code'; also check refs 14/15 (Sanda 2017, Skorheim 2014) for the parent codebase.",
+      "blocking": "no"
+    },
+    {
+      "item": "Whether any figure or supplement reports a statistical test.",
+      "where": "no test appears in the vendored text despite three uses of 'significantly' [L418, L444, L506].",
+      "search_term": "search the published article for 'p <' / 'p-value' / 't-test' / 'Wilcoxon' / 'ANOVA'",
+      "blocking": "yes for the unfavorable_facts item asserting that no test appears anywhere"
+    }
+  ],
+
+  "note_metadata": {
+    "written_by": "deep-read subagent, STC v2 pre-research",
+    "written_on": "2026-08-06",
+    "source_file": "/home/jimmy/repos/neural-memory-study/papers/stc/STC-T04.txt",
+    "source_file_lines": 1642,
+    "source_completeness": "FULL ARTICLE read end to end: abstract, author summary, introduction, results, discussion, complete methods, all six supporting-figure captions (S1-S6), author contributions and all 77 references. The supporting figures themselves are EPS files not present in the vendored text -- only their captions are available, and every S-figure number quoted in this note comes from a caption.",
+    "line_citation_convention": "All 'L<n>' references are line numbers in the vendored text file above, not journal page numbers. The paper numbers NO equations; Methods subsections are cited by name.",
+    "frame_version": "S0-DESIGN.md v0.1 (2026-08-06) §2 and §4; STC-STYLE-NOTATION.md v0.1 §0-§1",
+    "reserved_symbol_compliance": "Θ, W, E, S_t, ell, calL, eta_t, eta_Theta, C (chunk), C_cap, rho, B_s, B_t, N_q, k, tau used per STC-STYLE-NOTATION §1.2 only. Twelve paper-symbol collisions recorded in core_mechanism.notation_conflicts, all with remaps. No reserved symbol is redefined anywhere in this note."
+  }
+}

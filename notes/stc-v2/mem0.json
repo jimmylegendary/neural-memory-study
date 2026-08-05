@@ -1,0 +1,551 @@
+{
+  "paper_id": "mem0",
+  "arxiv": "2504.19413",
+  "arxiv_version_read": "v1 [cs.CL] 28 Apr 2025",
+  "title": "Mem0: Building Production-Ready AI Agents with Scalable Long-Term Memory",
+  "authors": "Prateek Chhikara, Dev Khant, Saket Aryan, Taranjeet Singh, Deshraj Yadav",
+  "affiliation": "Mem0 (research@mem0.ai) — commercial vendor of the system being evaluated. No academic affiliation is listed. [title block, lines 4-8]",
+  "venue": "arXiv preprint. No venue, no peer review stated.",
+  "date": "2025-04-28",
+  "path": "papers/stc/2504.19413.txt",
+  "code": "'Code can be found at: https://mem0.ai/research' [line 27] — a vendor landing page, not a repository URL.",
+  "axis": "E",
+
+  "problem_stated": {
+    "one_line": "LLM agents cannot stay coherent across multi-session dialogue because the context window is fixed, and simply making it longer neither solves cost nor guarantees that distant facts are actually used.",
+    "as_the_paper_puts_it": [
+      {
+        "claim": "The core limitation is the absence of persistent memory, not the size of the window.",
+        "quote": "'these systems are fundamentally limited by their reliance on fixed context windows, which severely restrict their ability to maintain coherence over extended interactions ... This limitation stems from LLMs' lack of persistent memory mechanisms that can extend beyond their finite context windows.'",
+        "source": "§1, lines 36-39"
+      },
+      {
+        "claim": "Long context is a delay, not a fix, for two named reasons: relationships outlive any window, and real conversations are not thematically contiguous.",
+        "quote": "'these improvements merely delay rather than solve the fundamental limitation ... First, as meaningful human-AI relationships develop over weeks or months, conversation history inevitably exceeds even the most generous context limits. Second, and perhaps more importantly, real-world conversations rarely maintain thematic continuity.'",
+        "source": "§1, lines 74-78"
+      },
+      {
+        "claim": "Even when the facts are in the window, attention degrades over distance.",
+        "quote": "'simply presenting longer contexts does not ensure effective retrieval or utilization of past information, as attention mechanisms degrade over distant tokens'",
+        "source": "§1, lines 82-89 (citing Guo et al. 2024, Nelson et al. 2024)"
+      },
+      {
+        "claim": "The requirement is stated as a three-verb specification, which becomes the architecture.",
+        "quote": "'A robust AI memory should selectively store important information, consolidate related concepts, and retrieve relevant details when needed'",
+        "source": "§1, lines 92-93"
+      }
+    ],
+    "note_on_framing": "The paper never frames the problem as a compute-allocation problem. B_s, B_t, amortization, idle time and 'sleep' do not appear anywhere in the text. The words 'sleep', 'offline', 'test-time' and 'inference-time' occur zero times in the paper (verified by grep over the full vendored text). The problem is framed as a *representation and cost* problem — what to keep and how few tokens to re-read — not as a *when to compute* problem."
+  },
+
+  "inherited_open_question": {
+    "status": "none-stated",
+    "evidence": "The paper contains no sentence of the form 'X left open', 'as posed by', 'the open question of'. Related work (§1, lines 61-69) and the baseline descriptions (App. C, lines 1305-1372) describe prior systems' mechanisms; they never quote a prior paper's future-work item. There is no Related Work section as such — prior work is folded into §1 and App. C.",
+    "what_it_implicitly_answers": [
+      {
+        "prior_paper": "MemGPT (Packer et al., 2023 — arXiv 2310.08560), cited at §1 line 67 and §3.3 line 317, and described at App. C lines 1342-1361.",
+        "their_open_question": "'integrating different memory tier technologies like databases or caches' [MemGPT §5]",
+        "mem0_answer": "Answered concretely and without acknowledgement: the external tier is a dense vector index (base Mem0, §2.1 lines 177-178) plus Neo4j (Mem0^g, §2.2 lines 241-242). MemGPT's undifferentiated 'external context' becomes a typed store with per-fact granularity."
+      },
+      {
+        "prior_paper": "MemGPT",
+        "their_open_question": "'further improving control flow and memory management policies' — MemGPT names policy improvement as future work and never contemplates learning it.",
+        "mem0_answer": "Answered by *declining to learn it*, explicitly: 'Rather than using a separate classifier, we leverage the LLM's reasoning capabilities to directly select the appropriate operation' [§2.1, lines 161-162]. The policy remains a frozen-LLM prompt. Zero parameters are trained anywhere in this paper."
+      },
+      {
+        "prior_paper": "MemGPT",
+        "their_open_question": "What is the cost of the memory hierarchy? MemGPT never poses it and reports no token, latency or dollar accounting.",
+        "mem0_answer": "Answered on the *read* side only, and made the paper's headline: Table 2 reports p50/p95 search and total latency and retrieved-token counts for every system. The *write* side (extraction + update LLM calls) is still not accounted — see cost_table.B_s."
+      },
+      {
+        "prior_paper": "Letta 'Sleep-time Compute' (arXiv 2504.13171, 18 Apr 2025) — the paper that names this line.",
+        "their_open_question": "n/a",
+        "mem0_answer": "NOT CITED. Mem0 v1 appeared 10 days later and does not reference it. The two E-path papers that the monograph places adjacent in the chain are mutually unaware. This is a bridge-chain fact, not a criticism."
+      }
+    ],
+    "finding": "Mem0 inherits no stated question from anyone. It is a systems paper written by a vendor against a benchmark leaderboard, and its interlocutors are competing *products* (Zep, LangMem, OpenAI ChatGPT memory, A-Mem), not competing *questions*. For the monograph this is the observable that separates the E-path's commercial wing from its research wing."
+  },
+
+  "core_mechanism": {
+    "no_numbered_equations": "The paper contains ZERO numbered equations. The mechanism is stated in prose (§2.1, lines 123-178; §2.2, lines 179-246) and one pseudocode block (Algorithm 1, App. B, lines 1220-1303). All citations below are therefore to section and line, not to equation number. This is itself a fact about the paper's genre.",
+
+    "unified_form": {
+      "layers_touched": "E only. Theta and W are never written. The LLM (GPT-4o-mini) and the embedding model are frozen throughout [§2.1 line 176; §2.2 lines 241-242].",
+
+      "read": {
+        "latex": "\\hat y \\;=\\; f\\big(q;\\ \\Theta,\\ \\mathrm{ret}(E, q)\\big), \\qquad W \\equiv \\varnothing",
+        "gloss": "Standard form (R) with the W term empty. There is no fast-weight state of any kind.",
+        "ret_base": "\\mathrm{ret}(E,q) = \\text{top-}n\\ \\text{dense-embedding nearest neighbours of } q \\text{ over the memory strings}",
+        "ret_graph": "\\mathrm{ret}(E,q) = \\underbrace{\\mathcal{N}_{\\pm}(\\mathrm{anchor}(q))}_{\\text{entity-centric subgraph}} \\;\\cup\\; \\underbrace{\\{(v_s,r,v_d) : \\mathrm{sim}(\\mathrm{emb}(q), \\mathrm{emb}(v_s,r,v_d)) > \\theta_{\\mathrm{rel}}\\}}_{\\text{semantic triplet}}",
+        "ret_graph_source": "§2.2, lines 229-239. 'dual-approach strategy': entity-centric traversal of both incoming and outgoing edges from anchor nodes, plus whole-query-embedding matching against textual encodings of each triplet, thresholded and ranked."
+      },
+
+      "write": {
+        "latex_top": "E_{\\tau+1} \\;=\\; \\mathrm{wr}\\big(E_\\tau,\\ \\hat c_\\tau\\big), \\qquad \\hat c_\\tau \\;=\\; S\\big(c_\\tau,\\ E_\\tau;\\ B_s\\big)",
+        "deviation_from_canonical": "Two structural deviations from the standard (U-E) of S0 §2.2. (1) The summariser argument is not just the context c: S is conditioned on E itself, because the conversation summary and the recency window are *retrieved from the database* before extraction [§2.1, lines 129-141]. The update is therefore recursive in E, i.e. E_{\\tau+1} = wr(E_\\tau, S(c_\\tau, E_\\tau; B_s)), and drift in E feeds back into future extraction. The canonical form has no such feedback path. (2) wr is not append-only: it can shrink E. See the operator set below.",
+        "step_1_extraction": {
+          "latex": "\\hat c_\\tau \\;=\\; \\{\\omega_1,\\dots,\\omega_n\\} \\;=\\; \\phi\\big(P_\\tau\\big), \\qquad P_\\tau \\;=\\; \\big(\\underbrace{\\hat c^{\\mathrm{sum}}}_{\\text{paper's }S},\\ \\{m_{t-m},\\dots,m_{t-2}\\},\\ m_{t-1},\\ m_t\\big)",
+          "source": "§2.1, lines 127-151. phi is 'an extraction function implemented via an LLM'. The trigger unit is a *message pair* (m_{t-1}, m_t), 'typically a user message and an assistant response' [lines 127-129].",
+          "hyperparameters": "m = 10 recency messages [§2.1, line 175]."
+        },
+        "step_2_integration": {
+          "latex": "\\mathrm{wr}(E,\\hat c) : \\quad \\forall\\, \\omega_i \\in \\hat c,\\ \\ \\mathrm{op}_i \\;=\\; g_\\Theta\\big(\\omega_i,\\ \\mathrm{ret}_s(E,\\omega_i)\\big) \\in \\{\\textsf{ADD},\\textsf{UPDATE},\\textsf{DELETE},\\textsf{NOOP}\\}",
+          "gloss": "g_Theta is the SAME frozen LLM invoked through a function-calling interface the paper calls a 'tool call'. ret_s retrieves the top s semantically similar existing memories.",
+          "source": "§2.1, lines 152-164; Algorithm 1 App. B lines 1227-1303.",
+          "hyperparameters": "s = 10 similar memories [§2.1, line 176].",
+          "operator_semantics": {
+            "ADD": "E \\leftarrow E \\cup \\{(\\mathrm{id},\\omega)\\} when no semantically equivalent memory exists [Alg. 1 lines 1238-1243].",
+            "UPDATE": "E \\leftarrow (E \\setminus \\{m_i\\}) \\cup \\{(\\mathrm{id}_i,\\omega)\\}, guarded by an information-content test: applied only 'if InformationContent(f) > InformationContent(m_i)' [Alg. 1 lines 1249-1252]. InformationContent is never defined anywhere in the paper.",
+            "DELETE": "E \\leftarrow E \\setminus \\{m_i\\} — a hard, irreversible removal of a contradicted memory [Alg. 1 lines 1256-1261].",
+            "NOOP": "identity [Alg. 1 lines 1263-1266]."
+          },
+          "key_property": "wr is CONTRACTION-CAPABLE. This is the first operator in the E-path corpus that can make |E| decrease as a *semantic* decision by a frozen LLM. MemGPT's external context is 'stored indefinitely'. The consequence is that rho (see cost_table) is now a real risk quantity for this architecture — and it is never measured."
+        },
+        "step_3_summary_refresh": {
+          "latex": "\\hat c^{\\mathrm{sum}}_{k+1} \\;=\\; \\mathrm{summarise}\\big(\\mathcal{H}_k\\big) \\quad \\text{(periodic, k = refresh round, off the request path)}",
+          "source": "§2.1, lines 142-146: 'we implement an asynchronous summary generation module that periodically refreshes the conversation summary. This component operates independently of the main processing pipeline, ensuring that memory extraction consistently benefits from up-to-date contextual information without introducing processing delays.'",
+          "significance": "THIS IS THE ONLY GENUINELY OFFLINE COMPONENT IN THE PAPER — the only place where a true sleep round with index k exists. Everything else (extraction, update) runs on the ingestion path, synchronously with the message pair. The refresh period, the summariser prompt, the summary length and its cost are all unreported."
+        }
+      },
+
+      "graph_variant_delta": {
+        "structure": "G = (V, E_{\\mathrm{edge}}, L_{\\mathrm{lab}}); each node v carries (entity type, embedding e_v, creation timestamp t_v); edges are triplets (v_s, r, v_d). [§2.2, lines 187-195]",
+        "write": "Two-stage LLM pipeline: entity extractor, then relationship generator [§2.2, lines 196-218]. Node reconciliation is by embedding similarity against a threshold t_{\\mathrm{sim}}: 'search for existing nodes with semantic similarity above a defined threshold t' — the threshold value is never given [§2.2, lines 220-223].",
+        "conflict_policy": "An LLM-based update resolver marks superseded relationships INVALID rather than deleting them: 'marking them as invalid rather than physically removing them to enable temporal reasoning' [§2.2, lines 225-226].",
+        "internal_tension": "The graph path preserves history by invalidation; the base path hard-DELETEs. The same system uses two mutually inconsistent forgetting policies, and the paper never reconciles them or measures either."
+      }
+    },
+
+    "notation_conflicts": [
+      {"paper_symbol": "S", "paper_meaning": "the conversation summary, a text object retrieved from the DB [§2.1 line 130]", "reserved_collision": "S_t (momentum term of (U-W)) and S(c;B_s) (offline processing procedure)", "map_to": "\\hat c^{\\mathrm{sum}} — a distinguished element of E. Never write a bare S for this."},
+      {"paper_symbol": "E", "paper_meaning": "the edge set of the memory graph G=(V,E,L) [§2.2 line 189]", "reserved_collision": "E = external store (RESERVED, P2: may not be overwritten)", "map_to": "E_{\\mathrm{edge}} \\subset E"},
+      {"paper_symbol": "L", "paper_meaning": "node type labels [§2.2 line 190]", "reserved_collision": "\\mathcal{L} = outer/task loss", "map_to": "L_{\\mathrm{lab}}"},
+      {"paper_symbol": "M", "paper_meaning": "the memory store M = {m_1..m_n} [Alg. 1, line 1222]", "reserved_collision": "\\mathcal{M}(\\cdot;W) = memory read function", "map_to": "E (the store itself)"},
+      {"paper_symbol": "m", "paper_meaning": "TWO things in the same sentence: m_t = the message at index t, and m = the recency-window size hyperparameter (=10) [§2.1 lines 127-142]. Also m_i = a stored memory in Alg. 1.", "reserved_collision": "none reserved", "map_to": "messages: m_t. Window size: m_{\\mathrm{rec}} = 10. Stored item: use E-indexed notation."},
+      {"paper_symbol": "t", "paper_meaning": "THREE things: message index t [§2.1 line 127], node creation timestamp t_v [§2.2 line 193], and the node-merge similarity threshold t [§2.2 line 221].", "reserved_collision": "t = token/chunk time index (RESERVED, P3)", "map_to": "message index keeps t. Timestamp: t_v. Threshold: t_{\\mathrm{sim}} — must be renamed in the chapter."},
+      {"paper_symbol": "k", "paper_meaning": "the number of RAG chunks retrieved, k in {1,2} [§3.3 lines 331-334]", "reserved_collision": "k = sleep-round index (RESERVED, P3)", "map_to": "k_{\\mathrm{RAG}}"},
+      {"paper_symbol": "s", "paper_meaning": "number of similar memories retrieved for the update decision (=10) [§2.1 line 155, 176]", "reserved_collision": "near-collision with S/S_t", "map_to": "s_{\\mathrm{nn}} = 10"},
+      {"paper_symbol": "\\phi", "paper_meaning": "the LLM extraction function [§2.1 line 149]", "reserved_collision": "none", "map_to": "the S(\\cdot;B_s) of (U-E)"},
+      {"paper_symbol": "\\Omega = \\{\\omega_1..\\omega_n\\}", "paper_meaning": "the set of extracted candidate facts [§2.1 line 149]", "reserved_collision": "none", "map_to": "\\hat c (learned context), set-valued"},
+      {"paper_symbol": "F", "paper_meaning": "set of retrieved facts, input to Alg. 1 [line 1222]", "reserved_collision": "F_1 the metric, same page", "map_to": "\\hat c"},
+      {"paper_symbol": "P", "paper_meaning": "the extraction prompt tuple [§2.1 line 148]", "reserved_collision": "none", "map_to": "keep as P_\\tau"},
+      {"paper_symbol": "J", "paper_meaning": "LLM-as-a-Judge score [§3.2 line 281]", "reserved_collision": "none", "map_to": "keep J"},
+      {"paper_symbol": "\\mathrm{Mem0}^g", "paper_meaning": "the graph variant. Rendered in the vendored text as a floating superscript 'g' on its own line, which corrupts several sentences (e.g. lines 100-101, 169-170, 179-184).", "reserved_collision": "none", "map_to": "Mem0^g — when quoting the txt, repair the superscript silently and note it."}
+    ]
+  },
+
+  "outer_vs_inner": {
+    "headline": "NOTHING IS LEARNED. Not one parameter is updated anywhere in this paper. Every 'learnable-looking' object is either a frozen pretrained model, a hand-set hyperparameter, or a text record written by a frozen model. For the monograph's reader, whose first question is 'who learns this, and when', the answer for Mem0 is: nobody, never — all movement is wake-time movement of E.",
+    "table": [
+      {"object": "\\Theta of the reasoning/extraction/update LLM (GPT-4o-mini)", "who_learns_it": "OpenAI, before this paper", "when": "never in this paper — frozen at all three call sites (extraction phi, update tool call, answer generation)", "source": "§2.1 line 176: 'All language model operations utilized GPT-4o-mini as the inference engine.' §2.2 lines 241-242 repeats it for the graph pipeline."},
+      {"object": "\\Theta of the embedding model", "who_learns_it": "OpenAI, before this paper", "when": "never", "source": "§2.1 lines 177-178 says only 'The vector database employs dense embeddings' — Mem0's OWN embedding model is never named. text-embedding-3-small (written 'text-embedding-small-3' in the text) is named only for the RAG and LangMem baselines [§3.3 lines 325, 330]."},
+      {"object": "W (fast weights)", "who_learns_it": "n/a", "when": "does not exist. No recurrent state, no KV reuse across queries, no test-time gradient.", "source": "absence throughout §2"},
+      {"object": "E: the memory strings (base Mem0)", "who_learns_it": "the frozen LLM, via ADD/UPDATE/DELETE tool calls", "when": "WAKE-TIME MOVEMENT, on the ingestion path, once per message pair (m_{t-1}, m_t)", "source": "§2.1 lines 127-164"},
+      {"object": "E: the entity nodes, typed labels and relation triplets (Mem0^g)", "who_learns_it": "the frozen LLM (entity extractor + relationship generator), reconciled by embedding similarity", "when": "wake-time movement, on the ingestion path", "source": "§2.2 lines 196-226"},
+      {"object": "\\hat c^{\\mathrm{sum}} (the conversation summary)", "who_learns_it": "the frozen LLM", "when": "SLEEP-ROUND UPDATE — the one asynchronous, off-request-path component. Period unspecified.", "source": "§2.1 lines 142-146"},
+      {"object": "the operation-selection policy g (ADD/UPDATE/DELETE/NOOP)", "who_learns_it": "NOBODY — deliberately. The authors explicitly reject a trained classifier.", "when": "never; it is a prompt", "source": "§2.1 lines 161-162: 'Rather than using a separate classifier, we leverage the LLM's reasoning capabilities to directly select the appropriate operation based on the semantic relationship between the candidate fact and existing memories.'"},
+      {"object": "InformationContent(\\cdot), the UPDATE guard", "who_learns_it": "nobody; also never defined", "when": "evaluated at write time by unspecified means", "source": "Alg. 1 line 1249"},
+      {"object": "m_{\\mathrm{rec}} = 10 (recency window)", "who_learns_it": "hand-set by the authors", "when": "fixed for all experiments; no sweep reported", "source": "§2.1 line 175"},
+      {"object": "s_{\\mathrm{nn}} = 10 (neighbours consulted for the update decision)", "who_learns_it": "hand-set", "when": "fixed; no sweep reported", "source": "§2.1 line 176"},
+      {"object": "t_{\\mathrm{sim}} (node-merge similarity threshold, Mem0^g)", "who_learns_it": "hand-set", "when": "value never disclosed", "source": "§2.2 line 221"},
+      {"object": "the triplet-relevance threshold at retrieval (Mem0^g)", "who_learns_it": "hand-set, called 'configurable'", "when": "value never disclosed", "source": "§2.2 lines 236-237"},
+      {"object": "the summary-refresh period", "who_learns_it": "hand-set", "when": "value never disclosed", "source": "§2.1 line 143 ('periodically')"}
+    ]
+  },
+
+  "update_layer": {
+    "instantiates": "(U-E) only.",
+    "order": "Single layer. There is no ordering question: (U-W) and (U-Theta) are never executed. Theta and W are bit-identical before and after every memory operation. Mem0 is the cleanest pure-E instance in the corpus.",
+    "differences_from_canonical_U_E": [
+      {
+        "difference": "wr is contraction-capable, not append-only.",
+        "detail": "Canonical (U-E) writes \\hat c into E. Mem0's wr selects from {ADD, UPDATE, DELETE, NOOP}, so |E| can decrease and a previously stored fact can be destroyed by an LLM judgement with no human in the loop and no reversal path.",
+        "source": "§2.1 lines 157-161; Alg. 1 lines 1256-1261"
+      },
+      {
+        "difference": "S is conditioned on E, making the recursion closed-loop: E_{\\tau+1} = wr(E_\\tau, S(c_\\tau, E_\\tau; B_s)).",
+        "detail": "The extraction prompt includes the summary retrieved from the store. Extraction quality at step tau+1 therefore depends on writes made at step tau. Canonical (U-E) has \\hat c_k = S(c_k; B_s) with no E on the right-hand side.",
+        "source": "§2.1 lines 129-141"
+      },
+      {
+        "difference": "The trigger granularity is a message pair, not a context or a session.",
+        "detail": "Sleep-time compute as defined in S0 §2.3 spends B_s on a whole context c before queries arrive. Mem0 spends its budget incrementally, one (m_{t-1}, m_t) pair at a time, on the ingestion path. Only \\hat c^{\\mathrm{sum}} is refreshed off-path.",
+        "source": "§2.1 lines 124-127 ('incremental processing paradigm, enabling it to operate seamlessly within ongoing conversations'), lines 142-146"
+      },
+      {
+        "difference": "\\hat c is an extraction, not an anticipation.",
+        "detail": "S(\\cdot;B_s) here is a fact extractor: it summarises what was said. It does not reason about what will be asked. Compare the Letta line, where \\hat c is the *result of inference performed in advance of a likely query*. Mem0's write path performs no query-anticipatory reasoning of any kind. This is the sharpest mechanical distinction inside the E-path and the chapter must make it: Mem0 pre-computes a REPRESENTATION; Letta STC pre-computes an INFERENCE.",
+        "source": "§2.1 lines 148-151 ('extracts a set of salient memories ... resulting in candidate facts for potential inclusion in the knowledge base')"
+      },
+      {
+        "difference": "Two forgetting policies coexist, unreconciled.",
+        "detail": "Base Mem0: hard DELETE. Mem0^g: invalidation without removal, 'to enable temporal reasoning'. Neither is measured; the paper does not note the inconsistency.",
+        "source": "§2.1 lines 159-160 vs §2.2 lines 225-226"
+      }
+    ]
+  },
+
+  "cost_table": {
+    "B_s": {
+      "value": "absent",
+      "what_the_paper_does_say": [
+        "No token count, no FLOP count, no LLM-call count, and no dollar figure is given for the extraction phase, the update phase, or the asynchronous summary refresh. §4.5 is titled 'Memory System Overhead: Token Analysis and Construction Time' and measures only the SIZE of the resulting store, never the COST of building it.",
+        "The single quantitative statement about build cost is wall-clock and applies only to the graph variant: 'Mem0 graph construction completes in under a minute even in worst-case scenarios' [§4.5, lines 965-966]. No hardware, no concurrency, no per-conversation breakdown.",
+        "The competitor's build cost is characterised only anecdotally: Zep's 'graph construction involves multiple asynchronous LLM calls and extensive background processing' [§4.5, lines 963-964] — asserted, not counted."
+      ],
+      "consequence": "The amortisation equation (A), C_avg = C_wake + C_sleep/N_q, cannot be evaluated for this paper. The numerator is missing. Every efficiency claim in the abstract and conclusion is a WAKE-SIDE claim presented as a system-level claim.",
+      "arithmetic_the_paper_declines_to_do": "[INFERENCE — not in the paper] LOCOMO conversations contain ~600 dialogues and ~200 questions each [§3.1, lines 251-254]. If extraction fires once per message pair, the write path costs on the order of a few hundred extraction calls plus a few hundred update tool calls per conversation, each carrying a prompt containing the summary plus 10 recent messages (extraction) or the candidate fact plus 10 retrieved memories (update). Against N_q ≈ 200 queries, the number of ingest-side LLM calls is plausibly of the same order as, or larger than, the number of served queries. The paper never states the pairing rate, so this cannot be closed from the text — see todo_verify."
+    },
+    "L_w": {
+      "value": "present, and it is the paper's strongest cell",
+      "numbers": {
+        "Mem0_search_p50_s": 0.148,
+        "Mem0_search_p95_s": 0.200,
+        "Mem0_total_p50_s": 0.708,
+        "Mem0_total_p95_s": 1.440,
+        "Mem0g_search_p50_s": 0.476,
+        "Mem0g_search_p95_s": 0.657,
+        "Mem0g_total_p50_s": 1.091,
+        "Mem0g_total_p95_s": 2.590,
+        "full_context_total_p50_s": 9.870,
+        "full_context_total_p95_s": 17.117
+      },
+      "source": "Table 2, lines 641-838. Definitions at §3.2, lines 296-299: search latency = time to fetch memories/chunks; total latency = retrieval time + answer generation time.",
+      "what_is_missing_from_this_cell": "No TTFT/ITL decomposition. No hardware, no GPU, no batch size, no concurrency level. No standard deviations (only J carries ±1 std). No indication of whether measurements were taken against a hosted API (network-dominated) or local infrastructure. §4.4 attributes part of the gain to 'infra improvements' [line 934] without describing them, which makes the search-latency comparison against other vendors' systems not attributable to architecture alone."
+    },
+    "C_cap": {
+      "value": "present in TOKENS only; never in bytes",
+      "store_size_per_conversation": {
+        "Mem0": "~7k tokens ['Mem0 ... occupies only 7k tokens per conversation on an average', §4.5 lines 952-953]",
+        "Mem0g": "~14k tokens ['roughly doubles the footprint to 14k tokens', §4.5 lines 953-955]",
+        "Zep": ">600k tokens ['Zep's memory graph consumes in excess of 600k tokens', §4.5 lines 955-956]",
+        "raw_conversation_for_reference": "~26k tokens ['supplying the entire raw conversation context ... amounts to roughly 26k tokens on average, 20 times less relative to Zep's graph', §4.5 lines 958-960]"
+      },
+      "retrieved_tokens_per_query": {
+        "Mem0": 1764,
+        "Mem0g": 3616,
+        "A-Mem": 2520,
+        "LangMem": 127,
+        "Zep": 3911,
+        "OpenAI": 4437,
+        "full_context": 26031,
+        "source": "Table 2, 'chunk size / memory tokens' column, lines 658-837. Metric definition at §3.2 lines 291-296: 'the number of tokens extracted during retrieval that serve as context for answering queries'."
+      },
+      "do_not_conflate": "7k/14k (store footprint, §4.5) and 1764/3616 (retrieved context per query, Table 2) are DIFFERENT quantities measured in the same unit. The abstract's 'saves more than 90% token cost' [line 23] refers to the second. The chapter must not mix them.",
+      "what_is_missing": "No bytes, no dtype, no embedding dimension, no index size, no Neo4j storage footprint, no per-user projection, no growth curve of |E| against conversation length. C_cap as S0 defines it (bytes/session or bytes/user) is therefore absent — the paper reports a token proxy for one conversation length only."
+    },
+    "rho": {
+      "value": "absent",
+      "why_this_is_serious_here": "Mem0 is the first E-path system in the corpus whose write operator can DESTROY state (hard DELETE, Alg. 1 lines 1256-1261) on a frozen LLM's unaudited judgement. The paper reports no measurement of erroneous deletion, no precision/recall of the ADD/UPDATE/DELETE/NOOP classification, no degradation curve as the number of ingested sessions grows, and no repeated-ingest experiment. Each LOCOMO conversation is ingested once. There is no round index k over which rho could even be defined.",
+      "adjacent_evidence_the_paper_does_have_but_does_not_use": "The recursive conditioning of extraction on the stored summary (§2.1 lines 129-141) is exactly the loop in which drift would compound. The paper never probes it."
+    },
+    "summary": "Of the four cells, one (L_w) is well populated, one (C_cap) is populated with a token proxy and no bytes, and two (B_s, rho) are absent. The title claims production readiness; the two cells a production operator would need to size the fleet and bound the failure mode are the two that are missing."
+  },
+
+  "experiments": {
+    "setup": {
+      "dataset": "LOCOMO (Maharana et al., 2024): 10 extended conversations, each ~600 dialogues and ~26000 tokens on average, distributed across multiple sessions; ~200 questions per conversation with ground-truth answers. Question types: single-hop, multi-hop, temporal, open-domain. [§3.1, lines 250-256]",
+      "excluded_category": "'The dataset originally included an adversarial question category, which was designed to test systems' ability to recognize unanswerable questions. However, this category was excluded from our evaluation because ground truth answers were unavailable' [§3.1, lines 255-267]",
+      "models": "All Mem0 LLM operations use GPT-4o-mini [§2.1 line 176; §2.2 lines 241-242]. Graph DB = Neo4j [§2.2 line 241]. Baselines: LangMem initialised with gpt-4o-mini and text-embedding-small-3 [§3.3 lines 325-326]; RAG chunks embedded with text-embedding-small-3 [§3.3 line 330]; OpenAI memory evaluated with gpt-4o-mini [§3.3 line 343]; established LOCOMO benchmarks taken at the gpt-4o-mini setting [§3.3 lines 320-321].",
+      "judge": "LLM-as-a-Judge (J), binary CORRECT/WRONG label, prompt adapted from Packer et al. 2023 [App. A, lines 1099-1126]. 10 independent runs per method over the entire dataset, mean ±1 std reported [§3.2, lines 285-287]. THE JUDGE MODEL IS NEVER NAMED — the text says only 'a separate, more capable LLM' [§3.2, line 282].",
+      "temperature": "'unless otherwise specified, we set the temperature to 0' [§3.3, lines 314-315]",
+      "rag_grid": "chunk sizes 128, 256, 512, 1024, 2048, 4096, 8192 tokens; k in {1,2}; k>2 avoided because 'the average conversation length (26000 tokens) would be fully covered, negating the benefits of selective retrieval' [§3.3, lines 327-336]"
+    },
+    "table_1_per_category": {
+      "source": "Table 1, lines 358-558. Columns in order: Single-Hop (F1, B1, J), Multi-Hop (F1, B1, J), Open-Domain (F1, B1, J), Temporal (F1, B1, J). A-Mem* = the authors' own re-run of A-Mem at temperature 0 to obtain J scores.",
+      "rows": {
+        "LoCoMo":     {"single_hop": [25.02, 19.75, null], "multi_hop": [12.04, 11.16, null], "open_domain": [40.36, 29.05, null], "temporal": [18.41, 14.77, null]},
+        "ReadAgent":  {"single_hop": [9.15, 6.48, null],   "multi_hop": [5.31, 5.12, null],   "open_domain": [9.67, 7.66, null],   "temporal": [12.60, 8.87, null]},
+        "MemoryBank": {"single_hop": [5.00, 4.77, null],   "multi_hop": [5.56, 5.94, null],   "open_domain": [6.61, 5.16, null],   "temporal": [9.68, 6.99, null]},
+        "MemGPT":     {"single_hop": [26.65, 17.72, null], "multi_hop": [9.15, 7.44, null],   "open_domain": [41.04, 34.34, null], "temporal": [25.52, 19.44, null]},
+        "A-Mem":      {"single_hop": [27.02, 20.09, null], "multi_hop": [12.14, 12.00, null], "open_domain": [44.65, 37.06, null], "temporal": [45.85, 36.67, null]},
+        "A-Mem*":     {"single_hop": [20.76, 14.90, "39.79 ± 0.38"], "multi_hop": [9.22, 8.81, "18.85 ± 0.31"], "open_domain": [33.34, 27.58, "54.05 ± 0.22"], "temporal": [35.40, 31.08, "49.91 ± 0.31"]},
+        "LangMem":    {"single_hop": [35.51, 26.86, "62.23 ± 0.75"], "multi_hop": [26.04, 22.32, "47.92 ± 0.47"], "open_domain": [40.91, 33.63, "71.12 ± 0.20"], "temporal": [30.75, 25.84, "23.43 ± 0.39"]},
+        "Zep":        {"single_hop": [35.74, 23.30, "61.70 ± 0.32"], "multi_hop": [19.37, 14.82, "41.35 ± 0.48"], "open_domain": [49.56, 38.92, "76.60 ± 0.13"], "temporal": [42.00, 34.53, "49.31 ± 0.50"]},
+        "OpenAI":     {"single_hop": [34.30, 23.72, "63.79 ± 0.46"], "multi_hop": [20.09, 15.42, "42.92 ± 0.63"], "open_domain": [39.31, 31.16, "62.29 ± 0.12"], "temporal": [14.04, 11.25, "21.71 ± 0.20"]},
+        "Mem0":       {"single_hop": [38.72, 27.13, "67.13 ± 0.65"], "multi_hop": [28.64, 21.58, "51.15 ± 0.31"], "open_domain": [47.65, 38.72, "72.93 ± 0.11"], "temporal": [48.93, 40.51, "55.51 ± 0.34"]},
+        "Mem0g":      {"single_hop": [38.09, 26.03, "65.71 ± 0.45"], "multi_hop": [24.32, 18.82, "47.19 ± 0.67"], "open_domain": [49.27, 40.30, "75.71 ± 0.21"], "temporal": [51.55, 40.28, "58.13 ± 0.44"]}
+      },
+      "who_actually_wins_each_cell": {
+        "single_hop": "Mem0 on all three metrics (F1 38.72, B1 27.13, J 67.13).",
+        "multi_hop": "Mem0 on F1 (28.64) and J (51.15); LangMem WINS on B1 (22.32 vs Mem0's 21.58).",
+        "open_domain": "Zep WINS on F1 (49.56 vs Mem0g 49.27) and on J (76.60 vs Mem0g 75.71). Mem0g wins B1 (40.30).",
+        "temporal": "Mem0g on F1 (51.55) and J (58.13); Mem0 wins B1 (40.51 vs Mem0g 40.28)."
+      }
+    },
+    "table_2_overall_and_latency": {
+      "source": "Table 2, lines 641-838. Latency in seconds; 'chunk size / memory tokens' column as defined in §3.2.",
+      "rag_k1": [
+        {"chunk": 128,  "search_p50": 0.281, "search_p95": 0.823, "total_p50": 0.774, "total_p95": 1.825, "J": "47.77 ± 0.23%"},
+        {"chunk": 256,  "search_p50": 0.251, "search_p95": 0.710, "total_p50": 0.745, "total_p95": 1.628, "J": "50.15 ± 0.16%"},
+        {"chunk": 512,  "search_p50": 0.240, "search_p95": 0.639, "total_p50": 0.772, "total_p95": 1.710, "J": "46.05 ± 0.14%"},
+        {"chunk": 1024, "search_p50": 0.240, "search_p95": 0.723, "total_p50": 0.821, "total_p95": 1.957, "J": "40.74 ± 0.17%"},
+        {"chunk": 2048, "search_p50": 0.255, "search_p95": 0.752, "total_p50": 0.996, "total_p95": 2.182, "J": "37.93 ± 0.12%"},
+        {"chunk": 4096, "search_p50": 0.254, "search_p95": 0.719, "total_p50": 1.093, "total_p95": 2.711, "J": "36.84 ± 0.17%"},
+        {"chunk": 8192, "search_p50": 0.279, "search_p95": 0.838, "total_p50": 1.396, "total_p95": 4.416, "J": "44.53 ± 0.13%"}
+      ],
+      "rag_k2": [
+        {"chunk": 128,  "search_p50": 0.267, "search_p95": 0.624, "total_p50": 0.766, "total_p95": 1.829, "J": "59.56 ± 0.19%"},
+        {"chunk": 256,  "search_p50": 0.255, "search_p95": 0.699, "total_p50": 0.802, "total_p95": 1.907, "J": "60.97 ± 0.20%"},
+        {"chunk": 512,  "search_p50": 0.247, "search_p95": 0.746, "total_p50": 0.829, "total_p95": 1.729, "J": "58.19 ± 0.18%"},
+        {"chunk": 1024, "search_p50": 0.238, "search_p95": 0.702, "total_p50": 0.860, "total_p95": 1.850, "J": "50.68 ± 0.13%"},
+        {"chunk": 2048, "search_p50": 0.261, "search_p95": 0.829, "total_p50": 1.101, "total_p95": 2.791, "J": "48.57 ± 0.22%"},
+        {"chunk": 4096, "search_p50": 0.266, "search_p95": 0.944, "total_p50": 1.451, "total_p95": 4.822, "J": "51.79 ± 0.15%"},
+        {"chunk": 8192, "search_p50": 0.288, "search_p95": 1.124, "total_p50": 2.312, "total_p95": 9.942, "J": "60.53 ± 0.16%"}
+      ],
+      "systems": [
+        {"method": "Full-context", "tokens": 26031, "search_p50": null, "search_p95": null, "total_p50": 9.870, "total_p95": 17.117, "J": "72.90 ± 0.19%"},
+        {"method": "A-Mem",   "tokens": 2520, "search_p50": 0.668, "search_p95": 1.485, "total_p50": 1.410, "total_p95": 4.374,  "J": "48.38 ± 0.15%"},
+        {"method": "LangMem", "tokens": 127,  "search_p50": 17.99, "search_p95": 59.82, "total_p50": 18.53, "total_p95": 60.40, "J": "58.10 ± 0.21%"},
+        {"method": "Zep",     "tokens": 3911, "search_p50": 0.513, "search_p95": 0.778, "total_p50": 1.292, "total_p95": 2.926,  "J": "65.99 ± 0.16%"},
+        {"method": "OpenAI",  "tokens": 4437, "search_p50": null,  "search_p95": null,  "total_p50": 0.466, "total_p95": 0.889,  "J": "52.90 ± 0.14%"},
+        {"method": "Mem0",    "tokens": 1764, "search_p50": 0.148, "search_p95": 0.200, "total_p50": 0.708, "total_p95": 1.440,  "J": "66.88 ± 0.15%"},
+        {"method": "Mem0g",   "tokens": 3616, "search_p50": 0.476, "search_p95": 0.657, "total_p50": 1.091, "total_p95": 2.590,  "J": "68.44 ± 0.17%"}
+      ],
+      "overall_J_ranking": "full-context 72.90 > Mem0g 68.44 > Mem0 66.88 > Zep 65.99 > RAG(k=2,256) 60.97 > RAG(k=2,8192) 60.53 > RAG(k=2,128) 59.56 > LangMem 58.10 > OpenAI 52.90 > A-Mem 48.38. The best system on quality is the one with no memory architecture at all."
+    },
+    "headline_numbers_as_stated": [
+      {"claim": "'Mem0 achieves 26% relative improvements in the LLM-as-a-Judge metric over OpenAI'", "source": "Abstract, lines 20-21", "check": "[INFERENCE] 66.88 / 52.90 = 1.264 → 26.4%. Consistent with Table 2."},
+      {"claim": "'Mem0 with graph memory achieves around 2% higher overall score than the base Mem0 configuration'", "source": "Abstract, lines 21-22", "check": "[INFERENCE] 68.44 vs 66.88 = +1.56 absolute, +2.33% relative. Consistent."},
+      {"claim": "'Mem0 attains a 91% lower p95 latency and saves more than 90% token cost'", "source": "Abstract, lines 23-24", "check": "[INFERENCE] 1.440 vs 17.117 = 91.6% reduction; 1764 vs 26031 = 93.2% reduction. Consistent — but §4.3 line 908 states the SAME comparison as 'a 92% reduction'. The paper reports 91% and 92% for one number in two places."},
+      {"claim": "'Mem0 reaches 67% — about a 10% relative improvement — and Mem0g reaches over 68%, achieving around a 12% relative gain' over the strongest RAG (~61%)", "source": "§4.3, lines 896-898", "check": "[INFERENCE] 66.88/60.97 = 9.7%; 68.44/60.97 = 12.2%. Consistent."},
+      {"claim": "'our methods deliver 5%, 11%, and 7% relative improvements in single-hop, temporal, and multi-hop reasoning question types over best performing methods in respective question type'", "source": "§5 Conclusion, lines 981-983", "check": "[INFERENCE] All three refer to BASE Mem0 on the J metric: single-hop 67.13/63.79 (OpenAI) = +5.2%; temporal 55.51/49.91 (A-Mem*) = +11.2%; multi-hop 51.15/47.92 (LangMem) = +6.7%. Self-consistent. Note the conclusion silently omits open-domain, the one category where a baseline (Zep) wins."},
+      {"claim": "'reduce p95 latency by over 91% compared to full-context baselines'", "source": "§5, lines 983-984", "check": "consistent with Mem0's 1.440s; Mem0g's 2.590s is an 84.9% reduction, which §4.3 line 908 states as '85%'."},
+      {"claim": "'LangMem and Zep both score around 8% relatively less against our models on J score' (single-hop)", "source": "§4.1, lines 587-588", "check": "[INFERENCE] 67.13/62.23 = 7.9%; 67.13/61.70 = 8.8%. Consistent."},
+      {"claim": "'Previous LOCOMO benchmarks such as A-mem lag by more than 25 points in J' (single-hop)", "source": "§4.1, lines 593-594", "check": "[INFERENCE] 67.13 − 39.79 = 27.34. Consistent, but the comparison is against A-Mem*, the authors' own re-run, not against published A-Mem."}
+    ],
+    "qualitative_zep_findings": {
+      "claim": "'After adding memories to Zep's system, we observed that immediate memory retrieval attempts often failed to answer our queries correctly. Interestingly, re-running identical searches after a delay of several hours yielded considerably better results.'",
+      "source": "§4.5, lines 960-963",
+      "status": "Anecdotal. No trial count, no error rate, no delay sweep, no Zep version, no date. Reported by a direct commercial competitor. The Table 1/Table 2 Zep numbers were produced under this admitted staleness condition, and the paper does not say whether they were collected before or after the several-hour delay."
+    }
+  },
+
+  "scale_ceiling": {
+    "data": "10 conversations. That is the entire empirical base. Each ~600 dialogues / ~26000 tokens / ~200 questions [§3.1, lines 250-254]. One dataset (LOCOMO). No second benchmark.",
+    "state_size": "The largest memory store the paper ever builds is ~14k tokens (Mem0^g, §4.5 line 954). Retrieved context per query never exceeds 3616 tokens for Mem0-family systems [Table 2].",
+    "models": "One LLM (GPT-4o-mini) at every call site. No model-size sweep, no open-weights model, no stronger model, no cheaper model. The J judge model is unnamed.",
+    "horizon": "Single-pass ingestion of a fixed transcript. No multi-round re-ingestion, no live deployment trace, no measurement across days or sessions beyond what LOCOMO already contains.",
+    "concurrency": "None. No multi-user store, no tenancy, no index size beyond one conversation, no throughput measurement, no cost-per-user.",
+    "verdict": "The paper is titled 'Building Production-Ready AI Agents' and evaluated on ten synthetic-persona conversations totalling roughly 260k tokens. Production readiness is a product claim; the measured ceiling is a ten-conversation benchmark. The chapter must state both sentences adjacently."
+  },
+
+  "concept_ledger_delta": {
+    "new": [
+      {"concept": "the four-operation write primitive {ADD, UPDATE, DELETE, NOOP} decided by a frozen LLM through a function-calling 'tool call'", "why_it_matters": "First contraction-capable wr in the E-path corpus. Makes rho a live risk quantity for external stores, which until now only Theta-path papers had to worry about.", "source": "§2.1 lines 152-164; Alg. 1 App. B"},
+      {"concept": "extraction/update phase separation — building \\hat c is decoupled from integrating it into E", "why_it_matters": "Gives the E-path an explicit two-stage pipeline that maps cleanly onto S(\\cdot;B_s) then wr(\\cdot,\\cdot), and makes the two costs separately attributable (in principle; the paper attributes neither).", "source": "§2.1 lines 124-126"},
+      {"concept": "dual retrieval over a memory graph — entity-centric subgraph expansion PLUS whole-query-to-triplet embedding match", "why_it_matters": "Two different ret(E,q) operators over the same E, selected by nothing; the paper unions them.", "source": "§2.2 lines 229-239"},
+      {"concept": "invalidation-not-deletion for edges", "why_it_matters": "A soft-forgetting policy motivated explicitly by temporal reasoning; the germ of a tombstone/versioned store.", "source": "§2.2 lines 225-226"},
+      {"concept": "memory-store token footprint as a reported system metric (7k / 14k / 600k / 26k)", "why_it_matters": "The first C_cap-shaped number in the E-path corpus, even though it is in tokens rather than bytes.", "source": "§4.5 lines 951-960"}
+    ],
+    "extended_or_renamed": [
+      {"from": "MemGPT's 'external context' (undifferentiated, paged, append-only, 'stored indefinitely')", "to": "a typed, per-fact memory store with an explicit mutation grammar", "source": "App. C lines 1342-1361 vs §2.1 lines 152-164"},
+      {"from": "Zep's temporal knowledge graph", "to": "Mem0^g's lighter graph — same shape (entities, typed edges, timestamps, invalidation) at ~1/43 the token footprint (14k vs >600k)", "source": "§4.5 lines 953-957"},
+      {"from": "LOCOMO's own memory pipeline (session summaries + 'observations' + temporal event graph)", "to": "the same two-tier idea (summary + facts) with the summary demoted to an extraction *aid* rather than a retrieval target", "source": "App. C lines 1306-1321 vs §2.1 lines 129-141"}
+    ],
+    "implicitly_retired": [
+      {"concept": "fixed-chunk RAG as a serious baseline for conversational memory", "evidence": "Every one of the 14 RAG configurations loses to Mem0 on overall J, and J is non-monotone in chunk size, so there is no chunk size to tune toward. [Table 2]"},
+      {"concept": "a learned memory-management policy", "evidence": "explicitly declined in favour of prompting a frozen LLM [§2.1 lines 161-162]. The E-path's commercial wing here forecloses the very move that the Theta-path is built on."},
+      {"concept": "'unanswerable' as a measured capability", "evidence": "the adversarial category is dropped [§3.1 lines 255-267]. Nothing in the paper measures whether a memory system knows what it does not know."}
+    ]
+  },
+
+  "open_questions": {
+    "stated_by_the_paper": [
+      {"question": "How can graph operations be optimised to remove Mem0^g's latency overhead?", "quote": "'Future research directions include optimizing graph operations to reduce the latency overhead in Mem0^g'", "source": "§5, lines 992-993", "bridge_out": "the paper's own cost admission: the graph variant costs 3.2× search latency (0.476 vs 0.148 s p50) and 2.05× retrieved tokens (3616 vs 1764) for +1.56 J points [Table 2]"},
+      {"question": "Can a hierarchical memory architecture combine base-Mem0 efficiency with graph relational structure?", "quote": "'exploring hierarchical memory architectures that blend efficiency with relational representation'", "source": "§5, line 993", "bridge_out": "this is MemGPT's tiering question returning unresolved, one architecture later"},
+      {"question": "What would a genuinely consolidation-like memory mechanism look like?", "quote": "'developing more sophisticated memory consolidation mechanisms inspired by human cognitive processes'", "source": "§5, line 993", "bridge_out": "THE ONE SENTENCE IN THE PAPER THAT REACHES TOWARD THIS MONOGRAPH'S SUBJECT. It gestures at biologically-inspired consolidation without ever using the words sleep, offline, or idle, without citing CLS, McClelland, replay, or any sleep-neuroscience work, and without proposing a mechanism. The chapter should use it as the bridge-out into the bio/Theta chapters precisely because it is a gesture rather than a proposal."},
+      {"question": "Does the architecture transfer beyond dialogue?", "quote": "'extending our memory frameworks to domains beyond conversational scenarios, such as procedural reasoning and multimodal interactions, would further validate their broader applicability'", "source": "§5, lines 997-998", "bridge_out": "concedes that the entire evidence base is conversational QA — feeds ReasoningBank, which is exactly the procedural case"}
+    ],
+    "left_open_without_acknowledgement": [
+      {"question": "What does the write path cost? No B_s of any kind is reported, so the amortisation over N_q cannot be computed for any system in Table 2, including the baselines.", "source": "absence; §4.5 measures store size and one wall-clock bound, not budget"},
+      {"question": "How often does DELETE destroy a fact that a later question needed? The operation-classification accuracy is never measured, and Alg. 1's guard function InformationContent is never defined.", "source": "§2.1 lines 157-161; Alg. 1 lines 1249, 1256-1261"},
+      {"question": "Does quality survive repeated rounds, given that extraction is conditioned on a summary that is itself derived from the store? No rho, no round index, no re-ingestion experiment.", "source": "§2.1 lines 129-146; absence of any longitudinal experiment"},
+      {"question": "Which of the two forgetting semantics is right — hard DELETE (base) or invalidate-in-place (graph)? The paper ships both and compares neither.", "source": "§2.1 lines 159-160 vs §2.2 lines 225-226"},
+      {"question": "Does the full-context baseline stay expensive under prompt/prefix caching? The word 'cache' never appears in the paper, yet the entire latency argument is made against an uncached full-context baseline that re-reads one identical 26k-token prefix for ~200 questions.", "source": "absence; §3.1 lines 250-254 establishes the ~200 questions per conversation, §4.3 lines 903-906 states the baseline re-reads on every query"},
+      {"question": "What happens as |E| grows? The claim that memory systems 'maintain consistent performance regardless of conversation length' [§4.3 lines 915-917] is asserted with no experiment varying conversation length."}
+    ]
+  },
+
+  "unfavorable_facts": [
+    {
+      "fact": "The abstract's central claim is contradicted by the paper's own Table 1. The abstract says the methods 'consistently outperform all existing memory systems across four question categories'; in the open-domain category Zep beats both variants on F1 (49.56 vs Mem0^g 49.27, Mem0 47.65) and on J (76.60 vs Mem0^g 75.71, Mem0 72.93). §4.1 concedes it in the body — 'the baseline Zep achieves the highest F1 (49.56) and J (76.60) scores, edging out our methods' — while the abstract and conclusion do not.",
+      "source": "Abstract lines 19-20 vs Table 1 lines 460-548 and §4.1 lines 605-614; §5 lines 981-983 lists only single-hop, temporal and multi-hop"
+    },
+    {
+      "fact": "THE PAPER'S OWN HEADLINE EXTENSION REVERSES ON HALF THE CATEGORIES. Adding graph memory makes results WORSE on single-hop (J 65.71 vs 67.13; F1 38.09 vs 38.72) and substantially worse on multi-hop (J 47.19 vs 51.15; F1 24.32 vs 28.64). The authors state it plainly — 'the addition of graph memory in Mem0^g does not provide performance gains here, indicating potential inefficiencies or redundancies in structured graph representations' — and offer no ablation isolating the cause.",
+      "source": "Table 1 lines 520-557; §4.1 lines 583-585 and 598-601; §4.2 lines 841-844"
+    },
+    {
+      "fact": "THE BEST SYSTEM ON QUALITY IS NO MEMORY SYSTEM AT ALL. Full-context scores J = 72.90 ± 0.19%, above Mem0^g's 68.44 ± 0.17% and Mem0's 66.88 ± 0.15%. The gap is 4.46 J points against the graph variant and 6.02 against the base — far outside the reported ±1 std. The paper's contribution is therefore a cost result, not a quality result, and the abstract's ordering ('Beyond accuracy gains, we also markedly reduce computational overhead') inverts that.",
+      "source": "Table 2 line 781 vs lines 836-837; conceded at §4.3 lines 903-904 ('a full-context method ... still achieves the highest J score (approximately 73%)')"
+    },
+    {
+      "fact": "The 91%/92% latency reduction is measured against a full-context baseline that is never given prompt or prefix caching. The word 'cache' appears nowhere in the paper. The baseline re-prefills the same ~26k-token conversation for each of ~200 questions about that conversation. [평가/INFERENCE] Under standard prefix caching that prefill is paid once, so an unknown but potentially large share of the 9.870 s p50 / 17.117 s p95 is an artefact of the baseline's configuration rather than of full-context serving as such.",
+      "source": "absence of 'cache' in the full text; §3.1 lines 250-254; §4.3 lines 903-906; §4.4 lines 925-928"
+    },
+    {
+      "fact": "B_s IS ABSENT ENTIRELY. Not one number quantifies the cost of building the memory — no LLM-call count, no ingest token count, no FLOPs, no dollars, for extraction, for the update tool calls, or for the asynchronous summary refresh. The only build-cost datum in the paper is 'Mem0 graph construction completes in under a minute even in worst-case scenarios'. A memory system paper whose thesis is cost therefore reports only half the cost, and the half it omits is the half that its architecture adds.",
+      "source": "§4.5 lines 950-966; absence throughout"
+    },
+    {
+      "fact": "rho IS ABSENT, in the one architecture in the corpus that can irreversibly destroy stored state. DELETE hard-removes a memory on a frozen LLM's unaudited judgement [Alg. 1 lines 1256-1261]. There is no measurement of the ADD/UPDATE/DELETE/NOOP decision accuracy, no false-delete rate, no ablation that disables DELETE, and no experiment in which a conversation is ingested more than once.",
+      "source": "§2.1 lines 152-164; Alg. 1 lines 1220-1303; absence of any such experiment"
+    },
+    {
+      "fact": "THERE ARE NO ABLATIONS OF ANY KIND on the proposed system. m = 10 and s = 10 are stated once and never varied. The node-merge threshold t and the triplet-relevance threshold are described as configurable and their values are never disclosed. The contribution of the conversation summary S versus the recency window is never separated. The four-operation grammar is never compared against append-only. The entire hyperparameter budget of the paper is spent sweeping the RAG *baseline* (14 configurations).",
+      "source": "§2.1 lines 175-176; §2.2 lines 220-223, 236-237; §3.3 lines 327-336"
+    },
+    {
+      "fact": "Algorithm 1 depends on four predicates that are never defined or measured: SemanticallySimilar, Contradicts, Augments and InformationContent. The UPDATE branch is gated by 'if InformationContent(f) > InformationContent(m_i)' with no definition of the quantity anywhere in the paper.",
+      "source": "Alg. 1 lines 1249, 1276-1294"
+    },
+    {
+      "fact": "THE JUDGE MODEL IS NEVER NAMED. J is the metric on which every headline claim rests, and §3.2 identifies the judge only as 'a separate, more capable LLM'. Neither §3.2, nor App. A (which gives the prompt verbatim), nor anywhere else states which model produced the scores. The judge prompt also instructs leniency twice — 'you should be generous with your grading' — which raises the ceiling for every system including the baselines.",
+      "source": "§3.2 lines 281-287; App. A lines 1101-1126"
+    },
+    {
+      "fact": "The A-Mem comparison rests on the authors' own re-run, which reproduces markedly lower numbers than A-Mem's published results: single-hop F1 27.02 → 20.76, open-domain F1 44.65 → 33.34, temporal F1 45.85 → 35.40, multi-hop F1 12.14 → 9.22. All A-Mem J scores in Table 1 come only from that re-run (A-Mem*), and §4.1's '25 points in J' claim is made against it. The discrepancy is footnoted as a temperature-0 re-run and never investigated.",
+      "source": "Table 1 lines 390-518 and caption lines 358-364; §4.1 lines 593-594"
+    },
+    {
+      "fact": "The OpenAI baseline's cost is admitted to be un-measured, in the paper's own words: 'While this approach achieves impressive response generation times (p50: 0.466s, p95: 0.889s), it requires pre-extraction of relevant context, which is not reflected in the reported metrics.' The fastest total latency in Table 2 after the memory systems is thus a number the authors state is incomplete — and the same omission (unreported pre-extraction cost) applies to Mem0 itself, where it is not flagged.",
+      "source": "§4.4 lines 928-931"
+    },
+    {
+      "fact": "The Zep criticisms in §4.5 are anecdotal and come from a direct commercial competitor. 'immediate memory retrieval attempts often failed ... re-running identical searches after a delay of several hours yielded considerably better results' — no trial count, no failure rate, no delay sweep, no Zep version or date. Whether the Zep numbers in Tables 1 and 2 were collected before or after the several-hour settling period is not stated, which leaves the strongest baseline's scores of unknown provenance.",
+      "source": "§4.5 lines 960-966"
+    },
+    {
+      "fact": "Asynchronous background processing is a feature when Mem0 does it and a defect when Zep does it. §2.1 presents 'an asynchronous summary generation module' as an advantage ('without introducing processing delays'); §4.5 condemns Zep because its 'graph construction involves multiple asynchronous LLM calls and extensive background processing, making the memory system impractical for real-time applications'. The paper applies the same architectural property in opposite directions without noticing.",
+      "source": "§2.1 lines 142-146 vs §4.5 lines 963-965"
+    },
+    {
+      "fact": "'full-context approaches suffer from exponential growth in computational overhead' is asserted and then supported by evidence that does not show it. The cited evidence is Table 2's RAG rows, not the full-context row: 'evident in Table 2 where total p95 latency increases significantly with larger k values or chunk sizes'. Across a 64× increase in chunk size at k=1, total p95 rises 1.825 → 4.416 s, i.e. 2.4× — sublinear, not exponential. Only one full-context configuration exists, so no growth curve for full context is measured at all.",
+      "source": "§4.3 lines 910-913 vs Table 2 lines 669-717"
+    },
+    {
+      "fact": "RAG's J is strongly non-monotone in chunk size and the paper never explains it. At k=1: 47.77, 50.15, 46.05, 40.74, 37.93, 36.84, 44.53 for chunks 128→8192 — a fall then an unexplained rise at 8192. The same rebound appears at k=2 (51.79 at 4096, 60.53 at 8192). An unexplained non-monotonicity in the principal baseline weakens the 'even the strongest RAG approach peaks at around 61%' framing, because the sweep is evidently not sampling a well-behaved surface.",
+      "source": "Table 2 lines 669-767; §4.3 lines 894-898"
+    },
+    {
+      "fact": "The claim that memory systems 'maintain consistent performance regardless of conversation length, making them substantially more viable for production-scale deployments' is unmeasured. No experiment varies conversation length, store size, session count or user count. Conversation length is a single fixed value (~26000 tokens) across the whole paper.",
+      "source": "§4.3 lines 914-917; §3.1 lines 250-252"
+    },
+    {
+      "fact": "Two different numbers are given for the same latency reduction: 91% in the abstract and conclusion, 92% in §4.3, for Mem0's 1.440 s against full-context's 17.117 s.",
+      "source": "Abstract line 23; §5 lines 983-984; §4.3 line 908"
+    },
+    {
+      "fact": "Single dataset, single model, ten conversations. LOCOMO only; GPT-4o-mini at every call site; no second benchmark, no model sweep, no open-weights check. Every quantitative claim in the paper is one-configuration evidence.",
+      "source": "§3.1 lines 250-254; §2.1 line 176"
+    },
+    {
+      "fact": "The adversarial (unanswerable) question category was removed from the benchmark. That category is the one that tests whether a memory system fabricates when its store lacks the answer — precisely the failure mode a lossy, DELETE-capable store introduces.",
+      "source": "§3.1 lines 255-267"
+    },
+    {
+      "fact": "The paper is written and evaluated by the vendor of the winning system, with no peer review, no author-independent evaluation, and competitor systems (Zep, LangMem, OpenAI memory) run by that vendor. LangMem's reported 17.99 s p50 / 59.82 s p95 search latency — two orders of magnitude above every other system — is reported without configuration detail or investigation, and the paper concludes it is 'impractical for interactive applications'.",
+      "source": "title block lines 4-8; §4.4 lines 923-925; Table 2 lines 784, 798-799"
+    },
+    {
+      "fact": "Compositions with the other two paths are entirely untested and unmentioned. Nothing checks whether the extracted \\hat c could serve as training data for (U-Theta), whether the store could be folded into fast weights, or whether a smaller model suffices once memories are curated. No experiment in the paper varies anything about Theta or W.",
+      "source": "absence throughout"
+    },
+    {
+      "fact": "The 'code' pointer is a vendor research landing page (https://mem0.ai/research), not a repository, commit or release. Neither prompts for extraction and update (only the QA and judge prompts appear in App. A), nor the embedding model, nor the summary-refresh policy is disclosed, so the pipeline as evaluated is not reproducible from the paper.",
+      "source": "line 27; App. A lines 1098-1214"
+    }
+  ],
+
+  "cross_path_citations": {
+    "verdict": "NEAR-TOTAL SILENCE. Mem0 engages the E-path densely and the other two paths not at all.",
+    "theta_path": {
+      "engagement": "ZERO. The reference list (lines 1010-1091) contains no LoRA, no adapter or PEFT work, no model-editing work (ROME, MEMIT), no continual-learning work (EWC, replay, generative replay), no SEAL, no distillation paper, no capacity or memorisation work. A grep of the full text for 'gradient', 'weight', 'parameter', 'fine-tun', 'LoRA' and 'distill' returns no hit in the body; 'distill' occurs only twice in App. C describing baselines' summarisation ('distill key information', 'distills each segment into concise summaries'). The paper does not merely decline the Theta-path — it appears not to be aware that updating parameters is an option, even where it would be the natural alternative (§2.1 lines 161-162 rejects a trained classifier without citing any learned-policy work).",
+      "monograph_use": "This is the cleanest instance of the S0 §5 'silence between paths is itself a finding'. State it as an observation about communities, not as a deficiency of the authors."
+    },
+    "w_path": {
+      "engagement": "ONE citation, used against itself. Bulatov, Kuratov & Burtsev, 'Recurrent Memory Transformer' (NeurIPS 2022) is cited exactly once, at §1 line 38, as evidence that context windows 'severely restrict' coherence — i.e. as a witness for the problem, never as a candidate solution. No TTT, no Titans, no fast-weight programmer, no linear-attention or SSM memory, no test-time training of any kind. Liu et al. 2023 'Think-in-Memory' (line 38) is an external-memory method, not a W-path one.",
+      "monograph_use": "The single W-path citation is inverted: the only recurrent-state architecture the paper names is used to motivate an external store."
+    },
+    "bio_and_cls": {
+      "engagement": "Rhetorical only. §1 opens on human memory with Craik & Jennings 'Human memory' (1992) and Assmann 'Communicative and cultural memory' (2011), and cites He et al. 2024, a survey of human-inspired AI long-term memory. There is NO McClelland/CLS citation, no sleep or consolidation neuroscience, no replay literature. The word 'consolidate/consolidation' appears four times (abstract line 13; §1 line 93; §5 lines 977, 993) and is always used loosely for 'merge related facts', never in the CLS sense. 'Sleep' appears zero times.",
+      "monograph_use": "Mem0 borrows the biological vocabulary without the biological literature. This is the vocabulary-without-mechanism pattern the Theta-5 chapter also has to handle."
+    },
+    "e_path_internal": {
+      "engagement": "Dense and current: MemGPT (Packer et al. 2023), Zep (Rasmussen et al. 2025), A-Mem (Xu et al. 2025), MemoryBank (Zhong et al. 2024), ReadAgent (Lee et al. 2024), LOCOMO (Maharana et al. 2024), RAPTOR (Sarthi et al. 2024), Reflexion (Shinn et al. 2023), CLIN (Majumder et al.), Think-in-Memory (Liu et al. 2023), Zhang et al. 2024 memory-mechanism survey. Five of these are run as baselines.",
+      "notable_absence": "Letta 'Sleep-time Compute' (arXiv 2504.13171, 18 Apr 2025) is NOT cited, ten days after its appearance. The two papers the monograph places consecutively on the E-path do not see each other. Near-simultaneity is a sufficient explanation and the chapter should say so rather than imply neglect."
+    }
+  },
+
+  "figures": {
+    "reproduce": [
+      {"id": "Figure 2", "location": "line 135 (caption lines 135-138)", "why": "The canonical (U-E) picture: extraction phase feeding update phase, with the database supplying context back into extraction. Reproduce it as the chapter's mechanism diagram, relabelled in unified notation (c_tau → S(·,E;B_s) → \\hat c → wr → E)."},
+      {"id": "Figure 3", "location": "line 171 (caption lines 171-173)", "why": "The Mem0^g graph pipeline: entity extraction, relation triplets, conflict detection and resolution. Needed to show that the graph variant differs in wr, not in read."},
+      {"id": "Figure 4b", "location": "line 872 (caption lines 876-879)", "why": "THE decisive figure for the chapter: J bars against total p50/p95 latency on a log axis, including full-context. It is the one place the paper draws the quality/cost frontier and shows itself losing on quality to the baseline with no memory."},
+      {"id": "Figure 4a", "location": "line 866", "why": "Search-only latency against J. Useful to separate read-path cost from generation cost — and to show that LangMem's 17.99 s search is what the log axis exists for."},
+      {"id": "Table 1", "location": "lines 358-558", "why": "Per-category results. Reproduce in full, including the open-domain column where Zep wins and the two categories where Mem0^g is worse than Mem0."},
+      {"id": "Table 2", "location": "lines 641-838", "why": "Overall J plus latency plus token counts — the only table in the E-path corpus that puts quality and cost in one grid. Reproduce whole; the RAG sweep is what makes the non-monotonicity visible."},
+      {"id": "Algorithm 1", "location": "App. B, lines 1220-1303", "why": "The four-operation write grammar in pseudocode, including the undefined InformationContent guard. Reproduce verbatim in the chapter's §N.3 to anchor the contraction-capable wr discussion."}
+    ],
+    "skip": [
+      {"id": "Figure 1", "location": "line 44 (caption lines 44-50)", "why": "Product illustration (vegetarian/dairy-free dinner recommendation with and without memory). No data. Mention in prose if a motivating example is wanted; do not reproduce."}
+    ]
+  },
+
+  "systems_implications": [
+    {
+      "claim": "Per-query prefill context drops 14.76× against full-context: 26031 → 1764 tokens for Mem0, 26031 → 3616 for Mem0^g.",
+      "grounding": "Table 2 token column [lines 771, 821-822]. The ratio is my arithmetic."
+    },
+    {
+      "claim": "At these lengths latency is prefill-dominated, which is why the token ratio and the latency ratio nearly coincide: token ratio 14.76×, total-p95 ratio 17.117/1.440 = 11.89×.",
+      "grounding": "[INFERENCE] from Table 2. The paper never decomposes prefill vs decode and gives no hardware, so this is a consistency observation, not a measurement."
+    },
+    {
+      "claim": "The read path never touches GPU HBM beyond the shortened prefill. Base Mem0's read is an embedding call plus an ANN query over a store of ~7k tokens' worth of records; that index lives in host DRAM at this scale. Mem0^g adds Neo4j traversal plus per-triplet embedding comparison, and the cost is visible: search p50 0.148 → 0.476 s (3.22×), search p95 0.200 → 0.657 s (3.29×).",
+      "grounding": "§2.1 lines 177-178, §2.2 lines 229-242, §4.5 lines 952-955, Table 2 lines 821-822. Placement in DRAM is [INFERENCE]; the paper states no storage tier."
+    },
+    {
+      "claim": "Mem0 has the tightest retrieval tail in the table: search p95/p50 = 0.200/0.148 = 1.35, against Zep 1.52, A-Mem 2.22, RAG(k=1,128) 2.93, LangMem 3.33. The tail of the end-to-end response (total p95/p50 = 2.03) is therefore generation, not retrieval.",
+      "grounding": "Table 2 [lines 669-837]. Ratios are my arithmetic; the attribution of the tail to generation is [INFERENCE] from the fact that search p95 is 0.200 s of a 1.440 s total p95."
+    },
+    {
+      "claim": "Batching is preserved exactly because nothing is learned. Theta is one shared GPT-4o-mini for all users; per-user state lives entirely in an external index. Continuous batching, shared weights and multi-tenancy on one replica all hold unchanged. This is the E-path's structural serving advantage over the Theta-path, where per-user weight deltas break shared-weight batching.",
+      "grounding": "§2.1 line 176 and §2.2 lines 241-242 (frozen model at every call site); the contrast with the Theta-path is this book's Rosetta row, not the paper's."
+    },
+    {
+      "claim": "The ingest path is LLM-bound, not storage-bound, and its cost scales with (message pairs) × (facts per pair) × (s_nn = 10 retrieved memories in each update prompt), plus one extraction prompt per pair carrying the summary and m_rec = 10 recent messages. None of this is measured.",
+      "grounding": "§2.1 lines 127-164, 175-176 for the structure and the hyperparameters. The scaling statement is [INFERENCE]; the paper reports no ingest counts, so the constant is unknown."
+    },
+    {
+      "claim": "The equal-N_q comparison the paper never makes: a full-context server answering ~200 questions about one conversation re-prefills an identical 26k-token prefix 200 times, which prefix caching would collapse to one prefill plus 200 short suffixes. Mem0's retrieved set differs per query and cannot be reused the same way. Whether Mem0 still wins on cost under a cached baseline is unknown from this paper.",
+      "grounding": "§3.1 lines 250-254 (~200 questions per conversation), §4.3 lines 903-906 ('the model must read the entire conversation on every query'), and the absence of any mention of caching. The consequence is [INFERENCE / 평가]."
+    },
+    {
+      "claim": "C_cap cannot be converted to bytes from this paper, so no memory-device argument can be built on it. The store is reported as ~7k tokens (Mem0) and ~14k tokens (Mem0^g) per conversation; the embedding dimension, vector dtype, index structure and Neo4j footprint are all unreported.",
+      "grounding": "§4.5 lines 951-955. Per NM D4, record the gap and do not force the connection."
+    },
+    {
+      "claim": "The system's serving profile is that of a retrieval frontend, not of an inference optimisation: quality is set by the frozen LLM and the retrieved 1764 tokens, and every gain in Table 2 is a gain in *what is put in the prompt*. Nothing in the decode kernel, the KV cache, or the attention pattern changes.",
+      "grounding": "§2 in full; there is no modification to the model anywhere in the paper."
+    },
+    {
+      "claim": "Sizing a fleet from this paper is not possible. Steady-state GPU demand is dominated by the ingest-side extraction and update calls, whose rate per conversation turn is never given, and the store growth curve against session count is never measured.",
+      "grounding": "cost_table.B_s (absent) and cost_table.rho (absent); §4.3 lines 914-917 asserts length-independence without an experiment."
+    }
+  ],
+
+  "todo_verify": [
+    {"item": "Which model produced the LLM-as-a-Judge scores. §3.2 says only 'a separate, more capable LLM'.", "how_to_settle": "grep papers/stc/2504.19413.txt for 'Judge', 'judge model', 'gpt-4', 'o1'. If absent from v1, check arXiv v2/v3 and the mem0.ai/research page. Currently unresolvable from the vendored text."},
+    {"item": "Whether extraction fires once per message (so ~600 calls per LOCOMO conversation) or once per user/assistant pair (~300). Needed to compute the write-side call count and hence any B_s estimate.", "how_to_settle": "grep for 'message pair', 'm_t', 'incremental'. §2.1 lines 127-129 defines the unit but not the stride."},
+    {"item": "The value of the node-merge similarity threshold t and of the triplet-relevance threshold in Mem0^g.", "how_to_settle": "grep for 'threshold'. Both occurrences (§2.2 lines 221, 236) state that a threshold exists and give no value."},
+    {"item": "Which embedding model Mem0 itself uses. §2.1 says only 'dense embeddings'; text-embedding-small-3 is named only for the RAG and LangMem baselines.", "how_to_settle": "grep for 'embedding' and 'text-embedding'. Lines 177, 325, 330 are the only hits."},
+    {"item": "The refresh period of the asynchronous summary module, and the summary's token length.", "how_to_settle": "grep for 'asynchronous', 'periodically', 'summary'. §2.1 lines 142-146 is the only description."},
+    {"item": "Whether the Zep results in Tables 1 and 2 were collected before or after the 'several hours' settling period described in §4.5.", "how_to_settle": "grep for 'Zep' and 'several hours'. §4.5 lines 960-966 raises the issue and never resolves it for the reported numbers."},
+    {"item": "The extraction and update prompts. App. A gives only the judge prompt, the two QA prompts and the OpenAI ChatGPT prompt.", "how_to_settle": "grep for 'Prompt Tem' in the appendix — four templates exist (lines 1101, 1131, 1178, 1205) and none is the extraction or update prompt."},
+    {"item": "Hardware, batch size and whether latencies were measured against hosted APIs. Needed before any of the latency numbers can be reused as a systems datum.", "how_to_settle": "grep for 'GPU', 'A100', 'hardware', 'batch', 'API'. No hits expected in v1."},
+    {"item": "Whether 'infra improvements' (§4.4 line 934) refers to anything architectural, since it is credited with part of the search-latency win.", "how_to_settle": "grep for 'infra'. Single occurrence, undefined."},
+    {"item": "The exact count of bibliography entries, if the chapter wants to state the citation-silence quantitatively.", "how_to_settle": "count entries in lines 1010-1091 of the vendored text; the block is 6533 characters and reflows across lines, so count by author-year rather than by line."}
+  ]
+}

@@ -1,0 +1,643 @@
+{
+  "paper_id": "generative-adapter",
+  "arxiv": "2411.05877",
+  "arxiv_version": "v1 [cs.LG] 8 Nov 2024 (stated on the arXiv stamp line, p.1)",
+  "title": "GenerativeAdapter: Contextualizing Language Models in Parameters with a Single Forward Pass",
+  "authors": [
+    "Tong Chen (University of Washington; work done during internship at Microsoft Research)",
+    "Hao Fang (Microsoft)",
+    "Patrick Xia (Microsoft)",
+    "Xiaodong Liu (Microsoft Research)",
+    "Benjamin Van Durme (Microsoft)",
+    "Luke Zettlemoyer (University of Washington)",
+    "Jianfeng Gao (Microsoft Research)",
+    "Hao Cheng (Microsoft Research; corresponding)"
+  ],
+  "venue": "arXiv preprint. No venue is stated anywhere in the text; the manuscript is formatted as a conference submission (ICLR-style) but names no conference.",
+  "date": "2024-11-08",
+  "path": "/home/jimmy/repos/neural-memory-study/papers/stc/2411.05877.txt",
+
+  "axis": "W (per the S0 discriminant), catalogued under Theta in the S0 roster (S0-DESIGN §3.1, row 'Θ-2')",
+  "axis_adjudication": {
+    "verdict": "Under S0-DESIGN §2.1 and STC-STYLE-NOTATION §1.6 this paper is a W-path paper, not a Θ-path paper, and the monograph must say so explicitly because the roster entry (S0 §3.1 Θ-2) suggests otherwise.",
+    "reasoning": [
+      "Θ-path discriminant (STC-STYLE §1.6): '(U-Θ) 실행. 배포 가중치가 바뀜.' Here the deployment artifact does NOT change. The paper states outright: 'the pretrained base LM remains frozen' (§1) and 'Unlike continual pretraining and supervised fine-tuning which update the pretrained LM via gradient descent, our method achieves adaptation using forward passes only' (§2 opening).",
+      "W-path discriminant (STC-STYLE §1.6): context is folded into a fast weight and the raw context is discarded. That is exactly what happens: after contextualization the adapted model answers 'in a closed-book fashion' (§4.1), i.e. the context tokens are gone.",
+      "The paper itself claims the W lineage, not the Θ lineage: 'Inspired by fast weights (Ba et al., 2016; Schmidhuber, 1992, inter alia), our approach incorporates a lightweight adapter generator on top of pretrained LM as the slow network to produce updated parameters for the fast network (the adapted LM)' (§1). §6 'Fast Weights' repeats it and adds the self-programming framing.",
+      "What makes it *look* like a Θ-path paper is only the physical shape of the state: the state Δ_t has the shape of weights and is added into the weight matrices (Θ_Σ(t) = Θ_base + Δ_t, §2.1). Shape is not timescale. Δ_t moves per 1,024-token chunk (§3 Training), which is the token/chunk timescale of W, not the training-round timescale of Θ."
+    ],
+    "why_it_still_earns_a_place_next_to_the_Theta_papers": "It is the paper that makes 'weight-shaped state produced without gradients' concrete at 7B scale, and it produces a LoRA-form object (Eq. 8-9) identical in shape to what the Θ-path writes by gradient descent. It is therefore the correct hinge chapter between the W-path and the Θ-path: same artifact, different clock, different write cost.",
+    "sleep_time_status": "The words 'sleep', 'offline', 'idle' and 'latency' do not occur anywhere in the paper (verified by grep over the full text). The paper is a sleep-time-compute paper only under S0's operational definition (§2.3), never under its own framing. The only amortization argument in the paper is one qualitative sentence: 'In real world scenarios with many queries from the same user, the benefits of our method are even more pronounced' (§4.3, and near-identically §1). No N_q value appears."
+  },
+
+  "problem_stated": {
+    "one_line": "Adapting a pretrained LM to a new context costs either training (finetuning) or inference overhead (prompting); the paper wants a third option that costs one forward pass and leaves per-query inference cost at the base-model level.",
+    "verbatim_anchors": [
+      "'However, there is an accuracy compute tradeoff—finetuning incurs significant training cost and prompting increases inference overhead.' [Abstract]",
+      "'to maintain additional memory across sessions, some extra prompts must be added to the input, which incur an inference-time or storage overhead (Chevalier et al., 2023). Finetuning is another way to embed new information into the LM's parameters, retaining long-term memory. Nevertheless, it requires a training phase that is more computationally expensive than a single forward pass, and acquiring knowledge through continual pretraining has shown to be data-inefficient (Yang et al., 2024; Allen-Zhu & Li, 2024).' [§1 Introduction]",
+      "'To contextualize a base model, Θbase, to a given context C, our goal is to obtain an updated model, ΘC, that can respond to user instructions using the information provided in the context C.' [§2.1]",
+      "'We specifically focus on test-time contextualization, where context arrives incrementally as a stream of data... In this online adaptation scenario, the model must be efficiently adapted to each new context chunk as it becomes available.' [§2.1]"
+    ],
+    "three_target_scenarios": "knowledge acquisition from documents, learning from demonstrations, personalization for users [Abstract; §1; §4]"
+  },
+
+  "inherited_open_question": {
+    "status": "none-stated",
+    "evidence_that_none_is_stated": [
+      "No sentence in §1 or §6 quotes or paraphrases an open question left by a named prior work. The related-work section (§6) is organised as three contrast paragraphs ('Different from previous work...', 'Unlike those methods...', 'Instead, GenerativeAdapter is...'), each asserting a difference rather than picking up a posed question.",
+      "The paper asserts the opposite of inheritance: 'As far as we know, we are the first to explore this direction.' [§1] and 'To our knowledge, we are the first to explore retaining the relevant temporary knowledge through generated parameter-efficient model updates for state-of-the-art pretrained LMs.' [§1, contribution 1]"
+    ],
+    "what_it_implicitly_answers": [
+      "The 1992/1993 fast-weight-programmer question of Schmidhuber — can a slow network reprogram the weights of a fast network — asked here in the form 'does this survive contact with a frozen 7B pretrained LM?'. The paper's answer differs from the classical FWP setup in one specific way it names itself: 'Instead of using a slow network to program a separate fast model, our method can be viewed as a self-programming model, i.e., context encoded by the base LM is used to update the base LM itself.' [§6, Fast Weights]",
+      "The inherited empirical *finding* (not question) that gradient-based knowledge injection is data-inefficient: 'acquiring knowledge through continual pretraining has shown to be data-inefficient (Yang et al., 2024; Allen-Zhu & Li, 2024)' [§1]. This is the load-bearing motivation and it is imported as settled fact, with no question attached.",
+      "A methodological complaint about the meta-learning line, stated as the paper's own differentiator rather than as an inherited question: 'Unlike those methods that typically require a nested training loop, our adapter generator augments pretrained LMs and our model can be trained in an end-to-end fashion with self-supervised objectives.' [§6, Adapting LMs via Meta-Learning] — aimed at Hu et al. (2023) and Tack et al. (2024)."
+    ],
+    "monograph_note": "For the bridge-in of this chapter there is no quotable predecessor question, and that absence is itself the finding: this paper enters the corpus from the fast-weight/PEFT engineering community with no thread running back to the continual-learning or agent-memory communities. The chapter should open on the un-inherited entry, not manufacture a lineage."
+  },
+
+  "core_mechanism": {
+    "summary_one_paragraph": "A frozen base LM encodes each arriving context chunk; per layer, the Gram matrix of that chunk's hidden states is projected down by two learned matrices and accumulated into a small square state; that state is SVD-normalized and projected back up into a rank-r additive weight delta, which is added to the base weights. Reading then happens through the modified weights with the context text discarded. No gradient is taken at test time; the only learned objects are the four projection matrices per layer, trained end-to-end through the frozen LM by next-token prediction.",
+
+    "unified_notation": {
+      "read": {
+        "eq": "\\hat y \\;=\\; f\\big(q;\\ \\Theta,\\ W_t,\\ \\varnothing\\big), \\qquad \\Theta = \\Theta_{\\text{base}} \\cup \\Theta_G",
+        "gloss": "Standard form (R) with E = varnothing: this paper has no external store at all. The read passes through Theta + W only.",
+        "paper_source": "Θ_Σ(t) = Θ_base + Δ_t [generative-adapter §2.1]; Figure 1 right panel"
+      },
+      "effective_weight": {
+        "eq": "W^{(l)} \\;=\\; \\Theta^{(l)}_{\\text{base}} \\;+\\; W^{(l)}_t, \\qquad l = 1,\\dots,L",
+        "gloss": "The fast weight is additive and layer-local. In the main experiments only one projection per block carries it (the attention output projection).",
+        "paper_source": "W(l) = W(l)_base + W(l)_Δ [generative-adapter §2.2, unnumbered display]"
+      },
+      "state_recurrence": {
+        "eq": "S_t \\;=\\; \\beta_t\\, S_{t-1} \\;+\\; A_2\\, H_t^{\\top} H_t\\, B_1, \\qquad \\beta_t \\equiv 1,\\quad S_0 = 0",
+        "gloss": "This is the (U-W) momentum slot, but the increment is a learned bilinear projection of the chunk's Gram matrix instead of -eta_t grad_W ell. There is no inner loss and no gradient. beta_t is pinned to 1, so nothing is ever forgotten.",
+        "paper_source": "[generative-adapter Eq. 3]"
+      },
+      "readout": {
+        "eq": "W_t \\;=\\; A_1\\, \\mathrm{norm}\\!\\big(S_t\\big)\\, B_2",
+        "gloss": "W is not carried forward; it is recomputed from S_t at every chunk. In (U-W) terms the retention gate alpha_t does not act on W at all — all retention lives in S_t — so writing this as W_t = alpha_t W_{t-1} + S_t would be wrong.",
+        "paper_source": "[generative-adapter Eq. 4] (unnormalized) and [generative-adapter Eq. 6] (normalized, the version actually used)"
+      },
+      "closed_form_equivalence": {
+        "eq": "W_t \\;=\\; A_1 \\mathrm{norm}\\Big( A_2 \\big(\\textstyle\\sum_{i=1}^{t} H_i^{\\top} H_i\\big) B_1 \\Big) B_2 \\;=\\; A_1 \\mathrm{norm}\\Big( A_2 \\big(\\textstyle\\sum_{m=1}^{M} h_m \\otimes h_m\\big) B_1 \\Big) B_2",
+        "gloss": "The streaming recurrence is exactly equal to the batch form: the write is order-independent and permutation-invariant over context tokens. This is the property that makes the update chunk-parallel (App. B) and it is also the property that forbids recency, ordering and eviction.",
+        "paper_source": "[generative-adapter Eq. 1] and [generative-adapter Eq. 2]"
+      },
+      "normalization": {
+        "eq": "\\mathrm{norm}(M) = U V^{\\top}\\ \\text{where}\\ M = U\\Sigma V^{\\top}",
+        "gloss": "All positive singular values are reset to 1. Purely a stabilizer: without it, training does not converge (§2.4). Truncating to rank r makes the product two thin matrices, i.e. a LoRA.",
+        "paper_source": "[generative-adapter Eq. 7]; low-rank/LoRA form at [generative-adapter Eq. 8] and [generative-adapter Eq. 9]"
+      },
+      "outer_objective": {
+        "eq": "\\Theta_{G,k+1} = \\Theta_{G,k} - \\eta_\\Theta \\nabla_{\\Theta_G} \\mathcal{L}(\\mathcal{R}; \\Theta_{G,k}), \\qquad \\mathcal{L} = -\\big[\\log P(x_{1:m} \\mid \\Theta_{\\text{base}} + W(x_{1:m})) + \\log P(x_{m+1:n} \\mid \\Theta_{\\text{base}} + W(x_{1:m}))\\big]",
+        "gloss": "Reconstruction + completion, maximized jointly. R here is not replay or synthetic data: it is 1B raw web tokens from SlimPajama, then an instruction-tuning mixture. Note that gradients flow through the frozen base LM to reach Theta_G.",
+        "paper_source": "[generative-adapter Eq. 5]; the two objective definitions are the unnumbered displays in §2.3; corpus in §3 Training and App. A"
+      }
+    },
+
+    "differences_from_canonical_U_W": [
+      "beta_t = 1 exactly. No decay term exists in Eq. 3. Consequence: S_t is a running sum with no forgetting mechanism whatsoever, and the SVD normalization is the only thing preventing unbounded growth of the readout — it does so by discarding magnitude entirely (all singular values -> 1), not by weighting.",
+      "The increment is not -eta_t grad_W ell. There is no ell in this paper. The reserved symbol ell (inner loss) has no counterpart; the write is Hebbian (outer product of hidden states with itself, Eq. 1) pushed through learned projections.",
+      "alpha_t has no analogue: W_t is a stateless function of S_t (Eq. 6), not a gated carry of W_{t-1}.",
+      "The nonlinearity sits in the *readout*, not the write: norm(.) is an SVD applied to S_t at every chunk. This is unusual against the whole (U-W) family, where the readout is typically linear and the nonlinearity is in the write.",
+      "eta_t does not exist. The write has no step size; the closest thing is the fixed hand-set adapter scale (1/16 for Mistral, 1/8 for Llama2, App. B), which is a constant, not a schedule."
+    ],
+
+    "notation_conflicts": [
+      {"paper_symbol": "C, C_t", "paper_meaning": "the context, and the context chunk arriving at step t (§2.1)", "reserved_meaning": "C = chunk *size* (NM-inherited); C_cap = capacity", "mapping": "paper C_t -> the chunk content c_t; the paper's chunk size is C = 1,024 tokens (§3 Training). Never write the paper's C_t in the monograph body."},
+      {"paper_symbol": "S_t", "paper_meaning": "the d_r x d_r accumulated partial sum, 'the memory of history context chunks' (§2.2, after Eq. 4)", "reserved_meaning": "S_t = the momentum/surprise term of the (U-W) update", "mapping": "Direct slot correspondence — the paper's S_t occupies exactly the S_t position of (U-W) — but the *content* differs: ours is gradient momentum, the paper's is a Hebbian accumulator. Reuse S_t and state the substitution."},
+      {"paper_symbol": "Σ, Σ(t)", "paper_meaning": "the streaming context (C_1,...,C_t) (§2.1)", "reserved_meaning": "none reserved, but the paper immediately reuses Σ for the singular-value matrix in M = UΣV^T (Eq. 7) — an internal collision in the paper itself", "mapping": "streaming context -> c_{1:t}; singular values -> keep Σ only inside the quoted Eq. 7."},
+      {"paper_symbol": "Θ_base, Θ_C, Θ_Σ(t)", "paper_meaning": "frozen base weights; the contextualized model", "reserved_meaning": "Θ = slow weights learned in the outer loop", "mapping": "Θ = Θ_base ∪ Θ_G. Only Θ_G moves during outer-loop training; Θ_base never moves in this work. Θ_Σ(t) -> Θ + W_t. Do not let the paper's Θ_Σ(t) suggest that Θ is updated."},
+      {"paper_symbol": "Δ, Δ_t, W_Δ, W_Δt", "paper_meaning": "the context-dependent additive adapter", "reserved_meaning": "W = fast weights", "mapping": "Δ_t -> W_t. This is the single most important substitution in the chapter: the paper's word 'adapter' (a Θ-path word from LoRA) denotes a W-path object here."},
+      {"paper_symbol": "G, G^(l)", "paper_meaning": "the adapter generator, layer-specific", "reserved_meaning": "no reserved symbol", "mapping": "Keep G, but state that its parameters {A_1, A_2, B_1, B_2}^(l) are a subset of Θ. Do not confuse with gen(.; B_s) of (U-Θ), which builds a training set."},
+      {"paper_symbol": "H, H^(l), H_t", "paper_meaning": "matrix of base-LM hidden states, M x d_h (§2.2)", "reserved_meaning": "\\mathcal{H}_k = accumulated experience up to sleep round k", "mapping": "paper H -> H (roman, hidden states) only inside quoted equations; the reserved script H_k has no instance in this paper (there are no sleep rounds)."},
+      {"paper_symbol": "M", "paper_meaning": "overloaded twice: number of tokens in the context (§2.2) and a generic matrix in norm(M) (§2.4, Eq. 7)", "reserved_meaning": "\\mathcal{M}(.; W) = the memory read function (NM-inherited)", "mapping": "token count -> M_ctx in prose; generic matrix -> keep only inside Eq. 7. Never write bare M."},
+      {"paper_symbol": "L", "paper_meaning": "number of Transformer blocks (§2.2); and L_reconstruction / L_completion for log-likelihood objectives (§2.3)", "reserved_meaning": "\\mathcal{L} = outer/task loss (minimized); L_w = wake latency contribution", "mapping": "block count -> L (matches STC-STYLE §1.3, L = number of layers). The paper's L_reconstruction/L_completion are log-likelihoods to be *maximized*; our \\mathcal{L} is minimized, so flip the sign when quoting Eq. 5."},
+      {"paper_symbol": "r", "paper_meaning": "SVD truncation rank, set to 128 (§3 Hyperparameters)", "reserved_meaning": "r = LoRA rank (STC-STYLE §1.3)", "mapping": "Compatible; the paper itself equates the two at Eq. 8-9. Use r = 128."},
+      {"paper_symbol": "d_r, d_h, d_in, d_out", "paper_meaning": "generator intermediate dim (1,024); hidden-state dim; layer input/output dims", "reserved_meaning": "d = model width", "mapping": "d_h = d. Keep d_r as a paper-local symbol declared in the chapter's local table row."},
+      {"paper_symbol": "A_1, A_2, B_1, B_2", "paper_meaning": "learnable generator matrices (Eq. 1)", "reserved_meaning": "alpha_t, beta_t are reserved for gates, not these", "mapping": "No conflict, but flag for the reader that A/B here are *learned in the outer loop* and are not the A/B of a LoRA (which would be test-time-fitted)."},
+      {"paper_symbol": "x", "paper_meaning": "input vector to a linear layer (§2.4) and also token x_1..x_n (§2.3)", "reserved_meaning": "none", "mapping": "internal paper overload; disambiguate in any quotation."}
+    ]
+  },
+
+  "outer_vs_inner": {
+    "reader_question": "Who learns this, and when?",
+    "table": [
+      {
+        "object": "Θ_base — the frozen base LM (Mistral-7B-Instruct v0.2 or Llama2-7B-Chat, 7B params)",
+        "who_learns_it": "nobody, in this paper",
+        "when": "never; inherited from the original pretraining done elsewhere",
+        "evidence": "'the pretrained base LM remains frozen while we train the LM-specific adapter generator' [§1]; base LMs named in §3"
+      },
+      {
+        "object": "Θ_G = {A_1^(l), A_2^(l), B_1^(l), B_2^(l)} for l = 1..L — the adapter generator, ~500 million parameters in total",
+        "who_learns_it": "outer-loop gradient descent (Adam), backpropagating *through* the frozen base LM",
+        "when": "once, before deployment, in two stages: (i) self-supervised pretraining on 1B SlimPajama tokens, (ii) instruction tuning for 2 epochs on a QA/ICL/instruction-following mixture",
+        "evidence": "'Approximately, this leads to 500 million parameters for the generator' [§3 Hyperparameters]; 'the adapter generator is trained on top of the frozen base model Θbase in an end-to-end fashion' [§2.3]; two-stage pipeline [§3 Training]; optimizer/LR/batch [App. B]"
+      },
+      {
+        "object": "S_t^(l) ∈ R^{d_r x d_r} (1,024 x 1,024 per adapted layer) — the accumulated state",
+        "who_learns_it": "not learned; it *moves* at wake/contextualization time by a forward-only recurrence",
+        "when": "once per arriving 1,024-token context chunk; S_0 = 0 at the start of each context stream",
+        "evidence": "[generative-adapter Eq. 3]; 'S0 initialized as all zeros' [§2.2]; chunk size 1,024 [§3 Training]"
+      },
+      {
+        "object": "W_t = Δ_t — the generated adapter, 32 million parameters",
+        "who_learns_it": "not learned; deterministically recomputed from S_t by Eq. 6 (no gradient, no optimizer state)",
+        "when": "once per chunk, immediately after S_t is updated; overwritten each chunk",
+        "evidence": "[generative-adapter Eq. 6]; 'the generated adapter of 32 million parameters' [§3 Hyperparameters]; Table 1 'Extra Storage (M floats)' = 32"
+      },
+      {
+        "object": "norm(.) — SVD normalization",
+        "who_learns_it": "no parameters at all",
+        "when": "computed at contextualization time, every chunk, every adapted layer; implemented as torch.svd_lowrank() with 1 iteration",
+        "evidence": "[generative-adapter Eq. 7]; 'we implemented it using torch.svd_lowrank(), setting the number of iterations to 1' [App. B Implementation]"
+      },
+      {
+        "object": "adapter scale (1/16 for Mistral, 1/8 for Llama2)",
+        "who_learns_it": "hand-set hyperparameter, not learned",
+        "when": "fixed before outer-loop training; per base model",
+        "evidence": "'The adapter added to the base model are scaled by 1/16 for Mistral and 1/8 for Llama2' [App. B Pretraining]"
+      },
+      {
+        "object": "d_r = 1,024 and r = 128",
+        "who_learns_it": "hand-set hyperparameters",
+        "when": "fixed before outer-loop training",
+        "evidence": "'The intermediate dimension dr and SVD rank r are set to 1,024 and 128, respectively' [§3 Hyperparameters]"
+      },
+      {
+        "object": "which modules carry the adapter (attention output projection only in the main results; feedforward down-projection explored only in the ablation)",
+        "who_learns_it": "design decision, not learned",
+        "when": "fixed before outer-loop training",
+        "evidence": "'our main experiments train adapter generators to only update the output projection layers of the multi-head attention unit' [§3]; feedforward variant in Table 2"
+      }
+    ],
+    "sleep_round_update": "There is none. No object in this paper is updated on a per-round, per-session or per-episode schedule between wake periods. The three timescales present are: outer-loop training (once, offline, gradient-based, on Θ_G), per-chunk contextualization (forward-only, on S_t and W_t), and per-token decode (nothing moves). The k index of (U-Θ) and the tau index of sessions are both unused.",
+    "wake_time_movement": "S_t and W_t. Everything else is static at wake time.",
+    "why_this_matters_for_the_reader": "The reader who has never trained a model should take away exactly one asymmetry: the expensive gradient work happened once, to a 500M-parameter side network, and it never happens again. Everything that happens per user, per document and per session is a forward pass plus a rank-128 SVD. That is the entire cost thesis of the paper."
+  },
+
+  "update_layer": {
+    "instantiates": "(U-W), in a gradient-free variant. It does not instantiate (U-Θ) and it does not instantiate (U-E).",
+    "order": "Single layer, single stage. There is no composition of rules: no (U-E) precedes it, no (U-Θ) follows it.",
+    "canonical_vs_paper": {
+      "canonical": "W_t = alpha_t W_{t-1} + S_t,  S_t = beta_t S_{t-1} - eta_t grad_W ell(W_{t-1}; k_t, v_t)",
+      "paper": "S_t = S_{t-1} + A_2 H_t^T H_t B_1,  W_t = A_1 norm(S_t) B_2   [generative-adapter Eq. 3, Eq. 6]",
+      "term_by_term": [
+        "alpha_t: absent. W_t does not carry W_{t-1}; it is recomputed from S_t. Equivalent to alpha_t = 0 with the retention moved wholesale into S_t.",
+        "beta_t: identically 1. No decay, no gating, no eviction.",
+        "eta_t: absent. There is no step size on the write; only a fixed global adapter scale (1/16 or 1/8).",
+        "grad_W ell(.; k_t, v_t): replaced by A_2 (H_t^T H_t) B_1 — a learned bilinear projection of the chunk's own Gram matrix. Because H_t^T H_t = sum_m h_m ⊗ h_m (Eq. 1), the associative pair (k_t, v_t) collapses to (h_m, h_m): the model writes each hidden state against itself. There is no separate key and value.",
+        "the readout: canonical (U-W) reads through W directly; here W_t is itself a nonlinear (SVD) function of the state, and the state S_t (d_r x d_r) is much smaller than W_t (d_out x d_in)."
+      ]
+    },
+    "not_U_Theta_because": "Θ_base is never differentiated and never modified; the deployment checkpoint after contextualization is byte-identical to the one before. STC-STYLE §1.6's Θ-path test ('배포 가중치가 바뀜') fails.",
+    "not_U_E_because": "No text, vector or graph record is written and there is no ret(E, q) at read time. The paper's whole point is that the context is *not* re-presented at inference: the adapted model answers 'in a closed-book manner' [§4.1].",
+    "boundary_note_for_the_monograph": "This is the cleanest example in the corpus of the shape/clock distinction. The artifact produced is a LoRA (the paper derives that form explicitly at Eq. 8-9), which is the canonical Θ-path artifact; the clock and the write rule are pure W-path. Chapters that classify by artifact will misfile it; the S0 frame classifies by update rule and clock, and gets it right."
+  },
+
+  "cost_table": {
+    "B_s": {
+      "value_in_paper": "Stated only in structural terms, never as a number in the running text. Structurally: one forward pass of the frozen base LM over the context, plus one rank-128 randomized SVD (torch.svd_lowrank, 1 iteration) per adapted layer per 1,024-token chunk, plus the four projection GEMMs of Eq. 3-4.",
+      "numeric": "absent",
+      "detail": "Figure 3 (leftmost panel, 'Contextualization Computation') plots contextualization FLOPs in units of T (teraFLOPs) on a log axis against context length 512..32K for GenerativeAdapter, prompting-with-KV-cache, prompting-without-KV-cache and continual pretraining, but no numeric value from that panel is quoted anywhere in the text, and the axis tick values are not recoverable from the extracted text.",
+      "qualitative_claims_in_text": [
+        "'GenerativeAdapter encodes the context into an adapter with a single forward pass' [§4.1, Setup and Baselines]",
+        "'GenerativeAdapter requires preprocessing time (forward passes only) that is orders of magnitude smaller than CPT (which involves multiple forward and backward passes), as demonstrated in Figure 3' [§4.1, Results] — 'orders of magnitude' is the only quantifier given.",
+        "'GenerativeAdapter is able to generate the adaptors for prefixes of chunks simultaneously by processing the context chunks in parallel' [App. B Implementation]"
+      ],
+      "one_time_amortized_component": "The generator's outer-loop training: 1 billion SlimPajama tokens, 'approximately 20 hours using 8 NVIDIA H100 GPUs' [App. B Pretraining], plus instruction tuning for 2 epochs at batch size 32 [App. B Instruction Tuning] whose wall-clock is not reported.",
+      "source": "§3 Training; §4.1; App. B; Figure 3"
+    },
+    "L_w": {
+      "value_in_paper": "absent",
+      "detail": "The words 'latency', 'ms', 'TTFT' and 'time to first token' do not appear in the paper (verified by grep over the full text). No wall-clock decode measurement of any kind is reported.",
+      "closest_available_proxy": "Per-query inference *compute* on MSC, in TFLOPS: GenerativeAdapter 0.505; closed-book 0.505; full-conversation prompting 2.059; UltraGist at 64/128/256/512/1K/2K compressed tokens = 0.514 / 0.552 / 0.627 / 0.772 / 1.067 / 1.658 [Table 1].",
+      "reading_of_the_proxy": "GenerativeAdapter's inference compute is reported as exactly equal to closed-book (0.505 TFLOPS to three decimals), i.e. the adapted model's per-query cost is the base model's per-query cost with no measurable additive term. Figure 3 (middle panel, 'Inference Computation') shows the same flatness against context length on StreamingQA.",
+      "source": "Table 1; Figure 3"
+    },
+    "C_cap": {
+      "value_in_paper": "32 million floats per adapted context.",
+      "detail": "'the generated adapter of 32 million parameters' [§3 Hyperparameters]; Table 1 'Extra Storage (M floats)' column gives 32 for GenerativeAdapter, 0 for closed-book, '128+' for full-conversation prompting, and 4/8/16/32/64/128 for UltraGist at 64/128/256/512/1K/2K tokens. Figure 3 (right panel, 'Extra Storage') shows GenerativeAdapter's storage flat in context length while prompting's KV cache grows.",
+      "dtype": "absent — the paper never states the dtype of the stored floats, so bytes per session cannot be computed from the paper. It also never says whether the stored object is S_t or the two low-rank factors of Eq. 9.",
+      "generator_storage": "'Approximately, this leads to 500 million parameters for the generator' [§3 Hyperparameters] — this is a one-time, per-base-model cost shared by all users, not per-session.",
+      "source": "§3 Hyperparameters; Table 1; Figure 3"
+    },
+    "rho": {
+      "value_in_paper": "absent",
+      "detail": "No degradation-per-round quantity is defined or measured. The words 'forget', 'forgetting' and 'catastrophic' do not appear in the paper (verified by grep). There is no experiment in which the same model undergoes repeated contextualization rounds and is re-evaluated on earlier material.",
+      "what_is_measured_instead_and_why_it_is_not_rho": [
+        "Quality degradation with *context length* within a single stream: on Mistral/StreamingQA, GenerativeAdapter F1 falls 51.5 -> 49.3 -> 44.7 -> 40.9 -> 36.7 -> 32.7 -> 32.0 across 512/1K/2K/4K/8K/16K/32K [Table 5]. This is compression loss as the state fills, not a per-round forgetting rate; the rounds are not separable because beta_t = 1 makes the whole stream one accumulation.",
+        "Preservation of general language modelling ability under the write, measured as completion perplexity on a held-out SlimPajama validation set: 7.40 for the default configuration [Table 2]. The paper gives no un-adapted base-model reference perplexity to compare against, so the degradation this number implies cannot be quantified."
+      ],
+      "source": "Table 5; Table 2; §5.1"
+    },
+    "amortization_equation_A": {
+      "can_N_q_star_be_computed": "No.",
+      "why": "Equation (A) needs C_sleep. C_sleep here is the contextualization FLOPs, which exist only as an unlabelled log-scale curve in Figure 3 and are never quoted numerically. C_wake is available for exactly one benchmark (MSC, Table 1: 0.505 vs 2.059 TFLOPS, a 1.554 TFLOPS saving per query), so the numerator of the break-even is known and the denominator is not.",
+      "what_the_paper_says_instead": "Two qualitative sentences, both unquantified: 'In practical scenarios with many queries from the same user on edge computing devices, the benefits of our method are even more evident' [§1] and 'In real world scenarios with many queries from the same user, the benefits of our method are even more pronounced' [§4.3].",
+      "monograph_consequence": "This paper joins Letta STC under the standing caveat that N_q is assumed known and never reported. Here it is worse than in Letta STC: not only is the N_q distribution unreported, the sleep-side cost itself is unreported in numbers."
+    },
+    "cells_absent_summary": "L_w absent (no latency at all); rho absent (no forgetting measurement); B_s absent as a number (figure-only); C_cap present as 32 M floats but without dtype, so not convertible to bytes."
+  },
+
+  "experiments": {
+    "base_models": [
+      "Mistral-7B-Instruct v0.2 (Jiang et al., 2023) [§3]",
+      "Llama2-7B-Chat (Touvron et al., 2023) [§3]"
+    ],
+    "no_other_scales": "Only 7B. No smaller or larger base model is evaluated anywhere in the paper.",
+    "generator_training": {
+      "params": "~500 million (generator); generated adapter ~32 million [§3 Hyperparameters]",
+      "d_r": 1024,
+      "svd_rank_r": 128,
+      "pretraining_corpus": "1 billion tokens randomly sampled from SlimPajama (Soboleva et al., 2023), split into segments of 8,192 tokens [§3 Training; App. A]",
+      "validation_set": "100 additional segments of 2K tokens each from the same corpus [App. A]",
+      "chunking": "context divided into chunks of 1,024 tokens [§3 Training]",
+      "instruction_tuning_data": "COQA (1798 docs, 57.2 instr/doc, ctx len 1083.5), DROP (1379 / 38.4 / 848.6), NarrativeQA (1047 / 29.4 / 574.5), PubMedQA (1000 / 1.0 / 200.2), Quail (560 / 16.2 / 332.7), MS MARCO (4832 / 16.5 / 1152.1), MetaICL (11888 / 3.5 / 1776.8), BookSum (2914 / 1.0 / 1158.6), PwC (13102 / 12.4 / 348.1) [Table 3]",
+      "optimizer": "Adam, weight decay 0.01, no dropout, WarmupDecayLR with 100-step warmup, global batch size 8; LR 5e-5 (Mistral) and 1e-4 (Llama2); adapter scaled by 1/16 (Mistral) and 1/8 (Llama2) [App. B Pretraining]",
+      "instruction_tuning_config": "LR 5e-5 for both models, 2 epochs, batch size 32 [App. B Instruction Tuning]",
+      "hardware": "approximately 20 hours on 8 NVIDIA H100 GPUs for the 1B-token pretraining stage [App. B Pretraining]",
+      "adapted_module": "attention output projection only in the main experiments [§3]"
+    },
+
+    "document_qa": {
+      "benchmarks": "SQuAD (Rajpurkar et al., 2016) and StreamingQA (Liska et al., 2022); documents in the test set divided evenly into groups of average length k tokens, k ∈ {512, 1K, 2K, 4K, 8K, 16K, 32K}; metric = F1 [§4.1]",
+      "baselines": "zero-shot prompting; supervised fine-tuning (SFT, full-parameter, on QA pairs from articles disjoint from the test set); continual pretraining (CPT, trained on all test-set documents then SFT); in-context prompting with the full document group. SFT and CPT are evaluated closed-book, hence constant across context lengths. For Llama2-7B-Chat, contexts beyond its 4K limit are truncated to the last 4K tokens [§4.1].",
+      "table5_full_numbers": {
+        "note": "Table 5 columns are 512 / 1K / 2K / 4K / 8K / 16K / 32K. Closed-book rows (zero-shot, SFT, CPT) report a single value each. Reproduced at the paper's own precision.",
+        "Mistral_SQuAD": {
+          "zero_shot_prompting": 10.8,
+          "supervised_fine_tuning": 20.7,
+          "continuous_pretraining": 30.0,
+          "in_context_prompting": [45.4, 44.9, 43.6, 42.6, 42.5, 38.6, 35.1],
+          "generative_adapter": [48.8, 43.0, 39.9, 35.9, 33.8, 30.3, 28.0]
+        },
+        "Mistral_StreamingQA": {
+          "zero_shot_prompting": 13.6,
+          "supervised_fine_tuning": 19.5,
+          "continuous_pretraining": 22.2,
+          "in_context_prompting": [47.2, 48.7, 48.1, 48.7, 48.0, 46.0, 39.3],
+          "generative_adapter": [51.5, 49.3, 44.7, 40.9, 36.7, 32.7, 32.0]
+        },
+        "Llama2_SQuAD": {
+          "zero_shot_prompting": 14.6,
+          "supervised_fine_tuning": 20.7,
+          "continuous_pretraining": 23.9,
+          "in_context_prompting": [64.8, 60.6, 55.4, 44.9, 25.2, 9.6, 6.4],
+          "generative_adapter": [36.2, 32.5, 31.0, 28.9, 28.2, 24.9, 23.6]
+        },
+        "Llama2_StreamingQA": {
+          "zero_shot_prompting": 18.0,
+          "supervised_fine_tuning": 18.9,
+          "continuous_pretraining": 20.5,
+          "in_context_prompting": [61.2, 61.3, 58.0, 46.8, 27.8, 17.5, 11.6],
+          "generative_adapter": [42.9, 37.8, 34.4, 32.6, 28.7, 26.0, 25.7]
+        },
+        "block_assignment_caveat": "The extracted text of Table 5 is column-scrambled by the PDF-to-text conversion. Block order (Mistral/SQuAD, Mistral/StreamingQA, Llama2/SQuAD, Llama2/StreamingQA) and the header order were reconstructed from the row labels, the Mistral/StreamingQA SFT value 19.5 quoted in the abstract, and the Llama2-only collapse of in-context prompting beyond 4K that §4.1 attributes to truncation. See todo_verify.",
+        "source": "Table 5 (App. D)"
+      },
+      "headline_claims": [
+        "Abstract: 'achieving a 63.5% improvement in F1 score over the model with supervised fine-tuning (from 19.5 to 31.5) for contexts as long as 32K tokens'. The SFT baseline 19.5 matches Mistral/StreamingQA in Table 5; the target value 31.5 does not appear anywhere in the body (Table 5 gives 32.0 at 32K), and 19.5 -> 31.5 is a 61.5% increase, not 63.5%. See unfavorable_facts.",
+        "§1: 'managing to handle context lengths up to 32K on StreamingQA (Liska et al., 2022) and 8K on SQuAD (Rajpurkar et al., 2016) better than continous pretraining'",
+        "§4.1: 'In most cases, GenerativeAdapter outperforms CPT, especially when the context length is less than 8K tokens.'",
+        "§4.1: 'GenerativeAdapter is highly effective when the context is relatively short (< 1K tokens).'"
+      ],
+      "computed_from_table5_for_the_chapter": [
+        "GenerativeAdapter beats in-context prompting on Mistral at exactly two of fourteen (model x length) cells: SQuAD 512 (48.8 vs 45.4) and StreamingQA 512/1K (51.5 vs 47.2; 49.3 vs 48.7). Three cells total across the two Mistral datasets.",
+        "On Llama2 it beats in-context prompting only from 8K upward (SQuAD 28.2 vs 25.2, 24.9 vs 9.6, 23.6 vs 6.4; StreamingQA 28.7 vs 27.8, 26.0 vs 17.5, 25.7 vs 11.6) — the range in which the baseline is truncated to its last 4K tokens by construction.",
+        "GenerativeAdapter beats CPT on SQuAD/Mistral at 512..16K (48.8, 43.0, 39.9, 35.9, 33.8, 30.3 all > 30.0) but not at 32K (28.0 < 30.0). On SQuAD/Llama2 it beats CPT at 512..16K (36.2..24.9 > 23.9) but not at 32K (23.6 < 23.9). On both StreamingQA blocks it beats CPT at every length."
+      ]
+    },
+
+    "in_context_learning": {
+      "benchmark": "MetaICL (Min et al., 2022), 26 test tasks, none seen during generator training; K ∈ {1, 2, 4, 8, 16} demonstrations sampled from the development split; sampling repeated five times per few-shot setting; averages reported separately for classification and non-classification tasks [§4.2]",
+      "test_task_list": "quarel, financial_phrasebank, openbookqa, codah, qasc, glue-mrpc, dream, sick, commonsense_qa, medical_questions_pairs, quartz-with_knowledge, poem_sentiment, quartz-no_knowledge, glue-wnli, climate_fever, ethos-national_origin, ethos-race, ethos-religion, ai2_arc, hate_speech18, glue-rte, superglue-cb, superglue-copa, tweet_eval-hate, tweet_eval-stance_atheism, tweet_eval-stance_feminist [Table 4]",
+      "baselines": "zero-shot prompting with the base LM; standard few-shot prompting with the base LM; fine-tuning the base LM on 16 input-output pairs per task (LR 5e-6 Mistral / 1e-5 Llama2, max 40 epochs, early stopping after 3 consecutive validation-loss increases, 16-sample disjoint validation set) [§4.2; App. C]",
+      "headline_number": "'our method achieves an average accuracy of 44.9 across 26 tasks, outperforming the base model' [Abstract]. This number appears only in the abstract. It is not repeated in §4.2, not tabulated anywhere, and the abstract does not say which base LM it belongs to nor at which K.",
+      "qualitative_results": [
+        "'While fine-tuned models generally achieve higher accuracy on classification tasks, their performance on non-classification tasks is lower.' [§4.2]",
+        "'In contrast, GenerativeAdapter outperforms few-shot prompting in most cases, with more significant improvements observed in the more challenging non-classification tasks, where the model must adapt to specific output styles.' [§4.2]",
+        "Per-task curves are given in Figure 5 (Llama2-7B-Chat, 26 panels) and Figure 6 (Mistral-7B-Instruct, 26 panels); no numeric table accompanies them."
+      ]
+    },
+
+    "personalization": {
+      "benchmark": "Multi-Session Conversation (MSC, Xu et al., 2022), following the setup of Packer et al. (2024) [MemGPT]; each case is a multi-session human-human conversation plus a question about it; average conversational context length 2.5K tokens; metric = F1 [§4.3]",
+      "base_model": "Mistral-7B-Instruct only [§4.3]",
+      "table1": [
+        {"model": "Closed-book", "F1": 8.1, "inference_TFLOPS": 0.505, "extra_storage_M_floats": "0"},
+        {"model": "Full-conversation Prompting", "F1": 66.0, "inference_TFLOPS": 2.059, "extra_storage_M_floats": "128+"},
+        {"model": "Ultragist (64 Tokens)", "F1": 26.5, "inference_TFLOPS": 0.514, "extra_storage_M_floats": "4"},
+        {"model": "Ultragist (128 Tokens)", "F1": 32.2, "inference_TFLOPS": 0.552, "extra_storage_M_floats": "8"},
+        {"model": "Ultragist (256 Tokens)", "F1": 38.3, "inference_TFLOPS": 0.627, "extra_storage_M_floats": "16"},
+        {"model": "Ultragist (512 Tokens)", "F1": 40.8, "inference_TFLOPS": 0.772, "extra_storage_M_floats": "32"},
+        {"model": "Ultragist (1K Tokens)", "F1": 44.4, "inference_TFLOPS": 1.067, "extra_storage_M_floats": "64"},
+        {"model": "Ultragist (2K Tokens)", "F1": 42.4, "inference_TFLOPS": 1.658, "extra_storage_M_floats": "128"},
+        {"model": "Generative Adapter", "F1": 40.2, "inference_TFLOPS": 0.505, "extra_storage_M_floats": "32"}
+      ],
+      "headline_claim": "'a 4x reduction in computation and memory costs compared to prompting with full conversation history' [Abstract]; 'full conversation prompting incurs significant computation and storage costs, i.e., 4x those of GenerativeAdapter' [§4.3]. Arithmetic check against Table 1: 2.059 / 0.505 = 4.08x compute; 128 / 32 = 4x storage.",
+      "second_claim": "'Comparing to UltraGist at the same level of storage cost (compressed into 512 tokens), GenerativeAdapter further reduces inference cost without performance drop.' [§4.3] — Table 1 shows UltraGist(512) at F1 40.8 and GenerativeAdapter at 40.2. See unfavorable_facts."
+    },
+
+    "ablation": {
+      "setup": "Adapter generators trained for Mistral-7B-Instruct only, under varied configurations, evaluated by reconstruction perplexity and completion perplexity on a validation set drawn from the pretraining distribution. 'As we observe in our preliminary study, the quality of the resulting adapter generator is highly correlated with these metrics' [§5.1] — this correlation is asserted, not shown.",
+      "table2": [
+        {"setting": "Default (both tasks, SVD norm, attention output projection)", "reconstruction_ppl": 1.75, "completion_ppl": 7.40},
+        {"setting": "Pretraining Task: Reconstruction Only", "reconstruction_ppl": 1.75, "completion_ppl": 34.34},
+        {"setting": "Pretraining Task: Completion Only", "reconstruction_ppl": 6.38, "completion_ppl": 6.71},
+        {"setting": "Normalization: Frobenius", "reconstruction_ppl": 7.72, "completion_ppl": 7.32},
+        {"setting": "Module: Feedforward (down projection; 3x the update parameters of the default)", "reconstruction_ppl": 1.68, "completion_ppl": 7.26}
+      ],
+      "paper_readings": [
+        "'relying solely on one task does not yield good perplexity on the validation set for both metrics. In particular, training with only reconstruction task results in a significant drop in completion perplexity, indicating a loss of general language modeling capabilities and overfitting to memorization. Thus, the completion task acts as data regularization' [§5.1]",
+        "'our results indicate that the Frobenius norm is not as effective. Observing substantial disparities in the scale of singular values, we hypothesize that applying the Frobenius norm may unnecessarily shrink certain directions, reducing the model's expressiveness.' [§5.1]",
+        "'placing the adapter on the feedforward layer indeed leads to slightly improved reconstruction and completion perplexities. Due to computational constraints, a more thorough exploration was not feasible and we leave this for future investigation.' [§5.1]"
+      ],
+      "no_downstream_ablation": "No ablation row is evaluated on SQuAD, StreamingQA, MetaICL or MSC. Every ablation conclusion rests on two validation perplexities."
+    }
+  },
+
+  "scale_ceiling": {
+    "model_scale": "7B parameters, two models (Mistral-7B-Instruct v0.2, Llama2-7B-Chat). Nothing below 7B, nothing above [§3].",
+    "generator_scale": "~500M parameters, trained on 1B tokens for ~20 H100-hours (8 GPUs x ~20 h) plus a 2-epoch instruction-tuning pass [§3 Hyperparameters; App. B].",
+    "context_scale": "Evaluated to 32K tokens on SQuAD and StreamingQA [Table 5]. The claimed *advantage* ceiling is lower and is stated as such: 32K on StreamingQA, 8K on SQuAD, relative to continual pretraining [§1]. Against in-context prompting on Mistral the advantage ceiling is 1K tokens.",
+    "session_scale": "MSC conversations average 2.5K tokens [§4.3]. No experiment exceeds a single continuous stream; there is no multi-session, multi-day or repeated-round setting anywhere.",
+    "coverage_scale": "One projection matrix per block (attention output projection) in all reported main results; the feedforward variant exists only as two perplexity numbers in Table 2 [§3; §5.1].",
+    "unmeasured_axes": "No throughput, no latency, no batch size at serving, no multi-user or multi-adapter composition, no repeated overwrite of an existing adapter with new material, no measurement of the base model's retained general ability on any downstream benchmark after adaptation."
+  },
+
+  "concept_ledger_delta": {
+    "new": [
+      {"concept": "adapter generator G", "definition": "A learned, layer-local map from base-LM hidden states to an additive weight delta, evaluated by forward pass only. The parameters of G belong to Θ; its output belongs to W.", "source": "§2.2, [generative-adapter Eq. 1]"},
+      {"concept": "test-time contextualization", "definition": "A third option alongside prompting and finetuning: convert a context into weights once, then answer closed-book. Distinguished from prompting by the absence of the context at read time, and from finetuning by the absence of gradients.", "source": "§2.1"},
+      {"concept": "SVD normalization as a write stabilizer", "definition": "norm(M) = UV^T, resetting all positive singular values to 1. Introduced because the naive outer-product write does not converge; its side effect is that truncating to rank r yields a LoRA-shaped delta for free.", "source": "§2.4, [generative-adapter Eq. 7, Eq. 8, Eq. 9]"},
+      {"concept": "self-programming model", "definition": "The paper's own name for the case where the fast network and the slow encoder are the same frozen LM: 'context encoded by the base LM is used to update the base LM itself.'", "source": "§6, Fast Weights"},
+      {"concept": "'extra storage (M floats)' as a reported cost unit", "definition": "A per-session state-size column placed directly beside quality and inference FLOPs. Notable for the monograph because it is one of the few places in the corpus where a paper tabulates C_cap at all — though without a dtype it does not convert to bytes.", "source": "Table 1"}
+    ],
+    "extended_or_renamed": [
+      {"concept": "fast weights", "was": "a separate small fast network programmed by a slow network (Schmidhuber 1992/1993; Ba et al. 2016; Schlag et al. 2021)", "now": "an additive delta on a frozen 7B pretrained LM, generated by a side network that reads that same LM's hidden states", "source": "§1; §6"},
+      {"concept": "the S_t slot of (U-W)", "was": "gradient momentum / surprise", "now": "a Hebbian accumulator of projected Gram matrices with beta_t = 1", "source": "[generative-adapter Eq. 3]"},
+      {"concept": "adapter / LoRA", "was": "a Θ-path artifact fitted by gradient descent on a downstream dataset", "now": "the same artifact shape, produced by a forward pass and discarded at the end of the context stream", "source": "[generative-adapter Eq. 8, Eq. 9]; §6 PEFT"}
+    ],
+    "retired_or_absent": [
+      {"concept": "inner loss ell and inner rate eta_t", "note": "Both have no counterpart. This is the first paper in the W-path chapters where the (U-W) write contains no loss and no learning rate at all, which is exactly what makes its wake-side write cheap."},
+      {"concept": "retention gate alpha_t / decay beta_t", "note": "Structurally absent (beta_t = 1). No forgetting mechanism of any kind exists in the method."},
+      {"concept": "sleep round index k, session index tau", "note": "Unused: the paper has no round structure and no cross-session structure."}
+    ]
+  },
+
+  "open_questions": {
+    "stated_by_the_paper": [
+      {"quote": "'For future work, it would be interesting to further explore scaling up the adapter generator, such as by integrating adapters into additional layers, and to investigate more selective update rules (Schlag et al., 2021).'", "location": "§7 Conclusion", "reading": "Two distinct questions in one sentence. 'More selective update rules' is the paper naming its own missing beta_t: Schlag et al. (2021) is cited for delta-rule-style write/erase in fast-weight programmers, i.e. precisely the eviction mechanism Eq. 3 lacks."},
+      {"quote": "'For efficiency, our main experiments train adapter generators to only update the output projection layers of the multi-head attention unit in Transformer. We study a more capable implementation in §5 and defer the full exploration of other modules for future work.'", "location": "§3", "reading": "The reported results are explicitly the cheap configuration, not the best one the authors know of."},
+      {"quote": "'Due to computational constraints, a more thorough exploration was not feasible and we leave this for future investigation.'", "location": "§5.1, on placing adapters in the feedforward module", "reading": "Same gap, restated at the ablation."}
+    ],
+    "implicit_left_open": [
+      "Capacity saturation. With beta_t = 1 and a fixed d_r x d_r state, quality must degrade monotonically with stream length, and Table 5 shows it doing so (51.5 -> 32.0 across 512..32K on Mistral/StreamingQA). The paper never characterises where the state saturates, nor how quality would scale with d_r or r. d_r and r are set once (1,024 and 128) and never varied [§3 Hyperparameters].",
+      "Overwrite and staleness. Nothing in the method can remove or correct information already accumulated into S_t. No experiment presents contradictory or superseded facts.",
+      "Composition. Two contexts written into the same S_t are summed indiscriminately (Eq. 2); two separately generated adapters are never combined. Multi-document, multi-user and multi-topic composition are untested.",
+      "Ordering. Because Eq. 2 is a sum over tokens, the write is permutation-invariant: the adapter for a shuffled context is bit-identical to the adapter for the original. The paper neither states this nor tests whether it hurts on order-sensitive material (dialogue, instructions, narrative). This is my inference from Eq. 1-2, and it is the sharpest untested consequence of the design.",
+      "Transfer of the generator across base models. One generator is trained per base LM ('the LM-specific adapter generator', §1); nothing is said about whether a generator survives a base-model update, which is the operational question for anyone deploying it.",
+      "Whether the perplexity proxy tracks downstream quality. §5.1 asserts a 'highly correlated' relationship from an unreported preliminary study; every design decision in the paper rests on it."
+    ],
+    "bridge_out": {
+      "to_the_Theta_path": "This paper produces the Θ-path's artifact (a LoRA) without the Θ-path's cost, and pays for it in quality: on Mistral/StreamingQA it beats continual pretraining everywhere (32.0 vs 22.2 at 32K), while on Mistral/SQuAD continual pretraining wins back at 32K (30.0 vs 28.0) [Table 5]. That crossing is the natural entry to the chapters that ask what gradient descent buys that a forward pass cannot.",
+      "to_the_W_path": "Its beta_t = 1 with no eviction is the exact gap the later W-path chapters close, and the paper itself points at the fix by name (Schlag et al. 2021, selective update rules) in §7.",
+      "to_the_capacity_chapters": "A fixed 1,024 x 1,024 state per layer holding an arbitrarily long stream is a bounded-capacity claim with no bound stated. The capacity-theory chapters supply the missing axis."
+    }
+  },
+
+  "unfavorable_facts": [
+    {
+      "fact": "The abstract's headline number does not reconcile with the paper's own table. The abstract claims 'a 63.5% improvement in F1 score over the model with supervised fine-tuning (from 19.5 to 31.5)'. The value 31.5 appears nowhere else in the paper; Table 5 gives GenerativeAdapter = 32.0 at 32K on Mistral/StreamingQA against SFT = 19.5. Moreover 19.5 -> 31.5 is a 61.5% increase, not 63.5% (19.5 -> 32.0 would be 64.1%). Neither the stated target nor the stated percentage matches.",
+      "location": "Abstract vs Table 5 (App. D)",
+      "severity": "The single headline number of the paper is internally inconsistent. State it as such and quote both figures."
+    },
+    {
+      "fact": "A 0.6-point F1 decrease is described as no decrease. §4.3 states 'Comparing to UltraGist at the same level of storage cost (compressed into 512 tokens), GenerativeAdapter further reduces inference cost without performance drop.' Table 1: UltraGist(512) F1 = 40.8, GenerativeAdapter F1 = 40.2. There is a drop; it is small, and the compute saving is real (0.772 -> 0.505 TFLOPS), but the sentence as written is not supported by the adjacent table.",
+      "location": "§4.3 Results vs Table 1",
+      "severity": "Direct text-table contradiction in the paper's only head-to-head against a state-of-the-art competitor."
+    },
+    {
+      "fact": "On the strongest base model, GenerativeAdapter loses to plain in-context prompting almost everywhere. On Mistral it wins in only three of fourteen length cells: SQuAD 512 (48.8 vs 45.4), StreamingQA 512 (51.5 vs 47.2) and StreamingQA 1K (49.3 vs 48.7). At 32K it loses 28.0 vs 35.1 on SQuAD and 32.0 vs 39.3 on StreamingQA. The abstract's framing ('effective in injecting knowledge into the LM's parameters') is measured against SFT, the weakest baseline, not against prompting.",
+      "location": "Table 5 (App. D); Figure 2; abstract",
+      "severity": "The method's quality advantage over the obvious baseline exists only below ~1K tokens on Mistral."
+    },
+    {
+      "fact": "The long-context wins on Llama2 are an artifact of how the baseline was configured, and the paper says so. 'for Llama2-7B-Chat, if the context length exceeds the maximum limit of 4K tokens, we truncate the prompt to include only the last 4K tokens' [§4.1]. In-context prompting on Llama2/SQuAD accordingly collapses 44.9 -> 25.2 -> 9.6 -> 6.4 across 4K/8K/16K/32K, and GenerativeAdapter's 28.2/24.9/23.6 'wins' against a baseline that has been shown only the tail of the document. At 512 tokens, where both see everything, in-context prompting scores 64.8 against GenerativeAdapter's 36.2 — a 28.6-point loss.",
+      "location": "§4.1 Setup and Baselines; Table 5 (App. D)",
+      "severity": "Half the evidence base for long-context superiority is a truncation artifact rather than a capability comparison."
+    },
+    {
+      "fact": "An ablation reverses on the metric it is supposed to justify. The default (both pretraining tasks) reaches completion perplexity 7.40; 'Completion Only' reaches 6.71 — better. The paper writes 'relying solely on one task does not yield good perplexity on the validation set for both metrics' [§5.1], which is true only for the reconstruction-only row (1.75 / 34.34). The completion-only row is strictly better than the default on completion perplexity and only worse on reconstruction (6.38 vs 1.75). The mixture is a trade, not a Pareto improvement, and the paper does not say so.",
+      "location": "§5.1 vs Table 2",
+      "severity": "The stated justification for the two-task objective overstates what Table 2 shows."
+    },
+    {
+      "fact": "All main results use the configuration the ablation identifies as inferior. Table 2 shows the feedforward placement improving both metrics (1.68 / 7.26 vs 1.75 / 7.40), and §3 concedes 'For efficiency, our main experiments train adapter generators to only update the output projection layers'. So every headline number comes from the cheaper, weaker variant, and the better variant is never run on any downstream benchmark.",
+      "location": "§3; §5.1; Table 2",
+      "severity": "Reported quality is a lower bound on the method, but no downstream evidence exists for the better configuration."
+    },
+    {
+      "fact": "Every ablation conclusion rests on two validation perplexities on the pretraining distribution, with the perplexity-to-quality link asserted from an unreported experiment: 'As we observe in our preliminary study, the quality of the resulting adapter generator is highly correlated with these metrics' [§5.1]. No ablation row is evaluated on SQuAD, StreamingQA, MetaICL or MSC.",
+      "location": "§5.1; Table 2",
+      "severity": "The design-choice evidence (normalization, task mixture, module placement) is entirely proxy-based."
+    },
+    {
+      "fact": "The MetaICL headline is abstract-only and unlocatable in the body. 'our method achieves an average accuracy of 44.9 across 26 tasks' [Abstract] appears nowhere in §4.2, in no table, and without a base model or a K-shot setting attached. §4.2 reports only per-category plots (Figure 4) and per-task plots (Figures 5, 6) with no numeric aggregates in the text.",
+      "location": "Abstract vs §4.2, Figures 4-6",
+      "severity": "One of the three headline results cannot be verified from the paper's own body."
+    },
+    {
+      "fact": "The largest quality gap is on the paper's own personalization scenario. MSC F1: full-conversation prompting 66.0, GenerativeAdapter 40.2 [Table 1] — the method retains 61% of full-context quality. The paper's framing ('highly competitive', abstract; 'highly effective in retaining user information', §1) is about the cost ratio, not the accuracy.",
+      "location": "Table 1; abstract; §1",
+      "severity": "A 25.8-point F1 deficit is the price of the 4x cost reduction, and the abstract's adjectives do not convey it."
+    },
+    {
+      "fact": "No forgetting, no repetition, no lifetime. beta_t = 1 in Eq. 3, so the state never sheds anything, and no experiment revisits earlier material after later material has been written. The words 'forget', 'forgetting' and 'catastrophic' do not occur in the paper (verified by grep over the full text). rho is not merely unmeasured; it is undefined for this method as published.",
+      "location": "[generative-adapter Eq. 3]; whole-paper grep",
+      "severity": "The sustainability axis of the S0 cost table is completely empty."
+    },
+    {
+      "fact": "The cost model omits the sleep-side number entirely. Contextualization FLOPs exist only as an unlabelled log-scale curve in Figure 3 and are never quoted; the only quantifier in the text is 'orders of magnitude smaller than CPT' [§4.1]. Consequently equation (A) cannot be closed and the break-even N_q* cannot be computed, even though the amortization argument ('many queries from the same user') is made twice [§1; §4.3] and no N_q value is given either.",
+      "location": "§4.1 Results; Figure 3; §1; §4.3",
+      "severity": "The paper's central economic claim is stated without either term of the ratio it depends on."
+    },
+    {
+      "fact": "No latency and no serving measurement of any kind. 'latency', 'ms' and 'TTFT' do not appear. All cost is reported as FLOPs and float counts. The paper twice invokes edge deployment — 'most computations occur on edge devices without power GPUs' [§4.3], 'on edge computing devices' [§1] — with no edge-device measurement anywhere.",
+      "location": "§1; §4.3; whole-paper grep",
+      "severity": "The deployment argument is asserted from FLOPs alone."
+    },
+    {
+      "fact": "The C_cap number is not convertible to bytes. Table 1 and §3 report 32 M floats, but the dtype is never stated, and the paper never says whether the stored object is S_t or the two low-rank factors of Eq. 9. Any byte figure in the monograph must therefore be marked as the book's own arithmetic under an assumed dtype.",
+      "location": "§3 Hyperparameters; Table 1",
+      "severity": "The one capacity number in the paper is one assumption short of usable."
+    },
+    {
+      "fact": "The novelty claim sits uneasily beside a work the paper itself describes. §1 asserts 'As far as we know, we are the first to explore this direction', while §6 summarises Tack et al. (2024): 'use a meta-learned amortization network to directly predict parameter efficient fine-tuning modulations of the base LM for individual context documents.' The paper's stated differences are that its training is end-to-end without a nested loop and that its generator is self-programming — both real, but they are differences of training procedure, not of direction. Tack et al. (2024) is not run as a baseline.",
+      "location": "§1 vs §6 Adapting LMs via Meta-Learning",
+      "severity": "The closest prior method is described but never compared against."
+    },
+    {
+      "fact": "Baseline coverage on the parametric side is thin. The only weight-writing baselines are full-parameter SFT and continual pretraining. Per-context gradient-fitted LoRA — the obvious cost-matched Θ-path comparator and the very object GenerativeAdapter emits — is never run, though LoRA is cited as the shape reference at Eq. 8-9 and in §6.",
+      "location": "§4.1 Setup and Baselines; §6 PEFT",
+      "severity": "The paper cannot say how much quality the forward-pass write gives up relative to a gradient write of identical shape and rank."
+    },
+    {
+      "fact": "Single-configuration evidence in two of the four evaluations. The MSC personalization results (Table 1) use Mistral-7B-Instruct only [§4.3]; the entire ablation (Table 2) uses Mistral-7B-Instruct only [§5.1]. Variance is not reported anywhere: MetaICL repeats sampling five times [§4.2] but no standard deviation is given in text or in Figures 4-6, and the QA results carry no error bars.",
+      "location": "§4.3; §5.1; §4.2",
+      "severity": "Cost claims and design justifications each rest on one base model with no dispersion reported."
+    },
+    {
+      "fact": "The write is permutation-invariant over context tokens and this is never acknowledged. Eq. 2 reduces the accumulated state to sum_i H_i^T H_i, a sum over tokens, so any reordering of the context produces the same adapter. Two of the three evaluated scenarios are order-bearing (multi-session dialogue in MSC; input-output demonstrations in MetaICL). No experiment probes order sensitivity.",
+      "location": "[generative-adapter Eq. 1, Eq. 2]; §4.2; §4.3 — my inference from the equations, not stated in the paper",
+      "severity": "A structural limitation of the method that the paper neither states nor tests."
+    }
+  ],
+
+  "cross_path_citations": {
+    "verdict": "Two of the three paths are engaged substantively; the third is touched exactly once, for an evaluation protocol, and never as a method. The sleep-time-compute literature is entirely absent, which is unsurprising given the date but should be recorded as the direction of the silence: this paper cannot cite the E-path's naming paper, and the E-path's naming paper is the one that would have to cite back.",
+    "W_path": {
+      "engaged": "Yes, extensively and by name. §6 opens with a 'Fast Weights' paragraph.",
+      "citations": [
+        "Hinton & Plaut (1987), Using fast weights to deblur old memories",
+        "Ba et al. (2016), Using fast weights to attend to the recent past",
+        "Schmidhuber (1992), Learning to control fast-weight memories; Schmidhuber (1993)",
+        "Schlag, Irie & Schmidhuber (2021), Linear Transformers are secretly fast weight programmers — cited twice: in §6 and again in §7 as the source of the 'more selective update rules' the paper wants next",
+        "Clark et al. (2022), Meta-learning fast weight language models",
+        "Linear-attention family: Tsai et al. (2019), Katharopoulos et al. (2020), Choromanski et al. (2021), Peng et al. (2021)"
+      ],
+      "note": "The lineage stops in 2022. Nothing from the 2024-2025 test-time-training line appears — the paper predates it (8 Nov 2024)."
+    },
+    "Theta_path": {
+      "engaged": "Yes, as the method's artifact reference and as its baseline family.",
+      "citations": [
+        "Hu et al. (2022), LoRA — cited in §1, §6 and at Eq. 8-9 as the shape the generated adapter takes",
+        "Houlsby et al. (2019) serial adapters; Li & Liang (2021) prefix tuning; Zhang et al. (2023) AdaLoRA; Liu et al. (2024) DoRA; Han et al. (2024) PEFT survey",
+        "Continual/synthetic pretraining: Yang et al. (2024) Synthetic continued pretraining; Allen-Zhu & Li (2024) Physics of Language Models 3.1; Jiang et al. (2024); Mecklenburg et al. (2024) injecting knowledge via SFT",
+        "Meta-learned online adaptation: Hu et al. (2023); Tack et al. (2024) Online adaptation of LMs with a memory of amortized contexts"
+      ],
+      "note": "Engaged as PEFT and continual pretraining, never as consolidation. No EWC, no replay, no generative replay, no CLS, no biological sleep. The forgetting-and-consolidation half of the Θ-path is absent from the bibliography entirely."
+    },
+    "E_path": {
+      "engaged": "Once, and only for a dataset protocol.",
+      "citations": [
+        "Packer et al. (2024), MemGPT (arXiv 2310.08560) — cited exactly once, in §4.3: 'We use the Multi-Session Conversation (MSC) dataset (Xu et al., 2022) for our experiments, following Packer et al. (2024).' MemGPT supplies the evaluation setup; it is not described as a method, not discussed in §6, and not run as a baseline.",
+        "Lewis et al. (2020), RAG — cited once in §1 as an instance of prompting with background knowledge, then dropped."
+      ],
+      "not_engaged": "No vector store, no graph memory, no agent-memory system, no retrieval baseline of any kind is evaluated. §6 has no external-memory paragraph.",
+      "adjacent_but_distinct": "The compression line — Chevalier et al. (2023), Ge et al. (2024) ICAE, Zhang et al. (2024) UltraGist, Kim et al. (2024) Compressed Context Memory — is well represented and UltraGist is the paper's only strong efficiency baseline (Table 1). Under the S0 frame these are not E-path: they compress into token embeddings consumed at read time, i.e. they shrink the prompt rather than write a store."
+    },
+    "sleep_time_compute_literature": "Absent. Nothing in the bibliography frames offline pre-query computation as a budget. The paper is five months earlier than Letta's Sleep-time Compute (2504.13171), so the silence is chronological in one direction only — the finding for Part III is whether the E-path papers cite back to this one."
+  },
+
+  "figures": [
+    {"id": "Figure 1", "reproduce": "yes — the chapter's structural diagram", "one_line": "Left: streaming chunks C_1..C_t encoded by the frozen base LM into hidden states H_t, fed to the generator G which emits Δ_t; right: inference runs on Θ_base + Δ_t with the context text gone. Redraw with Θ / W labels to show that the loop writes W and never touches Θ."},
+    {"id": "Figure 2", "reproduce": "yes — the quality-vs-length panel", "one_line": "F1 against context length 512..32K on SQuAD and StreamingQA for both base LMs; shows GenerativeAdapter decaying with length while closed-book SFT/CPT stay flat and in-context prompting stays high on Mistral but collapses on Llama2 past its 4K truncation."},
+    {"id": "Figure 3", "reproduce": "yes — the only cost figure in the paper", "one_line": "Three panels on StreamingQA — contextualization FLOPs, inference FLOPs, extra storage — against context length; the systems argument of the whole paper lives here, and the chapter must note that no numeric value from it is quoted in the text."},
+    {"id": "Figure 4", "reproduce": "optional", "one_line": "MetaICL accuracy against K ∈ {1,2,4,8,16}, split into classification and non-classification panels; shows fine-tuning winning on classification and losing on non-classification while GenerativeAdapter tracks or beats few-shot prompting."},
+    {"id": "Table 1", "reproduce": "yes — as a table, not a figure", "one_line": "MSC quality/compute/storage frontier against UltraGist at six compression budgets; the honest three-column view of the trade and the source of the 'without performance drop' discrepancy."},
+    {"id": "Table 2", "reproduce": "yes", "one_line": "Ablation on pretraining task, normalization and module placement, in reconstruction and completion perplexity; carries both the completion-only reversal and the feedforward-is-better-but-unused fact."},
+    {"id": "Table 5", "reproduce": "yes — in full", "one_line": "All QA numbers for both models, both datasets, all seven context lengths; the only place the length-dependent crossings against CPT and against prompting can be read exactly."},
+    {"id": "Figures 5 and 6", "reproduce": "no", "one_line": "Per-task MetaICL curves for Llama2 (Fig. 5) and Mistral (Fig. 6) across all 26 test tasks; cite as the location of the per-task detail, but 52 small panels do not belong in the chapter."},
+    {"id": "Figure 7", "reproduce": "no", "one_line": "The exact prompt templates for document QA and MetaICL; cite when discussing that GenerativeAdapter is evaluated closed-book while prompting baselines receive the context."}
+  ],
+
+  "systems_implications": [
+    {
+      "claim": "Decode cost after adaptation is the base model's decode cost, not more.",
+      "grounding": "Table 1 reports GenerativeAdapter inference at 0.505 TFLOPS, identical to closed-book at 0.505 TFLOPS, against 2.059 for full-conversation prompting. Figure 3's middle panel shows the same flatness against context length.",
+      "status": "paper number"
+    },
+    {
+      "claim": "That equality is only achievable if the delta is folded into the weights before serving. If instead the low-rank factors of Eq. 9 are kept as a residual path, each adapted matrix adds 2*r*d MACs per token: with r = 128 and d = 4096 that is ~1.05M MACs per adapted matrix per token, and with one adapted matrix in each of 32 blocks, ~33.5M MACs (~67 MFLOPs) per token — roughly 0.5% of a 7B forward pass (~14 GFLOPs/token). Either way the addition is small; the paper does not state which form is served.",
+      "grounding": "r = 128 and d_r = 1,024 from §3 Hyperparameters; Eq. 9's factorization; 7B forward-pass cost is standard 2N arithmetic.",
+      "status": "my inference — the paper never specifies the served form"
+    },
+    {
+      "claim": "The per-session state is ~32M floats, which at bf16 is ~64 MB and at fp32 ~128 MB per user or per context. Both the state S_t (32 blocks x 1024 x 1024 = 33.55M) and the low-rank factor pair (32 blocks x 2 x 4096 x 128 = 33.55M) come to the same count, which is consistent with the paper's '32 million parameters'.",
+      "grounding": "'the generated adapter of 32 million parameters' [§3]; Table 1 extra storage = 32 M floats; d_r = 1,024, r = 128 [§3].",
+      "status": "count is a paper number; the arithmetic reconciliation and the byte figures are my inference, since the dtype is never stated"
+    },
+    {
+      "claim": "Compared against a KV cache the state is flat rather than linear in context, and the crossover is early. Table 1 puts full-conversation prompting at '128+' M floats for a 2.5K-token conversation versus 32 M floats fixed; Figure 3's right panel shows the KV curve rising with context length while GenerativeAdapter's stays flat. Below roughly a 600-token conversation the KV cache would be the smaller object.",
+      "grounding": "Table 1; Figure 3 right panel; the crossover estimate is scaled from the reported 2.5K tokens / 128 M floats point in §4.3 and Table 1.",
+      "status": "the two endpoints are paper numbers; the crossover point is my inference"
+    },
+    {
+      "claim": "Contextualization is a prefill, not a training step. It requires one full forward pass of the frozen base LM over the context to obtain hidden states, so its FLOPs are of the same order as prefilling that context once — which is exactly what prompting-with-KV-cache also pays. The saving is not in the first pass; it is in every pass after it.",
+      "grounding": "'the context chunk Ct is encoded by the base LM Θbase into hidden state vectors Ht' [Figure 1 caption]; 'encodes the context into an adapter with a single forward pass' [§4.1]; Figure 3's leftmost panel places GenerativeAdapter and prompting-with-KV-cache in the same region and CPT orders of magnitude above.",
+      "status": "structure is a paper statement; the same-order claim is my inference, since no numeric contextualization FLOPs are given"
+    },
+    {
+      "claim": "The extra sleep-side work beyond prefill is a rank-128 randomized SVD of a 1024x1024 matrix per adapted layer per chunk, plus four projection GEMMs. With torch.svd_lowrank at 1 iteration this is O(d_r^2 * r) ~ 1.3e8 MACs per layer per chunk, ~4e9 per chunk over 32 layers — small against the ~1.4e13 FLOPs of prefilling a 1,024-token chunk through a 7B model, but it is a non-GEMM, poorly-batched kernel that lands in the middle of an otherwise clean prefill pipeline.",
+      "grounding": "'we implemented it using torch.svd_lowrank(), setting the number of iterations to 1' [App. B]; d_r = 1,024, r = 128, chunk = 1,024 tokens [§3].",
+      "status": "my inference — the paper reports no cost for the SVD"
+    },
+    {
+      "claim": "Batching is the unaddressed consequence. If the delta is folded into the weights, every concurrently served user needs a private 7B weight copy and shared-weight batching is dead. If it is served as low-rank factors, it is a per-request LoRA and batches the way multi-LoRA serving already does — at 32 M floats per request rather than the few M of a hand-fitted r=16 LoRA. The paper says nothing about serving multiple users at once; the word 'batch' appears in the paper only in training hyperparameters.",
+      "grounding": "Eq. 9's factorization; whole-paper grep for 'batch' returns only App. B/C training settings.",
+      "status": "my inference"
+    },
+    {
+      "claim": "Where the traffic lands: the write path streams 1,024-token chunks of hidden states (1,024 x 4,096 x 2 bytes = 8 MB per layer per chunk at bf16) into a 4 MB-per-layer accumulator at fp32, so the accumulation itself is a small-footprint, HBM-resident reduction; the read path is the ordinary 7B weight stream. The state that must persist between sessions is the ~64-128 MB adapter, which is a per-user object sized like a small model checkpoint rather than like a cache line — DRAM- or SSD-resident between sessions, promoted to HBM at session start.",
+      "grounding": "chunk = 1,024 tokens, d_h = 4,096 for a 7B model, d_r = 1,024 [§3]; 32 M floats [Table 1].",
+      "status": "my inference throughout — the paper reports no bandwidth or memory-hierarchy figures"
+    },
+    {
+      "claim": "The amortization the reader will want to compute cannot be computed. On MSC each query saves 2.059 - 0.505 = 1.554 TFLOPS. Equation (A) then needs only the contextualization cost of a 2.5K-token conversation to give N_q*, and that number is not in the paper.",
+      "grounding": "Table 1; equation (A) of S0-DESIGN §2.4; contextualization FLOPs are figure-only [Figure 3].",
+      "status": "the saving is a paper number; the observation that N_q* is unobtainable is the chapter's finding"
+    },
+    {
+      "claim": "The edge-device argument the paper leans on is stated without an edge measurement. '[costs] are highly undesirable for personalizing LMs for individual users, especially since most computations occur on edge devices without power GPUs' [§4.3]. On such a device the binding constraint is usually memory bandwidth and capacity, where a fixed 64-128 MB adapter that replaces a growing KV cache is a genuinely good trade — but the paper measures FLOPs only, and a 4x FLOPs reduction is not a 4x latency reduction on a bandwidth-bound device.",
+      "grounding": "§1 and §4.3 for the edge framing; Table 1 for the FLOPs; the bandwidth argument is mine.",
+      "status": "quote is a paper statement; the bandwidth critique is my inference"
+    }
+  ],
+
+  "todo_verify": [
+    {
+      "item": "Numeric contextualization FLOPs and inference FLOPs for each context length in Figure 3 (the axis tick values), which would close equation (A).",
+      "how_to_settle": "The txt extraction preserves only the axis labels ('Contextualization Computation', 'FLOPs (T)', 'Extra Storage', 'Floats (Million)') at lines 515-596 of papers/stc/2411.05877.txt. Obtain the source PDF of arXiv:2411.05877v1 and read the Figure 3 tick labels, or check whether the authors released the plotting data.",
+      "search_term": "grep -n 'FLOPs (T)' papers/stc/2411.05877.txt  (then read the PDF, Figure 3, p.7)"
+    },
+    {
+      "item": "Whether the abstract's '31.5' and '63.5%' correspond to some quantity other than Table 5's 32.0 at 32K on Mistral/StreamingQA — e.g. an average over lengths, or a superseded run.",
+      "how_to_settle": "The string '31.5' occurs exactly once in the whole file (abstract, line 26) and '63.5' exactly once (line 25). Nothing in the body supports either. Check any later arXiv version (v2+) for a corrected abstract.",
+      "search_term": "grep -n '31.5\\|63.5' papers/stc/2411.05877.txt"
+    },
+    {
+      "item": "Which base LM and which K-shot setting the MetaICL '44.9 across 26 tasks' figure belongs to.",
+      "how_to_settle": "'44.9' occurs only at line 26 (abstract) and at lines 2643 and 2729, both of which are Table 5 QA cells, not MetaICL. Recover from the authors' code/logs or from a later version with a MetaICL table.",
+      "search_term": "grep -n '44.9' papers/stc/2411.05877.txt"
+    },
+    {
+      "item": "The dtype of the stored 32 M floats, and whether the persisted object is S_t or the Eq. 9 factor pair.",
+      "how_to_settle": "'float' occurs only as the Table 1 / Figure 3 unit label ('M floats', 'Floats (Million)'); 'bf16' and 'fp16' do not occur at all. Would need the released implementation.",
+      "search_term": "grep -in 'float\\|bf16\\|fp16\\|dtype' papers/stc/2411.05877.txt"
+    },
+    {
+      "item": "What the '+' in the '128+' extra-storage entry for full-conversation prompting means (presumably 'at least', for a 2.5K-token KV cache).",
+      "how_to_settle": "'128+' occurs once, at line 840, inside Table 1, and is never explained in the caption or in §4.3.",
+      "search_term": "grep -n '128+' papers/stc/2411.05877.txt"
+    },
+    {
+      "item": "Confirmation of the Table 5 block-to-(model, dataset) assignment and the header column order, since the PDF-to-text conversion scrambled the table.",
+      "how_to_settle": "Read Table 5 in the source PDF (App. D, p.20). The reconstruction used here is anchored on three independent facts: SFT = 19.5 is quoted in the abstract as the Mistral/StreamingQA baseline; the header tokens 512/1K/2K/4K/8K/16K/32K appear scattered at lines 2617, 2621, 2623, 2778, 2771, 2764, 2640; and §4.1's Llama2 4K-truncation rule predicts the collapse seen in blocks 3 and 4.",
+      "search_term": "grep -n 'Table 5: All results' papers/stc/2411.05877.txt"
+    },
+    {
+      "item": "Whether the base LM has 32 Transformer blocks in both cases, which the 32 M-float arithmetic assumes.",
+      "how_to_settle": "The paper never states L for either base model; it is standard for Mistral-7B and Llama2-7B but must not be asserted as a paper fact. Check the Mistral-7B (2310.06825) and Llama 2 (2307.09288) papers, which are both in the bibliography.",
+      "search_term": "grep -in 'layer\\|block' papers/stc/2411.05877.txt | grep -i '32'"
+    },
+    {
+      "item": "Whether an official implementation exists, which would settle the served form (folded weights vs low-rank residual), the dtype, and the SVD cost.",
+      "how_to_settle": "No code URL, repository link or artifact statement appears anywhere in the extracted text. Confirm against the PDF's footnotes and the arXiv abstract page.",
+      "search_term": "grep -in 'github\\|code\\|release\\|available at' papers/stc/2411.05877.txt"
+    }
+  ]
+}
