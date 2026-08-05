@@ -1,11 +1,12 @@
 # STC Research
 
-Typed evidence, claim, artifact, and publication controls for the sleep-time
-compute research program.
+Sleep-Time Compute의 evidence, claim, artifact, publication gate를 함께 관리하는 연구 package다. 문헌 근거와 저자 제안, 사전 등록된 실험 설계와 실제 측정 결과를 구분한다.
 
-Start with [`DELIVERABLES.md`](DELIVERABLES.md) for the reader-facing
-monograph, English paper, presentation, audit corpus, theory, benchmark,
-systems, and empirical-status map.
+독자용 최신 release는 [`DELIVERABLES.md`](DELIVERABLES.md)에서 시작한다. 여기서 Study, Training Background, 15편 의역, section별 쉬운 설명, 112-slide seminar, evidence ledger, theory·benchmark·system 설계와 QA report로 이동할 수 있다. Release 전체의 hash와 공개 경계는 [`STC-STUDY-RELEASE-MANIFEST.json`](../../build/publications/STC-STUDY-RELEASE-MANIFEST.json)이 고정한다.
+
+**Source freeze:** 2026-08-05. 이후 공개된 연구는 이 판본의 근거 집합에 자동 포함되지 않는다.
+
+**Rights boundary:** 의역본 15편 중 `public` 2편과 `internal-only` 13편을 분리한다. 특히 internal-only PDF와 source plate는 외부 배포 경로에 포함하면 안 된다. 저자 작성 산출물 역시 외부 공개 전 조직의 legal/publication review가 필요하다.
 
 Run the package-local checks with:
 

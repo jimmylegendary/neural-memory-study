@@ -4,6 +4,82 @@ This index separates finished evidence synthesis and executable research design
 from empirical outputs that have not been run. No benchmark result is implied
 by a design, test fixture, or presentation schematic.
 
+**Current release:** 2026-08-05 source freeze. 아래 "학술 Study release"가 최신 통합 산출물이며, 뒤의 monograph/position-paper/28-slide 항목은 선행 연구 provenance로 유지한다.
+
+## 독자별 빠른 경로
+
+| 목적 | 시작 파일 | 함께 볼 파일 |
+|---|---|---|
+| 학회형 검토 | [`Conference PDF`](../../build/publications/SLEEP-TIME-COMPUTE-CONFERENCE-KR.pdf) | [`Appendix`](../../build/publications/SLEEP-TIME-COMPUTE-CONFERENCE-APPENDIX-KR.pdf), [`상세 Study`](../../build/publications/SLEEP-TIME-COMPUTE-STRATEGIC-STUDY-KR.pdf) |
+| Training 사전지식 | [`Training Background`](../../build/publications/TRAINING-BACKGROUND-FOR-SLEEP-TIME-COMPUTE-KR.pdf) | [`쉬운 설명 통합본`](../../build/publications/SLEEP-TIME-COMPUTE-EASY-COMPANION-KR.pdf) |
+| Seminar | [`112-slide PPTX`](../../build/publications/SLEEP-TIME-COMPUTE-DEEP-SEMINAR-112SLIDES-KR.pptx) | [`PDF`](../../build/publications/SLEEP-TIME-COMPUTE-DEEP-SEMINAR-112SLIDES-KR.pdf), [`speaker/deck QA`](../../presentation/sleep-time-compute-deep/README.md) |
+| 핵심 논문 의역 | [`15편 corpus index`](../../translations-kr/README.md) | [`rights manifest`](../../translations-kr/stc-core/reports/source-rights.json), [`build manifest`](../../build/publications/translations-kr/build-manifest.json) |
+| System·device | [`SYSTEM-INFRA-BLUEPRINT.md`](SYSTEM-INFRA-BLUEPRINT.md) | [`SCALING-LAWS-THEORY-AGENDA.md`](SCALING-LAWS-THEORY-AGENDA.md), [`BENCHMARK-EXPERIMENT-BLUEPRINT.md`](BENCHMARK-EXPERIMENT-BLUEPRINT.md) |
+| 재현·감사 | [`Release manifest`](../../build/publications/STC-STUDY-RELEASE-MANIFEST.json) | [`FINAL-QA.json`](../../build/publications/FINAL-QA.json), [`SHA256SUMS`](../../build/publications/SHA256SUMS) |
+
+## 학술 Study release
+
+| Artifact | 역할 | 검증 범위 |
+|---|---|---|
+| [`TRAINING-BACKGROUND-FOR-SLEEP-TIME-COMPUTE-KR.pdf`](../../build/publications/TRAINING-BACKGROUND-FOR-SLEEP-TIME-COMPUTE-KR.pdf) | training 비전공자용 사전 지식 | 57쪽, Study 개념 link의 target |
+| [`SLEEP-TIME-COMPUTE-STRATEGIC-STUDY-KR.pdf`](../../build/publications/SLEEP-TIME-COMPUTE-STRATEGIC-STUDY-KR.pdf) | 장문 분석 Study | 70쪽, 문헌·대안·promisingness·scaling·infra·device 통합 |
+| [`SLEEP-TIME-COMPUTE-CONFERENCE-KR.pdf`](../../build/publications/SLEEP-TIME-COMPUTE-CONFERENCE-KR.pdf) | 학회 제출 형식 본문 | 12쪽 |
+| [`SLEEP-TIME-COMPUTE-CONFERENCE-APPENDIX-KR.pdf`](../../build/publications/SLEEP-TIME-COMPUTE-CONFERENCE-APPENDIX-KR.pdf) | conference appendix | 30쪽 |
+| [`SLEEP-TIME-COMPUTE-EASY-COMPANION-KR.pdf`](../../build/publications/SLEEP-TIME-COMPUTE-EASY-COMPANION-KR.pdf) | Study section별 쉬운 설명 | 62쪽, 12개 booklet 통합 |
+| [`translations-kr/`](../../build/publications/translations-kr/) | 핵심 논문 15편 구조 보존형 의역 | 579쪽, public 2 / internal-only 13 |
+| [`SLEEP-TIME-COMPUTE-DEEP-SEMINAR-112SLIDES-KR.pptx`](../../build/publications/SLEEP-TIME-COMPUTE-DEEP-SEMINAR-112SLIDES-KR.pptx) / [`PDF`](../../build/publications/SLEEP-TIME-COMPUTE-DEEP-SEMINAR-112SLIDES-KR.pdf) | 상세 seminar | 112 slides, 112 source notes |
+
+## Rights·evidence boundary
+
+- PLOS STC-T04와 eLife STC-T13만 translation manifest에서 `public`이다. 나머지 13편은 `internal-only`이며 외부 배포 목록에서 제외된다.
+- Study의 literature synthesis와 저자 제안·가설을 구별하고, benchmark·capacity 결과가 아직 실행되지 않은 곳은 design/preregistered 상태로 표시한다.
+- 저자 작성 Study/Background/Easy/Deck도 source figure 및 인용 자산의 외부 공개 조건을 별도 검토해야 한다. `public` 표시는 자동적인 조직 외부 공개 승인이 아니다.
+
+## 최신 release 재현
+
+Repository root에서 다음 순서로 실행한다.
+
+```bash
+# Academic PDFs
+python3 paper-kr/common/build_publications.py --root . --target all --clean
+python3 paper-kr/common/qa_publications.py \
+  --pdf build/publications/TRAINING-BACKGROUND-FOR-SLEEP-TIME-COMPUTE-KR.pdf \
+  --kind background --require-all-concepts
+python3 paper-kr/common/qa_publications.py \
+  --pdf build/publications/SLEEP-TIME-COMPUTE-STRATEGIC-STUDY-KR.pdf \
+  --kind study --claim-map claims/stc-study/claim-map.json \
+  --figure-ledger claims/stc-study/figure-ledger.json
+python3 paper-kr/common/qa_publications.py \
+  --pdf build/publications/SLEEP-TIME-COMPUTE-CONFERENCE-KR.pdf \
+  --kind conference --min-pages 12 --max-pages 18
+python3 paper-kr/common/qa_publications.py \
+  --pdf build/publications/SLEEP-TIME-COMPUTE-CONFERENCE-APPENDIX-KR.pdf \
+  --kind appendix
+
+# 15 translations and rights/structure QA
+python3 translations-kr/stc-core/build_translations.py --all
+python3 translations-kr/stc-core/qa_translations.py --all --strict --render-all-pages
+python3 translations-kr/stc-core/audit_translations.py
+
+# Easy companion
+python3 easy/sleep-time-compute/build.py --all --combined
+python3 easy/sleep-time-compute/qa.py --all --combined --strict --render-all-pages
+
+# 112-slide deck (artifact-tool workspace가 준비된 Codex runtime)
+node presentation/sleep-time-compute-deep/src/generate-frame-map.mjs
+node presentation/sleep-time-compute-deep/src/prepare-starter.mjs
+node presentation/sleep-time-compute-deep/src/build-deck.mjs
+node --test presentation/sleep-time-compute-deep/tests/content.test.mjs
+python3 presentation/sleep-time-compute-deep/tests/verify_deck_release.py
+
+# Claim gates and release manifest
+python3 -m veridraft gate sleep-time-compute-strategic-study-2026 --data-dir .veridraft-stc-study
+python3 research/sleep-time-compute/program/build_release_manifest.py --root . --require-ready
+sha256sum -c build/publications/SHA256SUMS
+```
+
+Expected release outputs are `build/publications/`의 7개 core PDF/PPTX, translation 15개 PDF, `FINAL-QA.json`, `STC-STUDY-RELEASE-MANIFEST.json`, `SHA256SUMS`다. Deck authoring은 `@oai/artifact-tool`만 사용하며 LibreOffice는 PDF export/QA에만 사용한다.
+
 ## Reader-facing synthesis
 
 | Artifact | Purpose | Evidence status |

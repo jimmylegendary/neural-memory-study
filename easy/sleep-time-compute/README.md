@@ -6,7 +6,7 @@
 
 - 빠른 의사결정: E01 정의 → E02 문제 → E08 promisingness → E10 infra → E11 device
 - 연구 설계: E03 계보 → E04 대안 → E05 mechanism → E06 정면 비교 → E09 scaling → E12 falsifier
-- 전체 통합본: `build/publications/SLEEP-TIME-COMPUTE-EASY-COMPANION-KR.pdf`
+- 전체 통합본: [`SLEEP-TIME-COMPUTE-EASY-COMPANION-KR.pdf`](../../build/publications/SLEEP-TIME-COMPUTE-EASY-COMPANION-KR.pdf)
 
 각 booklet은 질문, 세 문장, 직관, 예·반례, canonical figure, strongest alternative, unknown, 원문·Background link 순서를 지킨다. `manifest.json`이 Study section, claim, figure, Background concept의 정확한 mapping을 고정한다.
 
@@ -20,4 +20,4 @@ python3 build/overflow_gate.py build/publications/SLEEP-TIME-COMPUTE-EASY-COMPAN
 sha256sum -c easy/sleep-time-compute/reports/SHA256SUMS
 ```
 
-최종 QA는 12개 individual PDF와 1개 combined PDF의 manifest consistency, unresolved placeholder, source figure 권리, missing glyph, PDF link annotation, 전 페이지 right-margin overflow를 검사한다. 결과는 `reports/qa-report.json`, build hash와 page count는 `reports/build-manifest.json`과 `reports/SHA256SUMS`에 기록된다.
+최종 QA는 12개 individual PDF와 1개 combined PDF의 manifest consistency, unresolved placeholder, source figure 권리, missing glyph, PDF link annotation, 전 페이지 right-margin overflow를 검사한다. 결과는 [`qa-report.json`](reports/qa-report.json), build hash와 page count는 [`build-manifest.json`](reports/build-manifest.json)과 [`SHA256SUMS`](reports/SHA256SUMS)에 기록된다.

@@ -1,5 +1,7 @@
 # 쉬운 버전 — 개념 booklet 12권
 
+> Sleep-Time Compute Study의 최신 section별 쉬운 설명은 [`sleep-time-compute/README.md`](sleep-time-compute/README.md)와 [`SLEEP-TIME-COMPUTE-EASY-COMPANION-KR.pdf`](../build/publications/SLEEP-TIME-COMPUTE-EASY-COMPANION-KR.pdf)에 있다. 아래 G00–G11은 Neural Memory 계열의 선행 개념 booklet로 함께 유지한다.
+
 수식·증명을 앞세우지 않고 **개념·물리적 직관 먼저**, 모든 기호를 풀어 쓰고, "이 계열을 시스템 모델링에 활용할 수준"을 목표로 한 쉬운 판본. 각 권은 개별 PDF (`pdf/`).
 
 문체 규약: 💡직관(파랑) · 🔤기호 풀이(주황) · ⚙️시스템 모델링 관점(초록) · 비유(회색) · 주의/한계(빨강) · 핵심/요약(보라) 콜아웃 박스. 증명·유도는 제외; 수식은 "이 식은 ~라는 뜻"으로만 풀이.

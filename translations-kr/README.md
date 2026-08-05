@@ -29,7 +29,14 @@ Sleep-Time Compute, continual learning, 외부 agent memory, memory capacity를 
 | STC-T14 | How much do language models memorize? | arXiv:2505.24832v3 | internal-only | `STC-T14-LANGUAGE-MODEL-MEMORIZATION-CAPACITY-KR.pdf` |
 | STC-T15 | LoRA as Knowledge Memory | arXiv:2603.01097v5 | internal-only | `STC-T15-LORA-KNOWLEDGE-MEMORY-KR.pdf` |
 
-PDF 위치: `../build/publications/translations-kr/`
+PDF 위치: [`../build/publications/translations-kr/`](../build/publications/translations-kr/), machine-readable 목록과 hash는 [`build-manifest.json`](../build/publications/translations-kr/build-manifest.json)에 있다.
+
+## 배포 경계
+
+- `public`: STC-T04(PLOS, CC BY 4.0), STC-T13(eLife, CC BY 4.0) 2편.
+- `internal-only`: 나머지 13편. 원문 전체 보존 부록을 포함하므로 조직 외부에 배포하지 않는다.
+- 개별 파일의 판정 근거는 [`source-rights.json`](stc-core/reports/source-rights.json), release에서 실제 분리된 목록은 [`STC-STUDY-RELEASE-MANIFEST.json`](../build/publications/STC-STUDY-RELEASE-MANIFEST.json)을 따른다.
+- 2026-08-05 source freeze 이후 논문 revision이나 license 변경은 이 corpus에 자동 반영되지 않는다.
 
 ## 재현과 검수
 
@@ -49,7 +56,7 @@ python3 translations-kr/stc-core/audit_translations.py
 - 579쪽, 두 번의 전체 build에서 SHA-256 byte 일치
 - 공개 가능 2편, internal-only 13편
 
-세부 보고서: `stc-core/reports/structural-parity.json`, `source-rights.json`, `reverse-check.md`, `corpus-audit.json`.
+세부 보고서: [`structural-parity.json`](stc-core/reports/structural-parity.json), [`source-rights.json`](stc-core/reports/source-rights.json), [`reverse-check.md`](stc-core/reports/reverse-check.md), [`corpus-audit.json`](stc-core/reports/corpus-audit.json).
 
 ## 기존 Neural Memory 의역본
 
