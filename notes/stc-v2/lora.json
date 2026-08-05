@@ -1,0 +1,468 @@
+{
+  "paper_id": "lora",
+  "arxiv": "2106.09685",
+  "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+  "authors": "Edward Hu*, Yelong Shen*, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean Wang, Lu Wang, Weizhu Chen (Microsoft Corporation; Yuanzhi Li also andrew.cmu.edu). *= equal contribution [lora title block]",
+  "venue": "vendored 원문에 venue 표기 없음. 표제부는 'arXiv:2106.09685v2 [cs.CL] 16 Oct 2021' 및 '(Version 2)'만 명시 [lora p.1 표제부]. v2 각주: 'Compared to V1, this draft includes better baselines, experiments on GLUE, and more on adapter latency.' → todo_verify 참조",
+  "date": "2021-10-16 (v2). v1 날짜는 원문에 없음",
+  "path": "/home/jimmy/repos/neural-memory-study/papers/stc/2106.09685.txt",
+  "axis": "Theta",
+
+  "problem_stated": {
+    "one_line": "downstream task마다 $|\\Delta\\Theta| = |\\Theta_0|$ 크기의 새 checkpoint를 만들어 저장·배포하는 것이 175B 규모에서 불가능해진다는 것, 그리고 기존 parameter-efficient 대안은 inference latency를 늘리거나 sequence length를 잡아먹거나 품질에서 fine-tuning을 못 따라간다는 것.",
+    "verbatim_and_location": [
+      "'The major downside of fine-tuning is that the new model contains as many parameters as in the original model.' [lora §1]",
+      "'As larger models are trained every few months, this changes from a mere \"inconvenience\" for GPT-2 ... to a critical deployment challenge for GPT-3 (Brown et al., 2020) with 175 billion trainable parameters.' [lora §1]",
+      "'One of the main drawbacks for full fine-tuning is that for each downstream task, we learn a different set of parameters $\\Delta\\Phi$ whose dimension $|\\Delta\\Phi|$ equals $|\\Phi_0|$. Thus, if the pre-trained model is large (such as GPT-3 with $|\\Phi_0| \\approx 175$ Billion), storing and deploying many independent instances of fine-tuned models can be challenging, if at all feasible.' [lora §2, Eq. 1 직후]",
+      "'existing techniques often introduce inference latency (Houlsby et al., 2019; Rebuffi et al., 2017) by extending model depth or reduce the model's usable sequence length ... More importantly, these method often fail to match the fine-tuning baselines, posing a trade-off between efficiency and model quality.' [lora §1]",
+      "'However, large neural networks rely on hardware parallelism to keep the latency low, and adapter layers have to be processed sequentially. This makes a difference in the online inference setting where the batch size is typically as small as one.' [lora §3]"
+    ],
+    "note": "논문은 sleep-time / wake-time / memory / consolidation 이라는 어휘를 한 번도 쓰지 않는다. 문제 정의는 전적으로 '배포 경제학(저장·전환·지연)'이다. v2 모노그래프가 이 논문을 Θ-경로에 놓는 것은 저자의 프레이밍이 아니라 v2의 재해석이다 — 본문에서 [해설]로 명시할 것."
+  },
+
+  "inherited_open_question": {
+    "from": "Aghajanyan et al. 2020 (arXiv:2012.13255, *Intrinsic Dimensionality Explains the Effectiveness of Language Model Fine-Tuning*) 및 Li et al. 2018a (arXiv:1804.08838, *Measuring the Intrinsic Dimension of Objective Landscapes*)",
+    "question": "선행 연구는 '과매개화된 학습 모델은 낮은 intrinsic dimension 위에 놓인다'를 objective landscape 수준에서 보였다. LoRA가 받아 가는 열린 질문은 이것이다 — 그렇다면 **adaptation 중 weights의 변화량 $\\Delta\\Theta$ 자체도** 낮은 intrinsic rank를 갖는가, 그리고 그 rank를 명시적 제약으로 걸어도 full fine-tuning 품질을 유지할 수 있는가.",
+    "evidence": "'We take inspiration from Li et al. (2018a); Aghajanyan et al. (2020) which show that the learned over-parametrized models in fact reside on a low intrinsic dimension. We hypothesize that the change in weights during model adaptation also has a low \"intrinsic rank\", leading to our proposed Low-Rank Adaptation (LoRA) approach.' [lora §1, 4번째 문단] · 동일 취지 재진술: 'Inspired by this, we hypothesize the updates to the weights also have a low \"intrinsic rank\" during adaptation.' [lora §4.1 첫 문단]",
+    "secondary_inheritances": [
+      "Houlsby et al. 2019 (adapter): adapter가 남긴 문제 = 순차적 depth가 만드는 inference latency. LoRA는 이를 §3 소제목으로 명시적으로 받아 Table 1 / Fig. 5로 측정한다. 'Adapter Layers Introduce Inference Latency' [lora §3].",
+      "Li & Liang 2021 (prefix-tuning): prefix-tuning의 비단조성 문제를 원저자가 이미 관찰한 것으로 인용하며 받는다. 'We observe that prefix tuning is difficult to optimize and that its performance changes non-monotonically in trainable parameters, confirming similar observations in the original paper.' [lora §3]"
+    ]
+  },
+
+  "core_mechanism": {
+    "summary": "slow weights를 얼어붙은 base $\\Theta_0$와 rank-$r$ 곱 $B A$의 합으로 재매개화하고, $(A,B)$만 outer loss $\\mathcal{L}$로 학습한 뒤 배포 시 $BA$를 $\\Theta_0$에 흡수한다. 즉 이것은 (U-$\\Theta$)의 **write primitive**이지 sleep-time schedule이 아니다.",
+    "unified_reduction_of_read_equation": "$\\hat y = f(q;\\ \\Theta,\\ W,\\ \\mathrm{ret}(E,q))$ [S0 (R)] 가 이 논문에서는 $\\hat y = f(q;\\ \\Theta_0 + \\Delta\\Theta)$ 로 붕괴한다. $W$(fast weights)와 $E$(external store)는 이 논문에 존재하지 않는다 — 논문 전체에 test-time 상태 변화가 없다.",
+    "equations": [
+      {
+        "id": "L-1",
+        "latex": "\\max_{\\Theta}\\ \\sum_{(x,y)\\in\\mathcal{D}}\\ \\sum_{t=1}^{|y|} \\log P_{\\Theta}\\big(y_t \\mid x, y_{<t}\\big)",
+        "orig": "[lora Eq. 1]",
+        "gloss": "full fine-tuning 기준선. 원문은 $\\max_\\Phi \\sum_{(x,y)\\in Z}\\sum_t \\log(P_\\Phi(y_t|x,y_{<t}))$ — 원문 $\\Phi$ = 모델 전체 파라미터 = 통일표기 $\\Theta$, 원문 $Z$ = 통일표기 $\\mathcal{D}$."
+      },
+      {
+        "id": "L-2",
+        "latex": "\\max_{\\{A^{(m)},B^{(m)}\\}}\\ \\sum_{(x,y)\\in\\mathcal{D}}\\ \\sum_{t=1}^{|y|} \\log p_{\\,\\Theta_0 + \\Delta\\Theta(\\{A,B\\})}\\big(y_t \\mid x, y_{<t}\\big)",
+        "orig": "[lora Eq. 2]",
+        "gloss": "저차원 재매개화된 목적함수. 원문은 $\\max_\\Theta \\sum\\sum \\log(p_{\\Phi_0+\\Delta\\Phi(\\Theta)}(\\cdot))$ — **원문의 $\\Theta$가 통일표기 $\\Theta$와 정반대 의미**(원문 $\\Theta$ = 학습되는 소수 파라미터, 통일 $\\Theta$ = slow weights 전체). notation_conflicts 참조."
+      },
+      {
+        "id": "L-3",
+        "latex": "\\Delta\\Theta^{(m)} = B^{(m)}A^{(m)},\\qquad B^{(m)}\\in\\mathbb{R}^{d_{\\mathrm{out}}\\times r},\\quad A^{(m)}\\in\\mathbb{R}^{r\\times d_{\\mathrm{in}}},\\quad r \\ll \\min(d_{\\mathrm{out}},d_{\\mathrm{in}})",
+        "orig": "[lora §4.1] ($W_0+\\Delta W = W_0 + BA$, $B\\in\\mathbb{R}^{d\\times r}$, $A\\in\\mathbb{R}^{r\\times k}$)",
+        "gloss": "$m$ = LoRA를 적용한 개별 weight 행렬 인덱스. 원문 $(d,k)$ = 그 행렬의 출력·입력 차원 → 통일표기에서 $d$는 model 차원 예약이므로 $(d_{\\mathrm{out}},d_{\\mathrm{in}})$으로 개명."
+      },
+      {
+        "id": "L-4",
+        "latex": "y \\;=\\; \\Theta_0^{(m)} x \\;+\\; \\Delta\\Theta^{(m)} x \\;=\\; \\Theta_0^{(m)} x \\;+\\; \\frac{\\alpha_{\\mathrm{LoRA}}}{r}\\,B^{(m)}A^{(m)} x",
+        "orig": "[lora Eq. 3] + [lora §4.1] scaling 산문",
+        "gloss": "**정확성 주의**: [lora Eq. 3]은 $h = W_0x+\\Delta Wx = W_0x+BAx$로 scaling **없이** 쓰였고, $\\alpha/r$ 배율은 Eq. 3 직후 산문에만 등장한다('We then scale $\\Delta Wx$ by $\\frac{\\alpha}{r}$'). 두 진술을 합친 것이 실제 구현이다. 원문 $h$(층 출력)는 통일표기 $h_t$(outer 2차 moment) 예약과 충돌하므로 $y$로 개명."
+      },
+      {
+        "id": "L-5",
+        "latex": "A^{(m)} \\sim \\mathcal{N}(0,\\sigma_{\\mathrm{init}}^2),\\qquad B^{(m)} = 0 \\;\\Longrightarrow\\; \\Delta\\Theta\\big|_{k=0} = 0",
+        "orig": "[lora §4.1] ('We use a random Gaussian initialization for A and zero for B, so $\\Delta W = BA$ is zero at the beginning of training'), [lora Fig. 1]",
+        "gloss": "write가 항등원에서 출발한다. Θ-경로에서 '쓰기 전 상태를 정확히 보존한다'는 성질의 최초 표준형."
+      },
+      {
+        "id": "L-6",
+        "latex": "\\begin{pmatrix}A\\\\B\\end{pmatrix}_{k+1} \\;=\\; \\begin{pmatrix}A\\\\B\\end{pmatrix}_{k} \\;-\\; \\eta\\,\\nabla_{(A,B)}\\,\\mathcal{L}\\!\\left(\\mathcal{D};\\ \\Theta_0 + \\tfrac{\\alpha_{\\mathrm{LoRA}}}{r} B_k A_k\\right),\\qquad \\Theta_0 \\ \\text{frozen}",
+        "orig": "[lora Eq. 2]의 최적화 형태 + [lora App. D.1–D.4] (optimizer = AdamW, linear LR decay)",
+        "gloss": "S0의 (U-$\\Theta$) $\\Theta_{k+1}=\\Theta_k-\\eta_\\Theta\\nabla_\\Theta\\mathcal{L}(\\mathcal{R}_k;\\Theta_k)$의 제약 버전. 차이 3가지: (i) gradient를 $\\Theta$가 아니라 $(A,B)$에 대해 취해 update가 rank-$r$ manifold에 갇힌다, (ii) $\\mathcal{R}_k = \\mathcal{D}$는 사람이 만든 고정 labeled dataset이므로 $\\mathcal{R}_k=\\mathrm{gen}(\\mathcal{H}_k;B_s)$의 $\\mathrm{gen}(\\cdot)$이 항등(=$B_s$ knob 없음), (iii) 실제 optimizer는 plain GD가 아니라 AdamW다 [lora App. D]."
+      },
+      {
+        "id": "L-7",
+        "latex": "\\Theta^{(m)} \\leftarrow \\Theta_0^{(m)} + B^{(m)}A^{(m)},\\qquad \\text{task switch: } \\Theta_0^{(m)} = \\Theta^{(m)} - B^{(m)}A^{(m)},\\ \\ \\Theta'^{(m)} = \\Theta_0^{(m)} + B'^{(m)}A'^{(m)}",
+        "orig": "[lora §4.1] 'No Additional Inference Latency'",
+        "gloss": "merge/unmerge. 이 한 줄이 '$L_w = 0$'의 전부이며, 동시에 batching 제약의 원인이다 (systems_implications 참조)."
+      },
+      {
+        "id": "L-8",
+        "latex": "|\\Delta\\Theta| \\;=\\; 2 \\times N_{\\mathrm{mod}} \\times d \\times r",
+        "orig": "[lora §5.1] ('$|\\Theta| = 2\\times \\hat{L}_{LoRA}\\times d_{model}\\times r$')",
+        "gloss": "$N_{\\mathrm{mod}}$ = LoRA를 적용한 weight 행렬의 개수(원문 $\\hat L_{LoRA}$). $C$(state capacity)의 정확한 회계식 — Θ-경로 용량 논의의 기준식이다."
+      },
+      {
+        "id": "L-9",
+        "latex": "\\mathrm{sim}(A,B,i,j) \\;=\\; \\frac{\\big\\lVert U_A^{i\\,\\top} U_B^{\\,j} \\big\\rVert_F^2}{\\min(i,j)} \\in [0,1]",
+        "orig": "[lora Eq. 4], [lora App. G]",
+        "gloss": "Grassmann projection metric의 역수 형태로 정의된 subspace similarity. 원문 기호 $\\phi(\\cdot)$는 통일표기 $\\phi_p,\\phi^*$(feature map, Atlas) 예약과 충돌하므로 $\\mathrm{sim}(\\cdot)$으로 개명. App. G: $\\mathrm{sim} = 1-\\frac{1}{p}d(U_A^i,U_B^j)^2$, $p=\\min\\{i,j\\}$."
+      },
+      {
+        "id": "L-10",
+        "latex": "\\mathrm{amp} \\;=\\; \\frac{\\lVert \\Delta\\Theta^{(m)} \\rVert_F}{\\lVert U_\\Delta^{\\top}\\, \\Theta_0^{(m)}\\, R_\\Delta^{\\top} \\rVert_F}",
+        "orig": "[lora App. H.4] + [lora §7.3, Table 7]",
+        "gloss": "feature amplification factor. $U_\\Delta,R_\\Delta$ = $\\Delta\\Theta^{(m)}$의 좌/우 singular vector 행렬(원문 $U,V$ — $V$는 통일표기에서 value 행렬 예약이므로 $R_\\Delta$로 개명). 측정값: $r=4$에서 $21.5 \\approx 6.91/0.32$, $r=64$에서 $\\approx 2$ ($3.57/1.90$)."
+      }
+    ],
+    "notation_conflicts": [
+      {"paper": "$\\Theta$ (Eq. 2) — 학습되는 소수의 파라미터 집합, $|\\Theta|\\ll|\\Phi_0|$", "unified": "$\\{A^{(m)},B^{(m)}\\}$ 또는 $\\Delta\\Theta$의 매개변수", "severity": "치명적 — 통일표기 $\\Theta$는 slow weights **전체**. 의미가 정반대다. 원문 $\\Theta$를 v2 본문에 절대 그대로 옮기지 말 것."},
+      {"paper": "$\\Phi$, $\\Phi_0$, $\\Delta\\Phi$ — 전체 파라미터 / 사전학습 파라미터 / 그 증분", "unified": "$\\Theta$, $\\Theta_0$, $\\Delta\\Theta$", "severity": "직접 대응"},
+      {"paper": "$W$, $W_0$, $\\Delta W$ — 사전학습 weight 행렬과 그 누적 gradient update", "unified": "$\\Theta_0^{(m)}$, $\\Delta\\Theta^{(m)}$", "severity": "치명적 — 통일표기 $W$는 **fast weights**(test-time에 움직이는 상태). LoRA의 $W$는 정확히 그 반대(고정된 slow weight). ch(LoRA)는 이 충돌을 첫 문단에서 경고해야 한다."},
+      {"paper": "$\\alpha$ — LoRA scaling 상수, $\\Delta Wx$를 $\\alpha/r$배 [§4.1]", "unified": "$\\alpha_{\\mathrm{LoRA}}$ (무첨자 상수)", "severity": "충돌 — 통일 $\\alpha_t$는 retention gate(남기는 비율, $[0,1]$). LoRA의 $\\alpha$는 8/16/32 같은 상수 배율이므로 게이트가 아니다. 시간 첨자 없음으로 구분하되 하첨자 명기 의무."},
+      {"paper": "$h$ — 층 출력 ($h=W_0x$) [Eq. 3]", "unified": "$y$", "severity": "충돌 — 통일 $h_t$는 outer 2차 moment(ch02). "},
+      {"paper": "$L$ — Transformer layer 수 (PreLayer의 $|\\Theta| = L\\times d_{model}\\times(l_p+l_i)$) [§5.1]", "unified": "$L_{\\mathrm{layer}}$", "severity": "충돌 — 통일 $L$은 sequence 길이 전용 [STYLE §1.5]."},
+      {"paper": "$\\hat{L}_{Adpt}$, $\\hat{L}_{LN}$, $\\hat{L}_{LoRA}$ — adapter 층 수 / 학습 LayerNorm 수 / LoRA 적용 행렬 수 [§5.1]", "unified": "$N_{\\mathrm{adpt}}$, $N_{\\mathrm{LN}}$, $N_{\\mathrm{mod}}$", "severity": "위 $L$ 충돌의 파생"},
+      {"paper": "$k$ — weight 행렬의 입력 차원 ($W_0\\in\\mathbb{R}^{d\\times k}$) [§4.1]", "unified": "$d_{\\mathrm{in}}$", "severity": "충돌 — 통일 $k_t$는 key 벡터, $d_k$는 key 차원 [STYLE §1.5: $k$는 key/보조 인덱스 전용]."},
+      {"paper": "$d$ — weight 행렬의 출력 차원 [§4.1]; 별도로 $d_{model}$ [§1 Terminologies]", "unified": "$d_{\\mathrm{out}}$; $d$", "severity": "충돌 — 통일 $d$는 model 차원. 원문은 $d$와 $d_{model}$을 다른 뜻으로 병용한다."},
+      {"paper": "$V$ — $\\Delta W$의 우 singular vector 행렬 [§7.3, Table 7]", "unified": "$R_\\Delta$", "severity": "충돌 — 통일 $V$는 value 행렬 전용 [STYLE §1.5]. $U$도 $U_\\Delta$로 첨자화."},
+      {"paper": "$\\phi(A,B,i,j)$, $\\psi(\\cdot)$ — subspace similarity [Eq. 4, App. G]", "unified": "$\\mathrm{sim}(\\cdot)$", "severity": "충돌 — 통일 $\\phi_p,\\phi^*$는 feature map(Atlas)."},
+      {"paper": "$Z=\\{(x_i,y_i)\\}_{i=1..N}$ — downstream dataset [§2]", "unified": "$\\mathcal{D}$, 크기 $N_{\\mathcal{D}}$", "severity": "약한 충돌 — 통일 $\\mathcal{D}$가 dataset 예약. $N$은 $N_p$(persistent memory tokens)와의 혼동 방지를 위해 첨자화."},
+      {"paper": "$\\sigma^2$ — $A$의 Gaussian 초기화 분산 [Fig. 1]; $\\sigma_1..\\sigma_p$ — singular values [App. G]", "unified": "$\\sigma_{\\mathrm{init}}^2$; $\\varsigma_i$ 또는 산문", "severity": "약한 충돌 — 통일 $\\sigma(\\cdot)$는 activation."},
+      {"paper": "$r$ — LoRA rank; adapter의 bottleneck 차원에도 같은 $r$을 쓴다 [§5.1, Table 15]", "unified": "$r$ (LoRA rank) / adapter는 $r_{\\mathrm{adpt}}$", "severity": "논문 내부 중의성 — Table 15의 $\\mathrm{Adapter}_H$ 행의 $r$은 LoRA rank가 아니라 adapter bottleneck이다. 표를 옮길 때 반드시 구분."},
+      {"paper": "$l_p, l_i$ — prefix/infix special token 수 (baseline 전용) [§5.1]", "unified": "동일 유지 (장-국소)", "severity": "없음"},
+      {"paper": "$r_q=r_v=8$ 류 표기 — 행렬별 rank [App. D Tables 9–12]", "unified": "$r^{(q)}, r^{(v)}$", "severity": "없음 (표기 정리만)"}
+    ]
+  },
+
+  "outer_vs_inner": [
+    {"object": "$\\Theta_0$ — 사전학습 backbone weights 전체 (embedding, MLP, LayerNorm, bias, 그리고 얼려둔 $W_q,W_k,W_v,W_o$)", "who_learns": "다른 사람/다른 라운드의 pre-training. 이 논문 안에서는 **아무도 학습하지 않는다**", "when": "이 논문의 범위 밖. adaptation 중 frozen, test-time에도 불변", "source": "[lora §4.1] 'During training, $W_0$ is frozen and does not receive gradient updates' · [lora §4.2] 'freeze the MLP modules (so they are not trained in downstream tasks)'"},
+    {"object": "$A^{(m)}$ — rank-$r$ 하강 투영 (Gaussian 초기화)", "who_learns": "outer-loop 학습 (downstream adaptation). optimizer = AdamW", "when": "adaptation 시점(sleep에 해당하는 오프라인 구간). test-time에는 **움직이지 않는다**", "source": "[lora §4.1] · [lora App. D.1–D.4]"},
+    {"object": "$B^{(m)}$ — rank-$r$ 상승 투영 (0으로 초기화)", "who_learns": "outer-loop 학습 (downstream adaptation)", "when": "위와 동일. test-time 불변", "source": "[lora §4.1] · [lora Fig. 1]"},
+    {"object": "$\\Theta_0^{(m)} + B^{(m)}A^{(m)}$ — merge된 배포용 weights", "who_learns": "학습되지 않음. 배포 시 1회 **계산**될 뿐", "when": "deploy 시점 (wake 진입 직전). 이후 고정", "source": "[lora §4.1] 'we can explicitly compute and store $W = W_0+BA$ and perform inference as usual'"},
+    {"object": "$r$ (rank), $\\alpha_{\\mathrm{LoRA}}$ (scaling), 어떤 행렬에 LoRA를 걸지", "who_learns": "학습되지 않음. 사람이 손으로 고르는 hyperparameter·heuristic", "when": "adaptation 시작 전. $\\alpha$는 '처음 시도한 $r$로 두고 튜닝하지 않는다'고 선언", "source": "[lora §4.1] 'we simply set $\\alpha$ to the first $r$ we try and do not tune it' · [lora §8 (3)] 'We mostly depend on heuristics to select the weight matrices to apply LoRA to'"},
+    {"object": "bias 벡터", "who_learns": "주 방법에서는 학습하지 않음. '모든 bias를 학습하면 full fine-tuning 표현력에 근접한다'는 **가정적 논증**에만 등장하고, BitFit은 별도 baseline", "when": "해당 없음", "source": "[lora §4.1 및 각주 2] · [lora §5.1] BitFit baseline"},
+    {"object": "$W$ (통일표기 fast weights)", "who_learns": "**이 논문에 존재하지 않는다**", "when": "wake-time에 움직이는 파라미터형 상태가 없다. inference는 사전학습 모델과 완전히 동일한 불변식(가중치 불변)을 유지한다", "source": "[lora §4.1] merge 후 'perform inference as usual' — test-time 상태 변화에 관한 서술이 논문 전체에 없음"},
+    {"object": "$E$ (통일표기 external store)", "who_learns": "**이 논문에 존재하지 않는다**. retrieval·vector store·외부 기억에 대한 언급이 본문·참고문헌 모두에 없다", "when": "해당 없음", "source": "cross_path_citations 참조"},
+    {"object": "KV cache", "who_learns": "학습 대상 아님", "when": "wake-time에 존재하는 유일한 상태이지만, 논문은 KV cache를 한 번도 언급하지 않는다", "source": "[note-writer 추론] 원문 침묵. 검색어 'KV', 'cache'로 확인 — 등장하지 않음"},
+    {"object": "prefix/infix token embedding ($l_p, l_i$)", "who_learns": "outer-loop 학습 — 단, **baseline(PreEmbed/PreLayer)과 조합실험(LoRA+PE/PL)에서만**", "when": "baseline adaptation 시점", "source": "[lora §5.1] · [lora App. E, Table 15]"}
+  ],
+
+  "update_layer": {
+    "instantiates": "(U-$\\Theta$) 단독. (U-W)와 (U-E)는 전혀 건드리지 않는다.",
+    "canonical_form": "$\\Theta_{k+1} = \\Theta_k - \\eta_\\Theta \\nabla_\\Theta \\mathcal{L}(\\mathcal{R}_k; \\Theta_k)$, $\\mathcal{R}_k = \\mathrm{gen}(\\mathcal{H}_k; B_s)$ [S0 (U-$\\Theta$)]",
+    "differences": [
+      "**차이 1 — 저차원 제약**: gradient를 $\\Theta$ 전체가 아니라 $(A,B)$에 대해 취한다. 결과적으로 $\\Theta_k - \\Theta_0$가 항상 rank $\\le r$인 manifold 위에 머문다. 즉 (U-$\\Theta$)를 rank-$r$ 부분공간으로 사영한 형태. $\\Theta_0$는 모든 $k$에서 불변. [lora §4.1]",
+      "**차이 2 — $\\mathcal{R}_k$가 생성되지 않는다**: 학습 집합은 사람이 만든 고정 labeled dataset $\\mathcal{D}$(GLUE, WikiSQL, SAMSum, E2E, DART, WebNLG)이다. $\\mathrm{gen}(\\mathcal{H}_k; B_s)$가 항등이므로 **$B_s$라는 knob 자체가 없다**. replay·synthetic data·self-generated target이 전무하다. [lora §2, App. C]",
+      "**차이 3 — $k$의 의미**: $k$는 wake/sleep lifecycle의 '라운드'가 아니라 한 번의 adaptation run 안의 평범한 SGD step이다. 라운드가 반복되지 않으므로 (U-$\\Theta$)의 반복 적용·누적 열화 문제가 아예 제기되지 않는다. [lora App. D: GPT-3은 2 epoch, GPT-2는 5 epoch]",
+      "**차이 4 — optimizer**: 표준형은 plain GD로 쓰였지만 실제는 AdamW + linear LR decay다. 이 논문의 메모리 절감 논리(optimizer state를 대부분 안 들고 있어도 된다)는 **adaptive optimizer를 전제**한다. [lora §1 bullet 2, App. D.1–D.4]",
+      "**차이 5 — merge라는 후처리 단계**: 표준형에는 없는 단계로, 학습 후 $\\Delta\\Theta$를 $\\Theta_0$에 흡수해 $L_w=0$을 만든다. Θ-경로에서 '쓰기 결과를 어디에 두는가'가 비용을 결정한다는 것을 보여주는 최초의 구조. [lora §4.1]"
+    ],
+    "ordering": "층 간 순서 문제 없음 — 단일 층만 갱신한다. 다만 $B=0$ 초기화 때문에 write는 반드시 '항등원 → 저랭크 이탈' 방향으로만 진행된다."
+  },
+
+  "cost_table": {
+    "B_s": {
+      "value": "논문에 sleep-time compute 개념이 없으므로 $B_s$라는 양 자체가 정의되지 않는다. 적응(=오프라인 쓰기)의 계산량에 대해 논문이 실제로 보고하는 값은 다음 셋뿐이다: (1) GPT-3 175B 학습 throughput — full fine-tuning 32.5 tokens/s per V100 GPU vs LoRA 43.1 tokens/s per V100 GPU (같은 model-parallel shard 수), 본문 표현으로 '25% speedup' [lora §4.2 및 각주 5]; (2) 학습 시 VRAM 1.2TB → 350GB, 'up to 2/3' 절감 [lora §4.2], Abstract는 'GPU memory requirement by 3 times' [lora Abstract]; (3) 학습 스케줄 — GPT-3: AdamW, 2 epochs, batch 128 samples, weight decay 0.1, seq len 384(WikiSQL)/768(MNLI)/2048(SAMSum), LoRA LR 2.00E-04 [lora App. D.4, Table 12]; GPT-2: 5 epochs, batch 8, LR 2E-04 [Table 11]; RoBERTa: 10–80 epochs, batch 4–32 [Table 9]; DeBERTa XXL: 5–30 epochs, batch 4–32 [Table 10]. **총 adaptation FLOPs·총 토큰 수·wall-clock은 전부 absent.** 데이터 규모만 App. C에서 확인 가능: WikiSQL 56,355/8,421 train/val, SAMSum 14,732/819 train/test, E2E ≈42,000/4,600/4,600, DART 82K, WebNLG 22K, MNLI 392K [lora App. C, Table 16].",
+      "absent_parts": "총 FLOPs, 총 학습 토큰 수, wall-clock 시간, 에너지"
+    },
+    "L_w": {
+      "value": "merge된 상태에서 **0** — 'we do not introduce any additional latency during inference compared to a fine-tuned model by construction' [lora §4.1] · 'unlike adapters, no additional inference latency' [lora Abstract]. 대조군(adapter)의 실측 [lora Table 1, GPT-2 medium, NVIDIA Quadro RTX8000, single forward pass, 100 trials 평균, ms]: (batch 32/seq 512, $|\\Theta|$=0.5M) Fine-Tune/LoRA 1449.4±0.8 · Adapter$_L$ 1482.0±1.0 (+2.2%) · Adapter$_H$ 1492.2±1.0 (+3.0%); (batch 16/seq 256, 11M) 338.0±0.6 · 354.8±0.5 (+5.0%) · 366.3±0.5 (+8.4%); (batch 1/seq 128, 11M) 19.8±2.7 · 23.9±2.1 (+20.7%) · 25.8±2.2 (+30.3%). [lora Fig. 5]는 slow-down이 online·short-sequence 상황에서 30% 이상까지 간다고 보고. **merge하지 않은 상태(멀티 task 배칭)의 latency는 absent** — 가능하다고만 언급하고 측정하지 않는다 [lora §4.2 Limitations].",
+      "absent_parts": "unmerged 경로의 ms/token·TTFT, decode 단계 분리 측정, GPT-3 규모의 latency 실측(모든 latency 수치는 GPT-2 medium 단일 GPU)"
+    },
+    "C": {
+      "value": "정확한 회계식 $|\\Delta\\Theta| = 2 \\times N_{\\mathrm{mod}} \\times d \\times r$ [lora §5.1]. 실측 값: **GPT-3 175B, $r=4$, $W_q$·$W_v$만 적응 → checkpoint 350GB → 35MB, 약 10,000× 감소** [lora §4.2]; 같은 설정을 §7.1은 '18M parameters (roughly 35MB if stored in FP16), 96 layers'로 표기 [lora §7.1]. 100개 task 저장 시 350GB + 35MB×100 ≈ 354GB (vs 100×350GB ≈ 35TB) [lora §4.2 각주 4]. 모델별 학습 파라미터 수: RoBERTa base LoRA 0.3M (FT 125.0M), RoBERTa large LoRA 0.8M (FT 355.0M), DeBERTa XXL LoRA 4.7M (FT 1500.0M) [lora Table 2]; GPT-2 M LoRA 0.35M (FT 354.92M), GPT-2 L LoRA 0.77M (FT 774.03M) [lora Table 3]; GPT-3 LoRA 4.7M 및 37.7M (FT 175,255.8M) [lora Table 4]. GPT-3 $d$ = 12,288 [lora §1], layer 수 96 [lora §7.1]. 스윕 범위 [lora Table 15]: LoRA 4.7M ~ 603.8M.",
+      "absent_parts": "per-session / per-user 기준 bytes (논문은 per-task 기준으로만 회계), 토큰당 이동 bytes, LoRA delta의 load 시간"
+    },
+    "rho": {
+      "value": "absent",
+      "note": "논문은 sequential·continual adaptation을 한 번도 수행하지 않는다. 한 task에 대해 한 번 적응하고 끝이며, 두 개의 $\\Delta\\Theta$를 누적하거나 같은 모델에 반복 write하는 실험이 없다. catastrophic forgetting·retention·열화라는 단어가 본문과 참고문헌 어디에도 없다. 가장 근접한 서술은 task switch를 '$BA$를 빼고 $B'A'$를 더한다'로 기술한 부분인데, 이는 열화가 아니라 **완전 되돌리기**를 전제한다 [lora §4.1]."
+    }
+  },
+
+  "experiments": {
+    "hardware": "모든 학습·평가 실험 NVIDIA Tesla V100 [lora §5]. latency 실험만 NVIDIA Quadro RTX8000, 100 trial 평균 [lora Table 1 캡션, App. B].",
+    "models": [
+      {"model": "RoBERTa base", "size": "125.0M", "source": "[lora Table 2], [lora §5.2]"},
+      {"model": "RoBERTa large", "size": "355.0M", "source": "[lora Table 2], [lora §5.2]"},
+      {"model": "DeBERTa XXL", "size": "1500.0M (1.5B)", "source": "[lora Table 2], [lora §5.3]"},
+      {"model": "GPT-2 Medium", "size": "354.92M (Table 13에서는 354M)", "source": "[lora Table 3], [lora Table 13]"},
+      {"model": "GPT-2 Large", "size": "774.03M (Table 13에서는 774M)", "source": "[lora Table 3], [lora Table 13]"},
+      {"model": "GPT-3", "size": "175,255.8M", "source": "[lora Table 4], [lora §5.5]"}
+    ],
+    "token_and_data_scale": "사전학습 토큰 수는 보고하지 않음(기성 checkpoint 사용). adaptation 데이터 규모 [lora App. C]: WikiSQL 56,355/8,421 (train/val), SAMSum 14,732/819 (train/test), E2E ≈42,000/4,600/4,600, DART 82K total, WebNLG 22K total(14 카테고리 중 9개만 학습 시 관측), MNLI 전량 392K [lora Table 16].",
+    "results": [
+      {
+        "benchmark": "GLUE (MNLI/SST-2/MRPC/CoLA/QNLI/QQP/RTE/STS-B, Avg)",
+        "source": "[lora Table 2]",
+        "metrics_note": "MNLI = matched+mismatched 종합 정확도, CoLA = Matthew 상관, STS-B = Pearson 상관, 나머지 = 정확도. * = 선행 연구 게재 수치 재인용, † = Houlsby et al. 2019에 맞춘 제한 setup.",
+        "rows": [
+          "RoBERTa base (FT)* 125.0M: 87.6 / 94.8 / 90.2 / 63.6 / 92.8 / 91.9 / 78.7 / 91.2 · Avg 86.4",
+          "RoBERTa base (BitFit)* 0.1M: 84.7 / 93.7 / 92.7 / 62.0 / 91.8 / 84.0 / 81.5 / 90.8 · Avg 85.2",
+          "RoBERTa base (Adpt_D)* 0.3M: 87.1±.0 / 94.2±.1 / 88.5±1.1 / 60.8±.4 / 93.1±.1 / 90.2±.0 / 71.5±2.7 / 89.7±.3 · Avg 84.4",
+          "RoBERTa base (Adpt_D)* 0.9M: 87.3±.1 / 94.7±.3 / 88.4±.1 / 62.6±.9 / 93.0±.2 / 90.6±.0 / 75.9±2.2 / 90.3±.1 · Avg 85.4",
+          "RoBERTa base (LoRA) 0.3M: 87.5±.3 / 95.1±.2 / 89.7±.7 / 63.4±1.2 / 93.3±.3 / 90.8±.1 / 86.6±.7 / 91.5±.2 · Avg 87.2",
+          "RoBERTa large (FT)* 355.0M: 90.2 / 96.4 / 90.9 / 68.0 / 94.7 / 92.2 / 86.6 / 92.4 · Avg 88.9",
+          "RoBERTa large (LoRA) 0.8M: 90.6±.2 / 96.2±.5 / 90.9±1.2 / 68.2±1.9 / 94.9±.3 / 91.6±.1 / 87.4±2.5 / 92.6±.2 · Avg 89.0",
+          "RoBERTa large (Adpt_P)† 3.0M: 90.2±.3 / 96.1±.3 / 90.2±.7 / 68.3±1.0 / 94.8±.2 / 91.9±.1 / 83.8±2.9 / 92.1±.7 · Avg 88.4",
+          "RoBERTa large (Adpt_P)† 0.8M: 90.5±.3 / 96.6±.2 / 89.7±1.2 / 67.8±2.5 / 94.8±.3 / 91.7±.2 / 80.1±2.9 / 91.9±.4 · Avg 87.9",
+          "RoBERTa large (Adpt_H)† 6.0M: 89.9±.5 / 96.2±.3 / 88.7±2.9 / 66.5±4.4 / 94.7±.2 / 92.1±.1 / 83.4±1.1 / 91.0±1.7 · Avg 87.8",
+          "RoBERTa large (Adpt_H)† 0.8M: 90.3±.3 / 96.3±.5 / 87.7±1.7 / 66.3±2.0 / 94.7±.2 / 91.5±.1 / 72.9±2.9 / 91.5±.5 · Avg 86.4",
+          "RoBERTa large (LoRA)† 0.8M: 90.6±.2 / 96.2±.5 / 90.2±1.0 / 68.2±1.9 / 94.8±.3 / 91.6±.2 / 85.2±1.1 / 92.3±.5 · Avg 88.6",
+          "DeBERTa XXL (FT)* 1500.0M: 91.8 / 97.2 / 92.0 / 72.0 / 96.0 / 92.7 / 93.9 / 92.9 · Avg 91.1",
+          "DeBERTa XXL (LoRA) 4.7M: 91.9±.2 / 96.9±.2 / 92.6±.6 / 72.4±1.1 / 96.0±.1 / 92.9±.1 / 94.9±.4 / 93.0±.2 · Avg 91.3"
+        ]
+      },
+      {
+        "benchmark": "E2E NLG Challenge (BLEU / NIST / MET / ROUGE-L / CIDEr)",
+        "source": "[lora Table 3]",
+        "rows": [
+          "GPT-2 M (FT)* 354.92M: 68.2 / 8.62 / 46.2 / 71.0 / 2.47",
+          "GPT-2 M (Adapter_L)* 0.37M: 66.3 / 8.41 / 45.0 / 69.8 / 2.40",
+          "GPT-2 M (Adapter_L)* 11.09M: 68.9 / 8.71 / 46.1 / 71.3 / 2.47",
+          "GPT-2 M (Adapter_H) 11.09M: 67.3±.6 / 8.50±.07 / 46.0±.2 / 70.7±.2 / 2.44±.01",
+          "GPT-2 M (FT_Top2)* 25.19M: 68.1 / 8.59 / 46.0 / 70.8 / 2.41",
+          "GPT-2 M (PreLayer)* 0.35M: 69.7 / 8.81 / 46.1 / 71.4 / 2.49",
+          "GPT-2 M (LoRA) 0.35M: 70.4±.1 / 8.85±.02 / 46.8±.2 / 71.8±.1 / 2.53±.02",
+          "GPT-2 L (FT)* 774.03M: 68.5 / 8.78 / 46.0 / 69.9 / 2.45",
+          "GPT-2 L (Adapter_L) 0.88M: 69.1±.1 / 8.68±.03 / 46.3±.0 / 71.4±.2 / 2.49",
+          "GPT-2 L (Adapter_L) 23.00M: 68.9±.3 / 8.70±.04 / 46.1±.1 / 71.3±.2 / 2.45±.02",
+          "GPT-2 L (PreLayer)* 0.77M: 70.3 / 8.85 / 46.2 / 71.7 / 2.47",
+          "GPT-2 L (LoRA) 0.77M: 70.4±.1 / 8.89±.02 / 46.8±.2 / 72.0±.2 / 2.47±.02"
+        ]
+      },
+      {
+        "benchmark": "GPT-3 175B — WikiSQL Acc.(%) / MNLI-m Acc.(%) / SAMSum R1/R2/RL",
+        "source": "[lora Table 4], [lora §5.5]",
+        "variance_note": "'The results on WikiSQL have a fluctuation around ±0.5%, MNLI-m around ±0.1%, and SAMSum around ±0.2/±0.2/±0.1' [lora Table 4 캡션]. §5.5: 'Due to the high training cost, we only report the typical standard deviation for a given task over random seeds, as opposed to providing one for every entry.'",
+        "rows": [
+          "GPT-3 (FT) 175,255.8M: 73.8 / 89.5 / 52.0/28.0/44.5",
+          "GPT-3 (BitFit) 14.2M: 71.3 / 91.0 / 51.3/27.4/43.5",
+          "GPT-3 (PreEmbed) 3.2M: 63.1 / 88.6 / 48.3/24.2/40.5",
+          "GPT-3 (PreLayer) 20.2M: 70.1 / 89.5 / 50.8/27.3/43.5",
+          "GPT-3 (Adapter_H) 7.1M: 71.9 / 89.8 / 53.0/28.9/44.8",
+          "GPT-3 (Adapter_H) 40.1M: 73.2 / 91.5 / 53.2/29.0/45.1",
+          "GPT-3 (LoRA) 4.7M: 73.4 / 91.7 / 53.8/29.8/45.9",
+          "GPT-3 (LoRA) 37.7M: 74.0 / 91.6 / 53.4/29.2/45.1"
+        ]
+      },
+      {
+        "benchmark": "어떤 attention 행렬에 LoRA를 걸 것인가 (GPT-3 175B, 학습 파라미터 18M 고정, 96 layers)",
+        "source": "[lora Table 5], [lora §7.1]",
+        "rows": [
+          "W_q (r=8): WikiSQL 70.4 / MultiNLI 91.0",
+          "W_k (r=8): 70.0 / 90.8",
+          "W_v (r=8): 73.0 / 91.0",
+          "W_o (r=8): 73.2 / 91.3",
+          "W_q,W_k (r=4): 71.4 / 91.3",
+          "W_q,W_v (r=4): 73.7 / 91.3",
+          "W_q,W_k,W_v,W_o (r=2): 73.7 / 91.7"
+        ]
+      },
+      {
+        "benchmark": "rank $r$ 스윕 (GPT-3 175B). 상단 WikiSQL(±0.5%), 하단 MultiNLI(±0.1%)",
+        "source": "[lora Table 6], [lora §7.2]",
+        "rows": [
+          "WikiSQL · W_q: r=1 68.8, r=2 69.6, r=4 70.5, r=8 70.4, r=64 70.0",
+          "WikiSQL · W_q,W_v: 73.4 / 73.3 / 73.7 / 73.8 / 73.5",
+          "WikiSQL · W_q,W_k,W_v,W_o: 74.1 / 73.7 / 74.0 / 74.0 / 73.9",
+          "MultiNLI · W_q: 90.7 / 90.9 / 91.1 / 90.7 / 90.7",
+          "MultiNLI · W_q,W_v: 91.3 / 91.4 / 91.3 / 91.6 / 91.4",
+          "MultiNLI · W_q,W_k,W_v,W_o: 91.2 / 91.7 / 91.7 / 91.5 / 91.4"
+        ]
+      },
+      {
+        "benchmark": "$\\Delta W$ 대 $W$ 의 Frobenius norm 분석 (GPT-3 48번째 layer)",
+        "source": "[lora Table 7], [lora §7.3], [lora App. H.4]",
+        "rows": [
+          "$\\lVert W_q\\rVert_F = 61.95$",
+          "$r=4$: $\\lVert U^\\top W_q V^\\top\\rVert_F$ = 0.32 ($U,V$가 $\\Delta W_q$의 top-$r$일 때) / 21.67 ($W_q$의 top-$r$) / 0.02 (random); $\\lVert\\Delta W_q\\rVert_F = 6.91$",
+          "$r=64$: 1.90 / 37.71 / 0.33; $\\lVert\\Delta W_q\\rVert_F = 3.57$",
+          "amplification factor: $21.5 \\approx 6.91/0.32$ ($r=4$) [lora §7.3]; $r=64$에서는 '$\\approx 2$' [lora App. H.4]"
+        ]
+      },
+      {
+        "benchmark": "subspace similarity (Grassmann)",
+        "source": "[lora Eq. 4], [lora Fig. 3], [lora Fig. 4], [lora App. G, H.1]",
+        "rows": [
+          "$A_{r=8}$와 $A_{r=64}$는 $\\Delta W_q$·$\\Delta W_v$ 모두에서 normalized similarity > 0.5인 **차원 1**의 부분공간을 공유한다 [lora §7.2 강조 박스] — 이것이 'r=1이 잘 되는 이유'로 제시된 유일한 기제적 근거.",
+          "본문 그림은 96개 층 중 **48번째 층 하나만** 사용 [lora §7.2] ('We only look at the 48th layer (out of 96) due to space constraint').",
+          "무작위 seed 두 개(r=64) 사이의 similarity는 $\\Delta W_q$가 $\\Delta W_v$보다 높다 [lora Fig. 4]. 대조군으로 두 random Gaussian 행렬은 공통 방향을 갖지 않는다."
+        ]
+      },
+      {
+        "benchmark": "GPT-2 Medium rank 스윕 (E2E NLG, 26,000 step 학습 후)",
+        "source": "[lora Table 18], [lora App. H.2]",
+        "rows": [
+          "r=1: val loss 1.23, BLEU 68.72, NIST 8.7215, METEOR 0.4565, ROUGE-L 0.7052, CIDEr 2.4329",
+          "r=2: 1.21, 69.17, 8.7413, 0.4590, 0.7052, 2.4639",
+          "r=4: 1.18, 70.38, 8.8439, 0.4689, 0.7186, 2.5349",
+          "r=8: 1.17, 69.57, 8.7457, 0.4636, 0.7196, 2.5196",
+          "r=16: 1.16, 69.61, 8.7483, 0.4629, 0.7177, 2.4985",
+          "r=32: 1.16, 69.33, 8.7736, 0.4642, 0.7105, 2.5255",
+          "r=64: 1.16, 69.24, 8.7174, 0.4651, 0.7180, 2.5070",
+          "r=128: 1.16, 68.73, 8.6718, 0.4628, 0.7127, 2.5030",
+          "r=256: 1.16, 68.92, 8.6982, 0.4629, 0.7128, 2.5012",
+          "r=512: 1.16, 68.78, 8.6857, 0.4637, 0.7128, 2.5025",
+          "r=1024: 1.17, 69.37, 8.7495, 0.4659, 0.7149, 2.5090"
+        ]
+      },
+      {
+        "benchmark": "DART (GPT-2) — BLEU↑ / MET↑ / TER↓",
+        "source": "[lora Table 13], [lora App. F.1]",
+        "rows": [
+          "GPT-2 M: Fine-Tune 354M 46.2/0.39/0.46 · Adapter_L 0.37M 42.4/0.36/0.48 · Adapter_L 11M 45.2/0.38/0.46 · FT_Top2 24M 41.0/0.34/0.56 · PrefLayer 0.35M 46.4/0.38/0.46 · LoRA 0.35M 47.1±.2/0.39/0.46",
+          "GPT-2 L: Fine-Tune 774M 47.0/0.39/0.46 · Adapter_L 0.88M 45.7±.1/0.38/0.46 · Adapter_L 23M 47.1±.1/0.39/0.45 · PrefLayer 0.77M 46.7/0.38/0.45 · LoRA 0.77M 47.5±.1/0.39/0.45",
+          "'The variances of MET and TER are less than 0.01 for all adaption approaches.' [lora Table 13 캡션]"
+        ]
+      },
+      {
+        "benchmark": "WebNLG (GPT-2) — BLEU↑ / MET↑ / TER↓, 각각 U(unseen)/S(seen)/A(all)",
+        "source": "[lora Table 14], [lora App. F.1]",
+        "rows": [
+          "GPT-2 M · Fine-Tune (354M): BLEU 27.7/64.2/46.5 · MET .30/.45/.38 · TER .76/.33/.53",
+          "GPT-2 M · Adapter_L (0.37M): 45.1/54.5/50.2 · .36/.39/.38 · .46/.40/.43",
+          "GPT-2 M · Adapter_L (11M): 48.3/60.4/54.9 · .38/.43/.41 · .45/.35/.39",
+          "GPT-2 M · FT_Top2 (24M): 18.9/53.6/36.0 · .23/.38/.31 · .99/.49/.72",
+          "GPT-2 M · Prefix (0.35M): 45.6/62.9/55.1 · .38/.44/.41 · .49/.35/.40",
+          "GPT-2 M · LoRA (0.35M): 46.7±.4/62.1±.2/55.3±.2 · .38/.44/.41 · .46/.33/.39",
+          "GPT-2 L · Fine-Tune (774M): 43.1/65.3/55.5 · .38/.46/.42 · .53/.33/.42",
+          "GPT-2 L · Adapter_L (0.88M): 49.8±.0/61.1±.0/56.0±.0 · .38/.43/.41 · .44/.35/.39",
+          "GPT-2 L · Adapter_L (23M): 49.2±.1/64.7±.2/57.7±.1 · .39/.46/.43 · .46/.33/.39",
+          "GPT-2 L · Prefix (0.77M): 47.7/63.4/56.3 · .39/.45/.42 · .48/.34/.40",
+          "GPT-2 L · LoRA (0.77M): 48.4±.3/64.0±.3/57.0±.1 · .39/.45/.42 · .45/.32/.38"
+        ]
+      },
+      {
+        "benchmark": "GPT-3 파라미터 예산 전 구간 스윕 (WikiSQL / MNLI-m validation accuracy)",
+        "source": "[lora Table 15], [lora App. F.2], [lora App. E]",
+        "rows": [
+          "Fine-Tune 175B: 73.8 / 89.5",
+          "PrefixEmbed (l_p=32,64,128,256,512; l_i=8) 0.4M/0.9M/1.7M/3.2M/6.4M: 55.9/58.7/60.6/63.1/55.9 · 84.9/88.1/88.0/88.6/85.8",
+          "PrefixLayer 5.1M/10.1M/20.2M/44.1M/76.1M: 68.5/69.8/70.1/66.4/64.9 · 89.2/88.2/89.5/89.6/87.9",
+          "Adapter_H (bottleneck r=1,4,8,16,64) 7.1M/21.2M/40.1M/77.9M/304.4M: 71.9/73.2/73.2/73.2/72.6 · 89.8/91.0/91.5/91.5/91.5",
+          "LoRA r_v=2 (4.7M) 73.4/91.7 · r_q=r_v=1 (4.7M) 73.4/91.3 · r_q=r_v=2 (9.4M) 73.3/91.4 · r_q=r_k=r_v=r_o=1 (9.4M) 74.1/91.2 · r_q=r_v=4 (18.8M) 73.7/91.3 · r_q=r_k=r_v=r_o=2 (18.8M) 73.7/91.7 · r_q=r_v=8 (37.7M) 73.8/91.6 · r_q=r_k=r_v=r_o=4 (37.7M) 74.0/91.7 · r_q=r_v=64 (301.9M) 73.6/91.4 · r_q=r_k=r_v=r_o=64 (603.8M) 73.9/91.4",
+          "LoRA+PE (r_q=r_v=8/32/64, l_p=8, l_i=4) 37.8M/151.1M/302.1M: 75.0/75.9/76.2 · 91.4/91.1/91.3",
+          "LoRA+PL (r_q=r_v=8, l_p=8, l_i=4) 52.8M: 72.9 / 90.2"
+        ]
+      },
+      {
+        "benchmark": "저데이터 레짐 MNLI(m)-n (GPT-3 175B) — 100 / 1k / 10k / 392K",
+        "source": "[lora Table 16], [lora App. F.3]",
+        "rows": [
+          "Fine-Tune: 60.2 / 85.8 / 88.9 / 89.5",
+          "PrefixEmbed: 37.6 / 75.2 / 79.5 / 88.6",
+          "PrefixLayer: 48.3 / 82.5 / 85.9 / 89.6",
+          "LoRA: 63.8 / 85.6 / 89.2 / 91.7",
+          "'PrefixEmbed performing only slightly better than random chance (37.6% vs. 33.3%)' [lora App. F.3]"
+        ]
+      },
+      {
+        "benchmark": "few-shot 대 fine-tuning (GPT-3, adaptation의 필요성 논증)",
+        "source": "[lora Table 8], [lora App. A]",
+        "rows": [
+          "GPT-3 Few-Shot: MNLI-m 40.6 / RTE 69.0",
+          "GPT-3 Fine-Tuned: MNLI-m 89.5 / RTE 85.4",
+          "RTE few-shot 수치는 GPT-3 논문(Brown et al. 2020)에서 가져옴; MNLI-m은 클래스당 2개 데모, 총 6개 in-context example [lora App. A]"
+        ]
+      },
+      {
+        "benchmark": "adapter inference latency (대조군)",
+        "source": "[lora Table 1], [lora Fig. 5], [lora App. B]",
+        "rows": ["cost_table.L_w 항목에 전문 수록"]
+      }
+    ],
+    "hyperparameters": [
+      "RoBERTa: AdamW, warmup ratio 0.06, linear LR schedule, $r_q=r_v=8$, LoRA $\\alpha$ = 8(base) / 16(large), max seq len 128 또는 512, batch 4–32, epoch 10–80, LR 2E-04~5E-04. 5개 random seed의 중앙값, 각 run은 best epoch 결과 [lora App. D.1, Table 9]",
+      "DeBERTa XXL: AdamW, warmup ratio 0.1, $r_q=r_v=8$, LoRA $\\alpha$=8, max seq len 64–512, batch 4–32, epoch 5–30, LR 6E-05~2E-04, CLS dropout 0~0.2. 5개 seed 중앙값, best epoch [lora App. D.2, Table 10]",
+      "GPT-2: AdamW, weight decay 0.01, dropout 0.1, batch 8, 5 epoch, warmup 500 step, linear schedule, label smooth 0.1, LR 0.0002, $r_q=r_v=4$, LoRA $\\alpha$=32; inference beam 10, length penalty 0.9(E2E)/0.8(WebNLG,DART), no-repeat-ngram 4. 3개 seed 평균, best epoch [lora App. D.3, Table 11]",
+      "GPT-3: AdamW, batch 128, 2 epoch, warmup 250,000 tokens, linear schedule, weight decay 0.1, LoRA LR 1.6E-03 (Table 12) / MNLI-n 실험에서는 2.00E-04·1.00E-04 (Table 17); seq len 384(WikiSQL)/768(MNLI)/2048(SAMSum). **'We report the best validation performance from each run.'** [lora App. D.4, Table 12, Table 17]"
+    ]
+  },
+
+  "scale_ceiling": "GPT-3 175B (175,255.8M 파라미터, $d$=12,288, 96 layers)에 대한 **downstream adaptation**이 상한이다 [lora §5.5, Table 4, §7.1]. 단 그 상한의 내용은 (a) 데이터 규모 최대 MNLI 392K example, (b) 2 epoch, batch 128, (c) 3개 dataset(WikiSQL/MNLI/SAMSum), (d) 모두 validation accuracy(별도 test split 평가 없음, 'best validation performance from each run' [App. D.4]), (e) 모든 실험 NVIDIA Tesla V100 [§5]. 사전학습은 수행하지 않는다(기성 checkpoint). 해석 실험(Table 5–7, Fig. 3·4·8)은 GPT-3에서 수행하되 본문은 96개 층 중 48번째 층 하나로 한정되고, 부록 H.1이 층 1/32/64/96까지 4개 층으로 확장한다. latency 실험의 상한은 GPT-2 medium 단일 GPU다 [Table 1, App. B] — 즉 **품질의 상한과 latency 근거의 상한이 서로 다른 모델·다른 하드웨어**에 있다.",
+
+  "concept_ledger_delta": {
+    "신설": [
+      "low-rank adaptation (LoRA) — $\\Theta$ write를 rank-$r$ 곱으로 제약하는 primitive",
+      "intrinsic rank of the update ($\\Delta W$의 intrinsic rank) — Aghajanyan의 intrinsic dimension을 '변화량'으로 옮긴 개념 [lora §1, §4.1]",
+      "mergeable adapter (parallel vs sequential adapter) — merge 가능성이 latency를 결정한다는 구분 [lora §6, App. B]",
+      "LoRA scaling $\\alpha_{\\mathrm{LoRA}}/r$ [lora §4.1]",
+      "subspace similarity $\\mathrm{sim}(A,B,i,j)$ (Grassmann projection metric의 역) [lora Eq. 4, App. G]",
+      "feature amplification factor [lora App. H.4]",
+      "task switching by subtract-and-add ($-BA$, $+B'A'$) [lora §4.1]"
+    ],
+    "확장·개명": [
+      "'adapter' → 순차(non-mergeable) / 병렬(mergeable) 두 계열로 분화. LoRA는 자신을 'external modules added in a parallel manner'로 규정 [lora App. B]",
+      "'parameter-efficient adaptation' → 저장 효율과 latency 효율이 별개 축임을 분리 [lora §3]",
+      "$\\Theta$-delta가 '배포 가능한 artifact'(35MB 체크포인트)라는 지위를 얻음 [lora §4.2 및 각주 4]"
+    ],
+    "폐기": [
+      "논문이 명시적으로 폐기를 선언한 개념은 없다.",
+      "[해설] 다만 §1이 선행 PEFT에 귀속시킨 전제 — 'efficiency와 model quality 사이의 trade-off' — 를 반례로 무력화하려 한다. 이는 폐기 선언이 아니라 반증 시도다."
+    ]
+  },
+
+  "open_questions": [
+    "'LoRA can be combined with other efficient adaptation methods, potentially providing orthogonal improvement.' [lora §8 (1)] — App. E에서 prefix 계열 두 종만 시험했고 그중 하나(LoRA+PL)는 음의 결과다.",
+    "'The mechanism behind fine-tuning or LoRA is far from clear – how are features learned during pre-training transformed to do well on downstream tasks? We believe that LoRA makes it more tractable to answer this than full fine-tuning.' [lora §8 (2)]",
+    "'We mostly depend on heuristics to select the weight matrices to apply LoRA to. Are there more principled ways to do it?' [lora §8 (3)]",
+    "'the rank-deficiency of $\\Delta W$ suggests that $W$ could be rank-deficient as well, which can also be a source of inspiration for future works.' [lora §8 (4)]",
+    "'We leave the empirical investigation of adapting the MLP layers, LayerNorm layers, and biases to a future work.' [lora §4.2] — 즉 이 논문의 모든 '어디에 쓸 것인가' 결론은 self-attention 안으로 한정된다.",
+    "'combining LoRA with other tensor product-based methods could potentially improve its parameter efficiency, which we leave to future work.' [lora §6, COMPACTER 언급 직후]",
+    "'Note that the relationship between model size and the optimal rank for adaptation is still an open question.' [lora App. H.2] — Θ-경로 용량 이론의 정확한 공백 지점.",
+    "'An interesting next question to answer, is how \"strong\" do we need to amplify those task-specific directions, in order for the model adaptation to work well?' [lora App. H.3]",
+    "batching 한계: 'it is not straightforward to batch inputs to different tasks with different A and B in a single forward pass, if one chooses to absorb A and B into W to eliminate additional inference latency.' [lora §4.2 Limitations] — 해결책을 제시하지 않고 남긴다. **v2의 관점에서 이것이 Θ-경로 서빙의 핵심 미해결 문제다.**",
+    "작은 $r$의 일반성: 'we do not expect a small r to work for every task or dataset. Consider the following thought experiment: if the downstream task were in a different language than the one used for pre-training, retraining the entire model (similar to LoRA with $r=d_{model}$) could certainly outperform LoRA with a small $r$.' [lora §7.2 각주 6] — 저자 스스로 반례 조건을 지목하되 실험하지 않는다.",
+    "prefix-tuning의 비단조성 원인: 'we suspect that having more special tokens causes the input distribution to shift further away from the pre-training data distribution. While a thorough investigation into this phenomenon is out-of-scope for this work' [lora §5.5]",
+    "[v2가 던지는 후속 질문, 논문에 없음] $\\Delta\\Theta$를 반복해서 누적할 때 무엇이 무너지는가($\\rho$), 그리고 여러 $\\Delta\\Theta$를 합성했을 때 간섭이 어떻게 되는가 — 논문은 두 delta의 합성을 한 번도 시험하지 않는다."
+  ],
+
+  "unfavorable_facts": [
+    "**§7.1의 결론이 자기 표와 어긋난다.** 본문은 'adapting both $W_q$ and $W_v$ yields the best result' / 'Adapting both $W_q$ and $W_v$ gives the best performance overall'이라고 쓰지만, 같은 [lora Table 5]에서 $\\{W_q,W_k,W_v,W_o\\}$ $r=2$가 WikiSQL 73.7로 **동률**이고 MultiNLI 91.7로 $\\{W_q,W_v\\}$의 91.3보다 **높다**. 즉 표는 '네 행렬 전부'가 열등하지 않음을 보여준다. [lora Table 5, §7.1]",
+    "**'$r=1$이면 충분하다'의 근거가 자기 오차막대 안에 있다.** [lora Table 6]에서 $\\{W_q,W_v\\}$의 WikiSQL 값은 $r=1..64$에 걸쳐 73.4/73.3/73.7/73.8/73.5로, 전체 폭 0.5가 캡션이 밝힌 변동 ±0.5%와 같다. 즉 rank 차이를 이 데이터로는 해상할 수 없다. [lora Table 6 및 그 캡션]",
+    "**작은 모델에서 결론이 뒤집힌다.** GPT-2 Medium에서는 $r=1$이 최적이 아니며, 저자 스스로 'Unlike on GPT-3 where $r=1$ suffices for many tasks, here the performance peaks at $r=16$ for validation loss and $r=4$ for BLEU'라고 쓴다. [lora Table 18 캡션, App. H.2]",
+    "**그 rank 스윕은 hyperparameter로 오염돼 있다.** 'Note that some of our hyperparameters are tuned on $r=4$, which matches the parameter count of another baseline, and thus might not be optimal for other choices of $r$.' [lora Table 18 캡션] — rank 축을 단독 변수로 읽을 수 없다.",
+    "**GLUE의 주요 LoRA 행이 MNLI checkpoint에서 warm-start된다.** 'Following Liu et al. (2019), we initialize the LoRA modules to our best MNLI checkpoint when adapting to MRPC, RTE, and STS-B, instead of the usual initialization' [lora App. D.1] (DeBERTa도 동일 [App. D.2]). 이 이점을 제거한 † setup에서 RoBERTa large LoRA의 RTE는 **87.4 → 85.2로 떨어지고**, full fine-tuning의 86.6보다 낮아진다. [lora Table 2] — 즉 화제가 된 'RoBERTa base LoRA RTE 86.6 vs FT 78.7' 격차는 공정한 비교가 아니다.",
+    "**FT/adapter baseline의 상당수가 재실행이 아니라 인용이다.** '* indicates numbers published in prior works' [lora Table 2·3 캡션]. RoBERTa base/large FT, DeBERTa XXL FT, GPT-2 M/L FT, FT_Top2, PreLayer가 모두 * 행이다. 학습 프로토콜이 LoRA 행과 동일하다는 보장이 없다.",
+    "**full fine-tuning에 남는 격차가 존재한다.** QQP에서 LoRA는 두 RoBERTa 크기 모두에서 FT보다 낮다 — base 90.8 vs 91.9, large 91.6 vs 92.2 [lora Table 2]. Adapter$_H$(6.0M)의 92.1도 LoRA†의 91.6보다 높다. SST-2에서도 Adapter$_P$(0.8M) 96.6 > LoRA† 96.2.",
+    "**LoRA가 adapter에 지는 지점이 있다.** E2E에서 GPT-2 Large CIDEr: Adapter$_L$(0.88M) 2.49 > LoRA(0.77M) 2.47 [lora Table 3]. WebNLG GPT-2 Large: Adapter$_L$(23M)이 BLEU-All 57.7 > LoRA 57.0, MET-All .43 > .42 [lora Table 14]. WebNLG GPT-2 Large BLEU-Unseen도 Adapter$_L$(0.88M) 49.8 > LoRA 48.4.",
+    "**저데이터에서도 완승이 아니다.** MNLI-1k에서 LoRA 85.6 < Fine-Tune 85.8 [lora Table 16]. 저자는 '±0.3 variance를 고려하면 comparable'이라고 처리한다 [App. F.3].",
+    "**'orthogonal / 조합 가능'이라는 주장의 절반이 음의 결과다.** LoRA+PL(52.8M)은 LoRA 단독(37.7M)보다 WikiSQL 72.9 vs 73.8, MNLI 90.2 vs 91.6으로 **더 나쁘다** [lora Table 15]. 저자는 'we attribute this to the fact that prefix-layer tuning is very sensitive to the choice of learning rate'라고 설명하지만 [App. E] 그 가설을 분리 검증하는 실험은 없다. adapter·BitFit·COMPACTER와의 조합은 아예 시험되지 않았다.",
+    "**해석 실험의 근거가 단일 층이다.** 본문 Fig. 3·4와 Table 7의 모든 수치는 GPT-3 96층 중 **48번째 층** 하나에서 나온다 ('We only look at the 48th layer (out of 96) due to space constraint' [lora §7.2]). 일반화 근거는 부록 H.1의 층 1/32/64/96 — 여전히 96개 중 4개뿐이며, Table 7의 norm 수치는 층 48 외에는 어디에도 없다.",
+    "**amplification factor 서사가 rank에 따라 뒤집힌다.** §7.3은 'the amplification factor is rather huge: 21.5'라고 강조하지만 App. H.4는 '$r=64$에서는 약 2에 불과'하다고 인정한다. 즉 21.5는 $r=4$ 설정의 산물이며, 저자도 이를 '(once again) 낮은 intrinsic rank의 증거'로 재해석해 넘어간다. [lora §7.3, App. H.4]",
+    "**latency 논거의 규모가 주장의 규모와 다르다.** 'no additional inference latency'의 대조 실험은 GPT-2 medium을 단일 NVIDIA Quadro RTX8000에서 측정한 것이고 [lora Table 1, App. B], 정작 배포 논거의 대상인 GPT-3 175B에서는 어떤 latency도 측정되지 않았다. 나아가 '이 문제는 모델을 shard하면 더 나빠진다 ... AllReduce와 Broadcast 같은 동기 연산이 늘기 때문' [lora §3]이라는 핵심 주장은 **측정 없이 단언**된다.",
+    "**merge와 batching은 양립하지 않는데, 그 비용이 측정되지 않았다.** 논문은 'many customized models that can be swapped in and out on the fly' [§4.2]를 팔면서 동시에 'it is not straightforward to batch inputs to different tasks with different A and B in a single forward pass, if one chooses to absorb A and B into W' [§4.2]라고 인정한다. merge하지 않는 대안의 latency는 '가능하다'고만 하고 **숫자가 하나도 없다**.",
+    "**$\\alpha$를 튜닝하지 않는다는 절차 서술이 부록과 어긋난다.** §4.1은 'we simply set $\\alpha$ to the first $r$ we try and do not tune it'이라고 쓰지만, 보고된 값은 RoBERTa base $r=8,\\alpha=8$ (일치), RoBERTa large $r=8,\\alpha=16$ (불일치), DeBERTa $r=8,\\alpha=8$ (일치), GPT-2 $r=4,\\alpha=32$ (불일치)다 [lora Tables 9·10·11]. 4개 설정 중 2개가 선언한 절차를 따르지 않는다.",
+    "**GPT-3 결과에 test split이 없다.** 모든 GPT-3 수치는 validation accuracy이며 'We report the best validation performance from each run' [lora App. D.4]이다. seed별 표준편차도 항목별로 제공하지 않고 task당 대표값 하나만 준다 [lora §5.5].",
+    "**Θ-경로 지속가능성에 관한 증거가 0이다.** 순차 적응, delta 누적, 반복 write, forgetting 측정이 하나도 없다. 따라서 $\\rho$는 absent이며, 'LoRA를 sleep-time write primitive로 쓸 수 있다'는 v2의 명제는 **이 논문으로는 warrant되지 않는다**. (부재의 증거이므로 위치를 특정할 수 없음 — 검색어 'forget', 'continual', 'sequential', 'catastrophic'가 원문에 등장하지 않음)",
+    "**MLP를 배제한 것은 검증이 아니라 편의다.** 'We limit our study to only adapting the attention weights for downstream tasks and freeze the MLP modules ... both for simplicity and parameter-efficiency' [lora §4.2]. 이후 사실 관계 기억이 MLP에 있다는 편집 연구 계열(ROME/MEMIT)의 주장과 정면으로 만나는 지점인데, 이 논문에는 그 축의 증거가 없다.",
+    "**GPT-3의 최고 성적은 순수 LoRA가 아니다.** WikiSQL 최고치는 LoRA+PE ($r_q=r_v=64$, 302.1M) 76.2로 [lora Table 15], LoRA 단독 최고 74.0보다 2.2점 높다. 논문의 서사(파라미터 수를 늘려도 LoRA는 안정적이다)는 맞지만, '가장 좋은 방법'이라는 인상과는 다르다."
+  ],
+
+  "cross_path_citations": {
+    "verdict": "**완전한 침묵.** LoRA는 E-경로와 W-경로 어느 쪽도 인용하지 않는다. 참고문헌 51항목 전부를 확인한 결과, retrieval/RAG/vector store/외부 기억 문헌 0건, fast weights/test-time training/linear attention/SSM 문헌 0건, continual learning/catastrophic forgetting/replay/EWC/CLS 문헌 0건이다.",
+    "checked_for": [
+      "E-경로: Lewis et al.(RAG), kNN-LM, Memory Networks, retrieval-augmented, vector store, MemGPT 계보 — 전부 부재",
+      "W-경로: Schmidhuber fast weights, Fast Weight Programmers, test-time training, linear attention, state-space model — 전부 부재. (주의: Ba et al. 2016이 인용되지만 이는 *Layer normalization*이지 *Using Fast Weights to Attend to the Recent Past*가 아니다 — 오독 위험 지점)",
+      "생물/CLS 축: McClelland, complementary learning systems, sleep, consolidation, dreaming — 전부 부재",
+      "모델 편집 축(같은 Θ-경로 내): ROME·MEMIT은 시기적으로 이후이므로 부재가 자연스러움"
+    ],
+    "what_it_does_cite": "인접 문헌은 세 덩어리다. (1) PEFT 경쟁자 — Houlsby 2019, Rebuffi 2017, Lin 2020, Pfeiffer 2021, Rücklé 2020(AdapterDrop), Mahabadi 2021(COMPACTER), Li & Liang 2021(prefix-tuning), Lester 2021, Hambardzumyan 2020(WARP), Liu 2021, Zaken 2021(BitFit). (2) low-rank 구조 이론 — Li et al. 2016/2018b, Cai 2010, Grasedyck 2013, Oymak 2019, Sainath 2013, Povey 2018, Zhang 2014, Jaderberg 2014, Zhao 2016, Khodak 2021, Denil 2014, Allen-Zhu & Li 2019/2020a/2020b, Ghorbani 2020, Li & Liang 2018. (3) 백본·데이터·시스템 — Vaswani 2017, Brown 2020, Devlin 2019, Liu 2019(RoBERTa), He 2021(DeBERTa), Radford a/b, Shoeybi 2020(Megatron), Lepikhin 2020(GShard), Wolf 2020, Kingma & Ba, Loshchilov & Hutter, Yang & Hu 2021, Ham & Lee 2008, 그리고 데이터셋 논문들.",
+    "finding_for_the_monograph": "[평가] 이 침묵은 시기(2021)만으로 설명되지 않는다. 2021년에도 retrieval-augmented LM과 fast-weight 문헌은 존재했다. 진짜 이유는 **문제 프레임**이다: LoRA는 '기억을 어디에 둘 것인가'가 아니라 '체크포인트를 어떻게 줄일 것인가'를 묻는다. 세 경로가 서로를 인용하지 않는 지점이 v2가 보고할 발견이라면, LoRA는 그 단절의 **출발점**에 해당한다 — Θ-경로가 memory 문제로 재해석되는 것은 이 논문 이후의 일이며, 그 재해석을 이 논문이 예비한 흔적은 본문에 없다.",
+    "caveat": "'모든 항목을 확인했다'는 진술의 근거는 vendored 텍스트의 References 절 전수 열람이다 [lora References, 원문 라인 1233–1402]. 원문 PDF에서 누락된 항목이 있다면 이 판정은 그만큼 약해진다."
+  },
+
+  "figures": [
+    {"figure": "Figure 1", "what": "LoRA 재매개화 도해 — frozen $W\\in\\mathbb{R}^{d\\times d}$ 옆에 $A=\\mathcal{N}(0,\\sigma^2)$, $B=0$, 폭 $r$의 병목이 병렬로 붙어 출력이 좌표별로 합쳐지는 그림.", "why": "Θ-경로 write primitive의 **정본 그림**. 이 한 장이 '왜 latency가 0인가'(병렬 경로 → merge 가능)와 '왜 항등원에서 출발하는가'($B=0$)를 동시에 설명한다. 반드시 재현."},
+    {"figure": "Figure 2", "what": "GPT-3 175B validation accuracy vs $\\log_{10}$(학습 파라미터 수), WikiSQL·MNLI-matched, 5개 방법(Fine-Tune, PrefixEmbed, PrefixLayer, Adapter(H), LoRA).", "why": "'파라미터를 늘려도 LoRA만 무너지지 않는다'는 논문의 두 번째 주장을 한 장으로 보여준다. prefix 계열의 비단조 붕괴가 육안으로 보인다. 재현 가치 높음."},
+    {"figure": "Figure 5 (App. B)", "what": "Adapter$_H$/Adapter$_L$의 inference slow-down(%) 히트맵 — batch size 1~32 × seq len 128/256/512 × bottleneck $r$ 0/10/100/250.", "why": "독자(inference 엔지니어)의 모국어로 쓰인 유일한 그림. '순차 depth는 batch=1 online decode에서만 아프다'는 사실을 배치·길이 축으로 보여준다. Part I의 T1 모듈과 Part III 서빙 논의에 직결."},
+    {"figure": "Figure 3", "what": "$A_{r=8}$과 $A_{r=64}$ 열벡터 사이의 normalized subspace similarity, $\\Delta W_q$·$\\Delta W_v$, 48번째 층. 우측 두 패널은 좌하 삼각의 확대.", "why": "'$r=1$이면 되는 이유'로 제시된 **유일한 기제적 근거**(top-1 방향의 유사도 > 0.5). 단, 단일 층 한계를 캡션에 반드시 병기."},
+    {"figure": "Figure 4", "what": "seed만 다른 두 $r=64$ run 사이의 subspace similarity($\\Delta W_q$, $\\Delta W_v$)와, 대조군으로 두 random Gaussian 행렬 사이의 similarity.", "why": "Fig. 3의 **대조군**. 이 그림 없이 Fig. 3만 실으면 '유사도가 높다'가 무엇 대비 높은지 알 수 없다. 두 장을 반드시 함께 실을 것."},
+    {"figure": "Figure 8 (App. H.3)", "what": "$W_q$의 singular 방향과 $\\Delta W_q$($r=4,8,64$) 및 random의 방향 사이 subspace similarity.", "why": "'$\\Delta W$는 $W$의 top 방향을 반복하지 않고, 이미 있으나 강조되지 않은 방향을 증폭한다'는 §7.3 결론의 시각적 근거. Θ-경로가 '새 지식을 넣는' 것인지 '있는 것을 키우는' 것인지 논쟁의 출발점."},
+    {"figure": "Figure 6 · Figure 7 (App. H.1)", "what": "Fig. 3 / Fig. 4를 층 1, 32, 64, 96으로 확장한 것.", "why": "일반화 주장의 실제 범위를 독자에게 보여주기 위해 **부록에 넣을 가치**가 있다(96개 층 중 4개). 본문 재현은 불필요."},
+    {"figure": "Table 1 (그림은 아니지만 동급)", "what": "GPT-2 medium single forward pass latency(ms)와 adapter의 %증가.", "why": "$L_w$ 논의의 유일한 실측 표. Fig. 5와 짝."}
+  ],
+
+  "systems_implications": [
+    "**decode 비용: merge 후 정확히 0 증가.** $\\Theta_0^{(m)}+B^{(m)}A^{(m)}$를 미리 합쳐두면 GEMM shape가 base 모델과 글자 그대로 같다 — 층이 늘지도, sequence가 줄지도 않는다. 논문이 이를 '$by construction$'이라고 부르는 이유다. [lora §4.1] 이것이 Θ-경로가 E-경로·W-경로와 근본적으로 다른 지점이다: **쓰기 결과가 wake-time 비용에 전혀 나타나지 않는다.**",
+    "**단, 그 0은 batching과 맞바꾼 것이다.** merge하면 한 forward pass가 하나의 task에만 유효해지므로, shared-weight batching이라는 서빙의 대전제가 깨진다. 논문 스스로 'it is not straightforward to batch inputs to different tasks with different A and B in a single forward pass' [lora §4.2]라고 인정하고 대안(비-merge 동적 선택)의 비용은 측정하지 않는다. [note-writer 추론] 비-merge 경로의 추가 연산은 적응 행렬당 $(d_{\\mathrm{out}}\\times r)(r\\times d_{\\mathrm{in}})$ 두 개의 GEMM, 즉 base GEMM 대비 약 $2r/d_{\\mathrm{out}}$ 배이며 GPT-3($d$=12,288, $r$=4)이면 $\\approx 0.07\\%$ FLOPs다. **그러나 논문에 이 계산도 측정도 없다** — 그리고 batch=1 decode에서 병목은 FLOPs가 아니라 커널 런치와 메모리 왕복이므로, Table 1이 adapter에서 보인 +20.7~30.3%가 경고하는 바가 정확히 그것이다.",
+    "**state bytes: task당 35MB, base 350GB.** GPT-3 175B에 $r=4$로 $W_q,W_v$를 적응하면 체크포인트가 350GB → 35MB, 약 10,000× 줄어든다 [lora §4.2]. 100개 task를 얹어도 350GB + 35MB×100 ≈ 354GB이고 독립 fine-tune은 35TB다 [lora §4.2 각주 4]. **v2가 필요로 하는 핵심 수치가 이것이다**: Θ-경로의 per-task 상태량은 base weights의 $10^{-4}$ 수준이다.",
+    "**메모리 계층 배치.** 논문의 배포 그림은 명시적으로 'machines that store the pre-trained weights in VRAM'에 delta만 갈아끼우는 것이다 [lora §4.2]. 즉 base는 HBM 상주, 이동하는 것은 35MB뿐이다. [note-writer 추론] 35MB는 PCIe Gen4 x16(≈25GB/s 실효)에서 1.4ms, HBM 대역에서는 무시할 수준이다 — **이 계산은 note-writer의 것이며 논문에는 delta의 load 시간·대역폭 수치가 하나도 없다.**",
+    "**토큰당 이동 bytes: 논문에 없음.** merge 후에는 정의상 base와 같고, 비-merge 경로에서는 적응 행렬당 $2\\times d\\times r$ 파라미터를 매 토큰 읽어야 하지만 [note-writer 추론], 논문은 대역폭·arithmetic intensity·roofline을 한 번도 언급하지 않는다. 이 공백은 v2가 직접 메워야 한다.",
+    "**용량 회계식은 정확히 주어져 있다.** $|\\Delta\\Theta| = 2 N_{\\mathrm{mod}} d r$ [lora §5.1]. GPT-3 검증: $2 \\times (96\\times2) \\times 12{,}288 \\times 4 = 18{,}874{,}368 \\approx 18\\mathrm{M}$, FP16으로 약 37.7MB — 논문의 '18M ≈ 35MB' [lora §7.1]과 반올림 수준에서 일치한다. 이 식이 Part III 용량 논의의 기준선이다.",
+    "**쓰기(=학습) 쪽 비용.** GPT-3 175B에서 VRAM 1.2TB → 350GB, throughput 32.5 → 43.1 tokens/s per V100 (25% 향상) [lora §4.2 및 각주 5]. 절감의 출처는 FLOPs가 아니라 **optimizer state와 gradient를 대부분 들고 있지 않아도 된다는 것** [lora §1 bullet 2]이다 — Adam의 moment 두 벌이 파라미터당 지배적이라는 사실을 아는 독자에게는 자연스러운 결론이고, Part I T1 모듈이 정확히 이 지점을 가르쳐야 한다.",
+    "**adapter가 왜 죽는지의 정량.** batch 1 / seq 128에서 base 19.8±2.7ms인데 Adapter$_L$ +20.7%, Adapter$_H$ +30.3%; batch 32 / seq 512에서는 +2.2%, +3.0%로 줄어든다 [lora Table 1]. 즉 **순차 depth의 비용은 batch가 작을수록 커진다** — online decode가 정확히 그 레짐이다. 이 표 하나가 'PEFT 설계에서 mergeability가 왜 1등 요구사항인가'를 독자의 언어로 설명한다.",
+    "**서빙 fleet 관점의 미해결.** 논문이 남긴 것: (a) 다중 task 동시 배칭의 비용 모델 없음, (b) delta swap의 지연·정합성 없음, (c) 여러 delta를 동시에 얹었을 때의 간섭 없음, (d) 반복 write의 열화($\\rho$) 없음. [note-writer] v2의 Part III가 Θ-경로를 sleep-time write로 다루려면 이 네 칸을 다른 논문이나 로컬 실험으로 채워야 한다."
+  ],
+
+  "todo_verify": [
+    {"claim": "이 논문의 최종 게재처가 ICLR 2022인지", "how": "vendored 텍스트에 'ICLR', 'conference', 'published as' 문자열이 없음 — 외부 확인 필요. 검색어: arXiv abs 페이지의 'Journal reference' 또는 OpenReview 'LoRA: Low-Rank Adaptation of Large Language Models ICLR 2022'"},
+    {"claim": "본문 Figure 1의 정확한 표기(그림 안 라벨 $W\\in\\mathbb{R}^{d\\times d}$)가 §4.1의 $W_0\\in\\mathbb{R}^{d\\times k}$와 다른 이유", "how": "PDF 원본의 Fig. 1 확인. 텍스트 추출본에서 그림 라벨은 'W ∈ ℝ^{d×d}'로 정사각을 가정한다 — 그림은 self-attention 투영 행렬($d_{model}\\times d_{model}$)을 그린 것으로 보이나 확증 불가. 검색어: 'Figure 1: Our reparametrization'"},
+    {"claim": "Table 2의 RoBERTa base $\\mathrm{Adpt}^D$ 두 행(0.3M, 0.9M)이 서로 다른 설정인지", "how": "두 행 모두 '(Adpt^D)*'로 라벨이 같다. 검색어: 'AdapterDrop', 'Rücklé' 및 원 논문의 해당 표"},
+    {"claim": "Table 12의 LoRA 학습률 1.6E-03과 Table 17(MNLI-n)의 2.00E-04 불일치", "how": "Table 12는 'We use the same hyperparameters for all datasets after tuning learning rate'라고만 한다. 어느 값이 Table 4의 결과에 쓰였는지 원문이 명시하지 않는다. 검색어: 'Table 12', 'after tuning learning rate'"},
+    {"claim": "$\\alpha_{\\mathrm{LoRA}}$ scaling이 Table 4의 GPT-3 실험에 실제로 어떤 값으로 적용됐는지", "how": "Table 12(GPT-3 hyperparameters)에 LoRA $\\alpha$ 행이 없다. RoBERTa/DeBERTa/GPT-2에만 있다. 검색어: 'LoRA α' in Tables 9, 10, 11, 12"},
+    {"claim": "Table 14(WebNLG)의 열 순서가 U/S/A인지", "how": "추출본의 헤더가 깨져 있다. 본 노트는 Fine-Tune 행의 27.7(U, unseen에서 급락)/64.2(S)/46.5(A, 중간값) 패턴으로 U-S-A 순서를 역산했다. 검색어: 'Table 14', '\"U\" indicates unseen categories'"},
+    {"claim": "Table 7의 열 배치(각 열이 (r=4, r=64) 쌍인지)", "how": "본 노트는 §7.3의 '21.5 ≈ 6.91/0.32 for r=4'와 App. H.4의 'for r=64, this amplification factor is only around 2'(3.57/1.90=1.88)로 배치를 확정했다. 두 서술이 모두 일치하므로 신뢰도는 높으나 PDF 원본 확인이 최종. 검색어: 'Table 7', 'amplification factor'"}
+  ]
+}

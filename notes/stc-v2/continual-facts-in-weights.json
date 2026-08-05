@@ -1,0 +1,730 @@
+{
+  "paper_id": "continual-facts-in-weights",
+  "arxiv": "2607.11020 (v2, 14 Jul 2026)",
+  "title": "Can a Language Model Learn Facts Continually in Its Weights?",
+  "authors": "Charles O'Neill (Baseten). Corresponding author charlie.oneill@baseten.co. Single author, single affiliation [title block, p.1].",
+  "venue": "Preprint, July 2026 (arXiv:2607.11020v2 [cs.CL]). No venue stated. Code: https://github.com/basetenlabs/cortex ; datasets: https://huggingface.co/datasets/baseten/cortex [p.1].",
+  "date": "2026-07-14 (arXiv v2 stamp on p.1); header reads 'Preprint, July 2026'.",
+  "path": "papers/stc/2607.11020.txt",
+  "axis": "theory",
+  "role_in_v2": "S0 §3.1 assigns this paper the role 'Theta-경로의 반증 후보'. This note treats it as the leading falsifier of the Theta-path: it is the only paper in the corpus that runs the Theta-path write loop 20-100 times and measures what is left, with the E-path (fact in prompt, oracle retrieval) as a matched control arm.",
+  "problem_stated": {
+    "as_stated": "'Continual learning promises a language model that keeps acquiring knowledge after training, with each new fact written into its weights. Whether weight writes can support accumulation remains undecided.' [Abstract, p.1]",
+    "decomposition": "The paper decomposes continual writing into three requirements and reports a verdict on each: 'Each write must create usable knowledge, general abilities must survive accumulating updates, and earlier facts must remain reachable. Data breadth makes the first tractable, while a frozen teacher or explicit penalty makes the second tractable. The third remains unresolved.' [§9.3, p.20; same three-way split first stated in §1, p.2]",
+    "object_of_study": "Not an algorithm but 'the object that a write creates: what kind of knowledge it contains, whether later writes preserve it, and what remains after questions about it fail. This turns catastrophic forgetting into a property of the written object, measured against the same content placed in context.' [§1, p.1]",
+    "verdict_sentence": "'When facts must be composed or survive later writes, the reliable channel is context rather than the weights.' [Abstract, p.1] and 'weights are therefore the wrong system of record: they store content without creating an address for it.' [§9.3, p.20]"
+  },
+  "inherited_open_question": {
+    "primary_from": "Shenfeld, Pari & Agrawal 2025, 'RL's Razor: Why online reinforcement learning forgets less' (arXiv:2509.04259)",
+    "question_taken_up": "Whether KL divergence from the base policy predicts forgetting outside the RL/policy setting in which it was established - i.e. whether it also orders damage when the update is a knowledge write.",
+    "evidence": "The paper states the extension explicitly: 'This extends the finding of Shenfeld et al. (2025), that KL from the base policy predicts forgetting, to knowledge writing.' [§6.1, p.14]. The debt is also flagged in the introduction: 'distributional drift predicts forgetting under further training (Shenfeld et al., 2025)' [§1, p.1].",
+    "second_from": "Hase, Bansal, Kim & Ghandeharioun 2023, 'Does localization inform editing?' (NeurIPS 2023)",
+    "second_question_taken_up": "Whether a measured localisation of a fact identifies the site at which to intervene. The paper takes this up and reports a null on its own activation-guided projection, patching and block swaps: 'These nulls accord with the warning of Hase et al. (2023) that localisation need not identify the best site to edit.' [§7.3, p.18]",
+    "honest_caveat": "The paper never quotes a prior work's open question verbatim, and it does not inherit a question from any sleep-time-compute paper. It constructs its own gap statement instead: 'These observations lack a common account of why some writes produce usable knowledge, why some survive, and what a forgotten fact leaves behind.' [§1, p.1], where 'these observations' = Gekhman et al. 2024, Berglund et al. 2024, Lampinen et al. 2025, Allen-Zhu & Li 2024, Shenfeld et al. 2025. For the monograph's bridge chain the usable inheritance is therefore (a) Shenfeld's KL-predicts-forgetting law and (b) Allen-Zhu & Li's paraphrase/extractability result, which this paper converts from a single-write property into a survival property.",
+    "what_it_implicitly_answers": "It implicitly answers the question the Theta-path leaves open at the end of the S0 chain (LoRA/edit -> GenAdapter -> SEAL -> NL -> Sleep -> SCM): 'does a Theta write accumulate?'. Every Theta-path paper in the corpus demonstrates a single consolidation round or a short sequence; this paper runs 20 and then 100 rounds of the same loop and measures the residue."
+  },
+  "core_mechanism": {
+    "one_line": "A pure (U-Theta) loop run k = 20-100 times: each round trains a rank-r adapter on a generated set $\\mathcal{R}_k$ derived from one invented fact and MERGES it into $\\Theta$, with the same content placed in the prompt (a zero-cost (U-E) read with an oracle retriever) as the matched control; $W$ is never used.",
+    "equations": [
+      {
+        "label": "(CFW-1) sequential weight write = the paper's instantiation of (U-Theta)",
+        "latex": "\\Theta_{k+1} \\;=\\; \\Theta_k + \\Delta\\Theta_k, \\qquad \\Delta\\Theta_k \\;=\\; B_k A_k \\;=\\; \\arg\\min_{\\Delta\\Theta\\in\\mathcal{S}_r}\\; \\mathcal{L}\\big(\\mathcal{R}_k;\\ \\Theta_k+\\Delta\\Theta\\big)",
+        "source": "[continual-facts-in-weights App. A.3, p.25: 'Sequential conditions merge each fact's adapter into the running model before the next fact trains'; Fig. 1 caption, p.2: 'each fact trains an adapter that is merged before the next fact arrives'.] $\\mathcal{S}_r$ = rank-$r$ LoRA subspace, $r\\in\\{4,16\\}$, $\\alpha_{\\mathrm{LoRA}}=32$, dropout 0, on all seven projection matrices (attention q/k/v/o, MLP gate/up/down) [App. A.3]. In the full-fine-tuning conditions $\\mathcal{S}_r$ is the whole parameter space [§3.3, §3.4].",
+        "note": "No numbered equation exists in the paper for this; it is the protocol stated in prose. This is the single most important reduction in the note: the paper's 'continual learning' IS (U-Theta) with $\\mathrm{gen}(\\cdot;B_s)$ made the experimental variable."
+      },
+      {
+        "label": "(CFW-2) the outer loss under SFT",
+        "latex": "\\mathcal{L}_{\\mathrm{SFT}}(\\Theta) \\;=\\; -\\,\\mathbb{E}_{(x,y)\\sim\\mathcal{R}_k}\\Big[\\sum_t \\log \\pi_\\Theta\\big(y_t \\mid x,\\ y_{<t}\\big)\\Big]",
+        "source": "[continual-facts-in-weights Eq. 3.1, §3.2, p.5]. Paper writes $D_s$ for $\\mathcal{R}_k$ and $\\theta$ for $\\Theta$."
+      },
+      {
+        "label": "(CFW-3) the sleep-time data generator - the paper's actual object of study",
+        "latex": "\\mathcal{R}_k \\;=\\; \\mathrm{gen}\\big(s_k;\\ B_s\\big), \\qquad |\\mathcal{R}_k| = \\begin{cases} 2 & \\text{bare-statement}\\\\ 24 & \\text{study}\\end{cases}",
+        "source": "[continual-facts-in-weights §3.1, p.4; App. A.1 glossary, p.25: bare-statement = 'SFT on the fact sentence itself, in two trivial framings'; study = 'SFT on 24 generated items per fact (paraphrases, question-answer pairs, worked implications, contrasts with the violated default)']",
+        "note": "$s_k$ is the one-sentence invented fact. The paper's central finding is a statement about $\\mathrm{gen}(\\cdot)$, not about the optimiser: breadth of $\\mathcal{R}_k$ decides both usability and survival, while extra optimisation on a narrow $\\mathcal{R}_k$ decides neither [§3.1, §7.1]."
+      },
+      {
+        "label": "(CFW-4) offline context distillation - a (U-Theta) write whose target is a (U-E) read",
+        "latex": "\\mathcal{L}_{\\mathrm{offline}}(\\Theta) \\;=\\; \\mathbb{E}_{x,y\\sim\\pi_T}\\Big[\\sum_t \\mathrm{KL}\\big(\\pi_T(\\cdot\\mid x,y_{<t})\\ \\|\\ \\pi_\\Theta(\\cdot\\mid x,y_{<t})\\big)\\Big], \\qquad \\pi_T(\\cdot\\mid x,y_{<t}) \\;=\\; \\pi_{\\Theta_0}\\big(\\cdot\\mid s\\oplus x,\\ y_{<t}\\big)",
+        "source": "[continual-facts-in-weights Eq. 3.2, §3.2, p.5]",
+        "note": "This is the one place the paper composes two layers of the frame: the teacher is exactly $f(q;\\Theta_0, W=\\varnothing, \\mathrm{ret}(E,q)=s)$, i.e. the E-channel read, and the student is a $\\Theta$ write. Online variants sample $y\\sim\\pi_\\Theta$ and use forward $\\mathrm{KL}(\\pi_T\\|\\pi_\\Theta)$ or reverse $\\mathrm{KL}(\\pi_\\Theta\\|\\pi_T)$ [§3.2]; the reverse direction is the on-policy-distillation objective of Lu & Thinking Machines Lab 2025 [§3.2]."
+      },
+      {
+        "label": "(CFW-5) the control arm = (U-E) with an oracle retriever and zero sleep budget",
+        "latex": "\\hat y \\;=\\; f\\big(q;\\ \\Theta_0,\\ W=\\varnothing,\\ \\mathrm{ret}(E,q)=s\\big), \\qquad E_{k+1} = \\mathrm{wr}(E_k, \\hat c_k) = E_k \\cup \\{s_k\\}, \\quad \\hat c_k = c_k, \\quad B_s = 0",
+        "source": "[continual-facts-in-weights §2, p.3: 'the same model with the fact in its prompt forms the ceiling'; Fig. 1, p.2: 'placed in the context, the fact accompanies every question and the weights stay untouched']",
+        "note": "The summariser $S(\\cdot;B_s)$ of (U-E) is the identity here and the retriever is perfect. So this arm is the UPPER BOUND of the E-path, not an implementation of it - no Letta/MemGPT-style sleep-time summarisation is run, and no retrieval error is modelled. Every 'context wins' claim in the paper is a claim against this idealised arm."
+      },
+      {
+        "label": "(CFW-6) entailment gap - the paper's instrument for 'what kind of knowledge a write created'",
+        "latex": "\\mathrm{gap} \\;=\\; \\mathrm{acc}_{\\mathrm{lenient}} \\;-\\; \\mathrm{acc}_{\\mathrm{strict}}",
+        "source": "[continual-facts-in-weights Eq. 2.1, §2.2, p.4]",
+        "note": "Strict credits only the requested conclusion; lenient also credits a fact that strictly entails the target. 'The two policies are judged independently rather than nested, so small negative gaps occur' [§2.2]."
+      },
+      {
+        "label": "(CFW-7) retained log-probability lift - the storage probe",
+        "latex": "R_{\\log p}(k) \\;=\\; \\frac{\\log p_{\\Theta_{j+k}}(s) - \\log p_{\\Theta_0}(s)}{\\log p_{\\Theta_j}(s) - \\log p_{\\Theta_0}(s)}",
+        "source": "[continual-facts-in-weights Eq. 5.1, §5.1, p.11]",
+        "note": "$\\Theta_0$ = model before the fact was written, $\\Theta_j$ = model just after; $R=1$ full retention, $R=0$ erasure to the pre-write prior. A drift control computes the same quantity on never-written statements. Facts whose write produced no measurable lift are excluded; medians reported."
+      },
+      {
+        "label": "(CFW-8) drift = the paper's cost coordinate for capability damage",
+        "latex": "\\mathrm{drift}(\\Theta) \\;=\\; \\mathbb{E}_{x\\sim P}\\Big[\\frac{1}{|x|}\\sum_t \\mathrm{KL}\\big(\\pi_\\Theta(\\cdot\\mid x_{<t})\\ \\|\\ \\pi_{\\Theta_0}(\\cdot\\mid x_{<t})\\big)\\Big]",
+        "source": "[continual-facts-in-weights Eq. 6.1, §6, p.13]",
+        "note": "Per-token KL on a fixed pool $P$ of held-out prompts that neither model was trained on."
+      },
+      {
+        "label": "(CFW-9) proximal write - the drift penalty",
+        "latex": "\\Delta\\Theta_k \\;=\\; \\arg\\min_{\\Delta\\Theta}\\Big[\\mathcal{L}(\\mathcal{R}_k;\\Theta_k+\\Delta\\Theta) \\;+\\; \\lambda_{\\mathrm{KL}}\\,\\mathrm{KL}\\big(\\pi_{\\Theta_k+\\Delta\\Theta}\\ \\|\\ \\pi_{\\Theta_k}\\big)\\Big], \\qquad \\lambda_{\\mathrm{KL}}\\in\\{0,\\ 0.5,\\ 1.0,\\ 2.0\\}",
+        "source": "[continual-facts-in-weights §6.3, p.15: 'We added a KL-to-the-current-base penalty to bare-statement SFT ... and swept its weight $\\lambda$'; sweep values read off Fig. 14, p.16]",
+        "note": "Penalty is to the CURRENT base $\\Theta_k$, not to $\\Theta_0$ - which is why measured KL from $\\Theta_0$ does not fall [§6.3]."
+      },
+      {
+        "label": "(CFW-10) linearised interference predictor",
+        "latex": "\\widehat{\\Delta\\mathcal{L}}_{\\mathrm{use}} \\;=\\; g_{\\mathrm{use}}^{\\top}\\,\\Delta\\Theta, \\qquad g_{\\mathrm{use}} = \\nabla_\\Theta\\,\\mathcal{L}_{\\mathrm{use}}(\\Theta_k)",
+        "source": "[continual-facts-in-weights Eq. 7.1, §7.3, p.18]",
+        "note": "$\\Delta\\Theta$ is the preconditioned Adam update. Predicts the NEXT update ($\\rho_S=0.795$) but not the trajectory ($\\rho_S=-0.258$)."
+      },
+      {
+        "label": "(CFW-11) protected optimiser - projection away from measured conflict",
+        "latex": "\\Delta\\Theta_\\perp \\;=\\; \\Delta\\Theta \\;-\\; \\max\\big(0,\\ \\hat g_{\\mathrm{use}}^{\\top}\\Delta\\Theta\\big)\\,\\hat g_{\\mathrm{use}}, \\qquad \\hat g_{\\mathrm{use}} = g_{\\mathrm{use}}/\\|g_{\\mathrm{use}}\\|",
+        "source": "[continual-facts-in-weights Eq. 7.2, §7.3, p.18]",
+        "note": "Fails: +1.4 pp over ordinary Adam, indistinguishable from a norm-matched random projection [§7.3, App. C.3]."
+      },
+      {
+        "label": "(CFW-12) periodic frozen-anchor consolidation - a second, slower (U-Theta) level",
+        "latex": "\\Theta_k \\;\\leftarrow\\; \\arg\\min_{\\Theta}\\ \\mathcal{L}_{\\mathrm{batch\\text{-}distill}}\\Big(\\bigcup_{j\\le k}\\mathcal{R}_j;\\ \\Theta\\Big) \\ \\text{initialised at}\\ \\Theta_0, \\qquad k \\equiv 0 \\!\\!\\pmod{20}",
+        "source": "[continual-facts-in-weights §4.3, p.10: 'every twenty writes, consolidate all facts so far into a fresh copy of the original model by batch distillation']",
+        "note": "Formally a two-level update-frequency system in the sense of [NL Def. 2] / [Sleep Def. 1]: level 1 at $f_1 = 1$ per write, level 2 at $f_2 = 1/20$. UNLIKE a CMS, level 2 does not accumulate on top of level 1 - it RESETS to $\\Theta_0$ and re-writes everything. Result: it restores capability (+12 pp at $k=100$) and does NOT restore retention (25% vs 28%, within noise) [§4.3]."
+      }
+    ],
+    "notation_conflicts": [
+      {
+        "paper_symbol": "$\\theta$, $\\theta_0$, $\\theta_j$, $\\theta_{j+k}$",
+        "meaning_in_paper": "model parameters; the sequence of merged models",
+        "unified": "$\\Theta$, $\\Theta_0$, $\\Theta_j$, $\\Theta_{j+k}$",
+        "why": "STYLE-NOTATION §1.2/§1.5 reserve lowercase $\\theta$ for a CMS level parameter $\\theta^{(\\ell)}$ and forbid $\\theta_t$ with a time subscript (Titans' inner-lr convention). All of this paper's $\\theta$ are slow weights, so they map to $\\Theta$."
+      },
+      {
+        "paper_symbol": "$\\Delta\\theta$",
+        "meaning_in_paper": "one preconditioned Adam update",
+        "unified": "$\\Delta\\Theta$",
+        "why": "same remapping; also distinguishes it from any $W$ movement, of which there is none."
+      },
+      {
+        "paper_symbol": "$\\lambda$ [§6.3, Fig. 14]",
+        "meaning_in_paper": "weight of the KL-to-current-base penalty",
+        "unified": "$\\lambda_{\\mathrm{KL}}$",
+        "why": "STYLE §1.2 reserves bare $\\lambda$ for outer weight decay; $\\lambda_{\\mathrm{KD}}$ is already taken by [Sleep] ch17, so use $\\lambda_{\\mathrm{KL}}$."
+      },
+      {
+        "paper_symbol": "$\\alpha = 32$ [App. A.3]",
+        "meaning_in_paper": "LoRA scaling factor",
+        "unified": "$\\alpha_{\\mathrm{LoRA}}$",
+        "why": "STYLE §1.2/§1.5: $\\alpha_t\\in[0,1]$ is the retention gate (retained fraction). A LoRA scale of 32 in that slot would be a hard collision."
+      },
+      {
+        "paper_symbol": "$\\rho$ (used throughout for Spearman correlation)",
+        "meaning_in_paper": "Spearman rank correlation coefficient",
+        "unified": "$\\rho_S$",
+        "why": "Double collision: STYLE §1.2 assigns $\\rho$ to [Sleep]'s reward-mixing coefficient, and S0 §2.4 assigns $\\rho$ to the forgetting/degradation rate - which is precisely the quantity this chapter is about. Every '$\\rho=$' in the paper must be rendered $\\rho_S$ in the monograph or the cost table becomes unreadable."
+      },
+      {
+        "paper_symbol": "$R(k)$ [Eq. 5.1]",
+        "meaning_in_paper": "retained fraction of the write's log-probability lift",
+        "unified": "$R_{\\log p}(k)$",
+        "why": "S0 §2.2 (U-Theta) uses $\\mathcal{R}_k$ for the round-$k$ training set; a bare $R$ next to it invites misreading."
+      },
+      {
+        "paper_symbol": "$D_s$ [Eq. 3.1]",
+        "meaning_in_paper": "the training set generated for fact $s$",
+        "unified": "$\\mathcal{R}_k$",
+        "why": "This is literally S0's $\\mathcal{R}_k = \\mathrm{gen}(\\mathcal{H}_k; B_s)$. Mapping it makes the paper's contribution visible as a statement about $\\mathrm{gen}(\\cdot)$."
+      },
+      {
+        "paper_symbol": "$s$",
+        "meaning_in_paper": "the one-sentence fact statement",
+        "unified": "$s_k$ (keep lowercase, always subscripted)",
+        "why": "STYLE §1.5 reserves $S$/$S_t$ for the inner momentum buffer and $s_\\ell$ for [Sleep]'s expert count. Keeping $s_k$ subscripted disambiguates."
+      },
+      {
+        "paper_symbol": "$k$",
+        "meaning_in_paper": "number of writes performed so far / number of subsequent writes",
+        "unified": "$k$ (kept)",
+        "why": "Consistent with S0 (U-Theta), which already indexes rounds by $k$. But STYLE §1.5 reserves $k$ for key/auxiliary index inside a sequence layer - so in this chapter, $k$ must never appear as a key. Declare locally."
+      },
+      {
+        "paper_symbol": "$\\pi_T$, $\\pi_\\theta$, $\\pi_0$",
+        "meaning_in_paper": "teacher / student / original next-token distributions",
+        "unified": "$\\pi_T$, $\\pi_\\Theta$, $\\pi_{\\Theta_0}$",
+        "why": "Lowercase $\\pi$ is free, but $\\Pi_t$ (capital) is reserved for [TNT]'s Q-K projection - never capitalise these."
+      },
+      {
+        "paper_symbol": "$g_{\\mathrm{use}}$ [Eq. 7.1]",
+        "meaning_in_paper": "gradient of the earlier facts' use loss",
+        "unified": "$g^{\\mathrm{out}}_{\\mathrm{use}}$ on first use, then $g_{\\mathrm{use}}$",
+        "why": "STYLE §1.2: when both loops coexist in one expression use $g^{\\mathrm{in}}/g^{\\mathrm{out}}$. Here only the outer loop exists, so the superscript can be dropped after one declaration."
+      },
+      {
+        "paper_symbol": "$L_{\\mathrm{SFT}}$, $L_{\\mathrm{offline}}$",
+        "meaning_in_paper": "training objectives",
+        "unified": "$\\mathcal{L}_{\\mathrm{SFT}}$, $\\mathcal{L}_{\\mathrm{offline}}$",
+        "why": "STYLE §0 rule 4 and §1.5: outer/task loss is calligraphic $\\mathcal{L}$; bare $L$ is sequence length. These are outer losses."
+      },
+      {
+        "paper_symbol": "'consolidation' [§4.3, Fig. 7]",
+        "meaning_in_paper": "periodic batch re-distillation of all facts into a fresh copy of $\\Theta_0$",
+        "unified": "'frozen-anchor consolidation' (qualified on every use)",
+        "why": "Term collision, not symbol collision: the monograph's concept ledger already owns 'consolidation' via CLS and [NL]/[Sleep] (online vs offline consolidation, ch11/ch16/ch17). This paper's consolidation is a RESET-and-rewrite, not an upward distillation into a slower level. Must be qualified or the ledger breaks."
+      }
+    ]
+  },
+  "outer_vs_inner": {
+    "reader_note": "The monograph's reader has never trained a model, so read this table as: 'which numbers in the machine are allowed to change, and at which of the three clocks'. The single most important row is the last one: this paper has NO wake-time movement at all. Serving is an ordinary frozen forward pass. Everything interesting happens between requests.",
+    "columns": [
+      "learnable_object",
+      "who_learns_it",
+      "when_it_moves",
+      "size_or_setting",
+      "source"
+    ],
+    "rows": [
+      {
+        "learnable_object": "$\\Theta_0$ - Qwen3-4B pretrained weights (bf16, thinking mode disabled)",
+        "who_learns_it": "outer-loop pretraining, done by Qwen, outside this paper",
+        "when_it_moves": "never in the LoRA conditions ('base weights frozen'); moves in the full-fine-tuning conditions",
+        "size_or_setting": "4B parameters; 8B for one replication",
+        "source": "[App. A.3, p.25; §2, p.3; §3.4, p.6]"
+      },
+      {
+        "learnable_object": "LoRA factors $A_k, B_k$ (the adapter for fact $k$)",
+        "who_learns_it": "the SLEEP-TIME update - this is the write",
+        "when_it_moves": "during the offline write of fact $k$; then merged into $\\Theta$ and discarded as a separate object",
+        "size_or_setting": "rank 16 (or 4 where stated), $\\alpha_{\\mathrm{LoRA}}=32$, dropout 0, on all seven projection matrices (attn q/k/v/o, MLP gate/up/down)",
+        "source": "[App. A.3, p.25]"
+      },
+      {
+        "learnable_object": "$\\Theta$ itself, in the full-FT conditions",
+        "who_learns_it": "the sleep-time update",
+        "when_it_moves": "during the write; learning rate $3\\times10^{-5}$, selected on five held-out facts so as to match LoRA's writing strength",
+        "size_or_setting": "all 4B parameters; at $10^{-5}$ it 'barely writes the fact' (lenient 35% vs LoRA 87%); the largest rate destabilised the study condition",
+        "source": "[§3.4, p.6-7]"
+      },
+      {
+        "learnable_object": "AdamW optimiser state ($m_t$, $h_t$) for the adapter",
+        "who_learns_it": "created and destroyed by the sleep-time update; never persists to wake time",
+        "when_it_moves": "during the write only. In §7.3 it is snapshotted, one update applied, then 'restored the exact state' / 'restores the state byte-for-byte'",
+        "size_or_setting": "AdamW, lr $2\\times10^{-4}$, loss on answer tokens only, optimiser steps counted at batch size one",
+        "source": "[App. A.3, p.25; §7.3, p.18; App. C.1, p.28]"
+      },
+      {
+        "learnable_object": "the teacher $\\pi_T = \\pi_{\\Theta_0}(\\cdot\\mid s\\oplus x)$ in context distillation",
+        "who_learns_it": "nobody - it has zero learnable parameters of its own",
+        "when_it_moves": "never in the frozen-teacher / batch conditions. In the 'own-merges' sequential distillation it moves because it IS the current merged model - and that is the paper's worst condition",
+        "size_or_setting": "'teacher and student share weights, the teacher being a forward pass with the adapter disabled and the fact in context'",
+        "source": "[App. A.3, p.25; §6, p.13; §6.2, p.14]"
+      },
+      {
+        "learnable_object": "$\\mathcal{R}_k$ - the 24-item study set per fact",
+        "who_learns_it": "generated once by a separate model, never trained",
+        "when_it_moves": "fixed before all runs; 'generated once and reused across all conditions; the generator never sees the evaluation questions'",
+        "size_or_setting": "24 items/fact = paraphrases, question-answer pairs, worked implications, contrasts with the violated default. Bare-statement = 2 trivial framings of the sentence",
+        "source": "[App. A.3, p.26; App. A.1, p.25]"
+      },
+      {
+        "learnable_object": "$\\lambda_{\\mathrm{KL}}$ - the drift-penalty weight",
+        "who_learns_it": "nobody; swept as a hyperparameter",
+        "when_it_moves": "fixed per run; values 0, 0.5, 1.0, 2.0",
+        "size_or_setting": "at $\\lambda_{\\mathrm{KL}}=1.0$: $-5$ pp capability, 36% retention, 49% write accuracy",
+        "source": "[§6.3, p.15; Fig. 14, p.16]"
+      },
+      {
+        "learnable_object": "the protected-optimiser projection (Eq. 7.2) and the linear predictor (Eq. 7.1)",
+        "who_learns_it": "nobody - hand-designed rules computed from a measured gradient",
+        "when_it_moves": "applied inside the sleep-time update",
+        "size_or_setting": "retains one held-out use prompt and gold answer per earlier fact; +1.4 pp, target was 15 pp",
+        "source": "[§7.3, p.18; App. C.2, p.28]"
+      },
+      {
+        "learnable_object": "the judges (primary GPT-5.4-mini at temperature 0, reasoning off; a second judge from another family)",
+        "who_learns_it": "nobody - part of the measuring instrument",
+        "when_it_moves": "never; audits run at temperature zero with majority-of-three",
+        "size_or_setting": "60-item stratified endpoint audit found 53/60 agreement; applying all seven corrections moved the later-write effect 37.6 -> 37.8 pp",
+        "source": "[§2.2, p.4; App. A.4, p.26; App. A.6, p.26; §9.2, p.20]"
+      },
+      {
+        "learnable_object": "$W$ - fast weights / any test-time state",
+        "who_learns_it": "NOBODY. $W = \\varnothing$ throughout the paper",
+        "when_it_moves": "never. There is no inner loop, no test-time training, no state that moves per token or per chunk",
+        "size_or_setting": "n/a",
+        "source": "[whole paper; confirmed by absence - no TTT / fast-weight / state-update mechanism appears anywhere in §2-§7, and no such work appears in the bibliography, see cross_path_citations]"
+      },
+      {
+        "learnable_object": "$E$ - the context channel (the fact statement in the prompt)",
+        "who_learns_it": "nobody; it is written verbatim and retrieved perfectly",
+        "when_it_moves": "at WAKE time, as prompt tokens, on every question; 'the weights stay untouched'",
+        "size_or_setting": "one sentence per fact; at most two facts ever placed in context simultaneously (§5.2's pair experiment)",
+        "source": "[Fig. 1, p.2; §2, p.3; §5.2, p.12]"
+      }
+    ]
+  },
+  "update_layer": {
+    "instantiates": "(U-$\\Theta$) exclusively, as the treatment arm; (U-E) appears only as an idealised control arm; (U-W) is not touched at all.",
+    "order_if_multiple": "Within a round, only (U-$\\Theta$). Across the design, (U-E) is run in PARALLEL as a matched control, never in sequence with (U-$\\Theta$) - with one exception: context distillation (Eq. 3.2) composes them, using the (U-E) read as the target for the (U-$\\Theta$) write. That composition is the paper's best weight-based composition result (70% vs 60% for study SFT, vs an 83% in-prompt ceiling) [§3.1, App. B.1].",
+    "differences_from_canonical_U_Theta": [
+      "Canonical (U-$\\Theta$) is a single gradient step per round: $\\Theta_{k+1} = \\Theta_k - \\eta_\\Theta \\nabla_\\Theta \\mathcal{L}(\\mathcal{R}_k;\\Theta_k)$. Here each round is a FULL inner optimisation to convergence - 24, 96 or 192 AdamW steps at batch size one - followed by a MERGE of a rank-constrained delta [§3.1, App. A.3]. The merge is what makes the loop continual: $\\Theta_{k+1} = \\Theta_k + B_kA_k$.",
+      "The update is rank-constrained: $\\Delta\\Theta_k \\in \\mathcal{S}_r$ with $r\\in\\{4,16\\}$, not free in parameter space. The paper shows this constraint is NOT the source of the effect - the entailment gap reproduces under full fine-tuning at matched writing strength (28 pp bare vs 4 pp study, contrast $+24.0$) [§3.4]. But rank does change the damage/retention trade-off in the opposite direction to the LoRA literature (see unfavorable_facts).",
+      "$\\mathrm{gen}(\\mathcal{H}_k; B_s)$ is promoted from a background assumption to the manipulated variable. In every other $\\Theta$-path paper $\\mathcal{R}_k$ is whatever the method produces; here its breadth is the independent variable and the compute budget is held fixed [§7.1: nine conditions on the same 32 facts with model, rank, learning rate, step count and seeds all fixed].",
+      "The objective $\\mathcal{L}$ is swapped four ways (SFT, offline KL, online forward KL, online reverse KL) while the data is swapped two ways, in a $4\\times2\\times2$ factorial [§3.3]. Canonical (U-$\\Theta$) says nothing about which $\\mathcal{L}$; this paper reports that the objective label 'alone is too coarse' [§3.3] and that the data axis dominates.",
+      "A proximal term is added in §6.3: $\\mathcal{L} + \\lambda_{\\mathrm{KL}}\\mathrm{KL}(\\pi_{\\Theta}\\|\\pi_{\\Theta_k})$ - anchoring to the CURRENT base, not to $\\Theta_0$. This is the EWC-descendant slot in the frame, and it works for capability ($-66 \\to -5$ pp) without moving KL from $\\Theta_0$ (stays 1.8-2.4).",
+      "A second, slower level is added in §4.3: every 20 rounds, $\\Theta$ is RESET to $\\Theta_0$ and all facts so far are re-written by batch distillation. In [NL]/[Sleep] terms this is a two-level update-frequency system ($f_1=1$, $f_2=1/20$), but with a reset instead of an upward transfer. It restores capability and fails to restore retention."
+    ],
+    "what_it_says_about_U_E": "(U-E) is instantiated in its degenerate best case: $S(c_k;B_s)$ = identity, $B_s = 0$, $\\mathrm{ret}(E,q) = s$ exactly. The paper therefore does NOT test the E-path as the E-path papers build it (summarisation, retrieval, ranking); it tests the ceiling that E-path work is trying to approach. For the monograph this is the right control, but the chapter must say so - otherwise the reader concludes that Letta-style STC is validated here, which it is not.",
+    "what_it_says_about_U_W": "Nothing. $W$ never appears. This is a structural silence and belongs in the branch chapter: the leading falsifier of the $\\Theta$-path was written without any awareness of the $W$-path, so its verdict ('weights are the wrong system of record') is a verdict on $\\Theta$ only, and cannot be carried over to fast weights without argument."
+  },
+  "cost_table": {
+    "B_s": {
+      "value": "Reported ONLY as optimiser-step counts and item counts, never as FLOPs, tokens, wall-clock or energy. Per fact: 24, 96 or 192 optimiser steps at batch size one, AdamW lr $2\\times10^{-4}$, loss on answer tokens only [§3.1, p.4; App. A.3, p.25]. Training-set size per fact: 2 framings (bare-statement) or 24 generated items (study) [App. A.1, p.25]. Batch conditions: one adapter on all $N$ facts for $24\\times N$ total steps [App. A.3, p.25], i.e. 2,400 steps at $N=100$ and 4,800 at $N=200$. Creation factorisation and the large crossed experiment: 192 steps per fact [App. C.1, p.28; App. A.3, p.26]. The bridge experiment: 144 bare-statement steps + 48 bridge steps [§7.3, p.18].",
+      "flops": "absent",
+      "tokens": "absent",
+      "wall_clock": "absent",
+      "caveat": "The paper explicitly declines to equalise anything but steps: 'The steps are matched, but generation and token throughput differ, so this remains an operating-point comparison' [§3.2, p.6] and 'The two data conditions are matched on steps, not tokens or examples' [App. A.3, p.26]. So even the step counts are not a compute budget - a study write processes 12x more items per step-equivalent than a bare-statement write. The amortisation identity (A) of S0 §2.4 cannot be evaluated for this paper at all."
+    },
+    "L_w": {
+      "value": "absent",
+      "detail": "No latency, TTFT, throughput, tokens/s, or serving-cost number appears anywhere in the paper. The only wake-time quantity reported is a 512-token answer cap and truncation rates against it (6.1% for bare-statement vs 0.1% for study at 96 steps) [App. D.3, p.31], and a 9.4% -> 85.2% growth in generation-cap-hitting loops for the censored condition [§3.3, p.6; §4.1, p.8]. Those are failure-mode rates, not latency. This is a finding: the paper that decides between the weight channel and the context channel never prices either channel."
+    },
+    "C": {
+      "value": "No byte count and no parameter count anywhere. What IS stated: LoRA rank 16 (or 4), $\\alpha_{\\mathrm{LoRA}}=32$, applied to all seven projection matrices of Qwen3-4B [App. A.3, p.25]; and that 'Sequential conditions merge each fact's adapter into the running model before the next fact trains' [App. A.3, p.25; Fig. 1 caption, p.2].",
+      "note_writer_inference": "[NOTE-WRITER INFERENCE, not in the paper] Because every adapter is merged, the steady-state served artefact after $k$ writes is one dense Qwen3-4B-shaped $\\Theta$ - so the per-fact and per-session state cost at serving time is zero additional bytes, and 100 facts cost exactly as much resident state as zero facts. That is the $\\Theta$-path's only unambiguous win over the E-path in this paper, and the paper never states it. The transient write-time cost (adapter + AdamW moments + a full-weight read-modify-write per merge) is likewise never quantified."
+    },
+    "rho": {
+      "value": "The paper's richest cost quantity, but reported as retention curves and endpoint levels, never as a per-round rate. Headline: after 20 sequential writes at 192 steps/fact, facts written from bare statements retain 1% and facts written from study data retain 46%; paired difference 45.6 pp (95% CI [38.8, 52.6], n=57 fact-seed cells) [§4.1, p.8]. Second evaluation, 96 steps/fact: study 31-49%, bare 1-7% at $k=20$; paired difference 35.7 pp (95% CI [29.8, 41.9], n=114) [§4.2, p.9]. Collapse is immediate: bare-statement at 2% by $k=5$ [§4.2]. At $k=100$: study retention plateaus at 25-28% rather than decaying to zero [§4.3, p.9]; reduced factorial at $k=100$ gives bare SFT 8.6-11.7%, study SFT 33.0-37.7%, offline distillation 25.0-29.4% (bare) vs 38.5-43.7% (study) [§4.3, p.9; App. B.3, p.27].",
+      "capability_side": "Capability degradation (a second $\\rho$): held-out capability starts at about 80% and after 20 sequential writes lands at $-11$ pp (SFT r4), $-16$ (SFT r16), $-6$ (CD r4), $-28$ (CD r16) [§6.2, §6.4, p.14-15, Fig. 12]. Unpenalised bare-statement sequential SFT loses 66 pp [§6.3, p.15]. At $k=100$ endpoint losses span 73.5 pp (full-parameter bare SFT) to 9.0 pp (low-rank study distillation) [App. B.3, p.27].",
+      "storage_vs_access": "Crucially $\\rho$ measured on STORAGE is near zero while $\\rho$ measured on ACCESS is near one for bare-statement writes: facts that fail every strict question at $k=20$ still retain a median 69% (bare) / 79% (study) of their write's log-probability lift, or 57% / 67% after drift correction, and 'No fact in either condition approaches the erased floor' [§5.1, p.11]. Any $\\rho$ the monograph quotes must therefore say WHICH $\\rho$.",
+      "not_reported": "No per-round decay constant, no fitted forgetting curve, no half-life, and no extrapolation beyond $k=100$."
+    }
+  },
+  "experiments": {
+    "models_and_setup": [
+      "Qwen3-4B, bf16, thinking mode disabled, base weights frozen - all experiments unless stated [§2, p.3; App. A.3, p.25].",
+      "LoRA rank 16 (or 4 where stated), $\\alpha_{\\mathrm{LoRA}}=32$, dropout 0, all seven projection matrices (attn q/k/v/o, MLP gate/up/down); AdamW lr $2\\times10^{-4}$; loss on answer tokens only; optimiser steps at batch size one [App. A.3, p.25].",
+      "Qwen3-8B: replication of the entailment gap only [§3.4, p.6, Fig. 5a].",
+      "Full fine-tuning at lr $3\\times10^{-5}$, chosen on five held-out facts to match LoRA's writing strength [§3.4, p.6].",
+      "Frozen dependency lockfile torch 2.12.1, transformers 5.13.0, peft 0.19.1; 'the exact base-model revision was not recorded in the run rows' [App. A.3, p.26]."
+    ],
+    "datasets_and_instruments": [
+      "Primary evaluation: 247 one-sentence facts about invented entities; most contradict a familiar default; 236-247 facts per contrast after screening exclusions [§2, p.3].",
+      "Five question types per fact - recall, paraphrase, application, composition, counterfactual - with gold answers and accepted aliases; questions written by a different model family from the facts and training data, revealing no answer, retained only when the original model fails them [§2, Table 1, p.3].",
+      "Two anchors: original model floor at 1-7% across question types; fact-in-prompt ceiling at 75-99% strict [§2, p.3].",
+      "Certification gate: floor <20%, ceiling >80%, truncation <5% per condition, leak audit <=3/30, pass audit >=24/30. Primary evaluation passed at floor 3%, ceiling 84%, leak 1/30, pass-audit 29/30 [§2.1, p.3; App. A.4, p.26]. Re-certified under the final judge and dual policy: floor 4%, in-prompt ceiling 91% lenient, strict pass-audit 30/30 [§2.2, p.4].",
+      "Judges: primary GPT-5.4-mini, reasoning off, temperature zero; passes must survive a second judge from another family; errors score incorrect [§2, p.3; §2.2, p.4].",
+      "Prior-conflict evaluation (Appendix D): matched triples (confirm / neutral / invert) sharing domain, statement structure and entity-name style; a generation-time screen discarded 47% of triples; after deduplication 80 triples = 240 facts [App. D.1, p.30].",
+      "Held-out capability tests: 100 rule-scored general-ability tests (mathematics, multiple choice, format following), no judge; original model scores about 80% [§6, p.13; App. A.1, p.25]. The factorial uses a separate 400-item held-out capability set [§6.1, p.14].",
+      "Two-fact question set: 14 fact pairs, 47 questions, each answerable only with both facts, screened so the original model fails every question [§5.2, p.12]."
+    ],
+    "results_single_write_creation": [
+      "At 96 steps, five-type average, strict policy: study training wins by 10.1 pp (95% CI [+7.0, +13.3], paired over 243 facts); under the lenient policy bare-statement training wins by 13.6 pp [§3.1, p.4].",
+      "Bare-statement reaches 97% recall and 95% paraphrase within 24 steps and saturates by 96; study reaches 88% recall and 83% paraphrase at 96 steps, trailing by paired differences of 11 and 13 pp [§3.1, p.4].",
+      "Counterfactual: bare-statement stays 21-23% from 24 to 192 steps; study reaches 45-50%, a paired gain of 29 pp at 96 steps [§3.1, p.4; Fig. 2 caption, p.5].",
+      "Composition: study 60%, bare-statement 40%, fact-in-prompt 83%, paired gain 18 pp; context distillation reaches 70%, i.e. +10.8 pp over study and -13.1 pp below the ceiling [§3.1, p.5].",
+      "At 96 steps, broader data improves application by +21 pp, composition by +18 pp, counterfactual use by +29 pp, 'while extra bare-statement optimisation improves none of them' [§3.1, p.5].",
+      "Entailment gap on the primary evaluation: 22-42 pp on bare-statement use questions, 1-5 pp after study training, 1-6 pp with the fact in the prompt [§3.1, p.4; Fig. 3 caps read +22 / +37 / +44, p.5].",
+      "Appendix B.1 full strict table over the 247-fact evaluation (bootstrap 95% CIs), columns = floor / bare-statement 24 steps / study 96 steps / transcript ablation / context distillation / fact-in-prompt: recall 1 [0,3] / 97 [95,99] / 88 [84,92] / 91 [88,95] / 93 [90,96] / 99 [97,100]; application 7 [4,9] / 52 [47,57] / 73 [68,77] / 67 [62,71] / 75 [71,79] / 91 [87,94]; composition 4 [2,6] / 40 [34,45] / 60 [55,65] / 61 [56,66] / 70 [65,75] / 83 [80,87]; paraphrase 2 [0,4] / 95 [92,98] / 83 [78,87] / 82 [76,86] / 83 [78,88] / 93 [90,96]; counterfactual 3 [1,6] / 23 [17,29] / 50 [43,57] / 50 [43,57] / 56 [49,63] / 75 [69,81] [App. B.1, p.27].",
+      "Paired composition differences (n=236): CD - study = +10.8 [+4.9, +16.5]; CD - fact-in-prompt = -13.1 [-18.2, -7.8]; transcript ablation - study = +1.5 [-4.9, +7.4]; CD - transcript ablation = +9.3 [+4.9, +13.8] [App. B.1, p.27].",
+      "Objective comparison (40 certified facts, fresh rank-16 adapter, 192 steps, three seeds): bare-statement gap 26 pp, the other four methods 2-4 pp; contrast +22.8 pp (95% CI [+17.4, +28.2]) [§3.2, p.6].",
+      "KL direction has no effect on the gap once it is small: forward 4.3 pp, reverse 3.0 pp - and the paper records this as a failed prediction [§3.2, p.6].",
+      "On-policy sampling helps strict accuracy at this operating point: online distillation 77-78%, study and offline distillation 71-72%, bare-statement 61%; every method above 50% [§3.2, p.6].",
+      "Factorial (4 objectives x 2 data x 2 update methods = 16 conditions, three seeds, forty facts, 15 numeric): study data reduces the conclusion-type entailment gap in every reportable pair - 36.4 pp (95% CI [31.7, 41.0]) full SFT, 31.2 LoRA SFT, 18.9 full offline distillation, 14.0 full forward-KL online distillation, 3.6-9.8 for the remaining pairs; four of seven pairs exceed 10 pp and five exclude zero [§3.3, p.6].",
+      "Scale: at Qwen3-8B the bare-statement gap remains 26 pp and the headline contrast is +22.9 pp, against +22.8 at 4B [§3.4, p.6].",
+      "Full fine-tuning at matched writing strength reproduces the gap: 28 pp bare-statement, 4 pp study, contrast +24.0 pp (95% CI [+20.9, +27.2]). 'Narrow supervision, not the number of trainable parameters, creates the gap' [§3.4, p.7].",
+      "Creation factorisation (nine controlled conditions, same 32 prior-inverting facts, rank-16, lr 2e-4, 192 steps, three seeds): bare-statement leaves a 27.4 pp gap (95% CI [20.2, 35.1]); 24 diverse recall and paraphrase prompts reduce it to 5.4 pp ([1.8, 8.8]) with no derived conclusion anywhere in the data [§7.1, p.17; Fig. 16A, p.17].",
+      "In the same factorisation, use-bearing examples scored LOWER than diverse recitation by -8.7 pp (95% CI [-15.7, -1.9]). 'The supported causal variable is therefore prompt breadth, not the presence of an explicit reasoning step' [§7.1, p.17]."
+    ],
+    "results_survival": [
+      "Twenty sequential writes, 192 steps per fact, three seeds, adapter merged before the next fact: study retains 46%, bare-statement retains 1%; paired difference 45.6 pp (95% CI [38.8, 52.6], n=57 fact-seed cells) [§4.1, p.8].",
+      "Not a write failure: bare-statement answers 65% of questions correctly before any later writes arrive [§4.1, p.8].",
+      "Not a budget artefact: at 24 steps per fact (capability 54%, against 3-37% at the full budget and roughly 80% before any writing), bare-statement facts still retain only 6% [§4.1, p.8].",
+      "Method ranking at k=20 (Fig. 5b, p.8): bare-statement 1, offline distillation 13, online forward 27, online reverse 31, study 46. Text reports online 27-32% against 14% for offline (+15.8 pp) [§4.1, p.8].",
+      "The entire distillation family partially degenerates by write 20: 35-46% looping output, capability down to 42-49%; 'the on-policy advantage is real in direction but modest in a degraded regime' [§4.1, p.8].",
+      "Kind-of-knowledge predicts survival: across 45 condition x question-type pairs, Spearman $\\rho_S = -0.526$ (95% CI [-0.657, -0.197]); collapsing each condition to its mean gives $\\rho_S = -0.675$ [§4.1, p.8; Fig. 4b, p.7].",
+      "Prior-conflict evaluation, 96 steps/fact, three seeds, twenty writes: study retains 31-49% at k=20, bare-statement 1-7%; paired difference 35.7 pp (95% CI [29.8, 41.9], n=114 fact-tier-seed cells) at an identical optimisation budget [§4.2, p.9].",
+      "Writing strength does not explain it: bare-statement writes these facts at 59% strict accuracy against study's 72%, 'so normalised survival still differs by a factor of about six'. Bare-statement is at 2% by k=5 [§4.2, p.9].",
+      "No decay into recitation: the lenient-minus-strict gap of retained facts is 0-2 pp at every checkpoint under both methods [§4.2, p.9].",
+      "Prior tier: neutral facts retain 12.3 pp LESS than prior-inverting ones (95% CI [-21.3, -2.8], n=19 paired triples), reversing the paper's own prediction; per-triple sign test p=0.064 [§4.2, p.9].",
+      "One hundred writes: study retention declines to a 25-28% plateau rather than to zero [§4.3, p.9; Fig. 7, p.10].",
+      "Hundred-write reduced factorial: bare-statement SFT 8.6-11.7% vs study SFT 33.0-37.7%; offline distillation 25.0-29.4% (bare) vs 38.5-43.7% (study); ranges span low-rank and full-parameter cells [§4.3, p.9; App. B.3, p.27].",
+      "Frozen-anchor consolidation every 20 writes: retention 25% against 28% unconsolidated at k=100, within noise; five writes after the first pass, 41% against 38%, so the pass 'fails to restore reachability even immediately'. General abilities recover at every pass and stay +12 pp above the unconsolidated run at k=100 [§4.3, p.10; Fig. 7, p.10]."
+    ],
+    "results_access_not_storage": [
+      "Reconstructed checkpoints agree with the original measurements within $10^{-2}$ nats per token [§5.1, p.11].",
+      "Facts that fail every strict question at k=20 still hold a median 69% (bare-statement) and 79% (study) of their write's log-probability lift, or 57% and 67% after the drift correction; 'No fact in either condition approaches the erased floor' [§5.1, p.11].",
+      "Counts of forgotten facts at k=20: 54 bare-statement, 3 study [Fig. 9 middle, p.11].",
+      "Among wrong answers about forgotten facts, the bare-statement model attaches the MOST RECENTLY WRITTEN fact's content to the queried entity in 70% of failures; the study model in 1% [§5.1, p.11; Fig. 9 right, p.11].",
+      "Reverse savings effect: re-training one forgotten study fact to criterion consumed the full step budget, whereas a never-written control fact took eight steps [§5.1, p.12].",
+      "Joint use of two written facts collapses: 32% when both facts are in the weights against 91% when both are in the prompt; paired difference -58.1 pp (95% CI [-76.8, -35.4]) over fourteen pairs [§5.2, p.12; Fig. 10, p.12].",
+      "87.5% of placements pass an individual-usability screen, so individually unusable facts do not explain the collapse [§5.2, p.12].",
+      "Self-retrieval is the bottleneck: asked simply to state a fact it was trained on and can answer questions about, the model produces the correct content 34% of the time (8% verbatim, the rest paraphrase); feeding its own retrievals back closes only a sixth of the deficit. 'There is nothing to search.' [§5.2, p.12].",
+      "Supplying the TRUE statements in context recovers accuracy to 63%; a control model that wrote one unrelated fact scores 66% on the same task, so the residual gap is generic write damage rather than an interaction [§5.2, p.12].",
+      "In the bare-statement condition this generic damage is total: after a single unrelated bare-statement write the model answers every question by reciting its one written statement and scores zero [§5.2, p.12].",
+      "In-context use does not erode faster than general ability: on reconstructed checkpoints of the study sequence, accuracy on fresh facts in context falls 83% -> 74% over twenty writes; difference-in-differences against the capability tests is +9.2 pp (95% CI [+3.1, +15.3]) [§5.3, p.13].",
+      "Forgotten facts recover when their statements are supplied in context: 77-80% in the study condition, 14% in the bare-statement condition [§5.3, p.13; Fig. 11 right, p.13]."
+    ],
+    "results_cost_of_writes": [
+      "Twelve conditions (2 objectives x ranks 4/16 x 3 regimes: sequential-20, batch-100, batch-200): capability loss follows KL from the original model, Spearman $\\rho_S = 0.83$ [§6.1, p.14; Fig. 12c, p.14].",
+      "On the factorial's 400-item capability set, damage after twenty writes correlates with endpoint KL at $\\rho_S = 0.946$ (95% CI [0.787, 0.991]) and with cumulative local KL at $\\rho_S = 0.909$ [§6.1, p.14; Fig. 4c-d, p.7].",
+      "Sequential capability change at k=20: SFT r4 -11, SFT r16 -16, CD r4 -6, CD r16 -28 [Fig. 12a, p.14; §6.2/§6.4, p.14-15].",
+      "Facts kept at k=20 in the same twelve conditions: SFT r16 53%, SFT r4 42%, CD r4 27%, CD r16 12% [§6.4, p.15]. §6.2 states 11% for the same worst condition [§6.2, p.14] - see todo_verify.",
+      "Batch conditions: batch-100 capability -20 / -26 / -4 / -2 with facts kept 72 / 70 / 67 / 69; batch-200 capability -22 (SFT r4), -19 (SFT r16), +1 (CD r4), -3 (CD r16) with facts kept in the 62-67 band [Fig. 12a-b, p.14 - figure-extracted]. Text anchor: 'Batch distillation from the original model as teacher writes 200 facts at -3 to +1 points of capability, at a third to half the KL of any SFT condition; at rank 16 it beats SFT by 16 points' [§6.2, p.14].",
+      "Accuracy immediately after writing is uniform: 76-78% sequential, 62-72% batch [Fig. 12 caption, p.14].",
+      "Sequential distillation against the model's own accumulated merges is the worst of the twelve: KL 1.75 at rank 16, -28 pp capability, 11% retention [§6.2, p.14].",
+      "Frozen-teacher sequential distillation, everything else matched: +2 pp capability, KL 0.48, 54% retention, indistinguishable from the batch condition. The own-merges run loses 31 pp, reaches KL 1.70, retains 21% (34% excluding capped outputs). Paired retention difference 33.0 pp (95% CI [24.6, 41.0]) [§6.2, p.14-15; Fig. 13, p.15].",
+      "KL penalty sweep on bare-statement sequential SFT: unpenalised loses 66 pp capability with 1% retention; $\\lambda_{\\mathrm{KL}}=0.5$ gives -19 pp and 25% retention (write accuracy 53%); $\\lambda_{\\mathrm{KL}}=1.0$ gives -5 pp and 36% retention (write accuracy 49%). Paired retention gains 23.4 and 35.1 pp (95% CIs [16.8, 30.4] and [28.8, 41.6]) [§6.3, p.15].",
+      "But measured KL from the original stays between 1.8 and 2.4 across the sweep, 'even as capability recovers by more than sixty points' [§6.3, p.15; Fig. 14 right, p.16].",
+      "Dissociations: CD r4 damages capability least among sequential conditions (-6) yet retains worse than SFT r4 (27% vs 42%); higher rank helps retention and hurts capability, 'the reverse of its usual reputation' [§6.4, p.15]."
+    ],
+    "results_causal_interference": [
+      "4x4 crossed design (5 stored facts, 15 later writes, every distillation condition using a frozen original-model teacher): retention change after fifteen later writes is -37.0 pp for bare-statement incoming writes, -6.7 for study, -1.9 for online distillation, +2.4 for offline distillation; contrasts with the bare-statement stream are 30.4, 35.1 and 39.4 pp, each excluding zero [§7.2, p.17; Fig. 16C, p.17; App. C.2, p.28].",
+      "The stored-write main effect 'changes sign under reasonable definitions of successful writing, so this experiment leaves it open' [§7.2, p.17; App. C.2, p.28].",
+      "2x2 resolution (24 new stored facts, three seeds, ten identical later writes, common item mask): 9.0% (bare store, bare later), 47.8% (bare store, study later), 7.8% (study store, bare later), 44.2% (study store, study later) [§7.2, p.17].",
+      "Later-write effect +37.6 pp (95% CI [28.9, 46.3]); storage-method effect -2.4 pp ([-9.2, 4.1]); bare x bare interaction +2.4 pp ([-11.5, 14.1]). 'Interference is caused by the incoming write, not by how the earlier fact was stored.' [§7.2, p.17-18; Fig. 17, p.17].",
+      "Robustness: repetitive generation failures 4.2% and 3.2% under the two bare-statement streams against 0% under study streams; under bare-statement streams even the fact-in-prompt reference falls 45.5 pp. Restricting to the 232 of 250 items without a generation failure leaves the effect at 36.8 pp [§7.2, p.18].",
+      "Early predictor failed: the pre-registered step-16 write-use score had a rank correlation of 0.083 with final strict-accuracy gain [§7.3, p.18].",
+      "Linearisation (Eq. 7.1) correlates 0.795 with the realised immediate effect but -0.258 with forgetting after the full sequence [§7.3, p.18].",
+      "Bridging data: 48 steps of bridging on top of 144 bare-statement steps produced no condition passing the four-way conjunction (halve the gap, +10 strict points, preserve lenient accuracy, no extra capability damage); eight tested rows, none passes all four [§7.3, p.18; Fig. 18A, p.29].",
+      "Activation methods: activation-guided projection, patching and block swaps did not meet rescue or kill thresholds; largest rescue 5.9 pp against a 10-pp threshold [§7.3, p.18].",
+      "Protected optimiser (Eq. 7.2): +1.4 pp over ordinary Adam (95% CI [-2.1, 5.0], five unique stored facts), far below the 15-pp target; random projection +1.8; magnitude masking +5.0 [1.4, 8.9]; targeted minus random = -0.4 pp [-4.4, 3.6] [§7.3, p.18; App. C.3, p.28-29].",
+      "GRPO condition with a programmatic answer-match reward 'received almost no signal because the base model never produced the target counterfactuals, and the few reward gains did not install the fact' [§3.3, p.6]."
+    ],
+    "results_prior_conflict_appendix": [
+      "Grid: 240 facts x 4 recipes x 3 seeds, reported as 13,728 records [App. D.3, p.31] - the arithmetic does not close, see todo_verify.",
+      "Primary contrast INCONCLUSIVE: under the strict policy every confidence interval crosses zero; the paired invert-minus-neutral interaction is +4.3 pp [-6.1, +14.2]; against the pre-set support criteria (invert gap >= +10 pp excluding zero, neutral gap <= +5 pp) 'this instrument neither reproduces the primary evaluation's diversity effect nor rules it out' [App. D.3, p.31; Fig. 21, p.31].",
+      "Truncation artefact: bare-statement conditions truncate at the 512-token cap far more than study (6.1% vs 0.1% at 96 steps); recomputed on non-truncated rows only, every gap collapses toward zero (invert +0.1 pp, neutral +0.2 pp) [App. D.3, p.31].",
+      "Negative control behaved: recall gaps uniform across tiers (-6.2 / -5.4 / -8.7 pp) with no tier-by-recipe interaction [App. D.3, p.31].",
+      "Cue mechanism: on tier counterfactual questions bare-statement scores 87-88% strict (ceiling 93%) but only 23% on the primary evaluation's counterfactuals; study is 79% vs 50%. The difference is question style, not prior strength (inverting tier facts carry MORE conflict, 89% vs 78% high-conflict) [App. D.4, p.32].",
+      "Controlled cue x recipe design: cueing raises bare-statement strict accuracy 52 -> 88% on tier facts and 23 -> 99% on primary facts, roughly twice the lift given to study (difference-in-differences +24.7 pp and +44.1 pp); it collapses bare-statement's entailment gap from 31.8 pp uncued to 0.9 pp cued [App. D.4, p.32].",
+      "Fact-in-prompt itself scores 95% cued against 76% uncued, so part of the cue magnitude is shorter inference distance [App. D.4, p.32].",
+      "The diversity x uncued interaction did NOT reproduce on the tier facts: the tier uncued set was about half recitation-answerable (primary is about 2%); recitability predicts bare-statement item-level pass (point-biserial r=0.42) and not study's (r=-0.22). Restricted to application-only tier items the diversity advantage reappears [App. D.4, p.32-33].",
+      "Composition limit is conflict-independent: composition sits at 37-58% for every tier and recipe while the in-context ceiling ranges 77-95%, and the gap is largest at zero conflict (neutral 58% vs a 95% ceiling) [App. D.4, p.33; Fig. 22 right, p.32].",
+      "Tier ceilings and floors under the certified pipeline (Fig. 20, p.30): floor 9 / 1 / 6 and ceiling 97 / 87 / 89 for confirm / neutral / invert, with 76% / 96% / 80% of questions surviving the screen.",
+      "Exploratory prior-strength regression (App. B.2, p.27): prior strength does not predict counterfactual accuracy in any condition (+0.01 [-0.13, +0.16], n=179); retention correlations -0.24 / -0.05 / -0.26 / -0.47 across four sequential conditions, n=19 each, unpowered."
+    ]
+  },
+  "scale_ceiling": "Qwen3-4B for every confirmatory result; Qwen3-8B for exactly one replication, of the entailment gap only (never of retention) [§3.4, p.6; §9.2, p.20]. Longest write sequence: 100 sequential writes, and that extension is explicitly descriptive rather than confirmatory [§4.3, p.9; App. B.3, p.27]. Largest batch write: 200 facts at once [§6, p.13]. Largest fact pools: 247 (primary) and 240 (prior-conflict); the confirmatory causal results rest on 32 creation facts, 5 stored facts and 15 later writes [App. C.4, p.29]. Data scale per write: 24 generated items, 192 optimiser steps at batch size one. No token counts, no FLOPs, no wall-clock, no multi-node anything. The paper's own scope statement: 'All confirmatory results are scoped to Qwen3-4B, rank-16 LoRA, the 32 creation facts, five stored facts, and fifteen later writes' [App. C.4, p.29].",
+  "concept_ledger_delta": {
+    "new_concepts": [
+      {
+        "term": "entailment gap (= recitation-to-use gap)",
+        "definition": "lenient accuracy minus strict accuracy, where lenient credits a fact that strictly entails the target and strict requires the requested conclusion",
+        "source": "[Eq. 2.1, §2.2, p.4]"
+      },
+      {
+        "term": "question-keyed knowledge",
+        "definition": "a written fact reachable only by the questions that happen to route to it, with no general handle",
+        "source": "[§9.1, p.20]"
+      },
+      {
+        "term": "address",
+        "definition": "'a general handle for reaching a fact beyond the questions that happen to route to it'",
+        "source": "[§9.1, p.20]"
+      },
+      {
+        "term": "access vs storage (availability vs accessibility)",
+        "definition": "behavioural forgetting that leaves the stored trace intact; borrowed descriptively from Tulving & Pearlstone 1966",
+        "source": "[§5, p.11; §8, p.19]"
+      },
+      {
+        "term": "address capture",
+        "definition": "later writes taking over the questions that used to reach an earlier fact; predicts SLOW rather than fast relearning",
+        "source": "[§5.1, p.12]"
+      },
+      {
+        "term": "drift-corrected log-probability lift $R_{\\log p}(k)$",
+        "definition": "the storage probe of Eq. 5.1 with a never-written-statement control",
+        "source": "[Eq. 5.1, §5.1, p.11]"
+      },
+      {
+        "term": "incoming-write interference",
+        "definition": "the finding that interference is a property of the arriving write, not of how the earlier fact was stored",
+        "source": "[§7.2, p.18; Fig. 17, p.17]"
+      },
+      {
+        "term": "data breadth (bare-statement vs study)",
+        "definition": "the size and diversity of $\\mathcal{R}_k$; identified as the causal variable for usability, with breadth - not the presence of a derived conclusion - doing the work",
+        "source": "[§3.1, p.4; §7.1, p.17]"
+      },
+      {
+        "term": "prior tier (confirm / neutral / invert)",
+        "definition": "matched-triple construction that varies only the fact's relation to the pretrained default",
+        "source": "[App. D.1, p.30; Fig. 19, p.30]"
+      },
+      {
+        "term": "cue mechanism",
+        "definition": "a question that states the default and asks for the contrast performs for free the step that broad data otherwise buys",
+        "source": "[App. D.4, p.32]"
+      },
+      {
+        "term": "certification gate (floor / ceiling / truncation / leak audit / pass audit)",
+        "definition": "a scripted pre-use screen for a generated evaluation instrument",
+        "source": "[§2.1, p.3; App. A.4, p.26]"
+      },
+      {
+        "term": "frozen-anchor consolidation",
+        "definition": "periodic batch re-distillation of all facts so far into a fresh copy of $\\Theta_0$",
+        "source": "[§4.3, p.10]"
+      },
+      {
+        "term": "write accuracy",
+        "definition": "accuracy on a fact immediately after its own write, before any later write arrives",
+        "source": "[§6.3, p.15; Fig. 12 caption, p.14]"
+      }
+    ],
+    "extended_or_renamed": [
+      "catastrophic forgetting (ch11) is re-specified: for weight-written facts it is loss of ACCESS, not erasure [§5, §9.1]. The monograph's ch11 definition must be qualified when this chapter arrives.",
+      "consolidation: the monograph owns this term via CLS and [NL]/[Sleep] (upward distillation into a slower level). This paper uses it for reset-and-rewrite into $\\Theta_0$. Use 'frozen-anchor consolidation' throughout the chapter, and state the difference explicitly - it is a genuinely different operation with a genuinely different result (capability yes, retention no).",
+      "the classical savings effect is reported REVERSED: relearning a forgotten fact is slower than learning a fresh one [§5.1, p.12].",
+      "KL-from-base as a forgetting predictor (Shenfeld et al. 2025) is extended from RL to knowledge writing, and simultaneously demoted from a causal handle to 'a cost coordinate that holds across methods, not a sufficient causal mechanism' [§6.1, p.14; §6.3, p.15]."
+    ],
+    "retired_or_challenged": [
+      "The assumption that a fact failing all its questions has been erased - falsified [§5.1].",
+      "The assumption that HOW a fact was stored determines its robustness - the 2x2 crossed experiment finds a storage-method effect of -2.4 pp [-9.2, 4.1] against a later-write effect of +37.6 pp [§7.2].",
+      "The prior-as-opponent account (facts contradicting the prior decay faster) - the direction reversed [§4.2, App. B.2].",
+      "The mode-seeking-reverse-KL account (that reverse KL creates more committed knowledge) - no effect [§3.2].",
+      "The hypothesis that use-bearing examples are what broad data supplies - falsified within the paper's own factorisation [§7.1]."
+    ]
+  },
+  "open_questions": [
+    "Reachability of earlier facts is unsolved across supervised fine-tuning and both offline and online distillation; 'The third remains unresolved' [§1, p.2; §9.3, p.20].",
+    "Why re-distilling every fact from its statement fails to re-key it: 'why re-distilling every fact from its statement fails to re-key them is a question our experiments do not answer' [§4.3, p.10].",
+    "Which ingredient of the study data matters: 'We have not isolated which ingredient of the study data matters' [§3.1, p.5]. §7.1 narrows it to breadth but does not decompose breadth.",
+    "Why study training scores WORSE on recall and paraphrase: 'remains unexplained' [§3.1, p.5].",
+    "Whether fine-tuned SKILLS fail the same way as discrete facts: 'our evidence concerns discrete facts; whether fine-tuned skills fail in the same way remains untested' [§9.2, p.20].",
+    "Reinforcement-learning objectives that can actually write knowledge: 'we leave reinforcement-learning objectives that can write new knowledge to future work' [§3.3, p.6]; and whether an objective that prices reasoning length would place knowledge in the weights - 'untested' [§9.3, p.20].",
+    "A mechanistic account that connects measurement to control - one that 'should forecast final behaviour beyond the next update, protect earlier facts without blocking new ones, and explain how broad training data connects content to more routes' [§9.3, p.20].",
+    "The sign of the stored-write effect: it 'changes sign under reasonable definitions of successful writing, so this experiment leaves it open' [§7.2, p.17; App. C.2, p.28].",
+    "Whether distinctiveness protects prior-inverting facts, or whether question-difficulty asymmetry between tiers explains it: 'Alternatives such as question-difficulty asymmetries between the tiers remain open, and the crossed experiments of §7 do not resolve them' [§4.2, p.9].",
+    "A clean tier replication of the diversity effect 'awaits a purpose-built application-only question set' [App. D.4, p.33].",
+    "Whether the composition limit is really about where the fact lives (weights vs activations) - asserted at [App. D.4, p.33] and deferred to concurrent work (Dai et al. 2026) at [§9.1, p.20]; not established here.",
+    "Whether bare-statement writes SELECTIVELY erase a stored object, or whether the effect is broad generation pathology: 'Generation failures do not create the contrast, but broad generation pathology remains a possible explanation' [§7.2, p.18]; 'their effect is not shown to be selective erasure' [§9.2, p.20].",
+    "Whether some other predictor, bridge recipe, internal mechanism or optimiser protection would work: the paper rejects specific hypotheses 'under their protocols' and states 'They do not show that all predictors, bridge recipes, internal mechanisms, or optimiser protections must fail' [App. C.4, p.29].",
+    "[BRIDGE-OUT for the monograph, note-writer's reading] The paper never asks what happens if the write target is $W$ rather than $\\Theta$, nor whether an external index over $E$ supplies exactly the missing 'address'. Both are the obvious next moves in the frame and neither is posed - which is the branch point Part III should occupy."
+  ],
+  "unfavorable_facts": [
+    "ABLATION REVERSAL, the paper's own: in the controlled creation factorisation, use-bearing examples (implications and contrasts - the ingredient the study set was built around) scored LOWER than plain diverse recitation by -8.7 pp (95% CI [-15.7, -1.9]). The paper's mechanism story for 'study data' is not the mechanism its own factorisation supports [§7.1, p.17].",
+    "THE SECOND EVALUATION'S PRIMARY CONTRAST FAILED. On the purpose-built prior-conflict instrument every confidence interval crosses zero and none reaches the pre-set +10 pp support band; recomputed on non-truncated rows only, the gaps collapse to +0.1 pp (invert) and +0.2 pp (neutral) - i.e. the residual signal was a truncation artefact working in the hypothesis's favour [App. D.3, p.31; Fig. 21, p.31]. The headline diversity effect is reproduced only after a post-hoc restriction to application-only items [App. D.4, p.33].",
+    "THE HEADLINE CONTRAST IS QUESTION-STYLE DEPENDENT. Cueing a question raises bare-statement strict accuracy from 23% to 99% on the primary facts and collapses its entailment gap from 31.8 pp to 0.9 pp [App. D.4, p.32]. The 22-42 pp gap that carries §3 exists only for uncued questions, and the paper's own primary evaluation is uncued by construction. A deployment whose users ask cued questions would see very little of this paper's effect.",
+    "SELF-BUILT INSTRUMENT END TO END: the facts are model-invented, the training data model-generated, the questions model-written by another family, and the answers model-judged, with a second judge required for passes [§2, p.3; §2.2, p.4]. The paper names six defect classes that this design invites [Table 2, p.25] and fails its own truncation criterion in two conditions (original-model floor 23%, bare-statement at 24 steps 11%, against a <5% bar), which it discloses 'rather than gating' [§2.1, p.3; App. A.4, p.26].",
+    "A FACTORIAL CELL WAS CENSORED AND THE PLAN WAS BROKEN. Reverse-KL distillation on bare statements with LoRA loops until the generation cap in 9.4% of outputs (85.2% by write 20), so 15 of 16 conditions yield numbers, and the survival correlation ($\\rho_S = -0.526$) is 'a complete-case analysis of fifteen conditions rather than the planned sixteen' because 'the analysis plan did not anticipate censoring' [§3.3, p.6; §4.1, p.8].",
+    "THE ON-POLICY ADVANTAGE IS MEASURED INSIDE A BROKEN REGIME: 'the entire distillation family partially degenerates by the twentieth write (35-46% looping output, capability down to 42-49%), so the on-policy advantage is real in direction but modest in a degraded regime' [§4.1, p.8].",
+    "THE FLAGSHIP 1%-vs-46% CONTRAST RUNS AT AN OPERATING POINT THE AUTHOR CALLS SEVERE: 'The heaviest bare-statement budget, 192 steps on a single sentence, is deliberately severe' [§3.1, p.4]. The lighter 24-step control still gives 6% retention, so the qualitative claim survives, but the headline number does not describe a reasonable configuration.",
+    "RETENTION NUMBERS ARE NOT COMPARABLE ACROSS THE PAPER'S OWN SECTIONS: 'These twelve conditions use their own optimisation budget and question set, so retention levels here are not comparable to those of §4' [§6.4, p.15]. §3.2 'remains an operating-point comparison' [§3.2, p.6] and the factorial 'gives an association across operating points rather than a one-variable causal effect' because 'four pairs use learning rates tuned by condition' [§3.3, p.6].",
+    "THE 100-WRITE EXTENSION - the result the monograph most wants (a plateau at 25-28%) - IS THE WEAKEST EVIDENCE IN THE PAPER: scope reduced from twelve cells to eight 'after partial records existed', endpoint contrasts 'chosen after the fact', learning rates tuned per condition, no uncertainty bands, and a response protocol that scores only the first sentence and reached a 77.3% in-context ceiling, BELOW the >80% certification gate - 'the miss was accepted before the runs and caps what the endpoint levels can show' [§4.3, p.9; App. B.3, p.27].",
+    "SMALL n ON LOAD-BEARING CLAIMS. The reverse-savings/relearning claim rests on 3 forgotten study facts [§5.1, p.12; §9.2, p.20]. The protected-optimiser null rests on 5 unique stored facts, resampled as 60 paired units [§7.3, p.18; App. A.6, p.26]. Joint use rests on 14 pairs / 47 questions [§5.2, p.12]. The creation factorisation's 864 units are repeated measurements on 32 facts, not 864 facts [App. C.1, p.28]. The prior-tier reversal rests on 19 paired triples with a sign test at p=0.064 [§4.2, p.9].",
+    "THE KL LAW IS NOT A HANDLE, BY THE PAPER'S OWN TEST. The $\\rho_S = 0.83$-to-$0.946$ ordering is the paper's cleanest quantitative law, but §6.3 shows capability recovering by more than sixty points while measured KL from the original stays at 1.8-2.4: 'The penalty preserves abilities without moving the output distribution closer to the original' [§6.3, p.15]. The paper says so itself: 'a cost coordinate that holds across methods, not a sufficient causal mechanism' [§6.1, p.14].",
+    "TWO DISSOCIATIONS RESIST THE PAPER'S OWN FRAME: context distillation at rank 4 damages capability least (-6 pp) yet retains earlier facts worse than SFT at the same rank (27% vs 42%); and higher rank helps retention while hurting capability, 'the reverse of its usual reputation' - i.e. opposite to Biderman et al. 2024, which the paper cites approvingly elsewhere [§6.4, p.15; §8, p.19].",
+    "THE CONTEXT CHANNEL IS NEVER TESTED AT THE SCALE THE WEIGHT CHANNEL REACHES. At most TWO facts are ever placed in context simultaneously (the pair experiment of §5.2); Fig. 11 supplies one statement per question [§5.2, p.12; §5.3, p.13]. Yet the weight channel is pushed to 100 accumulated facts. 'Context is the reliable channel' [Abstract, p.1] is therefore established at $|E|\\le 2$ and extrapolated to a regime it was never run in. [NOTE-WRITER: this is the untested composition, and it is the single most important caveat for the monograph, because at $|E| = 100$ the context channel pays prefill and KV cost that the merged $\\Theta$ channel does not pay at all.]",
+    "THE CONTEXT CHANNEL'S OWN CEILING IS LOW AND MOVING. In-prompt composition is 83% on the primary evaluation [§3.1, p.5; App. B.1, p.27] and the in-context ceiling spans 77-95% across tiers [App. D.4, p.33; Fig. 22, p.32]; the fact-in-prompt reference scores 95% cued against 76% uncued [App. D.4, p.32]; and under bare-statement write streams the fact-in-prompt reference itself falls 45.5 pp [§7.2, p.18]. Every 'context wins' margin is measured against a control that is itself failing 5-25% of the time and is itself damaged by writes.",
+    "ONE WHOLE OBJECTIVE FAMILY IS UNEVALUATED: the GRPO condition 'received almost no signal because the base model never produced the target counterfactuals, and the few reward gains did not install the fact' [§3.3, p.6]. So the paper's verdict on weight writing covers SFT and distillation only.",
+    "INTERNAL NUMERIC INCONSISTENCIES. (a) §6.2 reports 11% retention for sequential distillation at rank 16 while §6.4 reports 12% for the same condition [p.14 vs p.15]. (b) §4.1 text reports offline distillation retaining 14% while Fig. 5b prints 13 [p.8]. (c) App. D.1 gives 'the fact-in-prompt ceiling ... (neutral 96%, invert 80%, confirm 77%)' [p.30], but those are the surviving-question fractions of App. A.5 (95.9 / 79.5 / 76.3) [p.26], while Fig. 20 prints ceilings of 97 / 87 / 89 [p.30]. (d) App. D.3's '13,728 records (240 facts x 4 recipes x 3 seeds)' does not multiply out - 240 x 4 x 3 = 2,880 [p.31].",
+    "REPRODUCIBILITY GAP ADMITTED: 'the exact base-model revision was not recorded in the run rows' [App. A.3, p.26], despite a frozen dependency lockfile.",
+    "NO COST NUMBERS ANYWHERE. The paper compares two channels with radically different serving economics and reports zero FLOPs, zero latency, zero byte counts, zero wall-clock. It matches conditions 'on steps, not tokens or examples' [App. A.3, p.26] while acknowledging 'generation and token throughput differ' [§3.2, p.6]. For a systems reader the decisive comparison is therefore not made.",
+    "THE CENTRAL POSITIVE RESULT CARRIES A DEGENERACY CONFOUND THE PAPER CANNOT RULE OUT: under bare-statement streams, repetitive generation failures occur in 4.2% and 3.2% of probes against 0% under study streams, and 'broad generation pathology remains a possible explanation' for the interference contrast [§7.2, p.18]. Similarly, the own-merges retention figure moves from 21% to 34% purely by how capped outputs are scored [§6.2, p.15].",
+    "SCALE IS FAR BELOW DEPLOYMENT: 4B parameters for everything confirmatory, one 8B replication of a single measurement, no result above 8B, and the paper says so [§9.2, p.20; App. C.4, p.29]. The whole $\\Theta$-path falsification therefore rests on models two to three orders of magnitude smaller than the ones the sleep-time-compute literature targets."
+  ],
+  "cross_path_citations": {
+    "summary": "Asymmetric. The paper engages the IDEA of the E-path substantially and cites none of the named E-path sleep-time-compute papers; it engages the $\\Theta$-path's editing and PEFT lineage; and it is COMPLETELY SILENT on the W-path. It also never uses the words 'sleep-time compute' and cites no CLS or biological-sleep work, despite implementing a periodic offline consolidation pass in §4.3.",
+    "E_path": {
+      "engaged": "yes, conceptually and heavily - but not the named corpus",
+      "cited": [
+        "Snell, Klein & Zhong 2022, 'Learning by distilling context' (arXiv:2209.15189) - the origin of the paper's distillation arm [§3.2, §6, §8]",
+        "Eyuboglu, Ehrlich et al. 2025, 'Cartridges: lightweight and general-purpose long context representations via self-study' (arXiv:2506.06266) [§8, p.19]",
+        "Mu, Li & Goodman 2023, 'Learning to compress prompts with gist tokens' - cited as 'keep new knowledge in compressed context' [§8, p.19]",
+        "Berges et al. 2024, 'Memory layers at scale' (arXiv:2412.09764) - cited as 'key-value memories with explicit addresses' [§8, p.19]. NOTE: S0 §3.1 files this paper under $\\Theta$-2, so this is a genuine cross-path citation either way.",
+        "Ovadia et al. 2024, 'Fine-tuning or retrieval?' - retrieval outperforms continued pretraining for injecting new documents [§8, p.19]",
+        "Padmanabhan et al. 2023, 'Propagating knowledge updates to LMs through distillation' [§8, p.19]",
+        "Hartvigsen et al. 2023 (GRACE, discrete key-value adaptors), Wang et al. 2024b (WISE), Fang et al. 2025 (AlphaEdit) - 'Editors that survive many updates instead construct an address or constrain the incoming update' [§8, p.19]"
+      ],
+      "not_cited": [
+        "MemGPT (2310.08560)",
+        "Sleep-time Compute / Letta (2504.13171)",
+        "Mem0 (2504.19413)",
+        "Zep (2501.13956)",
+        "ReasoningBank (2509.25140)"
+      ],
+      "significance": "The paper independently arrives at the E-path's own thesis - 'Retrieval-augmented systems preserve this handle outside the weights. The write stores content, while the context supplies its address at use time' [§9.1, p.20] - without citing a single sleep-time-compute paper. It therefore supports the E-path conclusion while providing zero evidence about E-path METHODS, because its E arm has an oracle retriever and $B_s = 0$."
+    },
+    "W_path": {
+      "engaged": "NO. Total silence.",
+      "evidence": "The full bibliography (pp. 21-24) contains no Titans (2501.00663), no Miras (2504.13173), no Atlas (2505.23735), no TNT (2511.07343), no Nested Learning (2512.24695), no 'Language Models Need Sleep' (2606.03979), no TTT (Sun et al. 2024, arXiv:2407.04620), no Schmidhuber / fast-weight-programming, no Mamba / DeltaNet / RWKV, no linear-attention or state-space work of any kind. The terms 'fast weights', 'test-time training' and 'test-time memorization' do not appear in the body text. The only 'Sun' entries cited are Sun et al. 2025a (knowledge permeation) and 2025b (pseudo forgetting), which are not W-path work.",
+      "significance": "This is a finding S0 §5 asks for explicitly. The leading falsifier of the $\\Theta$-path was written with no awareness of the $W$-path, so it cannot and does not adjudicate it. Any monograph sentence of the form 'weights are the wrong place for facts' must be scoped to $\\Theta$ - the paper's own conclusion sentence [§9.3, p.20] uses 'weights' unqualified, and the chapter must add the qualification the paper does not."
+    },
+    "Theta_path": {
+      "engaged": "yes, but selectively - the editing and PEFT literature, not the sleep/consolidation literature",
+      "cited": [
+        "Hu et al. 2022, LoRA (the paper's own update method) [§2, p.3]",
+        "Meng et al. 2022 (ROME), Meng et al. 2023 (MEMIT), Zhong et al. 2023 (MQuAKE), Cohen et al. 2024, Yang et al. 2025a, Xie et al. 2025, Holmov et al. 2026, Gupta et al. 2024, Thede et al. 2025 - the knowledge-editing lineage [§8, p.19]",
+        "Kirkpatrick et al. 2017 (EWC) - 'Regularisation towards earlier parameters is the classical remedy for forgetting' [§8, p.19]",
+        "Biderman et al. 2024 (LoRA learns less and forgets less), Shuttleworth et al. 2025 (intruder directions) [§8, p.19]",
+        "Morris et al. 2025, 'How much do language models memorize?' (arXiv:2505.24832) - this IS S0's capacity/theory row [§8, p.19]",
+        "Shenfeld et al. 2025 (RL's Razor) and Shenfeld et al. 2026 (self-distillation enables continual learning) [§6.1, §6.2, §8]",
+        "Ye et al. 2026 (on-policy context distillation), Shumailov et al. 2024 (model collapse), Dohare et al. 2024 (plasticity loss) [§8, p.19]",
+        "Dai et al. 2026 (arXiv:2607.08393) - concurrent mechanistic work: memorised facts land in layers direct recall reaches but mid-layer multi-hop computation does not [§8, p.19; §9.1, p.20]"
+      ],
+      "not_cited": [
+        "SEAL (2506.10943)",
+        "Nested Learning (2512.24695)",
+        "Language Models Need Sleep (2606.03979)",
+        "SCM: Sleep-Consolidated Memory (2604.20943)",
+        "Generative Adapter (2411.05877)",
+        "LoRA as Knowledge Memory (2603.01097)",
+        "Rate-Distortion Memory Compaction (2607.08032)"
+      ],
+      "significance": "The paper cites the OLD $\\Theta$-path (editing, EWC, PEFT) and none of the 2025-2026 sleep/consolidation $\\Theta$-path. It implements periodic offline consolidation in §4.3 and cites no CLS, no McClelland, no biological sleep work, and no [Sleep]/[NL] CMS. The convergence is independent, which makes it stronger evidence, and the silence is exactly the kind of gap S0 §5 says to report as a finding."
+    },
+    "biology_and_CLS": {
+      "engaged": "partially, and only from human-memory psychology, not from CLS or sleep neuroscience",
+      "cited": [
+        "Tulving & Pearlstone 1966 (availability vs accessibility)",
+        "Tulving & Thomson 1973 (encoding specificity)",
+        "McGeoch 1932 and Anderson, Bjork & Bjork 1994 (forgetting as interference from new learning rather than decay)"
+      ],
+      "caveat": "'We use this vocabulary descriptively, without claiming a shared mechanism.' [§8, p.19]",
+      "not_cited": [
+        "McClelland et al. 1995 (CLS)",
+        "Deep Generative Replay (1705.08690)",
+        "Sleep prevents catastrophic forgetting (PLOS)",
+        "PAD (eLife)"
+      ]
+    }
+  },
+  "figures": [
+    {
+      "figure": "Figure 1 (p.2)",
+      "shows": "The two-channel setup: one fact written into the weights through a merged adapter chain $\\Theta_0\\to\\Theta_1\\to\\cdots\\to\\Theta_{20}$ versus the same fact placed in context with weights untouched, both facing the same five question types. The cleanest single picture of the frame's (U-$\\Theta$) vs (U-E) contrast in the whole corpus - reproduce it first."
+    },
+    {
+      "figure": "Figure 2 (p.5)",
+      "shows": "Strict accuracy by question type against optimisation budget (24/96/192 steps) for bare-statement vs study training, with the fact-in-prompt ceiling and original-model floor drawn in. Recitation saturates within 24 steps while counterfactual use stays flat at 21-23% no matter how much compute is spent - the visual proof that $B_s$ in steps does not buy usability."
+    },
+    {
+      "figure": "Figure 3 (p.5)",
+      "shows": "The entailment gap as caps on strict-accuracy bars for application / composition / counterfactual (+22 / +37 / +44). The figure that defines the paper's core instrument."
+    },
+    {
+      "figure": "Figure 4b (p.7)",
+      "shows": "Single-write entailment gap against survival after twenty writes, $\\rho_S = -0.53$ [-0.66, -0.20], across the factorial. The 'kind of knowledge predicts survival' claim in one scatter."
+    },
+    {
+      "figure": "Figure 4c-d (p.7)",
+      "shows": "Capability damage at twenty writes against endpoint KL from the original ($\\rho_S = 0.95$ [0.79, 0.99]) and against cumulative local KL ($\\rho_S = 0.91$ [0.72, 0.96]), with the censored reverse-KL LoRA cell annotated off-scale at KL 20 / 75 pp damage. The cost-coordinate figure."
+    },
+    {
+      "figure": "Figure 5b (p.8)",
+      "shows": "Retention at k=20 by method: bare-statement 1, offline distillation 13, online forward 27, online reverse 31, study 46. 'Recitation dies; half of the stated conclusions survive.'"
+    },
+    {
+      "figure": "Figure 7 (p.10)",
+      "shows": "One hundred sequential study writes: retention decaying to a 25-28% plateau (left) while frozen-anchor consolidation recovers held-out capability at each pass (right) and does nothing for retention. THE figure for the monograph's $\\Theta$-path ceiling argument - amortisation limit and capability/retention dissociation in one frame."
+    },
+    {
+      "figure": "Figure 9 (p.11)",
+      "shows": "Storage survives behavioural forgetting: $R_{\\log p}(k)$ staying far above the erased floor across all subsequent writes (left), forgotten facts at k=20 still holding most of their lift with the drift-corrected band marked (middle), and 70% vs 1% of wrong answers carrying the most recently written fact's content (right). The paper's most novel result."
+    },
+    {
+      "figure": "Figure 10 (p.12)",
+      "shows": "Two written facts largely cannot be used together: 32% both-in-weights vs 91% both-in-prompt, with the intermediate self-retrieval and true-statement conditions and the one-unrelated-write control at 66%. The composition failure that precedes any forgetting."
+    },
+    {
+      "figure": "Figure 11 (p.13)",
+      "shows": "In-context use eroding no faster than general ability across twenty writes (left, 83% -> 74%), and forgotten written facts recovering to 77-80% when their statements are supplied in context (right, against 14% bare-statement). The 'context is the reliable channel' evidence - reproduce with the $|E|\\le2$ caveat attached."
+    },
+    {
+      "figure": "Figure 12 (p.14)",
+      "shows": "The twelve conditions by regime / objective / rank: capability change, facts kept, and capability loss against KL ($\\rho_S=0.83$). Serves as the cost table the paper itself never writes."
+    },
+    {
+      "figure": "Figure 13 (p.15)",
+      "shows": "Frozen-teacher vs own-merges sequential distillation on retention, capability change and KL. The one clean positive engineering result: a frozen anchor makes writes nearly free in capability terms (+2 pp, KL 0.48, 54% retention)."
+    },
+    {
+      "figure": "Figure 14 (p.16)",
+      "shows": "The $\\lambda_{\\mathrm{KL}}$ sweep: capability and retention recovering sharply once $\\lambda_{\\mathrm{KL}}>0$ while measured KL from the original stays 1.8-2.4. The figure that demotes the KL law from mechanism to coordinate."
+    },
+    {
+      "figure": "Figure 15 (p.16)",
+      "shows": "Sequential writing of twenty facts: accuracy on earlier facts decaying (left) while accuracy on each NEW fact at the time it is written stays flat (right). 'The ability to write facts never degrades; the written facts do.' - the cleanest statement of the accumulation problem."
+    },
+    {
+      "figure": "Figure 17 (p.17)",
+      "shows": "Paired effects on final strict retention in the 2x2 crossed experiment: later-write effect +37.6, stored-write effect -2.4, interaction +2.4. Locates interference in the incoming write."
+    },
+    {
+      "figure": "Figure 22 right (p.32)",
+      "shows": "Composition at 37-58% for every recipe in every prior tier against an in-context ceiling spanning 77-95%. Shows the composition limit is conflict-independent AND that the context ceiling is itself well below 100%."
+    }
+  ],
+  "systems_implications": {
+    "decode_cost": [
+      "[PAPER] Nothing in this paper changes the decode kernel. There is no fast-weight state, no per-token state update, no growing cache beyond the ordinary KV cache. Serving after $k$ writes is an ordinary frozen forward pass over a Qwen3-4B-shaped $\\Theta$ [App. A.3, p.25: base frozen, adapters merged].",
+      "[NOTE-WRITER INFERENCE] Because adapters are merged rather than kept, the weight channel's marginal decode cost per stored fact is exactly zero, and 100 stored facts cost the same per token as 0. The paper never states this and never credits the $\\Theta$-path for it - which is why its 'context wins' conclusion reads stronger than the serving arithmetic would support.",
+      "[PAPER] The context channel's cost is one statement's worth of prompt tokens per question, and the paper only ever supplies one or two statements [§5.2, p.12; §5.3, p.13]. No prefill, TTFT or KV-byte number is given anywhere.",
+      "[NOTE-WRITER INFERENCE] Setting the paper's numbers against S0's amortisation identity (A) is impossible: neither $B_s$ in FLOPs nor $N_q$ (queries sharing a context) is reported. The chapter must say so rather than manufacture a crossover point."
+    ],
+    "state_bytes_moved": [
+      "[PAPER] LoRA rank 16 (or 4), $\\alpha_{\\mathrm{LoRA}}=32$, on all seven projection matrices of every layer [App. A.3, p.25]. No parameter count, no byte count.",
+      "[NOTE-WRITER INFERENCE] The write path, not the read path, is where the traffic is. Per fact: forward+backward over a 4B model for 192 steps at batch size one, AdamW moments for the adapter parameters, and then a MERGE, which is a full read-modify-write across all seven projection tensors of all layers. Twenty writes therefore imply twenty full-model RMW passes; one hundred writes imply one hundred. The paper measures none of this.",
+      "[PAPER] Batch conditions train one adapter on all $N$ facts for $24\\times N$ steps [App. A.3, p.25]. So the §4.3 consolidation pass at $k=100$ is a 2,400-step job, and the 200-fact batch condition is 4,800 steps.",
+      "[NOTE-WRITER INFERENCE] Consolidation cost grows linearly in the number of accumulated facts, so a policy of consolidating every $m$ writes costs $O(k^2/m)$ cumulative steps by write $k$. At the paper's $m=20$, the pass at $k=100$ alone is more than ten times a single write - and it buys capability, not retention [§4.3, p.10]. That is a bad exchange rate and the chapter should state it as such."
+    ],
+    "batching": [
+      "[PAPER] Every fact is merged into the ONE global $\\Theta$; there is no per-user or per-session weight state anywhere in the paper.",
+      "[NOTE-WRITER INFERENCE] This preserves shared-weight batching completely - the paper's setup is batching-neutral, unlike the $W$-path, where per-request fast weights break shared-weight GEMM (STYLE §3 Rosetta row). The moment one moves to per-user facts, the $\\Theta$-path acquires a per-user $\\Delta\\Theta$ and inherits exactly the grouped-GEMM problem the $W$-path already has. The paper does not consider per-user writes at all, so it says nothing about the deployment shape the monograph cares about most."
+    ],
+    "memory_hierarchy": [
+      "[NOTE-WRITER INFERENCE] There is no new cache class here. The stored fact lives in the weights, which are already resident; the context copy lives in the KV cache, which is already sized. The paper's contribution to the memory-hierarchy story is negative: the cheap-at-serving-time option ($\\Theta$) loses the addressability that the expensive-at-serving-time option (KV/context) has for free.",
+      "[PAPER] The one quantity that behaves like a health metric is drift (Eq. 6.1): a per-token KL against a frozen $\\Theta_0$ on a fixed pool of held-out prompts, correlating $\\rho_S = 0.83$ over twelve conditions and $0.946$ over sixteen with capability damage [§6.1, p.14].",
+      "[NOTE-WRITER INFERENCE] That is cheap to compute in a serving fleet - a forward pass over a fixed prompt pool against a pinned reference model - and would make a workable canary for any deployment that writes to weights. But §6.3 shows it is a monitor, not a controller: the KL penalty rescues capability by 60+ points without lowering it."
+    ],
+    "operational_recipe_the_paper_endorses": [
+      "[PAPER] 'Use broad data for each write, avoid bare-statement training when later updates must preserve existing knowledge, and distil against a frozen copy of the original model. When facts must compose or survive extensive later writing, keep them in context.' [§9.3, p.20]",
+      "[PAPER] The one condition that is nearly free: frozen-teacher sequential distillation writes twenty facts at +2 pp capability, KL 0.48, 54% retention [§6.2, p.14-15]. And frozen-teacher BATCH distillation writes 200 facts at -3 to +1 pp capability [§6.2, p.14].",
+      "[PAPER] The boundary the paper itself draws: 'Weight updates remain useful as a cache when a canonical copy exists elsewhere, because frozen-teacher batch distillation preserves general capability while consolidating many facts.' [§9.2, p.20]",
+      "[NOTE-WRITER INFERENCE] That last sentence is the design the monograph should carry forward: $\\Theta$ as a write-through cache over a canonical $E$, not $\\Theta$ as the system of record. It makes the E-path and the $\\Theta$-path complements rather than rivals, and it is the only composition this paper's evidence actually supports."
+    ]
+  },
+  "todo_verify": [
+    {
+      "item": "Sequential context distillation at rank 16: §6.2 says 11% retention, §6.4 says 12%. Which is the reported value?",
+      "search_term": "grep -n '11% retention' and grep -n '12% (distillation, rank 16)' in papers/stc/2607.11020.txt"
+    },
+    {
+      "item": "Offline distillation retention at k=20: §4.1 text says 14%, Fig. 5b bar label reads 13.",
+      "search_term": "grep -n '14% for offline' ; inspect the PDF Fig. 5b bar labels (text extraction gives '13')"
+    },
+    {
+      "item": "Figure 12a/12b exact per-condition values for the batch-100 and batch-200 rows. The text layer interleaves labels and numbers; capability -20/-26/-4/-2 (batch-100) and -22/-19/+1/-3 (batch-200) with facts-kept 72/70/67/69 and a 62-67 band are figure-extracted, and the batch-200 pairing of numbers to conditions is not text-confirmed.",
+      "search_term": "inspect Figure 12 at page 14 of the PDF; cross-check against §6.2 'at rank 16 it beats SFT by 16 points'"
+    },
+    {
+      "item": "App. D.1's 'fact-in-prompt ceiling ... (neutral 96%, invert 80%, confirm 77%)' vs Fig. 20's ceilings 97/87/89 vs App. A.5's surviving fractions 95.9/79.5/76.3. Is the D.1 sentence a mislabel of the surviving fraction?",
+      "search_term": "grep -n 'ceiling itself orders by tier' ; grep -n 'confirm 76.3%'"
+    },
+    {
+      "item": "App. D.3's '13,728 records (240 facts x 4 recipes x 3 seeds)' - 240*4*3 = 2,880. Is 13,728 a question-level count (implying about 4.77 questions per fact-recipe-seed)?",
+      "search_term": "grep -n '13,728'"
+    },
+    {
+      "item": "Figure 3's caps read +22 / +37 / +44 in the text layer, but the ordering of the numeric labels relative to the application / composition / counterfactual bar groups is not certain from the extraction.",
+      "search_term": "inspect Figure 3 at page 5 of the PDF"
+    },
+    {
+      "item": "Whether the §6 twelve-condition 'context distillation' sequential arm uses the current merged model as teacher in ALL four sequential cells, and therefore whether the CD r4 / CD r16 sequential numbers are own-merges numbers throughout.",
+      "search_term": "grep -n 'Batch distillation uses the original model as teacher'"
+    },
+    {
+      "item": "Exact optimiser-step count in the §6 twelve-condition experiment; the text says only that these conditions 'use their own optimisation budget', and App. A.3's 24xN rule explicitly covers batch conditions.",
+      "search_term": "grep -n 'own optimisation budget' ; grep -n 'for 24'"
+    }
+  ],
+  "note_writer_provenance": "Extracted from the full text of papers/stc/2607.11020.txt (2,577 lines, complete: abstract through Appendix D.4). Page numbers cite the running page numbers printed in the extracted text. Figure values marked 'figure-extracted' come from the text layer of the figure and are listed in todo_verify where the label-to-bar mapping is uncertain. Unified notation follows dossier/stc-v2/S0-DESIGN.md §2 and style/STYLE-NOTATION.md §1.1-1.5."
+}

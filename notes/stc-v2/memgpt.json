@@ -1,0 +1,649 @@
+{
+  "paper_id": "memgpt",
+  "arxiv": "2310.08560",
+  "arxiv_version_read": "v2 [cs.AI] 12 Feb 2024 (stated on the title page of the vendored text, line 6)",
+  "title": "MemGPT: Towards LLMs as Operating Systems",
+  "authors": [
+    "Charles Packer",
+    "Sarah Wooders",
+    "Kevin Lin",
+    "Vivian Fang",
+    "Shishir G. Patil",
+    "Ion Stoica",
+    "Joseph E. Gonzalez"
+  ],
+  "affiliation": "University of California, Berkeley (title page footnote 1)",
+  "venue": "arXiv preprint (no venue stated in the vendored text; the LaTeX class is the ICML style, but no acceptance is claimed anywhere in the text)",
+  "date": "2023-10-12 (v1 id); vendored text is v2, 2024-02-12",
+  "path": "/home/jimmy/repos/neural-memory-study/papers/stc/2310.08560.txt",
+  "axis": "E",
+
+  "problem_stated": {
+    "one_line": "Fixed context windows cap what an LLM can condition on; simply enlarging the window is both quadratically expensive and empirically under-used, so the paper asks how to get the illusion of unbounded context out of a fixed-context model.",
+    "verbatim_anchors": [
+      "\"Large language models (LLMs) have revolutionized AI, but are constrained by limited context windows, hindering their utility in tasks like extended conversations and document analysis.\" [Abstract, lines 13-15]",
+      "\"Directly extending the context length of transformers incurs a quadratic increase in computational time and memory cost due to the transformer architecture's self-attention mechanism\" [§1, line 31]",
+      "\"even if we could overcome the computational challenges of context scaling, recent research shows that long-context models struggle to utilize additional context effectively (Liu et al., 2023a)\" [§1, line 34]",
+      "\"In this paper, we study how to provide the illusion of an infinite context while continuing to use fixed-context models.\" [§1, lines 36-37]"
+    ],
+    "framing_metaphor": "OS virtual memory / paging between main memory and disk [Abstract lines 15-18; §1 lines 37-39; §2 lines 265-270]. The OS citation used is Patterson, Gibson & Katz 1988 (the RAID paper) [§1 line 67] — i.e. a storage-hierarchy citation, not a virtual-memory citation."
+  },
+
+  "inherited_open_question": {
+    "from": "Liu et al. 2023a, *Lost in the Middle: How Language Models Use Long Contexts* (arXiv:2307.03172)",
+    "question": "Given that long-context models do not actually use the middle of their context well, scaling the window is not the answer — so what alternative mechanism supplies long-range information?",
+    "evidence": [
+      "§1, line 34: \"even if we could overcome the computational challenges of context scaling, recent research shows that long-context models struggle to utilize additional context effectively (Liu et al., 2023a). As consequence, given the considerable resources needed to train state-of-the-art LLMs and diminishing returns of context scaling, there is a critical need for alternative techniques to support long context.\"",
+      "§3.2, lines 789-792: \"Recent research (Liu et al., 2023a) also raises doubts about the utility of simply scaling contexts, since they find uneven attention distributions in large context models (the model is more capable of recalling information at the beginning or end of its context window, vs tokens in the middle). To enable reasoning across documents, more flexible memory architectures like MemGPT are needed.\"",
+      "Operational inheritance, not just rhetorical: two of the four benchmarks are taken from Liu et al. 2023a — the retriever-reader document QA task [§3.2.1, lines 754-759] and the synthetic key-value retrieval task [§3.2.2, lines 934-938]."
+    ],
+    "caveat": "The paper never uses the words \"open question\", \"future work of\", or \"left open by\" about any prior work. The inheritance is reconstructed from the two passages above plus the benchmark reuse. A second, weaker line of inheritance is FLARE (Jiang et al. 2023), described in §4 (lines 1015-1016) as \"a method that allows the LLM to actively decide when and what to retrieve during the course of generation\" — MemGPT extends 'actively decide when to *read*' to 'actively decide when to *write and evict*', but the paper does not say so explicitly.",
+    "what_it_implicitly_answers": "It answers the retrieval literature's unstated question of who controls retrieval. In RAG the retrieval is a fixed pre-inference stage; MemGPT hands the retrieve/write/evict decision to the model itself as a decoded action, and makes the *store* rather than the *window* the thing that grows."
+  },
+
+  "core_mechanism": {
+    "summary_one_line": "MemGPT freezes Theta, has no W at all, and puts the entire mechanism in E: a two-tier text store whose read (ret) and write (wr) operators are function calls emitted by the LLM as ordinary decoded tokens, with a deterministic queue manager providing interrupt-driven eviction and recursive summarization.",
+
+    "equation_numbering_note": "**The paper contains no numbered equations and no mathematical notation of any kind.** It is a pure systems paper: every rule below is a formalization by the note-writer of prose in §2.1-§2.4. Where the monograph would normally write \"[memgpt Eq. N]\", it must instead write the section anchor. Every equation below therefore carries a prose-location citation, not an equation number. This absence is itself reportable: the ancestor of the E-path states its update rule in English only.",
+
+    "state_decomposition": {
+      "Theta": "The base LLM weights. Frozen, never touched. Accessed only through the OpenAI API endpoints named in §3 Implementation details (lines 495-500): gpt-4-1106-preview (128,000 ctx), gpt-4-0613 (8,192 ctx), gpt-3.5-turbo-1106 (16,385 ctx). There is no training section, no loss, no gradient, no optimizer anywhere in the paper.",
+      "W": "Empty. MemGPT has no fast weights. Nothing in the model's parameter space moves at test time.",
+      "E": "Everything. E is four-part, and the crucial split is between what is *inside* the prompt and what is *outside* it. [§2, lines 265-271; §2.1, line 232]",
+      "E_parts": {
+        "I_sys": "system instructions — read-only static prompt block containing the control-flow description and the function schema [§2.1, line 232; §2.3, lines 335-341]. In-context.",
+        "E_wc": "working context — 'a fixed-size read/write block of unstructured text, writeable only via MemGPT function calls' [§2.1, lines 233-234]. In-context. This is the block later renamed 'core memory' in the Letta line (outside-paper knowledge; the paper never uses 'core memory').",
+        "Q": "FIFO queue — rolling message history including system messages and function I/O; index 0 holds a recursive summary of evicted messages [§2.1, lines 237-241]. In-context.",
+        "E_rec": "recall storage — 'the MemGPT message database', holding every incoming message and every LLM output [§2.2, lines 262-263]. Out-of-context.",
+        "E_arc": "archival storage — 'a read/write database storing arbitrary length text objects' [§2.2, lines 348-350], read and written via functions [Fig. 3, lines 317-318]. Out-of-context."
+      }
+    },
+
+    "equations": [
+      {
+        "label": "(mg-1) prompt assembly",
+        "latex": "P_t \\;=\\; \\big[\\, I_{\\mathrm{sys}} \\;;\\; E^{\\mathrm{wc}}_t \\;;\\; Q_t \\,\\big], \\qquad Q_t=\\big[\\sigma_t;\\, m_{t-n+1},\\dots,m_t\\big]",
+        "source": "[memgpt §2.1, lines 231-241] — 'The prompt tokens in MemGPT are split into three contiguous sections: the system instructions, working context, and FIFO Queue.' and 'The first index in the FIFO queue stores a system message containing a recursive summary of messages that have been evicted from the queue.'",
+        "reading": "P_t is the main context = the whole prompt. sigma_t is the recursive summary."
+      },
+      {
+        "label": "(mg-2) read — instantiates (R) with W empty and ret iterative",
+        "latex": "\\hat y \\;=\\; f\\big(q;\\ \\Theta,\\ W=\\varnothing,\\ \\mathrm{ret}(E,q)\\big), \\qquad \\mathrm{ret}(E,q)=\\bigcup_{j=0}^{J-1}\\mathrm{search}\\big(E^{\\mathrm{rec}}\\!\\cup\\!E^{\\mathrm{arc}},\\ \\tilde q_j\\big)",
+        "source": "[memgpt §2.3, lines 371-375; §2.4, lines 502-513; Fig. 6; Fig. 8]",
+        "reading": "The retrieval arguments \\tilde q_j are *decoded by the model*, not derived from q by a fixed encoder. J is not a hyperparameter: the loop continues while the model emits request_heartbeat=true and stops when it yields. Retrieval is paginated, so \\tilde q_j may be the same query with page=j [Fig. 6, line 721: archival_storage.search(\"nobel physics\", page=2)]."
+      },
+      {
+        "label": "(mg-3) U-E write, LLM-directed branch",
+        "latex": "\\big(E^{\\mathrm{wc}}_{t},\\,E^{\\mathrm{arc}}_{t}\\big) \\;=\\; \\mathrm{wr}\\big(E^{\\mathrm{wc}}_{t-1},\\,E^{\\mathrm{arc}}_{t-1};\\ a_t\\big), \\qquad a_t \\sim p_\\Theta(\\cdot \\mid P_t)",
+        "source": "[memgpt §2.3, lines 372-375] — 'MemGPT orchestrates data movement between main context and external context via function calls that are generated by the LLM processor. Memory edits and retrieval are entirely self-directed'.",
+        "reading": "The write action a_t is a *sampled token sequence*. wr is the interpreter of that sequence: append / replace / archival_storage.insert. Fig. 1 shows working_context.append(...), Fig. 4 (line 416) shows working_context.replace('Boyfriend named James', 'Ex-boyfriend named James') — the E-layer analogue of an overwrite rather than an append."
+      },
+      {
+        "label": "(mg-4) U-E write, deterministic branch (no model in the loop)",
+        "latex": "E^{\\mathrm{rec}}_{t} \\;=\\; E^{\\mathrm{rec}}_{t-1} \\,\\cup\\, \\{m_t,\\ \\hat y_t\\}",
+        "source": "[memgpt §2.2, lines 258-263] — 'The queue manager writes both the incoming message and the generated LLM output to recall storage'.",
+        "reading": "Unconditional, lossless, append-only, no budget, no summarization. This is the branch of MemGPT's U-E that is *not* sleep-time compute in any sense: it is a log."
+      },
+      {
+        "label": "(mg-5) memory-pressure interrupt (the trigger, not the update)",
+        "latex": "|P_t| > \\tau_{\\mathrm{warn}} \\;\\Rightarrow\\; Q_t \\leftarrow \\mathrm{append}\\big(Q_t,\\ \\text{``memory pressure''}\\big), \\qquad \\tau_{\\mathrm{warn}} = 0.70\\,N_{\\mathrm{ctx}}",
+        "source": "[memgpt §2.2, lines 344-348] — 'When the prompt tokens exceed the 'warning token count' of the underlying LLM's context window (e.g. 70% of the context window), the queue manager inserts a system message into the queue warning the LLM of an impending queue eviction (a 'memory pressure' warning) to allow the LLM to use MemGPT functions to store important information contained in the FIFO queue to working context or archival storage'.",
+        "reading": "This is the load-bearing design idea for the whole E-path: the write is *interrupt-driven*, and the interrupt is delivered to the model as text inside its own prompt. The 70% figure is written 'e.g.' — see notation_conflicts / todo_verify."
+      },
+      {
+        "label": "(mg-6) flush + recursive summarization — the compression operator S",
+        "latex": "|P_t| > \\tau_{\\mathrm{flush}} \\;\\Rightarrow\\; Q_t \\leftarrow \\big[\\sigma_t;\\ Q_t^{\\mathrm{keep}}\\big], \\quad \\sigma_t = S\\big(\\sigma_{t-1},\\, Q_t^{\\mathrm{evict}};\\ \\Theta\\big), \\quad \\tau_{\\mathrm{flush}} = 1.00\\,N_{\\mathrm{ctx}}, \\quad |Q_t^{\\mathrm{evict}}| \\approx 0.50\\,N_{\\mathrm{ctx}}",
+        "source": "[memgpt §2.2, lines 350-355] — 'When the prompt tokens exceed the 'flush token count' (e.g. 100% of the context window), the queue manager flushes the queue to free up space in the context window: the queue manager evicts a specific count of messages (e.g. 50% of the context window), generates a new recursive summary using the existing recursive summary and evicted messages. Once the queue is flushed, the evicted messages are no longer in-context ... however they are stored indefinitely in recall storage'.",
+        "reading": "S is the only place in MemGPT where a compression budget exists at all — and it is bounded by a *token count target*, not by a compute budget. Note the eviction is lossy only with respect to the prompt; nothing is lost from E_rec (mg-4)."
+      },
+      {
+        "label": "(mg-7) function chaining / control flow",
+        "latex": "\\text{cycle } j:\\quad o_j \\sim p_\\Theta(\\cdot\\mid P^{(j)}),\\quad P^{(j+1)} = \\big[P^{(j)};\\ \\mathrm{exec}(o_j)\\big] \\ \\ \\text{if } \\mathtt{request\\_heartbeat}{=}\\mathtt{true},\\ \\text{else halt}",
+        "source": "[memgpt §2.4, lines 502-513; Fig. 3 caption, lines 329-331] — 'The LLM can request immediate follow-up LLM inference to chain function calls together by generating a special keyword argument (request_heartbeat=true) in its output; function chaining is what allows MemGPT to perform multi-step retrieval to answer user queries.'",
+        "reading": "One user turn is *not* one forward pass. Each chained call is a full additional inference cycle over a strictly longer prompt. The paper never counts these cycles."
+      }
+    ],
+
+    "notation_conflicts": [
+      {
+        "paper_term": "\"memory\" / \"main context\" / \"external context\"",
+        "collision": "MemGPT calls both the prompt blocks and the databases 'memory'. In the v2 frame only the out-of-context part is E; the in-context part is an argument of f.",
+        "mapping": "E^{wc} and Q are *in-prompt projections of E*, materialized text; E^{rec} and E^{arc} are E proper. The monograph must say this in one sentence or the reader will conflate MemGPT's 'main memory' with our W."
+      },
+      {
+        "paper_term": "\"context window\", measured in tokens (Table 1; §3 Implementation details)",
+        "collision": "Reserved $C$ = state capacity in bytes (S0-DESIGN §2.4) and, in STYLE-NOTATION §1.2, $C$ = chunk size.",
+        "mapping": "Write $N_{\\mathrm{ctx}}$ for MemGPT's context-window token budget. Never write $C$ for it."
+      },
+      {
+        "paper_term": "$K$ = number of documents returned by the retriever [§3.2.1, line 759: 'as the number of retrieved documents K increases']",
+        "collision": "Reserved $k$ = key vector; $K$ = row-stacked key matrix (STYLE-NOTATION §1.2).",
+        "mapping": "Rename to $K_{\\mathrm{doc}}$."
+      },
+      {
+        "paper_term": "\"function\" (the MemGPT callable)",
+        "collision": "Reserved $f$ = the read map in (R).",
+        "mapping": "Keep MemGPT's callables as named operators $\\mathrm{search}(\\cdot)$, $\\mathrm{append}(\\cdot)$, $\\mathrm{replace}(\\cdot)$, $\\mathrm{insert}(\\cdot)$; never abbreviate them to $f$."
+      },
+      {
+        "paper_term": "\"recursive summary\"",
+        "collision": "Maps onto $S(\\cdot;B_s)$ in (U-E), but STYLE-NOTATION §1.2 reserves $S_t$ for the inner momentum buffer.",
+        "mapping": "Write $\\sigma_t$ for MemGPT's recursive summary and $S(\\cdot)$ only as the generic summarization operator of (U-E), with a footnote that $S_t$ (momentum) does not occur in this chapter because $W=\\varnothing$."
+      },
+      {
+        "paper_term": "\"page\" / \"paging\" / \"page fault\"",
+        "collision": "None with reserved symbols, but a semantic trap: MemGPT's 'page fault' is *voluntary and model-issued*, whereas an OS page fault is involuntary and hardware-issued.",
+        "mapping": "The monograph should flag this: MemGPT has no fault mechanism, only a warning message (mg-5). If the model ignores the warning, data is silently lost from the prompt (though not from $E^{\\mathrm{rec}}$)."
+      },
+      {
+        "paper_term": "The percentages 70% / 100% / 50% in §2.2",
+        "collision": "None, but they are written with 'e.g.' and are therefore illustrative, not necessarily the configured values used in the experiments.",
+        "mapping": "Cite them as 'e.g. 70%' verbatim; do not present them as measured configuration."
+      }
+    ]
+  },
+
+  "outer_vs_inner": {
+    "headline_for_the_reader": "Nothing in this paper is trained. Not one gradient is computed. Every 'learnable-looking' object in MemGPT is either (a) frozen from someone else's pre-training, (b) hand-written English, or (c) text produced at wake time by decoding. The reader's first question — 'who learns this, and when?' — has the answer 'nobody, ever' for the entire system, and that is exactly what makes MemGPT the E-path ancestor.",
+    "rows": [
+      {
+        "object": "$\\Theta$ — base LLM weights (gpt-4-0613, gpt-4-1106-preview, gpt-3.5-turbo-1106)",
+        "who_learns": "OpenAI, in outer-loop pre-training + post-training",
+        "when": "before the paper; frozen throughout",
+        "moves_at_test_time": "no",
+        "source": "§3 Implementation details, lines 495-500. No training section exists in the paper."
+      },
+      {
+        "object": "$W$ — fast weights",
+        "who_learns": "nobody; the object does not exist in MemGPT",
+        "when": "never",
+        "moves_at_test_time": "n/a",
+        "source": "absence across the whole paper; §2 describes only text movement between prompt and databases"
+      },
+      {
+        "object": "$I_{\\mathrm{sys}}$ — system instructions: memory-hierarchy description + function schema",
+        "who_learns": "human authors, by hand",
+        "when": "authoring time",
+        "moves_at_test_time": "no — 'The system instructions are read-only (static)'",
+        "source": "§2.1, line 232; §2.3, lines 335-341; full prompts in Appendix §6.1.1, §6.1.4, §6.1.6"
+      },
+      {
+        "object": "$E^{\\mathrm{wc}}$ — working context",
+        "who_learns": "the LLM itself, by emitting append/replace calls",
+        "when": "wake time, on the critical path of the user turn (often triggered by the memory-pressure interrupt)",
+        "moves_at_test_time": "yes — this is the paper's central moving state",
+        "source": "§2.1 lines 233-236; §2.3 lines 372-375; Fig. 1; Fig. 4"
+      },
+      {
+        "object": "$Q$ — FIFO queue and its recursive summary $\\sigma$",
+        "who_learns": "the queue manager (deterministic policy) invoking $\\Theta$ only to write the summary text",
+        "when": "wake time, at flush",
+        "moves_at_test_time": "yes",
+        "source": "§2.2, lines 344-355"
+      },
+      {
+        "object": "$E^{\\mathrm{rec}}$ — recall storage (message DB)",
+        "who_learns": "the queue manager, unconditionally; no model decision involved",
+        "when": "wake time, every message",
+        "moves_at_test_time": "yes (append-only, never compacted)",
+        "source": "§2.2, lines 262-263; 'stored indefinitely in recall storage', line 354"
+      },
+      {
+        "object": "$E^{\\mathrm{arc}}$ — archival storage (arbitrary-length text objects)",
+        "who_learns": "the LLM via functions for writes; bulk-loaded by the operator for the document-analysis setting",
+        "when": "wake time (agent writes); pre-experiment (bulk load of the Wikipedia corpus)",
+        "moves_at_test_time": "yes",
+        "source": "§2.2 lines 348-350; Fig. 3 lines 317-318; §3.2.1 lines 774-777 'We precompute embeddings and load them into the database'"
+      },
+      {
+        "object": "retriever / embedding model (text-embedding-ada-002) and the HNSW index over it",
+        "who_learns": "OpenAI (embedding model); the index is built, not learned",
+        "when": "frozen; embeddings precomputed offline",
+        "moves_at_test_time": "no",
+        "source": "§3.2.1, lines 770-777"
+      },
+      {
+        "object": "memory-management policy (when to write, when to search, when to stop paging)",
+        "who_learns": "nobody — it is *prompted*, not learned; it emerges from $I_{\\mathrm{sys}}$ plus the base model's function-calling ability",
+        "when": "n/a",
+        "moves_at_test_time": "the policy is re-derived from scratch by decoding at every cycle",
+        "source": "§2.3, lines 335-341 'We implement self-directed editing and retrieval by providing explicit instructions within the system instructions'; §5, line 999 lists 'further improving control flow and memory management policies' as future work"
+      },
+      {
+        "object": "LLM judge (GPT-4) used for DMR and document-QA scoring",
+        "who_learns": "nobody; used as a frozen evaluator",
+        "when": "evaluation time",
+        "moves_at_test_time": "no",
+        "source": "§3.1.1 lines 605-610; Appendix §6.1.2, §6.1.5"
+      },
+      {
+        "object": "DMR question-answer pairs",
+        "who_learns": "generated by 'a separate LLM' via self-instruct prompting",
+        "when": "dataset-construction time",
+        "moves_at_test_time": "no",
+        "source": "§3.1.1, lines 661-664; prompt in Appendix §6.1.3"
+      }
+    ]
+  },
+
+  "update_layer": {
+    "instantiates": "(U-E), exclusively. (U-W) and (U-Theta) are not touched at all — $W$ does not exist and $\\Theta$ is a frozen API endpoint.",
+    "canonical_form": "$E_{k+1}=\\mathrm{wr}(E_k,\\hat c_k)$, $\\hat c_k=S(c_k;B_s)$",
+    "how_it_differs": [
+      "**The write is not offline.** In (U-E) the index $k$ is meant to advance in idle time between queries. In MemGPT every write happens inside the user turn, on the critical path, paid for out of the same decode budget as the answer (mg-3, mg-6). MemGPT is therefore the *structural* ancestor of sleep-time compute without being sleep-time compute: it supplies wr, S and the interrupt, but not the idle-time budget $B_s$.",
+      "**$\\mathrm{wr}$ is sampled, not computed.** $a_t \\sim p_\\Theta(\\cdot\\mid P_t)$ (mg-3). The write operator is a decoded token sequence parsed by a validator, and 'runtime errors ... are then fed back to the processor' [§2.3, lines 361-363]. So wr is stochastic and can fail; the canonical form has no failure mode.",
+      "**Two different wr's coexist with opposite characters.** (mg-4) is a deterministic, lossless, model-free log into $E^{\\mathrm{rec}}$; (mg-3) is a lossy, model-decided edit of $E^{\\mathrm{wc}}$/$E^{\\mathrm{arc}}$. The monograph should make this split explicit — later E-path work (Mem0/Zep) is essentially a re-engineering of *which* of the two dominates.",
+      "**$S$ appears in a different role than in (U-E).** Here $S$ is the recursive summarizer $\\sigma_t = S(\\sigma_{t-1}, Q^{\\mathrm{evict}};\\Theta)$ (mg-6) applied to *evicted prompt content*, i.e. it compresses the read side to keep the prompt within $N_{\\mathrm{ctx}}$. In (U-E), $S$ compresses context *into* the store. MemGPT's $S$ compresses context *out of* the prompt while the store keeps everything.",
+      "**$\\mathrm{ret}$ is a loop, not a call.** (mg-2): retrieval is iterated by the agent with self-chosen queries and pagination until it yields (mg-7). Canonical (R) writes $\\mathrm{ret}(E,q)$ as a single application.",
+      "**Ordering within a turn.** For one event: append to $Q$ → deterministic log write (mg-4) → possible interrupt (mg-5) → chained cycles of read (mg-2) and/or model-directed write (mg-3) → possible flush + summarize (mg-6) → answer. Reads and writes interleave freely within the chain; there is no phase separation."
+    ],
+    "layers_touched_in_order": "E only. If forced into the three-layer ordering: $\\Theta$ never, $W$ never, $E$ every turn."
+  },
+
+  "cost_table": {
+    "B_s": {
+      "value": "absent",
+      "detail": "The paper reports no sleep-time budget because it has no sleep phase. It does contain the *hook* that the later Letta paper turns into one: '[events] ... and timed events that are run on a regular schedule (allowing MemGPT to run 'unprompted' without user intervention)' [§2.4, lines 486-489]. No experiment uses timed events, and no compute is attributed to them.",
+      "source": "§2.4, lines 486-489; absence elsewhere"
+    },
+    "L_w": {
+      "value": "absent for end-to-end latency; one component figure only",
+      "detail": "No TTFT, no ms/token, no wall-clock, no token-count, no dollar cost anywhere in the paper. The single latency statement is about the vector index, not the system: 'which uses an HNSW index to enable approximate, sub-second query times' [§3.2.1, lines 774-775]. That is a sub-second bound on one archival search, and MemGPT issues many per turn (mg-7).",
+      "source": "§3.2.1, lines 770-777; absence of any cost/latency section"
+    },
+    "C": {
+      "value": "absent in bytes; only token-level window sizes are given, and they are $N_{\\mathrm{ctx}}$, not state capacity",
+      "detail": "Stated: gpt-4-0613 = 8,192 tokens; gpt-3.5-turbo-1106 = 16,385; gpt-4-1106-preview = 128,000 [§3, lines 495-498]. Table 1 tabulates windows for ten models (Llama 2k, Llama 2 4k, GPT-3.5 Turbo release 4k, Mistral 7B 8k, GPT-4 release 8k, GPT-3.5 Turbo 16k, GPT-4 32k, Claude 2 100k, GPT-4 Turbo 128k, Yi-34B-200k 200k) with an approximate message-count column (20/60/60/140/140/300/~600/~2000/~2600/~4000) computed under 'a preprompt of 1k tokens, and an average message size of ~50 tokens (~250 characters)' [Table 1 caption, lines 386-405]. The working context is described as 'fixed-size' [§2.1, line 233] but **its size is never stated**. Archival and recall storage have no stated capacity; recall storage is explicitly unbounded ('stored indefinitely', §2.2 line 354). The only corpus-scale number is the released artifact: 'a dataset of embeddings for 20M Wikipedia articles' [§3, lines 480-482].",
+      "source": "§3 lines 495-498; Table 1 lines 386-467; §2.1 line 233; §2.2 line 354; §3 lines 480-482"
+    },
+    "rho": {
+      "value": "absent",
+      "detail": "No repeated-consolidation experiment, no degradation-over-rounds measurement, no staleness study. Fig. 4 (lines 471-473) demonstrates a single working_context.replace correcting 'Boyfriend named James' to 'Ex-boyfriend named James', but it is an illustrative dialogue snippet with no accompanying metric. The DMR task uses 5 prior sessions + 1 new session [§3.1 Dataset, lines 636-641]; it does not vary session count to expose degradation.",
+      "source": "Fig. 4; §3.1 Dataset lines 636-641; absence elsewhere"
+    },
+    "amortization_N_q": {
+      "value": "absent",
+      "detail": "The paper reports no distribution of how many queries share a context, so equation (A) $C_{\\mathrm{avg}}=C_{\\mathrm{wake}}+C_{\\mathrm{sleep}}/N_q$ cannot be instantiated from this paper. This is the S0-DESIGN §7 caveat 'no paper reports the $N_q$ distribution' — MemGPT is one of the confirming cases."
+    }
+  },
+
+  "experiments": {
+    "models_evaluated": [
+      "gpt-3.5-turbo-1106 (16,385 ctx) — as baseline and as MemGPT backend [§3, lines 497-500]",
+      "gpt-4-0613 (8,192 ctx) — as baseline and as MemGPT backend [§3, lines 496-497]",
+      "gpt-4-1106-preview 'GPT-4 Turbo' (128,000 ctx) — as baseline and as MemGPT backend [§3, lines 495-496]"
+    ],
+    "models_not_evaluated": "No open-weights model is run anywhere, although Table 1 motivates the problem with Llama, Llama 2, Mistral 7B and Yi-34B-200k [Table 1, lines 386-467]. No model of stated parameter count is used at all — parameter counts are never given because all three backends are closed APIs.",
+    "training_tokens": "none — no training is performed [absence of any training section]",
+
+    "benchmarks": [
+      {
+        "name": "Deep Memory Retrieval (DMR) — consistency",
+        "provenance": "**author-constructed.** Built on Multi-Session Chat (Xu et al. 2021); the authors 'created a new session (session 6) that contains a single question-answer response pair' and 'generated the DMR question-answer (QA) pairs using a separate LLM' [§3.1 Dataset, lines 636-641; §3.1.1, lines 656-664; generation prompt in App. §6.1.3]",
+        "metric": "Accuracy by GPT-4 LLM judge, plus ROUGE-L recall (R) [§3.1.1, lines 605-614]",
+        "setup_asymmetry": "'The baselines are able to see a lossy summarization of the past five conversations ... while MemGPT instead has access to the full conversation history but must access it via paginated search queries' [§3.1.1 results, lines 629-632]",
+        "results": [
+          {"system": "GPT-3.5 Turbo", "accuracy": "38.7%", "rouge_l_recall": "0.394", "source": "Table 2, lines 540-575"},
+          {"system": "GPT-3.5 Turbo + MemGPT", "accuracy": "66.9%", "rouge_l_recall": "0.629", "source": "Table 2"},
+          {"system": "GPT-4", "accuracy": "32.1%", "rouge_l_recall": "0.296", "source": "Table 2"},
+          {"system": "GPT-4 + MemGPT", "accuracy": "92.5%", "rouge_l_recall": "0.814", "source": "Table 2"},
+          {"system": "GPT-4 Turbo", "accuracy": "35.3%", "rouge_l_recall": "0.359", "source": "Table 2"},
+          {"system": "GPT-4 Turbo + MemGPT", "accuracy": "93.4%", "rouge_l_recall": "0.827", "source": "Table 2"}
+        ],
+        "note": "The GPT-4 baseline (32.1%) scores *below* the GPT-3.5 Turbo baseline (38.7%) on accuracy and ROUGE-L. The paper does not comment on this inversion."
+      },
+      {
+        "name": "Conversation Opener — engagement",
+        "provenance": "**author-defined metric** over MSC personas: similarity of the generated opener to the gold persona labels (SIM-1 = best-of-1, SIM-3 = top-3 aggregate as implied by the caption) and to the human-written opener (SIM-H) [§3.1.2, lines 645-655; Table 3 caption, lines 548-549]. The caption calls them 'CSIM scores' in the body text [line 748].",
+        "results": [
+          {"system": "Human", "SIM-1": "0.800", "SIM-3": "0.800", "SIM-H": "1.000", "source": "Table 3, lines 555-599"},
+          {"system": "MemGPT (GPT-3.5 Turbo)", "SIM-1": "0.830", "SIM-3": "0.812", "SIM-H": "0.817", "source": "Table 3"},
+          {"system": "MemGPT (GPT-4)", "SIM-1": "0.868", "SIM-3": "0.843", "SIM-H": "0.773", "source": "Table 3"},
+          {"system": "MemGPT (GPT-4 Turbo)", "SIM-1": "0.857", "SIM-3": "0.828", "SIM-H": "0.767", "source": "Table 3"}
+        ],
+        "no_baseline": "Table 3 contains **no non-MemGPT LLM row**. The only comparator is the human opener. There is no 'GPT-4 without MemGPT' opener score.",
+        "authors_reading": "'MemGPT is able to craft engaging openers that perform similarly to and occasionally exceed the hand-written human openers. We observe that MemGPT tends to craft openers that are both more verbose and cover more aspects of the persona information than the human baseline.' [§3.1.2, lines 761-766]"
+      },
+      {
+        "name": "Multi-document question answering (document QA)",
+        "provenance": "task from Liu et al. 2023a; questions from NaturalQuestions-Open; 'sampled a subset of 50 questions for evaluation' over a 'dump of Wikipedia from late 2018' [§3.2.1, lines 891-893]",
+        "infrastructure": "top-$K_{\\mathrm{doc}}$ by cosine similarity over text-embedding-ada-002; PostgreSQL + pgvector, HNSW index, 'approximate, sub-second query times'; embeddings precomputed and bulk-loaded [§3.2.1, lines 770-777]",
+        "metric": "LLM judge, requiring the answer to be derived from retrieved text (the judge marks 'INSUFFICIENT INFORMATION' or a missing DOCUMENT field as incorrect) [§3.2.1, lines 893-896; App. §6.1.5]",
+        "headline_numbers": "**No table.** Results appear only as Figure 5 (accuracy vs. number of documents retrieved). Axis labels legible in the vendored text: y-axis 'Accuracy' with ticks 0.1-0.7; x-axis 'Documents Retrieved' with ticks 0, 25, 50, 75, 100, 125, 150, 175, 200. Series: GPT-4, GPT-3.5 Turbo, GPT-4 Turbo, MemGPT (GPT-4, GPT-4 Turbo) [shown as one curve], MemGPT (GPT-3.5) [Fig. 5, lines 670-740]. **No per-point numeric values are recoverable from the text dump; see todo_verify.**",
+        "qualitative_findings": [
+          "'MemGPT's performance is unaffected by increased context length' [Fig. 5 caption, lines 735-736]",
+          "'Running MemGPT with GPT-4 and GPT-4 Turbo have equivalent results on this task.' [Fig. 5 caption, lines 739-740]",
+          "'GPT-4's accuracy is relatively low with few retrieved documents, and continues to improve as additional documents are added to the context window' [§3.2.1, lines 930-931]",
+          "'MemGPT has significantly degraded performance using GPT-3.5, due to its limited function calling capabilities, and performs best using GPT-4.' [§3.2.1, lines 921-924]",
+          "'While MemGPT is theoretically not limited by sub-optimal retriever performance ... we observe that MemGPT will often stop paging through retriever results before exhausting the retriever database.' [§3.2.1, lines 898-903]",
+          "'The document QA task is challenging for all methods due to the limitations of embedding-based similarity search. We observe that the golden document for chosen question ... often appears outside of the first dozen retrieved results, if not even further.' [§3.2.1, lines 926-929]"
+        ]
+      },
+      {
+        "name": "Nested key-value retrieval (nested KV)",
+        "provenance": "**author-constructed** variant of the synthetic KV task of Liu et al. 2023a: 'We create a version of the KV task, nested KV retrieval, where values themselves may be keys, thus requiring the agent to perform a multi-hop lookup.' [§3.2.2, lines 934-962]",
+        "setup": "140 UUID key-value pairs fixed, 'corresponding to roughly 8k tokens (the context length of our GPT-4 baseline)'; nesting levels varied 0 to 4; 'sample 30 different ordering configurations including both the initial key position and nesting key positions' [§3.2.2, lines 962-968]",
+        "headline_numbers": "**No table.** Figure 7 only: y-axis 'Accuracy' ticks 0.0, 0.2, 0.4, 0.6, 0.8, 1.0; x-axis 'Nesting Level' ticks 0, 1, 2, 3. Series: GPT-3.5 Turbo, GPT-4, GPT-4 Turbo, MemGPT (GPT-3.5), MemGPT (GPT-4), MemGPT (GPT-4 Turbo) [Fig. 7, lines 811-879]. Note the x-axis in the figure runs 0-3 while the text says levels 0-4 were tested.",
+        "stated_results": [
+          "'GPT-3.5 is unable to complete the nested variant of the task and has an immediate dropoff in performance, hitting 0 percent accuracy at 1 nesting level (we observe that its primary failure mode is to simply returns the original value).' [§3.2.2, lines 969-973]",
+          "'GPT-4 and GPT-4 Turbo are better than GPT-3.5, but also suffer from a similar dropoff, and hit 0 percent accuracy by 3 nesting levels.' [§3.2.2, lines 973-974]",
+          "'MemGPT with GPT-4 on the other hand is unaffected with the number of nesting levels' [§3.2.2, lines 974-976]",
+          "'MemGPT with GPT-4 Turbo and GPT-3.5 also have better performance than the corresponding baseline models, but still begin to drop off in performance at 2 nesting levels as a result of failing to perform enough lookups.' [§3.2.2, lines 978-981]",
+          "'While GPT-4 Turbo performs better as a baseline, MemGPT with GPT-4 Turbo performs worse than MemGPT with GPT-4.' [Fig. 7 caption, lines 874-879]"
+        ]
+      }
+    ],
+    "released_artifacts": "'We publicly release our augmented MSC dataset, nested KV retrieval dataset, and a dataset of embeddings for 20M Wikipedia articles' + benchmark code at https://research.memgpt.ai [§3, lines 479-483; Abstract line 28]",
+    "ablations": "**None.** No component of MemGPT is removed and re-measured. The closest statement is unquantified prose: 'Additionally, we can see the storing information in working context is key to generating engaging openers.' [§3.1.2, lines 766-767]"
+  },
+
+  "scale_ceiling": {
+    "largest_model": "GPT-4 Turbo (gpt-4-1106-preview), 128,000-token context. Parameter count unknown and unstated — all three backends are closed APIs [§3, lines 495-500].",
+    "largest_state": "20M Wikipedia article embeddings bulk-loaded into archival storage (PostgreSQL + pgvector + HNSW) for the document-QA task [§3 lines 480-482; §3.2.1 lines 770-777]. Retrieval depth swept to ~200 documents [Fig. 5 x-axis].",
+    "largest_conversation": "MSC: 5 sessions of 'roughly a dozen messages' each, plus one authored session 6 with a single QA pair [§3.1 Dataset, lines 636-641]. Roughly 60-70 messages of history — far below the 'weeks, months, or even years' the paper motivates with [§3.1, lines 516-518].",
+    "largest_synthetic": "140 UUID KV pairs ≈ 8k tokens, up to 4 nesting levels, 30 orderings per level [§3.2.2, lines 962-968]",
+    "evaluation_set_sizes": "50 questions for document QA [§3.2.1, line 891]; DMR set size never stated; conversation-opener set size never stated; 30 orderings per nesting level for KV",
+    "training_scale": "n/a — no training",
+    "deployment_gap": "The paper claims applicability to conversations 'potentially spanning weeks, months, or even years' [§3.1, lines 516-518] and to documents that 'can easily pass the million token mark' (SEC 10-K) [§3.2, lines 786-787], but demonstrates neither: the longest evaluated dialogue is six sessions and the longest evaluated document workload is top-200 Wikipedia passages."
+  },
+
+  "concept_ledger_delta": {
+    "new_concepts_introduced": [
+      "virtual context management — the paper's own name for the technique [Abstract, line 15]",
+      "main context vs external context (in-context vs out-of-context) [§2, lines 265-271]",
+      "working context — fixed-size, function-writeable, in-prompt fact block [§2.1, lines 233-236]",
+      "FIFO queue with recursive summary at index 0 [§2.1, lines 237-241]",
+      "recall storage — auto-written message database [§2.2, lines 262-263]",
+      "archival storage — function-written arbitrary-length text database [§2.2, lines 348-350]",
+      "queue manager — deterministic eviction/summarization policy [§2.2]",
+      "function executor — parses completion tokens into memory operations [§2.3]",
+      "memory pressure warning; warning token count; flush token count [§2.2, lines 344-353]",
+      "self-directed memory editing and retrieval [§2.3, lines 372-374]",
+      "function chaining via request_heartbeat=true [§2.4, lines 502-513; Fig. 3 caption]",
+      "pagination of retrieval results as a context-overflow guard [§2.3, lines 367-369; Fig. 6]",
+      "Deep Memory Retrieval (DMR) task [§3.1.1]",
+      "nested key-value retrieval task [§3.2.2]"
+    ],
+    "extended_or_renamed": [
+      "'LLM OS' — the paper's framing of the whole system [§1, lines 220-222]",
+      "'page in / page out' applied to prompt content [§1, lines 48-51]",
+      "'memory hierarchy' / 'memory tiers' imported from Patterson et al. 1988 [§1, lines 66-67]"
+    ],
+    "deprecated_by_this_paper": [
+      "the assumption that retrieval is a fixed pre-inference stage: MemGPT makes retrieval a decoded action of the model itself (contrast with the RAG citations in §4, lines 1012-1019)"
+    ],
+    "outside_paper_note": "The rename 'working context' → 'core memory' and 'MemGPT' → 'Letta' happens after this paper and is **not** in the text. The monograph must attribute it to the later Letta work, not here."
+  },
+
+  "open_questions": [
+    {
+      "question": "Which memory-tier technology should back external context? The paper explicitly defers this.",
+      "source": "§5 Conclusion, lines 997-999: 'This work opens numerous avenues for future exploration, including applying MemGPT to other domains with massive or unbounded contexts, integrating different memory tier technologies like databases or caches, and further improving control flow and memory management policies.'"
+    },
+    {
+      "question": "How should the memory-management *policy* be improved — and could it be learned rather than prompted? The paper names policy improvement as future work but never contemplates training it.",
+      "source": "§5, line 999 ('further improving control flow and memory management policies'); §2.3 lines 335-341 shows the policy is entirely prompt-specified"
+    },
+    {
+      "question": "How do you make the agent keep searching long enough? The observed failure is premature termination of paging, and no mechanism is proposed.",
+      "source": "§3.2.1, lines 898-903: 'we observe that MemGPT will often stop paging through retriever results before exhausting the retriever database'; §3.2.2, lines 978-981 attributes the KV dropoff to 'failing to perform enough lookups'. The only remedy applied is a prompt shout — 'DO NOT STOP SEARCHING UNTIL YOU VERIFY THAT THE VALUE IS NOT A KEY' [App. §6.1.6, lines 1453-1456]."
+    },
+    {
+      "question": "Why does a stronger base model give a weaker MemGPT on nested KV? Left entirely unexplained.",
+      "source": "Fig. 7 caption, lines 874-879"
+    },
+    {
+      "question": "What is the cost of the memory hierarchy? Never posed. No token, latency, or dollar accounting appears in the paper, even though function chaining multiplies inference cycles per turn [§2.4].",
+      "source": "absence; §2.4 lines 502-513 establishes the multiplication"
+    },
+    {
+      "question": "How does the system behave as external context grows without bound? Recall storage is 'stored indefinitely' [§2.2, line 354] with no compaction, eviction or capacity policy, and no experiment varies store size.",
+      "source": "§2.2, line 354"
+    },
+    {
+      "question": "Does the fact-correction mechanism actually work? working_context.replace is illustrated but never measured.",
+      "source": "Fig. 4, lines 471-473"
+    },
+    {
+      "question": "Does any of this transfer to open-weights models? The paper motivates with Llama/Mistral/Yi [Table 1] and then evaluates only OpenAI endpoints, while attributing MemGPT's GPT-3.5 failure to 'limited function calling capabilities' [§3.2.1, lines 921-924] — implying weaker models may not support the mechanism at all.",
+      "source": "Table 1 vs §3 lines 495-500; §3.2.1 lines 921-924"
+    }
+  ],
+
+  "unfavorable_facts": [
+    {
+      "fact": "Nothing is learned, anywhere. The entire contribution rests on prompt-engineered function calling over three frozen closed APIs. There is no training, no gradient, no loss, no parameter of the method. Every capability claim is therefore a claim about gpt-4-0613's instruction-following as much as about MemGPT's architecture.",
+      "source": "§3 Implementation details, lines 495-500; absence of any training section in the whole paper"
+    },
+    {
+      "fact": "Zero ablations. No component of the memory hierarchy (working context vs recall vs archival vs the memory-pressure interrupt vs pagination) is removed and re-measured. The one component claim in the paper is unquantified prose: 'we can see the storing information in working context is key to generating engaging openers'.",
+      "source": "§3.1.2, lines 766-767; absence elsewhere"
+    },
+    {
+      "fact": "The DMR comparison is not information-matched. Baselines see only 'a lossy summarization of the past five conversations' while MemGPT 'has access to the full conversation history'. The 92.5% vs 32.1% gap therefore measures method *and* input access together, and the paper does not run a baseline with equal access.",
+      "source": "§3.1.1 results, lines 629-632; Table 2"
+    },
+    {
+      "fact": "Two of the four benchmarks are built by the authors, and one of those is generated by an LLM. DMR questions were 'generated using a separate LLM' from MSC, with session 6 authored by the team; nested KV is an author-designed variant. The conversation-opener metric (SIM-1/SIM-3/SIM-H) is also author-defined.",
+      "source": "§3.1 Dataset lines 636-641; §3.1.1 lines 656-664 + App. §6.1.3; §3.2.2 lines 934-962; §3.1.2 lines 645-655"
+    },
+    {
+      "fact": "DMR accuracy is graded by a GPT-4 judge that is explicitly instructed to be lenient — 'you should be generous with your grading - as long as it touches on the same topic as the gold answer, it should be counted as CORRECT' — and the judge is from the same model family as the system under test.",
+      "source": "App. §6.1.2, lines 1186-1190; §3.1.1 lines 605-610"
+    },
+    {
+      "fact": "The GPT-4 baseline scores *worse* than the GPT-3.5 Turbo baseline on DMR (32.1% vs 38.7% accuracy; 0.296 vs 0.394 ROUGE-L). A baseline inversion of this size in the reference condition is unexplained, and it inflates the apparent MemGPT lift for GPT-4 (+60.4 points) relative to GPT-3.5 (+28.2 points).",
+      "source": "Table 2, lines 540-575"
+    },
+    {
+      "fact": "The 'exceeds the human opener' claim is carried only by SIM-1/SIM-3 against persona labels. On SIM-H every MemGPT variant loses to the human by construction (human SIM-H = 1.000, self-similarity), and the *strongest* backend has the *lowest* SIM-H (GPT-4 Turbo 0.767 < GPT-4 0.773 < GPT-3.5 Turbo 0.817). The authors themselves note MemGPT openers are 'more verbose and cover more aspects of the persona information', which is precisely what would inflate similarity-to-persona metrics without indicating better openers.",
+      "source": "Table 3, lines 548-599; §3.1.2 lines 761-766"
+    },
+    {
+      "fact": "Table 3 has no LLM baseline row at all. There is no measurement of what GPT-4 without MemGPT scores on the conversation-opener task, so the engagement result establishes no lift attributable to MemGPT.",
+      "source": "Table 3, lines 548-599"
+    },
+    {
+      "fact": "A stronger base model makes MemGPT worse on nested KV: 'While GPT-4 Turbo performs better as a baseline, MemGPT with GPT-4 Turbo performs worse than MemGPT with GPT-4.' The paper offers no explanation, which undercuts the implicit claim that MemGPT rides base-model improvement.",
+      "source": "Fig. 7 caption, lines 874-879"
+    },
+    {
+      "fact": "MemGPT with GPT-3.5 is 'significantly degraded ... due to its limited function calling capabilities'. The method's benefit is thus contingent on a capability that, at the time of writing, only the strongest closed models had — and no open-weights model was tested despite Table 1 motivating the problem with Llama/Mistral/Yi.",
+      "source": "§3.2.1, lines 921-924; Table 1, lines 386-467"
+    },
+    {
+      "fact": "The central theoretical advantage — unbounded effective retrieval via repeated paging — is not realized in practice: 'While MemGPT is theoretically not limited by sub-optimal retriever performance ... we observe that MemGPT will often stop paging through retriever results before exhausting the retriever database.' The same failure explains the nested-KV dropoff at 2 levels for two of three backends.",
+      "source": "§3.2.1, lines 898-903; §3.2.2, lines 978-981"
+    },
+    {
+      "fact": "Document-QA and nested-KV results exist only as figures with no numeric table and no error bars or variance, for 50 sampled questions (doc QA) and 30 orderings per nesting level (KV). At those sample sizes, unreported variance is material.",
+      "source": "Fig. 5; Fig. 7; §3.2.1 line 891; §3.2.2 line 968"
+    },
+    {
+      "fact": "On document QA the fixed-context baselines improve monotonically with retrieved documents while MemGPT is flat ('MemGPT's performance is unaffected by increased context length'). The paper does not state whether the baselines overtake MemGPT at large $K_{\\mathrm{doc}}$, does not tabulate the curves, and does not report the crossing point if any.",
+      "source": "Fig. 5 caption, lines 735-740; §3.2.1, lines 930-931. See todo_verify — the figure image is needed to settle it."
+    },
+    {
+      "fact": "There is no cost accounting of any kind — no latency, no token count, no number of inference cycles per turn, no price. Function chaining necessarily makes one user turn into many inference passes over a monotonically growing prompt (§2.4), so MemGPT is strictly more expensive per answer than its baselines, and the paper never quantifies by how much.",
+      "source": "§2.4, lines 502-513; absence of any cost section"
+    },
+    {
+      "fact": "The OS analogy is asserted rather than validated, and it leaks. MemGPT's 'page fault' is a *voluntary* warning message the model may ignore (§2.2), not an involuntary trap; there is no address translation, no protection, no residency guarantee. The OS citation used is Patterson, Gibson & Katz 1988 — the RAID paper — not a virtual-memory reference.",
+      "source": "§1, line 67; §2.2, lines 344-348"
+    },
+    {
+      "fact": "No forgetting/staleness measurement (rho = absent). The correction mechanism (working_context.replace) is shown only in an illustrative dialogue figure, and the longest evaluated interaction is six sessions, against a stated motivation of 'weeks, months, or even years'.",
+      "source": "Fig. 4, lines 471-473; §3.1 lines 516-518, 636-641"
+    },
+    {
+      "fact": "Recall storage grows without bound by design ('stored indefinitely'), yet no capacity, compaction or eviction policy is proposed or evaluated for external context. The paper solves prompt overflow and leaves store overflow untouched.",
+      "source": "§2.2, line 354"
+    },
+    {
+      "fact": "Table 1's message-count column is not measured but derived from an assumption — 'Approximate message count assuming a preprompt of 1k tokens, and an average message size of ~50 tokens (~250 characters)' — and it is the table that carries the paper's motivating claim about how few messages fit.",
+      "source": "Table 1 caption, lines 386-405"
+    }
+  ],
+
+  "cross_path_citations": {
+    "verdict": "**No engagement with either the W-path or the Theta-path. Zero citations to fast weights, test-time training, model editing, PEFT, continual learning, catastrophic forgetting, complementary learning systems, or biological sleep/consolidation.** The bibliography (lines 1024-1176, ~40 entries) is entirely (a) long-context transformer architectures, (b) retrieval-augmented generation, (c) LLM agents, (d) evaluation infrastructure.",
+    "what_it_does_cite": {
+      "long_context_architectures": "Transformer-XL (Dai et al. 2019), Longformer (Beltagy et al. 2020), Reformer (Kitaev et al. 2020), Sparse Transformers (Child et al. 2019), Linformer (Wang et al. 2020), ALiBi (Press et al. 2021), Positional Interpolation (Chen et al. 2023), long-text survey (Dong et al. 2023) [§4, lines 1004-1011]",
+      "retrieval": "Ram et al. 2023, RETRO (Borgeaud et al. 2022), DPR (Karpukhin et al. 2020), RAG (Lewis et al. 2020), REALM (Guu et al. 2020), RA-DIT (Lin et al. 2023), FLARE (Jiang et al. 2023), IRCoT (Trivedi et al. 2022) [§4, lines 1012-1019]",
+      "agents": "Generative Agents (Park et al. 2023), WebGPT (Nakano et al. 2021), ReAct (Yao et al. 2022), AgentBench (Liu et al. 2023b), Toolformer (Schick et al. 2023) [§4, lines 946-959]",
+      "evaluation_and_data": "Lost in the Middle (Liu et al. 2023a), MSC (Xu et al. 2021), ROUGE (Lin 2004), MT-Bench/LLM-judge (Zheng et al. 2023), NQ-Open retrieval setups (Izacard & Grave 2020; Izacard et al. 2021)",
+      "systems": "Patterson, Gibson & Katz 1988 (RAID) — the sole OS/architecture citation [§1, line 67]"
+    },
+    "the_one_near_miss": "§4 line 1005 cites 'neural memory (Lee et al., 2019)' inside the long-context paragraph. That reference is *Set Transformer* (inducing-point attention), which is not neural memory in the fast-weight / TTT sense. So even the paper's single gesture toward a memory-parameterized architecture points at an efficiency mechanism, not at the W-path.",
+    "chronology_caveat": "MemGPT is from Oct 2023 (v2 Feb 2024). Titans, Atlas, TNT, NL, SEAL and the sleep-time works all postdate it, so their absence is not a fault. But the *pre-existing* W-path and Theta-path literature that it could have cited and did not — fast weight programmers (Schmidhuber; Schlag et al. 2021), TTT (Sun et al. 2020/2024), LoRA (Hu et al. 2021), ROME/MEMIT (Meng et al. 2022), EWC (Kirkpatrick et al. 2017), CLS (McClelland et al. 1995) — is entirely absent. Not one of these appears in the reference list.",
+    "monograph_finding": "MemGPT is the origin point of the three-path silence that S0-DESIGN §5 asks the monograph to document. The E-path is founded without any reference to the possibility of putting the same information into $W$ or $\\Theta$; the option is never argued against, it is simply never raised. The paper's framing — 'a critical need for alternative techniques to support long context' [§1, line 35] — treats *context* as the only axis, so parametric memory never enters the design space."
+  },
+
+  "figures": [
+    {
+      "id": "Figure 3",
+      "why": "**The one figure to reproduce.** The complete MemGPT architecture: the finite context window split into System Instructions (read-only) / Working Context (write via functions) / FIFO Queue (write via queue manager), the completion tokens flowing into the Function Executor, and the two external stores — Archival Storage (read+write via functions) and Recall Storage (read via functions, write via queue manager). The read/write-path asymmetry between the two stores is visible only in this figure and is the key structural fact of the E-path.",
+      "source": "lines 291-331"
+    },
+    {
+      "id": "Figure 1",
+      "why": "The write trigger in one picture: a 'System Alert: Memory Pressure' message arrives inside the prompt and the agent responds with working_context.append('Birthday is February 7') / ('Boyfriend named James'). This is the interrupt-driven U-E write (mg-3, mg-5) made concrete.",
+      "source": "lines 87-211"
+    },
+    {
+      "id": "Figure 4",
+      "why": "working_context.replace('Boyfriend named James', 'Ex-boyfriend named James'). The E-layer overwrite — the closest thing in the E-path to a delta rule, and the natural place for the monograph to contrast append-only stores with corrective ones. Also the paper's only depiction of belief revision.",
+      "source": "lines 380-473"
+    },
+    {
+      "id": "Figure 5",
+      "why": "Document-QA accuracy vs number of documents retrieved. The shape of the argument: flat MemGPT curve against rising fixed-context curves. Reproduce it precisely because the crossing behaviour is what the chapter must interrogate.",
+      "source": "lines 670-740"
+    },
+    {
+      "id": "Figure 7",
+      "why": "Nested-KV accuracy vs nesting level. Shows both the headline result (MemGPT+GPT-4 flat where baselines collapse to 0 by level 3) and the anomaly (MemGPT+GPT-4 Turbo below MemGPT+GPT-4).",
+      "source": "lines 811-879"
+    },
+    {
+      "id": "Figure 6",
+      "why": "A worked trace of pagination: archival_storage.search('nobel physics') → 'Showing 10 of 124 results (page 1/13)' → search(..., page=2). Best teaching artifact for why $\\mathrm{ret}$ is a loop and why the agent's stopping decision is the real failure mode.",
+      "source": "lines 707-745"
+    },
+    {
+      "id": "Figure 8",
+      "why": "A worked trace of multi-hop chaining: 831..ea5 → 5b8..4c3 → f37..617, with the termination test 'returns only one result, indicating that it is not also a key'. Use it to count inference cycles per user turn — the number the paper never reports.",
+      "source": "lines 825-889"
+    },
+    {
+      "id": "Table 1",
+      "why": "Context windows of ten models as of 1/2024, with a derived message-count column. Worth reproducing as a historical marker of what 'long context' meant when the E-path was founded — and as an object lesson, since the message counts are assumption-derived, not measured.",
+      "source": "lines 386-467"
+    },
+    {
+      "id": "Table 2",
+      "why": "The DMR numbers. Reproduce with the information-asymmetry caveat printed alongside, and with the GPT-4-below-GPT-3.5 baseline inversion marked.",
+      "source": "lines 540-575"
+    },
+    {
+      "id": "Table 3",
+      "why": "The conversation-opener numbers. Reproduce only if the chapter also states that there is no non-MemGPT LLM row and that SIM-H for the human is 1.000 by construction.",
+      "source": "lines 548-599"
+    }
+  ],
+
+  "systems_implications": {
+    "grounded_in_paper": [
+      {
+        "claim": "All memory traffic is decoded, not DMA'd. Reads and writes are token sequences emitted by the LLM and parsed by a validator; failures come back as text.",
+        "ground": "§2.3, lines 357-363: 'LLM processor takes main context (concatenated into a single string) as input, and generates an output string. This output string is parsed by MemGPT ... The results, including any runtime errors ... are then fed back to the processor.'"
+      },
+      {
+        "claim": "One user turn is many inference cycles. Each chained function call costs a full forward pass over a prompt that has grown by the function's output.",
+        "ground": "§2.4, lines 502-513; Fig. 3 caption lines 329-331; Fig. 6 and Fig. 8 traces"
+      },
+      {
+        "claim": "The context-pressure thresholds are prompt-length thresholds, delivered as in-band text. The system reserves ~30% of $N_{\\mathrm{ctx}}$ as headroom between warning and flush, and dumps ~50% of the window at flush.",
+        "ground": "§2.2, lines 344-353 ('e.g. 70%', 'e.g. 100%', 'e.g. 50% of the context window')"
+      },
+      {
+        "claim": "The archival tier is a database, not accelerator memory: PostgreSQL with pgvector, HNSW index, 'approximate, sub-second query times', embeddings precomputed offline with text-embedding-ada-002.",
+        "ground": "§3.2.1, lines 770-777"
+      },
+      {
+        "claim": "The store is unbounded and append-only on the recall side: every message in and out is logged forever.",
+        "ground": "§2.2, lines 262-263 and line 354"
+      },
+      {
+        "claim": "Retrieval is explicitly made token-aware: 'our memory retrieval mechanisms are designed to be cognizant of these token constraints and implement pagination to prevent retrieval calls from overflowing the context window.'",
+        "ground": "§2.3, lines 367-369"
+      },
+      {
+        "claim": "Store scale reached in the paper: 20M Wikipedia article embeddings, retrieval depth swept to ~200 documents.",
+        "ground": "§3 lines 480-482; Fig. 5 x-axis"
+      }
+    ],
+    "note_writer_inferences": [
+      {
+        "inference": "**MemGPT does not break shared-weight batching, and that is the E-path's structural advantage over the W- and Theta-paths.** Because no parameter of any kind moves per user, a serving fleet keeps one weight copy and batches across agents exactly as it batches across ordinary chat sessions. Per-user state lives in Postgres rows and in prompt tokens, both of which are already first-class in existing serving stacks. (Grounded in the fact that $\\Theta$ is a frozen API endpoint and $W=\\varnothing$ — §3 lines 495-500 — but the batching conclusion is the note-writer's, not the paper's.)",
+        "status": "note-writer inference"
+      },
+      {
+        "inference": "**The recursive summary at FIFO index 0 is the worst possible placement for prefix KV-cache reuse.** The prompt layout is [system instructions ; working context ; summary ; messages] (mg-1). Every flush rewrites the summary, which sits near the front, so the KV cache for everything after it is invalidated — and every working_context.append/replace does the same for the entire message tail. On a stable-prefix caching stack, MemGPT converts a cheap append-only prefix into a frequently-invalidated one. The paper never mentions the KV cache.",
+        "status": "note-writer inference; grounded in the layout of §2.1 lines 231-241 and the flush of §2.2 lines 350-355"
+      },
+      {
+        "inference": "**Bytes moved per turn are dominated by re-prefill, not by the store.** A retrieved page in Fig. 6 is ~10 text results; that is kilobytes off SSD/DRAM. The consequence of inserting it — re-running attention over a prompt of up to $N_{\\mathrm{ctx}}$ tokens for the next cycle — is orders of magnitude more accelerator traffic. So the E-path moves almost nothing across the memory hierarchy but multiplies HBM-side prefill/decode work. The paper reports neither quantity.",
+        "status": "note-writer inference"
+      },
+      {
+        "inference": "**Minimum inference-cycle counts implied by the traces.** Fig. 8's 4-lookup nested-KV solution shows four archival_storage.search calls plus a final answer — at least five cycles for one user question, each over a longer prompt than the last. Fig. 6 shows two paginated searches for a single Wikipedia question. Against a fixed-context baseline's single call, this is a ≥2x-5x multiplier on decode invocations for the tasks shown. The paper reports no cycle counts, so this is read off the figure traces.",
+        "status": "note-writer inference; traces at Fig. 6 lines 707-745 and Fig. 8 lines 825-889"
+      },
+      {
+        "inference": "**The write budget is stolen from the answer budget.** Because writes happen inline (mg-3), tokens spent on memory management are tokens not spent answering, and they land on the user's latency path. This is precisely the deficiency that the sleep-time-compute framing later fixes by moving $S(\\cdot;B_s)$ off the critical path. MemGPT already contains the hook — the 'timed events that are run on a regular schedule' of §2.4 lines 486-489 — but never uses it in an experiment.",
+        "status": "note-writer inference for the lineage claim; the timed-event hook itself is verbatim from §2.4"
+      },
+      {
+        "inference": "**Failure mode transfers to serving as a tail-latency problem.** The reported failure is 'stops paging too early' (§3.2.1). The obvious fix — instruct or force more paging — converts an accuracy failure into an unbounded-cycle-count failure, i.e. a tail-latency and cost problem. Appendix §6.1.6's 'DO NOT STOP SEARCHING UNTIL YOU VERIFY THAT THE VALUE IS NOT A KEY' is exactly that trade being made by prompt. No cycle cap or timeout is described.",
+        "status": "note-writer inference; prompt verbatim at App. §6.1.6 lines 1453-1456"
+      },
+      {
+        "inference": "**Capacity planning is undefined by construction.** $C$ per user is unbounded (recall storage keeps everything, §2.2 line 354), while the *usable* per-user state is capped by the undisclosed fixed size of the working context (§2.1 line 233). A deployment therefore has an unbounded storage bill and a fixed, unstated retrieval-independent memory budget. Neither number appears in the paper.",
+        "status": "note-writer inference"
+      }
+    ],
+    "the_readers_question": "So what does it change at decode? Nothing inside the kernel — no new state, no new GEMM, no change to attention. What changes is *above* the model: one logical turn becomes an unpredictable number of forward passes over a prompt whose prefix is rewritten by the model itself, with a vector database on the host side of the boundary. The E-path buys long context by spending decode cycles and prefix-cache locality, not by spending bytes of accelerator state."
+  },
+
+  "todo_verify": [
+    {
+      "item": "Numeric values of the Figure 5 curves (document QA), and specifically whether any fixed-context baseline overtakes MemGPT at large $K_{\\mathrm{doc}}$.",
+      "how_to_settle": "Open the PDF figure at arXiv:2310.08560v2 Figure 5, or search the released repo for the plotting data. Search term: \"Documents Retrieved\" accuracy MemGPT figure 5 data"
+    },
+    {
+      "item": "Numeric values of the Figure 7 curves (nested KV), and whether nesting level 4 was plotted (text says levels 0-4 were tested; the axis ticks recovered from the text dump run 0-3).",
+      "how_to_settle": "Open Figure 7 in the PDF. Search term in the text: \"vary the total number of nesting levels from 0\" and cross-check the figure x-axis."
+    },
+    {
+      "item": "Exact definition of SIM-1 vs SIM-3 (the caption says 'similarity scores to the gold persona labels (SIM-1/3)' but does not define the 1/3).",
+      "how_to_settle": "Search the paper for \"SIM-1\" and \"CSIM\" — both appear only in Table 3's caption (line 549) and §3.1.2 (line 748) with no definition. Settle from the released benchmark code at research.memgpt.ai."
+    },
+    {
+      "item": "The actual configured values of warning/flush/eviction thresholds used in experiments (the paper writes them with 'e.g.').",
+      "how_to_settle": "Search term: \"warning token count\" / \"flush token count\" in the released MemGPT source."
+    },
+    {
+      "item": "Size of the DMR evaluation set and of the conversation-opener evaluation set — neither is stated in the vendored text.",
+      "how_to_settle": "Search terms: \"DMR\" with a count; \"we sampled\"; check the released augmented MSC dataset."
+    },
+    {
+      "item": "Fixed size (in tokens) of the working context block.",
+      "how_to_settle": "Search term: \"fixed-size read/write block\" — the paper states the property but not the number; settle from the released source."
+    },
+    {
+      "item": "Whether the vendored text is complete — the vendored .txt is OCR-derived and interleaves figure callouts with body text (e.g. Table 1 rows are split across lines 386-467). Confirm no section was dropped.",
+      "how_to_settle": "Diff the section headings found (1 Introduction, 2 MemGPT with 2.1-2.4, 3 Experiments with 3.1-3.2.2, 4 Related Work, 5 Conclusion, 6 Appendix with 6.1.1-6.1.6) against the PDF table of contents."
+    }
+  ]
+}

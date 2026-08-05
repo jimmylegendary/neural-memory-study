@@ -1,0 +1,692 @@
+{
+  "paper_id": "multi-timescale-updating",
+  "arxiv": "2605.05097",
+  "arxiv_version_read": "v3 [cs.LG], 24 Jun 2026 (stated on the banner line, line 6 of the vendored text)",
+  "title": "Continual Knowledge Updating in LLM Systems: Learning Through Multi-Timescale Memory Dynamics",
+  "system_name": "Memini (Latin \"I remember\"; the footnote on lines 206-208 explains the name is grammatically perfect-tense but present in meaning)",
+  "authors": "Andreas Pattichis, Constantine Dovrolis (lines 4, 71-72)",
+  "affiliation": "1 The Cyprus Institute, Nicosia, Cyprus; 2 School of Computer Science, Georgia Institute of Technology, Atlanta, GA, USA (lines 71-72)",
+  "venue": "ICML 2026 Workshop “Continual Adaptation at Scale: Towards Sustainable AI” (lines 73-74). Workshop paper, 9 pages including appendix.",
+  "date": "2026-06-24 (v3 banner, line 6)",
+  "path": "/home/jimmy/repos/neural-memory-study/papers/stc/2605.05097.txt",
+  "funding": "European Union Horizon MSCA DN programme FINALITY, G.A. 101168816 (lines 491-492)",
+
+  "axis": "E",
+  "axis_assignment_correction": {
+    "assigned_by_orchestrator": "Theta",
+    "what_the_paper_actually_is": "E. This is an external-store paper end to end. The backbone LLM is frozen and never updated; the only thing that changes over time is a directed association graph that lives entirely outside the model. The paper states the separation as a design property: “The backbone LLM and the memory system occupy different layers (Figure 1). The LLM reads and writes text; the memory does the learning… The backbone can be replaced or upgraded without disturbing what the memory has learned, and the memory can evolve continuously without modifying the backbone” [§3.1, lines 304-307].",
+    "why_the_Theta_label_is_tempting_and_wrong": "The paper's per-edge variables are called $w_{\\mathrm{fast}}$ and $w_{\\mathrm{slow}}$ and the paper's framing is “continual learning” with “consolidation”. Both words belong to the $\\Theta$-path vocabulary in this monograph. But these are scalar edge annotations in an external graph, not model parameters and not fast weights in the (U-W) sense. The paper explicitly lists parametric continual learning as the paradigm it is *not* adopting: “The first is parametric continual learning, which adapts the model by updating its weights (Shi et al., 2025)… parameter updates risk catastrophic forgetting, are computationally expensive, and are often unavailable to downstream developers who access the model as a service” [Abstract/§1 block, lines 10-16].",
+    "recommended_chapter_placement": "E-path, as a late/adjacent branch of the MemGPT → Letta → Mem0/Zep line — specifically as the branch that makes the *store itself* dynamical. It is the E-path's answer to the $\\Theta$-path's consolidation story, and it should be taught next to the E-path chapters, not next to SEAL or Nested Learning.",
+    "warning_flag_for_the_author": "The chapter MUST open by disarming a terminology trap. The monograph's reserved meaning of “fast weights” is $W$ (in-model, inner-loop state) and “slow weights” is $\\Theta$ (model parameters). Memini's “fast/slow” is a pair of timescales *inside* $E$ and touches neither $W$ nor $\\Theta$. Confusing the two would corrupt the whole three-layer frame."
+  },
+
+  "problem_stated": {
+    "as_the_paper_states_it": "“LLMs are trained once, then deployed into a world that never stops changing” [Abstract, lines 29-30]. “The challenge is not merely one of access to new information. It is one of selective adaptation: strengthening what ongoing evidence confirms, letting go of what it no longer supports, and doing so continuously as new experience arrives” [§1 Introduction, lines 65-68].",
+    "central_claim": "“The central claim is that continual learning in LLM systems can be implemented as the reorganization of associative memory through multi-timescale dynamics. Prior memory-augmented LLM systems store or retrieve information; they do not learn by reshaping their association structure over time” [§1, lines 47-51].",
+    "the_load_bearing_distinction": "“A system whose memory merely grows is accumulating. A system whose memory consolidates, forgets, and reshapes its organization in response to experience is learning (Kumaran et al., 2016)” [§1, lines 42-45]. This accumulating-vs-learning line is the paper's entire rhetorical lever and the monograph should quote it verbatim.",
+    "three_principles": "“Three principles define this paradigm. First, dynamics… Second, multi-timescale learning… Third, selectivity: the system does not store everything or retain everything, and what it forgets is as consequential as what it keeps” [§1, lines 51-57].",
+    "self_declared_maturity": "“This workshop article describes an early-stage conceptual design without experimental evaluation” [Abstract, lines 39-40]. Note this sentence coexists with a quantitative Appendix A; see unfavorable_facts."
+  },
+
+  "inherited_open_question": {
+    "from": "none-stated",
+    "finding": "The paper never quotes, locates, or paraphrases a stated open question from any prior work. There is no sentence anywhere of the form ‘X leaves open’ / ‘X poses the question’ / ‘as noted by X, it remains unclear’. Every gap it addresses is diagnosed by the authors themselves, in their own voice, in §2 and in Table 1. The bridge-in for this chapter therefore cannot be built from a quotation; it has to be built from what the paper *implicitly* answers.",
+    "evidence_of_the_absence": "§2 Related Work, lines 148-195, is structured as three lines of prior work each followed by an authorial rebuttal: ‘…but the edges remain static as new documents arrive’ (lines 189-190), ‘…yet the weights (fixed at indexing, set by time decay, or modulated only per query) are never shaped by repeated evidence’ (lines 192-194), ‘…but a single timescale cannot be both fast enough for recent evidence and slow enough to preserve what repetition confirms’ (lines 194-146). All three are the authors' verdicts, not the cited works' own admissions.",
+    "what_it_implicitly_answers": [
+      "Kaplanis et al. 2018 (Continual RL with Complex Synapses) transplanted the Benna–Fusi complex-synapse chain into an agent's *network weights*. Memini takes the same $n=2$ instantiation and transplants it a second time — into the edges of an external graph. The paper cites Kaplanis exactly for the instantiation choice: “We adopt the simplest instantiation of the Benna-Fusi chain model, with two coupled variables per edge (n = 2) following Kaplanis et al. (2018)” [§3.2, lines 342-343]. The implicit question answered: *does complex-synapse consolidation still buy you anything when the substrate is not weights at all?*",
+      "CLS theory (McClelland et al. 1995; Kumaran et al. 2016) posits two complementary systems. Memini implicitly answers the question of whether two *stores* are needed: “This transition from episodic trace to stable association parallels the episodic-to-semantic transition described by CLS theory (McClelland et al., 1995) and Tulving's memory taxonomy (Tulving, 1984), but here it emerges from dynamics on a single structure rather than from explicit dual systems” [§3.3, lines 414-418].",
+      "Benna & Fusi 2016's power-law forgetting: the paper claims the general chain ‘approaches the power-law form established empirically for human memory (Wixted & Ebbesen, 1997)’ [§3.3, lines 421-423] — but does not test it, because it uses $n=2$."
+    ],
+    "evidence": "§2 lines 148-195 (authorial rebuttals, no quoted open questions); §3.2 lines 342-343 (Kaplanis instantiation); §3.3 lines 414-423 (CLS / Tulving / Wixted–Ebbesen)."
+  },
+
+  "core_mechanism": {
+    "one_line": "Memini is (U-E) and nothing else: every directed edge of an external association graph carries a two-variable linear filter (a fast, readable component and a slow, hidden component, coupled bidirectionally), the whole bank of filters is advanced one step per arriving document, and retrieval is a $T_{\\mathrm{sa}}$-step damped spreading activation that reads only the fast component.",
+
+    "notation_conflicts": {
+      "preamble": "This paper collides with the reserved table (STYLE-NOTATION §1.2/§1.5) in seven places, three of them severe. Every collision is mapped below and the mapped symbol is what the chapter must use in running text; the paper's own symbols may appear only in the correspondence table and inside direct quotations.",
+      "rows": [
+        {
+          "paper_symbol": "$w_{\\mathrm{fast}}$ — accessible per-edge variable, the only one read at retrieval",
+          "unified_symbol": "$E^{\\mathrm{f}}_e(t)$",
+          "severity": "SEVERE",
+          "why": "$W$ is reserved for fast weights = in-model inner-loop state (STYLE §1.2, rule 1 of the summary card: ‘$W$ = fast weights, $\\Theta$ = slow weights. еxception none’). Memini's variable is neither: it is a scalar living on an edge of the external store. Writing it as $W$ would place this paper on the W-path, which is factually wrong. It is a *component of* $E$, hence the superscript.",
+          "paper_location": "§3.1, lines 197-204"
+        },
+        {
+          "paper_symbol": "$w_{\\mathrm{slow}}$ — hidden consolidation variable, never read directly",
+          "unified_symbol": "$E^{\\mathrm{s}}_e(t)$",
+          "severity": "SEVERE",
+          "why": "Same as above, and additionally: ‘slow’ in this monograph means $\\Theta$ (model parameters). Memini's slow variable is not a parameter and is not in the model.",
+          "paper_location": "§3.1, lines 200-204"
+        },
+        {
+          "paper_symbol": "$C$ — coupling strength between the two variables",
+          "unified_symbol": "$\\mu$",
+          "severity": "SEVERE (double collision)",
+          "why": "$C$ is reserved twice over: chunk size in STYLE §1.2/§1.5, and state capacity in bytes in S0-DESIGN §2.4's cost table. $\\mu$ is unreserved in both documents.",
+          "paper_location": "Eq. 1 and Eq. 2, lines 288-302; value $C = 0.2$ at App. A.2, line 766"
+        },
+        {
+          "paper_symbol": "$E$ — the edge set of $G=(V,E)$",
+          "unified_symbol": "$\\mathcal{E}$ (and node set $V \\to \\mathcal{V}$)",
+          "severity": "SEVERE",
+          "why": "$E$ is reserved in S0-DESIGN §2.1 for the external store itself; $V$ is reserved in STYLE §1.5 for the value matrix. The graph is *an instance of* $E$, so its edge set cannot also be called $E$.",
+          "paper_location": "§3.1, lines 164-166 and 295-297"
+        },
+        {
+          "paper_symbol": "$u_i^{(t)}$ — activation of node $i$ at spreading iteration $t$",
+          "unified_symbol": "$a_i^{(t)}$",
+          "severity": "moderate",
+          "why": "$u_t$ is reserved for the Local Surprise Signal $u_t=\\nabla_{y_t}\\mathcal{L}$ (NL; STYLE §1.2).",
+          "paper_location": "Eq. 3, lines 376-391"
+        },
+        {
+          "paper_symbol": "$\\delta$ — per-iteration retention decay, appearing as $(1-\\delta)$",
+          "unified_symbol": "$\\alpha_{\\mathrm{sa}} := 1-\\delta$",
+          "severity": "moderate, with a direction flip",
+          "why": "$\\delta_t$ is the learned Huber threshold and $\\delta_\\ell$ is backprop error (STYLE §1.2). The mapped form is *better than a rename*: $(1-\\delta)$ is literally a retention fraction, so $\\alpha_{\\mathrm{sa}}$ obeys the book's convention P4 (‘$\\alpha$ = the fraction kept’) exactly. Note for the chapter: this is the same direction convention as the retention gate, but $\\alpha_{\\mathrm{sa}}$ is a constant, not a data-dependent gate — no time subscript, per STYLE §1.5's subscript rule.",
+          "paper_location": "Eq. 3, line 382 and lines 392-393"
+        },
+        {
+          "paper_symbol": "$S$ — global spreading factor",
+          "unified_symbol": "$s_{\\mathrm{sp}}$",
+          "severity": "moderate",
+          "why": "$S_t$ is reserved exclusively for the inner momentum buffer (STYLE §1.5: ‘$S$ | $S_t$=inner momentum 전용’).",
+          "paper_location": "Eq. 3, lines 387-393"
+        },
+        {
+          "paper_symbol": "$b$ — binary input amplitude, $I(t)=b$ on co-occurrence",
+          "unified_symbol": "$b_{\\mathrm{in}}$",
+          "severity": "minor",
+          "why": "STYLE §1.5 bans bare $b$ in its Titans meaning (inner mini-batch size). Subscripting removes any ambiguity.",
+          "paper_location": "lines 300-302; value $b=1$ at App. A.2, line 766"
+        },
+        {
+          "paper_symbol": "$n$ — (i) number of variables in the Benna–Fusi chain; (ii) number of co-occurrence events a pair receives",
+          "unified_symbol": "$n_{\\mathrm{BF}}$ and $N_{\\mathrm{ev}}$ respectively",
+          "severity": "minor, but the paper overloads it itself",
+          "why": "$n$ is reserved for the chunk index (STYLE §1.2). The paper uses $n$ for two different things (§3.2 line 343 ‘$n = 2$’; App. A.4 line 946 ‘the number of co-occurrence events $n$’).",
+          "paper_location": "§3.2 line 343; App. A.4 lines 945-950"
+        },
+        {
+          "paper_symbol": "$T$ — number of spreading-activation iterations; top-$k$ passages",
+          "unified_symbol": "$T_{\\mathrm{sa}}$; top-$k_{\\mathrm{ret}}$",
+          "severity": "minor",
+          "why": "$k$ is reserved for keys (STYLE §1.5). $T$ is not reserved but STYLE §1.7.6 already folds a paper's $T$ into $L$ (sequence length), so a bare $T$ is ambiguous.",
+          "paper_location": "§3.4, lines 399-402"
+        },
+        {
+          "paper_symbol": "$\\tau_{\\mathrm{fast}},\\ \\tau_{\\mathrm{slow}}$ — decay time constants",
+          "unified_symbol": "$\\tau_{\\mathrm{f}},\\ \\tau_{\\mathrm{s}}$ (kept)",
+          "severity": "none",
+          "why": "$\\tau$ is used in the reserved table only as a token index; the constants carry subscripts and are unambiguous in context. Retained to keep the Benna–Fusi lineage legible.",
+          "paper_location": "lines 299-300"
+        },
+        {
+          "paper_symbol": "‘LTI’ (not used by the paper, but the correct systems description of Eqs. 1-2)",
+          "unified_symbol": "LTI = linear time-invariant (→ ch07 sense)",
+          "severity": "advisory",
+          "why": "STYLE §2.4 flags that LTI means linear time-invariant book-wide except inside ch17 (Learning to Imitate). Here the ch07 sense is the intended one and is exactly right — see systems_implications.",
+          "paper_location": "n/a (note-writer's characterization of Eqs. 1-2)"
+        }
+      ]
+    },
+
+    "state": "The memory state is defined by the paper as “the graph $G(t) = (V(t), E(t))$ together with the edge states $\\{(w_{\\mathrm{fast}}(e,t), w_{\\mathrm{slow}}(e,t))\\}_{e\\in E(t)}$” [§3.1, lines 295-297]. In unified notation: $E_k = \\big(\\mathcal{V}_k,\\ \\mathcal{E}_k,\\ \\{(E^{\\mathrm{f}}_e, E^{\\mathrm{s}}_e)\\}_{e\\in\\mathcal{E}_k},\\ \\mathcal{P}_k\\big)$, where $\\mathcal{P}_k$ is the passage store the nodes point at (the paper refers to ‘the passages associated with the highest-activation nodes’ [Fig. 1 caption, lines 283-284] but never specifies the passage store).",
+
+    "edges_are_unlabeled": "“They are unlabeled, with meaning encoded in the pattern, strength, and direction of connectivity rather than in explicit relation types” [§3.1, lines 169-171]. This is a real departure from GraphRAG-style typed-relation graphs and matters for the monograph: the semantics of Memini live entirely in two floats per edge, not in text.",
+
+    "equations": [
+      {
+        "id": "(mt-1)",
+        "name": "fast-variable dynamics",
+        "latex": "\\frac{dE^{\\mathrm{f}}_e}{dt} \\;=\\; -\\frac{E^{\\mathrm{f}}_e}{\\tau_{\\mathrm{f}}} \\;+\\; \\mu\\,\\big(E^{\\mathrm{s}}_e - E^{\\mathrm{f}}_e\\big) \\;+\\; I_e(t)",
+        "original": "[multi-timescale-updating Eq. 1] (lines 346-351, 357)",
+        "gloss": "Three forces, as the paper enumerates them: “decay toward zero at rate $1/\\tau_{\\mathrm{fast}}$, coupling that pulls it toward $w_{\\mathrm{slow}}$, and input from co-occurrence events” [§3.2, lines 309-310]."
+      },
+      {
+        "id": "(mt-2)",
+        "name": "slow-variable dynamics",
+        "latex": "\\frac{dE^{\\mathrm{s}}_e}{dt} \\;=\\; -\\frac{E^{\\mathrm{s}}_e}{\\tau_{\\mathrm{s}}} \\;+\\; \\mu\\,\\big(E^{\\mathrm{f}}_e - E^{\\mathrm{s}}_e\\big),\\qquad \\tau_{\\mathrm{s}} \\gg \\tau_{\\mathrm{f}}",
+        "original": "[multi-timescale-updating Eq. 2] (lines 288-292, 353)",
+        "gloss": "“The key structural property is that $w_{\\mathrm{slow}}$ receives no direct external input. It accumulates only indirectly, through coupling, when $w_{\\mathrm{fast}}$ is repeatedly elevated by co-occurrence events, and once accumulated, it sustains $w_{\\mathrm{fast}}$ through the reverse direction of the same coupling” [§3.2, lines 310-315]."
+      },
+      {
+        "id": "(mt-3)",
+        "name": "the drive",
+        "latex": "I_e(t) \\;=\\; b_{\\mathrm{in}}\\cdot \\mathbb{1}\\big[e \\in \\hat c_k\\big],\\qquad \\hat c_k \\;=\\; S\\big(c_k;\\ B_s\\big)",
+        "original": "prose definition at lines 300-302: “$I(t) = b$ when concepts A and B co-occur in a document at time $t$, and $I(t)=0$ otherwise”",
+        "gloss": "$\\hat c_k$ = the set of co-occurring entity pairs extracted from document $c_k$. In the *design*, $S(\\cdot)$ is an LLM entity-extraction pass [Fig. 1(a), lines 213-219]. In the *experiment*, $S(\\cdot)$ is case-insensitive word-boundary string matching against 20 predefined terms [App. A.2, lines 759-761]. There is no explicit negative drive: “There is no explicit negative input when A appears without B; weakening is handled through the decay terms, so that prolonged absence of reinforcement is functionally equivalent to gradual depression” [§3.2, lines 315-317]."
+      },
+      {
+        "id": "(mt-4)",
+        "name": "the discrete write actually run — forward Euler, one document per step",
+        "latex": "\\begin{aligned} E^{\\mathrm{f}}_{e,k+1} &= E^{\\mathrm{f}}_{e,k} + \\Delta t\\Big[-\\tfrac{1}{\\tau_{\\mathrm{f}}}E^{\\mathrm{f}}_{e,k} + \\mu\\big(E^{\\mathrm{s}}_{e,k}-E^{\\mathrm{f}}_{e,k}\\big) + b_{\\mathrm{in}}\\mathbb{1}[e\\in\\hat c_k]\\Big] \\\\ E^{\\mathrm{s}}_{e,k+1} &= E^{\\mathrm{s}}_{e,k} + \\Delta t\\Big[-\\tfrac{1}{\\tau_{\\mathrm{s}}}E^{\\mathrm{s}}_{e,k} + \\mu\\big(E^{\\mathrm{f}}_{e,k}-E^{\\mathrm{s}}_{e,k}\\big)\\Big] \\end{aligned},\\qquad \\text{both clamped to}\\ \\ge 0",
+        "original": "App. A.2, lines 765-769: “a forward Euler step $\\Delta t = 1$ corresponding to one document per step. Both variables are clamped to be non-negative.” The clamp is an added rule not present in Eqs. 1-2.",
+        "gloss": "This is the only integrator the paper reports using."
+      },
+      {
+        "id": "(mt-5)",
+        "name": "matrix form — the whole store is a bank of independent second-order LTI filters",
+        "latex": "z_e := \\begin{bmatrix} E^{\\mathrm{f}}_e \\\\ E^{\\mathrm{s}}_e \\end{bmatrix},\\qquad \\dot z_e = A z_e + \\begin{bmatrix} I_e(t) \\\\ 0 \\end{bmatrix},\\qquad A = \\begin{bmatrix} -\\big(\\tfrac{1}{\\tau_{\\mathrm{f}}}+\\mu\\big) & \\mu \\\\ \\mu & -\\big(\\tfrac{1}{\\tau_{\\mathrm{s}}}+\\mu\\big) \\end{bmatrix}",
+        "original": "note-writer's restatement of [multi-timescale-updating Eq. 1] and [Eq. 2]; no matrix form appears in the paper",
+        "gloss": "[note-writer] $A$ is constant, symmetric, edge-independent and shared by every edge in the graph, and $I_e$ is an impulse train. So Memini's write layer is exactly a bank of $|\\mathcal{E}|$ identical two-pole linear filters driven by impulses — a description the reader already owns from ch07. Nothing is learned; nothing is nonlinear except the non-negativity clamp of (mt-4). This is the single most useful reframing for the systems reader and it is not in the paper."
+      },
+      {
+        "id": "(mt-6)",
+        "name": "read — spreading activation, componentwise",
+        "latex": "a_i^{(t+1)} \\;=\\; \\alpha_{\\mathrm{sa}}\\, a_i^{(t)} \\;+\\; s_{\\mathrm{sp}} \\sum_{j\\in\\mathcal{N}_i^{-}} \\frac{E^{\\mathrm{f}}_{j\\to i}}{\\deg_{\\mathrm{out}}(j)}\\, a_j^{(t)},\\qquad a_i^{(0)} = 1\\ \\ \\text{for seed nodes}",
+        "original": "[multi-timescale-updating Eq. 3] (lines 376-391); seed initialization at lines 451-454",
+        "gloss": "$1/\\deg_{\\mathrm{out}}(j)$ is “the fan effect that penalizes high-degree hub nodes (Anderson, 1974)” [lines 395-396]. The paper credits the propagation form to SYNAPSE: “This propagation equation is adapted from Jiang et al. (2026), with the key difference that $w_{\\mathrm{fast}}$ values here are persistent and history-shaped rather than computed per query” [lines 396-398] — i.e. the novelty claim for the read path is the *provenance of the weights*, not the propagation."
+      },
+      {
+        "id": "(mt-7)",
+        "name": "read — matrix form",
+        "latex": "a^{(t+1)} = \\big(\\alpha_{\\mathrm{sa}} I + s_{\\mathrm{sp}} \\tilde A^{\\top}\\big) a^{(t)},\\qquad \\tilde A_{ji} = \\frac{E^{\\mathrm{f}}_{j\\to i}}{\\deg_{\\mathrm{out}}(j)},\\qquad t = 0,\\dots,T_{\\mathrm{sa}}-1",
+        "original": "note-writer's restatement of [multi-timescale-updating Eq. 3]; no matrix form or convergence condition appears in the paper",
+        "gloss": "[note-writer] Damped power iteration on the fast-weighted, out-degree-normalized adjacency. The paper gives no spectral condition on $\\alpha_{\\mathrm{sa}} I + s_{\\mathrm{sp}}\\tilde A^{\\top}$; it simply runs a fixed budget: “a deterministic, constrained propagation procedure that runs for a fixed number of iterations $T$, respects edge direction, and terminates without stochastic sampling” [§3.4, lines 399-400]. Since $E^{\\mathrm{f}}$ is unbounded above in principle, nothing in the paper prevents activation blow-up for large $s_{\\mathrm{sp}}$."
+      },
+      {
+        "id": "(mt-8)",
+        "name": "reduction to the frame's (U-E)",
+        "latex": "E_{k+1} = \\mathrm{wr}\\big(E_k,\\ \\hat c_k\\big),\\qquad \\hat c_k = S\\big(c_k;\\ B_s\\big),\\qquad \\hat y = f\\big(q;\\ \\Theta,\\ \\cdot,\\ \\mathrm{ret}(E,q)\\big)",
+        "original": "n/a — this is S0-DESIGN (U-E) and (R) with Memini substituted in",
+        "gloss": "$S(\\cdot;B_s)$ = entity + co-occurrence extraction from the arriving document. $\\mathrm{wr}(\\cdot)$ = one step of (mt-4) applied to *every* edge. $\\mathrm{ret}(E,q)$ = seed extraction + (mt-6) for $T_{\\mathrm{sa}}$ steps + top-$k_{\\mathrm{ret}}$ passages. The $W$ slot of (R) is empty: Memini has no fast weights."
+      }
+    ],
+
+    "how_it_differs_from_canonical_U_E": [
+      "(a) $\\mathrm{wr}$ is NOT an append or an upsert. Canonical (U-E) writes a record $\\hat c_k$ into the store and leaves the rest alone. Memini's write is a *global affine state transition* over the entire store: the decay and coupling terms of (mt-1)/(mt-2) apply to every edge on every step, whether or not that edge appears in $\\hat c_k$. Every document arrival moves every edge. [structure of Eq. 1-2, lines 288-302; ‘Each pair is integrated independently using the same parameters’, App. A.2, line 765]",
+      "(b) $\\hat c_k$ carries no text. Canonical (U-E) summaries/records are natural language. Memini's extraction output is a set of *unlabeled ordered pairs*; all meaning is then carried by two floats. [§3.1, lines 169-171]",
+      "(c) The store has hidden state. $E^{\\mathrm{s}}$ “is never read directly” [§3.1, line 203] and exists purely to modulate $E^{\\mathrm{f}}$. No E-path predecessor in the monograph's roster has a latent, unreadable component of the store.",
+      "(d) The read is non-mutating and provides no reinforcement: “Retrieval reads the current memory state but does not modify it; $w_{\\mathrm{fast}}$ and $w_{\\mathrm{slow}}$ remain unchanged” [§3.4, lines 402-404]. Usage is deliberately not evidence — recall-driven reinforcement is explicitly disqualified in the Table 1 caption (lines 82-84). The paper never argues *why* usage should not count.",
+      "(e) The store is trajectory-dependent, not set-dependent: “The resulting memory state is trajectory-dependent rather than merely data-dependent, since the same set of documents arriving in a different order produces a different associative landscape” [§3.3, lines 461-465]."
+    ],
+
+    "which_update_rule_it_is_NOT": "It is not (U-W): no fast weights, no inner loss $\\ell$, no $\\nabla_W$, no per-token state, no momentum $S_t$, no retention gate $\\alpha_t$. The superficial resemblance of (mt-1) to (U-W)'s $W_t = \\alpha_t W_{t-1} + S_t$ — a decaying state plus an increment — is a coincidence of linear-filter form, not a shared mechanism: there is no gradient anywhere in Memini. It is not (U-\\Theta): no $\\mathcal{R}_k$, no $\\nabla_\\Theta\\mathcal{L}$, no replay, no distillation, no weight delta."
+  },
+
+  "outer_vs_inner": {
+    "headline_for_the_reader": "Nothing in this paper is trained. There is no outer loop, no inner loop, no gradient, no loss function of any kind — neither $\\ell$ nor $\\mathcal{L}$ appears in the paper. Every object is either (a) frozen from someone else's pre-training, (b) a hand-set constant, or (c) a dynamical variable driven by an impulse train. The reader's first question, ‘who learns this and when?’, has the answer ‘nobody, ever’ for every row below. What the paper calls ‘learning’ is the time-evolution of a linear filter bank, and the chapter must say so plainly — the paper's own definition permits it (‘A system whose memory consolidates, forgets, and reshapes its organization in response to experience is learning’, §1 lines 42-45), but the reader arriving from the $\\Theta$-path will assume gradients are involved and they are not.",
+    "rows": [
+      {
+        "object": "$\\Theta$ — backbone LLM weights",
+        "who_learns_it": "whoever pre-trained it; not this paper",
+        "when": "before deployment; frozen forever after",
+        "moves_at_sleep_time": "no",
+        "moves_at_wake_time": "no",
+        "role": "text→structure transducer on write (entity + co-occurrence extraction), query→seed transducer on read, and answer generator on read — three call sites, all read-only w.r.t. $\\Theta$",
+        "source": "§3.1 lines 304-307; Figure 1(a)(b), lines 213-256. No model, size, or vendor is ever named anywhere in the paper."
+      },
+      {
+        "object": "$W$ — fast weights",
+        "who_learns_it": "nobody; the object does not exist in Memini",
+        "when": "never",
+        "moves_at_sleep_time": "n/a",
+        "moves_at_wake_time": "n/a",
+        "role": "the $W$ slot of (R) is empty",
+        "source": "absence across the whole paper"
+      },
+      {
+        "object": "$E^{\\mathrm{f}}_e$ — per-edge fast variable",
+        "who_learns_it": "nobody — it is integrated, not learned; a state variable of an LTI filter",
+        "when": "advanced one forward-Euler step per arriving document",
+        "moves_at_sleep_time": "YES — this is the entire sleep-time mechanism",
+        "moves_at_wake_time": "no — retrieval explicitly does not modify it",
+        "role": "the sole quantity read by retrieval",
+        "source": "Eq. 1 lines 346-351; §3.1 lines 199-201; §3.4 lines 402-404; App. A.2 lines 765-769"
+      },
+      {
+        "object": "$E^{\\mathrm{s}}_e$ — per-edge slow variable",
+        "who_learns_it": "nobody — integrated, and never directly driven by input",
+        "when": "advanced with the same Euler step, but changes only through coupling with $E^{\\mathrm{f}}_e$",
+        "moves_at_sleep_time": "YES",
+        "moves_at_wake_time": "no",
+        "role": "hidden consolidation reservoir; sustains $E^{\\mathrm{f}}$ between reinforcements",
+        "source": "Eq. 2 lines 288-292; §3.1 lines 200-204"
+      },
+      {
+        "object": "$\\mathcal{V}_k$ — node set (entities/concepts)",
+        "who_learns_it": "in the design, the backbone LLM proposes nodes from the document stream; in the experiment, a human fixed the node set in advance",
+        "when": "design: on each document arrival. Experiment: never — 20 entities predefined before the run, 5 per pandemic phase",
+        "moves_at_sleep_time": "design yes / experiment NO",
+        "moves_at_wake_time": "no",
+        "role": "graph vertices, also the seed targets for queries",
+        "source": "design: §3.1 lines 164-166, Fig. 1(a). Experiment: App. A.2 lines 759-761 (‘We track 20 entities… detected in text by case-insensitive word-boundary string matching against the 20 predefined terms and a small set of hand-curated aliases’)."
+      },
+      {
+        "object": "$\\mathcal{E}_k$ — edge set",
+        "who_learns_it": "created on first co-occurrence; the paper never states a deletion or pruning rule",
+        "when": "on document arrival",
+        "moves_at_sleep_time": "yes (growth only)",
+        "moves_at_wake_time": "no",
+        "role": "carriers of the two variables",
+        "source": "§3.1 lines 172-175, 295-297. No pruning rule appears; ‘eventually disappear’ (§3.2, line 362) refers to the weight decaying, not to the edge being removed."
+      },
+      {
+        "object": "$\\tau_{\\mathrm{f}}, \\tau_{\\mathrm{s}}, \\mu, b_{\\mathrm{in}}$ — dynamics hyperparameters",
+        "who_learns_it": "nobody — hand-set constants, identical for every edge",
+        "when": "fixed before the run",
+        "moves_at_sleep_time": "no",
+        "moves_at_wake_time": "no",
+        "role": "set the two timescales and the coupling; the ratio $\\tau_{\\mathrm{s}}/\\tau_{\\mathrm{f}}=5$ decides everything the experiment shows",
+        "source": "App. A.2 lines 765-769: ‘$\\tau_{\\mathrm{fast}}=2$, $\\tau_{\\mathrm{slow}}=10$, coupling $C=0.2$, binary input $b=1$… The remaining parameters are not tuned per pair and are held fixed across all events.’"
+      },
+      {
+        "object": "$\\alpha_{\\mathrm{sa}}$ (=$1-\\delta$), $s_{\\mathrm{sp}}$, $T_{\\mathrm{sa}}$, $k_{\\mathrm{ret}}$ — retrieval hyperparameters",
+        "who_learns_it": "nobody — and, uniquely, nobody ever *set* them either: the paper gives no values for any of the four",
+        "when": "n/a — the read path was never run",
+        "moves_at_sleep_time": "no",
+        "moves_at_wake_time": "no",
+        "role": "would control the retrieval; entirely unspecified",
+        "source": "Eq. 3 lines 376-393 and §3.4 lines 399-402 introduce all four symbolically. No numeric value for any of them appears anywhere in the paper, and App. A.5 confirms ‘we report no retrieval metrics’ (line 1015)."
+      },
+      {
+        "object": "$a_i^{(t)}$ — node activation",
+        "who_learns_it": "nobody",
+        "when": "computed per query, $T_{\\mathrm{sa}}$ iterations, then discarded",
+        "moves_at_sleep_time": "no",
+        "moves_at_wake_time": "YES — the only thing that moves at wake time in the whole system",
+        "role": "ranks nodes to select top-$k_{\\mathrm{ret}}$ passages",
+        "source": "§3.4 lines 399-404"
+      },
+      {
+        "object": "$\\mathcal{P}$ — the passage store behind the nodes",
+        "who_learns_it": "nobody; never described",
+        "when": "presumably on ingest",
+        "moves_at_sleep_time": "unstated",
+        "moves_at_wake_time": "no",
+        "role": "supplies the actual context tokens handed to the generator",
+        "source": "referenced only as ‘the passages associated with the highest-activation nodes’ [Fig. 1 caption, lines 283-284] and ‘top-k associated passages’ [§3.4, line 402]. Its construction, chunking, and storage are never specified."
+      }
+    ]
+  },
+
+  "update_layer": {
+    "instantiates": "(U-E) only. Exactly one layer. There is no (U-W) and no (U-\\Theta) anywhere in the paper.",
+    "order": "n/a — single layer. Within a step the ordering is: write (integrate mt-4 over all edges) → read (mt-6, non-mutating). The read never feeds back into the write.",
+    "canonical_form": "$E_{k+1} = \\mathrm{wr}(E_k, \\hat c_k)$, $\\hat c_k = S(c_k; B_s)$",
+    "deviations_from_canonical": [
+      "$\\mathrm{wr}$ is a *global* linear operator, not a local insert. Canonical E-path writes touch $O(|\\hat c_k|)$ records; Memini's write touches $O(|\\mathcal{E}_k|)$ edges because decay is unconditional. This is the paper's defining structural choice and its main scaling exposure.",
+      "$\\mathrm{wr}$ is stateful in a hidden dimension: half the store ($E^{\\mathrm{s}}$) is unreadable and exists only to shape the readable half.",
+      "$S(\\cdot; B_s)$ produces relational structure (ordered entity pairs), not summary text — so the sleep-time compute here compresses a document to *edges*, not to prose. Contrast with Letta-style E-path work where $\\hat c$ is generated text.",
+      "$\\mathrm{ret}(E,q)$ is a multi-hop graph diffusion, not a nearest-neighbour lookup; the retrieved set is a function of the whole write history, not just of $q$. The paper states the consequence: “the same query issued at different times traverses different routes through the graph and recovers different context” [§3.3, lines 425-429]."
+    ],
+    "the_frames_sleep_time_test": "Under S0-DESIGN §2.3 (compute spent before $q$ arrives, whose product reduces wake-time cost or raises accuracy), Memini qualifies structurally: all edge dynamics run at document-ingest time, strictly before any query. But the second half of the definition — that the product reduces $B_t$ or raises accuracy — is *not demonstrated*, because no query was ever issued (App. A.5, line 1015). Memini is a sleep-time-compute mechanism with an untested wake-time payoff. The paper itself never uses the term ‘sleep’ or ‘sleep-time compute’ — verified by full-text search, zero hits."
+  },
+
+  "cost_table": {
+    "preamble": "Three of the four quantities are absent outright. This is not an oversight to be excused: the paper reports no FLOPs, no tokens, no wall-clock, no bytes, no latency, and no dollar figure anywhere in nine pages. The one quasi-quantitative row ($\\rho$) reports decay *time constants*, which is not the same thing as a performance-loss rate.",
+    "B_s": {
+      "value": "absent",
+      "what_the_paper_does_state": [
+        "One LLM entity-extraction call per arriving document, in the design [Figure 1(a), lines 213-219].",
+        "The integration is a single forward-Euler step per document, $\\Delta t = 1$ [App. A.2, lines 766-767].",
+        "The reported stream is 13 documents producing 124 co-occurrence events over 68 unique entity pairs [App. A.2, line 764].",
+        "In the experiment actually run, the extraction cost was zero LLM tokens — string matching replaced the LLM [App. A.2, lines 759-761]."
+      ],
+      "what_is_missing": "No FLOPs, no token count, no wall-clock, no per-document cost, no cost model, no amortization argument. $N_q$ (queries sharing a context, S0 Eq. (A)) is never mentioned, so the amortization equation cannot be evaluated for this paper at all.",
+      "source": "Figure 1(a) lines 213-219; App. A.2 lines 759-769; absence of any cost discussion in §3, §4, App. A"
+    },
+    "L_w": {
+      "value": "absent",
+      "what_the_paper_does_state": [
+        "The read path is: seed extraction (1 LLM call) → $T_{\\mathrm{sa}}$ spreading-activation iterations → top-$k_{\\mathrm{ret}}$ passages → answer generation (1 LLM call) [Figure 1(b), lines 235-256; §3.4, lines 399-402].",
+        "The propagation is ‘deterministic… runs for a fixed number of iterations $T$… and terminates without stochastic sampling’ [§3.4, lines 399-400] — i.e. bounded, but the bound is never given a number."
+      ],
+      "what_is_missing": "No TTFT, no ms/token, no ms/query, no value of $T_{\\mathrm{sa}}$ or $k_{\\mathrm{ret}}$, no graph size at which the propagation was timed. The read path was never executed: ‘we report no retrieval metrics or comparison against published systems’ [App. A.5, line 1015].",
+      "source": "§3.4 lines 399-404; Figure 1(b) lines 235-256; App. A.5 lines 1013-1019"
+    },
+    "C": {
+      "value": "absent in bytes; the state's *shape* is stated exactly",
+      "what_the_paper_does_state": [
+        "‘The full state of the memory at any time $t$ is therefore the graph $G(t) = (V(t), E(t))$ together with the edge states $\\{(w_{\\mathrm{fast}}(e,t), w_{\\mathrm{slow}}(e,t))\\}_{e\\in E(t)}$’ — i.e. exactly 2 scalars per directed edge, plus the adjacency [§3.1, lines 295-297].",
+        "‘the tuple $(A, B, w_{\\mathrm{fast}}, w_{\\mathrm{slow}})$ constitutes the minimal unit of memory in this system’ [§3.1, lines 197-199].",
+        "The experiment's store: 20 entities, 68 unique entity pairs [App. A.2, lines 759, 764]."
+      ],
+      "what_is_missing": "Bytes, precision (fp32/fp64), adjacency representation, passage-store size, and any per-user or per-session sizing. The paper never discusses storage.",
+      "note_writer_arithmetic_do_not_quote_as_the_papers": "[note-writer] 68 edges × 2 scalars = 136 scalars; at fp32 that is 544 bytes of dynamical state for the entire reported experiment. The adjacency and the passage store dominate by orders of magnitude. Neither figure is in the paper.",
+      "source": "§3.1 lines 197-199, 295-297; App. A.2 lines 759, 764"
+    },
+    "rho": {
+      "value": "decay time constants only: $\\tau_{\\mathrm{f}} = 2$ and $\\tau_{\\mathrm{s}} = 10$, in units of documents (one Euler step = one document); ratio $\\tau_{\\mathrm{s}}/\\tau_{\\mathrm{f}} = 5$. Effective single-timescale-equivalent decay when $E^{\\mathrm{s}}=0$: $\\tau = 1/(1/\\tau_{\\mathrm{f}} + \\mu) \\approx 1.43$ documents. Performance-loss-per-round: absent.",
+      "what_the_paper_does_state": [
+        "‘$\\tau_{\\mathrm{fast}} = 2$, $\\tau_{\\mathrm{slow}} = 10$, coupling $C = 0.2$, binary input $b = 1$, and a forward Euler step $\\Delta t = 1$ corresponding to one document per step’ [App. A.2, lines 765-767].",
+        "‘The timescale ratio $\\tau_{\\mathrm{slow}}/\\tau_{\\mathrm{fast}} = 5$ is chosen so that the three expected regimes are clearly distinguishable within the 13-step window’ [App. A.2, lines 767-769].",
+        "‘We choose $\\tau$ to match Memini's effective decay rate when $w_{\\mathrm{slow}} = 0$, namely $\\tau = 1/(1/\\tau_{\\mathrm{fast}} + C) \\approx 1.43$’ [App. A.4, lines 941-942].",
+        "Weight retention outcomes after 13 steps, by group, in Table 3 (see experiments)."
+      ],
+      "what_is_missing": "S0-DESIGN §2.4 defines $\\rho$ as performance loss per round. The paper reports no performance metric of any kind — no accuracy, no recall@k, no MRR — so no performance-loss rate exists. The reported numbers are association-weight magnitudes, which are not a task metric and are not comparable across the three configurations (see unfavorable_facts).",
+      "source": "App. A.2 lines 765-769; App. A.4 lines 941-942; Table 3 lines 971-1004"
+    }
+  },
+
+  "experiments": {
+    "scope_statement_by_the_authors": "‘This experiment is intentionally limited in scope. The corpus contains 13 documents, the four classified groups range from 5 to 25 pairs, and we report no retrieval metrics or comparison against published systems’ [App. A.5, lines 1013-1015].",
+    "model_sizes": "NONE. No language model was run in the reported experiment. Entity detection was ‘case-insensitive word-boundary string matching against the 20 predefined terms and a small set of hand-curated aliases, with abbreviations such as WHO and PCR matched case-sensitively to avoid spurious hits’ [App. A.2, lines 759-761]. The LLM of Figure 1(a) was not used. No model name, no parameter count, no vendor appears anywhere in the nine pages.",
+    "token_counts": "absent. No token count is reported for anything.",
+    "corpus": {
+      "what": "13 English Wikipedia articles on COVID-19 topics, ordered by the period in which each topic became prominent [App. A.1, lines 667-669].",
+      "phases": "4 phases: origin (Phase 1, step 0), containment (Phase 2, steps 1-4), vaccines (Phase 3, steps 5-7), variants and endemic transition (Phase 4, steps 8-12) [App. A.1, lines 668-669].",
+      "contamination_control": "‘Wikipedia articles are continuously edited, so using current revisions would contaminate early time steps with content written years after the events they describe. To prevent this, every article is fetched through the MediaWiki revision API at the last edit on or before a target date corresponding to its phase’ [App. A.1, lines 670-673]. Table 2 (lines 675-757) lists all 13 articles with revision IDs and dates — e.g. step 0 SARS-CoV-2 rev 943272842 @ 2020-02-29; step 7 mRNA vaccine rev 1009464972 @ 2021-02-28; step 12 Endemic COVID-19 rev 1130409555 @ 2022-12-30. [note-writer] This is genuinely careful methodology and is worth holding up in the monograph as an example, independent of what the experiment shows.",
+      "source": "App. A.1, lines 666-757; Table 2"
+    },
+    "event_stream": {
+      "entities": "20, five per phase [App. A.2, line 759]",
+      "co_occurrence_rule": "sentence-level, ‘with each entity pair generating at most one event per document regardless of how many sentences contain both’ [App. A.2, lines 761-763]",
+      "totals": "‘Across the 13 documents, the procedure produces 124 events covering 68 unique entity pairs’ [App. A.2, line 764]",
+      "parameters": "$\\tau_{\\mathrm{fast}}=2$, $\\tau_{\\mathrm{slow}}=10$, $C=0.2$, $b=1$, $\\Delta t=1$, $n=2$, both variables clamped $\\ge 0$ [App. A.2, lines 765-769]"
+    },
+    "qualitative_result_figure_2": {
+      "pairs_shown": "four, one per event-pattern group: bat–SARS-CoV-2, mRNA–vaccine, WHO–long COVID, Delta–vaccine [App. A.3, lines 775-777 and 920-928]",
+      "findings_as_stated": [
+        "bat–SARS-CoV-2: ‘appears once at step 0… and never again. This is the episodic regime, where $w_{\\mathrm{fast}}$ spikes and decays within a few steps while $w_{\\mathrm{slow}}$ rises briefly through coupling but never accumulates’ [lines 920-922].",
+        "mRNA–vaccine: ‘appears in three consecutive Phase 3 articles… The clustered events drive $w_{\\mathrm{slow}}$ upward, and the elevated $w_{\\mathrm{slow}}$ then sustains $w_{\\mathrm{fast}}$ above the episodic baseline well into 2022 after direct input stops, illustrating consolidation’ [lines 922-924].",
+        "WHO–long COVID: ‘appears once near the end of the stream… and produces a sharp $w_{\\mathrm{fast}}$ response with no accumulated $w_{\\mathrm{slow}}$ to sustain it’ [lines 924-926].",
+        "Delta–vaccine: ‘appears in three consecutive Phase 4 articles… showing ongoing consolidation, with $w_{\\mathrm{slow}}$ still rising near the end of the stream because the events occurred too recently to have decayed’ [lines 926-928].",
+        "Emergent recency: ‘The mRNA – vaccine and Delta – vaccine pairs receive the same number of events with the same spacing, yet Delta – vaccine retains a higher final state because its events arrive later in the stream and have had less time to decay’ [lines 929-931]."
+      ],
+      "no_numbers": "Figure 2 reports no numeric values in the text; only trajectories. Axis maxima appear to differ between panels (1.2 vs 1.50) in the extracted text — see todo_verify."
+    },
+    "ablation_table_3": {
+      "design": "Three configurations on 51 of the 68 pairs. (i) Memini = full coupled dynamics. (ii) Single-timescale ablation: ‘$w_{\\mathrm{slow}}$ is removed and the remaining variable evolves as $dw/dt = -w/\\tau + I$… We choose $\\tau$ to match Memini's effective decay rate when $w_{\\mathrm{slow}} = 0$, namely $\\tau = 1/(1/\\tau_{\\mathrm{fast}} + C) \\approx 1.43$, so that the two systems are mathematically identical in the absence of consolidation. Any divergence between them must therefore originate from $w_{\\mathrm{slow}}$’ [App. A.4, lines 936-943]. (iii) Uniform-retention baseline: ‘simply accumulates event counts without any decay, representing a memory that never forgets’ [lines 943-944].",
+      "grouping_rule": "By event count $n$ and last-event document index (0-12). Repeated = $n \\ge 3$; few mentions = $n \\in \\{1,2\\}$; no longer mentioned = last index $\\le 7$; recently mentioned = last index $\\ge 10$. ‘Pairs whose last event falls at index 8 or 9 are excluded so that the old and recent regions remain cleanly separated. The four-way classification covers 51 of the 68 pairs’ [App. A.4, lines 945-953].",
+      "metric": "mean final association weight (Memini reports $w_{\\mathrm{fast}}$) [Table 3 caption, lines 965-970]",
+      "numbers_exact": [
+        {"pattern": "Repeated, no longer mentioned", "N": 5, "memini_wfast": 0.104, "single_timescale": 0.003, "uniform": 3.000},
+        {"pattern": "Few mentions, no longer mentioned", "N": 25, "memini_wfast": 0.026, "single_timescale": 0.000, "uniform": 1.280},
+        {"pattern": "Repeated, recently mentioned", "N": 8, "memini_wfast": 0.426, "single_timescale": 0.260, "uniform": 4.625},
+        {"pattern": "Few mentions, recently mentioned", "N": 13, "memini_wfast": 0.463, "single_timescale": 0.451, "uniform": 1.000}
+      ],
+      "source_of_numbers": "Table 3, lines 971-1004",
+      "headline_as_claimed": "‘The headline result is in the first row… Memini retains a mean weight roughly thirty times larger than the single-timescale ablation. This gap cannot be explained by faster decay, since the two systems share the same effective decay rate when $w_{\\mathrm{slow}} = 0$, and it isolates the contribution of the slow variable’ [App. A.4, lines 955-958].",
+      "controls_as_claimed": "‘Few-mention associations that are no longer mentioned collapse to near zero in both Memini and the ablation, while uniform retention still carries them at a mean of 1.28, showing the cost of having no decay at all. Repeated associations that remain recently mentioned look similar across Memini and the ablation, since recent input dominates and consolidation has had less time to make its effect visible. Few-mention associations that are recently mentioned are tied within numerical precision, confirming that Memini gains no spurious advantage where consolidation has not had time to occur’ [App. A.4, lines 958-964]."
+    },
+    "benchmarks": "NONE. No QA benchmark, no retrieval benchmark, no published-system comparison. ‘we report no retrieval metrics or comparison against published systems’ [App. A.5, line 1015].",
+    "baselines": "Two, both self-constructed and both non-standard: a matched single-timescale ODE and an undecayed event counter. No published memory system (MemGPT, GraphRAG, HippoRAG 2, A-MEM, SYNAPSE, MemoryBank…) was run, despite all of them being tabulated in Table 1."
+  },
+
+  "scale_ceiling": "13 documents; 20 hand-predefined entities; 124 co-occurrence events; 68 unique entity pairs; 51 pairs classified into 4 groups of N = 5, 25, 8, 13; 13 Euler steps of a 2-variable ODE per pair. Zero LLM inference calls. Zero retrieval queries. Zero benchmark numbers. The largest 'model' demonstrated is a 2-state linear filter. As a fraction of any deployment scale this is effectively zero — and the authors say so themselves in App. A.5 and in the abstract ('an early-stage conceptual design without experimental evaluation', lines 39-40).",
+
+  "concept_ledger_delta": {
+    "new_concepts": [
+      {"name": "accumulating vs learning (memory)", "definition": "a store that only grows is accumulating; a store that consolidates, forgets and reorganizes in response to experience is learning", "source": "§1, lines 42-45", "note": "The single most reusable line in the paper. Belongs in the monograph's E-path framing as the criterion that separates Memini from MemGPT/Mem0/Zep."},
+      {"name": "multi-timescale external memory (Benna–Fusi in $E$)", "definition": "each store record carries $n_{\\mathrm{BF}}$ coupled variables of increasing time constant, of which only the fastest is readable", "source": "§3.1-3.2, lines 197-204, 288-302; $n_{\\mathrm{BF}}=2$ following Kaplanis et al. 2018 at lines 342-343"},
+      {"name": "hidden consolidation variable", "definition": "a component of the store's state that is never read but modulates what is read, so that two records with identical readable value diverge in future", "source": "§3.2, lines 333-340: ‘Two edges with identical current $w_{\\mathrm{fast}}$ but different $w_{\\mathrm{slow}}$ values will diverge over subsequent time steps.’"},
+      {"name": "emergent selective forgetting", "definition": "forgetting produced by the substrate's dynamics rather than by a deletion rule, threshold or gating module", "source": "§3.2, lines 362-364; restated App. A.4, lines 1008-1010"},
+      {"name": "trajectory-dependent memory state", "definition": "the store depends on the *order* of arrival, not only the set of documents", "source": "§3.3, lines 461-465"},
+      {"name": "multi-cue convergence", "definition": "all query entities seed simultaneously so retrieval surfaces nodes where several independent activation waves meet", "source": "§3.3, lines 430-434"},
+      {"name": "fan effect in retrieval ($1/\\deg_{\\mathrm{out}}$)", "definition": "out-degree normalization penalizing hub nodes during spreading activation", "source": "Eq. 3 and lines 395-396, crediting Anderson 1974"},
+      {"name": "unlabeled directed association edge", "definition": "meaning carried by connectivity pattern, strength and direction rather than by an explicit relation type", "source": "§3.1, lines 169-173, motivated by spike-timing-dependent plasticity (Bi & Poo 1998)"}
+    ],
+    "extended_or_renamed": [
+      {"term": "consolidation", "change": "extended from $\\Theta$ (weights, the $\\Theta$-path meaning) to $E$ (external edge scalars). The monograph must mark this as a *reuse of the word on a different substrate*, not a continuation.", "source": "§3.2-3.3"},
+      {"term": "episodic vs semantic", "change": "reframed from two stores (CLS) to two regimes of one dynamical structure", "source": "§3.3, lines 414-418"},
+      {"term": "forgetting", "change": "reframed from uniformly-harmful degradation to a functional property of the substrate", "source": "§3.2, lines 364-373; App. A.4, lines 1010-1012"},
+      {"term": "fast / slow", "change": "COLLISION WARNING — in this paper these are two timescales inside $E$, not the monograph's fast weights $W$ / slow weights $\\Theta$. Must be disambiguated on first use in the chapter.", "source": "§3.1, lines 197-204"}
+    ],
+    "deprecated_by_the_paper": [
+      {"target": "separate stores, explicit rules, gating modules for consolidation", "claim": "unnecessary — the three behaviors ‘emerge as facets of a single mechanism’", "source": "Abstract lines 37-39; §3.3 lines 407-409; §4 lines 445-447"},
+      {"target": "recall-driven reinforcement", "claim": "disqualified as a mechanism for the 'selective forgetting' property in the Table 1 comparison", "source": "Table 1 caption, lines 82-84: ‘Explicit deletion, per-query reweighting, threshold archival, and recall-driven reinforcement do not qualify.’ No argument is given for the disqualification."},
+      {"target": "single-timescale decay", "claim": "structurally incapable — ‘a single timescale cannot be both fast enough for recent evidence and slow enough to preserve what repetition confirms’", "source": "§2, lines 194-146"}
+    ]
+  },
+
+  "open_questions": [
+    {"q": "Full empirical validation, including retrieval and benchmarks suited to evolving-evidence memory, is not done.", "location": "§4 Discussion, lines 456-459: ‘Scaling this up to full empirical validation, including retrieval and benchmarks suited to memory that adapts to an evolving stream of evidence, is the immediate next step.’"},
+    {"q": "Validation on larger and more varied document streams; retrieval quality on temporal question-answering corpora; comparison against existing memory-augmented systems.", "location": "App. A.5, lines 1016-1019"},
+    {"q": "Whether the power-law forgetting profile actually appears. The paper claims it only for the *general* Benna–Fusi chain, while using $n_{\\mathrm{BF}}=2$: ‘The coupled decay departs from the simple exponential profile of single-timescale systems and, in the general Benna-Fusi chain model, approaches the power-law form established empirically for human memory’.", "location": "§3.3, lines 419-423; $n=2$ at §3.2 line 343"},
+    {"q": "How $\\tau_{\\mathrm{f}}, \\tau_{\\mathrm{s}}, \\mu, b_{\\mathrm{in}}$ should be set when the stream is not a 13-step window. The ratio used was chosen for visibility inside that window, not derived from data or from a target retention horizon.", "location": "App. A.2, lines 767-769"},
+    {"q": "The retrieval hyperparameters $\\alpha_{\\mathrm{sa}}, s_{\\mathrm{sp}}, T_{\\mathrm{sa}}, k_{\\mathrm{ret}}$ have no values and no selection procedure, and the propagation has no stated convergence or boundedness condition.", "location": "§3.4, lines 392-402 (symbols introduced, no values); absence of any spectral condition"},
+    {"q": "Graph growth is unbounded: no node/edge pruning rule, no eviction, no capacity bound is stated. Weights decay but edges are never said to be removed.", "location": "§3.1 lines 172-175 and 295-297; §3.2 line 362 (‘eventually disappear’ refers to weights)"},
+    {"q": "Whether LLM entity extraction is reliable enough to drive the dynamics — extraction noise feeds directly into $I_e(t)$ with no filtering, and the design's LLM extractor was never exercised.", "location": "Figure 1(a) lines 213-219 (design) vs App. A.2 lines 759-761 (string matching used instead)"},
+    {"q": "Contradiction handling. The motivation is that ‘old ones become obsolete’ [§1, line 63], but the mechanism only decays unsupported associations; a fact actively contradicted by new documents has no path to being overwritten faster than by neglect. The paper never addresses direct contradiction.", "location": "§1 lines 62-63 (motivation) vs §3.2 lines 315-317 (‘There is no explicit negative input’)"},
+    {"q": "Whether usage should reinforce. Retrieval deliberately does not write [§3.4, lines 402-404], and recall-driven reinforcement is disqualified [Table 1 caption], but no argument is offered. A fact queried daily but never re-documented decays to zero.", "location": "§3.4 lines 402-404; Table 1 caption lines 82-84"},
+    {"q": "How the passage store $\\mathcal{P}$ is built, chunked and attached to nodes — entirely unspecified, yet it is what actually enters the generator's prompt.", "location": "Figure 1 caption lines 283-284; §3.4 line 402"},
+    {"q": "Whether trajectory dependence is desirable or hazardous in practice — stated as a property, never evaluated, and it forbids order-independent re-ingest.", "location": "§3.3, lines 461-465"},
+    {"q": "Whether the mechanism composes with the parametric ($\\Theta$) path at all. Titans and Nested Learning are invoked as independent validation of the multi-timescale principle but no combination is proposed or tested.", "location": "§3.2, lines 329-331"}
+  ],
+
+  "unfavorable_facts": [
+    {
+      "fact": "No language model was run in the only experiment. The design's write path is 'LLM extracts entities and co-occurrences' [Figure 1(a), lines 213-219], but the appendix substitutes 'case-insensitive word-boundary string matching against the 20 predefined terms and a small set of hand-curated aliases' [App. A.2, lines 759-761]. The entire LLM interface of the system — the part that makes it an *LLM* memory system — is unvalidated.",
+      "location": "Figure 1(a) lines 213-219 vs App. A.2 lines 759-761",
+      "severity": "high"
+    },
+    {
+      "fact": "The graph never grew. The paper's structural claim is that edges 'carry persistent, evolving weights that change as new documents arrive' on a graph whose nodes are 'entities or concepts identified in the incoming document stream' [§3.1, lines 164-166, 172-175]. In the experiment the 20 nodes were fixed by hand in advance, five per pandemic phase [App. A.2, line 759]. Node discovery, the noisiest and most failure-prone part of any graph-memory system, was bypassed.",
+      "location": "§3.1 lines 164-175 vs App. A.2 line 759",
+      "severity": "high"
+    },
+    {
+      "fact": "The read path was never executed. Spreading activation (Eq. 3) has four hyperparameters ($\\delta$, $S$, $T$, $k$) and the paper gives a value for none of them. 'we report no retrieval metrics or comparison against published systems' [App. A.5, line 1015]. Since the paper's entire value proposition is that retrieval changes with experience, the proposition is untested.",
+      "location": "§3.4 lines 392-402; App. A.5 lines 1013-1015",
+      "severity": "high"
+    },
+    {
+      "fact": "Table 1's comparison axes are defined to be exactly Memini's feature list. The caption states this outright: 'Memory-augmented LLM systems compared on the three properties that together define Memini' [Table 1 caption, lines 79-82]. It then pre-emptively disqualifies competing mechanisms without argument: 'Explicit deletion, per-query reweighting, threshold archival, and recall-driven reinforcement do not qualify' [lines 82-84]. Seven prior systems receive 20 crosses and 1 check; Memini receives 3 checks. No system in the table was run.",
+      "location": "Table 1, lines 79-144",
+      "severity": "high"
+    },
+    {
+      "fact": "The headline 30× rests on N = 5 pairs, with a near-zero denominator. 'Repeated, no longer mentioned' has N = 5, Memini 0.104 vs single-timescale 0.003 [Table 3, lines 981, 986, 991, 996]. [note-writer] 0.104/0.003 = 34.7, and since 0.003 is reported to three decimals the true ratio is bounded only between roughly 31× and 42×. No variance, confidence interval, or significance test is reported for any cell of Table 3.",
+      "location": "Table 3, lines 965-1004; App. A.4 lines 955-958",
+      "severity": "high"
+    },
+    {
+      "fact": "The 'tied within numerical precision' claim is not accurate. For 'Few mentions, recently mentioned' the paper writes that Memini and the ablation 'are tied within numerical precision, confirming that Memini gains no spurious advantage' [App. A.4, lines 962-964]. The reported values are 0.463 vs 0.451 [Table 3, line 991-999] — a 2.7% difference, at the same three-decimal precision used for every other cell. It is a small gap, not a tie.",
+      "location": "App. A.4 lines 962-964 vs Table 3 lines 991-999",
+      "severity": "medium"
+    },
+    {
+      "fact": "The 'look similar' claim in the third row is a 64% gap. 'Repeated associations that remain recently mentioned look similar across Memini and the ablation' [App. A.4, lines 960-962]; the numbers are 0.426 vs 0.260 [Table 3]. [note-writer] 0.426/0.260 = 1.64. The paper describes as 'similar' a gap larger than most published ablation effects, in a row where the control argument requires them to be similar.",
+      "location": "App. A.4 lines 960-962 vs Table 3",
+      "severity": "medium"
+    },
+    {
+      "fact": "The metric is not comparable across the three configurations, and the paper compares them anyway. 'Mean final association weight' means a decayed ODE state for Memini and the ablation but a raw cumulative event count for Uniform — hence Uniform's 3.000, 1.280, 4.625, 1.000, which are simply the mean event counts per group. Uniform therefore has the largest number in every single row. The paper reads this as 'showing the cost of having no decay at all' [App. A.4, lines 959-960], but with no retrieval metric and no normalization, nothing in Table 3 establishes that Memini's smaller numbers are *better* for any downstream purpose.",
+      "location": "Table 3 lines 971-1004; App. A.4 lines 958-960",
+      "severity": "high"
+    },
+    {
+      "fact": "By the paper's own numbers, consolidation loses to recency in ranking terms. Retrieval ranks nodes by activation, which is driven by $w_{\\mathrm{fast}}$, so what matters is the *ordering* of weights, not their absolute size. Memini's 'Repeated, no longer mentioned' group (the case the mechanism exists for) finishes at 0.104, well below 'Few mentions, recently mentioned' at 0.463 and 'Repeated, recently mentioned' at 0.426 [Table 3]. [note-writer] A twice-mentioned association from last week outranks a five-times-confirmed association from six months ago by roughly 4.5×. Whether that is the intended behavior is never discussed.",
+      "location": "Table 3 lines 981-999; ranking rule at §3.4 lines 400-402",
+      "severity": "high"
+    },
+    {
+      "fact": "The decisive parameter was chosen for demonstrability, not from data. 'The timescale ratio $\\tau_{\\mathrm{slow}}/\\tau_{\\mathrm{fast}} = 5$ is chosen so that the three expected regimes are clearly distinguishable within the 13-step window' [App. A.2, lines 767-769]. The ratio between the two time constants is the one parameter that decides whether consolidation is visible at all, and it was set to make the result visible.",
+      "location": "App. A.2, lines 767-769",
+      "severity": "high"
+    },
+    {
+      "fact": "The 'no explicit rules' claim has explicit rules attached to it. The thesis is that selective retention 'is not imposed by an explicit rule, a threshold, or a gating module, but emerges from the dynamics themselves' [§3.2, lines 362-364]. Yet the implementation adds a non-negativity clamp on both variables [App. A.2, line 767], the classification excludes pairs whose last event falls at index 8 or 9 [App. A.4, lines 951-952], and retrieval hard-truncates at top-$k$ after a hard-coded $T$ iterations [§3.4, lines 399-402].",
+      "location": "§3.2 lines 362-364; App. A.2 line 767; App. A.4 lines 951-952; §3.4 lines 399-402",
+      "severity": "medium"
+    },
+    {
+      "fact": "17 of 68 pairs (25%) were excluded from the analysis by the classification rule, and the excluded band (last event at index 8 or 9) is chosen by the authors. 'Pairs whose last event falls at index 8 or 9 are excluded so that the old and recent regions remain cleanly separated. The four-way classification covers 51 of the 68 pairs' [App. A.4, lines 951-953]. The excluded band is precisely the transitional regime where the fast/slow distinction is hardest to demonstrate.",
+      "location": "App. A.4, lines 951-953",
+      "severity": "medium"
+    },
+    {
+      "fact": "The abstract states there is no experimental evaluation while the paper contains one. 'This workshop article describes an early-stage conceptual design without experimental evaluation' [Abstract, lines 39-40] versus Appendix A's quantitative ablation with Table 3. [note-writer] Most plausibly the appendix was added in v2/v3 and the abstract not updated. Either way, a reader citing the abstract and a reader citing Table 3 will describe this paper differently.",
+      "location": "Abstract lines 39-40 vs Appendix A lines 656-1019",
+      "severity": "medium"
+    },
+    {
+      "fact": "Every claim in §3.3 is hedged as expectation, not result: 'Three characteristic behaviors are expected to follow from the dynamics' [§3.3, line 407]; 'are expected to emerge together' [§4, lines 445-447]; 'is intended to produce' [§1, lines 87-89]. This is honest of the authors, but it means the monograph must not present any of the three emergent properties as demonstrated.",
+      "location": "§1 lines 87-89; §3.3 line 407; §4 lines 445-447",
+      "severity": "medium"
+    },
+    {
+      "fact": "The self-declared novelty is narrow and concedes the components. 'The novelty is not an external memory, a graph, or a retrieval procedure. It is that the memory itself is a dynamical state' [§1, lines 92-95]. The propagation equation is 'adapted from Jiang et al. (2026)' [line 396], the dynamics are 'the simplest instantiation of the Benna-Fusi chain model… following Kaplanis et al. (2018)' [lines 342-343], and the fan effect is Anderson (1974). The contribution is the composition, which is exactly the part not empirically tested.",
+      "location": "§1 lines 92-95; §3.2 lines 342-343; §3.4 lines 396-398",
+      "severity": "medium"
+    },
+    {
+      "fact": "The write cost scales with the store, not with the input. Decay and coupling in Eqs. 1-2 apply to every edge every step, since neither term is conditioned on $I_e(t) \\ne 0$; App. A.2's 'Each pair is integrated independently using the same parameters' [line 765] confirms all 68 pairs were integrated for all 13 steps despite only 124 events. [note-writer] That is $O(|\\mathcal{E}|)$ work per document, i.e. a full-store scan per tick. The linearity of the system permits a lazy closed-form catch-up instead, but the paper neither notices the cost nor proposes the fix.",
+      "location": "Eqs. 1-2 lines 288-302; App. A.2 line 765",
+      "severity": "medium"
+    },
+    {
+      "fact": "The forward Euler step is half the fastest time constant. $\\Delta t = 1$ with $\\tau_{\\mathrm{f}} = 2$ [App. A.2, lines 765-767] gives $\\Delta t/\\tau_{\\mathrm{f}} = 0.5$. [note-writer] No discretization-error or stability analysis is offered, and no comparison against a finer integrator is run, so it is not established that the reported trajectories are the ODE's trajectories rather than artefacts of a coarse explicit integrator.",
+      "location": "App. A.2, lines 765-767",
+      "severity": "medium"
+    },
+    {
+      "fact": "The corpus is a single topic with an author-known answer key. 'We use Wikipedia articles tracking the COVID-19 pandemic because the topic has a clear, widely understood phase structure, with associations that should plausibly consolidate within a phase… and others that should fade across phases' [App. A, lines 661-665]. The 20 entities, their phase assignment, the 13 articles and their ordering were all chosen by the authors knowing which associations they wanted to consolidate and which to fade.",
+      "location": "App. A lines 661-665; App. A.1-A.2",
+      "severity": "high"
+    },
+    {
+      "fact": "Composition with the $\\Theta$/W path is claimed as support and never tested. 'The same multi-timescale principle has been validated independently in optimization theory (Behrouz et al., 2025a) and in empirical neural architectures (Behrouz et al., 2025b)' [§3.2, lines 329-331] — that is Nested Learning and Titans, invoked in one sentence as external corroboration. No shared formalism is drawn, no combination is proposed, and neither is mentioned again.",
+      "location": "§3.2, lines 329-331",
+      "severity": "medium"
+    }
+  ],
+
+  "cross_path_citations": {
+    "verdict": "PARTIAL AND ORNAMENTAL. The paper does cite the W-path and the $\\Theta$-path, but in exactly two ways: as a foil (the parametric paradigm it rejects, cited at survey level) and as a one-sentence appeal to authority (Titans + Nested Learning). It never draws a shared formalism, never proposes a combination, never runs a comparison, and never returns to either citation. For the monograph's bridge-chain purposes this counts as *contact without engagement* — the strongest cross-path gesture in the E-path corpus so far, and still not a bridge.",
+    "W_path": {
+      "cited": true,
+      "which": "Titans (Behrouz, Zhong & Mirrokni, NeurIPS 2025) — listed in References at lines 515-517.",
+      "how": "One sentence, §3.2 lines 329-331: 'The same multi-timescale principle has been validated independently in optimization theory (Behrouz et al., 2025a) and in empirical neural architectures (Behrouz et al., 2025b).' Titans is 2025b. It appears nowhere else in the paper.",
+      "not_cited": "Nothing else from the TTT / fast-weights line: no TTT (Sun et al.), no Miras, no Atlas, no TNT, no DeltaNet/Gated DeltaNet, no Mamba/SSM work, no 'Do Language Models Need Sleep?', no Memory Caching."
+    },
+    "Theta_path": {
+      "cited": true,
+      "which": "Nested Learning (Behrouz, Razaviyayn, Zhong & Mirrokni, NeurIPS 2025) at lines 512-514, plus the parametric continual-learning literature as a foil: Shi et al. 2025 (ACM CSUR survey), Wu et al. 2024 (survey), De Lange et al. 2022 (TPAMI survey), Sun et al. 2022 (Black-Box Tuning).",
+      "how": "Nested Learning gets the same single sentence as Titans (§3.2, 'validated independently in optimization theory'). The rest are used only to establish that the parametric paradigm is expensive, forgetful and unavailable to API consumers [Abstract/§1 block lines 10-20; §2 lines 154-160].",
+      "not_cited": "No LoRA, no ROME, no MEMIT, no model-editing paper by name ('targeted knowledge editing' appears as a bare phrase at §2 line 156 with only the two surveys attached), no SEAL, no Generative Adapter, no Memory Layers, no 'Language Models Need Sleep', no SCM. The $\\Theta$-path's actual mechanisms are never engaged — only its survey-level reputation."
+    },
+    "E_path": {
+      "cited": true,
+      "which": "Dense and current: RAG (Lewis et al. 2020), MemGPT (Packer et al. 2024), Generative Agents (Park et al. 2023), GraphRAG (Edge et al. 2025), HippoRAG 2 (Gutiérrez et al. 2025), A-MEM (Xu et al. 2025), SYNAPSE (Jiang et al. 2026), SA-RAG (Pavlović et al. 2025), CatRAG (Lau et al. 2026), MemoryBank (Zhong et al. 2024), ACT-R-LLM (Honda et al. 2026), Mialon et al. 2023, Zaharia et al. 2024.",
+      "how": "§2 lines 177-195 organizes them into three rebutted lines of work; Table 1 tabulates seven of them. SYNAPSE is the direct technical ancestor of Eq. 3 [line 396]."
+    },
+    "sleep_time_compute_literature": {
+      "cited": false,
+      "detail": "The words 'sleep', 'sleep-time', and 'offline compute' do not appear anywhere in the paper — verified by full-text search, zero hits. Letta's Sleep-time Compute (2504.13171), Mem0, Zep, and ReasoningBank are absent from the bibliography. The paper's ingest-time consolidation is a sleep-time mechanism in the S0 sense without knowing the name.",
+      "monograph_consequence": "This is a clean instance of the disconnect S0-DESIGN §5 says to record explicitly: a 2026 paper doing sleep-time compute on the E-path, citing 13 E-path systems, and not citing the paper that named the technique."
+    },
+    "bio_path": {
+      "cited": true,
+      "which": "Benna & Fusi 2016, Fusi et al. 2005, Kaplanis et al. 2018, Zenke & Laborieux 2025, Bi & Poo 1998, McClelland et al. 1995, Kumaran et al. 2016, Tulving 1984, Wixted & Ebbesen 1997, Nørby 2015, Collins & Loftus 1975, Anderson 1974.",
+      "how": "This is the paper's real intellectual home — the neuroscience citations are load-bearing, not decorative. Notably absent: any sleep/replay neuroscience (no PLOS sleep-and-catastrophic-forgetting, no PAD/dreaming work) despite the CLS framing. The paper takes *synaptic consolidation* from biology, not *sleep*."
+    },
+    "theory_capacity_path": {
+      "cited": false,
+      "detail": "No capacity or rate–distortion work at all. No discussion of how much a graph of $|\\mathcal{E}|$ two-scalar edges can hold, or what is lost."
+    }
+  },
+
+  "figures": [
+    {
+      "id": "Figure 1 (a)(b)(c)",
+      "location": "lines 213-286",
+      "what_it_shows": "The complete system in one frame: (a) write path — document stream → LLM entity extraction → co-occurrences → associative memory, with edge thickness rendering $w_{\\mathrm{fast}}$; (b) read path — user query → LLM seed extraction → seed nodes (red) → spreading activation → top-k passages → LLM answer generation; (c) edge dynamics — one edge A→B at three moments: single co-occurrence (transient trace, $t_1$), repeated co-occurrences (consolidation, $t_2$), no recent co-occurrences (fades but persists, $t_3$).",
+      "why_reproduce": "It is the cleanest single picture of the E-path write/read split anywhere in the corpus, and panel (c) is the entire thesis in three glyphs. Use it to teach the reader where the three LLM call sites are — one on write, two on read — which is the whole of the paper's serving cost story."
+    },
+    {
+      "id": "Figure 2",
+      "location": "lines 779-918",
+      "what_it_shows": "$w_{\\mathrm{fast}}$ (solid blue) and $w_{\\mathrm{slow}}$ (dashed red) trajectories for four entity pairs over the 13-document COVID-19 stream, with green triangles marking co-occurrence events and background colors marking the four pandemic phases. Panels: bat–SARS-CoV-2 (episodic), mRNA–vaccine (consolidation), WHO–long COVID (late episodic), Delta–vaccine (ongoing consolidation, recency).",
+      "why_reproduce": "The paper's only data figure and the only place a reader can *see* the two-timescale mechanism doing its job. Also the best place to show a reader what 'consolidation' looks like as a time series rather than as a metaphor. Reproduce with the caveat that panel y-axes may not share a scale (see todo_verify)."
+    },
+    {
+      "id": "Table 1",
+      "location": "lines 79-144",
+      "what_it_shows": "Seven prior memory-augmented LLM systems vs Memini on three binary properties (evolving weights / multi-timescale / selective forgetting). Only MemoryBank + ACT-R-LLM earn a single check; Memini earns three.",
+      "why_reproduce": "Reproduce it precisely *because* it is definitionally rigged — the caption says the axes are 'the three properties that together define Memini'. It is a compact teaching object for the monograph's honesty-caveat section on author-constructed comparison tables, and it doubles as a genuinely useful map of the E-path's 2024-2026 population."
+    },
+    {
+      "id": "Table 2",
+      "location": "lines 675-757",
+      "what_it_shows": "The 13 Wikipedia articles with phase, MediaWiki revision ID and revision date (943272842 @ 2020-02-29 through 1130409555 @ 2022-12-30).",
+      "why_reproduce": "As a positive methodological example, not as a result. Pinning every document to a dated revision to prevent hindsight contamination is exactly the discipline the temporal-knowledge literature usually skips, and the monograph's evaluation module (T9) should point at it."
+    },
+    {
+      "id": "Table 3",
+      "location": "lines 965-1004",
+      "what_it_shows": "Mean final association weight for 51 pairs in four event-pattern groups under Memini / single-timescale ablation / uniform retention.",
+      "why_reproduce": "The paper's only quantitative claim, and the object of most of the unfavorable facts above. Reproduce in full, all twelve cells and all four N values — the reader needs the third row (0.426 vs 0.260, called 'similar') and the fourth (0.463 vs 0.451, called 'tied') next to the headline row to judge it."
+    }
+  ],
+
+  "systems_implications": {
+    "decode_answer": {
+      "claim": "Nothing changes in decode. $\\Theta$ is frozen, there are no fast weights, no per-request weight state, no extra state to move per token. From the serving stack's point of view this is ordinary RAG: build a prompt containing the query plus top-$k_{\\mathrm{ret}}$ passages, then decode normally.",
+      "grounding": "§3.1 lines 304-307 ('The backbone can be replaced or upgraded without disturbing what the memory has learned'); §3.4 lines 399-404; Figure 1(b)."
+    },
+    "wake_time_cost_breakdown": {
+      "claim": "Per query the system spends: 1 LLM call for seed extraction, $T_{\\mathrm{sa}}$ sparse propagation iterations over the graph, a top-$k_{\\mathrm{ret}}$ passage fetch, and 1 LLM call for answer generation.",
+      "grounding": "Figure 1(b) lines 235-256; §3.4 lines 399-402.",
+      "unknowns": "$T_{\\mathrm{sa}}$, $k_{\\mathrm{ret}}$, $s_{\\mathrm{sp}}$, $\\alpha_{\\mathrm{sa}}$ all have no values in the paper, so the middle term cannot be costed. [note-writer] Each propagation iteration is one SpMV over the edge set: $O(|\\mathcal{E}|)$ multiply-adds, memory-bound, on the host — negligible against two LLM calls until $|\\mathcal{E}|$ reaches the hundreds of millions. The paper never says this."
+    },
+    "state_bytes": {
+      "claim": "Two scalars per directed edge, plus adjacency, plus the passage store. Bytes are never stated.",
+      "grounding": "§3.1 lines 197-199, 295-297 (the state is defined as exactly this); App. A.2 lines 759, 764 (20 entities, 68 unique pairs).",
+      "note_writer_inference": "[note-writer] 68 edges × 2 fp32 = 544 bytes of dynamical state in the reported experiment. Extrapolating the shape rather than the numbers: at $10^8$ edges the dynamical state is ~0.8 GB in fp32 — still host DRAM, still nothing on the accelerator. The E-path's cost signature is exactly this: $C$ is negligible on the device, and the passage store, not the weights, dominates storage. Contrast the $\\Theta$-path, where per-user weight deltas are MB–GB and land in HBM."
+    },
+    "bytes_moved_per_token": {
+      "claim": "Zero. No component of $E$ is read during decode; it is read once, before the prompt is assembled, to rank nodes.",
+      "grounding": "§3.4 lines 402-404 ('Retrieval reads the current memory state but does not modify it')."
+    },
+    "batching": {
+      "claim": "Batching is completely unaffected. Because there is no per-request weight state, shared-weight batching — the invariant the W-path and $\\Theta$-path break — holds exactly as in a stock serving stack. This is the E-path's structural advantage and the reason it composes with existing infrastructure while the other two paths do not.",
+      "grounding": "§3.1 lines 304-307; absence of any per-request parametric state anywhere in the paper. [note-writer] The comparison to the other two paths is the note-writer's, not the paper's."
+    },
+    "ingest_path_is_the_only_stateful_one": {
+      "claim": "The write path is the only mutating component, and it has an unusual cost shape: $O(|\\mathcal{E}|)$ per arriving document, not $O(|\\hat c_k|)$, because decay and coupling in Eqs. 1-2 are unconditional. Every document arrival touches every edge.",
+      "grounding": "Eqs. 1-2 lines 288-302; App. A.2 line 765 ('Each pair is integrated independently using the same parameters').",
+      "note_writer_inference": "[note-writer] At the paper's scale (68 edges × 13 steps = 884 Euler updates) this is free. At store scale it is a full sweep of the store per tick, which is a compaction-style background job, not an incremental write. The mitigation is available and unmentioned: the system (mt-5) is LTI, so each edge can be advanced lazily in closed form from its last-touched timestamp — $z_e(t) = e^{A(t-t_{\\mathrm{last}})} z_e(t_{\\mathrm{last}})$ — turning the sweep into $O(|\\hat c_k|)$ touched edges. This is the single most useful engineering observation the chapter can add."
+    },
+    "where_the_traffic_lands": {
+      "claim": "Nowhere near the accelerator. The dynamical state is a graph-database workload: pointer-chasing SpMV on host DRAM (or a graph store) for the read, and a scan-or-lazy-update for the write. HBM sees only the two ordinary LLM calls.",
+      "grounding": "[note-writer] inference from the state definition (§3.1 lines 295-297) and the read/write structure (Figure 1). The paper contains no hardware or systems discussion whatsoever."
+    },
+    "ingest_ordering_constraint": {
+      "claim": "The ingest pipeline cannot be parallelized or replayed out of order per edge. 'the same set of documents arriving in a different order produces a different associative landscape' [§3.3, lines 461-465]. Rebuilding the store from a corpus requires replaying the stream in its original order; sharding by document is only safe if edges do not cross shards.",
+      "grounding": "§3.3 lines 461-465. The paper presents this as a feature and never notes the operational consequence.",
+      "note_writer_inference": "[note-writer] Combined with the lazy-LTI observation above, per-edge event streams *are* independent (each edge is its own filter, App. A.2 line 765: 'Each pair is integrated independently'), so sharding by edge is safe even though sharding by document is not. That is a real and non-obvious systems property of this design."
+    },
+    "amortization_under_S0_eq_A": {
+      "claim": "Cannot be evaluated. $C_{\\mathrm{sleep}}$ = one LLM extraction call per document plus the edge sweep; $C_{\\mathrm{wake}}$ = two LLM calls plus propagation; $N_q$ = unreported. The paper gives no number for any of the three terms.",
+      "grounding": "absence throughout; App. A.5 lines 1013-1015 confirms no cost or retrieval measurement was made.",
+      "note_writer_inference": "[note-writer] Structurally, Memini's amortization is favourable in the way all E-path systems are: the sleep-time work is per-document and shared by every future query that touches those edges, so $N_q$ is unbounded above. But the paper contributes no evidence on the numerator or the denominator, and S0-DESIGN §7's standing caveat applies — no paper in this corpus reports the $N_q$ distribution."
+    },
+    "the_one_genuinely_new_serving_object": {
+      "claim": "A store whose contents change while nobody is querying it. Standard RAG indexes are static between rebuilds; Memini's weights move on every document tick, which means retrieval results are not reproducible across time even for an identical query and identical corpus.",
+      "grounding": "§3.3 lines 425-429: 'the same query issued at different times traverses different routes through the graph and recovers different context'.",
+      "note_writer_inference": "[note-writer] This breaks caching of retrieval results, breaks regression testing of a RAG stack, and makes A/B comparison time-confounded. The paper names the property as a virtue and never mentions any of these consequences."
+    }
+  },
+
+  "todo_verify": [
+    {
+      "item": "The vendored .txt has two-column extraction scramble in the first page: the Abstract block (lines 8-40) is interleaved with what is clearly §1/§2 body text (lines 10-27 read as Related Work prose sitting inside the abstract region). Line-number citations in this note are to the vendored text and are stable, but any verbatim quotation destined for print must be re-checked against the PDF.",
+      "search_term": "\"Existing work addresses this through two main paradigms\"  and  \"LLMs are trained once, then deployed into a world that never stops changing\""
+    },
+    {
+      "item": "Figure 2 panel y-axis scales appear to differ (extracted ticks show 0.0-1.2 on two panels and 0.00-1.50 on two others). If true, cross-panel visual comparison of trajectory heights is misleading and the monograph must say so when reproducing.",
+      "search_term": "in the PDF, Figure 2 axis labels: \"1.50\" \"1.25\" \"1.00\" vs \"1.2\" \"1.0\" \"0.8\""
+    },
+    {
+      "item": "Whether numeric values for the retrieval hyperparameters $\\delta$, $S$, $T$, $k$ appear anywhere (a caption, a footnote, or a supplementary file). Full-text search of the vendored .txt returns none.",
+      "search_term": "\"spreading factor\" / \"iterations T\" / \"top-k\" / \"retention decay\""
+    },
+    {
+      "item": "Whether the arXiv v1/v2 of 2605.05097 contained Appendix A. If not, the abstract's 'without experimental evaluation' is simply a stale v1 sentence and the unfavorable fact should be downgraded to a versioning artefact.",
+      "search_term": "arXiv listing for 2605.05097 v1/v2 abstract and page count"
+    },
+    {
+      "item": "Whether Kaplanis et al. 2018 in fact uses $n=2$, or whether $n=2$ is the authors' simplification of a longer chain. The paper says 'the simplest instantiation… following Kaplanis et al. (2018)', which is ambiguous about which part follows Kaplanis.",
+      "search_term": "Kaplanis, Shanahan, Clopath 2018 'Continual Reinforcement Learning with Complex Synapses', number of chain variables"
+    },
+    {
+      "item": "Whether Table 3's Uniform column is literally the mean event count per group (3.000, 1.280, 4.625, 1.000 are suspiciously clean). If confirmed, the note's reading that the Uniform column is dimensionally incomparable is exact rather than inferred.",
+      "search_term": "\"uniform-retention baseline that simply accumulates event counts without any decay\""
+    }
+  ]
+}

@@ -1,0 +1,649 @@
+{
+  "paper_id": "lm-memorization-capacity",
+  "arxiv": "2505.24832",
+  "arxiv_version": "v3 [cs.CL] 18 Jun 2025 (arXiv stamp, vendored p.1 line 41)",
+  "title": "How much do language models memorize?",
+  "authors": [
+    "John X. Morris (FAIR at Meta; Cornell University)",
+    "Chawin Sitawarin (Google DeepMind)",
+    "Chuan Guo (FAIR at Meta)",
+    "Narine Kokhlikyan (FAIR at Meta)",
+    "G. Edward Suh (Cornell University; NVIDIA)",
+    "Alexander M. Rush (Cornell University)",
+    "Kamalika Chaudhuri (FAIR at Meta)",
+    "Saeed Mahloujifar (FAIR at Meta)"
+  ],
+  "venue": "arXiv preprint. No venue stated anywhere in the vendored text.",
+  "date": "Paper's own date line: 'Date: June 19, 2025' (vendored line 18). arXiv v3 stamp: 18 Jun 2025 (vendored line 41). The two disagree by one day; both are reproduced here as printed.",
+  "path": "/home/jimmy/repos/neural-memory-study/papers/stc/2505.24832.txt",
+  "axis": "theory",
+
+  "citation_convention_for_this_note": {
+    "note": "The vendored text of this paper contains NO numbered equations. Every displayed formula is unnumbered. Therefore all equation citations below are to numbered Definitions / Propositions / Lemmas, to section numbers, to Table/Figure numbers, and — where the text is otherwise unlocatable — to line ranges in the vendored .txt file. Citations of the form '[lm-memorization-capacity Eq. N]' are deliberately NOT used, because no such numbers exist in the source. This is itself a small finding for the monograph: the chapter cannot cite this paper by equation number.",
+    "form": "[lm-memorization-capacity §X.Y] / [lm-memorization-capacity Def. N] / [lm-memorization-capacity Prop. N] / [lm-memorization-capacity Table N] / [lm-memorization-capacity Fig. N] / [lm-memorization-capacity txt L###-L###]"
+  },
+
+  "problem_stated": {
+    "one_line": "Give a definition of memorization that (i) separates memorization from generalization, (ii) applies to a single realized sample and a single realized model, and (iii) does not depend on the training algorithm — then use it to measure how many bits of a specific dataset a transformer's weights can hold at all.",
+    "verbatim_criteria": [
+      "'1. Separation from generalization. Our notion of unintended memorization must be distinct from intended memorization, which we refer to as generalization.' [lm-memorization-capacity §2, txt L285-L286]",
+      "'2. Sample-level memorization. We need to define memorization for realizations of random variables, not the random variables themselves.' [lm-memorization-capacity §2, txt L290-L292]",
+      "'3. Independence from training algorithm. Our definition should be independent of the training algorithm L and only a function of the final model θ and the sample x.' [lm-memorization-capacity §2, txt L293-L295]"
+    ],
+    "framing_number": "'one recent state-of-the-art model (Dubey & et al, 2024) has 8 billion parameters (around 32GB on disk) but is trained on 15 trillion tokens (around 7TB on disk)' [lm-memorization-capacity §1, txt L87-L89]. This 32GB-of-weights vs 7TB-of-data gap is the paper's motivating asymmetry.",
+    "headline_claim": "'our measurements estimate that models in the GPT family have an approximate capacity of 3.6 bits-per-parameter' [lm-memorization-capacity Abstract, txt L12-L13]"
+  },
+
+  "core_mechanism": {
+    "summary_in_unified_notation": "This paper adds no update rule. It measures the CAPACITY OF THE CONTAINER Θ under (U-Θ). It defines the information a trained Θ holds about a specific training dataset 𝒟 — after subtracting whatever a reference model Θ_ref already knows about 𝒟 — estimates that quantity by arithmetic-coding code lengths (i.e. negative log-likelihoods), and takes the maximum over datasets as the capacity of Θ. The empirical result is a linear law C_cap(Θ) = bpp · |Θ| with bpp ≈ 3.6 bits per parameter.",
+
+    "notation_conflicts": {
+      "preamble": "The paper's symbol set collides with the reserved symbols of style/STYLE-NOTATION.md §1.2 in nine places, three of them severe (α, L, S). The mapping below is mandatory for any chapter written from this note. The paper additionally overloads its own symbols: capital Θ is a random variable over models, lowercase θ is the reference model, θ̂ is the trained target model.",
+      "map": [
+        {"paper": "θ̂ — the trained target model whose memorization is being measured", "unified": "Θ", "note": "This is the object the monograph calls slow weights. Where both target and reference must appear in one line, write Θ for the target and Θ_ref for the reference."},
+        {"paper": "θ — 'a reference model that approximates the true distribution of data' [Def. 3]", "unified": "Θ_ref", "note": "NOT the monograph's Θ. Severe collision if left unmapped: the paper's θ is a second, external model used only at measurement time."},
+        {"paper": "Θ (capital) — the prior/random variable over underlying models [§2.1, txt L306-L307, L313-L314]", "unified": "𝚯 (boldface random variable) or just 'the model random variable'", "note": "Direct collision with the reserved Θ = slow weights. Must never appear unannotated in the chapter."},
+        {"paper": "Θ̂ (capital hat) — random variable of the trained model", "unified": "𝚯̂", "note": "same collision"},
+        {"paper": "L — the learning algorithm, L : X → Θ̂ [§2.1, §3.1 Def. 5]", "unified": "𝒜", "note": "SEVERE. Reserved L = sequence length (STYLE §1.2, v1.1) and reserved 𝓛 = outer loss. The paper's L is neither. Rename to 𝒜 (algorithm) throughout."},
+        {"paper": "S — sequence length in tokens per datapoint (S = 64) [§3.2, txt L635, L645]", "unified": "L", "note": "SEVERE, and it is a swap: the paper's S is the monograph's L, while the monograph's S_t is inner momentum. Never carry the paper's S into the chapter."},
+        {"paper": "N — number of datapoints in the dataset [§3.2, txt L635]", "unified": "N_D  (= |𝒟|)", "note": "The paper itself later switches to |D| in §5.2.1. Use N_D uniformly."},
+        {"paper": "V — vocabulary size (V = 2048) [§3.2, txt L644-L645]", "unified": "|𝒱|", "note": "Reserved V = value matrix (STYLE §1.5). Must be renamed."},
+        {"paper": "α — bits-per-parameter constant [Fig. 6, §3.2, §A.1]", "unified": "bpp  (multi-letter roman constant)", "note": "SEVERE. Reserved α_t ∈ [0,1] = retention gate. A single-letter rename is unsafe (β, γ, κ, c are all reserved), so use the multi-letter roman symbol bpp."},
+        {"paper": "Capacity(L) [Def. 5], Capacity(θ) [§5.2.1]", "unified": "C_cap(𝒜), C_cap(Θ)", "note": "The bare C is doubly claimed inside our own frame: STYLE §1.2 reserves C = chunk size, while S0-DESIGN §2.4 reserves C = state capacity in bytes. This paper forces that conflict into the open — see frame_level_conflict below."},
+        {"paper": "x = (x_1,…,x_n) — the dataset; x_i — one datapoint (a 64-token sequence)", "unified": "𝒟 = (z_1,…,z_{N_D}); z_i", "note": "Reserved x_t = input token representation and X = L×d sequence matrix (STYLE §1.2). The paper's x is a whole dataset, not a token. 𝒟 is already reserved for 'dataset' in STYLE §1.2."},
+        {"paper": "X — the data distribution / dataset random variable", "unified": "𝒳 (distribution over 𝒟)", "note": "collides with reserved X = sequence matrix"},
+        {"paper": "f — 'an arbitrary computational model … (e.g. universal Turing machine)' [Def. 2]", "unified": "𝒰", "note": "Reserved f is the read map in (R); f_ℓ is update frequency (NL/Sleep)."},
+        {"paper": "p — a program/description string, |p| its bit length [Def. 2]", "unified": "π, |π|", "note": "Reserved p = norm order / polynomial degree (STYLE §1.5). Also note the paper reuses p for probability, p(x|θ̂), in §2.3 — the paper itself overloads p."},
+        {"paper": "ε — the constant in Prop. 4", "unified": "ε₀", "note": "Reserved ε(·) = CMS error term in (M5)."},
+        {"paper": "ℓ, ℓ′ — bit lengths of the model and of a sample [Prop. 4 footnote 2, txt L416]", "unified": "b_Θ, b_z", "note": "Reserved ℓ = inner loss and ℓ = level index."},
+        {"paper": "σ(x) = 1/(1+e^{−x}) — sigmoid [§5.2.1]", "unified": "σ(·)", "note": "Reserved σ(·) = activation. Compatible in kind; declare chapter-locally that σ here is the logistic function."},
+        {"paper": "D — the dataset in the TF-IDF definition [§A.3]", "unified": "𝒟", "note": "same object as x/𝒟"},
+        {"paper": "H, H^K, I, I^K — Shannon entropy, Kolmogorov complexity, and the two mutual informations", "unified": "kept as-is", "note": "H is unreserved (the reserved outer 2nd moment is h_t). I is used as identity only inside the DeltaNet row of STYLE §1.6; low risk, but declare chapter-locally."},
+        {"paper": "d — a document, |d| its length [§A.3 TF-IDF]", "unified": "z_i, |z_i|", "note": "Reserved d = model dimension."},
+        {"paper": "d_model / d_emb, n_layer [Table 1, Table 2]", "unified": "d, L_layer", "note": "STYLE §1.2: L_layer is the v1.1 symbol for depth."}
+      ],
+      "frame_level_conflict": "S0-DESIGN §2.4 names the third cost quantity C = 'state capacity (bytes/session or bytes/user)', while style/STYLE-NOTATION.md §1.2 and §1.5 reserve C for chunk size. This paper is the one whose whole content is that quantity, so the collision has to be resolved before the chapter is written. Recommendation to S0: keep C = chunk size (inherited, load-bearing across six NM chapters) and rename the cost quantity to C_cap. This note uses C_cap throughout; the cost_table below keeps the key name 'C' only to satisfy the S0 §4 schema.",
+      "text_defects_in_the_source": [
+        "§2.3, txt L550: 'In this work we use two reference models to compute p(x | θ̂)'. It should read p(x | θ) — θ̂ is the target, not the reference. Typo in the source.",
+        "Prop. 4 as printed, txt L387-L389, drops the absolute-value bars: 'E[mem^K_U(x_i, θ̂, θ)] − mem_U(X_i, Θ̂, θ) ≤ ϵ'. The proof in §A.7 supplies two-sided bounds, so the statement is intended as |·| ≤ ε.",
+        "§A.6 proof, txt L1643: 'H(Θ̂ − H(Θ̂ | (X | Θ))' — unbalanced parenthesis.",
+        "§5.2.1, txt L899: 'Solutions found are c1 = 1.34, c2 = −0.034, and −33.14' — the label 'c3 =' is missing before −33.14."
+      ]
+    },
+
+    "equations": [
+      {
+        "id": "cap-1",
+        "name": "total memorization (Shannon form)",
+        "latex": "\\mathrm{mem}(\\mathcal{X}, \\Theta) \\;=\\; I(\\mathcal{X}; \\Theta) \\;=\\; H(\\mathcal{X}) - H(\\mathcal{X}\\mid\\Theta)",
+        "source": "[lm-memorization-capacity §2.1, txt L316] (unnumbered in source)",
+        "paper_form": "mem(X, Θ̂) = I(X, Θ̂) = H(X) − H(X | Θ̂)"
+      },
+      {
+        "id": "cap-2",
+        "name": "unintended memorization — the paper's central quantity",
+        "latex": "\\mathrm{mem}_U(\\mathcal{X}, \\Theta, \\Theta_{\\mathrm{ref}}) \\;=\\; I\\big([\\mathcal{X}\\mid\\Theta_{\\mathrm{ref}}];\\ \\Theta\\big) \\;=\\; H(\\mathcal{X}\\mid\\Theta_{\\mathrm{ref}}) - H\\big(\\mathcal{X}\\mid(\\Theta_{\\mathrm{ref}},\\Theta)\\big)",
+        "source": "[lm-memorization-capacity §2.1, txt L321] (unnumbered)",
+        "paper_form": "mem_U(X, Θ̂, Θ) = I([X | Θ], Θ̂) = H(X | Θ) − H(X | (Θ, Θ̂))",
+        "reading": "Condition on the reference model FIRST, then ask how much of what is left the target model still knows. That conditioning is the entire mechanism for subtracting generalization."
+      },
+      {
+        "id": "cap-3",
+        "name": "intended memorization = generalization, by residual",
+        "latex": "\\mathrm{mem}_I(\\mathcal{X},\\Theta,\\Theta_{\\mathrm{ref}}) \\;=\\; \\mathrm{mem}(\\mathcal{X},\\Theta) - \\mathrm{mem}_U(\\mathcal{X},\\Theta,\\Theta_{\\mathrm{ref}})",
+        "source": "[lm-memorization-capacity §2.1, txt L323] (unnumbered)",
+        "reading": "Generalization is defined as a leftover, not measured directly."
+      },
+      {
+        "id": "cap-4",
+        "name": "super-additivity and the container bound",
+        "latex": "\\sum_{i=1}^{N_D} \\mathrm{mem}_U(z_i,\\Theta,\\Theta_{\\mathrm{ref}}) \\;\\le\\; \\mathrm{mem}_U(\\mathcal{D},\\Theta,\\Theta_{\\mathrm{ref}}) \\;\\le\\; H(\\Theta)",
+        "source": "[lm-memorization-capacity Prop. 1, txt L326-L330]; proof in [§A.6, txt L1583-L1644]",
+        "reading": "The right-hand inequality is the sentence the monograph cares about: total unintended memorization can never exceed the entropy of the weights themselves. This is the ceiling any (U-Θ) consolidation scheme must respect. Requires i.i.d. samples — the proof uses conditional independence of z_i given Θ_ref [§A.6 footnote 4, txt L1592-L1594]."
+      },
+      {
+        "id": "cap-5",
+        "name": "Kolmogorov complexity and Kolmogorov mutual information",
+        "latex": "H^K(z) = \\min_{\\mathcal{U}(\\pi)=z} |\\pi|,\\qquad H^K(z\\mid\\Theta) = \\min_{\\mathcal{U}(\\pi,\\Theta)=z} |\\pi|,\\qquad I^K(z,\\Theta) = H^K(z) - H^K(z\\mid\\Theta)",
+        "source": "[lm-memorization-capacity Def. 2, txt L363-L368]"
+      },
+      {
+        "id": "cap-6",
+        "name": "Kolmogorov memorization (the instance-level definition)",
+        "latex": "\\mathrm{mem}^K(\\Theta, z) = I^K(\\Theta, z),\\qquad \\mathrm{mem}^K_U(z,\\Theta_{\\mathrm{ref}},\\Theta) = H^K(z\\mid\\Theta_{\\mathrm{ref}}) - H^K\\big(z\\mid(\\Theta_{\\mathrm{ref}},\\Theta)\\big)",
+        "source": "[lm-memorization-capacity Def. 3, txt L369-L378]",
+        "reading": "Switching from Shannon to Kolmogorov is what buys criterion (2) — sample-level memorization — because a single realized string has a description length even though it has no entropy."
+      },
+      {
+        "id": "cap-7",
+        "name": "Shannon-Kolmogorov agreement",
+        "latex": "\\Big|\\ \\mathbb{E}_{z\\sim\\mathcal{X},\\,\\Theta\\sim\\mathcal{A}(\\mathcal{D})}\\big[\\mathrm{mem}^K_U(z_i,\\Theta,\\Theta_{\\mathrm{ref}})\\big] \\;-\\; \\mathrm{mem}_U(\\mathcal{X}_i,\\mathbf{\\Theta},\\Theta_{\\mathrm{ref}})\\ \\Big| \\;\\le\\; \\varepsilon_0",
+        "source": "[lm-memorization-capacity Prop. 4, txt L383-L390]; proof [§A.7, txt L1650-L1677] via Lemma 6 = Theorem 3.6 of Grunwald & Vitanyi (2004)",
+        "reading": "ε₀ = 2H^K(f) where f is the density of the joint (z_i | Θ_ref, Θ). The bound is 'independent of ℓ, ℓ′ and n' — i.e. of model bit-length, sample bit-length and dataset size — but it is NOT small in any absolute sense; H^K(f) is the description length of the whole joint distribution."
+      },
+      {
+        "id": "cap-8",
+        "name": "the practical estimator (arithmetic coding = negative log-likelihood)",
+        "latex": "H^K(z\\mid\\Theta) \\;\\approx\\; -\\log_2 p(z\\mid\\Theta), \\qquad H^K\\big(z\\mid(\\Theta,\\Theta_{\\mathrm{ref}})\\big) \\;\\approx\\; -\\log_2 \\max\\{\\,p(z\\mid\\Theta),\\ p(z\\mid\\Theta_{\\mathrm{ref}})\\,\\}",
+        "source": "[lm-memorization-capacity §2.3, txt L406-L413]",
+        "reading": "Substituting into cap-6 gives mem^K_U(z) ≈ log₂( max{p(z|Θ), p(z|Θ_ref)} / p(z|Θ_ref) ), which is ≥ 0 by construction [note-writer's derivation]. See unfavorable_facts #11 — the paper nonetheless plots negative values."
+      },
+      {
+        "id": "cap-9",
+        "name": "exact dataset entropy for the synthetic (uniform-token) regime",
+        "latex": "H(\\mathcal{D}) \\;=\\; N_D\\, L\\, \\log_2 |\\mathcal{V}|",
+        "source": "[lm-memorization-capacity §3.2, txt L634-L637]",
+        "paper_form": "H(x_i) = N S log2 V",
+        "reading": "Because tokens are i.i.d. uniform, generalization is impossible and mem_U ≈ mem [§3.2, txt L632-L633]. This is the trick that turns a definition into a measurement."
+      },
+      {
+        "id": "cap-10",
+        "name": "capacity",
+        "latex": "C_{\\mathrm{cap}}(\\mathcal{A}) \\;=\\; \\max_{\\mathcal{X}} \\ \\mathrm{mem}\\big(\\mathcal{X}, \\mathcal{A}(\\mathcal{X})\\big)",
+        "source": "[lm-memorization-capacity Def. 5, §3.1, txt L571-L616]",
+        "reading": "Capacity is a property of the (architecture, training algorithm) PAIR, not of the architecture alone — Def. 5 takes 𝒜 as its argument. 'In practice, we can compute capacity by training to saturation on varying sizes of X and computing the maximum memorization' [§3.1, txt L618-L620]."
+      },
+      {
+        "id": "cap-11",
+        "name": "the empirical capacity law — the sentence the monograph inherits",
+        "latex": "C_{\\mathrm{cap}}(\\Theta) \\;\\approx\\; \\mathrm{bpp}\\cdot|\\Theta|, \\qquad \\mathrm{bpp} \\approx 3.6\\ \\text{bits/parameter}",
+        "source": "[lm-memorization-capacity Abstract, txt L12-L13; Fig. 6 caption (α = 3.64, half precision); Table 1 (means 3.51 bf16 / 3.83 fp32); §A.1, txt L1310 (α = 3.642)]",
+        "reading": "The constant is NOT a single number in the paper: 3.6 (abstract), 3.5–4 (§1), 3.5–3.6 (§3.2 Results), 3.64 (Fig. 6), 3.642 (§A.1), 3.51/3.83 (Table 1 means), 2.86–4.23 (Table 1 per-configuration range)."
+      },
+      {
+        "id": "cap-12",
+        "name": "memorization predictor (min of capacity and data entropy)",
+        "latex": "\\mathrm{mem}\\big(\\mathcal{D},\\mathcal{A}(\\mathcal{D})\\big) \\;\\approx\\; \\min\\big(C_{\\mathrm{cap}}(\\mathcal{A}),\\ H(\\mathcal{D})\\big)",
+        "source": "[lm-memorization-capacity §A.1, txt L1309]",
+        "reading": "This is the operational form: fill until full, then stop. Validated at 1.7% mean error scaling L and 1.8% scaling |𝒱| [§A.1, txt L1399; Tables 3, 4]."
+      },
+      {
+        "id": "cap-13",
+        "name": "membership-inference scaling law (as printed)",
+        "latex": "\\mathrm{MembershipF1}(\\Theta,\\mathcal{D}) \\;=\\; \\tfrac{1}{2}\\Big(1 + c_1\\,\\sigma\\big(c_2\\big(\\tfrac{C_{\\mathrm{cap}}(\\Theta)}{|\\mathcal{D}|} + c_3\\big)\\big)\\Big),\\qquad \\sigma(x)=\\tfrac{1}{1+e^{-x}}",
+        "source": "[lm-memorization-capacity §5.2.1, txt L886-L894]; fitted constants c1 = 1.34, c2 = −0.034, c3 = −33.14 [txt L898-L899]",
+        "reading": "See unfavorable_facts #5: the printed ratio direction, combined with the printed constants, contradicts the paper's own stated limiting behaviour; consistency requires |𝒟|/C_cap(Θ), which is the axis actually plotted in Fig. 3 ('Dataset-to-capacity ratio') and Fig. 17 ('Capacity ratio')."
+      }
+    ],
+
+    "what_the_mechanism_is_NOT": "There is no memory module, no state that moves at test time, no consolidation step, no writing procedure. The 'mechanism' is a measurement protocol applied to ordinary from-scratch pre-training. Any chapter that presents this paper as a method will be wrong; it is a ruler."
+  },
+
+  "outer_vs_inner": {
+    "reader_note": "For the monograph's reader who has never trained a model: in this paper NOTHING moves at test time. Every learned object is fixed before measurement begins, and the measurement itself is two forward passes and a subtraction.",
+    "rows": [
+      {
+        "object": "Θ — the target model's weights (GPT-2 architecture, from scratch)",
+        "who_learns_it": "outer-loop pre-training",
+        "when": "before any measurement; 10^6 steps, batch size 2048, Adam, single A100, bfloat16",
+        "moves_at_test_time": "no",
+        "source": "[lm-memorization-capacity §3.2, txt L640-L646]"
+      },
+      {
+        "object": "Θ_ref — the reference model, synthetic regime",
+        "who_learns_it": "not learned at all — the exact known uniform data-generating distribution is used as the reference",
+        "when": "n/a (analytic)",
+        "moves_at_test_time": "no",
+        "source": "[lm-memorization-capacity §2.3, txt L550-L553]"
+      },
+      {
+        "object": "Θ_ref — the reference model, text regime",
+        "who_learns_it": "outer-loop pre-training of a SECOND model. The paper gives more than one convention: (a) §2.3 'a larger model with the same architecture as θ trained for many steps on a much wider data distribution'; (b) §4 'a model of an equal parameter count trained on the maximum amount of data (in this case, the entire dataset)'; (c) §4 'an oracle reference model, which is the model that achieves the best compression rate (lowest loss) on the evaluation dataset, and may have many more parameters'.",
+        "when": "before measurement",
+        "moves_at_test_time": "no",
+        "source": "[lm-memorization-capacity §2.3, txt L411-L413; §4, txt L688-L692; Fig. 2 caption]"
+      },
+      {
+        "object": "bpp (the paper's α) — bits per parameter",
+        "who_learns_it": "neither: it is an estimated constant, read off as the slope of measured capacity vs parameter count",
+        "when": "post-hoc, after all training runs; Fig. 6 / Table 1",
+        "moves_at_test_time": "no",
+        "source": "[lm-memorization-capacity §3.2, txt L655-L662; Fig. 6; Table 1]"
+      },
+      {
+        "object": "c1, c2, c3 — membership-inference scaling-law constants",
+        "who_learns_it": "non-linear least squares fit on the already-collected text results — not gradient descent, not part of any model",
+        "when": "post-hoc",
+        "moves_at_test_time": "no",
+        "source": "[lm-memorization-capacity §5.2.1, txt L886-L899]"
+      },
+      {
+        "object": "the membership-inference loss cutoff",
+        "who_learns_it": "chosen at evaluation time by the attacker ('we set a cutoff loss value to predict whether a sample is or is not a member')",
+        "when": "evaluation only",
+        "moves_at_test_time": "it IS a test-time object, but it is the attacker's threshold, not the model's state",
+        "source": "[lm-memorization-capacity §5, txt L850-L854]"
+      },
+      {
+        "object": "W — fast weights",
+        "who_learns_it": "does not exist in this paper",
+        "when": "—",
+        "moves_at_test_time": "no",
+        "source": "absent from the source; verified by keyword search for 'test-time', 'fast weight', 'in-context' — no hits in a mechanism sense"
+      },
+      {
+        "object": "E — external store",
+        "who_learns_it": "does not exist in this paper",
+        "when": "—",
+        "moves_at_test_time": "no",
+        "source": "absent from the source; verified by keyword search for 'retriev', 'RAG', 'external memory', 'vector store' — zero hits in the body and bibliography"
+      }
+    ]
+  },
+
+  "update_layer": {
+    "instantiates": "None as a mechanism. As a CONSTRAINT it binds (U-Θ) and only (U-Θ).",
+    "precise_statement": "Take (U-Θ): Θ_{k+1} = Θ_k − η_Θ ∇_Θ 𝓛(ℛ_k; Θ_k), ℛ_k = gen(ℋ_k; B_s). This paper studies the composite map 𝒜 : ℛ ↦ Θ obtained by running that recursion to saturation with ℛ = 𝒟 (a fixed dataset, not a generated one; gen is the identity and B_s = 0). It then asks how much of 𝒟 survives in Θ, and answers: at most H(Θ) bits [Prop. 1], and empirically at most bpp·|Θ| ≈ 3.6|Θ| bits [Fig. 6, Table 1].",
+    "difference_from_canonical_form": [
+      "ℛ_k is a fixed i.i.d. dataset. There is no sleep-time generation step, so gen(·; B_s) never appears; B_s = 0 throughout.",
+      "k does not index rounds of consolidation — the paper trains once, to saturation, per (model, dataset) pair. There is no repeated (U-Θ) and therefore no measurement of ρ.",
+      "η_Θ is Adam with unstated hyperparameters beyond 'We use the Adam optimizer' [§3.2, txt L643].",
+      "The paper's object of study is not the trajectory but the fixed point: C_cap(𝒜) = max_𝒳 mem(𝒳, 𝒜(𝒳)) [Def. 5]. Capacity is attributed to the (architecture, optimizer) pair, so a different (U-Θ) rule is formally allowed to have a different capacity — the paper never tests one."
+    ],
+    "touches_other_layers": "No. (U-W) and (U-E) are untouched and uncited. The monograph must be explicit that the 3.6 bpp ceiling is a Θ-path ceiling and that this paper gives no corresponding bound for W or E. [note-writer's evaluation, grounded in the zero-hit keyword search recorded under cross_path_citations]",
+    "consequence_for_the_monograph": "This is the falsifier candidate named in S0-DESIGN §6 (A4) and the capacity axis of S0 §3.1. Its usable content is two sentences: (i) memorization into weights is bounded by H(Θ) [Prop. 1]; (ii) empirically the bound is reached at ≈3.6 bits per parameter [Fig. 6], which is 22.8% of a bf16 parameter's 16 bits and 12.0% of an fp32 parameter's 32 bits [note-writer's arithmetic from Table 1 means 3.51 and 3.83]."
+  },
+
+  "cost_table": {
+    "B_s": {
+      "value": "absent",
+      "explanation": "The paper has no sleep phase, so no sleep-time budget exists to report. For completeness, the OUTER-loop training budget it does state — which is not B_s — is: 10^6 steps, batch size 2048, Adam, single A100 GPU, bfloat16, gradient accumulation when a batch does not fit [§3.2, txt L640-L646]. No FLOP count, no GPU-hour count, and no wall-clock time is given anywhere in the paper (keyword search for 'FLOP', 'GPU-hour', 'wall-clock', 'latenc', 'throughput' returns zero hits)."
+    },
+    "L_w": {
+      "value": "absent",
+      "explanation": "No latency, no TTFT, no ms/token, no throughput number appears anywhere. The paper never runs a serving experiment. Its only inference-time procedures are (i) one forward pass to get −log p(z|Θ) and (ii) greedy decoding for extraction rates [§4, txt L817-L818] — neither is timed."
+    },
+    "C": {
+      "value": "3.64 bits-per-parameter for GPT models in half precision [Fig. 6 caption]. Table 1 means: 3.51 bpp (bfloat16), 3.83 bpp (float32), printed as 'Mean (±0.1)'. Per-configuration range across the 16 (n_layer, d_model) settings of Table 1: 2.86–3.94 bpp (bf16), 3.02–4.23 bpp (fp32). §A.1 substitutes α = 3.642. Abstract says 3.6; §1 says 'between 3.5 and 4'; §3.2 Results says 'between 3.5 and 3.6'. Largest absolute capacity measured: 2.51×10^7 bits (bf16) / 2.71×10^7 bits (fp32) for the 6.86×10^6-parameter model [Table 1, n_layer = 8, d_model = 256].",
+      "explanation": "This is the one cost quantity the paper actually supplies, and it is the reason the paper is in the corpus. Note it is bits-per-PARAMETER, not bytes-per-session: converting to the S0 §2.4 unit requires knowing how many parameters a sleep-time scheme writes, which this paper does not address."
+    },
+    "rho": {
+      "value": "absent",
+      "explanation": "No repeated consolidation round exists, so no per-round performance loss is measured. The paper does report the closest structural analogue — that once capacity is full, adding data REDISTRIBUTES the fixed budget rather than adding to it: 'When the dataset size increases by a factor of N, the model divides its memorization between datapoints by an equal amount; the sum of memorization is measured to be constant' [§A.2, txt L1405-L1408] — but it gives no rate, no round index, and never uses the word forgetting."
+    },
+    "amortization_note": "Equation (A) of S0-DESIGN, C_avg = C_wake + C_sleep/N_q, cannot be instantiated from this paper: neither C_wake, nor C_sleep, nor N_q appears. Three of the four cost quantities being 'absent' is the finding — this is a theory paper about the size of the container, not about the cost of filling it."
+  },
+
+  "experiments": [
+    {
+      "id": "E1",
+      "name": "Synthetic capacity sweep (the headline)",
+      "setup": "GPT-2 architecture initialized from scratch; 1–8 layers; 'hidden dimensions scaled from 32 to 512'; 'from 100K to 20M parameters'; 10^6 steps; batch size 2048; Adam; single A100; bfloat16; gradient accumulation. Defaults |𝒱| = 2048, L = 64 tokens per datapoint; only N_D varies. Five random seeds per (model, dataset size), affecting both initialization and dataset sampling.",
+      "source": "[lm-memorization-capacity §3.2, txt L640-L646]",
+      "data": "Uniformly sampled tokens, each token independent of the previous [§3.2, txt L628-L629]. Dataset entropy known exactly: H = N_D·L·log2|𝒱| [cap-9].",
+      "headline_numbers": [
+        "Capacity plateaus: 'We observe a striking plateau once a model reaches its capacity … models exhibit an upper bound in net memorization, regardless of data size' [§3.2 Results, txt L650-L654; Fig. 1].",
+        "'our models consistently memorize between 3.5 and 3.6 bits per parameter' [§3.2, txt L659].",
+        "α = 3.64 bits-per-parameter for half precision [Fig. 6 caption].",
+        "Table 1, bfloat16, α by configuration: (n_layer=1) 3.93, 3.74, 3.61, 2.88; (n_layer=2) 3.56, 3.94, 3.89, 3.66; (n_layer=4) 3.37, 3.39, 3.53, 3.51; (n_layer=8) 2.86, 3.19, 3.49, 3.65 — for d_model = 32, 64, 128, 256 respectively. Mean 3.51.",
+        "Table 1, float32, α by configuration: (n_layer=1) 4.23, 3.92, 3.65, 3.12; (n_layer=2) 4.16, 4.08, 3.99, 4.01; (n_layer=4) 3.92, 3.98, 3.78, 3.68; (n_layer=8) 3.02, 3.83, 3.89, 3.96. Mean 3.83.",
+        "Table 1 parameter counts: 8.04×10^4, 1.85×10^5, 4.69×10^5, 1.33×10^6 (1 layer); 9.31×10^4, 2.35×10^5, 6.67×10^5, 2.12×10^6 (2 layers); 1.18×10^5, 3.35×10^5, 1.06×10^6, 3.70×10^6 (4 layers); 1.69×10^5, 5.35×10^5, 1.86×10^6, 6.86×10^6 (8 layers).",
+        "Table 1 capacities in bits, bf16: 3.16×10^5 … 2.51×10^7; fp32: 3.39×10^5 … 2.71×10^7.",
+        "Precision: 'an increase in α from 3.51 to 3.83 bits-per-parameter on average. This is far less than the actual 2x increase in the bits of θ, indicating that most of the extra model bits added when increasing precision from bfloat16 to float32 are not used for raw storage' [§3.2, txt L677-L680]."
+      ],
+      "convergence_check": "For the 6.86M-parameter model [Fig. 5]: 'all datasets from 16,000 to 4M samples fall within a range of 3.56 − 3.65 × 10^6 bits memorized'; 'The two largest datasets (4M and 8M samples, respectively) converge to total memorization of 2.95×10^6 and 1.98×10^6 bits memorized. We expect that their memorization rates would continue to increase toward the capacity had we trained for more epochs.' [§3.2, txt L665-L672]. Fig. 5's train-set-size legend runs 65536, 131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608.",
+      "comparisons_to_prior_work": "'This corroborates the findings of prior work such as (Roberts et al., 2020; Lu et al., 2024), which noticed that fact storage scales linearly with model capacity. Ours is a slightly larger estimate than Allen-Zhu & Li (2024), which estimated via quantization that models can store around 2 bits per parameter.' [§3.2, txt L659-L662]"
+    },
+    {
+      "id": "E2",
+      "name": "Text experiments (FineWeb)",
+      "setup": "Same protocol as E1 with real text. FineWeb (Penedo et al. 2024), chosen because 'it follows state-of-the-art deduplication practices'. Sequences of 64 tokens plus an ADDITIONAL deduplication step, because 'that 1 − 2% of sequences become duplicates when truncating to 64 tokens'. 'We find careful deduplication extremely important for faithfully measuring extraction rates.'",
+      "source": "[lm-memorization-capacity §4, txt L693-L699]",
+      "model_sizes": "1,711,968 / 3,620,544 / 8,027,520 / 19,200,768 parameters (Fig. 9 legend; Fig. 4 legend as 1.7M / 3.6M / 8.0M / 19.2M).",
+      "headline_numbers": [
+        "'sample-level unintended memorization increases with model parameters and decreases with training set size' [§4 Results, txt L819-L820].",
+        "Against an ORACLE reference model: 'memorization steadily increases as our smaller model is able to learn more about the small training set than the oracle, and then decreases as our model starts to generalize and perform on average worse than the (higher-capacity) oracle' [§4, txt L820-L823; Fig. 2].",
+        "Double descent onset: 'the model only begins to generalize (i.e. evaluation loss decreases) once its capacity is reached, which takes approximately 10^5 samples, depending on parameter count' [§4, txt L824-L826; Figs. 3, 4].",
+        "'double descent begins exactly when the data capacity exceeds the model capacity' [§4, txt L832-L833].",
+        "Extraction: 'for 32-token prefixes, 100% are extractable for very small training set sizes'; 'When the dataset sizes grows sufficiently large, the extraction rate does not go fully to zero; however, it converges to nearly exactly the test extraction rate. In other words, when our (deduplicated) dataset grows sufficiently large, all successful training data extraction is attributable to generalization.' [§4, txt L836-L841; Fig. 8, prefix lengths 8/16/32]."
+      ]
+    },
+    {
+      "id": "E3",
+      "name": "Membership inference — synthetic and text",
+      "setup": "Standard loss-based membership inference (Yeom et al. 2018; Sablayrolles et al. 2019): a single cutoff loss value.",
+      "source": "[lm-memorization-capacity §5, txt L850-L854]",
+      "headline_numbers": [
+        "Synthetic: 'Above a certain dataset size, membership inference starts to fail in the average case' [§5.1, txt L860-L863; Fig. 14]. But Fig. 14's caption states: 'In the case of uniform synthetic data, membership inference performance never falls below 0.54.'",
+        "Text: 'For a fixed model size, membership inference gets more difficult as the size of the data increases' [§5.1, txt L866-L867; Fig. 9].",
+        "'membership inference is strictly higher in every case; in some cases we can infer training dataset membership quite well (score of 0.97) with an extraction rate of 0' [§5.1, txt L867-L869; Fig. 10]."
+      ]
+    },
+    {
+      "id": "E4",
+      "name": "Membership-inference scaling law and its validation at 1.5B",
+      "setup": "Fit c1, c2, c3 of cap-13 by non-linear least squares to the E2 text results; then solve for the dataset size that should produce F1 ∈ {0.55, 0.75, 0.95} at two larger model sizes and train those models.",
+      "source": "[lm-memorization-capacity §5.2, txt L875-L913; Table 2]",
+      "headline_numbers": [
+        "c1 = 1.34, c2 = −0.034, c3 = −33.14 [§5.2.1, txt L898-L899].",
+        "'Although the sigmoidal function is slightly simplistic (the points do not perfectly fit) our fit produces estimates within 1 − 2% of observations' [§5.2.1, txt L899-L901; also §A.4, txt L1569-L1570].",
+        "Table 2, GPT2-XL (d_emb 1600, n_layer 48, |Θ| = 1,556,075,200): |𝒟| = 170,654,583 → predicted 0.55, observed 54.61 ± 1.3; |𝒟| = 76,795,021 → predicted 0.75, observed 71.08 ± 0.4; |𝒟| = 18,851,574 → predicted 0.95, observed 95.85 ± 0.8.",
+        "Table 2, row labelled 'GPT2-Medium' (d_emb 768, n_layer 12, |Θ| = 123,702,528): |𝒟| = 13,566,442 → predicted 0.55, observed 53.44 ± 1.1; |𝒟| = 6,104,935 → predicted 0.75, observed 65.69 ± 0.6; |𝒟| = 1,498,634 → predicted 0.95, observed 97.98 ± 0.3.",
+        "'Our predictions are generally within 1.5 points of the true F1 score; the score is most inaccurate for estimated F1 of 0.75, which is the point where the sigmoid is steepest.' [§5.2.2, txt L973-L974].",
+        "Deployment claim: 'all contemporary language models trained with a tokens-per-parameter ratio of 10^2 or higher, which according to our laws would imply membership inference score of 0.5 – that is, within our formulation, statistically significant loss-based membership inference is not possible.' [§5.2.2, txt L906-L908]."
+      ]
+    },
+    {
+      "id": "E5",
+      "name": "Capacity predictor validated by scaling L and |𝒱| instead of N_D",
+      "setup": "Fix N_D = 4096 training samples; 2 layers, hidden size 128; scale sequence length L, then vocabulary size |𝒱|; adjust parameter count for embedding-matrix growth; substitute α = 3.642 into cap-12.",
+      "source": "[lm-memorization-capacity §A.1, txt L1307-L1312, L1398-L1399; Tables 3, 4; Figs. 11, 12]",
+      "headline_numbers": [
+        "Table 3 (scaling L, columns: L | params | memorized | expected | error%): 4 | 6.59×10^5 | 1.73×10^5 | 1.80×10^5 | 4.19; 8 | 6.60×10^5 | 3.54×10^5 | 3.60×10^5 | 1.80; 16 | 6.61×10^5 | 7.15×10^5 | 7.21×10^5 | 0.84; 32 | 6.63×10^5 | 1.44×10^6 | 1.44×10^6 | 0.41; 64 | 6.67×10^5 | 2.29×10^6 | 2.36×10^6 | 2.97; 128 | 6.75×10^5 | 2.36×10^6 | 2.39×10^6 | 1.24; 256 | 6.92×10^5 | 2.44×10^6 | 2.45×10^6 | 0.44.",
+        "Table 4 (scaling |𝒱|): 128 | 4.21×10^5 | 1.49×10^6 | 1.49×10^6 | 0.36; 512 | 4.71×10^5 | 1.71×10^6 | 1.67×10^6 | 2.78; 1024 | 5.36×10^5 | 1.95×10^6 | 1.90×10^6 | 2.70; 2048 | 6.67×10^5 | 2.39×10^6 | 2.36×10^6 | 1.11; 4096 | 9.29×10^5 | 3.13×10^6 | 3.15×10^6 | 0.47.",
+        "'Our predictions of total memorization are accurate, with an average error rate of 1.7% while scaling S and 1.8% when scaling V' [§A.1, txt L1399].",
+        "Fig. 12 caption's own caveat: 'Note that, we do not observe a capacity plateau, since increasing V also increases parameters.'"
+      ],
+      "note_writer_arithmetic": "Column mapping of Tables 3 and 4 was recovered from the OCR'd column order by checking H = N_D·L·log2|𝒱| against the 'Expected' column: at L = 4, 4096·4·11 = 180,224 = 1.80×10^5 ✓. In the capacity-bound rows the 'Expected' values imply bpp = 2.36×10^6 / 6.67×10^5 = 3.54, not the α = 3.642 the appendix says it substituted [note-writer's arithmetic]."
+    },
+    {
+      "id": "E6",
+      "name": "Which datapoints get memorized (distribution analysis)",
+      "setup": "Compression-rate histograms for equal-sized transformers (n_layer = 4, d_model = 128); TF-IDF vs unintended memorization for a 20M-parameter model trained past its capacity.",
+      "source": "[lm-memorization-capacity §A.3, txt L1420-L1556; Figs. 15, 16; Table 5]",
+      "headline_numbers": [
+        "'Random training data follows a very normal distribution with a small amount of overlap between train and test compression rates. Text loss is lower on average but more spread out … There is much more overlap between the train and test loss distributions, which explains why membership inference is more difficult for text data.' [§A.3, txt L1422-L1426; Fig. 15]",
+        "'Prior work has indicated that a large amount of this memorization can be due to duplicated training points (Lee et al., 2022) but our dataset is fully deduplicated so this cannot be an explanation in our case.' [§A.3, txt L1428-L1429]",
+        "'examples with more rare words are more memorized. In particular, the sample with highest TF-IDF out of the whole training dataset (a sequence of Japanese words) has the third-highest measured memorization; even though this is just one out of 260,000 training samples, the model can regurgitate the entire sequence given just a single token (囚). Out of the top twenty memorized sequences, all but three contain sequences of tokens from other languages (Japanese, Chinese, and Hebrew).' [§A.3, txt L1549-L1554]",
+        "Table 5 caption: 'All of the highest TF-IDF examples are considered memorized, and contain text from non-English languages (Japanese, Chinese, Hebrew, and Greek).'"
+      ]
+    }
+  ],
+
+  "scale_ceiling": {
+    "capacity_measurement": "6.86×10^6 parameters — the largest model in Table 1, the only table that reports measured bits-per-parameter. §3.2 claims the sweep runs 'from 100K to 20M parameters' and 'hidden dimensions scaled from 32 to 512', but Table 1 stops at d_model = 256 and 6.86×10^6 parameters. One 20M-parameter model appears in the appendix (Fig. 16, Table 5) but no α is reported for it.",
+    "text_experiments": "19,200,768 parameters (Fig. 9 legend / Fig. 4 legend).",
+    "largest_model_trained_at_all": "1,556,075,200 parameters (GPT2-XL, Table 2) — used ONLY to test the membership-inference sigmoid, never to measure capacity.",
+    "largest_dataset": "170,654,583 text sequences (Table 2, GPT2-XL row). At the paper's 64 tokens per sequence that is ≈1.09×10^10 tokens [note-writer's arithmetic]. Synthetic: up to 8,388,608 = 2^23 datapoints (Fig. 5 legend).",
+    "compute": "10^6 steps, batch 2048, single A100, bfloat16 [§3.2]. No FLOP or GPU-hour figure given.",
+    "gap_to_deployment": "The 3.6 bits-per-parameter constant is measured at ≤6.86M parameters and applied to a 1.556B-parameter model — a factor of ~227 extrapolation with no re-measurement [Table 1 vs Table 2; note-writer's arithmetic]. Frontier models are a further factor of 10^2–10^3 beyond that."
+  },
+
+  "concept_ledger_delta": {
+    "new": [
+      {"term": "unintended memorization", "owner_paper": "this paper", "definition": "the information a model holds about a specific dataset AFTER conditioning on a reference model that captures the true data-generating process [§2.1, Def. 3]", "monograph_note": "official term; do not translate; distinct from 'memorization' unqualified"},
+      {"term": "intended memorization (= generalization)", "owner_paper": "this paper", "definition": "mem − mem_U, defined as a residual [§2.1]", "monograph_note": "the paper's equating of intended memorization with generalization is a definitional choice, not a result"},
+      {"term": "Kolmogorov memorization", "owner_paper": "this paper", "definition": "instance-level memorization via description length [Def. 3]", "monograph_note": "the move from Shannon to Kolmogorov is what makes the quantity measurable for one model and one sample"},
+      {"term": "model capacity (information-theoretic, empirical)", "owner_paper": "this paper", "definition": "C_cap(𝒜) = max_𝒳 mem(𝒳, 𝒜(𝒳)) [Def. 5]", "monograph_note": "MUST be kept distinct from 'memory capacity (formal)' which STYLE §2.4 assigns to ch14 (Atlas, associative-memory capacity of a fast-weight matrix) and from ch05's Hopfield capacity. Three different capacities; naming them apart is a chapter-level obligation."},
+      {"term": "bits-per-parameter (bpp)", "owner_paper": "this paper", "definition": "the slope of measured capacity against parameter count; ≈3.6 for GPT-family models [Fig. 6]", "monograph_note": "reserved-symbol collision with retention gate α forces the multi-letter name"},
+      {"term": "dataset-to-capacity ratio", "owner_paper": "this paper", "definition": "H(𝒟) / C_cap(Θ); the x-axis of Fig. 3 and the predictor of double-descent onset", "monograph_note": "the single most reusable idea in the paper for the monograph"}
+    ],
+    "extended_or_renamed": [
+      {"term": "double descent", "prior": "Belkin et al. 2019; Nakkiran et al. 2019", "this_paper": "re-anchored to an exactly computable crossing point rather than a parameter count: 'double descent begins exactly when the data capacity exceeds the model capacity' [§4, txt L832-L833]"},
+      {"term": "grokking", "prior": "—", "this_paper": "used in the abstract for the same phenomenon the body calls double descent, and mis-attributed to Nakkiran et al. 2019 in §A.8. See unfavorable_facts #13."}
+    ],
+    "retired": []
+  },
+
+  "inherited_open_question": {
+    "verdict": "The paper quotes no prior work's stated open question verbatim. It names three inherited problems explicitly, and the chapter's bridge-in should be built from the first two.",
+    "primary": {
+      "from": "Brown, Bun, Feldman, Smith & Talwar (2021), 'When is memorization of irrelevant training data necessary for high-accuracy learning?' (STOC 2021)",
+      "question": "How to measure unintended memorization at the level of a single realized sample and a single realized model, when the conditional-mutual-information definition only applies to random variables.",
+      "evidence": "'We note that this statistical definition of memorization was first introduced by Brown et al. (2021), where they theoretically looked at the role of unintended memorization in enabling successful learning for certain tasks. However, this preliminary definition is unsuitable for us as we aim to practically measure instance-level memorization. In particular, since we observe only a single trained model and a single input sample, we are unable to define probabilities or conditional probabilities over samples conditioned on the model.' [lm-memorization-capacity §2.1, txt L337-L341]. Also §1, txt L185-L188: 'This separation is similar to the approach in (Brown et al., 2021) … However, our notion differs in that it enables this separation at the instance level using algorithmic definitions of information.'"
+    },
+    "secondary": {
+      "from": "Prashanth et al. (2024), 'Recite, reconstruct, recollect: Memorization in LMs as a multifaceted phenomenon' (arXiv:2406.17746)",
+      "question": "Distinguishing memorization from generalization.",
+      "evidence": "'We address the fundamental challenge of distinguishing memorization from generalization (Prashanth et al., 2024) by decomposing memorization into two distinct components' [lm-memorization-capacity §1, txt L181-L184]"
+    },
+    "tertiary_gap_claim": {
+      "from": "Yun et al. 2019; Curth et al. 2023; Mahdavi et al. 2024; Kajitsuka & Sato 2024",
+      "question": "Theoretical capacity estimates that scale to real multi-layer transformers.",
+      "evidence": "'A few research efforts (Yun et al., 2019; Curth et al., 2023; Mahdavi et al., 2024; Kajitsuka & Sato, 2024) have developed theoretical estimates for the capacity of different model architectures, although none have yet scaled to multi-layer modern transformers. … We are the first to measure a clear upper-bound in model capacity using per-sample entropy measurements.' [lm-memorization-capacity §6, txt L996-L1001]"
+    },
+    "what_it_implicitly_answers_for_the_STC_lineage": "Nothing in the sleep-time-compute literature — the paper is unaware of it. What the MONOGRAPH will make it answer, retroactively, is the question left open by every Θ-path scheme (SEAL, Nested Learning's CMS, 'Language Models Need Sleep', SCM): how many bits can repeated weight-writing actually deposit before the container is full? [note-writer's evaluation]"
+  },
+
+  "open_questions": [
+    "Better compression schemes would give tighter estimates: 'A promising direction for future research is to design compression algorithms specifically tailored to minimize the code length of training data in machine learning models and use it to obtain more accurate estimation of Kolmogorov complexity and memorization.' [§2.3, txt L402-L405]",
+    "The measured capacity is only a lower bound: 'Since our models are learned via gradient descent, they are not guaranteed to find the global optima; thus, we are only ever measuring a lower bound on model capacity.' [§3.2, txt L663-L664] — the true capacity of a transformer is left unmeasured.",
+    "The largest synthetic runs did not converge: 'We expect that their memorization rates would continue to increase toward the capacity had we trained for more epochs.' [§3.2, txt L670-L672]",
+    "Why extra precision bits are not used for storage is unexplained: 'most of the extra model bits added when increasing precision from bfloat16 to float32 are not used for raw storage' [§3.2, txt L678-L680] — what those bits ARE used for is not investigated.",
+    "The mechanism behind double descent is stated as a conjecture: 'One theory is that once the model can no longer memorize datapoints individually, it is forced to share information between datapoints to save capacity, which leads to generalization.' [§4, txt L833-L835] — labelled 'one theory', never tested.",
+    "Dependence of the estimate on decoding parameters: 'this likelihood is dependent on the parameters of the decoding algorithm, such as temperature or top-k sampling' [§2.3, txt L546-L547] — never quantified.",
+    "The functional form of the membership law is admitted to be inadequate: 'Although the sigmoidal function is slightly simplistic (the points do not perfectly fit)' [§5.2.1, txt L899-L901].",
+    "Capacity vs vocabulary is confounded: 'we do not observe a capacity plateau, since increasing V also increases parameters' [Fig. 12 caption] — the paper cannot separate embedding-table growth from capacity growth.",
+    "Generality is explicitly disclaimed: 'Our results are specific to the environment proposed and do not necessarily generalize to other datasets, architectures, or training setups.' [§A.8 Limitations, txt L1687-L1688]",
+    "Reference-model sensitivity is never studied. mem_U is defined relative to Θ_ref [Def. 3] and the paper uses at least three different Θ_ref conventions [§2.3, §4, Fig. 2 caption] without an ablation. [note-writer's observation of an absence]",
+    "No capacity number is ever reported for TEXT. §A.2 says the text-side sum of memorization is 'measured to be constant, presumably at the upper bound of the model's capacity' [txt L1405-L1408] — 'presumably' is the paper's own hedge, and no text-side bpp is given.",
+    "Whether capacity depends on the optimizer is left open by construction: Def. 5 makes capacity a property of the learning algorithm 𝒜, and every experiment uses Adam [§3.2, txt L643]. No second optimizer is tried."
+  ],
+
+  "unfavorable_facts": [
+    {
+      "id": "U1",
+      "claim": "The headline '3.6 bits-per-parameter' is not the number the paper's own table produces, and the paper prints six different values for it.",
+      "detail": "Abstract: 3.6 [txt L12-L13]. §1: 'between 3.5 and 4' [txt L194-L195]. §3.2 Results: 'between 3.5 and 3.6' [txt L659]. Fig. 6 caption: α = 3.64. §A.1: α = 3.642 [txt L1310]. Table 1 means: 3.51 (bf16), 3.83 (fp32). The per-configuration spread in Table 1 is 2.86–3.94 bf16 and 3.02–4.23 fp32 — a factor of 1.38 across 16 settings, against a stated 'Mean (±0.1)'.",
+      "why_it_matters": "The monograph's A4 falsifier axis wants a hard ceiling. What exists is a ±0.5 bpp band whose central value depends on which sentence of the paper you quote."
+    },
+    {
+      "id": "U2",
+      "claim": "α is not monotone or even stable in model shape, which undercuts the 'very smooth relationship' claim.",
+      "detail": "§3.2 says 'we see a very smooth relationship between observed capacity … and model parameters' [txt L656-L658; Fig. 6]. But Table 1 bf16 gives 2.88 at (n_layer 1, d_model 256) and 3.66 at (n_layer 2, d_model 256); 2.86 at (n_layer 8, d_model 32) and 3.93 at (n_layer 1, d_model 32). Depth and width move α in opposite directions at different points with no stated pattern.",
+      "why_it_matters": "If bpp depends on architecture shape by ±30%, it is not a constant of the medium, and a chapter cannot use it to size a per-user weight delta without knowing the shape."
+    },
+    {
+      "id": "U3",
+      "claim": "The authors concede they measure only a lower bound, and the two largest runs did not converge.",
+      "detail": "'we are only ever measuring a lower bound on model capacity' [§3.2, txt L663-L664]. 'The two largest datasets (4M and 8M samples, respectively) converge to total memorization of 2.95×10^6 and 1.98×10^6 bits memorized. We expect that their memorization rates would continue to increase toward the capacity had we trained for more epochs.' [§3.2, txt L670-L672].",
+      "why_it_matters": "A lower bound cannot falsify a Θ-path scheme. It can only say 'at least this much fits', which is the direction FAVOURABLE to the Θ path. The monograph must not present 3.6 bpp as an upper bound on what weights can hold."
+    },
+    {
+      "id": "U4",
+      "claim": "The convergence paragraph contradicts itself and is an order of magnitude away from Table 1 for the same model.",
+      "detail": "'all datasets from 16,000 to 4M samples fall within a range of 3.56 − 3.65 × 10^6 bits memorized' and, one sentence later, 'The two largest datasets (4M and 8M samples, respectively) converge to total memorization of 2.95×10^6 and 1.98×10^6 bits' [§3.2, txt L667-L672] — the 4M dataset appears on both sides with different values. Moreover Fig. 5's model is 'a GPT-style transformer with 6.86M parameters', whose Table 1 bf16 capacity is 2.51×10^7 bits, roughly 7× the 3.56–3.65×10^6 quoted in the same paragraph [note-writer's comparison].",
+      "why_it_matters": "The convergence evidence for the headline constant is internally inconsistent."
+    },
+    {
+      "id": "U5",
+      "claim": "Figure 5's capacity is printed in the wrong unit.",
+      "detail": "Fig. 5 caption: 'a GPT-style transformer with 6.86M parameters and a capacity of 23.9 MB' [txt L264], and the plot annotation reads 'Estimated capacity (23.9 MB)' [txt L238]. Table 1 gives that model 2.51×10^7 bits (bf16) = 3.14 MB. 2.51×10^7 / 2^20 = 23.9 — i.e. the bit count divided by 2^20 and labelled MB [note-writer's arithmetic].",
+      "why_it_matters": "A reader sizing a memory device from this figure would over-provision by 8×."
+    },
+    {
+      "id": "U6",
+      "claim": "The membership-inference scaling law, as printed with its own fitted constants, predicts the opposite of the limiting behaviour the paper states one paragraph later — and can exceed F1 = 1.",
+      "detail": "As printed [§5.2.1, txt L886-L894]: F1 = ½(1 + c1·σ(c2(Capacity(θ)/|D| + c3))) with c1 = 1.34, c2 = −0.034, c3 = −33.14. As |D| → ∞ the ratio → 0, the sigmoid argument → c2·c3 = 1.127, σ(1.127) = 0.755, F1 = ½(1 + 1.34·0.755) = 1.006 — but the paper states 'as |D| → ∞, performance of our membership inference attack decreases to 0.5' [txt L895-L897]. In the other limit the maximum attainable value is ½(1 + 1.34) = 1.17 > 1. Both are repaired if the ratio is inverted to |D|/Capacity(θ), which is exactly the axis plotted in Fig. 3 ('Dataset-to-capacity ratio') and Fig. 17 ('Capacity ratio'). [note-writer's arithmetic; the paper never states the corrected form.]",
+      "why_it_matters": "The one predictive law in the paper cannot be reproduced from the paper as printed."
+    },
+    {
+      "id": "U7",
+      "claim": "'Our predictions are generally within 1.5 points of the true F1' is contradicted by the paper's own Table 2.",
+      "detail": "§5.2.2 [txt L973-L974] claims within 1.5 points; §5.2.1 [txt L899-L901] claims within 1–2%. Table 2: predicted 0.75 → observed 65.69 ± 0.6 (off by 9.31 points) and predicted 0.75 → observed 71.08 ± 0.4 (off by 3.92 points). Only 4 of the 6 validation rows are within 1.5 points [note-writer's arithmetic from Table 2].",
+      "why_it_matters": "The validation section overstates its own agreement by a factor of six at the worst point, and the worst point is exactly the operating regime of interest (the steep part of the sigmoid)."
+    },
+    {
+      "id": "U8",
+      "claim": "Table 2 mislabels its own models.",
+      "detail": "The row labelled 'GPT2-Medium' has d_emb = 768, n_layer = 12, |θ| = 123,702,528 — that is GPT-2 SMALL. §5.2.2 itself says 'we select GPT-2 small (125M params) and GPT-2 XL (1.5B params)' [txt L909-L911]. Table and text disagree.",
+      "why_it_matters": "Minor on its own; combined with U6, U7 and U9 it establishes that §5.2 was not carefully checked."
+    },
+    {
+      "id": "U9",
+      "claim": "The model-size range is stated three incompatible ways.",
+      "detail": "Abstract: 'ranging from 500K to 1.5B parameters' [txt L15-L16]. §3.2: 'from 100K to 20M parameters' and 'hidden dimensions scaled from 32 to 512' [txt L641-L642]. Table 1: smallest 8.04×10^4 parameters, largest 6.86×10^6, largest d_model 256 — no d_model = 512 row and no 20M row appears anywhere in the capacity tables.",
+      "why_it_matters": "The scale actually supporting the capacity constant is smaller than any of the three advertised ranges."
+    },
+    {
+      "id": "U10",
+      "claim": "The bits-per-parameter constant is never re-measured above ~7M parameters, yet it is silently extrapolated 227× inside the law that gets 'validated' at 1.5B.",
+      "detail": "Capacity(θ) enters the membership law [§5.2.1] and Capacity(θ) = bpp·|θ| with bpp fitted only on Table 1's ≤6.86×10^6-parameter models. Table 2's validation at 123,702,528 and 1,556,075,200 parameters tests the SIGMOID, not the constant. No capacity measurement is reported at either size.",
+      "why_it_matters": "The paper's claim that 'Our scaling laws extrapolate to larger models' [§1, txt L274] rests on an untested extrapolation of the very quantity the monograph wants to inherit."
+    },
+    {
+      "id": "U11",
+      "claim": "For text, the central quantity is defined only relative to a reference model, and the paper uses at least three different reference conventions without ablating any of them.",
+      "detail": "(a) §2.3: 'our choice of reference model is a larger model with the same architecture as θ trained for many steps on a much wider data distribution' [txt L411-L413]. (b) §4: 'as a reference model, we use the model of an equal parameter count trained on the maximum amount of data (in this case, the entire dataset)' [txt L688-L690]. (c) §4: 'We also consider an oracle reference model, which is the model that achieves the best compression rate (lowest loss) on the evaluation dataset, and may have many more parameters' [txt L690-L692] — and this last is what the headline text figure uses: 'All quantities are calculated with respect to a large oracle model trained on the full data distribution' [Fig. 2 caption]. No sensitivity study of the choice is reported.",
+      "why_it_matters": "mem_U is not a property of the model; it is a property of a model PAIR. Every text-side number in the paper moves if the reference moves, by an unreported amount."
+    },
+    {
+      "id": "U12",
+      "claim": "The estimator as defined cannot be negative, yet the paper plots negative memorization and speaks of 'samples with positive unintended memorization'.",
+      "detail": "Substituting §2.3's estimators into Def. 3 gives mem^K_U(z) ≈ log₂( max{p(z|Θ), p(z|Θ_ref)} / p(z|Θ_ref) ) ≥ 0 identically [note-writer's derivation]. But Fig. 16's x-axis 'Kolmogorov Memorization (bits)' extends to −2.5, §A.3 writes 'for samples with positive unintended memorization there is a strong correlation' [txt L1549-L1550] (implying negative ones exist), and §4 describes memorization that 'decreases as our model starts to generalize and perform on average worse than the (higher-capacity) oracle' [txt L820-L823]. The paper never states which estimator produced these plots.",
+      "why_it_matters": "Either the max{·} is dropped in practice — in which case the reported quantity is not the mem^K_U of Def. 3 — or the axis is mislabelled. The chapter cannot state which without the code."
+    },
+    {
+      "id": "U13",
+      "claim": "The same experimental configuration reports two different measured values in two appendix tables.",
+      "detail": "The setting N_D = 4096, L = 64, |𝒱| = 2048, 2 layers, d_model = 128 (params 6.67×10^5) is the shared row of Table 3 (L sweep) and Table 4 (|𝒱| sweep). Table 3 reports memorized 2.29×10^6 with 2.97% error; Table 4 reports memorized 2.39×10^6 with 1.11% error — a 4.4% discrepancy inside a section claiming 1.7–1.8% average error [§A.1, txt L1399; note-writer's comparison]. Separately, the 'Expected' entries in the capacity-bound rows imply bpp ≈ 3.54, not the α = 3.642 the appendix says it substituted [txt L1310; note-writer's arithmetic].",
+      "why_it_matters": "The appendix validation of the min(capacity, entropy) predictor has run-to-run variance comparable to the effect it validates."
+    },
+    {
+      "id": "U14",
+      "claim": "Appendix dataset sizes are mutually inconsistent across captions, plot titles and prose.",
+      "detail": "Fig. 15 caption: 'trained on 2^14 sequences', while the same figure's two panel titles read 'N = 262144' (= 2^18) [txt L1435-L1439, L1504-L1506]. Fig. 16 and Table 5 captions: 'on 2^16 sequences of English text' (= 65,536), while §A.3 prose says 'this is just one out of 260,000 training samples' [txt L1552].",
+      "why_it_matters": "The 'rare tokens get memorized' result — the most quotable qualitative finding for a consolidation chapter — cannot be pinned to a dataset size."
+    },
+    {
+      "id": "U15",
+      "claim": "The precision result cuts against the paper's own framing of bits-per-parameter as a storage property.",
+      "detail": "'an increase in α from 3.51 to 3.83 bits-per-parameter on average. This is far less than the actual 2x increase in the bits of θ' [§3.2, txt L677-L679]. Doubling the storage medium buys +9.1% capacity [note-writer's arithmetic].",
+      "why_it_matters": "bpp is therefore a property of the OPTIMIZATION, not of the container. Def. 5's dependence on 𝒜 is doing real work, and no second optimizer is ever tried. Any claim of the form 'a d-dimensional weight delta can hold 3.6d bits' inherits an untested optimizer assumption."
+    },
+    {
+      "id": "U16",
+      "claim": "'grokking' in the abstract is the paper's own name for what the body calls double descent, and its citation is wrong.",
+      "detail": "Abstract: 'models memorize until their capacity fills, at which point \"grokking\" begins' [txt L13-L15]. Body and figures call the identical phenomenon double descent [§4; Figs. 3, 4]. §A.8: 'a new perspective on the phenomenon of grokking (Nakkiran et al., 2019)' [txt L1686-L1687] — Nakkiran et al. 2019 is *Deep double descent*, not a grokking paper.",
+      "why_it_matters": "The chapter must not repeat the conflation; grokking and double descent are separate literatures."
+    },
+    {
+      "id": "U17",
+      "claim": "In-text figure references are wrong in two places in §4.",
+      "detail": "'the sample-level unintended memorization increases with model parameters and decreases with training set size (Figure 4)' [txt L819-L820] — Figure 4 plots train and test LOSSES. 'We measure extraction rates on the full training set and 10,000 non-overlapping test samples (Figure 17)' [txt L836-L837] — Figure 17 is the scaling-law fit; extraction rates are Figure 8.",
+      "why_it_matters": "A study chapter reproducing figures from this paper cannot trust the in-text pointers and must verify each against the captions."
+    },
+    {
+      "id": "U18",
+      "claim": "Evidence rests on one architecture family, one optimizer, one corpus, one sequence length, and the authors say so.",
+      "detail": "GPT-2 architecture only [§3.2, txt L640-L641]; Adam only [txt L643]; FineWeb only [§4, txt L694-L696]; 64-token sequences throughout the main results [§3.2, §4]; bfloat16 default with a single fp32 replication. §A.8: 'Our results are specific to the environment proposed and do not necessarily generalize to other datasets, architectures, or training setups.' [txt L1687-L1688]",
+      "why_it_matters": "There is no MoE, no Mamba/SSM, no quantized-serving, no LoRA/adapter measurement — i.e. no measurement of the exact objects a Θ-path sleep scheme actually writes."
+    },
+    {
+      "id": "U19",
+      "claim": "No capacity number is reported for text at all; the text-side plateau is asserted with a hedge.",
+      "detail": "§A.2: 'the sum of memorization is measured to be constant, presumably at the upper bound of the model's capacity' [txt L1405-L1408]. The word is 'presumably'. Table 1 and Fig. 6 — the only bpp measurements — are synthetic-only.",
+      "why_it_matters": "The monograph cares about real knowledge, not uniform bitstrings. The 3.6 bpp constant is measured exactly where generalization is impossible by construction."
+    },
+    {
+      "id": "U20",
+      "claim": "On synthetic data the membership-inference law's own limit is not reached.",
+      "detail": "Fig. 14 caption: 'In the case of uniform synthetic data, membership inference performance never falls below 0.54.' The law predicts decay to 0.5 [§5.2.1, txt L895-L897] and §5.2.2 uses that prediction to assert that 'statistically significant loss-based membership inference is not possible' for contemporary models [txt L906-L908].",
+      "why_it_matters": "The strongest practical claim in the paper (privacy conclusion for frontier models) has a counterexample in the paper's own appendix figure."
+    }
+  ],
+
+  "cross_path_citations": {
+    "verdict": "ZERO engagement with any of the three sleep-time-compute paths. This is a clean, verified silence, not an inference from skimming.",
+    "method": "Full-text case-insensitive keyword search over the vendored file for: retriev | RAG | external memory | memory-augment | MemGPT | vector store | vector database | knowledge base | LoRA | adapter | fine-tun | finetun | continual | catastrophic | forget | replay | sleep | consolidat | test-time | test time | fast weight | Titans | model editing | distill | in-context. The bibliography (txt L1048-L1298, 61 entries) was additionally read entry by entry.",
+    "E_path": "No citation. No MemGPT (2310.08560), no Letta Sleep-time Compute (2504.13171), no Mem0/Zep, no RAG, no retrieval-augmented anything, no vector or graph store. The only near-miss is Roberts, Raffel & Shazeer 2020, 'How much knowledge can you pack into the parameters of a language model?' — a closed-book-QA paper whose whole point is the parametric-vs-retrieval trade-off — but this paper cites it only for the narrow claim that 'fact storage scales linearly with model capacity' [§3.2, txt L659-L661] and never mentions retrieval. Heinzerling & Inui 2021 ('Language models as knowledge bases') is cited in the same register [§6, txt L994-L996].",
+    "W_path": "No citation. No TTT, no fast weights, no Titans/Miras/Atlas, no linear attention, no state-space models, no test-time adaptation of any kind. The paper's model is a static GPT-2; nothing moves at inference.",
+    "Theta_path": "No citation of the STC Θ-line. No SEAL, no Nested Learning, no 'Language Models Need Sleep', no SCM, no LoRA, no ROME/MEMIT/model editing, no EWC, no generative replay, no continual learning, no catastrophic forgetting. The nearest neighbours are capacity papers, not consolidation papers: Allen-Zhu & Li 2024 ('Physics of language models: Part 3.3, knowledge capacity scaling laws', ~2 bits/parameter under quantization), Lu et al. 2024 ('Scaling laws for fact memorization'), Boo, Shin & Sung 2019 (memorization capacity under parameter quantization), Collins et al. 2017 (RNN capacity), Yun et al. 2019 / Mahdavi et al. 2024 / Kajitsuka & Sato 2024 (theoretical transformer memorization capacity), Cover 1965 / Gardner 1988 / Baldi & Hornik 1989 (2 bits-per-parameter for single-layer perceptrons). Mireshghallah et al. 2022 ('Memorization in NLP fine-tuning methods') is the single fine-tuning citation, and it is cited only as a prior memorization DEFINITION [§1, txt L90-L91; §6, txt L1017].",
+    "biological_path": "No citation. No CLS, no McClelland, no sleep neuroscience, no PAD/dreaming.",
+    "reverse_direction": "The paper's bibliography stops at 2024/2025 privacy-and-capacity work. Whether the STC papers cite THIS paper is out of scope for this note and must be checked in the other notes.",
+    "monograph_consequence": "This is a hard instance of the S0-DESIGN §5 finding that the paths do not cite each other — and it is the cleanest one, because the capacity paper is precisely the falsifier the Θ-path would have to answer. The chapter should state plainly: the paper that measures how many bits weights can hold and the papers that propose writing new knowledge into weights do not know about each other. [note-writer's evaluation]"
+  },
+
+  "figures": [
+    {"number": "Figure 1", "reproduce": "yes — this is the single most important figure in the paper", "shows": "Unintended memorization (bits, log y) vs training-set size (log x), one curve per model size, synthetic uniform bitstrings. Each curve rises linearly then goes flat: the plateau IS the capacity. Caption: 'Memorization plateaus at the empirical capacity limit of different-sized models from the GPT-family, approximately 3.6 bits-per-parameter.'"},
+    {"number": "Figure 6", "reproduce": "yes", "shows": "Total memorization (bits) vs parameter count, log-log, with the fitted line annotated 'Bits-per-parameter: 3.64'. This is where the constant comes from. Caption: 'We estimate α = 3.64 bits-per-parameter for GPT models trained in half precision.'"},
+    {"number": "Figure 3", "reproduce": "yes", "shows": "Test loss vs dataset-to-capacity ratio (synthetic), curves for 1.7M/3.6M/8.0M/19.2M parameters collapsing onto one another with the double-descent bump at ratio ≈ 1. The strongest visual argument that capacity is the right x-axis. Caption: 'double descent occurs exactly when the dataset size begins to exceed the model's capacity.'"},
+    {"number": "Figure 2", "reproduce": "yes", "shows": "Unintended memorization of TEXT vs training-set size, per model size, measured against a large oracle reference — rises then FALLS as the model switches from memorizing to generalizing. This rise-and-fall is the shape the synthetic figure cannot show. Note the reference-model caveat (U11)."},
+    {"number": "Figure 4", "reproduce": "yes, paired with Figure 3", "shows": "Train and test loss vs training-set size on text, per parameter count; the double-descent onset in the natural x-axis (raw dataset size) that Figure 3 then rescales."},
+    {"number": "Figure 5", "reproduce": "optional, with the unit corrected", "shows": "Bits memorized vs training step for a 6.86M-parameter model across eight train-set sizes, with a horizontal 'estimated capacity' line. Useful for showing saturation dynamics; the caption's '23.9 MB' is wrong (U5) and must be redrawn as bits."},
+    {"number": "Figure 7", "reproduce": "yes if the membership section is covered", "shows": "Model capacity (bits) vs dataset size (samples), coloured by membership-inference F1, with the fitted scaling-law contours and empirical points as circles."},
+    {"number": "Figure 10", "reproduce": "yes — one line, high value", "shows": "Membership-inference F1 vs 32-token-prefix extraction rate. The cloud sits well above the diagonal: F1 up to 0.97 at extraction rate 0. Proves that 'the model holds it' and 'you can generate it' are different questions — directly relevant to how a consolidation scheme should be verified."},
+    {"number": "Figure 8", "reproduce": "optional", "shows": "Extraction rate vs training-set size for prefix lengths 8/16/32, train and test curves converging as the dataset grows — the visual form of 'all successful extraction becomes attributable to generalization'."},
+    {"number": "Figure 16", "reproduce": "yes for the qualitative point", "shows": "Unintended memorization (bits) vs TF-IDF for every training point of a 20M-parameter model trained past capacity. Rare-word documents are the memorized ones. Note the negative-axis problem (U12) and the dataset-size ambiguity (U14)."},
+    {"number": "Figure 15", "reproduce": "optional", "shows": "Train vs test compression-rate histograms for the same architecture on random bitstrings (narrow, nearly separated) and on text (broad, heavily overlapping) — explains why membership inference is harder on text."},
+    {"number": "Figure 12", "reproduce": "no — cite the caption only", "shows": "Memorization vs vocabulary size. Worth citing only for its self-caveat: 'we do not observe a capacity plateau, since increasing V also increases parameters.'"},
+    {"number": "Figure 14", "reproduce": "cite the caption", "shows": "Membership-inference F1 vs dataset size on synthetic data, per model size — and the caption's admission that it 'never falls below 0.54' (U20)."},
+    {"number": "Table 1", "reproduce": "yes — reproduce in full", "shows": "The 16-configuration capacity table in bits and in bits-per-parameter, fp32 and bf16. Reproducing it in full is the honest way to present the constant, because the spread is the story."},
+    {"number": "Table 2", "reproduce": "yes", "shows": "The 1.5B / 124M validation of the membership law: predicted vs observed F1 with std. Reproduce because the 0.75 rows are where the claim breaks (U7)."}
+  ],
+
+  "systems_implications": [
+    {
+      "claim": "A bfloat16 parameter carries 16 bits of storage but holds ≈3.51 bits of dataset information; an fp32 parameter carries 32 and holds ≈3.83. Storage efficiency is 21.9% and 12.0% respectively.",
+      "grounding": "Table 1 means 3.51 / 3.83 [paper]; the two percentages are note-writer's arithmetic (3.51/16, 3.83/32).",
+      "so_what": "Weight bytes are a very inefficient medium for storing specific content. A Θ-path sleep scheme pays ~4.5 bf16 parameters per bit of new knowledge deposited."
+    },
+    {
+      "claim": "Raising the precision of the weights buys almost nothing in information terms: bf16 → fp32 doubles the bytes and raises capacity by 9.1%.",
+      "grounding": "'an increase in α from 3.51 to 3.83 bits-per-parameter on average. This is far less than the actual 2x increase in the bits of θ' [§3.2, txt L677-L679]; the 9.1% is note-writer's arithmetic.",
+      "so_what": "For anyone storing a per-user or per-session weight delta, the precision knob is the wrong knob. Rank and parameter count dominate; bit-width almost does not matter. Conversely this is a permissive result for aggressive quantization of consolidated deltas [note-writer's inference — the paper tests no quantized inference]."
+    },
+    {
+      "claim": "Absolute capacity of a deployment-scale model: 1,556,075,200 parameters × 3.6 bits ≈ 5.60×10^9 bits ≈ 700 MB of dataset information, against ~3.11 GB of bf16 weights on disk.",
+      "grounding": "Parameter count from Table 2; 3.6 bits/param from the abstract; both products are note-writer's arithmetic. Compare the paper's own framing figure: an 8B-parameter model is '32GB on disk' but trained on '15 trillion tokens (around 7TB on disk)' [§1, txt L87-L89].",
+      "so_what": "The information a frontier model can hold about its training set is three to four orders of magnitude smaller than the training set itself. Everything else it does is compression, i.e. generalization."
+    },
+    {
+      "claim": "Capacity is TOTAL and SHARED, so writing into Θ is zero-sum once saturated.",
+      "grounding": "Prop. 1's upper bound mem_U ≤ H(Θ); '§A.2: When the dataset size increases by a factor of N, the model divides its memorization between datapoints by an equal amount; the sum of memorization is measured to be constant' [txt L1405-L1408].",
+      "so_what": "This is the formal reason a repeated Θ-path sleep loop MUST forget: past the crossing point, every new bit written evicts an old bit. The paper supplies the ceiling but no rate — ρ is absent — so the monograph can state the necessity of forgetting from this paper but must get the rate from elsewhere. [note-writer's evaluation]"
+    },
+    {
+      "claim": "The regime boundary is computable in advance: generalization begins when H(𝒟) crosses bpp·|Θ|, at roughly 10^5 64-token samples for the paper's models.",
+      "grounding": "'the model only begins to generalize … once its capacity is reached, which takes approximately 10^5 samples, depending on parameter count' [§4, txt L824-L826]; Figs. 3, 4; predictor mem ≈ min(C_cap, H(𝒟)) [§A.1, txt L1309].",
+      "so_what": "A sleep-time consolidation scheduler could in principle compute, before running a consolidation round, whether the target parameter block is already saturated — using only the entropy of the material to be written and the parameter count of the block. [note-writer's inference; the paper proposes no such scheduler.]"
+    },
+    {
+      "claim": "Rare and out-of-distribution content is the expensive content.",
+      "grounding": "'examples with more rare words are more memorized … Out of the top twenty memorized sequences, all but three contain sequences of tokens from other languages (Japanese, Chinese, and Hebrew)' [§A.3, txt L1549-L1554]; Fig. 16; Table 5.",
+      "so_what": "Exactly the material a per-user sleep-time scheme wants to consolidate — the user's idiosyncratic, non-generic facts — is the material that consumes the most capacity per item. The favourable framing (rare content sticks easily) and the unfavourable one (rare content is what fills the container) are the same fact. [note-writer's evaluation]"
+    },
+    {
+      "claim": "Reading memorized bits costs nothing extra at decode: capacity is a static property of the weights, and there is no state to move.",
+      "grounding": "No latency, byte-movement, or throughput number appears anywhere in the paper (see cost_table: L_w = absent). The claim that reading costs one ordinary forward pass is note-writer's inference from the fact that the paper's only inference procedure is −log p(z|Θ) over a fixed model.",
+      "so_what": "This is the Θ path's structural advantage over the E path and the entire reason the monograph must weigh it: consolidated knowledge has zero marginal read cost and zero per-token state traffic, whereas an external store pays retrieval latency and bytes per query. The paper supplies no number on either side of that comparison. [note-writer's evaluation]"
+    },
+    {
+      "claim": "The E path has no analogue of this ceiling.",
+      "grounding": "note-writer's inference. The paper never mentions external memory (see cross_path_citations). Prop. 1's bound is H(Θ) — the entropy of the weights — and by construction it does not apply to bytes stored outside the model.",
+      "so_what": "S0-DESIGN §6 candidate A1 (three paths, three cost structures) gets its sharpest statement here: E scales its state with content and pays at read time; Θ has a fixed 3.6-bits-per-parameter budget and pays at write time. The monograph should say so as an evaluation, not attribute it to this paper."
+    },
+    {
+      "claim": "A rank-r LoRA on a d×d matrix touches 2dr parameters and can therefore hold at most ≈3.6·2dr bits of dataset information.",
+      "grounding": "note-writer's inference by applying cap-11 to a parameter subset. The paper measures NO adapter, NO low-rank update, and NO partial-parameter training; every model in Table 1 is trained from scratch with all parameters free. Whether bpp transfers to a constrained subspace is untested and is exactly what the sibling note on 'LoRA as Knowledge Memory' (2603.01097) must check.",
+      "so_what": "Do not state the LoRA figure as this paper's result. State it as the hypothesis this paper makes checkable."
+    },
+    {
+      "claim": "Verification of a consolidation scheme cannot rely on generation.",
+      "grounding": "'in some cases we can infer training dataset membership quite well (score of 0.97) with an extraction rate of 0' [§5.1, txt L867-L869; Fig. 10]; 'Language models can be coerced to output almost any string (Geiping et al., 2024); hence the fact that a model outputs something is not necessarily a sign of memorization' [§1, txt L169-L171].",
+      "so_what": "A sleep-time scheme that validates 'did the knowledge land?' by prompting the model and checking the output is measuring the wrong thing in both directions: the model can hold content it will not emit, and emit content it does not hold. The likelihood-ratio measure of Def. 3 is a better gate. [note-writer's evaluation]"
+    },
+    {
+      "claim": "Batching and serving are entirely untouched.",
+      "grounding": "No batching, no KV cache, no serving, no memory-hierarchy discussion appears in the paper. Verified by keyword search.",
+      "so_what": "The reader's standing question — 'what does this change at decode?' — has the honest answer: nothing directly. This paper changes what you may CLAIM about a Θ-path scheme before you build it. The chapter should say that in one sentence rather than manufacture a serving story. [note-writer's evaluation; consistent with the S0 D4 constraint against forced connections]"
+    }
+  ],
+
+  "todo_verify": [
+    {
+      "item": "Which estimator produced the negative values on Figure 16's 'Kolmogorov Memorization (bits)' axis, given that Def. 3 plus §2.3's max{·} estimator is non-negative by construction.",
+      "search_term": "In the source or released code, search for: 'max{p(x | θ̂), p(x | θ)}' and for the Fig. 16 plotting routine. In the arXiv source, search the LaTeX for 'Kolmogorov Memorization' and for the appendix figure's data-generation script. Also check whether an arXiv v1/v2 states a different estimator."
+    },
+    {
+      "item": "Whether the membership-inference law's ratio is Capacity/|D| (as printed) or |D|/Capacity (as required by the fitted constants and by the Fig. 3 / Fig. 17 axes).",
+      "search_term": "Search the arXiv LaTeX source for 'MembershipF1' and '\\frac{\\text{Capacity}' ; compare against Fig. 17's x-axis label 'Capacity ratio' and Fig. 3's 'Dataset-to-capacity ratio'. Also check arXiv v1 and v2 for a corrected form."
+    },
+    {
+      "item": "Figure 1's legend values. The vendored OCR interleaves two figures' legends; the values 170K / 500K / 2.5M / 7M appear adjacent to the string 'Data set size' but are most consistent with MODEL sizes (compare Fig. 13/14 legends: 1.7e+05, 5.4e+05, 1.9e+06, 6.9e+06). This note has not asserted Figure 1's legend semantics anywhere.",
+      "search_term": "Open the PDF at Figure 1 and read the legend title. Search term in the source: 'Model size' near the Figure 1 float."
+    },
+    {
+      "item": "The exact number of models trained ('hundreds of transformer language models', Abstract) and the seed count for the text experiments (five seeds are stated only for the synthetic sweep, §3.2).",
+      "search_term": "Search the paper for 'seeds' and 'hundreds'. Only one occurrence of 'five random seeds' exists (§3.2, txt L646); §4 says 'We repeat the experiments from Section 3.2' without restating the seed count."
+    },
+    {
+      "item": "Whether Table 1's 'Mean (±0.1)' is a standard deviation, a standard error, or a confidence interval.",
+      "search_term": "Search Table 1's caption and §3.2 for '±' and for 'standard'. The vendored text gives no definition."
+    },
+    {
+      "item": "Whether the paper (or a later version) reports any bits-per-parameter figure for text rather than synthetic data.",
+      "search_term": "Search for 'bits-per-parameter' and 'bits per parameter' — in the vendored text all six occurrences attach to synthetic experiments or to Table 1."
+    }
+  ]
+}

@@ -1,0 +1,702 @@
+{
+  "paper_id": "need-sleep-recurrence",
+  "arxiv": "2605.26099",
+  "arxiv_version": "v3 [cs.CL] 5 Jun 2026 (as printed on p.1 of the vendored text, line 4)",
+  "title": "Do Language Models Need Sleep? Offline Recurrence for Improved Online Inference",
+  "authors": [
+    "Sangyun Lee (Carnegie Mellon University; correspondence sangyunl@andrew.cmu.edu)",
+    "Sean McLeish (University of Maryland)",
+    "Tom Goldstein (University of Maryland)",
+    "Giulia Fanti (Carnegie Mellon University)"
+  ],
+  "venue": "Preprint (the paper marks itself 'Preprint.' on p.1, line 56). No conference/journal stated. No appendix exists in the vendored text — the document ends at reference [65] on p.15.",
+  "date": "2026-06-05 (arXiv v3 stamp, line 4)",
+  "path": "/home/jimmy/repos/neural-memory-study/papers/2605.26099.txt",
+  "axis": "W",
+
+  "problem_stated": {
+    "statement": "Scalable memory is not the same as scalable reasoning. The paper claims that attention-SSM hybrid models, whose fixed-size fast weights are supposed to compensate for a bounded attention window, fail not because they run out of storage but because they run out of *computation* for converting evicted context into a usable internal state.",
+    "verbatim_anchors": [
+      "'However, scalable memory is not the same as scalable reasoning. A fast weight memory may support long-range recall [48], but it is unclear whether it can support deep computation over tokens that are no longer present in the KV cache.' [§1 Introduction, lines 45-47]",
+      "'This suggests that the bottleneck is not merely memory capacity as suggested by prior work [32, 2], but the amount of computation available for transforming evicted context into a useful internal state.' [§1 Introduction, lines 49-51]",
+      "'we impose a strict context window size as well as a hard-eviction constraint: we clear the context window every 24 tokens' ... 'We impose a prediction-phase latency constraint: during the prediction phase, each answer token is predicted with a single standard forward pass. Extra loops or chain-of-thought tokens are disallowed because they increase prediction latency.' [§4, lines 288-300]"
+    ],
+    "operational_setup": "Every C tokens the KV cache is hard-evicted; all information that survives the boundary must already sit in the SSM fast weights; the answer must then be produced in one forward pass with no chain-of-thought. The paper's target quantity is accuracy under this pair of constraints, at a *fixed training-token budget* ([§4 'On task failures', lines 312-317])."
+  },
+
+  "core_mechanism": {
+    "one_line": "At every KV-cache eviction boundary the model runs N extra forward passes over the *same* token chunk, each pass re-writing the SSM fast weights W with keys/values recomputed from the previous pass's features; the KV cache and the refined features are then thrown away and only W crosses the boundary — i.e. (U-W) applied N times over one chunk instead of once, with a learned forward-pass write rule in place of a gradient step.",
+
+    "notation_conflicts": {
+      "note": "Three of the paper's central symbols collide head-on with reserved symbols in style/STYLE-NOTATION.md §1.2/§1.5. The collisions are severe enough that the chapter MUST carry this mapping table before any equation is shown.",
+      "map": [
+        {
+          "paper": "$S_t$ — the fast-weight state itself ([need-sleep-recurrence Eq. 3], §3.1 line 200)",
+          "unified": "$W_t$",
+          "severity": "HARD COLLISION",
+          "why": "Reserved $S_t$ = inner momentum buffer ('past surprise'), STYLE-NOTATION §1.2 optimizer table and §1.5 ('$S$: $S_t$=inner momentum 전용'). This paper has no momentum at all, so the reserved $S_t$ simply does not appear; the paper's $S_t$ must be renamed to $W_t$ everywhere."
+        },
+        {
+          "paper": "$\\beta_t\\in(0,1)$ — data-dependent *input* gate, multiplying the write $v_tk_t^\\top$ ([Eq. 3], §3.1 lines 200-205)",
+          "unified": "$\\eta_t$ (inner learning rate / write step size)",
+          "severity": "HARD COLLISION",
+          "why": "Reserved $\\beta_t$ = inner momentum decay (STYLE-NOTATION §1.2). The paper's $\\beta_t$ is the per-token write magnitude, which is exactly the role of $\\eta_t$ in (M1)/(M2). Mapping $\\beta_t^{\\text{paper}}\\to\\eta_t$ is required."
+        },
+        {
+          "paper": "$\\alpha_t\\in(0,1)$ — data-dependent forget gate, $\\alpha_tS_{t-1}$ ([Eq. 3], §3.1 line 204)",
+          "unified": "$\\alpha_t$ — NO conversion needed",
+          "severity": "none",
+          "why": "Direction already matches the unified convention ($\\alpha_t$ = fraction RETAINED, $\\alpha_tW_{t-1}$). Unlike Titans, no sign/direction flip is required here."
+        },
+        {
+          "paper": "$L$ — context-window size / hard-eviction period ($L=24$, $75$, $2000$, $512$)",
+          "unified": "$C$ (chunk size)",
+          "severity": "HARD COLLISION",
+          "why": "Reserved $L$ (unsubscripted) = sequence length only (STYLE-NOTATION §1.5). The eviction window *is* the chunk in this architecture, so it maps to $C$."
+        },
+        {
+          "paper": "$T$ — total sequence length ($T=100$, $360$, $12{,}000$)",
+          "unified": "$L$",
+          "severity": "swap",
+          "why": "Consequence of the line above: the paper's $T$ and $L$ swap names under the unified scheme. This is the single most dangerous mapping in the chapter."
+        },
+        {
+          "paper": "$D$ — number of blocks ([Eq. 4], [Eq. 5], line 213-226)",
+          "unified": "$L_{\\mathrm{layer}}$",
+          "severity": "collision",
+          "why": "Reserved $L_{\\mathrm{layer}}$ = layer count (STYLE-NOTATION §1.2 v1.1). $D$ is reserved for the Atlas lifted dimension."
+        },
+        {
+          "paper": "$t$ — Rule-110 rollout step count ($t=4,8,\\dots,32$, §4 line 284, §6.1 line 458)",
+          "unified": "$r$ (chapter-local; 'rollout depth')",
+          "severity": "HARD COLLISION",
+          "why": "Reserved $t$ = token index (STYLE-NOTATION §1.2). The paper uses $t$ for BOTH the token index (Eq. 1-3) and the automaton rollout depth (§4, §6.1) *in the same document*. The chapter must rename the latter."
+        },
+        {
+          "paper": "$k$ — Depo hop count ($k\\in\\{1,2,4,8,16\\}$, §3.2 line 240, §6.2 line 639)",
+          "unified": "$n_{\\mathrm{hop}}$ (chapter-local)",
+          "severity": "HARD COLLISION",
+          "why": "Reserved $k$ = key / auxiliary index; STYLE-NOTATION §1.5 forbids reusing $k$ for counts."
+        },
+        {
+          "paper": "$h$ — hidden activations in Algorithm 1",
+          "unified": "$H^{(n,j)}\\in\\mathbb{R}^{C\\times d}$ (chapter-local feature matrix)",
+          "severity": "collision",
+          "why": "Reserved $h_t$ = outer second moment (Adam). Also lets us make the pass index $j$ explicit, which Algorithm 1 leaves implicit."
+        },
+        {
+          "paper": "$m$, $m_c$ — loss mask (Algorithm 1 lines 2-5)",
+          "unified": "$\\mu$, $\\mu_n$ (chapter-local)",
+          "severity": "collision",
+          "why": "Reserved $m_t$ = outer first moment."
+        },
+        {
+          "paper": "$c$ — token chunk (Algorithm 1 line 3)",
+          "unified": "$c_n$ (chunk $n$; chapter-local, subscript mandatory)",
+          "severity": "soft collision",
+          "why": "Reserved bare $c$ = Omega-rule window length (Atlas). Always subscript in this chapter."
+        },
+        {
+          "paper": "$o_t$ — layer output ([Eq. 2], [Eq. 3])",
+          "unified": "$y_t$",
+          "severity": "none",
+          "why": "Standard unified rename (STYLE-NOTATION §1.2)."
+        },
+        {
+          "paper": "$\\mathcal{L}$ — MaskedCE task loss (Algorithm 1 line 11)",
+          "unified": "$\\mathcal{L}$ — unchanged",
+          "severity": "none",
+          "why": "The paper happens to use $\\mathcal{L}$ for the OUTER loss, which agrees with the unified convention. Note this is the *opposite* of [TNT], whose $\\mathcal{L}$ is the inner loss (STYLE-NOTATION §1.7.4)."
+        },
+        {
+          "paper": "$N$ — number of sleep passes",
+          "unified": "$N$ — adopted as a NEW reserved symbol for this chapter",
+          "severity": "new",
+          "why": "No existing symbol covers 'recursion count at a consolidation boundary'. Must be declared; do not confuse with Titans' $N_p$ (persistent memory tokens) or Titans' $N$ (sequence length, already mapped to $L$)."
+        },
+        {
+          "paper": "$q_t,k_t,v_t$; $W_Q,W_K,W_V$; $K_t,V_t$",
+          "unified": "identical",
+          "severity": "none",
+          "why": "The paper already declares column vectors ('where $q_t,k_t,v_t\\in\\mathbb{R}^d$ are column vectors', §3.1 line 187), which matches STYLE-NOTATION §1.3. No transposition needed — unusual and worth noting, since [Titans] required it."
+        },
+        {
+          "paper": "$\\mathcal{M}(\\cdot;W)$ — memory-read function",
+          "unified": "n/a",
+          "severity": "absent",
+          "why": "The paper never introduces a memory module abstraction. Reads are written directly as $y_t=W_tq_t$ [Eq. 3]. The chapter should say so explicitly rather than retrofitting $\\mathcal{M}$."
+        }
+      ]
+    },
+
+    "equations": [
+      {
+        "label": "(NS-1) projections",
+        "latex": "q_t = W_Q x_t,\\qquad k_t = W_K x_t,\\qquad v_t = W_V x_t",
+        "source": "[need-sleep-recurrence Eq. 1] (§3.1, lines 177-187)",
+        "comment": "Verbatim in unified form; the paper already uses column vectors and the same symbols."
+      },
+      {
+        "label": "(NS-2) attention baseline (the thing being evicted)",
+        "latex": "y_t = V_t^{\\top}\\,\\mathrm{softmax}\\!\\left(\\frac{K_t q_t}{\\sqrt{d}}\\right),\\qquad K_t=[k_1,\\dots,k_t]^{\\top},\\ V_t=[v_1,\\dots,v_t]^{\\top}",
+        "source": "[need-sleep-recurrence Eq. 2] (§3.1, lines 188-197)",
+        "comment": "Only rename: paper's $o_t\\to y_t$. This is the state that gets destroyed at every boundary."
+      },
+      {
+        "label": "(NS-3) per-token write inside one pass — the illustrative Mamba-2-style rule",
+        "latex": "W_t = \\alpha_t\\,W_{t-1} + \\eta_t\\,v_t k_t^{\\top},\\qquad y_t = W_t q_t",
+        "source": "[need-sleep-recurrence Eq. 3] (§3.1, lines 198-209)",
+        "comment": "Unified renames: $S_t\\to W_t$, $\\beta_t\\to\\eta_t$, $o_t\\to y_t$; $\\alpha_t$ unchanged. Compare to (M2): momentum is ABSENT ($S_t\\equiv 0$ in the unified sense), and the write is a raw Hebbian outer product rather than $-\\nabla_W\\ell$. CAVEAT FROM THE PAPER ITSELF: 'In our experiments we use Gated Delta Networks (GDNs), which add a delta-rule correction to this update; however, the specific update rule does not matter for our discussion.' [§3.1, lines 207-209] — so Eq. 3 is exposition, not the rule that was run."
+      },
+      {
+        "label": "(NS-3') the rule actually run (GDN), supplied from STYLE-NOTATION §1.6 — NOT written out in the paper",
+        "latex": "W_t = \\alpha_t\\,W_{t-1}\\big(I - \\eta_t k_t k_t^{\\top}\\big) + \\eta_t\\,v_t k_t^{\\top}",
+        "source": "note-writer's substitution; the paper only names 'Gated Delta Networks (GDNs)' [§3.1 line 207; §4 line 307; §6 line 434] and never displays the GDN update. Jet-Nemotron's 'Jet layers' (§6.2 line 438, §6.3 line 675) are described only as 'dynamic convolution instead of the fixed convolution in GDN'.",
+        "comment": "Flag in the chapter: the paper's displayed mechanism and its executed mechanism are different equations."
+      },
+      {
+        "label": "(NS-4) block stack, hybrid layout",
+        "latex": "\\mathrm{Embed}\\to B_0^{\\mathrm{attn}}\\to B_1^{\\mathrm{ssm}}\\to B_2^{\\mathrm{attn}}\\to B_3^{\\mathrm{ssm}}\\to\\cdots\\to B_{L_{\\mathrm{layer}}-1}^{\\mathrm{attn}}\\to\\mathrm{OutProj}",
+        "source": "[need-sleep-recurrence Eq. 5] (§3.1, lines 221-227); attention-only version is [Eq. 4] (lines 213-220)",
+        "comment": "Only rename: $D\\to L_{\\mathrm{layer}}$."
+      },
+      {
+        "label": "(NS-5) the sleep — looped stack",
+        "latex": "\\mathrm{Embed}\\to\\Big(B_0^{\\mathrm{attn}}\\to B_1^{\\mathrm{ssm}}\\to\\cdots\\to B_{L_{\\mathrm{layer}}-1}^{\\mathrm{attn}}\\Big)^{\\times N}\\to\\mathrm{OutProj}",
+        "source": "[need-sleep-recurrence Eq. 6] (§5, lines 327-338)",
+        "comment": "'the superscript $\\times N$ denotes $N$ looped passes over the architecture' [§5 line 338]. In two of the three real-model runs the loop covers only a sub-range of blocks: 'For Jet, we loop over the middle 14 blocks out of the total 28 blocks' [§6.3 line 679]; 'For Ouro, we loop over the entire blocks' [§6.3 line 680]."
+      },
+      {
+        "label": "(NS-6) the chunk/sleep recursion — index-explicit form (the equation the chapter should teach)",
+        "latex": "\\begin{aligned}\nW^{(0,N)} &= 0,\\\\\nH^{(n,0)} &= \\mathrm{Embed}(c_n),\\qquad W^{(n,0)} = W^{(n-1,N)},\\\\\n\\big(H^{(n,j)},\\,W^{(n,j)}\\big) &= \\mathrm{Blocks}\\big(H^{(n,j-1)},\\,W^{(n,j-1)};\\,\\Theta\\big),\\qquad j=1,\\dots,N,\\\\\n&\\text{then discard } H^{(n,N)} \\text{ and the KV cache; only } W^{(n,N)} \\text{ crosses the boundary.}\n\\end{aligned}",
+        "source": "[need-sleep-recurrence Algorithm 1, lines 1-8 (p.6)] + [§5, lines 370-382]. The paper writes this only as pseudocode 'h, S ← Blocks(h, S)' inside 'for n = 1,…,N'; the index-explicit algebra is the note-writer's transcription.",
+        "comment": "THREE load-bearing facts the pseudocode encodes and the prose does not spell out: (a) $W$ is NOT reset between passes — pass $j$ starts from the state pass $j-1$ ended on, so the same $C$ tokens are absorbed $N$ times cumulatively; (b) $H$ IS carried across the $N$ passes within a chunk (that is what makes the keys/values change between passes) but is destroyed at the boundary; (c) therefore the *only* cross-chunk channel is $W$ — 'Unlike prior depth-recurrent models where gradient flows through recursively refined feature vectors, the gradient flows through the refined fast weights because we discard the refined features after sleep.' [§5, lines 380-382]."
+      },
+      {
+        "label": "(NS-7) what the loop does at the token level — (U-W) run N times over one chunk",
+        "latex": "\\begin{aligned}\nx_t^{(j-1)} &= \\big[H^{(n,j-1)}\\big]_{t,:},\\qquad k_t^{(j)}=W_K x_t^{(j-1)},\\quad v_t^{(j)}=W_V x_t^{(j-1)},\\\\\nW_{\\xi(t,C)}^{(n,j)} &= W^{(n,j-1)},\\\\\nW_t^{(n,j)} &= \\alpha_t^{(j)}\\,W_{t-1}^{(n,j)} + \\eta_t^{(j)}\\,v_t^{(j)}\\big(k_t^{(j)}\\big)^{\\top},\\qquad t=\\xi(t,C)+1,\\dots,\\xi(t,C)+C,\\\\\nW^{(n,j)} &= W_{\\xi(t,C)+C}^{(n,j)}.\n\\end{aligned}",
+        "source": "note-writer's expansion of [Eq. 3] under [Algorithm 1 lines 6-8]. The paper never writes an index that carries both token position and pass number. Gate data-dependence 'both computed from $x_t$' is [§3.1 line 204].",
+        "comment": "This is the sentence the monograph needs: the gates $\\alpha_t^{(j)},\\eta_t^{(j)}$ at pass $j$ are functions of features that were themselves produced by $W^{(n,j-1)}$. So the recursion is a closed loop state $\\to$ features $\\to$ gates $\\to$ state, run $N$ times on frozen input tokens. It is a *learned* fixed-point-style refinement, not $N$ steps of a fixed objective."
+      },
+      {
+        "label": "(NS-8) prediction chunk and outer objective",
+        "latex": "\\big(H^{(n,1)},W^{(n,1)}\\big)=\\mathrm{Blocks}\\big(H^{(n,0)},W^{(n-1,N)};\\Theta\\big),\\qquad \\mathcal{L}=\\mathrm{MaskedCE}\\big(\\mathrm{OutProj}(H^{(n,1)}),\\,c_n,\\,\\mu_n\\big)",
+        "source": "[need-sleep-recurrence Algorithm 1, lines 9-11]",
+        "comment": "Exactly one pass when the loss mask $\\mu_n$ is not all-zero. The sleep is triggered purely by the mask: 'if $m_c$ is all-zero then [N loops] else [1 pass + loss]' [Alg. 1 lines 5-12]. So at TRAINING time the sleep/wake split is dictated by the label layout, not by a runtime policy."
+      },
+      {
+        "label": "(NS-9) outer update",
+        "latex": "\\Theta_{k+1} = \\Theta_k - \\eta\\,\\nabla_{\\Theta}\\,\\mathcal{L}(\\Theta_k)",
+        "source": "[need-sleep-recurrence Algorithm 1 line 14] ('Backpropagate $\\mathcal{L}$ and take an optimizer step') + [§5, lines 378-380] ('trained to minimize the prediction error by backpropagating through the entire computational graph shown in Equation (6)') + [§6 Experiment details, lines 432-433] (Muon for all experiments, AdamW lr fixed at 5e-5).",
+        "comment": "Backprop runs through ALL $N$ passes of EVERY chunk and through the cross-chunk $W$ chain. This is the entire cost story of §7."
+      }
+    ],
+
+    "what_the_learned_local_rule_actually_updates": "The abstract's phrase 'updates the fast weights in its state-space model (SSM) blocks through a learned local rule' [Abstract, lines 24-25] resolves as follows, and the chapter must be precise here because it is the W-path anchor: (1) the OBJECT updated is $W^{(\\ell)}$, the matrix-valued fast-weight state of each SSM/GDN/Jet block — nothing else persists across an eviction boundary; (2) the RULE is the block's own gated outer-product write [Eq. 3] (delta-corrected in the GDN runs), i.e. a forward-pass rule whose gates $\\alpha_t,\\eta_t$ are produced from the token representation by slow weights $\\Theta$ — there is no inner loss $\\ell$, no $\\nabla_W$, and no optimizer state; (3) 'learned' refers to $\\Theta$ (the gate producers and projections) being trained by outer-loop backprop through the whole sleep graph, NOT to any test-time learning of the rule; (4) what the sleep adds on top of the ordinary SSM is only the recursion index $j=1..N$ — the same token chunk is written into $W$ $N$ times, with the keys/values regenerated each time from features that depend on the previous $W$. The attention blocks participate in the loop (their KV cache is rebuilt each pass over the chunk) but contribute nothing that survives the boundary.",
+
+    "relation_to_S0_frame": "Reduction to (U-W) with two deviations. (i) The gradient term $-\\eta_t\\nabla_W\\ell(W_{t-1};k_t,v_t)$ is replaced by a learned Hebbian/delta write $+\\eta_t v_tk_t^{\\top}$ (delta-corrected), and $\\beta_tS_{t-1}$ is absent (no momentum). (ii) A recursion index $N$ is added that (U-W) does not have; the canonical rule is a single left-to-right sweep, here it is $N$ sweeps over the same window with regenerated $(k,v)$. The paper contrasts (i) explicitly with the gradient-descent framing: 'Instead of doing gradient descent on predefined losses, our method uses a learned recurrent forward pass to transfer context to weights.' [§2 Context distillation, lines 120-121] and 'our method uses a learned recurrent forward pass as the memory-update rule, allowing more flexible forms of consolidation that need not correspond to a one-step gradient descent on a fixed scalar objective.' [§2 Test-time training, lines 126-128]."
+  },
+
+  "outer_vs_inner": {
+    "note": "'Who learns this, and when.' Columns: object / where it lives / moved by outer-loop training? / moved by the sleep? / moved at wake time? / source.",
+    "rows": [
+      {
+        "object": "$\\Theta$ — all projection matrices $W_Q,W_K,W_V$, MLP weights, normalization, output projection, embedding",
+        "lives_in": "slow weights",
+        "outer_loop_training": "YES — Muon (+AdamW at lr 5e-5) on MaskedCE through the whole graph",
+        "sleep_time": "NO — frozen during sleep; the sleep is a forward pass",
+        "wake_time": "NO",
+        "source": "[Alg. 1 line 14]; [§6 Experiment details, lines 432-433]"
+      },
+      {
+        "object": "the gate producers for $\\alpha_t,\\eta_t$ (the 'learned local rule')",
+        "lives_in": "slow weights ($\\subset\\Theta$)",
+        "outer_loop_training": "YES — this is the only sense in which the rule is 'learned'",
+        "sleep_time": "NO — the producers are fixed; their OUTPUTS $\\alpha_t^{(j)},\\eta_t^{(j)}$ change from pass to pass only because the input features change",
+        "wake_time": "NO",
+        "source": "[§3.1 line 204] 'both computed from $x_t$'; [Abstract line 25] 'a learned local rule'"
+      },
+      {
+        "object": "$W^{(\\ell)}$ — SSM/GDN/Jet fast-weight state, one matrix per SSM block",
+        "lives_in": "fast weights (test-time state)",
+        "outer_loop_training": "NO as a stored quantity; but gradient flows THROUGH it during training. Its initial value is not meta-learned — it is zero: 'Zero-initialize SSM fast weights $S$' [Alg. 1 line 1]. NOTE: this differs from [Titans]/[TNT], where $W_{\\mathrm{init}}$ is meta-learned.",
+        "sleep_time": "YES — this is the only object the sleep moves. $N$ cumulative sweeps over the chunk",
+        "wake_time": "YES — the ordinary single-pass SSM recurrence still writes to $W$ while the answer tokens are processed",
+        "source": "[Alg. 1 lines 1, 6-8, 10]; [§5 lines 370-376]"
+      },
+      {
+        "object": "$H^{(n,j)}$ — refined hidden features inside a sleep",
+        "lives_in": "activations (transient)",
+        "outer_loop_training": "NO (not a parameter)",
+        "sleep_time": "YES — carried across the $N$ passes",
+        "wake_time": "DESTROYED at the eviction boundary — 'we discard the refined features after sleep' [§5 line 382]",
+        "source": "[Alg. 1 line 7]; [§5 lines 380-382]"
+      },
+      {
+        "object": "KV cache $K_t,V_t$",
+        "lives_in": "non-parametric state",
+        "outer_loop_training": "NO",
+        "sleep_time": "rebuilt within each of the $N$ passes over the current chunk; then cleared",
+        "wake_time": "under hard eviction: empty at the start of the prediction chunk. Under sliding-window eviction (§6.4): the most recent $C-1$ tokens are retained",
+        "source": "[§5 lines 371-376]; [§6.4 lines 701-706]"
+      },
+      {
+        "object": "$N$ — sleep duration",
+        "lives_in": "hyperparameter",
+        "outer_loop_training": "NO — fixed per run; each value of $N$ is a separately trained model",
+        "sleep_time": "NO — not adaptive, no halting/ACT mechanism despite [25, 21, 50, 5] being cited for adaptive depth (§2 lines 137-138)",
+        "wake_time": "NO",
+        "source": "[§6.1 line 456] '2 to 4 recurrent updates'; [§6.3 lines 682-683] 'we use $N=\\{1,2,4\\}$ for Ouro ... we use $\\{1,2,4,6\\}$' for Jet"
+      },
+      {
+        "object": "$C$ — eviction window",
+        "lives_in": "hyperparameter",
+        "outer_loop_training": "NO — fixed per task ($24$ / $75$ / $2000$ / $512$)",
+        "sleep_time": "NO",
+        "wake_time": "NO",
+        "source": "[§4 line 290]; [§6.2 line 632]; [§6.3 line 668]; [§6.4 line 1007]"
+      },
+      {
+        "object": "the 6 inserted Jet layers in the Ouro 1.4B experiment",
+        "lives_in": "slow weights (newly added, $<10\\%$ parameter increase)",
+        "outer_loop_training": "YES, in TWO stages under sliding-window eviction: 'we first warm up only the Jet layers for one epoch and then train the full model for two epochs' [§6.4 lines 1010-1012]",
+        "sleep_time": "NO",
+        "wake_time": "NO",
+        "source": "[§6.3 lines 676-678]; [§6.4 lines 1009-1013]"
+      },
+      {
+        "object": "external store $E$",
+        "lives_in": "—",
+        "outer_loop_training": "N/A",
+        "sleep_time": "N/A",
+        "wake_time": "N/A",
+        "source": "The paper has no external store of any kind. This is a pure W-path paper; nothing is written to text, vectors, or a graph."
+      }
+    ]
+  },
+
+  "update_layer": {
+    "instantiates": "(U-W), and only (U-W), at test time.",
+    "layers_touched_in_order": "One layer only. $\\Theta$ moves exclusively in outer-loop training (which is not sleep-time compute under S0 §2.3); $E$ does not exist. There is no cascade and no ordering question.",
+    "differences_from_canonical_U_W": [
+      "The write term is not a gradient. Canonical (U-W) has $S_t=\\beta_tS_{t-1}-\\eta_t\\nabla_W\\ell(W_{t-1};k_t,v_t)$; here the write is $+\\eta_t v_tk_t^{\\top}$ (Mamba-2 form, [Eq. 3]) or the delta-corrected GDN form. The paper defends this choice explicitly against the gradient framing [§2 lines 126-128].",
+      "Momentum is absent. In unified terms $S_t\\equiv -\\eta_t v_tk_t^\\top$ with $\\beta_t\\equiv 0$; there is no persistent momentum buffer. The reserved symbol $S_t$ therefore never appears in its reserved meaning in this chapter — a useful thing to state, since the paper's own $S_t$ means $W_t$.",
+      "Retention is a data-dependent scalar/diagonal gate $\\alpha_t\\in(0,1)$ computed from $x_t$, in the SAME direction as the unified convention (no flip needed, unlike [Titans]).",
+      "A NEW index is introduced that (U-W) has no slot for: the pass index $j\\in\\{1,\\dots,N\\}$. The update is applied $N$ times over the same token block, and the $(k,v)$ pairs are regenerated at each pass from features that depend on $W^{(n,j-1)}$. So this is not 'more (U-W) steps' — it is (U-W) composed with a feature-refinement fixed-point iteration.",
+      "The chunk-start anchor differs from (M4). In chunkwise-parallel training the gradients inside a chunk are all evaluated at the stale snapshot $W_{\\xi(t,C)}$; here the recurrence within a pass is the ordinary online SSM recurrence, and the 'snapshot' semantics live at the *pass* level instead: pass $j$ starts from $W^{(n,j-1)}$, which already contains the chunk's content written $j-1$ times.",
+      "$W_{\\mathrm{init}}=0$ (zero-initialized, [Alg. 1 line 1]) rather than meta-learned. The line's usual load-bearing meta-learned initial state is absent."
+    ],
+    "deviation_from_S0_operational_definition_of_sleep": "IMPORTANT AND UNFAVOURABLE TO THE FRAME. S0 §2.3 defines sleep-time compute as computation spent BEFORE the query $q$ arrives. This paper's sleep does not satisfy that in its headline realistic experiment: 'We place the question before the context and exclude Chain-of-Thought traces from the data... This order gives the model the query before it reads the long problem context, allowing it to selectively consolidate information relevant to the question while ignoring filler tokens.' [§6.3, lines 664-667]. The sleep here is query-CONDITIONED and sits on the critical path of a single request; there is no $N_q$ and the amortization equation (A) does not apply. The Depo task is the counter-example inside the same paper: 'the model must form a query-agnostic representation because both $k$ and the start node are randomly sampled for each example' [§6.2, lines 636-637]. The chapter must state both."
+  },
+
+  "cost_table": {
+    "B_s": {
+      "value": "absent as a number. Stated only structurally and qualitatively.",
+      "what_is_stated": [
+        "$N$ extra forward passes over the looped block range, per eviction boundary. Loop range: all blocks for the from-scratch models and for Ouro; 'the middle 14 blocks out of the total 28 blocks' for Jet-Nemotron [§6.3 line 679].",
+        "$N$ values actually run: $\\{1,2,3,4\\}$ (automaton, §6.1 line 456 '2 to 4 recurrent updates'), $\\{1,2,4\\}$ (Depo, §6.2 line 641), $\\{1,2,4,6\\}$ (Jet) and $\\{1,2,4\\}$ (Ouro) on GSM-Infinite [§6.3 lines 682-683], $\\{1,2,4\\}$ (sliding window, §6.4 line 1008).",
+        "'training cost grows roughly linearly with the number of recurrent steps $N$' [§6.5 lines 1093-1094]; 'Throughput is roughly inversely proportional to $N$' [Fig. 6 caption, line 1081].",
+        "Total experiment compute (training, not per-session sleep): 'The automaton experiments require less than one A6000 GPU-day. The Depo and GSM-Infinite experiments require roughly 1–2 H100 GPU-days per run.' [§6 Experiment details, lines 443-444]."
+      ],
+      "not_stated": "No FLOPs, no per-boundary token or FLOP count, no inference-time sleep cost of any kind. Figure 6 measures TRAINING throughput only ('Training throughput comparison on 1 NVIDIA H200 GPU', Fig. 6 caption line 1079). The absolute axis ticks in Fig. 6 are readable (30/20/10 and 20/10/5 k tokens/s at window sizes 1K/2K/4K, sequence length 12,000) but no curve values are printed, so no number is quotable."
+    },
+    "L_w": {
+      "value": "absent as a measurement. Present only as an architectural guarantee.",
+      "what_is_stated": [
+        "'this shifts extra computation to the sleep while preserving the latency of wake-time prediction' [Abstract, lines 25-26].",
+        "'We impose a prediction-phase latency constraint: during the prediction phase, each answer token is predicted with a single standard forward pass. Extra loops or chain-of-thought tokens are disallowed because they increase prediction latency.' [§4, lines 298-300].",
+        "'the additional computation has already been spent on forming fast weights that support later single-pass prediction' [§1, lines 77-78]; 'our model does not need to loop at prediction time' [§1, line 76].",
+        "Peak inference memory bound under sliding-window eviction: 'This does not increase peak inference-time memory: the active context is still capped at $L$ tokens, as in sliding-window attention (SWA).' [§6.4, lines 703-704]."
+      ],
+      "not_stated": "No ms/token, no TTFT, no wake-time tokens/s, no decode-throughput measurement anywhere in the paper. The wake-latency claim is true by construction of the training/eval protocol and is never measured. Equally, the wall-clock cost of the sleep itself at serving time is never measured — Fig. 6 is a training-throughput figure."
+    },
+    "C": {
+      "value": "absent in bytes. The paper states only that the state is fixed-size in $t$, plus the shape ingredients.",
+      "what_is_stated": [
+        "'Unlike the KV cache $K_t$ and $V_t$, the fast-weight $S_t$ does not grow in size with $t$.' [§3.1, lines 204-206].",
+        "Hidden dimension $d=256$ for the 4-layer GDN-attention hybrid used in §4 and §6.1 [§6 line 434]; $d=512$ for the 10-layer from-scratch Depo model [§6.2 / §6 lines 439-440].",
+        "Layer counts: 4-layer, layout attention $\\to$ GDN $\\to$ attention $\\to$ GDN, i.e. 2 SSM blocks [§4 line 307, §6.1 line 453]; 10-layer for Depo [§6 line 440]; 28 blocks total for Jet-Nemotron 2B [§6.3 line 679]; Ouro 1.4B with '6 Jet layers without MLP layers' inserted, 'increasing the total parameter count by less than 10%' [§6.3 lines 677-678].",
+        "Eviction window / KV-cache bound: $C=24$ (automaton, §4 line 290), $C=75$ (Depo, §6.2 line 632), $C=2000$ (GSM-Infinite hard eviction, §6.3 line 668), $C=512$ (GSM-Infinite sliding window, §6.4 line 1007).",
+        "Sequence lengths: $L=100$ (automaton, §4 line 260), $L=360$ (Depo, §6.2 line 631), 2,000–3,300 tokens per problem (GSM-Infinite, §6.3 line 663), $L=12{,}000$ in the throughput probe (Fig. 6 caption line 1079)."
+      ],
+      "not_stated": "No bytes per session, no bytes per SSM block, no state dimension ($d_k\\times d_v$ per head), no head count, no dtype. The per-block fast-weight shape is therefore NOT derivable from the paper without importing GDN/Jet defaults from external sources. Recording this as a gap, not filling it."
+    },
+    "rho": {
+      "value": "absent.",
+      "what_is_stated": [
+        "The only retention mechanism named is the per-token forget gate $\\alpha_t\\in(0,1)$ in [Eq. 3] (§3.1, line 204) — a within-sequence decay, not a measured degradation rate.",
+        "Number of consolidation boundaries actually exercised: 4 windows for the automaton ($L=100$, $C=24$) [§4 line 258]; 'each cycle is fragmented across four cache windows' for Depo [§6.2 line 632]; roughly 1–2 for GSM-Infinite hard eviction ($L\\in[2000,3300]$, $C=2000$) [note-writer's arithmetic from §6.3 lines 663, 668]; 'the total sequence length $T$ is roughly 4–6$\\times$ the window size' for the sliding-window setting [§6.4 line 1007]."
+      ],
+      "not_stated": "No degradation-vs-number-of-sleeps curve, no cross-session or repeated-consolidation measurement, no catastrophic-forgetting evaluation, no held-out-general-capability check after fine-tuning. With at most ~6 boundaries per sequence and no cross-sequence persistence (the state is zero-initialized per sequence, [Alg. 1 line 1]), the paper simply never enters the regime where $\\rho$ would be observable."
+    }
+  },
+
+  "experiments": [
+    {
+      "id": "E0-protocol",
+      "what": "Shared training protocol",
+      "details": [
+        "Muon optimizer for all experiments, following McLeish et al. [39]; AdamW learning rate fixed at 5e-5; only the Muon learning rate is tuned. [§6, lines 432-434]",
+        "Muon lr tuned on the $N=1$ model and the selected value 2e-3 reused for all looped models, in both §6.1 and §6.2. 'We tune the Muon learning rate on the $N=1$ model, giving the no-loop baseline an advantage, and use the selected value, 2e-3, for all looped models.' [§6, lines 435-437]; same protocol restated for §6.2 [lines 440-441].",
+        "§6.3 uses Muon lr 1e-3 following McLeish et al. [39]. [§6, lines 441-443]",
+        "Batch sizes: 512 (automaton), 128 (Depo), 256 (GSM-Infinite). [§6, lines 445-446]",
+        "'For fair comparison, we fix random seeds ensuring that all runs use exactly the same data ordering.' [§6, line 446] — a single seed; no error bars appear in any figure.",
+        "Compute: automaton < 1 A6000 GPU-day; Depo and GSM-Infinite roughly 1–2 H100 GPU-days per run. [§6, lines 443-444]"
+      ]
+    },
+    {
+      "id": "E1-automaton-motivation",
+      "task": "Rule 110 cellular automaton, authors' own construction",
+      "model": "4-layer GDN-attention hybrid, $d=256$, layout attention $\\to$ GDN $\\to$ attention $\\to$ GDN",
+      "setup": "Four independent length-24 binary strings, character-level tokenizer ('0'/'1'), $T=24\\times4=96$ state tokens + 4 label tokens $\\Rightarrow$ total sequence length 100. Hard eviction every $C=24$ tokens. Label $i$ = first bit of state $i$ after $r$ Rule-110 transitions. [§4, lines 254-286]",
+      "headline": "Accuracy of the vanilla (non-looped) hybrid falls as rollout depth $r$ grows, at FIXED sequence length. Curves shown for $r\\in\\{4,8,10,12,14,16\\}$; 4- and 8-step runs early-stopped 'as they converge earlier'. x-axis 0M–40M+ training tokens, y-axis 25%–100%.",
+      "numbers": "No numeric endpoints printed on Fig. 2a; only the curve family and axis ranges are readable. [Fig. 2a, lines 493-556]",
+      "source": "[§4, Fig. 2a]"
+    },
+    {
+      "id": "E2-automaton-sleep",
+      "task": "Rule 110 at fixed $r=32$",
+      "model": "same 4-layer GDN-attention hybrid, $d=256$",
+      "arms": "no loop ($N=1$), 2 loops, 3 loops, 4 loops",
+      "numbers": [
+        "$N=1$: 'remains close to random guessing, reaching only about 10% exact accuracy after nearly 5B training tokens' [§6.1, lines 459-461]",
+        "$N=2$: 'approximately 20% accuracy' [§6.1, line 462]",
+        "$N=3$ and $N=4$: 'above 30%' [§6.1, lines 462-463]",
+        "Fig. 2b axis range 0%–50%, x-axis 0B–4B+ training tokens, with an explicit 'Random guessing' reference line. [Fig. 2b, lines 501-554]"
+      ],
+      "authors_attribution": "'Because the context length, eviction rule, and prediction-phase computation are fixed across these runs, the improvement comes from additional consolidation-time computation during sleep.' [§6.1, lines 463-465]",
+      "source": "[§6.1, Fig. 2b]"
+    },
+    {
+      "id": "E3-depo",
+      "task": "Depo, the $k$-hop knowledge retrieval task of Allen-Zhu [1]",
+      "model": "10-layer model trained from scratch, $d=512$ ('To roughly match the small model size in Allen-Zhu [1]') [§6, lines 439-440]; described in §6.2 as a '4-layer GDN-attention hybrid' in the Fig. 3 caption (line 624) — the paper is INTERNALLY INCONSISTENT on this point, see unfavorable_facts.",
+      "setup": "Each cycle up to 75 nodes, up to 300 tokens, left-padded to 300 at both train and test time; 10 query-answer pairs spanning up to 60 tokens; total $L=360$; window $C=75$, so each cycle is fragmented across four cache windows. Hop count sampled uniformly from $[1,16]$ during training; test loss reported on held-out $k\\in\\{1,2,4,8,16\\}$. [§6.2, lines 629-639]",
+      "arms": "$N\\in\\{1,2,4\\}$",
+      "numbers": "NO NUMERIC VALUES ARE REPORTED. Only test-loss curves over 0k–100k steps, loss axis 0–2, one subplot per hop count. Qualitative findings: 'increasing the number of offline loops improves learning speed for queries that require 4 or more hops. The 1-loop model makes little progress on 4-hop and harder queries, and the 2-loop model similarly stalls on 8-hop and harder queries. Within our training budget, only the 4-loop model begins to improve on the hardest 16-hop task.' [§6.2, lines 642-645]",
+      "framing": "'Allen-Zhu [1] show that SSMs perform substantially worse than transformers on this task, despite having enough fast weight capacity to store the context. This suggests that the bottleneck is not storage alone, but organizing stored edges into a representation that supports later multi-hop retrieval [44].' [§6.2, lines 473-475]",
+      "source": "[§6.2, Fig. 3]"
+    },
+    {
+      "id": "E4-gsm-infinite-hard-eviction",
+      "task": "GSM-Infinite [64], procedurally generated; authors generate their own disjoint train and eval sets; evaluation set = 1,600 held-out examples [§6.3, lines 655-657]",
+      "setup": "Each problem 2,000–3,300 tokens; number of operations sampled uniformly from $[1,8]$; question placed BEFORE the context; chain-of-thought traces excluded from the data; context-window size $C=2000$. [§6.3, lines 663-670]",
+      "models_and_arms": [
+        "Jet-Nemotron 2B [26] — SSM-attention hybrid itself fine-tuned from Qwen 2.5 1.5B by replacing some attention layers with Jet layers (dynamic convolution instead of GDN's fixed convolution). Loop over the middle 14 of 28 blocks. $N\\in\\{1,2,4,6\\}$. [§6, lines 436-439; §6.3, lines 674-683]",
+        "Ouro 1.4B [65] — a looped attention-only model; 6 Jet layers WITHOUT MLP layers are inserted to give it fast-weight memory, increasing total parameter count by <10%. Loop over all blocks. $N\\in\\{1,2,4\\}$ ('To keep memory cost during training manageable while using a reasonable batch size'). [§6.3, lines 676-683]"
+      ],
+      "numbers_from_prose": [
+        "Jet, 6 loops vs no loop: 6-operation problems 0.742 $\\to$ 0.812; 8-operation problems 0.351 $\\to$ 0.388. [§6.3, lines 691-692]",
+        "Ouro, 4 loops vs no loop: 6-operation problems 0.419 $\\to$ 0.615; 8-operation problems 0.210 $\\to$ 0.272. [§6.3, lines 692-693]"
+      ],
+      "numbers_printed_on_figure_4": [
+        "Jet-Nemotron 2B (Fig. 4a), four values per panel for $N\\in\\{1,2,4,6\\}$ — op2: 0.985, 0.985, 0.980, 0.979; op4: 0.995, 0.994, 0.993, 0.992; op6: 0.812, 0.799, 0.753, 0.742 annotated '9% improvement'; op8: 0.388, 0.372, 0.370, 0.351 annotated '11% improvement'. x-axis 300–700 steps. [Fig. 4a, lines 709-882]",
+        "Ouro 1.4B (Fig. 4b), three values per panel for $N\\in\\{1,2,4\\}$ — op2: 0.868, 0.863, 0.857; op4: 0.932, 0.923, 0.903; op6: 0.615, 0.484, 0.419; op8: 0.272, 0.210, 0.209. Panel annotations '30% improvement' and '47% improvement'. x-axis 300–1000 steps. [Fig. 4b, lines 786-890]",
+        "ARITHMETIC CHECK (note-writer): $0.419\\to0.615$ is +46.8% and $0.210\\to0.272$ is +29.5%, so the '47%' label belongs to op6 and the '30%' label to op8; the extracted text order reverses them. Jet checks out directly: $0.742\\to0.812$ = +9.4% ('9%'), $0.351\\to0.388$ = +10.5% ('11%'). The paper reports RELATIVE improvement, not absolute points."
+      ],
+      "authors_caveat": "'For easier two- and four-operation problems, accuracy often approaches saturation regardless of the number of loops, especially for Jet, which has more fast weight memory capacity than Ouro.' [§6.3, lines 686-688]. 'The gap is wider for Ouro, which may reflect its depth-recurrent pretraining.' [§6.3, lines 693-694]",
+      "source": "[§6.3, Fig. 4]"
+    },
+    {
+      "id": "E5-sliding-window",
+      "task": "GSM-Infinite with sliding-window eviction",
+      "setup": "After the sleep the model retains the most recent $C-1$ tokens and evicts only older ones; with $N=1$ this reduces to a standard SWA-SSM hybrid [48]. $C=512$, so $L\\approx 4$–$6\\times C$. Ouro 1.4B fine-tuned, $N\\in\\{1,2,4\\}$. Two-stage recipe: warm up ONLY the Jet layers for one epoch, then train the full model for two epochs; 'We find that for $N>1$, using hard eviction for the warm-up stage is crucial for the model to learn to refine the fast weights.' [§6.4, lines 701-713, 1007-1013]",
+      "numbers_printed_on_figure_5": "op2: 0.905, 0.823, 0.596, annotated '52% improvement'; op4: 0.926, 0.892, 0.839, annotated '10% improvement'; op6: 0.320, 0.265, 0.251, annotated '27% improvement'; op8: 0.137, 0.118, 0.116, annotated '18% improvement'. x-axis 0–600 steps. [Fig. 5, lines 898-1005]. All four annotations check out arithmetically against the $N=1\\to N=4$ endpoints (+51.8%, +10.4%, +27.5%, +18.1%).",
+      "numbers_from_prose": "'using loops drastically improves accuracy from 0.596 to 0.905, an 52% improvement' [§6.4, lines 1018-1019] (op2).",
+      "authors_interpretation": "'Unlike in Figure 4, where the window size is $L=2000$, this baseline performs poorly even on two-operation problems, which are the least reasoning-heavy and therefore more directly stress retrieval under distractor tokens... This suggests that when the active attention window is several times smaller than the sequence length, longer sleep duration helps not only with multi-step reasoning, but also with compressing and retrieving relevant context.' [§6.4, lines 1015-1021]",
+      "source": "[§6.4, Fig. 5]"
+    },
+    {
+      "id": "E6-throughput",
+      "task": "Training throughput probe",
+      "setup": "Ouro 1.4B, 1 NVIDIA H200 GPU, sequence length 12,000, FlashAttention 2 [16]; batch size tuned per setting to optimize GPU utilization; Fig. 6b additionally uses activation checkpointing across the context-chunk axis to prevent OOM. Window sizes 1K, 2K, 4K. [Fig. 6 caption, lines 1078-1083]",
+      "findings": [
+        "'When window size $L$ is sufficiently large, serialness across context windows do not meaningfully change the throughput compared to the fully parallel baseline.' [Fig. 6a caption, lines 1080-1081]",
+        "'Throughput is roughly inversely proportional to $N$.' [Fig. 6b caption, line 1081]; 'training cost grows roughly linearly with the number of recurrent steps $N$' [§6.5, lines 1093-1094]",
+        "Axis ranges only: Fig. 6a y-ticks 30/20/10 k tokens/s; Fig. 6b y-ticks 20/10/5 k tokens/s. No curve values printed."
+      ],
+      "source": "[§6.5, Fig. 6]"
+    }
+  ],
+
+  "scale_ceiling": {
+    "largest_models": "Jet-Nemotron 2B (itself fine-tuned from Qwen 2.5 1.5B) and Ouro 1.4B (+6 inserted Jet layers, <10% parameter increase). [§6.3, lines 673-678]",
+    "from_scratch_models": "4-layer, $d=256$ (automaton); 10-layer, $d=512$ (Depo). [§6, lines 434, 439-440]",
+    "longest_sequence": "2,000–3,300 tokens per GSM-Infinite problem [§6.3 line 663]; 12,000 tokens in the throughput probe only, which trains nothing and evaluates no task [Fig. 6 caption line 1079].",
+    "largest_N": "6, and only for Jet-Nemotron where the loop covers half the blocks. [§6.3, lines 682-683]",
+    "data_scale": "Automaton: 'nearly 5B training tokens' [§6.1 line 461] — the only token count stated anywhere. Depo: ~100k steps at batch 128, $L=360$ [Fig. 3, §6 line 445] $\\Rightarrow$ order 4.6B tokens (note-writer's arithmetic; the paper does not state it). GSM-Infinite: 300–1000 steps at batch 256 with 2,000–3,300-token problems [Fig. 4, §6 line 445] $\\Rightarrow$ order 0.2–0.9B tokens (note-writer's arithmetic).",
+    "compute": "<1 A6000 GPU-day (automaton); 1–2 H100 GPU-days per run (Depo, GSM-Infinite) [§6, lines 443-444]. Throughput probe on 1 H200 [Fig. 6].",
+    "one_line": "Two pre-trained checkpoints at 1.4B and 2B, sequences under 3.3k tokens, at most 6 sleep passes, single-digit H100-GPU-days per run — three to four orders of magnitude below deployment scale in both parameters and context."
+  },
+
+  "concept_ledger_delta": {
+    "new": [
+      "**sleep duration $N$** — the number of offline recurrent passes performed at an eviction boundary. New reserved symbol for the v2 chapter. [Abstract line 24; §5 line 338]",
+      "**consolidation phase vs prediction phase** — a hard partition of the token stream induced by the eviction schedule and, at training time, by the loss mask. 'the consolidation phase (the first 96 tokens...), during which the model must encode context into its fast weights $S_t$; and the prediction phase (the last 4 tokens...)' [§4, lines 294-297]",
+      "**hard-eviction constraint** — clearing the KV cache completely every $C$ tokens, as an experimental instrument that makes the fast weight the sole surviving channel. [§4, lines 288-292]",
+      "**prediction-phase latency constraint** — the discipline that the answer must come from one forward pass with no loops and no chain-of-thought. This is the paper's real contribution to the frame: it defines what 'wake cost held fixed' means operationally. [§4, lines 298-301]",
+      "**offline recurrence for consolidation (as opposed to prediction)** — 'Our key insight is that recurrence can be used not only for prediction but also for memory consolidation.' [§1, lines 70-71]",
+      "**reasoning depth at fixed memory load** — the experimental design that separates compute-bound from capacity-bound failure. 'These tasks allow us to vary reasoning demand while holding sequence length fixed, isolating a model's reasoning capability from its information retrieval capability.' [§3.2, lines 242-243]"
+    ],
+    "extended_or_renamed": [
+      "**fast weights** — used here for the SSM/GDN matrix state, identical in role to the unified $W$; the paper cites the Schlag et al. [49] / Schmidhuber FWP lineage, matching the book's ownership (ch06).",
+      "**sleep** — collides with [Sleep] (Behrouz et al., 2606.03979, our $\\Theta$-5 chapter). The authors themselves flag the collision in footnote 2: 'This OpenReview submission has a title that overlaps with our original title, namely \"Language Models Need Sleep.\" We were unaware of it when choosing our title and have updated ours to avoid confusion.' [lines 170-172]. The monograph MUST fix distinct short names; recommend [NeedSleep] for this paper and keep [Sleep] for 2606.03979.",
+      "**depth recurrence / looped models** — repurposed from prediction-time compute scaling to consolidation-time compute scaling."
+    ],
+    "contested_or_retired": [
+      "**'capacity is the SSM bottleneck'** — actively contested. 'Contrary to these works, we show that such models can fail as the required reasoning depth to solve a task increases, even when the amount of information to store is held fixed.' [§2, lines 105-107], against Jelassi et al. [32] and Arora et al. [2].",
+      "**meta-learned $W_{\\mathrm{init}}$** — not used. The state is zero-initialized [Alg. 1 line 1], unlike [Titans]/[TNT]."
+    ]
+  },
+
+  "inherited_open_question": {
+    "from": "none-stated",
+    "verdict": "The paper does not quote or locate an open question stated by any prior work. It has no 'X asked whether...' sentence anywhere. What it does instead is take prior works' *empirical claims* and contradict their diagnosis.",
+    "what_it_implicitly_answers": [
+      "Jelassi et al. [32] ('Repeat after me: Transformers are better than state space models at copying') and Arora et al. [2] ('Simple linear attention language models balance the recall-throughput tradeoff) attributed the SSM deficit to fixed memory size. This paper implicitly answers 'is capacity the whole story?' with 'no': 'This suggests that the bottleneck is not merely memory capacity as suggested by prior work [32, 2], but the amount of computation available for transforming evicted context into a useful internal state.' [§1, lines 49-51], restated as an explicit contradiction in [§2, lines 105-107].",
+      "Allen-Zhu [1] observed on Depo that 'SSMs perform substantially worse than transformers on this task, despite having enough fast weight capacity to store the context' [§6.2, lines 473-474]. This paper supplies a mechanism (insufficient consolidation-time computation) and a fix (offline recurrence), and adopts Allen-Zhu's task and training protocol ($k$ sampled uniformly from $[1,16]$, 'Following Allen-Zhu [1]', §6.2 line 638).",
+      "Tandon et al. [55] (end-to-end TTT for long context) perform 'only one gradient step for distilling each context chunk' [§2, line 125]; Zhang et al. [63] 'updates the weights only once per chunk' [§2, lines 133-134]. This paper implicitly answers 'is one update per chunk enough?' with 'no'.",
+      "The depth-recurrence line [19, 25, 24, 39, 65] established that more prediction-time recurrence helps. The paper answers a question that line did not pose: whether the recurrence can be moved off the prediction path entirely. 'Unlike previous looped models, our model does not need to loop at prediction time' [§1, lines 76-78].",
+      "Noroozizadeh et al. [44], cited at §6.2 line 475, has an open question in its own title ('Deep sequence models tend to memorize geometrically; it is unclear why'). The paper cites it only as support for the 'organizing, not storing' framing and does not claim to answer it."
+    ],
+    "bridge_in_material_for_the_chapter": "The honest bridge-in for the W-path chapter is NOT an inherited question but an inherited *misdiagnosis*: the efficient-sequence-model literature (Jelassi [32], Arora [2]) had settled on capacity as the limit, and this paper's contribution is a controlled experiment that separates capacity from computation and shows the second binds first."
+  },
+
+  "open_questions": [
+    "Training cost and stability of the sleep. 'this gain is not free: during training, we need to perform $N$ deeper forward and backward passes, which can make training slow and unstable. Tackling these challenges is an active topic in recurrent-depth training, with possible approaches including implicit gradients [4] and truncated backpropagation through time [24, 39], as well as various techniques to stabilize training [46, 24].' [§7 Discussion and Limitations, lines 1102-1107] — none of these are attempted in the paper.",
+    "Loss of sequence-axis parallelism during training. 'our training is recurrent across context windows... This prevents full parallelization along the sequence axis. However, this loss of sequence-axis parallelism need not hinder wall-clock training time when the window size $L$ is large enough to keep the GPU saturated' [§6.5, lines 1085-1092] — established for $C\\in\\{1K,2K,4K\\}$ at $L=12{,}000$ on one H200 only; behaviour at small $C$ or multi-GPU is open.",
+    "Whether the gains survive on tasks that are not inherently sequential. 'Sleep makes training sequential across context and depth dimension, but this sequentiality is also why our method shows gains on the tasks we consider, whose solutions are themselves sequential.' [§7, lines 1108-1110] — an explicit scope limitation from the authors.",
+    "Whether the specific fast-weight update rule matters. Declared out of scope: 'the specific update rule does not matter for our discussion' [§3.1, lines 208-209]. No ablation over GDN vs Mamba-2 vs Jet vs delta rule is run, even though the abstract sells 'a learned local rule'.",
+    "How to choose $N$, and whether it should be adaptive. $N$ is a fixed hyperparameter per run; adaptive-depth work [25, 21, 50, 5] is cited in related work [§2, lines 137-138] but never applied. No halting criterion, no per-example allocation.",
+    "Where the benefit of $N$ saturates. Maximum tested is $N=6$ (Jet only) [§6.3, line 683]; for Ouro, $N$ was capped at 4 for memory reasons ('To keep memory cost during training manageable while using a reasonable batch size', §6.3 lines 681-682), so the saturation point is unmeasured.",
+    "Scaling of recurrent depth with model size and training compute. Cited as an open area: 'Detailed analyses of how best to train depth recurrent models suggest the recurrent depth should be scaled with training compute [46, 51]' [§2, lines 139-141]. The paper contributes no scaling law.",
+    "Why sliding-window caches under-utilize newly inserted SSM layers, and why hard-eviction warm-up fixes it. 'Analogously to observations in prior work [8], we find that giving the model access to a sliding-window KV cache can make the newly inserted Jet layers underutilized... We find that for $N>1$, using hard eviction for the warm-up stage is crucial for the model to learn to refine the fast weights.' [§6.4, lines 1008-1013] — reported as a recipe, not explained.",
+    "Inference-time cost of the sleep. Never measured. The paper measures only training throughput [§6.5, Fig. 6] and never states the serving-time wall clock or the fraction of a session spent asleep.",
+    "Whether sleep composes with the mechanisms it cites — context distillation [52, 3, 9, 13], Cartridges [22], TTT gradient updates [55], LoRA-per-chunk [63], or Behrouz et al.'s $\\Theta$-path sleep [6]. Every one of these is described in related work and none is run as a baseline or a composition.",
+    "Whether training on GSM-Infinite with sleep transfers to other reasoning tasks. The paper motivates GSM-Infinite partly by transfer — 'realistic enough that training on it can improve a model's reasoning capabilities on other tasks [33]' [§6.3, lines 654-655] — but evaluates only in-distribution on its own held-out 1,600 examples."
+  ],
+
+  "unfavorable_facts": [
+    {
+      "fact": "The headline latency claim is never measured. 'this shifts extra computation to the sleep while preserving the latency of wake-time prediction' [Abstract, lines 25-26] is true by construction of the protocol ('each answer token is predicted with a single standard forward pass', §4 lines 298-299) and is supported by zero timing data. There is no ms/token, no TTFT, no wake-time throughput anywhere. The one throughput figure in the paper is explicitly a TRAINING measurement: 'Training throughput comparison on 1 NVIDIA H200 GPU' [Fig. 6 caption, line 1079].",
+      "why_it_hurts": "The paper is sold to a systems audience on a latency property and provides no systems measurement of it — nor of the sleep's own serving cost, which is $N\\times$ a full pass at every eviction boundary and lands on the same request."
+    },
+    {
+      "fact": "The transformer failure in the abstract is a tautology, not a result. 'we test our method on ... tasks, on which a regular transformer as well as SSM-attention hybrid models fail' [Abstract, lines 28-29]. But §4 states the reason: 'Under this hard eviction constraint, a standard transformer cannot do better than random guessing as the KV cache has been destroyed before prediction is made.' [§4, lines 302-303]. The transformer has no state that survives the boundary by definition of the setup.",
+      "why_it_hurts": "No full-attention baseline that is allowed to keep its cache is ever run, at any task, at any scale. The reader cannot see how far below an unconstrained transformer the method sits."
+    },
+    {
+      "fact": "No compute-matched baseline. Loops multiply cost roughly linearly in $N$ ('training cost grows roughly linearly with the number of recurrent steps $N$', §6.5 lines 1093-1094), yet every comparison in Figs. 2b, 3, 4 and 5 is at equal TRAINING TOKENS or equal STEPS, not equal FLOPs. At the same x-position, the $N{=}4$ run has consumed roughly 4$\\times$ the compute of the $N{=}1$ run.",
+      "why_it_hurts": "The central claim — that offline recurrence buys something that ordinary capacity or ordinary compute does not — is never tested against a wider, deeper, or longer-trained non-looped model at matched compute."
+    },
+    {
+      "fact": "Non-monotonicity in $N$ that the paper does not discuss. Fig. 4b (Ouro, op8) prints three values, 0.272 / 0.210 / 0.209, and §6.3 identifies the no-loop baseline as 0.210 and the 4-loop as 0.272 [lines 692-693]; the remaining value 0.209 is therefore the 2-loop run, i.e. 2 loops is marginally BELOW no loop on the hardest operation count. [note-writer's inference from §6.3 prose + Fig. 4b labels; the paper never assigns the third label.]",
+      "why_it_hurts": "The paper's claim is 'increasing sleep duration $N$ improves performance' [Abstract, line 30]; the hardest setting of its most-improved model contains a reversal at $N=2$."
+    },
+    {
+      "fact": "On easy problems more loops are neutral-to-worse. Fig. 4a (Jet): op2 = 0.985/0.985/0.980/0.979, op4 = 0.995/0.994/0.993/0.992 — a spread of 0.6 and 0.3 percentage points respectively across $N\\in\\{1,2,4,6\\}$. Fig. 4b (Ouro): op2 = 0.868/0.863/0.857, op4 = 0.932/0.923/0.903. The paper acknowledges only saturation: 'accuracy often approaches saturation regardless of the number of loops' [§6.3, lines 686-688].",
+      "why_it_hurts": "In serving terms the method spends $N\\times$ consolidation compute on every request, but the benefit exists only on the hard tail. The paper offers no mechanism for spending it selectively."
+    },
+    {
+      "fact": "All three evaluation settings are synthetic and at least partly authors' own. The Rule-110 setup (four independent length-24 strings, hard eviction every 24 tokens, first-bit label) is entirely the authors' construction [§4, lines 254-286]. Depo is Allen-Zhu's task but re-parameterized by the authors (75 nodes, $L=360$, $C=75$, left-padding to 300) [§6.2, lines 629-632]. GSM-Infinite is procedurally generated and 'we can generate distinct training and evaluation datasets from the same distribution' [§6.3, lines 655-657] — the eval set is the authors' own 1,600 samples from the same generator. Established long-context benchmarks are named only to be dismissed: 'Unlike retrieval-focused long-context tasks such as RULER [31]...' [§6.3, lines 659-661].",
+      "why_it_hurts": "There is no result on any benchmark the authors did not construct or configure, and no evaluation on natural text at all."
+    },
+    {
+      "fact": "The GSM-Infinite protocol is deliberately non-standard in two ways that both favour the method: the question is placed BEFORE the context, and chain-of-thought is removed. 'We place the question before the context and exclude Chain-of-Thought traces from the data, forcing the model to the final answer in the single prediction time forward pass alone. This order gives the model the query before it reads the long problem context, allowing it to selectively consolidate information relevant to the question while ignoring filler tokens.' [§6.3, lines 664-667].",
+      "why_it_hurts": "Two consequences. (a) The consolidation is query-conditioned, which violates the S0 §2.3 operational definition of sleep-time compute (compute spent before the query arrives) and removes any amortization across queries. (b) Removing CoT removes the standard, strong way of buying reasoning depth at wake time — the very thing the method claims to replace — so the comparison never faces its natural competitor."
+    },
+    {
+      "fact": "Single seed, no error bars, no variance reported. 'For fair comparison, we fix random seeds ensuring that all runs use exactly the same data ordering.' [§6, line 446]. No figure in the paper (Figs. 2–6) shows a confidence interval, a shaded band, or a repeat.",
+      "why_it_hurts": "Several headline gaps are small in absolute terms (Jet op8: 0.351 $\\to$ 0.388 = 3.7 points; op6: 0.742 $\\to$ 0.812 = 7.0 points) and are unbacked by any variance estimate."
+    },
+    {
+      "fact": "The learning-rate protocol is asymmetric in both directions and is presented as only one of them. 'We tune the Muon learning rate on the $N=1$ model, giving the no-loop baseline an advantage, and use the selected value, 2e-3, for all looped models.' [§6, lines 435-437]. The AdamW lr is simply fixed at 5e-5 with no search [§6, line 433], and §6.3's Muon lr of 1e-3 is inherited from McLeish et al. [39] rather than tuned at all [§6, lines 441-443].",
+      "why_it_hurts": "The framing 'giving the baseline an advantage' is defensible, but the same sentence means the treatment arm was never tuned. Since the looped model has a different effective depth, transferring an lr tuned at $N=1$ is a confound in an unknown direction — and it is the only lr protocol used in the two from-scratch experiments."
+    },
+    {
+      "fact": "The equation the paper displays is not the equation it runs, and the paper declines to investigate the difference. Eq. 3 is a Mamba-2-style gated Hebbian rule, but 'In our experiments we use Gated Delta Networks (GDNs), which add a delta-rule correction to this update; however, the specific update rule does not matter for our discussion.' [§3.1, lines 207-209]. In §6.3 a third rule appears (Jet layers, 'dynamic convolution instead of the fixed convolution in GDN', line 438). No ablation over the local rule is run.",
+      "why_it_hurts": "The abstract advertises 'a learned local rule' as a component of the contribution; the paper never isolates it, so the reader cannot tell whether the delta correction, the gates, or merely the extra passes are doing the work."
+    },
+    {
+      "fact": "The paper is internally inconsistent about the Depo model. §6 Experiment details says 'we train a 10-layer model from scratch with hidden dimension $d=512$' for Section 6.2 [lines 439-440]; the Figure 3 caption says 'Test loss of a 4-layer GDN-attention hybrid on the $k$-hop knowledge retrieval task' [line 624].",
+      "why_it_hurts": "The reader cannot determine which model produced Fig. 3, and the paper has no appendix in which to check."
+    },
+    {
+      "fact": "Depo reports no numbers at all. §6.2 and Fig. 3 give only test-loss curves; no accuracy, no final loss values, no table. And the strongest statement available is that the task is not solved: 'Within our training budget, only the 4-loop model begins to improve on the hardest 16-hop task.' [§6.2, lines 644-645].",
+      "why_it_hurts": "One of three experimental sections contributes no quotable quantity."
+    },
+    {
+      "fact": "The automaton result remains far from solved. Best reported accuracy is 'above 30%' at $N\\in\\{3,4\\}$ against ~10% at $N=1$, after nearly 5B training tokens [§6.1, lines 459-463], on a task whose baseline is explicitly 'close to random guessing'.",
+      "why_it_hurts": "The demonstration that sleep helps is real; the demonstration that sleep makes the task tractable is not."
+    },
+    {
+      "fact": "The largest reported relative gain comes from repairing an unusually weak baseline. The 52% op2 improvement in §6.4 runs from 0.596 to 0.905 [Fig. 5, §6.4 lines 1018-1019], but the SAME model (Ouro 1.4B) at op2 under hard eviction with $C=2000$ scores 0.857–0.868 without any loops [Fig. 4b]. The paper itself notes 'this baseline performs poorly even on two-operation problems' [§6.4, lines 1016-1017].",
+      "why_it_hurts": "The most striking headline number in the paper measures recovery from a configuration-induced deficit, not a new capability."
+    },
+    {
+      "fact": "The sliding-window result required a bespoke, admittedly fragile two-stage recipe. 'we first warm up only the Jet layers for one epoch and then train the full model for two epochs... We find that for $N>1$, using hard eviction for the warm-up stage is crucial for the model to learn to refine the fast weights.' [§6.4, lines 1009-1013].",
+      "why_it_hurts": "The variant closest to a deployable serving configuration (SWA, cache never fully dropped) is the one that does not train without a hand-designed schedule."
+    },
+    {
+      "fact": "Composition with every cited alternative is untested. Context distillation [52, 3, 9, 13], Cartridges [22], in-context autoencoding [23], TTT with real gradient steps [55], per-chunk LoRA [63], and Behrouz et al.'s $\\Theta$-path sleep [6] are each described in §2 and none is run as a baseline or combined. The complete comparison set in the paper is $N=1$ versions of the same architecture.",
+      "why_it_hurts": "There is no evidence that offline recurrence beats — or even differs empirically from — the one-gradient-step-per-chunk methods it argues against in §2, lines 122-134."
+    },
+    {
+      "fact": "Scale is far below deployment. Largest models 1.4B/2B, longest task sequence 3,300 tokens, 1–2 H100 GPU-days per run [§6, lines 443-444], $N\\le 6$. Ouro's $N$ was capped at 4 purely by training memory: 'To keep memory cost during training manageable while using a reasonable batch size, we use $N=\\{1,2,4\\}$ for Ouro.' [§6.3, lines 681-682].",
+      "why_it_hurts": "The method's cost scales linearly in $N$ and its training memory scales with $N\\times$ chunks; the paper is already memory-limited at 1.4B and 3.3k tokens."
+    },
+    {
+      "fact": "Training instability is admitted, not measured or mitigated. 'we need to perform $N$ deeper forward and backward passes, which can make training slow and unstable' [§7, lines 1103-1104]; the proposed remedies (implicit gradients, truncated BPTT, stabilization) are all deferred to future work.",
+      "why_it_hurts": "The paper offers no evidence about how often the instability bites, and Fig. 2b/3/4/5 are single-seed curves, so instability would be invisible."
+    },
+    {
+      "fact": "The claimed generality of the gain is scoped away by the authors themselves. 'Sleep makes training sequential across context and depth dimension, but this sequentiality is also why our method shows gains on the tasks we consider, whose solutions are themselves sequential.' [§7, lines 1108-1110].",
+      "why_it_hurts": "By the authors' own account, the three tasks were chosen because they have the property that makes the method work."
+    }
+  ],
+
+  "systems_implications": {
+    "decode_cost": [
+      "PAPER-GROUNDED: the wake-time decode path is byte-for-byte the decode path of the underlying SSM-attention hybrid — one forward pass per answer token, no extra loops, no chain-of-thought tokens [§4 lines 298-300; §1 lines 76-78]. So decode FLOPs/token, decode weight traffic and decode arithmetic intensity are unchanged from the $N=1$ baseline. What changes is only the *content* of the fast weights.",
+      "PAPER-GROUNDED: chain-of-thought is removed from the data on purpose [§6.3 lines 664-666], so the comparison the reader should hold in mind is 'N sleep passes at the boundary' versus 'k CoT tokens at decode' — and the paper never runs the second arm.",
+      "NOTE-WRITER'S INFERENCE: at serving time the sleep is not free latency, it is *relocated* latency. Every eviction boundary becomes a burst of $N$ full passes over the last $C$ tokens. For GSM-Infinite ($C=2000$, problems 2,000–3,300 tokens, §6.3 lines 663-668) that is roughly 1–2 boundaries per request; for the sliding-window setting ($L\\approx4$–$6\\times C$, §6.4 line 1007) roughly 4–6 boundaries. With $N=6$ over 14 of 28 Jet blocks [§6.3 line 679], the consolidation FLOPs for a chunk are about $1+ (N-1)\\cdot\\tfrac{14}{28} = 3.5\\times$ a plain prefill of that chunk. The paper reports none of this."
+    ],
+    "state_bytes_moved": [
+      "PAPER-GROUNDED: the only state that crosses an eviction boundary is the per-SSM-block fast weight, and it is fixed-size in $t$ [§3.1 lines 204-206]. Everything else — the KV cache and the refined activations — is destroyed [§5 lines 376-382].",
+      "PAPER-GROUNDED: peak inference memory for the attention path is capped at the window: 'the active context is still capped at $L$ tokens, as in sliding-window attention (SWA)' [§6.4 lines 703-704]. Windows used: 24, 75, 2000, 512 tokens.",
+      "GAP: the paper gives no bytes. It gives $d=256$ / $d=512$ for the from-scratch models [§6 lines 434, 439-440] and layer counts (2 GDN blocks in the 4-layer hybrid; 28 blocks for Jet with 14 looped; 6 inserted Jet layers for Ouro) [§4 line 307, §6.3 lines 677-679], but never the per-block state dimension, head count or dtype. The per-session state size is therefore NOT derivable from this paper alone. Recording as a gap rather than importing GDN defaults.",
+      "NOTE-WRITER'S INFERENCE: the traffic pattern is the interesting part regardless of the constant. During a sleep, each SSM block's state is read-modify-written $N\\times C$ times instead of $C$ times, on a state that does not grow. So the sleep is a bandwidth-light, compute-heavy burst against a small resident state — the opposite of the KV-cache-bound decode regime the monograph's reader knows. The attention blocks inside the loop, by contrast, re-prefill the same $C$ tokens $N$ times, which IS quadratic-in-$C$ work repeated $N$ times."
+    ],
+    "batching": [
+      "PAPER-GROUNDED: training throughput at $N=1$ is essentially unharmed by the cross-window serial dependency when the window is large — 'When window size $L$ is sufficiently large, serialness across context windows do not meaningfully change the throughput compared to the fully parallel baseline' at $C\\in\\{1K,2K,4K\\}$, $L=12{,}000$, one H200, FlashAttention 2 [Fig. 6a caption, lines 1078-1083].",
+      "PAPER-GROUNDED: throughput falls roughly as $1/N$ [Fig. 6b caption, line 1081], and $N>1$ required activation checkpointing across the context-chunk axis to avoid OOM [Fig. 6 caption, lines 1082-1083]. Ouro's $N$ was capped at 4 by training memory [§6.3 lines 681-682].",
+      "NOTE-WRITER'S INFERENCE (the paper is silent): in serving, eviction boundaries occur at per-request token counts and will not align across a batch. A batch in which one request is asleep and the rest are decoding has two different kernel shapes live at once — an $N$-pass chunked prefill and a batch-1-ish decode step. Either the scheduler stalls the sleeping request's peers, or it must run consolidation as a separate, preemptible job. Nothing in the paper addresses boundary skew, and the paper's only batching remark is that batch size was tuned per setting to optimize GPU utilization [Fig. 6 caption line 1082].",
+      "NOTE-WRITER'S INFERENCE: the per-request fast weight already breaks shared-weight batching in the ordinary way (STYLE-NOTATION §3, 'batching' row). The sleep does not make that worse in kind, but it adds a second, bursty phase with a completely different arithmetic intensity."
+    ],
+    "memory_hierarchy": [
+      "NOTE-WRITER'S INFERENCE, grounded in the paper's shapes: the sleep partitions cleanly into two very different footprints. (a) The SSM state: small, fixed-size, ideally resident in SRAM across all $N$ passes — this is the part that would benefit from a memory-centric device, since it is read-modify-written $N\\times$ per chunk. (b) The chunk's KV cache and activations: $O(C)$ and $O(C^2)$ work respectively, recomputed on every one of the $N$ passes because the features change. At $C=2000$ that is not a small recomputation.",
+      "PAPER-GROUNDED CONSEQUENCE FOR CAPACITY PLANNING: because the state is zero-initialized per sequence [Alg. 1 line 1] and nothing persists across requests, this method creates NO per-user or per-session persistent store. It is intra-request consolidation. There is no checkpoint/restore story, no eviction policy for a session cache, and no cross-request amortization — the S0 amortization equation (A) has no $N_q$ to divide by here.",
+      "NOTE-WRITER'S EVALUATION for the monograph's spine: this paper is the cleanest available demonstration that the W-path can move compute off the wake path, and simultaneously the clearest demonstration of the W-path's structural limitation relative to the E-path — the E-path's sleep output outlives the request, this one does not."
+    ],
+    "one_line_for_the_reader": "It changes nothing about decode; it adds an $N$-fold chunked-prefill burst at every context-window boundary, whose output is a fixed-size weight state that dies with the request."
+  },
+
+  "figures": [
+    {
+      "figure": "Figure 1 (p.6, lines 383-414)",
+      "shows": "The architecture in one picture: at the eviction boundary an SSM-attention stack runs $N$ offline recurrent passes over the current context, the fast weights are refined, then the KV cache is discarded. Reproduce — it is the only diagram of the mechanism and it makes the 'KV cache vs fast weight' split visual.",
+      "worth_reproducing": "yes — essential"
+    },
+    {
+      "figure": "Algorithm 1 (p.6, lines 339-368)",
+      "shows": "Not a figure but the load-bearing artifact: the mask-driven sleep/wake branch, the zero-initialization of $S$, and the fact that $h$ and $S$ are both carried through the $N$ loops. Reproduce alongside Fig. 1; the prose alone does not determine the semantics.",
+      "worth_reproducing": "yes — essential"
+    },
+    {
+      "figure": "Figure 2a (p.8, lines 493-557)",
+      "shows": "Accuracy of the vanilla GDN-attention hybrid collapsing as Rule-110 rollout depth $r$ grows from 4 to 16, at fixed sequence length. This is the whole 'computation, not capacity' argument in one plot.",
+      "worth_reproducing": "yes"
+    },
+    {
+      "figure": "Figure 2b (p.8, lines 501-561)",
+      "shows": "At $r=32$: no-loop ~10%, 2 loops ~20%, 3–4 loops above 30%, with an explicit random-guessing line, against training tokens up to ~5B. The core positive result of the controlled setting — and, honestly read, also the evidence that the task stays mostly unsolved.",
+      "worth_reproducing": "yes"
+    },
+    {
+      "figure": "Figure 3 (p.8, lines 562-626)",
+      "shows": "Depo test loss per hop count $k\\in\\{1,2,4,8,16\\}$ for $N\\in\\{1,2,4\\}$. The staircase is the point: 1 loop stalls at 4 hops, 2 loops at 8 hops, only 4 loops moves on 16 hops. Best single illustration of 'sleep duration buys reasoning depth'. Reproduce with the caveat that no numbers are printed and the caption contradicts §6 on the model's layer count.",
+      "worth_reproducing": "yes, with caveat"
+    },
+    {
+      "figure": "Figure 4 (p.10, lines 698-897)",
+      "shows": "GSM-Infinite accuracy vs training step for Jet-Nemotron 2B (a) and Ouro 1.4B (b), split by operation count 2/4/6/8, with final values printed. The only place in the paper where real pre-trained models, real numbers, and the saturation-on-easy/gain-on-hard pattern appear together. Reproduce with the op2/op4 panels included — omitting them would hide the no-gain regime.",
+      "worth_reproducing": "yes — the central results figure"
+    },
+    {
+      "figure": "Figure 5 (p.10, lines 898-1005)",
+      "shows": "Sliding-window eviction ($C=512$, Ouro 1.4B, $N\\in\\{1,2,4\\}$): 0.596$\\to$0.905 at op2, 0.839$\\to$0.926 at op4, 0.251$\\to$0.320 at op6, 0.116$\\to$0.137 at op8. Reproduce next to Fig. 4b so the reader sees that the op2 baseline here (0.596) is far below the same model's hard-eviction op2 (0.857–0.868).",
+      "worth_reproducing": "yes — but only side by side with Fig. 4b"
+    },
+    {
+      "figure": "Figure 6 (p.11, lines 1031-1083)",
+      "shows": "(a) windowed vs fully-parallel SWA training throughput at window sizes 1K/2K/4K, $L=12{,}000$, one H200 — the serial dependency across windows costs little at large windows. (b) training throughput roughly $\\propto 1/N$. The only systems measurement in the paper, and worth reproducing precisely so the chapter can say out loud that it measures training, not serving.",
+      "worth_reproducing": "yes — with the training-vs-serving caveat stated in the caption"
+    }
+  ],
+
+  "cross_path_citations": {
+    "summary": "This W-path paper DOES engage both other paths, but only in single sentences in related work, and never experimentally. Simultaneously it is completely silent on the Titans/Miras/Atlas/TNT/Nested-Learning line — i.e. on the W-path's own dominant research program. Both facts belong in the monograph.",
+    "E_path": {
+      "engaged": "YES",
+      "citations": [
+        "Lin et al. [35] = 'Sleep-time compute: Beyond inference scaling at test-time', arXiv:2504.13171 — the Letta paper, our E-2 chapter and the paper that named the line. Cited TWICE: '[35] propose scaling offline compute by letting LLMs generate expected questions from users and precompute quantities needed to solve them' [§2 Offline planning, lines 147-149], and 'Lin et al. [35] frames its offline planning phase as \"sleep.\"' [§2 Sleep, line 156].",
+        "Eyuboglu et al. [22] = Cartridges, arXiv:2506.06266 — 'use offline self-study to learn a small KV cache that can substitute for the full-context cache. This line of work shares our goal of spending offline computation once to turn a long context into a compact state that can be reused later. These methods shorten what remains in the attention context, whereas our method transfers evicted context into weight-based memory.' [§2 Context compression, lines 111-117]. This is the clearest explicit path-differentiation sentence in the paper.",
+        "Ge et al. [23] = In-context autoencoder, arXiv:2307.06945 — context compression into hidden states [§2, lines 109-111]."
+      ],
+      "not_cited": "MemGPT (2310.08560), Mem0 (2504.19413), Zep (2501.13956), ReasoningBank (2509.25140) — none appear in the bibliography. The production external-memory literature is entirely absent.",
+      "depth": "One sentence each; no baseline, no comparison, no composition."
+    },
+    "Theta_path": {
+      "engaged": "YES",
+      "citations": [
+        "Behrouz et al. [6] = 'Language models need sleep: Learning to self modify and consolidate memories' — our $\\Theta$-5 chapter (2606.03979). Cited in §2 Sleep: 'Behrouz et al. [6] study a sleep-inspired memory consolidation method for language models based on RL, parameter expansion, teacher-student distillation, and synthetic data generation.' [lines 156-158], plus footnote 2 acknowledging the title collision [lines 170-172]. The reference entry carries NO arXiv id, NO venue and NO year — just the title — indicating it was cited from an OpenReview submission.",
+        "Chen et al. [13] = Generative Adapter, arXiv:2411.05877 — our $\\Theta$-2 chapter — cited inside the context-distillation list [§2, line 119].",
+        "Snell et al. [52] and Askell et al. [3] = context distillation; Caccia et al. [9]; Cao & Lam [10] InfiniteICL (2504.01707); Tack et al. [54] Memory of Amortized Contexts (2403.04317) — all in §2 Context distillation [lines 118-121].",
+        "Tandon et al. [55] = End-to-end test-time training for long context, arXiv:2512.23675 — test-time gradient updates on a subset of MLP layers, explicitly contrasted at length [§2, lines 122-131]. This is the closest neighbour and is the one comparison the paper argues verbally but never runs.",
+        "Zhang et al. [63] = per-chunk LoRA adapter in an RL setting, arXiv:2602.16839 [§2, lines 131-134]."
+      ],
+      "not_cited": "SEAL (2506.10943), Nested Learning (2512.24695), SCM (2604.20943), LoRA (2106.09685), ROME (2202.05262), MEMIT (2210.07229), Memory Layers (2412.09764) — absent.",
+      "depth": "One or two sentences each. Behrouz et al. [6] — the single closest work by title and by framing — is cited only to disambiguate the title and to name its components. No comparison of any kind."
+    },
+    "own_W_path_silence": {
+      "finding": "The paper cites the fast-weight-programming lineage (Schlag et al. [49], Katharopoulos et al. [34], Hebb [29]) and the modern gated/delta linear-attention line (Yang et al. [60, 61, 62], Dao & Gu [17], Ren et al. [48] Samba, De et al. [18] Griffin, Dong et al. [20] Hymba, Arora et al. [2]), but it cites NONE of Titans (2501.00663), Miras (2504.13173), Atlas (2505.23735), TNT (2511.07343) or Nested Learning (2512.24695).",
+      "why_it_matters": "This is the W-path anchor for the v2 monograph, and it does not cite the W-path's own test-time-learning research program at all. Its 'learned local rule' is deliberately positioned as NOT a gradient step [§2, lines 120-121, 126-128] — precisely the position the Titans line takes the opposite side of. So the two halves of the W-path are, in this paper, non-communicating. Record this as a hard S0 §5 finding, not a guess: the bibliography is 65 entries and none of the five is present."
+    },
+    "common_ancestors": {
+      "engaged": "YES, and more seriously than the paths",
+      "citations": [
+        "McClelland, McNaughton & O'Reilly [38] = CLS (Psychological Review 1995) — cited as the source of the hippocampal-replay framing [§1, lines 52-54].",
+        "Rasch & Born [47] = 'About sleep's role in memory', Physiological Reviews 2013 — cited twice, including for the cost-justification argument: 'Sleep makes animals unable to respond to external stimuli, suggesting that it must provide enough cognitive benefit to justify this cost' [§1, lines 58-59].",
+        "Momennejad et al. [42] = 'Offline replay supports planning in human reinforcement learning', eLife 2018 — 'neural evidence of offline replay during rest predicts improved planning performance for human subjects' [§2 Offline planning, lines 144-146]; also Tolman [57].",
+        "Hinton et al. [30] wake-sleep (Science 1995) and Carreira-Perpinan & Hinton [11] contrastive divergence; Sutton [53] Dyna; Ha & Schmidhuber [27] World Models; Hafner et al. [28] Dreamer; Mnih et al. [41] replay buffer [§2 Sleep, lines 153-156].",
+        "Chalvidal et al. [12] = meta-RL with self-modifying networks — 'recursive Hebbian-like weight updates support fast adaptation' [§2, lines 149-150], the closest prior art to the recursion-on-fast-weights idea."
+      ]
+    },
+    "verdict_for_the_monograph": "Do not report this as 'the paths do not cite each other'. This paper cites the E-path's naming paper and the $\\Theta$-path's title-twin, and differentiates itself from both in explicit prose. The accurate finding is narrower and sharper: (i) engagement is uniformly one sentence deep with zero experimental contact — the comparison set in every figure is $N=1$ versions of itself; (ii) the paper is silent on the Titans/Miras/Atlas/TNT/NL branch of its own path, which is a within-path break, not a cross-path one."
+  },
+
+  "todo_verify": [
+    {
+      "item": "Which of the four printed values in Fig. 4a op2 (0.985, 0.985, 0.980, 0.979) and op4 (0.995, 0.994, 0.993, 0.992) corresponds to which $N\\in\\{1,2,4,6\\}$. The text does not say and the extracted layout does not preserve the legend order.",
+      "search_term": "grep for '0.985' / '0.979' in the source PDF colour legend, or re-extract Fig. 4a with layout preservation"
+    },
+    {
+      "item": "Confirm the assignment 0.209 = 2 loops in Fig. 4b op8 (which would make $N=2$ marginally worse than $N=1$). Currently inferred from §6.3's statement that the no-loop value is 0.210.",
+      "search_term": "'0.209' with the Fig. 4b legend colours; or 'eight-operation' in any extended version"
+    },
+    {
+      "item": "Whether Fig. 3's model is 4-layer (caption, line 624) or 10-layer $d=512$ (§6 Experiment details, lines 439-440).",
+      "search_term": "'10-layer' and '4-layer GDN-attention hybrid' — check whether a later arXiv version corrects one of them"
+    },
+    {
+      "item": "Per-block fast-weight state size in bytes (head dim, head count, dtype for GDN and Jet layers). Not derivable from this paper.",
+      "search_term": "'d_state' / 'head' / 'state size' — absent from 2605.26099; would need Jet-Nemotron (2508.15884) and GDN (2412.06464)"
+    },
+    {
+      "item": "Total training tokens for Depo and GSM-Infinite. Only steps (100k / 300–1000) and batch sizes (128 / 256) are given.",
+      "search_term": "'training tokens' — appears only in §6.1 ('nearly 5B training tokens') and the Fig. 2 axis labels"
+    },
+    {
+      "item": "Whether the KV cache is rebuilt from scratch on each of the $N$ passes or somehow reused. Algorithm 1 shows 'h, S ← Blocks(h, S)' with $h$ changing each pass, which implies rebuild, but the paper never says so.",
+      "search_term": "'KV cache' within §5 and Algorithm 1; also 'recompute'"
+    },
+    {
+      "item": "Whether any appendix, code release, or supplementary material exists. The vendored text ends at reference [65] with no appendix and no code URL.",
+      "search_term": "'Appendix' / 'github' / 'code is available' — zero hits in 2605.26099.txt"
+    },
+    {
+      "item": "Exact curve values in Fig. 6 (throughput in k tokens/s at each window size and $N$). Only axis ticks are recoverable from the text extraction.",
+      "search_term": "Fig. 6 vector data in the source PDF"
+    }
+  ]
+}

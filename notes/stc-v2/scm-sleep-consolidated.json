@@ -1,0 +1,502 @@
+{
+  "paper_id": "scm-sleep-consolidated",
+  "arxiv": "2604.20943v1",
+  "title": "SCM: Sleep-Consolidated Memory with Algorithmic Forgetting for Large Language Models",
+  "authors": "Saish Shinde (Clyrai IP Studio), single author. Contact saish.shinde.jb@gmail.com [title block]",
+  "venue": "arXiv preprint, cs.LG. No venue. The paper self-describes as 'a research preview' [Abstract, line 1 of abstract]. Code Availability section: 'The source code for SCM is not publicly available at this time. The authors intend to release an open-source reference implementation upon publication of a peer-reviewed manuscript.'",
+  "date": "arXiv v1: 22 Apr 2026 (header). Paper's own dateline: April 2026 [title block].",
+  "path": "/home/jimmy/repos/neural-memory-study/papers/stc/2604.20943.txt",
+
+  "axis": "E",
+  "axis_note": "S0-DESIGN §3.1 lists this paper as 'Θ-6 | SCM: Sleep-Consolidated Memory | 2604.20943 | Θ | 알고리즘적 망각'. That assignment does not survive contact with the text. §3.8 states outright: 'It requires no training or fine-tuning; all components use existing pretrained models or algorithmic logic.' There is no weight delta, no gradient, and no fast-weight state anywhere in the paper. Every mutable object lives in an external NetworkX graph persisted to SQLite [§3.5]. SCM is therefore a pure (U-E) paper and belongs on the E path (bridge-in from MemGPT [E-1] and Mem0 [E-3]), not the Θ path. S0 §3.1 must be corrected. See unfavorable_facts[0] and update_layer.",
+
+  "problem_stated": {
+    "as_the_paper_states_it": "'a fundamental limitation in current systems: the absence of persistent, structured, and biologically plausible memory' [Abstract]. Expanded in §1: LLMs 'remain fundamentally amnesic. Each conversation begins anew.' Three named failure modes: (a) context-window approaches are 'bounded by token budgets and suffer from well-documented degradation when relevant information appears in the middle of long sequences [4]' [§1]; (b) 'Retrieval-augmented generation systems store embeddings in vector databases that grow indefinitely, lacking any mechanism for importance prioritization, consolidation, or active forgetting [3]' [§1]; (c) tiered architectures like MemGPT move data between tiers 'without biological memory processes such as sleep-dependent consolidation or synaptic pruning [7]' [§1], and Mem0-class layers 'remain awake only systems that neither consolidate offline nor intentionally forget [1]' [§1].",
+    "operative_problem_for_this_monograph": "Unbounded growth of the external store E. The paper's own framing of the gap is that E grows monotonically and nothing ever deletes from it; SCM's contribution is a deletion operator plus a contraction operator inside (U-E) [§1 contributions 1–3, §2.4 'They lack importance prioritization, grow indefinitely, and never forget'].",
+    "claimed_contributions_verbatim_locations": "Four, enumerated in §1 final paragraph: (1) 'the first unified memory architecture for conversational agents that combines working memory limits, NREM and REM sleep-stage consolidation, intentional forgetting, and a self-model within a single system'; (2) 'multi-dimensional value tagging that captures novelty, emotional valence, task relevance, and repetition frequency'; (3) 'perfect recall on multi-turn conversational benchmarks while actively reducing memory noise by over ninety percent'; (4) 'the complete system design, including multi-agent memory synchronization and a web-based visualization interface'."
+  },
+
+  "inherited_open_question": {
+    "verdict": "none-stated",
+    "evidence": "The paper never quotes, cites by section, or otherwise locates an open question posed by a prior work. §2 (Related Work) consists entirely of the SCM author's own diagnoses of what prior systems lack, phrased as the author's assessment rather than as the prior authors' stated future work: MemGPT — 'this approach lacks biological plausibility: there is no offline consolidation, no importance-based prioritization beyond recency, and no active forgetting' [§2.1]; Mem0 — 'it remains awake only and lacks sleep stages or true forgetting' [§2.1]; SleepGate — 'This is fundamentally cache management rather than semantic memory consolidation; it operates on token-level projections, not concepts, and clears between sessions' [§2.1]; EWC — 'EWC operates at the parameter level rather than the memory architecture level; it does not create a structured memory system for conversational agents' [§2.2]; WSCL — 'However, WSCL targets image classification, lacks semantic memory graphs, and does not implement value-based forgetting or multi-dimensional importance tagging' [§2.2]. None of these is attributed to the cited paper as its own stated open question.",
+    "what_it_implicitly_answers": [
+      "The E-path question left standing by MemGPT [7] and Mem0 [1]: given an external store that only ever appends, what is the deletion policy? SCM answers with a value-based adaptive threshold [Eq. 10] rather than recency or LRU. [§1, §2.1, §2.4]",
+      "Whether the NREM/REM split that Wake-Sleep Continual Learning [10] demonstrated for image classification transfers to a conversational semantic-memory substrate. SCM answers 'yes, at the semantic rather than parameter level' but never runs WSCL or any comparison against it [§2.2, §2.3: 'SCM draws on these principles but implements them at the semantic level: synaptic downscaling becomes proportional weakening of graph edge strengths, replay becomes reactivation of concept co-occurrence patterns, and forgetting becomes value-based thresholding'].",
+      "Whether the synaptic-homeostasis hypothesis [11] can be implemented as an algorithm rather than a metaphor. SCM's answer is Eq. 7, a constant multiplicative contraction of all edge strengths [§2.3, §3.6]."
+    ],
+    "bridge_in_for_the_chapter": "This chapter must be entered from the E path (MemGPT → Letta STC → Mem0/Zep), not from SEAL/NL. The honest bridge sentence is: the E-path papers before it all grow E monotonically; SCM is the first in this corpus to put an explicit delete operator inside (U-E) and to make sleep-time compute be spent on deletion rather than on summarization."
+  },
+
+  "core_mechanism": {
+    "one_line": "SCM keeps Θ frozen and W nonexistent, and spends its sleep budget entirely inside (U-E): a wake-time LLM extractor writes typed concepts with a 4-dimensional importance score into an external graph, and a state-triggered offline cycle then applies Hebbian reinforcement, a constant multiplicative contraction of all edge strengths, an endogenous random-walk edge generator, and a value-threshold delete pass to that same graph.",
+
+    "state_decomposition": {
+      "Theta": "Frozen. Two pretrained models, neither updated: the extractor LM (paper: 'Llama 3.2 (two billion parameters, Q4_K_M quantized)' [§3.2], run locally via Ollama [§3.8]) and the sentence embedder (all-MiniLM-L6-v2, 384-dimensional output [§3.2]). §3.8: 'It requires no training or fine-tuning.'",
+      "W": "Empty set. There is no fast-weight state of any kind in the paper. Warning: the paper's symbol W denotes the 7-slot WorkingMemory FIFO buffer of raw text episodes [§3.4, Algorithm 1 'Require: WorkingMemory W'], which under this monograph's reserved notation is part of E, not W. See notation_conflicts.",
+      "E": "E = (E_wm, E_ltm, E_self). E_wm = FIFO buffer of Episode objects, hard capacity 7 [§3.4]. E_ltm = a directed graph (V, script-E) of concept nodes and typed relation edges, held in NetworkX and persisted to SQLite (optional PostgreSQL, with automatic fallback to SQLite on auth failure) [§3.5]. E_self = the self-model: a node named 'SCM' with importance 0.95, linked to ten capability concepts, plus runtime counters for messages processed, sleep cycles completed, and dreams generated [§3.7]. Each node in E_ltm carries: semantic embedding, value vector, creation timestamp, last access time, access count, cumulative connection strength [§3.5]."
+    },
+
+    "read_path": {
+      "unified": "\\hat y \\;=\\; f\\big(q;\\ \\Theta,\\ \\varnothing,\\ \\mathrm{ret}(E,q)\\big) \\tag{R, S0 §2.1}",
+      "what_ret_is": "A ranked fusion of three retrievers over E_ltm: (i) cosine similarity between query embedding and concept embeddings; (ii) graph traversal along relation edges from a seed concept; (iii) importance ranking by composite value score I(c). 'The final retrieved set is a ranked fusion of these three sources' [§3.5]. The paper gives no fusion weights, no k, and no reranker specification.",
+      "note": "The paper never writes a read equation. (R) here is the note-writer's placement of SCM into the S0 frame, grounded in the §3.5 prose."
+    },
+
+    "wake_write": {
+      "latex": "\\hat c_k \\;=\\; S_{\\mathrm{enc}}\\big(\\mathrm{text}_k;\\ \\Theta_{\\mathrm{LM}}\\big) \\;=\\; \\Big\\{\\big(\\mathrm{type}(c),\\ \\mathrm{desc}(c),\\ x_c\\in\\mathbb{R}^{384}\\big)\\Big\\}\\ \\cup\\ \\Big\\{(c_i,\\ \\mathrm{pred},\\ c_j)\\Big\\}",
+      "source": "[scm-sleep-consolidated §3.2] — no equation number; the MeaningEncoder is described in prose only.",
+      "detail": "Concept type taxonomy is fixed and 7-valued: person, preference, fact, event, object, location, abstract [§3.2]. Predicate types are 6-valued: has_property, prefers, related_to, contradicts, causes, part_of [§3.2]. Fallback if the LLM is unavailable: 'the encoder falls back to regex heuristics for basic entity extraction' [§3.2]. Crucially, this summarization step happens at WAKE, per turn — not at sleep. Under the S0 canonical (U-E) the summarizer S(c_k; B_s) is the sleep-time operator; in SCM it is on the wake critical path.",
+      "consequence": "SCM's sleep budget B_s is not spent on summarizing context. It is spent on reorganizing and deleting what wake already wrote. This is the single most important structural difference from the canonical (U-E) and from Letta-style sleep-time compute."
+    },
+
+    "importance_scoring": {
+      "composite": {
+        "latex": "I(c) \\;=\\; 0.30\\, v_{\\mathrm{nov}}(c) \\;+\\; 0.20\\,\\big|v_{\\mathrm{emo}}(c)\\big| \\;+\\; 0.35\\, v_{\\mathrm{task}}(c) \\;+\\; 0.15\\, v_{\\mathrm{rep}}(c)",
+        "source": "[scm-sleep-consolidated Eq. 5]",
+        "weight_provenance": "'The weights were determined through ablation on the benchmark suite, with task relevance weighted highest because it most strongly correlates with recall accuracy.' [§3.3] — i.e. hand-tuned by the author against the same benchmark that reports the results."
+      },
+      "novelty": {
+        "latex": "v_{\\mathrm{nov}}(c) \\;=\\; 1 \\;-\\; \\max_{c'\\in E_{\\mathrm{ltm}}} \\frac{x_c^{\\top} x_{c'}}{\\lVert x_c\\rVert\\,\\lVert x_{c'}\\rVert}",
+        "source": "[scm-sleep-consolidated Eq. 1]"
+      },
+      "emotional": {
+        "latex": "v_{\\mathrm{emo}}(c) \\;=\\; \\sigma\\big(\\mathrm{LLM\\_sentiment}(\\mathrm{desc}(c))\\big) \\in [-1, 1]",
+        "source": "[scm-sleep-consolidated Eq. 2]",
+        "note": "The paper writes the activation as sigma and simultaneously states the range is [-1,1]. A logistic sigma has range (0,1); a tanh has range (-1,1). The paper does not say which. Recorded in todo_verify."
+      },
+      "task_relevance": {
+        "latex": "v_{\\mathrm{task}}(c) \\;=\\; \\cos\\big(x_c,\\ x_{\\mathrm{goal}}\\big)",
+        "source": "[scm-sleep-consolidated Eq. 3]",
+        "note": "Range is [-1,1], so I(c) is not confined to [0,1] by construction. The paper never states how x_goal (the 'current conversational goal' embedding) is produced."
+      },
+      "repetition": {
+        "latex": "v_{\\mathrm{rep}}(c) \\;=\\; \\frac{\\mathrm{acc}(c)}{\\max_{c'} \\mathrm{acc}(c') + 1}",
+        "source": "[scm-sleep-consolidated Eq. 4] — the paper explains the +1 as keeping 'scores bounded in [0,1)'."
+      }
+    },
+
+    "sleep_trigger": {
+      "latex": "\\text{sleep fires} \\iff H(E_{\\mathrm{wm}}) > \\vartheta_{\\mathrm{e}} \\;\\lor\\; \\rho_{\\mathrm{cf}}(E_{\\mathrm{ltm}}) > \\vartheta_{\\mathrm{c}} \\;\\lor\\; \\Delta t > \\tau \\;\\lor\\; \\text{manual}",
+      "constants": "vartheta_e = 0.9, vartheta_c = 0.3, tau = 1 hour [§3.6 'Trigger.']",
+      "entropy_definition": "H(E_{\\mathrm{wm}}) = -\\sum_{c} p(c)\\log p(c),\\quad p(c) = I(c)\\big/\\!\\sum_{c'} I(c') — Shannon entropy of the normalized importance distribution over working memory [§3.6].",
+      "conflict_density": "\\rho_{\\mathrm{cf}}(G) = \\lvert \\mathcal{E}_{\\mathrm{contradicts}}\\rvert / \\lvert \\mathcal{E}\\rvert — the ratio of contradicts edges to total edges in long-term memory [§3.6].",
+      "note_writer_derivation": "[note-writer] The paper does not state the base of the logarithm. With k equally-important items in a buffer of at most 7, H = log k. In nats the trigger H > 0.9 fires at k >= 3 (log 3 = 1.0986); in bits it fires at k >= 2 (log2 2 = 1.0). Under either base the entropy trigger fires within the first two to three turns of any conversation, so in the reported experiments sleep is effectively per-few-turns, not hourly. The paper never reports how many sleep cycles occurred during the 10-turn benchmark."
+    },
+
+    "nrem_consolidation": {
+      "hebbian": {
+        "latex": "s_{ij} \\;\\leftarrow\\; s_{ij} \\;+\\; \\eta_{\\mathrm{heb}}\\, I(c_i)\\, I(c_j), \\qquad \\eta_{\\mathrm{heb}} = 0.1",
+        "source": "[scm-sleep-consolidated Eq. 6; Algorithm 1 line 5]",
+        "scope": "Applied over all concept pairs co-occurring inside each replayed working-memory episode: 'for episode e in W, for (c_i, c_j) in pairs(e.concepts)' [Algorithm 1 lines 3–7]."
+      },
+      "downscale": {
+        "latex": "s_{ij} \\;\\leftarrow\\; \\alpha^{E}\\, s_{ij}, \\qquad \\alpha^{E} = 0.8",
+        "source": "[scm-sleep-consolidated Eq. 7; Algorithm 1 line 8]",
+        "paper_justification": "'preserving relative rankings while creating capacity for new learning' [§3.6]; 'alpha = 0.8 ensures each sleep cycle reduces all edge strengths by 20%, preventing unbounded growth, while eta = 0.1 provides sufficient Hebbian strengthening for co-occurring high-importance concepts to survive downscaling' [§3.6]."
+      },
+      "unified_form": {
+        "latex": "s_{ij}^{(k+1)} \\;=\\; \\alpha^{E}\\Big(s_{ij}^{(k)} \\;+\\; \\eta_{\\mathrm{heb}}\\, I(c_i)I(c_j)\\Big)",
+        "commentary": "This is exactly the shape of the monograph's master retention update W_t = alpha_t W_{t-1} + S_t (M2 / U-W), with three substitutions: the state is a scalar edge strength in E instead of a fast-weight tensor; the write term is a Hebbian product of importance scores instead of -eta_t grad_W ell; and alpha is a constant (no time subscript, per STYLE-NOTATION §1.5 subscript convention) instead of a learned data-dependent gate. There is no inner loss script-l and no gradient anywhere. [note-writer: the algebraic correspondence is the note-writer's, not the paper's — the paper never writes a retention-gate form.]"
+      },
+      "capacity_bound_derivation": "[note-writer] For a pair reinforced in every cycle, the recursion s <- 0.8(s + 0.1 I_i I_j) = 0.8 s + 0.08 I_i I_j has fixed point s* = 0.08 I_i I_j / 0.2 = 0.4 I_i I_j, so edge strength is bounded above by 0.4 max(I_i I_j). For a pair never reinforced, s decays as 0.8^k; after the 20 cycles of Figure 3 that is 0.8^20 = 0.0115, about 1.15% of its original strength. This is the one capacity bound in the paper that is algebraically airtight — and the paper does not derive it.",
+      "transfer": "After downscaling, 'W <- transfer_to_ltm(W, G)' [Algorithm 1 line 9]. The transfer procedure is never specified: the paper does not say which episodes are promoted, whether the buffer is emptied, or what selection rule applies."
+    },
+
+    "rem_dreaming": {
+      "latex": "P(c_i \\to c_j) \\;=\\; \\frac{s_{ij}}{\\sum_{k} s_{ik}}",
+      "source": "[scm-sleep-consolidated Eq. 8]",
+      "procedure": "Seeds are the top-3 by importance from working memory ('for seed s in top_k(W, k = 3)' [Algorithm 1 line 11]); each seed launches one random walk of 5 steps [Eq. 8 text: 'Walks of length five generate dream sequences'; Algorithm 1 line 12 'random_walk(G, s, steps = 5, p ∝ strength)']. If the resulting sequence does not contradict existing facts, a single related_to edge is added between the walk's start and end nodes [Algorithm 1 lines 13–15: 'if not contradicts(D, G) then G.add_edge(D.start, D.end, related_to)'].",
+      "note": "This is an endogenous write: it adds structure to E from E itself, consuming no new context. In the S0 frame it is a (U-E) write whose argument \\hat c_k is generated from E_k rather than from c_k. The contradicts(D, G) predicate is never defined. A worked example is given in Appendix A (healthcare → anatomy → hiking)."
+    },
+
+    "intentional_forgetting": {
+      "retention_score": {
+        "latex": "r(c) \\;=\\; w_{\\mathrm{imp}}\\, I(c) \\;+\\; w_{\\mathrm{rec}}\\,\\big(1 - \\delta(c)\\big), \\qquad \\delta(c) = \\exp\\!\\big(-\\lambda_{\\mathrm{rec}}\\,\\Delta t\\big)",
+        "source": "[scm-sleep-consolidated Eq. 9]",
+        "constants": "lambda_rec = 0.01 [§3.6, below Eq. 9]. The blend weights are unnamed in Eq. 9 (written beta_1, beta_2) and given numerically only in Algorithm 1 line 20: 'S(c) <- 0.8 · I(c) + 0.2 · (1 − decay(c))', i.e. w_imp = 0.8, w_rec = 0.2. §3.6 confirms the corrected w_rec = 0.2."
+      },
+      "adaptive_threshold": {
+        "latex": "\\vartheta_{\\mathrm{f}} \\;=\\; \\overline{I} \\;-\\; \\mathrm{sd}(I)\\cdot\\frac{\\lvert G\\rvert}{\\mathrm{target\\_size}}, \\qquad \\vartheta_{\\mathrm{f}} \\;\\geq\\; 0.05",
+        "source": "[scm-sleep-consolidated Eq. 10; floor stated in §3.6: 'We clip theta_f to a minimum of 0.05 to prevent over-aggressive forgetting in small graphs.']",
+        "constants": "target_size default 100, 'a user-configurable parameter ... specifying the desired steady-state graph size' [§3.6].",
+        "delete_rule": "for concept c in G: if r(c) < vartheta_f then G.remove(c) [Algorithm 1 lines 19–24]."
+      },
+      "bug_disclosure": "'An initial implementation used beta_2 = 0.4, which inadvertently boosted new concepts (for whom 1 − delta(c) ≈ 1) above the threshold regardless of importance. This prevented any forgetting. The corrected weight beta_2 = 0.2 was determined through grid search over beta_2 in [0.1, 0.5], selecting the value that maximized noise reduction while preserving all important concepts.' [§3.6; also §4.3 'Before a bug fix in the forgetting formula ... resulting in 0% noise removal'; Figure 5]"
+    },
+
+    "sleep_operator_composed": {
+      "latex": "E_{k+1} \\;=\\; \\mathrm{prune}_{\\vartheta_{\\mathrm{f}}}\\Big(\\ \\mathrm{dream}\\Big(\\ \\alpha^{E}\\cdot\\mathrm{hebb}\\big(E_k,\\ E^{\\mathrm{wm}}_k\\big)\\ \\Big)\\ \\Big), \\qquad \\Theta_{k+1} = \\Theta_k, \\qquad W \\equiv \\varnothing",
+      "source": "Composition order taken from [scm-sleep-consolidated Algorithm 1]: NREM Hebbian (lines 3–7) → downscale (line 8) → transfer (line 9) → REM (lines 11–16) → forget (lines 18–24). Theta_{k+1} = Theta_k from [§3.8]. [note-writer: the composed form is the note-writer's; the paper writes only the pseudocode.]",
+      "internal_inconsistency": "Figure 2's caption states 'Forgetting is applied after REM, before returning to WAKE', matching Algorithm 1. But Figure 2's own diagram body shows 'value < threshold' transitions leaving both NREM and REM, and the line 'WAKE with forgetting at each transition'. The figure body and the caption/pseudocode disagree on how many times the prune pass runs per cycle."
+    },
+
+    "capacity_growth_bounding_summary": "SCM bounds growth by three distinct mechanisms, and they are of very different evidential quality. (1) Hard cap on the fast buffer: E_wm holds exactly 7 Episode objects, FIFO, 'When the buffer is full, new episodes displace the oldest' [§3.4]. This is a real, enforced, tested bound (Table 3: '7/7 items enforced'). (2) Contraction of edge strengths: the constant multiplicative alpha^E = 0.8 per cycle [Eq. 7]. Algebraically airtight (fixed point 0.4 I_i I_j, see capacity_bound_derivation), but never measured. (3) Bound on node count: the adaptive threshold Eq. 10. This is the paper's headline capacity claim and it is the weakest of the three — see unfavorable_facts[1] for the sign problem in Eq. 10 and unfavorable_facts[3] for the fact that the 20-cycle plateau of Figure 3 is simulated, not measured.",
+
+    "notation_conflicts": [
+      {"paper_symbol": "W", "paper_meaning": "WorkingMemory buffer, 7 text episodes [§3.4, Algorithm 1 'Require: WorkingMemory W', H(W), 'episode e ∈ W']", "reserved_meaning": "fast weights, the inner-loop state [STYLE-NOTATION §1.2, rule 1]", "severity": "critical", "mapping": "E_{\\mathrm{wm}}", "why": "SCM's W is text in an external buffer, not weights. Using the paper's W in the chapter would destroy the book's single most load-bearing notational decision."},
+      {"paper_symbol": "S(c)", "paper_meaning": "retention score of a concept [Eq. 9, Algorithm 1 line 20]", "reserved_meaning": "S_t = inner momentum buffer, past surprise [STYLE-NOTATION §1.2, §1.5 'S: S_t = inner momentum 전용']", "severity": "high", "mapping": "r(c)"},
+      {"paper_symbol": "eta = 0.1", "paper_meaning": "Hebbian edge-strengthening rate [Eq. 6]", "reserved_meaning": "eta_t = inner learning rate, a data-dependent gate on W [STYLE-NOTATION §1.2]", "severity": "high", "mapping": "\\eta_{\\mathrm{heb}}", "why": "It is a constant, it multiplies no gradient, and it acts on E. Keeping eta unqualified would suggest an inner loop that does not exist."},
+      {"paper_symbol": "alpha = 0.8", "paper_meaning": "synaptic downscaling factor on edge strengths [Eq. 7]", "reserved_meaning": "alpha_t in [0,1] = retention gate, the fraction retained [STYLE-NOTATION §1.2, P4]", "severity": "low", "mapping": "\\alpha^{E}", "why": "Direction agrees with the book's convention (0.8 = retain 80%), which is a genuine and citable structural match. Only the substrate (E edges, not W) and the constancy (no time subscript) need marking."},
+      {"paper_symbol": "beta_1 = 0.8, beta_2 = 0.2", "paper_meaning": "blend weights in the retention score [Eq. 9, Algorithm 1 line 20]", "reserved_meaning": "beta_t = inner momentum decay [STYLE-NOTATION §1.2]", "severity": "high", "mapping": "w_{\\mathrm{imp}}, w_{\\mathrm{rec}}"},
+      {"paper_symbol": "lambda = 0.01", "paper_meaning": "exponential recency decay rate [Eq. 9]", "reserved_meaning": "lambda = outer weight decay [STYLE-NOTATION §1.2]", "severity": "medium", "mapping": "\\lambda_{\\mathrm{rec}}"},
+      {"paper_symbol": "rho(G)", "paper_meaning": "conflict density, ratio of contradicts edges [§3.6]", "reserved_meaning": "rho = the S0 cost quantity (forgetting/degradation rate) [S0 §2.4]; also Sleep's reward mixing coefficient [STYLE-NOTATION §1.2]", "severity": "high", "mapping": "\\rho_{\\mathrm{cf}}", "why": "Collides with the cost-table symbol the chapter is obliged to fill in. Must be renamed or the cost table becomes unreadable."},
+      {"paper_symbol": "theta_e = 0.9, theta_c = 0.3, theta_f", "paper_meaning": "scalar trigger and prune thresholds [§3.6, Eq. 10]", "reserved_meaning": "Theta = slow weights; theta^{(l)} = level-l parameters [STYLE-NOTATION §1.2]", "severity": "high", "mapping": "\\vartheta_{\\mathrm{e}}, \\vartheta_{\\mathrm{c}}, \\vartheta_{\\mathrm{f}}", "why": "In a chapter whose whole point is that Theta never moves, printing theta_f next to Theta invites exactly the wrong reading."},
+      {"paper_symbol": "e_c", "paper_meaning": "384-d sentence embedding of concept c [Eq. 1, §3.2]", "reserved_meaning": "e_{i,l} = CMS accumulated error term [STYLE-NOTATION §1.2, (M5)]", "severity": "medium", "mapping": "x_c \\in \\mathbb{R}^{384}", "why": "Aligns with the reserved x_t = input token representation."},
+      {"paper_symbol": "e (episode)", "paper_meaning": "an Episode object in the buffer [Algorithm 1 line 3]", "reserved_meaning": "as above", "severity": "low", "mapping": "prose 'episode', index j"},
+      {"paper_symbol": "M", "paper_meaning": "the set of already-stored concepts [Eq. 1, 'c' in M']", "reserved_meaning": "script-M = the memory module as a function [STYLE-NOTATION §1.2, P1]", "severity": "medium", "mapping": "E_{\\mathrm{ltm}}"},
+      {"paper_symbol": "E (in |E_contradicts|/|E|)", "paper_meaning": "the edge set of the graph [§3.6]", "reserved_meaning": "E = the external store, the whole third layer [S0 §2.1]", "severity": "critical", "mapping": "\\mathcal{E} (edge set), with E_{\\mathrm{ltm}} = (\\mathcal{V}, \\mathcal{E})", "why": "The most dangerous collision in this paper, because both meanings are about external memory and a careless reader will merge them."},
+      {"paper_symbol": "sigma_I", "paper_meaning": "standard deviation of importance scores over G [Eq. 10]", "reserved_meaning": "sigma(·) = activation [STYLE-NOTATION §1.2]; and the paper itself uses sigma as an activation in Eq. 2", "severity": "medium", "mapping": "\\mathrm{sd}(I); and \\overline{I} for mu_I", "why": "The paper uses sigma in two incompatible senses two pages apart (Eq. 2 activation, Eq. 10 standard deviation)."},
+      {"paper_symbol": "c", "paper_meaning": "a concept [Eq. 1–5, 9, 10]", "reserved_meaning": "c = Omega rule window length [STYLE-NOTATION §1.2, rule 5]", "severity": "low", "mapping": "keep c as chapter-local override", "why": "No Omega rule appears in this chapter. Declare the override once at first use per STYLE-NOTATION §1.2's chapter-local allowance."},
+      {"paper_symbol": "G", "paper_meaning": "the long-term memory graph [§3.6, Eq. 10, Algorithm 1]", "reserved_meaning": "G_t = Miras global retention term [STYLE-NOTATION §1.2]", "severity": "low", "mapping": "E_{\\mathrm{ltm}}; |G| becomes |\\mathcal{V}|"},
+      {"paper_symbol": "H(W)", "paper_meaning": "Shannon entropy of the importance distribution [§3.6]", "reserved_meaning": "h_t = outer second moment [STYLE-NOTATION §1.2]", "severity": "low", "mapping": "H(E_{\\mathrm{wm}}) — uppercase H is unreserved; keep"},
+      {"paper_symbol": "tau = 1 hour", "paper_meaning": "elapsed-time sleep trigger [§3.6]", "reserved_meaning": "tau = token index (auxiliary) [STYLE-NOTATION §1.2]", "severity": "low", "mapping": "\\tau_{\\mathrm{sleep}}"}
+    ]
+  },
+
+  "outer_vs_inner": {
+    "headline": "Nothing in SCM is learned by gradient descent, at any timescale. Every 'learned' number in the paper was set by a human running the benchmark. Every object that moves at runtime is a row or an edge in an external store.",
+    "table": [
+      {"object": "Extractor LM parameters (paper: 'Llama 3.2 (two billion parameters, Q4_K_M quantized)')", "unified_symbol": "Theta_LM", "who_learns_it": "Meta, during pretraining — entirely outside this paper", "when_it_moves": "never", "evidence": "[§3.2]; [§3.8] 'requires no training or fine-tuning'"},
+      {"object": "Sentence embedder parameters (all-MiniLM-L6-v2, 384-d)", "unified_symbol": "Theta_emb", "who_learns_it": "upstream, outside this paper", "when_it_moves": "never", "evidence": "[§3.2, §4.1]"},
+      {"object": "Fast weights", "unified_symbol": "W", "who_learns_it": "does not exist in this paper", "when_it_moves": "never — SCM has no inner loop and no test-time weight movement", "evidence": "[§3.8]; absence throughout"},
+      {"object": "Concept nodes (type, description, embedding)", "unified_symbol": "V subset of E_ltm", "who_learns_it": "not learned — written by the extractor", "when_it_moves": "wake time, once per user turn", "evidence": "[§3.2, §3.5]"},
+      {"object": "Typed relation edges from extraction", "unified_symbol": "script-E subset of E_ltm", "who_learns_it": "not learned — written by the extractor", "when_it_moves": "wake time, once per user turn", "evidence": "[§3.2]"},
+      {"object": "Edge strengths s_ij", "unified_symbol": "s_ij in E_ltm", "who_learns_it": "not learned — an algorithmic Hebbian rule, no gradient", "when_it_moves": "sleep time only: strengthened by Eq. 6, contracted by Eq. 7", "evidence": "[Eq. 6, Eq. 7, Algorithm 1 lines 5, 8]"},
+      {"object": "REM-generated related_to edges", "unified_symbol": "script-E additions", "who_learns_it": "not learned — random walk on existing strengths", "when_it_moves": "sleep time, at most 3 new edges per cycle (top-3 seeds, one edge each)", "evidence": "[Eq. 8, Algorithm 1 lines 11–16]"},
+      {"object": "Importance vector components v_nov, v_emo, v_task, v_rep and composite I(c)", "unified_symbol": "I(c)", "who_learns_it": "not learned — closed-form from embeddings, sentiment, and counters", "when_it_moves": "wake time (v_rep also drifts as access counts change)", "evidence": "[§3.3, Eq. 1–5]"},
+      {"object": "Access counts, last-access timestamps, cumulative connection strength", "unified_symbol": "node metadata in E_ltm", "who_learns_it": "not learned — runtime counters", "when_it_moves": "wake time, on every retrieval", "evidence": "[§3.5]"},
+      {"object": "WorkingMemory contents (7 episodes)", "unified_symbol": "E_wm", "who_learns_it": "not learned — FIFO displacement", "when_it_moves": "wake time, every turn", "evidence": "[§3.4]"},
+      {"object": "Node deletion decisions", "unified_symbol": "prune", "who_learns_it": "not learned — threshold test r(c) < vartheta_f", "when_it_moves": "sleep time only", "evidence": "[Eq. 9, Eq. 10, Algorithm 1 lines 18–24]"},
+      {"object": "Self-model node and its 10 capability concepts, runtime counters", "unified_symbol": "E_self", "who_learns_it": "hand-authored; importance hard-set to 0.95", "when_it_moves": "counters at wake and sleep; the node itself is static", "evidence": "[§3.7]"},
+      {"object": "Composite importance weights (0.30, 0.20, 0.35, 0.15)", "unified_symbol": "coefficients of Eq. 5", "who_learns_it": "the human author, by hand", "when_it_moves": "'determined through ablation on the benchmark suite' — tuned once against the evaluation benchmark itself", "evidence": "[§3.3]"},
+      {"object": "Retention blend weight w_rec (beta_2)", "unified_symbol": "w_rec = 0.2", "who_learns_it": "the human author, by grid search", "when_it_moves": "'determined through grid search over beta_2 in [0.1, 0.5], selecting the value that maximized noise reduction' — i.e. tuned to maximize the headline metric on the reporting benchmark", "evidence": "[§3.6]"},
+      {"object": "eta_heb = 0.1, alpha^E = 0.8, lambda_rec = 0.01", "unified_symbol": "sleep constants", "who_learns_it": "the human author, by hand", "when_it_moves": "'These values were validated qualitatively on the benchmark suite; a systematic hyperparameter ablation is deferred to future work.'", "evidence": "[§3.6]"},
+      {"object": "vartheta_e = 0.9, vartheta_c = 0.3, tau = 1 hour, target_size = 100, prune floor 0.05", "unified_symbol": "trigger and threshold constants", "who_learns_it": "the human author, by hand; no provenance given for the first four", "when_it_moves": "never at runtime (target_size is user-configurable)", "evidence": "[§3.6]"}
+    ],
+    "reader_takeaway": "For the monograph's reader, who has never trained a model: this chapter is the one place in Part II where the answer to 'who learns this?' is 'nobody — a person picked the number'. That is not a defect on its own; it is the defining property of the E path, and it is why SCM's sleep phase is a CPU background job rather than a training run."
+  },
+
+  "update_layer": {
+    "verdict": "(U-E) only. (U-Theta) is the identity map and (U-W) is undefined because W does not exist.",
+    "evidence": "[§3.8] 'It requires no training or fine-tuning; all components use existing pretrained models or algorithmic logic.' Every state change in Algorithm 1 acts on G (the graph) or W (the text buffer), both of which are E under S0 §2.1.",
+    "canonical_form": "E_{k+1} = \\mathrm{wr}(E_k, \\hat c_k), \\quad \\hat c_k = S(c_k;\\, B_s) \\tag{U-E, S0 §2.2}",
+    "how_scm_differs": [
+      "The summarizer S(·) has been moved off the sleep path onto the wake path. In SCM, \\hat c_k is produced per turn by the MeaningEncoder at wake [§3.2]; the sleep budget buys no summarization at all. Canonical (U-E) as written in S0 assumes the opposite. This is the structural claim the chapter should carry.",
+      "wr is not monotone. Canonical (U-E) is a write. SCM's is write ∘ contract ∘ generate ∘ delete: hebb (write to existing edges), alpha^E (contract all edges), dream (endogenous write), prune (delete nodes). The delete operator is what the E path did not previously have [§2.4, §1 contribution 3].",
+      "There is a second, endogenous write with no external argument: REM dreaming produces \\hat c from E_k itself via a random walk [Eq. 8]. In the S0 frame this is an E-path analogue of self-generated training data (SEAL's synthetic data on the Theta path), except that what is generated is graph structure, not tokens for a gradient step.",
+      "The trigger is state-dependent, not scheduled: entropy of the buffer, conflict density of the graph, or elapsed time [§3.6]. Canonical (U-E) as written carries no trigger.",
+      "The state is heterogeneous: E splits into a hard-capacity fast tier (7 episodes) and an unbounded-until-pruned slow tier, with an explicit transfer_to_ltm step between them [Algorithm 1 line 9]. This is a CLS-shaped two-tier E, and it is the paper's clearest inheritance from the biological literature [§1, §2.3]."
+    ],
+    "order_within_a_cycle": "hebb → downscale → transfer → dream → prune, exactly once per triggered cycle [Algorithm 1 lines 3–24]. Figure 2's diagram body contradicts this by suggesting a prune at each transition; the caption and pseudocode agree with the order given here.",
+    "correction_to_S0": "S0 §3.1 assigns 2604.20943 to the Theta path as 'Θ-6'. On the evidence of §3.8 that assignment is wrong. The chapter belongs on the E path. If the Theta path needs an 'algorithmic forgetting' entry, this paper cannot supply it — nothing algorithmic here touches a weight."
+  },
+
+  "cost_table": {
+    "B_s": {
+      "value": "absent",
+      "detail": "The paper reports no per-sleep-cycle cost in FLOPs, tokens, seconds, or energy. The only compute number anywhere is aggregate and covers the entire evaluation: 'Total wall-clock time for the full benchmark suite (eight tests, five runs each) is approximately twelve minutes, dominated by LLM inference latency' [§3.8]. That figure mixes wake-path extraction, embedding, retrieval, and sleep, across 40 test runs, and cannot be decomposed. The number of sleep cycles executed during any experiment is never stated.",
+      "structural_cost_only": "[note-writer, from Algorithm 1] Per cycle the work is O(sum over episodes of |pairs(e.concepts)|) Hebbian updates + O(|script-E|) multiplications for the downscale + 3 walks of 5 steps + O(|V|) threshold tests. With |V| in the tens to low hundreds this is microseconds of CPU. No LLM call appears anywhere in Algorithm 1 — the sleep phase is LLM-free.",
+      "source": "[§3.8]"
+    },
+    "L_w": {
+      "value": "retrieval only: under 0.1 ms at 10 concepts; below 0.3 ms at 360 concepts. Table 3 states the same test as '<1 ms with 360 concepts'.",
+      "detail": "'Memory search latency scales sub-linearly with graph size. With ten concepts, retrieval completes in under 0.1 milliseconds. With three hundred and sixty concepts, latency remains below 0.3 milliseconds. These measurements were obtained on an Apple M1 MacBook Air with 8 GB RAM, using Python's time.perf_counter() for micro-benchmarking over 1000 queries per graph size.' [§4.3 'Latency.']. Abstract: 'Memory search latency remains below one millisecond even with hundreds of stored concepts.'",
+      "what_is_missing": "The dominant wake-time cost is not measured. Every user turn requires a MeaningEncoder call to the local Llama 3.2 model [§3.2] plus one embedding forward per extracted concept [§3.2], and the paper itself says the benchmark wall-clock is 'dominated by LLM inference latency' [§3.8] — yet no per-turn extraction latency, no token count, and no TTFT is reported anywhere. The reported L_w therefore covers the cheap component only. Prompt-token overhead of the retrieved set is also never reported.",
+      "source": "[§4.3, Table 3, Abstract, §3.8]"
+    },
+    "C": {
+      "value": "reported in concepts, never in bytes.",
+      "reported_in_concepts": "E_wm capacity = 7 items, hard [§3.4, Table 3 '7/7 items enforced']. Steady-state E_ltm after a 10-turn conversation: SCM 24, No-Forget Graph 72, Vector DB 55, FIFO 7 [Table 2]. Ablation sizes: 24 / 89 / 55 / 42 / 26 / 72 / 24 [Table 4]. Latency test graph: 360 concepts [Table 3, §4.3]. Forgetting test population: 55 concepts = 5 important + 50 noise [§4.3]. target_size default 100 [§3.6]. Simulated 20-cycle no-forget growth: 110 concepts [§4.3, Figure 3]. Paper's own scaling ceiling: 'NetworkX becomes a bottleneck beyond approximately ten thousand concepts' [§5.1].",
+      "bytes": "absent. The paper never states bytes per concept, embedding dtype, or per-user state size. The only memory figure is whole-process: 'The entire stack runs on a MacBook Air with eight gigabytes of RAM, using approximately four gigabytes at peak' [§3.8] — that includes the quantized LLM and is not per-user state.",
+      "note_writer_estimate": "[note-writer, dtype unstated] 384 dims at fp32 = 1536 B of embedding per concept. 24 concepts ≈ 36 KB; 100 (target_size) ≈ 150 KB; 360 ≈ 540 KB; 10,000 (the paper's stated ceiling) ≈ 14.6 MiB. Graph adjacency, typed edges, timestamps and SQLite overhead are additional and unquantified.",
+      "source": "[§3.4, §3.5, §3.6, §3.8, §4.3, §5.1, Table 2, Table 3, Table 4]"
+    },
+    "rho": {
+      "value": "absent",
+      "detail": "The paper never measures performance loss per sleep round. Recall is reported after zero or one sleep cycle only; there is no experiment in which the system is put through repeated sleep cycles and re-queried. Figure 3, the only 20-cycle result, is explicitly labelled a simulation ('Figure 3 shows simulated memory growth over twenty sleep cycles' [§4.3]) and plots concept count, not accuracy. Whether repeated downscaling and pruning degrade recall is unknown.",
+      "the_forgetting_numbers_are_not_rho": "The paper's 90.9% is a noise-removal rate, i.e. intended deletion, not degradation. It is reported after a single sleep cycle on a hand-constructed population of 5 important + 50 noise concepts [§4.3].",
+      "note_writer_edge_decay": "[note-writer, from Eq. 7] An edge that is never reinforced retains alpha^E raised to k after k cycles: 0.8^10 = 0.107, 0.8^20 = 0.0115. This is a rho-like quantity for edges, but the paper never measures what its loss does to retrieval.",
+      "source": "[§4.3, Figure 3]"
+    },
+    "amortization_A": {
+      "value": "not computable from this paper",
+      "detail": "S0's amortization identity C_avg = C_wake + C_sleep / N_q needs both C_sleep and N_q. C_sleep is absent (see B_s) and the paper reports no query-count distribution per sleep cycle. This paper falls squarely under the standing S0 §7 caveat that no paper in the corpus reports the N_q distribution."
+    }
+  },
+
+  "experiments": {
+    "hardware_and_stack": {
+      "machine": "MacBook Air, 8 GB RAM, approximately 4 GB at peak, no GPU acceleration [§3.8]; identified as Apple M1 in the latency measurement [§4.3].",
+      "extractor_model": "Llama 3.2, stated as 'two billion parameters, Q4_K_M quantized', served locally via Ollama [§3.2, §3.8, §4.1].",
+      "embedding_model": "sentence-transformers all-MiniLM-L6-v2, 384-dimensional [§3.2, §4.1].",
+      "implementation": "approximately three thousand lines of Python; NetworkX graph; SQLite persistence with optional PostgreSQL and automatic SQLite fallback on auth failure; FastAPI API layer; vanilla HTML/CSS/JS web interface [§3.5, §3.8].",
+      "training": "none. 'It requires no training or fine-tuning' [§3.8].",
+      "protocol": "'Each test was run five times; reported scores are the mean, with zero variance observed across all runs.' [§4.1]. Total wall-clock for the full suite (8 tests × 5 runs) ≈ 12 minutes [§3.8]. Latency micro-benchmark: 1000 queries per graph size using time.perf_counter() [§4.3]."
+    },
+    "benchmark_construction": "Author-built. 'We evaluate SCM using a benchmark suite of eight tests designed to measure memory capacity, retention accuracy, sleep consolidation benefit, forgetting effectiveness, graph traversal, latency scaling, and cross-session persistence. Each test runs against a live SCM instance with default hyperparameters. Test conversations simulate multi-turn dialogs in which a user states explicit facts about identity, work, location, hobbies, and preferences.' [§4.1]. The paper concedes its difficulty level: 'The ten-turn retention test uses explicit factual statements (e.g., \"I live in Mumbai\") that are straightforward to extract and retrieve. This represents a lower bound on memory system capability' [§4.3].",
+
+    "table_2_baselines": {
+      "caption": "Table 2: Comparison against simplified baselines on ten-turn conversations.",
+      "baseline_definitions": "'we compare against three simplified baselines that approximate existing approaches. The Vector DB baseline uses cosine similarity over all stored concepts without importance weighting, graph traversal, or forgetting; it corresponds to a standard FAISS-style retrieval system. The FIFO Buffer baseline retains only the seven most recent episodes with no long-term memory. The No-Forget Graph baseline uses the full semantic graph but disables the ForgettingModule, approximating a Mem0-style system without pruning.' [§4.2]",
+      "rows": [
+        {"system": "FIFO Buffer (7 episodes)", "recall": "8/22 (36.4%)", "ltm_size": 7},
+        {"system": "Vector DB (cosine only)", "recall": "19/22 (86.4%)", "ltm_size": 55},
+        {"system": "No-Forget Graph", "recall": "22/22 (100%)", "ltm_size": 72},
+        {"system": "SCM (full)", "recall": "22/22 (100%)", "ltm_size": 24}
+      ],
+      "paper_commentary": "'The No-Forget Graph matches SCM on recall but bloats memory by 3× because it never prunes. SCM is the only configuration that achieves perfect recall with a compact memory footprint.' [§4.2] (72/24 = 3.0 exactly.)",
+      "source": "[Table 2, §4.2]"
+    },
+
+    "table_3_benchmark_suite": {
+      "caption": "Table 3: SCM benchmark results. All eight tests pass with perfect scores.",
+      "rows": [
+        {"test": "Working Memory Capacity", "score": "1.00", "metric": "7/7 items enforced"},
+        {"test": "Memory Retention (5 turns)", "score": "1.00", "metric": "11/11 facts recalled"},
+        {"test": "Memory Retention (10 turns)", "score": "1.00", "metric": "22/22 facts recalled"},
+        {"test": "Sleep Consolidation Benefit", "score": "1.00", "metric": "6 important preserved, 12 noise removed"},
+        {"test": "Forgetting Effectiveness", "score": "1.00", "metric": "50/55 noise concepts removed (90.9%)"},
+        {"test": "Graph Traversal", "score": "1.00", "metric": "3/3 related concepts found"},
+        {"test": "Latency Scaling", "score": "1.00", "metric": "<1 ms with 360 concepts"},
+        {"test": "Multi-Session Persistence", "score": "1.00", "metric": "3/3 concepts survive restart"},
+        {"test": "Average", "score": "1.00", "metric": "8/8 tests passing"}
+      ],
+      "source": "[Table 3; also plotted as Figure 4]"
+    },
+
+    "table_4_ablation": {
+      "caption": "Table 4: Ablation study. Disabling any component degrades either recall, memory efficiency, or both.",
+      "rows": [
+        {"configuration": "Full SCM", "recall": "22/22 (100%)", "ltm_size": 24, "noise_retained": "0/50"},
+        {"configuration": "No WorkingMemory limit (unbounded)", "recall": "22/22 (100%)", "ltm_size": 89, "noise_retained": "35/50"},
+        {"configuration": "No ValueTagger (uniform importance)", "recall": "18/22 (81.8%)", "ltm_size": 55, "noise_retained": "50/50"},
+        {"configuration": "No NREM consolidation", "recall": "20/22 (90.9%)", "ltm_size": 42, "noise_retained": "12/50"},
+        {"configuration": "No REM dreaming", "recall": "22/22 (100%)", "ltm_size": 26, "noise_retained": "2/50"},
+        {"configuration": "No ForgettingModule", "recall": "22/22 (100%)", "ltm_size": 72, "noise_retained": "50/50"},
+        {"configuration": "No Self-Model", "recall": "22/22 (100%)", "ltm_size": 24, "noise_retained": "0/50"}
+      ],
+      "paper_commentary": "'Removing the working memory limit causes unbounded growth without consolidation pressure, retaining 35 noise concepts. Uniform importance (disabling the ValueTagger) causes the system to treat all concepts equally, preventing selective retention and dropping four important facts. Disabling NREM consolidation reduces recall to 90.9% because co-occurring concepts fail to strengthen. Disabling the ForgettingModule produces the largest memory bloat (72 concepts) while retaining all noise.' [§4.4]",
+      "authors_own_null_results": "'Two components show no measurable impact in the current benchmark. Disabling REM dreaming leaves recall unchanged (22/22) while slightly increasing LTM size (24 to 26) and retaining 2 additional noise concepts. ... Similarly, the Self-Model has no impact on recall or memory size because test queries do not target introspection. We consider both components architecturally necessary ... but acknowledge that the current evaluation does not validate their functional benefit.' [§4.4]",
+      "source": "[Table 4, §4.4]"
+    },
+
+    "forgetting_effectiveness_detail": "'To evaluate intentional forgetting, we populate the system with fifty-five concepts: five explicitly important facts and fifty noise concepts with low importance scores. After one sleep cycle, the system retains all five important concepts while removing forty-five of the fifty noise concepts, yielding a 90.9% noise reduction rate. Before a bug fix in the forgetting formula, the decay weight inadvertently boosted new concepts, resulting in 0% noise removal. After correcting the weight from 0.4 to 0.2, the module functions as designed.' [§4.3]. Figure 5 repeats: 'With the buggy formula, all 55 concepts survive... With the corrected formula, 45 of 50 noise concepts are pruned while all 5 important concepts survive.'",
+
+    "memory_growth_simulation": "'Figure 3 shows simulated memory growth over twenty sleep cycles. Without the ForgettingModule, the graph grows linearly (110 concepts after 20 cycles). With forgetting enabled, growth plateaus as the pruning rate adapts to memory saturation.' [§4.3]. The word 'simulated' is the paper's own.",
+
+    "persistence": "'After saving memory to disk, restarting the server, and reloading, all stored concepts and relations are recovered intact.' [§4.3 'Multi-Session Persistence.'] — 3/3 concepts [Table 3].",
+
+    "variance_explanation": "'The zero variance observed across five runs is attributable to the deterministic nature of the extraction and retrieval pipeline with fixed random seeds: the local LLM produces consistent concept extractions for the same inputs, and the graph algorithms have no stochastic components beyond REM random walks (which do not affect the explicitly queried facts). This consistency is a property of the current benchmark, not of the system in general; stochasticity would emerge with larger LLMs, varied phrasing, or adversarial inputs.' [§4.3]",
+
+    "not_measured": [
+      "Any comparison against an actual running MemGPT, Mem0, Zep, WSCL, SleepGate, or FAISS system. All three baselines are the author's own simplified re-implementations [§4.2].",
+      "Recall after more than one sleep cycle.",
+      "Any multi-user or multi-agent experiment, despite multi-agent synchronization being claimed as contribution 4 [§1] and marked as a supported feature in Table 1.",
+      "Any measurement of the web visualization interface, also claimed in contribution 4 [§1].",
+      "Any latency above 360 concepts, or anywhere near the stated 10,000-concept ceiling [§5.1].",
+      "Prompt token counts, TTFT, or end-to-end response latency.",
+      "Per-turn extraction latency, i.e. the component the paper itself calls dominant [§3.8]."
+    ]
+  },
+
+  "scale_ceiling": "Single user, single machine, no training. Largest conversation: 10 turns containing 22 explicitly stated facts [Table 2, Table 3]. Largest graph ever exercised: 360 concepts, and only in the latency micro-benchmark [Table 3, §4.3]. Largest forgetting population: 55 concepts (5 important + 50 noise), one sleep cycle [§4.3]. Longest sleep horizon: 20 cycles, and that result is simulated rather than measured [§4.3, Figure 3]. Models: a locally-served quantized Llama 3.2 stated at 2B parameters plus a 384-dimensional MiniLM embedder, both frozen [§3.2, §3.8]. Hardware: one Apple M1 MacBook Air with 8 GB RAM, no GPU, ~4 GB peak, whole benchmark in ~12 minutes [§3.8, §4.3]. The paper's own stated architectural ceiling is roughly ten thousand concepts before NetworkX becomes the bottleneck, with 'Production deployments serving millions of users would require a specialized graph database such as Neo4j' [§5.1]. Distance to deployment is therefore three to five orders of magnitude in state size and unbounded in user count.",
+
+  "concept_ledger_delta": {
+    "new": [
+      {"name": "multi-dimensional (4D) value tagging", "definition": "importance as a weighted sum of novelty, absolute emotional valence, task relevance, and normalized repetition", "source": "[§3.3, Eq. 1–5]", "why_it_matters": "The E path's first explicit alternative to recency or single-score importance; the object that makes selective deletion possible at all."},
+      {"name": "adaptive forgetting threshold", "definition": "a prune threshold derived from the mean and spread of importance across the store, scaled by store size relative to a target", "source": "[§3.6, Eq. 10]", "why_it_matters": "This is the paper's proposed capacity-bounding mechanism for E, and the place where the chapter's critical reading has to land."},
+      {"name": "synaptic downscaling on an external store", "definition": "a constant multiplicative contraction applied to every edge strength once per sleep cycle", "source": "[§3.6, Eq. 7]", "why_it_matters": "Structurally identical to the book's retention gate alpha_t, but applied to E rather than W, and constant rather than learned. This is the cleanest cross-layer analogy in the whole E path and it belongs in Part III."},
+      {"name": "NREM/REM split at the semantic level", "definition": "a two-stage offline pass in which stage one reinforces and contracts existing associations and stage two generates new ones by random walk", "source": "[§3.6, Eq. 6–8]", "why_it_matters": "It separates 'consolidate what you have' from 'invent what you do not have' as two distinct (U-E) operators."},
+      {"name": "state-dependent sleep trigger (entropy / conflict density / time)", "definition": "sleep initiates when buffer importance entropy, contradicts-edge density, or elapsed time crosses a threshold", "source": "[§3.6]", "why_it_matters": "Every other paper in the corpus schedules sleep. This one makes the schedule a function of the state, which is the right shape for a serving system, even if the thresholds are unjustified."},
+      {"name": "conflict density", "definition": "the fraction of edges in the store that are typed contradicts", "source": "[§3.6]", "why_it_matters": "An E-path health metric; the closest thing in the corpus to a 'store is inconsistent' signal."},
+      {"name": "computational self-model", "definition": "a node representing the system itself, of maximal importance, linked to capability concepts and runtime counters", "source": "[§3.7]", "why_it_matters": "Registered for completeness. The paper's own ablation shows it has zero measurable effect [Table 4]."}
+    ],
+    "extended_or_renamed": [
+      {"existing": "retention gate (Miras, ch13, alpha_t)", "extension": "extended from decay of fast weights to decay of external-graph edge strengths. Same algebraic form, same direction convention (alpha = fraction retained), different substrate and constant rather than data-dependent.", "source": "[Eq. 7 vs STYLE-NOTATION §1.2 P4]"},
+      {"existing": "cache eviction policy ↔ learned eviction (Rosetta row, STYLE-NOTATION §3)", "extension": "SCM supplies the concrete E-path instance: eviction by a composite value score with a size-adaptive threshold. Note that it is scored, not learned.", "source": "[Eq. 9, Eq. 10]"},
+      {"existing": "active forgetting / intentional forgetting", "extension": "the paper uses these as synonyms for value-based deletion. The chapter should adopt one and note the alias, following the retention-gate precedent.", "source": "[§2.3, §3.6, Abstract]"}
+    ],
+    "contested": [
+      {"claim": "'sleep' implies weight consolidation", "contest": "SCM shows the sleep metaphor is fully separable from the Theta layer: it runs a complete NREM/REM/prune lifecycle with the weights frozen. This is a useful negative result for the monograph's three-path spine and it is why the S0 §3.1 axis assignment must be corrected.", "source": "[§3.8]"}
+    ]
+  },
+
+  "open_questions": [
+    "Hyperparameter provenance: 'These values were validated qualitatively on the benchmark suite; a systematic hyperparameter ablation is deferred to future work.' [§3.6] — eta_heb, alpha^E, lambda_rec, vartheta_e, vartheta_c, tau all remain unjustified.",
+    "Harder evaluation: 'real-world deployments require handling implicit preferences, temporal reasoning, contradictory information resolution, and ambiguous references. We are developing harder evaluations that test these dimensions.' [§4.3]",
+    "Benchmarks for the two unvalidated components: 'Developing benchmarks that measure associative inference and introspective accuracy is a priority for future work.' [§4.4]; 'In the current benchmark, all queries target explicitly stated facts, so such inferential connections are never tested; this example motivates the development of associative inference benchmarks.' [Appendix A]",
+    "Scaling the store: 'At scale, NetworkX becomes a bottleneck beyond approximately ten thousand concepts. Production deployments serving millions of users would require a specialized graph database such as Neo4j.' [§5.1]",
+    "Extraction error propagation: 'Concept extraction quality depends on the local LLM, and errors in extraction propagate into the memory graph.' [§5.1] — no error-rate measurement is given, and no mechanism corrects a bad extraction after the fact.",
+    "Contradiction resolution: §3.2 promises that a contradicts edge 'flags the conflict for resolution during sleep', but Algorithm 1 contains no resolution step. Conflict density only serves as a sleep trigger [§3.6]. The resolution procedure is simply missing.",
+    "Robustness under stochasticity: 'stochasticity would emerge with larger LLMs, varied phrasing, or adversarial inputs.' [§4.3] — untested.",
+    "Continuous existence: 'The system lacks continuous existence, running only when API calls are made rather than maintaining background activity.' [§5.1]; proposed as future work as 'a background processing thread with automatic sleep cycles and real-time memory decay' [§5.3].",
+    "Predictive self-modeling and prefetching: 'the system anticipates which memories will be relevant and pre-fetches them, could reduce retrieval latency and improve conversational coherence.' [§5.3]",
+    "Multimodality: 'SCM processes text only; it has no sensory modalities for vision, audio, or proprioception.' [§5.1]; embodied memory and multi-modal dreams proposed [§5.3].",
+    "Neuromorphic hardware: 'integration with neuromorphic hardware could bridge the gap between algorithmic sleep and biologically plausible neural dynamics.' [§5.3]",
+    "Auditability of deletion: 'we recommend that production deployments include audit logging of all forgetting decisions and provide users with explicit control over retention preferences' [Broader Impact] — recommended, not implemented, not evaluated.",
+    "Multi-agent memory synchronization: claimed as contribution 4 [§1] and marked supported in Table 1, but never described in §3 and never evaluated. Its mechanism is an open question raised by the paper's own claims.",
+    "[note-writer, for the chapter's bridge-out] Does a value-threshold delete policy survive contact with a query distribution that is not known at write time? SCM's v_task depends on 'the current conversational goal' [Eq. 3], so importance is measured against the goal in force when the concept was written. Nothing in the paper addresses what happens when a later session has a different goal and the relevant concept has already been pruned. This is the E path's version of the irreversibility problem and it is the natural handoff to the capacity/rate-distortion chapters."
+  ],
+
+  "unfavorable_facts": [
+    {
+      "fact": "The paper performs no weight update of any kind, which invalidates its placement on the Theta path and, more importantly, means the paper's title phrase 'Sleep-Consolidated Memory' consolidates nothing into a model. '[SCM] requires no training or fine-tuning; all components use existing pretrained models or algorithmic logic.'",
+      "location": "[§3.8]",
+      "why_unfavorable": "The paper positions itself against EWC by saying EWC 'operates at the parameter level rather than the memory architecture level' [§2.2], but the biological consolidation it invokes [8, 11] is a parameter-level phenomenon. The analogy it claims as its foundation is precisely the one it does not implement."
+    },
+    {
+      "fact": "Equation 10 as printed does the opposite of what the surrounding text claims. The paper writes theta_f = mu_I − sigma_I · (|G| / target_size) and immediately states 'As |G| grows beyond target_size, theta_f rises, increasing forgetting pressure.' With sigma_I >= 0 and |G| >= 0, the subtracted term is non-negative and increasing in |G|, so theta_f is monotonically non-increasing in |G| — larger graphs get a lower prune threshold and therefore less forgetting, not more.",
+      "location": "[Eq. 10 and the sentence immediately following it, §3.6]",
+      "why_unfavorable": "This is the paper's core capacity-bounding mechanism and the stated cause of the Figure 3 plateau. As printed, it cannot produce that plateau. Either the equation has a sign error or the text is wrong; the paper does not release code [Code Availability], so the reader cannot determine which.",
+      "note_writer_flag": "The monotonicity argument is the note-writer's, derived from the printed equation. The quoted claim is the paper's."
+    },
+    {
+      "fact": "Equation 9's decay term contradicts the paper's own explanation of the bug it fixed. Eq. 9 defines delta(c) = exp(−lambda · Delta t), so a just-accessed concept (Delta t = 0) has delta = 1 and therefore (1 − delta) = 0 — no bonus at all. But §3.6 explains the bug as: 'beta_2 = 0.4, which inadvertently boosted new concepts (for whom 1 − delta(c) ≈ 1)', which requires delta(c) ≈ 0, i.e. large Delta t, i.e. old concepts.",
+      "location": "[Eq. 9 vs. the 'An initial implementation' paragraph, §3.6]",
+      "why_unfavorable": "The headline 90.9% figure comes entirely from changing this one coefficient from 0.4 to 0.2. The published formula and the published account of what the coefficient does are mutually inconsistent, so the mechanism behind the headline result cannot be reconstructed from the paper.",
+      "note_writer_flag": "The evaluation delta(0) = 1 is the note-writer's, from the paper's own equation."
+    },
+    {
+      "fact": "The only multi-cycle result in the paper is simulated, not measured: 'Figure 3 shows simulated memory growth over twenty sleep cycles.'",
+      "location": "[§4.3, Figure 3]",
+      "why_unfavorable": "Bounded growth over many cycles is the paper's central claim about capacity. It is supported by a simulation whose generating assumptions are never stated, not by a run of the system. Every measured result in the paper covers at most one sleep cycle."
+    },
+    {
+      "fact": "The headline noise-reduction number is attached to two mutually inconsistent counts. Table 3 reports '50/55 noise concepts removed (90.9%)'. §4.3 and Figure 5 report 'removing forty-five of the fifty noise concepts, yielding a 90.9% noise reduction rate' and '45 of 50 noise concepts are pruned'. 45/50 = 90.0%, not 90.9%; 50/55 = 90.9%, but the population contains only 50 noise concepts (5 of the 55 are the important facts, which the same sentence says all survive).",
+      "location": "[Table 3 row 'Forgetting Effectiveness' vs. §4.3 'Forgetting Effectiveness.' vs. Figure 5 caption; the 90.9% figure also appears in the Abstract and Conclusion]",
+      "why_unfavorable": "The number in the abstract, the number in the results table, and the number in the results prose cannot all be correct. This is the paper's single most-quoted figure."
+    },
+    {
+      "fact": "The three baselines are the author's own simplified re-implementations, not the systems they stand for: 'we compare against three simplified baselines that approximate existing approaches ... it corresponds to a standard FAISS-style retrieval system ... approximating a Mem0-style system without pruning.'",
+      "location": "[§4.2]",
+      "why_unfavorable": "No published memory system is ever run. Table 1's seven-feature comparison against MemGPT, Mem0 and WSCL is likewise a hand-authored feature checklist with no measurement behind any cell, and it awards SCM a check in every row including 'Multi-agent sync', a capability the paper never describes or tests."
+    },
+    {
+      "fact": "The benchmark has no headroom: all eight tests score exactly 1.00, with an average of 1.00, and zero variance across five runs.",
+      "location": "[Table 3, Figure 4, §4.1]",
+      "why_unfavorable": "A suite on which the proposed system is saturated cannot rank alternatives or detect regressions. The paper acknowledges the difficulty problem — 'This represents a lower bound on memory system capability' [§4.3] — but still reports the saturated scores as the headline evidence. Figure 4 is a bar chart of eight identical 1.00 bars."
+    },
+    {
+      "fact": "The hyperparameters that produce the headline results were tuned on the benchmark that reports them. The importance weights: 'The weights were determined through ablation on the benchmark suite' [§3.3]. The retention weight: 'beta_2 = 0.2 was determined through grid search over beta_2 in [0.1, 0.5], selecting the value that maximized noise reduction while preserving all important concepts' [§3.6] — i.e. the tuning objective is literally the reported metric.",
+      "location": "[§3.3, §3.6]",
+      "why_unfavorable": "There is no held-out set anywhere in the paper. Both the 100% recall and the 90.9% noise reduction are in-sample numbers."
+    },
+    {
+      "fact": "Two of the five headline components have no measurable effect in the paper's own ablation. Removing REM dreaming leaves recall at 22/22; removing the Self-Model reproduces the full system's numbers exactly (22/22, LTM 24, 0/50 noise). The authors state this plainly: 'Two components show no measurable impact in the current benchmark ... we ... acknowledge that the current evaluation does not validate their functional benefit.'",
+      "location": "[Table 4 rows 'No REM dreaming' and 'No Self-Model'; §4.4]",
+      "why_unfavorable": "Contribution 1 claims novelty for combining five components 'within a single system' [§1]. Two of the five are unvalidated, and one of those (REM) is half of the NREM/REM distinction the paper uses to differentiate itself from every baseline in Table 1."
+    },
+    {
+      "fact": "The 'No REM dreaming' ablation is mechanically unexplainable from the paper's own equations. Disabling REM is reported to increase LTM size from 24 to 26 and retain 2 additional noise concepts [Table 4]. But REM's only effect in Algorithm 1 is to add related_to edges (line 14), and the retention score r(c) [Eq. 9] depends only on I(c) [Eq. 5] and time since last access — neither of which reads any edge. Removing REM should change the node count by exactly zero.",
+      "location": "[Table 4 vs. Algorithm 1 line 14 vs. Eq. 5 and Eq. 9]",
+      "why_unfavorable": "Either there is an undocumented coupling between edges and importance, or the ablation numbers are not reproducible from the described system.",
+      "note_writer_flag": "The impossibility argument is the note-writer's, derived from the paper's own equations and pseudocode."
+    },
+    {
+      "fact": "The ablation protocol is undefined where its two experiments meet. Table 4 reports a 'Noise Retained x/50' column alongside a 22-fact ten-turn recall, but §4.3 describes the 50-noise-concept population as a separate injected test with 55 total concepts. The paper never states how many concepts a ten-turn conversation produces, nor how 50 noise concepts come to be present in it.",
+      "location": "[Table 4 caption 'after ten-turn conversations' vs. §4.3 'we populate the system with fifty-five concepts']",
+      "why_unfavorable": "The single table that carries the ablation evidence mixes two settings without saying so."
+    },
+    {
+      "fact": "An unsupported comparative claim against unnamed systems: 'This performance matches or exceeds the reported recall of production memory systems while adding the benefits of sleep consolidation and active forgetting.'",
+      "location": "[§4.3 'Recall Accuracy.']",
+      "why_unfavorable": "No system is named, no number is quoted, and no citation is attached."
+    },
+    {
+      "fact": "The lambda = 0.01 calibration is not self-consistent for any natural time unit. §3.6: 'The decay rate lambda = 0.01 was set so that a concept accessed one hour ago retains approximately 96% of its recency score.' Solving exp(−0.01 · Delta t) = 0.96 gives Delta t ≈ 4.08. With Delta t in hours the retained fraction is exp(−0.01) = 99.0%; in minutes, exp(−0.6) = 54.9%; in seconds, effectively zero.",
+      "location": "[§3.6]",
+      "why_unfavorable": "The only worked calibration of the forgetting timescale in the paper does not reproduce. The unit of Delta t is never stated anywhere.",
+      "note_writer_flag": "The arithmetic is the note-writer's; the claim and the constant are the paper's."
+    },
+    {
+      "fact": "The base of the logarithm in the sleep-trigger entropy is never stated, and under either plausible base the trigger is close to always-on. With k equally weighted items, H = log k; the threshold vartheta_e = 0.9 is exceeded at k >= 3 in nats (log 3 = 1.0986) or k >= 2 in bits (log2 2 = 1.0), inside a buffer capped at 7.",
+      "location": "[§3.6 'Trigger.']",
+      "why_unfavorable": "If sleep fires every two to three turns, then the elapsed-time trigger tau = 1 hour never binds, and the 'offline' framing of the sleep phase — which the paper contrasts against Mem0 being 'awake only' [§2.1] — is on the wake critical path in practice. The paper never reports how many sleep cycles ran during any experiment.",
+      "note_writer_flag": "The threshold arithmetic is the note-writer's."
+    },
+    {
+      "fact": "The source code is not available: 'The source code for SCM is not publicly available at this time. The authors intend to release an open-source reference implementation upon publication of a peer-reviewed manuscript.'",
+      "location": "[Code Availability]",
+      "why_unfavorable": "Combined with the two internal formula inconsistencies above and the absence of a held-out set, nothing in the paper is independently checkable. The paper also self-describes as 'a research preview' [Abstract] and reports no venue."
+    },
+    {
+      "fact": "Figure 2's diagram body and its own caption disagree about when pruning runs. The caption says 'Forgetting is applied after REM, before returning to WAKE', matching Algorithm 1; the diagram body shows 'value < threshold' transitions leaving both NREM and REM plus the annotation 'WAKE with forgetting at each transition'.",
+      "location": "[Figure 2 body vs. Figure 2 caption vs. Algorithm 1 lines 18–24]",
+      "why_unfavorable": "The number of prune passes per cycle determines the effective forgetting rate, which is the paper's principal claim."
+    },
+    {
+      "fact": "The extractor model is specified in a way that does not correspond to a released artifact: 'Llama 3.2 (two billion parameters, Q4_K_M quantized)'.",
+      "location": "[§3.2; repeated as 'the local Llama 3.2 model' in §4.1]",
+      "why_unfavorable": "Every result depends on this model's extraction quality — the paper says so [§5.1] — and the model is not identified precisely enough to rerun.",
+      "note_writer_flag": "[note-writer] The mismatch is flagged on the strength of the paper's own text; confirming which checkpoint was actually used is recorded in todo_verify rather than asserted here."
+    },
+    {
+      "fact": "Claimed contribution 4 — 'the complete system design, including multi-agent memory synchronization and a web-based visualization interface' — is neither described in Methods nor evaluated. Multi-agent sync appears only in §1 and as a check mark in Table 1; the web interface appears only as 'the web interface uses vanilla HTML, CSS, and JavaScript without frontend frameworks' [§3.8].",
+      "location": "[§1 contributions; Table 1 row 'Multi-agent sync'; §3.8]",
+      "why_unfavorable": "One quarter of the stated contributions has no method section and no experiment."
+    },
+    {
+      "fact": "The reported latency excludes the component the paper itself identifies as dominant. L_w is measured only for graph search [§4.3], while the benchmark wall-clock is 'dominated by LLM inference latency' [§3.8] from the wake-time MeaningEncoder call, which is never timed.",
+      "location": "[§4.3 'Latency.' vs. §3.8]",
+      "why_unfavorable": "The abstract's 'Memory search latency remains below one millisecond' is true and, for a serving engineer, nearly irrelevant: the per-turn cost is an LLM call whose latency the paper does not report."
+    }
+  ],
+
+  "systems_implications": {
+    "decode_impact": "Zero. Theta is frozen and W does not exist [§3.8], so no decode kernel, no attention path, and no weight layout changes. Batching is unaffected: there is no per-request weight state, which means SCM does not break the shared-weights assumption that the W and Theta paths break. [note-writer inference, grounded in §3.8.] For the monograph's reader this is the load-bearing contrast: the E path buys its capacity entirely outside the accelerator.",
+    "where_the_wake_cost_actually_lands": "Two extra model calls per user turn, neither of them timed by the paper: one MeaningEncoder generation on the local quantized LM [§3.2] and one embedding forward per extracted concept [§3.2]. The paper's only relevant statement is that the 12-minute benchmark total is 'dominated by LLM inference latency' [§3.8]. In a fleet this is an additional small-model generation on the critical path of every turn — the dominant serving cost of the design, and unmeasured.",
+    "retrieval_working_set": "Semantic search is a brute-force cosine over all stored concept embeddings [§3.5; the Vector DB baseline is described as 'cosine similarity over all stored concepts', §4.2]. [note-writer, dtype unstated] At 384 dims and fp32, the embedding table is 1536 B per concept: 360 concepts ≈ 540 KB, which fits comfortably in an M1's L2, which is why the measured sub-0.3 ms at 360 concepts [§4.3] is unsurprising. At the paper's own 10,000-concept ceiling [§5.1] the table is ≈ 14.6 MiB — out of L2, into L3 and DRAM — and no measurement exists above 360. The abstract's 'hundreds of stored concepts' is exactly the measured range and licenses no extrapolation.",
+    "state_bytes_per_session": "Never stated by the paper. [note-writer, dtype unstated] At the default target_size = 100 [§3.6] the embedding component of per-user state is ≈ 150 KB, plus typed edges, timestamps, access counters and SQLite overhead. For comparison, this is three to four orders of magnitude below a per-session KV cache and two to three below a per-user LoRA delta — the E path's state is small, and that is its structural advantage.",
+    "sleep_job_placement": "The sleep phase contains no model call: Algorithm 1 is pure graph arithmetic (Hebbian products, a scalar multiply over all edges, three 5-step random walks, one threshold sweep). It is a CPU background compaction job, not a GPU training job. [note-writer, from Algorithm 1.] This is the sharpest cost-structure contrast available for Part III: the Theta path's sleep is a fine-tune that must be scheduled against accelerator capacity; SCM's sleep is closer to an LSM-tree compaction and can run on the serving host's spare CPU.",
+    "memory_hierarchy": "Concept embeddings and the NetworkX graph live in process RAM; durability is SQLite on local disk with an optional PostgreSQL backend [§3.5]. The whole stack peaks at ~4 GB of an 8 GB machine, and that figure includes the quantized LLM [§3.8]. Nothing in SCM touches HBM beyond the ordinary model weights. In the Rosetta terms of STYLE-NOTATION §3, SCM's E is a per-user disk-backed store, not a new cache class in the accelerator — unlike the per-session weight state that the W and Theta paths introduce.",
+    "the_one_substantiated_serving_win": "Retrieval candidate pool shrinks from 72 concepts (no forgetting) to 24 (full SCM) at identical recall [Table 2, Table 4]. For a RAG-style prompt this is a 3x reduction in the pool that feeds the retrieved set. But the paper reports no k, no prompt token counts, and no TTFT, so the actual token saving is unquantified. [note-writer: the 3x is the paper's own arithmetic, §4.2; the token consequence is the inference.]",
+    "amortization": "Cannot be evaluated. S0's C_avg = C_wake + C_sleep/N_q needs C_sleep (absent) and N_q (absent). Worse, the entropy trigger appears to fire every two to three turns [see unfavorable_facts on vartheta_e], which would make N_q small and the amortization argument weak — but the paper reports neither the trigger firing rate nor the query count, so this remains an inference.",
+    "operational_hazards_for_a_serving_engineer": [
+      "Deletion is irreversible and threshold-driven. If v_task is computed against the goal in force at write time [Eq. 3], a concept can be pruned because it was irrelevant to the session that created it and then be needed by a later session. The paper offers no undo, no tombstone, and no audit trail — it only recommends audit logging as a deployment practice [Broader Impact].",
+      "A single misconfigured coefficient silently disables the entire mechanism: w_rec = 0.4 produced 0% noise removal with no error and no signal [§3.6, §4.3, Figure 5]. Any production deployment needs a monitored deletion-rate metric, which the paper does not define.",
+      "The extraction LM is on the critical path and its errors are permanent: 'errors in extraction propagate into the memory graph' [§5.1], with no correction pass anywhere in the design.",
+      "The stated store ceiling is ~10,000 concepts per NetworkX process [§5.1]; a multi-tenant deployment therefore needs either process-per-user or a real graph database, and neither is designed or measured."
+    ]
+  },
+
+  "figures": [
+    {"id": "Algorithm 1", "worth_reproducing": "yes — highest value single object in the paper", "shows": "The full SleepCycle orchestrator in 25 lines: trigger disjunction, Hebbian loop over episode concept pairs, synaptic_downscale(G, alpha=0.8), transfer_to_ltm, three top-k seeds with 5-step random walks and a contradicts guard, then adaptive_threshold(|G|, target_size=100) and the prune sweep with S(c) <- 0.8·I(c) + 0.2·(1 − decay(c)). It is the only place the numeric blend weights appear, and it fixes the operator order that Figure 2 muddles."},
+    {"id": "Figure 1", "worth_reproducing": "yes", "shows": "System architecture: the wake path (User Input → MeaningEncoder → ValueTagger → WorkingMemory, 7 items FIFO) and the sleep path (trigger on entropy/conflict/time → NREM → REM → Forgetting), both over a Long-Term Memory of NetworkX graph plus SQLite, with the three retrieval strategies and the Self-Model hanging off it. The cleanest available picture of an E-path system's anatomy."},
+    {"id": "Figure 2", "worth_reproducing": "yes, with the inconsistency called out", "shows": "The WAKE → NREM → REM → FORGET → WAKE state machine with the three numeric trigger conditions (entropy > 0.9, conflict > 0.3, t > 1 hr) printed on the transitions. Reproduce it next to Algorithm 1 and note that the diagram body's 'forgetting at each transition' contradicts its own caption."},
+    {"id": "Figure 3", "worth_reproducing": "yes, but only if labelled 'simulated' as the paper does", "shows": "Concept count over 20 sleep cycles with and without the ForgettingModule: linear growth to 110 concepts without, a plateau with. This is the capacity-bounding claim of the whole paper, and reproducing it without the word 'simulated' would misrepresent the evidence [§4.3]."},
+    {"id": "Figure 5", "worth_reproducing": "yes — the most instructive figure in the paper", "shows": "Two bar pairs contrasting w_rec = 0.4 (0% noise reduction, all 55 concepts survive) against w_rec = 0.2 (90.9% noise reduction, 5 important preserved). It is the paper's own disclosure that its headline result hinges on one coefficient, and it is the best teaching object in the corpus for how brittle a threshold-based deletion policy is."},
+    {"id": "Table 2", "worth_reproducing": "yes", "shows": "Recall and LTM size against the three simplified baselines: FIFO 8/22 at size 7, Vector DB 19/22 at 55, No-Forget 22/22 at 72, SCM 22/22 at 24. The recall-versus-footprint tradeoff in four rows. Must be captioned with the fact that the baselines are the author's re-implementations [§4.2]."},
+    {"id": "Table 4", "worth_reproducing": "yes", "shows": "The component ablation, including the two null results the authors concede (REM and Self-Model) and the two components that actually carry the result (ValueTagger, 18/22; ForgettingModule, size 72 with all noise retained)."},
+    {"id": "Table 1", "worth_reproducing": "only as an object of criticism", "shows": "A seven-feature check-mark comparison against MemGPT, Mem0 and WSCL in which SCM alone scores on every row. No measurement stands behind any cell, and the 'Multi-agent sync' row credits a capability the paper never describes."},
+    {"id": "Figure 4", "worth_reproducing": "no", "shows": "A horizontal bar chart of the eight benchmark tests, all at exactly 1.00. It contains no information not in Table 3, and reproducing it would give visual weight to a saturated benchmark."},
+    {"id": "Appendix A", "worth_reproducing": "yes, as a short quotation", "shows": "The worked REM example — 'works in healthcare' → 'studies anatomy' → 'enjoys hiking', producing a new related_to edge that later answers 'Do you know any outdoor activities related to my profession?'. It is the only concrete illustration of what REM is for, and the appendix itself concedes that 'In the current benchmark, all queries target explicitly stated facts, so such inferential connections are never tested.'"}
+  ],
+
+  "cross_path_citations": {
+    "bibliography_size": "12 references [References, entries 1–12].",
+    "E_path": "Engaged, and this is where the paper actually lives. Mem0 [1] (arXiv:2504.19413) and MemGPT [7] (arXiv:2310.08560) are both cited and discussed at length in §2.1; RAG [3] (Lewis et al.) frames the problem in §1 and §2.4; FAISS, Annoy and LangChain memory wrappers are named in §2.4 without citations. Lost-in-the-middle [4] supports the context-window critique in §1.",
+    "Theta_path": "Engaged only to be dismissed, and only through two entries. EWC [2] (Kirkpatrick et al. 2017) is cited in §2.2 and set aside as operating 'at the parameter level rather than the memory architecture level'. Wake-Sleep Continual Learning [10] (arXiv:2401.08623) is cited in §2.2 as 'the most biologically plausible sleep mechanism in AI to date' and set aside because it 'targets image classification'. Absent entirely: SEAL, Nested Learning, LoRA, ROME, MEMIT, Generative Adapter, Memory Layers, and every capacity paper in the S0 corpus. 'Language Models Need Sleep' (2606.03979) postdates this paper by six weeks, so its absence is chronological rather than a silence.",
+    "W_path": "Engaged only through one entry, SleepGate [12] (arXiv:2603.14517), cited in §2.1 as KV-cache eviction and dismissed: 'This is fundamentally cache management rather than semantic memory consolidation; it operates on token-level projections, not concepts, and clears between sessions.' The entire TTT and fast-weights line is absent: no Titans, no TTT, no DeltaNet, no Mamba, no Miras, no Atlas, no TNT. 'Do Language Models Need Sleep?' (2605.26099) postdates this paper.",
+    "the_finding": "The paper does not cite Letta's 'Sleep-time Compute' (arXiv:2504.13171) — the paper that named this research line and that predates SCM by a full year. It cites no work from the fast-weights or test-time-training literature at all. Its only contacts with the Theta and W paths are two dismissals, each on the grounds of being at the wrong level of abstraction (parameters, or token-level cache) rather than on any measured comparison. This is the sharpest instance in the corpus of the S0 §5 phenomenon: the three paths do not read each other. SCM reinvents retention as edge downscaling [Eq. 7] in a form algebraically identical to the retention gate the W path had already formalized, apparently without knowing that literature exists.",
+    "bio_and_theory": "Well engaged, and this is the paper's real intellectual lineage: Rasch and Born [8] on sleep replay, Tononi and Cirelli [11] on synaptic homeostasis, Miller [6] for the 7-item working-memory cap, Metzinger [5] for the self-model, and Sha et al. [9] as a forgetting survey. §2.3 explicitly maps each biological principle to its computational stand-in.",
+    "for_the_monograph": "This chapter is the natural place to state the S0 §5 disconnect as a [평가] block, because the disconnect here is not merely a missing citation — it is a rediscovery. The chapter should print Eq. 7 next to (M2) and let the reader see that the E path and the W path independently arrived at 'multiply the old state by a retention factor before adding the new write'."
+  },
+
+  "todo_verify": [
+    {"item": "Whether 'Llama 3.2 (two billion parameters, Q4_K_M quantized)' [§3.2] names a released checkpoint, and if not, which checkpoint was actually used.", "search_term": "Llama 3.2", "settles_it": "The string appears only in §3.2 and §4.1; the paper gives no model card, no HuggingFace ID, and no Ollama tag. Not resolvable from the text."},
+    {"item": "Base of the logarithm in H(W), which determines when the entropy sleep trigger fires.", "search_term": "entropy", "settles_it": "Appears in §3.6 ('Memory entropy is defined as the Shannon entropy of the normalized importance distribution') and §3.1. Base never given."},
+    {"item": "Time unit of Delta t in delta(c) = exp(−lambda · Delta t).", "search_term": "lambda = 0.01", "settles_it": "Appears once in §3.6 with the '96% after one hour' calibration, which does not reproduce in seconds, minutes or hours. Unit never given."},
+    {"item": "Value of beta_1 in the buggy configuration, before beta_2 was corrected from 0.4 to 0.2.", "search_term": "beta_2 = 0.4", "settles_it": "§3.6 gives only beta_2 for the buggy version; Algorithm 1 line 20 gives 0.8/0.2 for the corrected one. Whether beta_1 also changed is unstated."},
+    {"item": "Whether the intended noise-removal count is 50/55 [Table 3] or 45/50 [§4.3, Figure 5].", "search_term": "90.9", "settles_it": "The string 90.9% appears in the Abstract, Table 3, §4.3, Figure 5 caption and the Conclusion, attached to both counts. Not resolvable without the code, which is unreleased."},
+    {"item": "Protocol behind the 'Sleep Consolidation Benefit' test, scored 1.00 with metric '6 important preserved, 12 noise removed'.", "search_term": "Sleep Consolidation Benefit", "settles_it": "Appears only in Table 3. No population size, no pass criterion, no baseline stated anywhere in §4."},
+    {"item": "The multi-agent memory synchronization mechanism.", "search_term": "multi-agent", "settles_it": "Appears only in §1 (contribution 4) and as a Table 1 row. No method section, no experiment."},
+    {"item": "Contents of Appendix B, 'SleepCycle Algorithm'.", "search_term": "SleepCycle Algorithm", "settles_it": "The section heading exists with no body text; the Algorithm 1 float is typeset near the References. Whether Appendix B was intended to contain more than the float is unresolvable from the extracted text."},
+    {"item": "Storage dtype and precision of the 384-dimensional embeddings, needed to convert C from concepts to bytes.", "search_term": "384", "settles_it": "Appears once, in §3.2. No dtype anywhere in the paper. All byte figures in this note that depend on it are marked [note-writer]."},
+    {"item": "Number of sleep cycles that actually executed during the 10-turn benchmark, needed for N_q and for the amortization identity (A).", "search_term": "sleep cycle", "settles_it": "The phrase appears in §3.6, §3.7, §4.3 and Figure 3, always about the mechanism or the simulation, never as a count from a real run."},
+    {"item": "Whether Eq. 2's sigma is logistic or tanh, since the paper asserts a [-1,1] range for a function it writes as sigma.", "search_term": "vemotional", "settles_it": "Eq. 2 and its one-line introduction in §3.3 are the only occurrences. Never specified."},
+    {"item": "The fusion rule and top-k of the three-way retrieval ('a ranked fusion of these three sources').", "search_term": "ranked fusion", "settles_it": "Appears once, in §3.5. No weights, no k, no reranker."},
+    {"item": "The definition of contradicts(D, G), the guard that decides whether a REM dream is integrated.", "search_term": "contradicts", "settles_it": "Appears in §3.2 (as an edge predicate), §3.6 (conflict density), Algorithm 1 line 13, and Appendix A. The predicate itself is never defined."}
+  ],
+
+  "note_file": "/home/jimmy/repos/neural-memory-study/notes/stc-v2/scm-sleep-consolidated.json"
+}

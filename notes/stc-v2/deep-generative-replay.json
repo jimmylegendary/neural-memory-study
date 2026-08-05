@@ -1,0 +1,463 @@
+{
+  "paper_id": "deep-generative-replay",
+  "arxiv": "1705.08690",
+  "arxiv_version": "v3 [cs.AI] 12 Dec 2017 (as printed on the vendored text, line 3)",
+  "title": "Continual Learning with Deep Generative Replay",
+  "authors": [
+    "Hanul Shin (MIT / SK T-Brain)",
+    "Jung Kwon Lee (SK T-Brain, equal contribution)",
+    "Jaehong Kim (SK T-Brain, equal contribution)",
+    "Jiwon Kim (SK T-Brain)"
+  ],
+  "venue": "31st Conference on Neural Information Processing Systems (NIPS 2017), Long Beach, CA, USA [line 57]",
+  "date": "2017-05-24 (v1); vendored text is v3, 2017-12-12",
+  "path": "/home/jimmy/repos/neural-memory-study/papers/stc/1705.08690.txt",
+  "axis": "bio",
+  "axis_note": "Assigned axis is bio (the CLS/hippocampus-as-generator motivation, §1 lines 47-67, §2.2). Mechanically the paper is a pure Theta-path paper: every learnable object it touches lives in the weights. The bio material is motivation and analogy, not measurement — the paper reports no biological data of its own. [note-writer's reading]",
+
+  "problem_stated": {
+    "statement": "Sequential training of a deep network on a task sequence T = (T_1, ..., T_N) causes catastrophic forgetting; the standard fix -- storing and replaying all past data -- 'requires large memory and even worse, often infeasible in real world applications where the access to past data is limited' [Abstract, lines 17-19]. The paper's problem is therefore: retain past task performance with NO access to past data and NO growing data store.",
+    "formal_objective": "Minimize the unbiased sum of losses over all tasks, E_{(x,y)~D}[L(S(x;theta), y)], where D is the entire (cumulative) data distribution, while at training time for task T_i only samples from D_i are available [§3, lines 167-170].",
+    "definitions_given": [
+      "Definition 1: a task T_i is to optimize a model towards an objective on data distribution D_i, from which training examples (x^i, y^i) are drawn [§3, lines 160-161].",
+      "Definition 2: a scholar H is a tuple <G, S>, where G is a generative model producing real-like samples and S is a task-solving model parameterized by theta [§3, lines 165-166]."
+    ],
+    "source": "Abstract lines 14-25; §1 lines 31-46; §3 lines 158-170"
+  },
+
+  "inherited_open_question": {
+    "from": "Robins 1995 pseudorehearsal [ref 31]; Ans & Rousset 1997 [ref 2]; Hattori 2014 [ref 15] -- the three pseudorehearsal / dual-network works the paper groups in §2.2. Also Mocanu et al. 2016 [ref 24] (RBM-based generative replay).",
+    "question": "Can pseudo-rehearsal be made to work on HIGH-DIMENSIONAL, realistic inputs? The paper states the inherited gap in its own words: 'However, none of them demonstrates scalability to high-dimensional inputs similar to those appear in real world due to the difficulty of generating meaningful high-dimensional pseudoinputs without further supervision.' [§2.2, lines 127-129]",
+    "evidence": "§2.2, lines 121-136. The neighbouring sentences establish the lineage precisely: pseudorehearsal is credited to [31] (lines 122-124); the degenerate binary-pattern case where 'simply feeding random noises and corresponding responses suffices' is credited to [2] (line 125); the hippocampus-shaped architecture for 'small binary pixel images' is credited to [15] (lines 125-127). The paper's answer is to replace hand-made pseudoinputs with samples from a GAN trained on the past input distribution (lines 130-134).",
+    "honesty_caveat": "The paper does NOT quote any prior paper's own stated open question. The sentence above is the authors' characterization of the prior literature's limit, not a citation of a prior author's future-work paragraph. Treated here as the inherited question because it is the only explicit 'nobody has yet done X' statement in the paper and it is the statement the method is built to answer. [note-writer's judgement]",
+    "second_inherited_gap": "The paper also records an unanswered theoretical question it inherits and does not take up: 'While the cause of catastrophic forgetting has not been studied analytically, it is known that the neural networks parameterize the internal features of inputs...' [§2, lines 91-94]."
+  },
+
+  "core_mechanism": {
+    "one_line": "At round k the experience history H_k of (U-Theta) is not stored -- it is replaced by a parametric surrogate Sigma_{k-1} = <Theta^G_{k-1}, Theta_{k-1}> (generator + previous solver) which SAMPLES the replay set R_k on demand, and Theta is then retrained jointly on r-weighted real new data plus (1-r)-weighted self-generated input/target pairs.",
+
+    "notation_conflicts": [
+      {"paper_symbol": "S, S(x; theta) -- the solver network", "reserved_meaning": "S_t = inner momentum buffer ('past surprise'), STYLE-NOTATION §1.2 / §1.5 ('S: S_t = inner momentum only')", "remap": "solver = f(.; Theta), the read function of frame Eq. (R). Where the two networks must be named side by side, write f (solver) and G (generator)."},
+      {"paper_symbol": "L(., .) -- the per-example loss function; L_train, L_test", "reserved_meaning": "L (unsubscripted) = sequence length ONLY [STYLE §1.5]; calligraphic L = outer/task loss; script l = inner loss", "remap": "per-example task loss -> L_ex(., .); the two round-level objectives -> calL_train, calL_test. Script l is NOT used in this note: this paper has no inner loop, so no inner loss exists."},
+      {"paper_symbol": "theta_i -- parameters of the i-th solver", "reserved_meaning": "Theta = slow weights (outer loop); lowercase theta with time subscript is FORBIDDEN as inner lr [STYLE §1.5]", "remap": "Theta_k. Round index k follows S0 (U-Theta); the paper's i and n both become k."},
+      {"paper_symbol": "H, H_i -- the scholar tuple <G, S>", "reserved_meaning": "calH_k = experience history up to round k in S0 (U-Theta); h_t = outer 2nd moment [STYLE §1.2]", "remap": "Sigma_k = <Theta^G_k, Theta_k>. This collision is substantively informative: the paper's scholar occupies exactly the slot S0 reserves for the experience history, which IS the paper's thesis."},
+      {"paper_symbol": "D -- the discriminator; D_i -- the data distribution of task i; D_past", "reserved_meaning": "calD = dataset [STYLE §1.2 'calD, calF: dataset, divergence']", "remap": "discriminator -> Disc(.; Theta^Disc); data distributions -> calD_k, calD_past."},
+      {"paper_symbol": "V(D, G) -- the GAN value function", "reserved_meaning": "V = value matrix ONLY [STYLE §1.5]", "remap": "calV(Disc, G)."},
+      {"paper_symbol": "N -- number of tasks; T = (T_1,...,T_N) -- the task sequence", "reserved_meaning": "L is sequence length; T is mapped to L for sequences [STYLE §1.2]", "remap": "number of tasks -> N_T; task sequence -> calT = (T_1, ..., T_{N_T})."},
+      {"paper_symbol": "r -- ratio of mixing real data [Eq. 1]", "reserved_meaning": "no reserved collision; rho = forgetting/degradation rate in S0 §2.4, alpha_t = retention gate in STYLE §1.2", "remap": "keep r. NOTE for the chapter: r is a ROUND-scale retention knob and is the closest thing this paper has to alpha_t; it is a fixed hyperparameter, not a data-dependent gate, so it takes no time subscript per STYLE §1.5 ('data-dependent gates must carry a time subscript; constants must not'). [note-writer's reading]"},
+      {"paper_symbol": "x', y' -- replayed input and replayed target", "reserved_meaning": "none", "remap": "tilde-x, tilde-y (typographic clarity only)."},
+      {"paper_symbol": "z ~ p_z(z) -- GAN latent", "reserved_meaning": "none", "remap": "kept; declared chapter-local."}
+    ],
+
+    "equations": [
+      {
+        "id": "(DGR-1) read / wake-time inference",
+        "latex": "\\hat y \\;=\\; f\\big(x;\\ \\Theta_k\\big) \\;=\\; f\\big(x;\\ \\Theta_k,\\ W=\\varnothing,\\ \\mathrm{ret}(E,\\cdot)=\\varnothing\\big)",
+        "source": "Implicit throughout; the solver is applied as S(x; theta_i) with no state and no retrieval [§3, line 168; §3.1 Eq. 1, line 189]. Written here as the degenerate case of frame Eq. (R).",
+        "comment": "The wake path is an ordinary forward pass. W and E are empty for the whole paper. This is what makes DGR the cleanest possible Theta-path instance."
+      },
+      {
+        "id": "(DGR-2) sleep-time synthesis -- the primitive this paper establishes",
+        "latex": "\\mathcal{R}_k \\;=\\; \\Big\\{\\big(\\tilde x,\\ f(\\tilde x;\\Theta_{k-1})\\big)\\ :\\ \\tilde x = G(z;\\Theta^{G}_{k-1}),\\ z\\sim p_z\\Big\\}, \\qquad \\mathcal{H}_k \\;\\longmapsto\\; \\Sigma_{k-1}=\\langle \\Theta^{G}_{k-1},\\ \\Theta_{k-1}\\rangle",
+        "source": "§3.1 lines 182-187 ('the replayed target is past solver's response to replayed input'); Figure 1(c) caption, lines 281-282 ('replayed response y' is obtained by feeding generated inputs into previous solver').",
+        "comment": "This is the exact substitution S0 (U-Theta) leaves open: gen(H_k; B_s) is realized without H_k ever existing as data. The replay pairs are (generated input, previous MODEL's prediction) -- never ground-truth labels."
+      },
+      {
+        "id": "(DGR-3) solver objective  [deep-generative-replay Eq. 1]",
+        "latex": "\\mathcal{L}_{\\mathrm{train}}(\\Theta_k) \\;=\\; r\\,\\mathbb{E}_{(x,y)\\sim\\mathcal{D}_k}\\!\\big[\\mathcal{L}_{\\mathrm{ex}}\\big(f(x;\\Theta_k),\\,y\\big)\\big] \\;+\\; (1-r)\\,\\mathbb{E}_{\\tilde x\\sim G(\\cdot;\\Theta^{G}_{k-1})}\\!\\big[\\mathcal{L}_{\\mathrm{ex}}\\big(f(\\tilde x;\\Theta_k),\\ f(\\tilde x;\\Theta_{k-1})\\big)\\big]",
+        "source": "[deep-generative-replay Eq. 1], §3.1 line 189. Original: L_train(theta_i) = r E_{(x,y)~D_i}[L(S(x;theta_i), y)] + (1-r) E_{x'~G_{i-1}}[L(S(x';theta_i), S(x';theta_{i-1}))].",
+        "comment": "The second term is a self-distillation term: the previous solver is the teacher, on inputs the previous generator invents. 'Second loss term is ignored in both functions when i = 1 because there is no replayed data to refer to for the first solver' [line 199-200]."
+      },
+      {
+        "id": "(DGR-4) realized (U-Theta) step",
+        "latex": "\\Theta_k \\;\\leftarrow\\; \\Theta_k \\;-\\; \\eta_\\Theta\\,\\nabla_\\Theta\\,\\mathcal{L}_{\\mathrm{train}}(\\Theta_k), \\qquad \\mathcal{R}_k=\\mathrm{gen}(\\Sigma_{k-1};\\,B_s)",
+        "source": "Not written as an equation in the paper; the paper states only that 'the network parameters are jointly optimized' [§1, line 43] and that the new solver 'is trained to couple the inputs and targets drawn from the same mix of real and replayed data' [§3.1, lines 185-187]. The optimizer, eta_Theta and step count are not stated in the main text ('Experimental details are provided in supplementary materials', §4.2 line 387).",
+        "comment": "Written to make the mapping onto S0 (U-Theta) explicit. The gradient operator and eta_Theta here are the note-writer's instantiation of the frame, not the paper's symbols."
+      },
+      {
+        "id": "(DGR-5) generator objective -- the recursion",
+        "latex": "\\Theta^{G}_{k}\\ \\ \\text{fits}\\ \\ p_k \\;=\\; r\\,\\mathcal{D}^{x}_{k} \\;+\\; (1-r)\\,G(\\cdot\\,;\\Theta^{G}_{k-1}), \\qquad \\min_{G}\\max_{\\mathrm{Disc}}\\ \\mathcal{V} \\;=\\; \\mathbb{E}_{x\\sim p_{\\mathrm{data}}}\\big[\\log \\mathrm{Disc}(x)\\big] + \\mathbb{E}_{z\\sim p_z}\\big[\\log\\big(1-\\mathrm{Disc}(G(z))\\big)\\big]",
+        "source": "Mixture: §3.1 lines 182-186 and Figure 1(b) caption lines 279-281; explicit recursion statement §4.3 lines 475-478 ('we trained the generator to mimic both current inputs and the generated samples from the previous generator. The generator thus reproduces cumulative input distribution'). GAN game: §2.3, line 149 (UNNUMBERED in the paper). Actually trained with WGAN-GP [ref 14]: §4, lines 325-326 ('To draw the best possible result, we used WGAN-GP [14] technique in training the generator').",
+        "comment": "Notation caveat: the paper prints the original minimax GAN objective in §2.3 but trains with WGAN-GP, whose objective is different and is never written down. The generator, like the solver, is trained on its own previous samples -- so BOTH members of Sigma_k are recursive."
+      },
+      {
+        "id": "(DGR-6) evaluation objective  [deep-generative-replay Eq. 2]",
+        "latex": "\\mathcal{L}_{\\mathrm{test}}(\\Theta_k) \\;=\\; r\\,\\mathbb{E}_{(x,y)\\sim\\mathcal{D}_k}\\!\\big[\\mathcal{L}_{\\mathrm{ex}}\\big(f(x;\\Theta_k),y\\big)\\big] \\;+\\; (1-r)\\,\\mathbb{E}_{(x,y)\\sim\\mathcal{D}_{\\mathrm{past}}}\\!\\big[\\mathcal{L}_{\\mathrm{ex}}\\big(f(x;\\Theta_k),y\\big)\\big]",
+        "source": "[deep-generative-replay Eq. 2], §3.1 line 195. 'where D_past is a cumulative distribution of past data' [line 199].",
+        "comment": "Note the asymmetry the paper is explicit about: 'As we aim to evaluate the model on original tasks, test loss differs from the training loss' [lines 193-194]. Training uses generated inputs with teacher predictions; evaluation uses real past inputs with real labels. The same r appears in both, which the paper does not justify."
+      }
+    ],
+
+    "reduction_to_frame": "Frame (U-Theta): Theta_{k+1} = Theta_k - eta_Theta grad_Theta calL(R_k; Theta_k) with R_k = gen(H_k; B_s). Deep Generative Replay instantiates gen(.) as ancestral sampling from a GAN whose weights ARE the compressed history, and instantiates the target of each replayed input as the previous round's model output rather than a stored label. Frame (U-W): not instantiated -- no test-time state moves. Frame (U-E): not instantiated -- no external store; the paper's whole argument is that the store should be parametric rather than external [§1 lines 44-46, §2.2 lines 130-134]."
+  },
+
+  "outer_vs_inner": {
+    "columns": ["learnable object", "symbol (unified)", "who learns it", "when it moves", "source"],
+    "rows": [
+      {
+        "object": "solver network (the task model that produces the answer)",
+        "symbol": "Theta_k",
+        "who_learns": "outer-loop gradient training (SGD on Eq. 1)",
+        "when": "SLEEP / between-rounds only. Retrained once per task T_k on the r/(1-r) mixture. Frozen during wake-time inference.",
+        "source": "§3.1 Eq. 1 line 189; §3 Def. 2 line 166"
+      },
+      {
+        "object": "generator network (the parametric replacement for the data store)",
+        "symbol": "Theta^G_k",
+        "who_learns": "outer-loop adversarial training (WGAN-GP)",
+        "when": "SLEEP / between-rounds only. Retrained once per task on the mixture r*D_k^x + (1-r)*G(.;Theta^G_{k-1}).",
+        "source": "§3.1 lines 182-186; Fig. 1(b) lines 279-281; §4 line 326 (WGAN-GP); §4.3 lines 475-478 (recursion)"
+      },
+      {
+        "object": "discriminator network",
+        "symbol": "Theta^Disc",
+        "who_learns": "outer-loop adversarial training; auxiliary, discarded after each round",
+        "when": "SLEEP only. Never used at wake time. The paper never says whether it is carried across rounds or re-initialized.",
+        "source": "§2.3 lines 145-149; discarded-status is the note-writer's inference -- the paper never mentions the discriminator after §2.3"
+      },
+      {
+        "object": "previous solver kept as a frozen teacher",
+        "symbol": "Theta_{k-1}",
+        "who_learns": "nobody -- it is a frozen copy from the previous round",
+        "when": "read-only during sleep, to label replayed inputs. Not present at wake time.",
+        "source": "§3.1 line 187 ('the replayed target is past solver's response to replayed input'); Fig. 1(c) lines 281-282"
+      },
+      {
+        "object": "previous generator kept as a frozen sampler",
+        "symbol": "Theta^G_{k-1}",
+        "who_learns": "nobody -- frozen copy from the previous round",
+        "when": "sampled during sleep to produce tilde-x. Not present at wake time.",
+        "source": "§3.1 lines 182-184; Fig. 1(b)"
+      },
+      {
+        "object": "replay inputs (pseudo-data)",
+        "symbol": "tilde-x",
+        "who_learns": "not learned -- SAMPLED at sleep time from the frozen generator",
+        "when": "SLEEP. Materialized on demand, 'as much as needed' [§1 line 73], then discarded.",
+        "source": "§1 lines 72-74; §3.1 lines 182-187"
+      },
+      {
+        "object": "replay targets (pseudo-labels)",
+        "symbol": "tilde-y = f(tilde-x; Theta_{k-1})",
+        "who_learns": "not learned -- COMPUTED at sleep time by a forward pass of the frozen previous solver",
+        "when": "SLEEP.",
+        "source": "§3.1 line 187; Fig. 1(c) caption lines 281-282"
+      },
+      {
+        "object": "mixing ratio between real and replayed data",
+        "symbol": "r",
+        "who_learns": "nobody -- a hand-set hyperparameter",
+        "when": "fixed before each round; 'a ratio that depends on the desired importance of a new task compared to the older tasks' [§3.1 lines 184-185]. No value is given anywhere in the main text.",
+        "source": "§3.1 lines 184-185 and Eq. 1 line 189/193"
+      },
+      {
+        "object": "task-specific output heads (LwF and LwF-GR variants ONLY)",
+        "symbol": "chapter-local; part of Theta",
+        "who_learns": "outer-loop training, with the original LwF regime -- 'warming up the new network head for some amount of the time and then fine tuning the whole network' [§4.2 lines 427-429]",
+        "when": "SLEEP. Requires task-context at test time, which the paper flags as a disadvantage of LwF: 'Note that our scholar model with generative replay does not need the task context' [§4.2 lines 424-425].",
+        "source": "§4.2 lines 420-429; Fig. 5"
+      },
+      {
+        "object": "anything at all at wake / test time",
+        "symbol": "-- none --",
+        "who_learns": "nothing",
+        "when": "NEVER. There is no test-time movement of any kind in this paper. Wake-time is a plain forward pass f(x; Theta_k).",
+        "source": "Absence-of-statement across the whole paper; the evaluation objective Eq. 2 (line 195) evaluates a fixed Theta_i on held-out data."
+      }
+    ],
+    "readers_first_answer": "Everything in this paper is learned by ordinary gradient training between tasks. Nothing moves while the model is answering. The 'sleep' is an entire retraining round, not a test-time state update -- which is exactly why this paper sits at the root of the Theta path and not the W path."
+  },
+
+  "update_layer": {
+    "instantiates": "(U-Theta) only.",
+    "not_instantiated": [
+      "(U-W): no fast weights, no test-time state, no inner loss. The paper cites the fast-weights ancestor Hinton & Plaut 1987 [ref 16] but only inside a list of 'a few primitive solutions' to forgetting [§2, line 95] -- it does not build on it.",
+      "(U-E): no external store. The paper's central claim is precisely that the external store should NOT exist: 'a major drawback of memory-based approach is that it requires large working memory to store and replay past inputs. Moreover, such data storage and replay may not be viable in some real-world situations.' [§1, lines 44-46]"
+    ],
+    "difference_from_canonical": [
+      "Canonical (U-Theta) writes R_k = gen(H_k; B_s), presupposing that the experience H_k exists in some form. DGR's contribution is to DELETE H_k and substitute the parametric surrogate Sigma_{k-1} = <Theta^G_{k-1}, Theta_{k-1}>. The history is stored in weights, at fixed size, not in a buffer. [§1 lines 68-77; §2.2 lines 130-134]",
+      "The targets in R_k are not stored labels but the previous MODEL's outputs, f(tilde-x; Theta_{k-1}) -- so (U-Theta) here is simultaneously a self-distillation step. [Eq. 1 second term, line 189]",
+      "The update is doubly recursive: BOTH Theta and Theta^G at round k are trained on samples drawn from their own round-(k-1) selves [§4.3 lines 475-478]. The canonical form has one recursion; DGR has two coupled ones, and the paper measures the compounding of neither.",
+      "The mixing ratio r plays the role a retention gate plays at token scale in (U-W), but at ROUND scale and as a constant hyperparameter, not a data-dependent gate. [note-writer's reading; the paper never draws this analogy]"
+    ],
+    "order_if_multiple": "Within one round the order is: (1) sample tilde-x from G(.;Theta^G_{k-1}); (2) label them with the frozen f(.;Theta_{k-1}); (3) train Theta^G_k on the mixed input distribution; (4) train Theta_k on the mixed (input, target) pairs. The paper describes (3) and (4) as 'two independent procedures' [§3.1, lines 182-183] -- i.e. generator and solver training do not share gradients."
+  },
+
+  "cost_table": {
+    "B_s": {
+      "value": "absent",
+      "detail": "No FLOPs, no sample count, no wall-clock, no epoch count for the sleep-time replay+retraining is stated anywhere in the main text. The paper says only that pairs can be produced 'as much as needed' [§1, line 73] and that the mixture is set by a ratio r whose value is never given [§3.1, lines 184-185]. The nearest thing in the paper is the x-axis of Figure 4 (1000 / 2000 / 5000 / 10000 / 20000 generator training iterations in the MNIST-to-SVHN experiment, caption lines 409-411), which is a training-length axis for a qualitative sample-quality figure, not a budget. 'Experimental details are provided in supplementary materials' [§4.2, line 387] -- the supplement is not present in the vendored text.",
+      "source": "§1 line 73; §3.1 lines 184-185; Fig. 4 caption lines 409-411; §4.2 line 387"
+    },
+    "L_w": {
+      "value": "absent",
+      "detail": "No latency, throughput or per-token cost of any kind is reported. Structurally, wake-time cost is identical to the unmodified solver -- a single forward pass f(x; Theta_k) -- because nothing is retrieved and nothing is updated at test time [note-writer's inference from the absence of any test-time mechanism; the paper makes no latency claim]. The one wake-time cost DIFFERENCE the paper does name is for a competitor, not for itself: for LwF, 'the training time for one task linearly increases with the number of former tasks' [§5, line 499] -- and that is training time, not serving latency.",
+      "source": "absence across the paper; §5 line 499 for the LwF contrast"
+    },
+    "C": {
+      "value": "absent",
+      "detail": "No parameter counts, no byte counts, no architecture sizes for solver, generator or discriminator appear in the main text. The paper's entire motivating claim is a capacity claim -- replay buffers 'require large memory' [Abstract line 18; §1 lines 44-46] -- and it is never quantified, not once, in either direction. The qualitative claim is that the retained state is exactly the two networks: 'it maintains the former knowledge solely with input-target pairs produced from the saved networks' [§5, lines 500-502]. That the resulting state size is O(|Theta| + |Theta^G|) and therefore constant in the number of tasks and in the volume of data seen is the note-writer's inference, not a stated result.",
+      "source": "absence; Abstract line 18; §1 lines 44-46; §5 lines 500-502; §4.2 line 387 (details deferred to supplement)"
+    },
+    "rho": {
+      "value": "Table 1 (§3.2, lines 292-317) is the only numeric degradation series in the paper: 98.81% -> 98.64% -> 98.58% -> 98.53% -> 98.56% test accuracy on full MNIST for Solver1 through Solver5. Per-transfer deltas: -0.17, -0.06, -0.05, +0.03 percentage points; total -0.25pp over four generations, non-monotonic at the last step.",
+      "detail": "IMPORTANT SCOPE LIMIT: this is degradation along a chain of knowledge TRANSFER on one and the same task (each solver is measured on the full MNIST test set), not forgetting across a sequence of different tasks. 'The first solver learned from real data, and subsequent solvers learned from previous scholar networks.' [Table 1 caption, lines 292-293]. Forgetting across an actual task sequence (§4.1, §4.2, §4.3) is reported ONLY as curves in Figures 2, 3, 5 and 6 with no numbers in the text. So a per-round forgetting rate for the continual-learning setting itself is: absent.",
+      "source": "Table 1, §3.2 lines 287-317; Figures 2/3/5/6 for the numberless case"
+    },
+    "amortization_A": {
+      "value": "absent",
+      "detail": "The paper has no notion of N_q (queries sharing a context) and never computes an amortized cost. Frame Eq. (A) cannot be filled from this paper. [note-writer's assessment]"
+    }
+  },
+
+  "experiments": [
+    {
+      "id": "E0 -- preliminary: scholar-to-scholar knowledge transfer",
+      "section": "§3.2, lines 285-317",
+      "setup": "MNIST handwritten digits [ref 19]. A sequence of five scholar models trained from scratch, each learning only through generative replay from the previous scholar. 'Sequence of scholar models were trained from scratch through generative replay from previous scholar.' [lines 288-290]",
+      "metric": "Test accuracy on the FULL MNIST test set",
+      "numbers": "Solver1 98.81%, Solver2 98.64%, Solver3 98.58%, Solver4 98.53%, Solver5 98.56% [Table 1, lines 295-317]",
+      "claim": "'We observed that the scholar model transfers knowledge without losing information.' [lines 290-291]",
+      "note": "This is NOT a continual-learning experiment -- there is only one task. It measures whether a GAN+solver pair is a lossless teacher, which is the precondition of the method, not the method's benefit."
+    },
+    {
+      "id": "E1 -- learning independent tasks (permuted MNIST)",
+      "section": "§4.1, lines 343-368; Figure 2(a),(b)",
+      "setup": "MNIST with pixel values shuffled by a random permutation unique to each task; solver must classify permuted inputs into the original classes. 'Since the most, if not all pixels are switched between the tasks, the tasks are technically independent from each other, being a good measure of memory retention strength' [lines 350-352]. Number of tasks in the sequence is not stated in the text -- it is only readable off Figure 2.",
+      "metric": "Per-task test accuracy during sequential training (Fig. 2a); average test accuracy over tasks learnt so far (Fig. 2b)",
+      "numbers": "NONE IN TEXT. No table, no in-text accuracy figures. All results are curves in Figure 2.",
+      "claim": "GR (orange) 'maintained the former task performances throughout sequential training' and 'achieved almost full performance on trained tasks'; None (violet) 'incurred catastrophic forgetting'; Noise (pink) 'did not help tempering performance loss'. [lines 362-368]",
+      "arms": "GR (generative replay), ER (exact replay: real past inputs paired with the OLD SOLVER'S PREDICTED targets -- defined at lines 337-339), Noise (random gaussian noise inputs with recorded responses), None (naive sequential training) [§4, lines 336-342]"
+    },
+    {
+      "id": "E2 -- learning new domains (MNIST <-> SVHN)",
+      "section": "§4.2, lines 369-419; Figures 3(a),(b) and 4",
+      "setup": "Sequentially train on MNIST then SVHN [ref 25], and vice versa. 'Experimental details are provided in supplementary materials.' [line 387]",
+      "metric": "Accuracy on the original task (thick curves) and the new task (dim curves)",
+      "numbers": "NONE IN TEXT. Figure 3 curves only. Figure 4 shows generator samples after 1000, 2000, 5000, 10000, 20000 SVHN training iterations [caption lines 409-411].",
+      "claims": [
+        "GR 'maintained its performance on the first task while accomplishing the second one' [lines 415-416]",
+        "'The results were no worse than replaying past real inputs paired with predicted responses from the old solver (green)' -- i.e. GR ties ER; it is never shown to beat it [lines 416-417]",
+        "'Since MNIST and SVHN input data share similar spatial structure, the performance on the former task did not drop to zero, yet the decline was critical' [lines 413-415]",
+        "'In both cases, the model trained without any replay data achieved slightly better performance on new task, as the network was solely optimized to solve the second task.' [lines 417-419] -- an explicit cost of the method that is not removed."
+      ]
+    },
+    {
+      "id": "E3 -- composition with LwF (LwF vs LwF-GR)",
+      "section": "§4.2, lines 420-439; Figure 5",
+      "setup": "Trained on SVHN then MNIST. LwF [ref 21] compared with LwF-GR, in which 'task-specific generated inputs are fed to maintain older network responses' [lines 426-428]. Original LwF training regime used: warm up the new head, then fine-tune the whole network [lines 427-429]. Because LwF needs task context for task-specific heads, performance was tested separately per task [lines 422-424].",
+      "metric": "Per-domain test accuracy",
+      "numbers": "NONE IN TEXT. Figure 5 curves only.",
+      "claim": "'The solver trained with original LwF algorithm loses performance on the first task when fine-tuning begins, due to alteration to shared network (green). However, with generative replay, the network maintains most of the past knowledge (orange).' [lines 429-439]. 'Test accuracy on SVHN classification task (thick curves) dropped when the shared parameters were fine-tuned, but generative replay greatly tempered the loss' [Fig. 5 caption, lines 434-436]"
+    },
+    {
+      "id": "E4 -- learning new classes (class-incremental MNIST)",
+      "section": "§4.3, lines 440-478; Figures 6 and 7",
+      "setup": "MNIST split into 5 disjoint subsets of 2 classes each: '0 and 1 during the first task, 2 and 3 for the second, and in the same manner' [Fig. 6 caption, lines 459-462]. The paper describes this as an experiment it proposes: 'we propose a new experiment in which the network is sequentially trained on disjoint data' [lines 444-446].",
+      "metric": "Test performance on all encountered classes",
+      "numbers": "NONE IN TEXT. Figure 6 curves only. 'Only our networks achieved test performance close to the upper bound.' [Fig. 6 caption, line 462]",
+      "claims": [
+        "None 'completely forgot previous classes and only learned the new subset of data' [lines 464-465]",
+        "Noise: 'Recovering only the past output distribution without a meaningful input distribution did not help retaining knowledge' [lines 465-467]",
+        "GR: 'when both the input and output distributions are reconstructed, generative replay evoked previously learnt classes, and the model was able to discriminate all encountered classes' [lines 468-471]",
+        "Fig. 7: 'generated samples from trained generator include examples equally from encountered classes' [lines 477-478]"
+      ],
+      "distribution_taxonomy": "The paper classifies its arms by which distributions are recovered: ER and GR recover both input and target cumulative distributions; Noise recovers cumulative targets but only the current input distribution; None recovers neither [§4.3, lines 453-457]."
+    },
+    {
+      "id": "E5 -- SVHN in the class-incremental setting (negative result)",
+      "section": "§5 Discussion, lines 504-507",
+      "setup": "The same §4.3 protocol applied to SVHN",
+      "numbers": "NONE. 'Indeed, we observed some performance loss while training the model on SVHN dataset within same setting employed in section 4.3. Detailed analysis is provided in supplementary materials.' [lines 505-507]",
+      "note": "This is the paper's own reported failure case. The magnitude is never stated in the main text, and the analysis is in a supplement not present in the vendored file."
+    }
+  ],
+
+  "scale_ceiling": {
+    "datasets": "MNIST (28x28 grayscale, 10 classes) [ref 19] and SVHN (32x32 colour street-view digits) [ref 25]. Nothing larger. No CIFAR, no ImageNet, no text, no RL.",
+    "task_sequence_length": "At most 5 tasks (5 disjoint 2-class MNIST subsets, §4.3 / Fig. 6; and a 5-scholar chain in §3.2 / Table 1). The number of permutation tasks in §4.1 is not stated in the text.",
+    "model_size": "NOT STATED. No parameter counts, no layer counts, no architecture description in the main text for solver, generator or discriminator. Deferred: 'Experimental details are provided in supplementary materials' [§4.2, line 387].",
+    "token_count": "N/A -- image classification, no tokens. Dataset sizes are never stated either.",
+    "compute": "NOT STATED. No GPU-hours, no FLOPs. The only compute-like number in the whole paper is the generator iteration axis of Figure 4 (1000-20000 iterations).",
+    "generator": "WGAN-GP [ref 14], §4 lines 325-326. The framework is claimed to be generator-agnostic: 'our framework can employ any deep generative model as a generator' [§3.1, lines 202-203] -- this is asserted, not tested (only the GAN is run).",
+    "summary": "Largest demonstration: two-domain (MNIST/SVHN) image classification and 5-step class-incremental MNIST, with no reported model size, dataset size or compute. Roughly nine orders of magnitude below anything in the sleep-time-compute LLM literature this monograph covers. [note-writer's framing]"
+  },
+
+  "concept_ledger_delta": {
+    "new": [
+      {"term": "deep generative replay (GR)", "definition": "retaining past knowledge by training on input/target pairs synthesized by a learned generative model of the past input distribution, paired with the previous model's own responses", "source": "Abstract lines 19-23; §3.1"},
+      {"term": "scholar", "definition": "the tuple <G, S> (generator + solver); named 'scholar' because it both learns and teaches, unlike a teacher-student pair where 'the networks either teach or learn only'", "source": "§3 Def. 2 lines 162-166"},
+      {"term": "exact replay (ER)", "definition": "the paper's upper-bound arm: replay of REAL past inputs paired with the OLD SOLVER'S PREDICTED targets (not ground-truth labels)", "source": "§4 lines 337-339"},
+      {"term": "Noise arm", "definition": "control that replays random gaussian noise inputs with the old solver's recorded responses -- recovers the cumulative target distribution but not the input distribution", "source": "§4 lines 339-341; §4.3 lines 453-457"},
+      {"term": "mixing ratio r", "definition": "round-level constant trading new-task against old-task importance in Eq. 1 and Eq. 2", "source": "§3.1 lines 184-185, Eq. 1"},
+      {"term": "cumulative generative replay (recursive generator)", "definition": "training the generator on its own previous samples so that it reproduces the cumulative input distribution of all tasks seen", "source": "§4.3 lines 475-478; Fig. 7"}
+    ],
+    "extended_or_renamed": [
+      {"term": "pseudorehearsal -> generative replay", "note": "the paper explicitly positions itself as a successor: 'Our generative replay framework differs from aforementioned pseudorehearsal techniques in that the fake inputs are generated from learned past input distribution.' [§2.2, lines 130-131]", "source": "§2.2"},
+      {"term": "hippocampus as replay buffer -> hippocampus as generative model", "note": "'These properties suggest that the hippocampus is better paralleled with a generative model than a replay buffer.' [§1, lines 63-65] -- this single sentence is the biological warrant for the entire method, and rests on cited neuroscience (false-memory implantation [ref 28], reactivation defects [ref 35]), not on any experiment in this paper.", "source": "§1 lines 63-67"},
+      {"term": "complementary learning systems (CLS)", "note": "reused as motivation, not extended; hippocampus = generator, neocortex = solver is the implied mapping, though the paper never states the mapping that baldly", "source": "§1 lines 50-52; §2.2 lines 121-129"}
+    ],
+    "retired": [
+      {"term": "episodic memory buffer of real past data", "note": "argued against on memory-cost and privacy grounds ('this framework can be employed to various practical situation involving privacy issues', §1 lines 78-80), though it is retained as the ER upper-bound arm."}
+    ]
+  },
+
+  "open_questions": [
+    {"q": "Generator quality is the binding constraint and its failure mode is uncharacterized. 'One defect of the generative replay framework is that the efficacy of the algorithm heavily depends on the quality of the generator.' [§5, lines 504-505] The paper's own SVHN class-incremental loss is reported without magnitude and analyzed only in a supplement.", "source": "§5 lines 504-507"},
+    {"q": "How to combine GR with EWC and LwF. 'each method poses some constraints on training procedure or network configurations, and there is no straightforward mixture of any two frameworks. We believe a good mix of the three frameworks would give a better solution' [§5, lines 508-512]. Believed, not tested -- except the single LwF-GR variant of §4.2.", "source": "§5 lines 508-512"},
+    {"q": "Extension to reinforcement learning. 'Future works of generative replay may extend to reinforcement learning domain' [§5, line 513].", "source": "§5 line 513"},
+    {"q": "A continuously self-replaying network with no explicit task boundaries. 'or the form of continuously evolving network that maintains knowledge from past copy of the self' [§5, lines 513-514]; foreshadowed at lines 488-490: 'if the previous scholar model is just a past copy of the same network, it can learn multiple tasks without explicitly partitioning the training procedure.' This is precisely the question the modern sleep-time-compute line inherits.", "source": "§5 lines 488-490, 513-514"},
+    {"q": "Scaling to more complex domains is deferred to progress in generative modelling: 'we expect the improvements in training deep generative models would directly aid the performance of generative replay framework on more complex domains' [§5, lines 514-516].", "source": "§5 lines 514-516"},
+    {"q": "Applicability beyond image classification is asserted but untested: 'our model can be applied to any task as long as the trained generator reliably reproduces the input space' [§1, lines 81-83].", "source": "§1 lines 81-83"},
+    {"q": "The analytic cause of catastrophic forgetting is still open and the paper does not address it: 'While the cause of catastrophic forgetting has not been studied analytically...' [§2, line 91].", "source": "§2 lines 91-94"},
+    {"q": "How to set r. The mixing ratio is described only as depending on 'the desired importance of a new task compared to the older tasks' [§3.1, lines 184-185]; no selection procedure, no value, no sensitivity study.", "source": "§3.1 lines 184-185"},
+    {"q": "How many replay samples are needed, and whether that number grows with the number of tasks. The paper says pairs can be produced 'as much as needed' [§1, line 73] and never asks how much is needed. This is the missing B_s.", "source": "§1 line 73 (question is the note-writer's)"},
+    {"q": "Whether the doubly-recursive training (generator trained on its own samples, solver trained on its own predecessor's predictions) drifts over many rounds. Shown qualitatively for 5 rounds in Fig. 7; never measured.", "source": "§4.3 lines 475-478, Fig. 7 (question is the note-writer's)"}
+  ],
+
+  "unfavorable_facts": [
+    {
+      "fact": "Every result in the four main experiments is a curve in a figure. There is no numeric table for §4.1, §4.2 or §4.3 -- no accuracies, no error bars, no seeds, no significance. The only numbers printed anywhere in the paper are Table 1's five MNIST accuracies, and Table 1 is the PRELIMINARY single-task experiment, not a continual-learning result.",
+      "source": "Table 1 (§3.2, lines 292-317) is the paper's only numeric table; §4.1/§4.2/§4.3 report Figures 2, 3, 5, 6 only"
+    },
+    {
+      "fact": "Generative replay is never shown to BEAT its own upper bound proxy, only to tie it: 'The results were no worse than replaying past real inputs paired with predicted responses from the old solver (green).' Tie-with-ER is the strongest claim made.",
+      "source": "§4.2, lines 416-417"
+    },
+    {
+      "fact": "The 'upper bound' arm ER is itself soft: it replays real past inputs but pairs them with the OLD SOLVER'S PREDICTED targets, not ground-truth labels. So the paper's ceiling is a distilled ceiling, and true joint training on real labelled data is never run as an arm.",
+      "source": "§4 lines 337-339 ('we replayed actual past data paired with the predicted targets from the old solver')"
+    },
+    {
+      "fact": "A cost of the method survives and is stated by the authors: the no-replay baseline is BETTER on the new task. 'In both cases, the model trained without any replay data achieved slightly better performance on new task, as the network was solely optimized to solve the second task.' The magnitude of the gap is never quantified.",
+      "source": "§4.2, lines 417-419"
+    },
+    {
+      "fact": "EWC -- the paper's principal named rival, discussed at length in §2.1 and §5 -- is NEVER RUN as a baseline. No experiment in the paper contains an EWC arm. The comparison to EWC is entirely argumentative (§5 lines 491-497). Likewise plain LwF appears only in the composed LwF vs LwF-GR figure (Fig. 5), never as a head-to-head competitor to GR on the same benchmark.",
+      "source": "§2.1 lines 103-105; §5 lines 491-499; absence of EWC from §4 arms (which are only GR / ER / Noise / None, §4 lines 336-342)"
+    },
+    {
+      "fact": "The composition the paper recommends is explicitly untested and explicitly hard: 'there is no straightforward mixture of any two frameworks. We believe a good mix of the three frameworks would give a better solution.' Only one weak composition (LwF-GR) was actually built, and it inherits LwF's need for task context at test time -- which the paper elsewhere counts as a disadvantage.",
+      "source": "§5 lines 508-512; §4.2 lines 422-425"
+    },
+    {
+      "fact": "The paper reports its own negative result at SVHN scale and defers the analysis out of the paper: 'we observed some performance loss while training the model on SVHN dataset within same setting employed in section 4.3. Detailed analysis is provided in supplementary materials.' No magnitude is given in the main text. This is the one place where the generator-quality dependence bites, and it is exactly where the numbers are absent.",
+      "source": "§5, lines 505-507"
+    },
+    {
+      "fact": "The paper's motivating cost claim is never measured. The abstract and introduction reject replay buffers because they 'require large memory' [Abstract line 18] / 'large working memory to store and replay past inputs' [§1 line 45], yet the paper never compares the size of the generator+solver against the size of the datasets they replace. On MNIST specifically, a GAN capable of covering the input distribution is plausibly comparable to or larger than the raw dataset -- the paper offers no number either way.",
+      "source": "Abstract line 18; §1 lines 44-46; absence of any size number in the paper (comparison-plausibility remark is the note-writer's inference)"
+    },
+    {
+      "fact": "§4.3 is a benchmark the authors designed for this paper: 'we propose a new experiment in which the network is sequentially trained on disjoint data'. It is also the setting where GR's margin over baselines is largest and where the qualitative claim 'Only our networks achieved test performance close to the upper bound' is made -- with no numbers.",
+      "source": "§4.3 lines 444-446; Fig. 6 caption lines 459-462"
+    },
+    {
+      "fact": "The Noise arm is a weak control. It feeds random gaussian noise, which no prior method proposes for high-dimensional images -- the closest prior work [ref 2] used random noise only for elementary binary-pattern coupling, as the paper itself notes. Beating it establishes little.",
+      "source": "§4 lines 339-341; §2.2 lines 124-125"
+    },
+    {
+      "fact": "Every experiment rests on a single configuration: one architecture family (undisclosed), one generator (WGAN-GP), one value of r (undisclosed), and no repeated seeds. The framework claim 'our framework can employ any deep generative model as a generator' [§3.1 lines 202-203] is asserted with exactly one generator tested.",
+      "source": "§3.1 lines 202-203; §4 lines 325-326; absence of hyperparameters and seeds from the main text (§4.2 line 387 defers to the supplement)"
+    },
+    {
+      "fact": "Table 1's near-flat accuracies (98.81 -> 98.56) are used to support 'the scholar model transfers knowledge without losing information' [lines 290-291], but the measurement is on the SAME full MNIST test set for every solver in the chain. It shows lossless distillation on one task; it carries no information about forgetting across tasks, which is the paper's actual subject.",
+      "source": "Table 1 caption lines 292-293; §3.2 lines 287-291"
+    },
+    {
+      "fact": "The biological warrant -- 'the hippocampus is better paralleled with a generative model than a replay buffer' [§1 lines 63-65] -- is the load-bearing motivation for the whole design and rests entirely on three cited neuroscience results ([28] false-memory implantation, [35] reactivation defect, [8] internally generated reactivation). The paper contributes no biological evidence and performs no test that would distinguish a generative hippocampus from a buffer.",
+      "source": "§1 lines 59-67; refs 8, 28, 35"
+    },
+    {
+      "fact": "The theoretical guarantee is conditional and the condition is never checked: 'The performance is therefore equivalent to joint training on accumulated real data as long as the generator recovers the input distribution' [§2.2 lines 133-134] and 'guaranteed to achieve the full performance when the former input spaces are recovered by the generator' [§5 lines 502-504]. No measurement of distribution recovery (FID, coverage, precision/recall) appears anywhere -- generator quality is assessed only by eyeballing Figures 4 and 7.",
+      "source": "§2.2 lines 132-134; §5 lines 502-504; Figs. 4, 7"
+    }
+  ],
+
+  "cross_path_citations": {
+    "verdict": "Silence is genuine on the E path and near-silence on the W path -- but this paper is dated 2017 and PREDATES all three paths as this monograph defines them, so the finding must be reported as a lineage fact and not as a snub. Checked against the full reference list, lines 524-607 (35 references).",
+    "Theta_path": {
+      "engaged": "Yes -- extensively. This paper is itself the Theta-path ancestor.",
+      "citations": [
+        "EWC -- Kirkpatrick et al. 2017, PNAS [ref 18], discussed in §2.1 lines 103-105 and §5 lines 491-497",
+        "Learning without Forgetting -- Li & Hoiem 2016 [ref 21], §2.1 lines 110-114, and the only method actually composed with (Fig. 5)",
+        "Incremental Moment Matching -- Lee et al. 2017 [ref 20], §2.1 line 101",
+        "Goodfellow et al. 2013 empirical investigation of catastrophic forgetting [ref 12], §2.1 lines 101-103",
+        "Robins 1995 pseudorehearsal [ref 31], §2.2 lines 122-124 -- the direct ancestor of the replay primitive",
+        "Ans & Rousset 1997 [ref 2], Hattori 2014 dual-network memory model [ref 15], §2.2",
+        "Mocanu et al. 2016, RBM-based generative replay [ref 24], §2.2 lines 134-136 -- the nearest prior art, acknowledged in one sentence and never compared against experimentally"
+      ]
+    },
+    "W_path": {
+      "engaged": "One citation, and it is dismissive.",
+      "citations": [
+        "Hinton & Plaut 1987, 'Using fast weights to deblur old memories' [ref 16] -- cited ONLY inside the sentence 'provide a few primitive solutions [16, 30] such as replaying all previous data' [§2, line 95]. The fast-weights idea itself is never discussed, and no fast-weight, test-time-update or inner-loop mechanism appears anywhere in the paper."
+      ],
+      "note": "No TTT, no meta-learning, no MAML, no memory-augmented networks (NTM/DNC), no attention or transformer citation of any kind. The word 'fast weights' appears exactly once, in a reference title."
+    },
+    "E_path": {
+      "engaged": "No -- and the paper argues AGAINST the E path's premise.",
+      "citations": [
+        "Robins 1995 [ref 31] is invoked in §1 line 41-42 for 'episodic memory system that stores past data'",
+        "Mnih et al. 2015 DQN [ref 23] for experience replay, §1 lines 61-62"
+      ],
+      "note": "These are the only external-store citations, and both are treated as the raw data buffer whose elimination is the paper's goal ('a major drawback of memory-based approach is that it requires large working memory', §1 lines 44-46). There is no retrieval, no vector store, no memory network, no key-value external memory, no RAG-like citation. The E path did not exist in a citable form in 2017."
+    },
+    "bio_and_theory": {
+      "engaged": "Heavily -- this is the paper's rhetorical spine.",
+      "citations": [
+        "CLS -- O'Reilly & Norman 2002 [ref 26], §1 lines 49-52",
+        "Stickgold & Walker 2007, sleep-dependent memory consolidation and reconsolidation [ref 35], §1 line 63-64 -- the single explicit 'sleep' citation in the paper",
+        "O'Neill et al. 2010, reactivation of waking experience [ref 27], §1 line 60",
+        "Gelbard-Sagiv et al. 2008, internally generated reactivation in human hippocampus [ref 8], §1 line 59",
+        "Ramirez et al. 2013, creating a false memory in the hippocampus [ref 28], §1 lines 64-65",
+        "Abraham & Robins 2005, stability-plasticity dilemma [ref 1], §1 line 34",
+        "McCloskey & Cohen 1989, catastrophic interference [ref 22], §2 lines 89-91",
+        "Fagot & Cook 2006 [ref 6], Grutzendler et al. 2002 [ref 13], §1 lines 31-33"
+      ],
+      "note": "Note for the monograph: McClelland 1995 (the primary CLS paper listed as a common ancestor in S0 §3.1) is NOT cited. The CLS citation here is the O'Reilly & Norman 2002 review [ref 26]."
+    },
+    "finding_for_the_monograph": "Deep Generative Replay is the point BEFORE the three paths separate. It names the Theta-path move (regenerate the training set, retrain the weights), it names the E-path premise only to reject it on memory-cost and privacy grounds, and it touches the W path only through a 1987 reference title. Any claim in the monograph that the three paths fail to cite one another should date the split AFTER this paper, not to it."
+  },
+
+  "figures": [
+    {"figure": "Figure 1 (a)(b)(c)", "location": "lines 204-282, caption lines 278-282", "shows": "The whole method on one page: (a) the chain of scholars, equivalent to one scholar referring to its own recent copy; (b) the new generator trained on real x mixed with replayed x'; (c) the new solver trained on (x,y) plus (x', y') where y' is the OLD SOLVER'S response to the generated input. Reproduce this -- panel (c) is where the self-distillation lives and is the single most transferable diagram in the paper.", "worth_reproducing": "yes -- essential"},
+    {"figure": "Table 1", "location": "lines 292-317", "shows": "The only numbers in the paper: 98.81 / 98.64 / 98.58 / 98.53 / 98.56 across a five-scholar teaching chain on full MNIST. Reproduce with the scope caveat attached (one task, not a task sequence).", "worth_reproducing": "yes -- with caveat"},
+    {"figure": "Figure 2(a) and 2(b)", "location": "lines 354-361", "shows": "Permuted-MNIST: (a) per-task accuracy over sequential training, GR flat vs None collapsing; (b) average accuracy over learnt tasks, ordered ER >= GR >> Noise > None. The canonical catastrophic-forgetting picture for a Theta-path reader.", "worth_reproducing": "yes"},
+    {"figure": "Figure 3(a) and 3(b)", "location": "lines 389-397", "shows": "MNIST->SVHN and SVHN->MNIST. Thick curves = old task, dim = new task. Contains the honest detail the text admits: the no-replay arm is slightly better on the NEW task.", "worth_reproducing": "yes -- use it to teach the new-task/old-task tradeoff"},
+    {"figure": "Figure 4", "location": "lines 399-411", "shows": "Generator samples at 1000/2000/5000/10000/20000 SVHN iterations, 'diverted into ones that mimic either SVHN or MNIST input images'. The visual proof that one generator holds a bimodal cumulative distribution -- and simultaneously the only compute-like axis in the paper.", "worth_reproducing": "yes"},
+    {"figure": "Figure 5", "location": "lines 433-437", "shows": "LwF vs LwF-GR after SVHN->MNIST. The composition result: SVHN accuracy drops when shared parameters are fine-tuned under plain LwF and is largely preserved under LwF-GR.", "worth_reproducing": "optional -- only if the chapter discusses composing sleep mechanisms"},
+    {"figure": "Figure 6", "location": "lines 459-462", "shows": "Class-incremental MNIST (5 x 2 classes). GR near the upper bound; Noise and None fail. The strongest qualitative result and the self-designed benchmark.", "worth_reproducing": "yes -- with the self-designed-benchmark caveat"},
+    {"figure": "Figure 7", "location": "lines 473-478", "shows": "Generator samples after tasks 1-5, showing coverage of all classes seen so far. The visual evidence -- the only evidence -- that the recursive generator does not collapse over five rounds.", "worth_reproducing": "yes -- pair it with the note that no quantitative drift measure exists"}
+  ],
+
+  "systems_implications": {
+    "decode_cost": "Zero change at decode. The wake-time path is f(x; Theta_k) -- the same forward pass as the unmodified model, with no retrieval, no per-session state and no test-time gradient. [note-writer's inference from the total absence of any test-time mechanism; the paper reports no latency number of any kind, cost_table L_w = absent.] For the monograph's reader this is the defining property of the Theta path: it buys accuracy without touching the serving critical path, which is the opposite trade from the E path (retrieval adds prefill tokens) and from the W path (state update adds per-token work).",
+    "state_bytes_per_token_or_session": "None. There is no per-user or per-session state at all -- no KV-like structure, no fast-weight tensor, no per-session record. The entire retained state is the two shared networks Theta and Theta^G, resident in HBM alongside the model as ordinary weights. [note-writer's inference; the paper gives no parameter counts -- cost_table C = absent.] Consequence: batching is completely unaffected. Shared-weight batching, the invariant that per-request fast weights break (STYLE §3 Rosetta row 'batching'), is fully preserved here.",
+    "where_the_sleep_traffic_lands": "Sleep-time work is: (i) ancestral sampling from a GAN -- a large, dense, embarrassingly-batchable generation job with no data dependence between samples; (ii) a forward pass of the frozen previous solver over those samples to produce targets; (iii) a full training run over the r/(1-r) mixture for both solver and generator. All three are throughput-bound, high-arithmetic-intensity, offline batch jobs with no latency SLA -- they run where a background compaction job runs, not on the serving fleet. [note-writer's inference; the paper reports no B_s and no wall-clock.]",
+    "what_never_touches_disk": "The historical dataset. This is the paper's own systems claim, stated as a privacy property rather than a bandwidth property: 'As deep generative replay supported by the scholar network retains the knowledge without revisiting actual past data, this framework can be employed to various practical situation involving privacy issues.' [§1, lines 78-80] Translated: the training-data plane disappears; the storage and the I/O for past examples both go to zero and are replaced by GPU time spent sampling. That is a compute-for-storage trade, and the paper never prices either side.",
+    "capacity_scaling": "The retained-state size is constant in the number of tasks and in the volume of data seen -- O(|Theta| + |Theta^G|) -- whereas a real replay buffer grows linearly. [note-writer's inference; no size numbers exist in the paper.] The unpriced counterpart is that the sleep budget per round plausibly must GROW to cover a widening cumulative distribution with enough samples, since the generator must be re-fit to an ever-broader mixture each round (§4.3 lines 475-478). The paper never measures sample count per round, so this is the missing B_s and the sharpest unpriced quantity in the whole paper.",
+    "failure_mode_a_systems_reader_should_watch": "Doubly recursive self-training: Theta^G_k is fit to samples from Theta^G_{k-1}, and Theta_k is fit to labels from Theta_{k-1}. Any distributional error compounds multiplicatively across rounds with no external anchor. The paper's evidence against collapse over five rounds is two sample grids (Figs. 4 and 7) and one flat accuracy chain on a single task (Table 1: -0.25pp over four generations). At LLM scale this is the model-collapse question. [note-writer's assessment; the paper does not raise it.]",
+    "the_one_number_a_serving_engineer_can_take_away": "98.81 -> 98.56 percent over four generations of teach-and-retrain on MNIST [Table 1, §3.2]. That is the entire quantitative basis in this paper for the claim that a model can be its own training set. Everything else is a curve."
+  },
+
+  "todo_verify": [
+    {"item": "Solver / generator / discriminator architectures and parameter counts", "where": "supplementary materials, referenced at §4.2 line 387", "search_term": "grep -i 'supplementary' in the arXiv v3 ancillary PDF; look for 'Experimental details' / 'Network architecture' section"},
+    {"item": "The value of the mixing ratio r used in each experiment", "where": "supplementary materials", "search_term": "search 'ratio' / 'r =' / 'mixing' in the supplement"},
+    {"item": "Magnitude of the SVHN class-incremental performance loss admitted in §5 line 506", "where": "supplementary materials, 'Detailed analysis is provided in supplementary materials' [line 507]", "search_term": "search 'SVHN' in the supplement, section corresponding to §4.3"},
+    {"item": "Numeric accuracies underlying Figures 2, 3, 5 and 6", "where": "figure images (not present in the vendored .txt, which contains no plot data)", "search_term": "read the figures from the arXiv PDF pages 5-8, or the NIPS 2017 proceedings version"},
+    {"item": "Number of permutation tasks in the §4.1 sequence", "where": "Figure 2 x-axis", "search_term": "read Figure 2(a)/(b) axis labels from the PDF"},
+    {"item": "Whether Theta_k is initialized from Theta_{k-1} or from scratch in the MAIN experiments (§4.1-4.3). The preliminary §3.2 says 'trained from scratch' [line 288-289]; §3.1 lines 175-179 describes an equivalence between a single continuously-trained scholar and a sequence of scholars, which implies warm start, but the main-experiment protocol is not stated.", "where": "supplementary materials", "search_term": "search 'initializ' / 'from scratch' / 'fine-tun' in the supplement"},
+    {"item": "Whether the discriminator is carried across rounds or re-initialized each round", "where": "supplementary materials", "search_term": "search 'discriminator' in the supplement"},
+    {"item": "Number of replay samples generated per round (the missing B_s)", "where": "supplementary materials, if anywhere", "search_term": "search 'samples' / 'batch size' / 'iterations' in the supplement"},
+    {"item": "Whether McClelland et al. 1995 is cited in any version of the paper (the vendored v3 reference list, lines 524-607, cites O'Reilly & Norman 2002 [26] for CLS but not McClelland 1995)", "search_term": "grep -i 'mcclelland' over the arXiv v1/v2/v3 sources"}
+  ],
+
+  "note_metadata": {
+    "written_by": "deep-read subagent, STC v2 pre-research",
+    "written_on": "2026-08-06",
+    "source_file_lines": 610,
+    "source_completeness": "MAIN PAPER ONLY (10 pages, references included). The supplementary materials referenced at §4.2 line 387 and §5 line 507 are NOT in the vendored text -- every architecture, hyperparameter and the SVHN failure analysis lives there. All citations in this note are to line numbers in the vendored .txt, which are stable and directly checkable.",
+    "frame_version": "S0-DESIGN.md v0.1 (2026-08-06); STYLE-NOTATION.md v1.1 §1.1-1.5"
+  }
+}

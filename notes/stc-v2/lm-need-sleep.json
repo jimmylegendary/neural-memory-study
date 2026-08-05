@@ -1,0 +1,663 @@
+{
+  "paper_id": "lm-need-sleep",
+  "slug": "lm-need-sleep",
+  "arxiv": "2606.03979 (v2)",
+  "title": "Language Models Need Sleep: Learning to Self-Modify and Consolidate Memories",
+  "authors": "Ali Behrouz (Google), Farnoosh Hashemi (Cornell), Adel Javanmard (Google), Vahab Mirrokni (Google). Correspondence footnote p.1: {alibehrouz, adeljavanmard, mirrokni}@google.com and sh2574@cornell.edu (note: the correspondence handle sh2574@cornell.edu does not match the listed Cornell author's name -- recorded as printed, not corrected).",
+  "venue": "arXiv preprint, cs.LG. No venue stated in the text. Footnote p.1: 'A version of this work has been publicly available from September 2025 on OpenReview.'",
+  "date": "arXiv v2 stamp on the page margin: 10 Jul 2026 (line 'arXiv:2606.03979v2 [cs.LG] 10 Jul 2026').",
+  "path": "/home/jimmy/repos/neural-memory-study/papers/2606.03979v2.txt",
+  "axis": "Theta",
+  "axis_note": "Theta-path, but with a load-bearing W-layer substrate. The paper's OWN contribution (Knowledge Seeding + Dreaming) moves Theta. The substrate it runs on (CMS/Hope, inherited from Nested Learning) already moves finite-frequency parameter blocks at wake time, which under the S0 frame is W-layer motion. The paper is therefore the corpus's clearest instance of an explicit W -> Theta transfer operator. E is never touched, and the paper says so explicitly (App. A.3, dismissing Lin et al. 2025).",
+  "problem_stated": {
+    "as_the_paper_states_it": "Sec. 1, p.1: LLMs 'are largely static after their initial deployment ... their knowledge and skills become progressively stale, operating with a fixed \"knowledge cutoff\" date.' The two existing remedies are named and rejected: (1) re-pretraining on an expanded dataset, 'computationally expensive and impractical for frequent updates'; (2) continual parameter updates or fine-tuning / low-rank adaptation, which 'with iterative updates often results in Catastrophic Forgetting.'",
+    "the_load_bearing_question": "Sec. 1, p.2 (italicised in the original): 'How the model can effectively transfer the fragile short-term memories into more stable long-term knowledge?' In S0 notation this is exactly: given a W that holds this session's knowledge and a Theta that holds pre-training, what is the operator W -> Theta, and when does it run?",
+    "the_reframing": "Sec. 3.1 and the boxed claim on p.3 ('No Training or Test Time in Continual Learning'): the paper discards the train/test split and replaces it with a wake/sleep lifecycle. Sec. 2.3, p.6: 'To the best of our knowledge, the existing literature (including sleep-inspired studies) remains firmly anchored in the conventional distinction of training and testing phases.'",
+    "capacity_reframing_of_CF": "App. A.4 'Positioning of Our Work' (i), p.24: 'This reframes catastrophic forgetting as a problem of insufficient capacity rather than of sampling distribution, and addresses it by gradual parameter growth between consolidation steps rather than by re-conditioning a fixed teacher.' Same claim in Sec. 3.2, p.7: CF 'is an inherent cause of model's limited capacity (e.g., number of parameters), where parameters need to be overridden to incorporate the new knowledge.'"
+  },
+  "inherited_open_question": {
+    "from": "Nested Learning (NL), Behrouz et al. 2025, arXiv:2512.24695 -- named as the direct parent.",
+    "question": "NL solved ONLINE consolidation (wake-time, end-to-end knowledge transfer from high-frequency to low-frequency blocks) and left OFFLINE consolidation unbuilt. This paper takes up exactly that gap, and it also inherits NL's own diagnosis of when NL fails: catastrophic forgetting still strikes 'when the update period of all models matched at some point'.",
+    "evidence": [
+      "Sec. 1, p.3: 'Behrouz et al. (2025), recently, presented the Nested Learning (NL) paradigm and aimed at the first form of memory consolidation (i.e., online consolidation). ... In this paper, we focus on the second type of consolidation: i.e., offline consolidation via sleep.'",
+      "Sec. 1, p.3, the three-part complaint against NL's online-only consolidation: 'it still uses the same amount of model's capacity ... (i) Is selective and retrieval-dependent ... (ii) Depends on the context: the update caused by the online consolidation is based only on the context of the model, and so misses the higher-level understanding of new knowledge with existing one.'",
+      "Sec. 2.2, p.6 (the inherited failure condition, attributed to NL): 'While actively updating this memory system can enhance the resistance to CF, the CF can happen when the update period of all models matched at some point (Behrouz et al. 2025). Therefore, it is crucial that before each update of a memory block, a mechanism consolidates the abstracted knowledge of that block to more stable parameters.'"
+    ],
+    "secondary_inheritance_SEAL": "Sec. 3.4, p.9: the paper picks up SEAL's (Zweiger et al. 2025, arXiv:2506.10943) stated problem and names three inherited obstacles verbatim: '(1) Due to the cost of supervised fine-tuning (SFT) in SEAL's inner-loop, it is limited to small number of self-edits (dreams in our terminology). (2) Potential catastrophic forgetting as the cause of iterative self-improvement in sleep periods. (3) The sampling process only samples from the existing knowledge space of the model, while one of the key roles of dreaming is to explore novel synthesis of memories.' Item (2) is SEAL's own reported limitation, cited to Zweiger et al. 2025.",
+    "tertiary_inheritance_OPSD": "App. A.4 'Limitations of OPSD', p.24: the paper adopts the failure modes reported by Kim et al. 2026 (arXiv:2603.24472) -- privileged-context conditioning 'suppress[es] the model's epistemic verbalisation ... with drops of up to 40% across Qwen3-8B, DeepSeek-Distill-Qwen-7B, and Olmo3-7B-Instruct' -- and by He et al. 2026 / Wang et al. 2026 on 'information leakage from the privileged teacher and ... training collapse', and offers the two-stage split as the answer."
+  },
+  "core_mechanism": {
+    "one_line": "During wake, a chain of frequency-ordered parameter blocks inside Theta absorbs context (W-like motion, [lm-need-sleep Eq. 2]); at every chunk boundary the model sleeps, GROWS Theta by one low-rank expert in the next-slower block, distills the pre-growth self UPWARD into that new expert with GKD + an imitation-learning reward, DELETES the faster block's previously added experts, and then runs a SEAL-style self-generated-data RL loop (Dreaming) on top.",
+    "layer_decomposition_under_S0": "Read equation (R) collapses to \\hat y = f(q;\\Theta, W, \\varnothing): E is empty for this paper. Theta is not one object here -- it is partitioned by update frequency into \\theta^{(1)},\\dots,\\theta^{(k)} with f_1 \\ge \\dots \\ge f_k [lm-need-sleep Sec. 2.1, Def. 1]. The sequence layer (attention, or a Titans/TTT-style memory) sits at f \\to \\infty and is exactly the S0 W layer; a frozen pre-trained MLP sits at f = 0 and is exactly the S0 Theta layer [lm-need-sleep Sec. 2.2, p.5]. The paper's whole contribution lives in the interior of that spectrum, which is why S0's binary W/Theta split has to be read here as the two ENDPOINTS of a continuum the paper explicitly interpolates.",
+    "equations": [
+      {
+        "label": "(S-1) forward / read through the CMS chain",
+        "latex": "\\hat y_t \\;=\\; \\mathcal{M}^{(k)}\\Big(\\mathcal{M}^{(k-1)}\\big(\\cdots \\mathcal{M}^{(1)}(x_t;\\theta^{(1)})\\cdots;\\theta^{(k-1)}\\big);\\theta^{(k)}\\Big)",
+        "source": "[lm-need-sleep Eq. 1]",
+        "notes": "Paper writes y_t = MLP^{(f_k)}(MLP^{(f_{k-1})}(...MLP^{(f_1)}(x_t))), normalizations omitted by the authors. Under STYLE-NOTATION each MLP block is a memory module \\mathcal{M}(\\cdot;\\theta^{(\\ell)}). One block with f=0 recovers a standard Transformer, so CMS is a strict superset [lm-need-sleep Sec. 2.2]."
+      },
+      {
+        "label": "(S-2) wake-time level update -- the (M5)/CMS form",
+        "latex": "\\theta^{(\\ell)}_{i+1} \\;=\\; \\theta^{(\\ell)}_{i} - e_{i,\\ell},\\qquad e_{i,\\ell} \\;=\\; \\begin{cases}\\displaystyle\\sum_{t=i-C^{(\\ell)}}^{i} \\eta^{(\\ell)}_t\\,\\varepsilon\\big(\\theta^{(\\ell)}_t; x_t\\big) & i \\equiv 0 \\pmod{C^{(\\ell)}}\\\\[4pt] 0 & \\text{otherwise}\\end{cases}",
+        "source": "[lm-need-sleep Eq. 2]",
+        "notes": "\\varepsilon(\\cdot) is 'the error component of an arbitrary optimizer (e.g. \\nabla\\mathcal{L}(\\theta^{(f_\\ell)}_t;x_t) in gradient descent)'. Chunk size is defined as C^{(\\ell)} := \\max_{\\ell'} C^{(\\ell')} / f_\\ell [lm-need-sleep Sec. 2.2], with C^{(\\ell)} assumed divisible by C^{(\\ell-1)}. FAITHFULNESS CAVEAT: the paper's summation lower limit is t = i - C^{(\\ell)} (inclusive), i.e. C^{(\\ell)}+1 terms, whereas STYLE-NOTATION (M5) writes t = i - C^{(\\ell)} + 1. This book uses (M5); the discrepancy is an off-by-one in the original and must be footnoted, not silently corrected."
+      },
+      {
+        "label": "(S-3) sleep trigger schedule",
+        "latex": "\\text{sleep fires at step indices } \\{C^{(1)}b,\\; C^{(2)}b,\\;\\dots,\\;C^{(k)}b\\}\\quad \\forall b \\in \\mathbb{N}",
+        "source": "[lm-need-sleep Sec. 3.2, p.7]",
+        "notes": "Sleep is scheduled, not learned, and it fires immediately BEFORE a block's own base-weight update would overwrite it. Because frequencies nest, a fast block is consolidated into its slower neighbour many times before that neighbour updates -- the paper's own worked example is f=1K feeding f=10K, giving 10 consolidations per slow update [Sec. 3.2, p.7]."
+      },
+      {
+        "label": "(S-4) capacity expansion -- Theta grows",
+        "latex": "\\theta^{(\\ell^*)} \\;\\leftarrow\\; \\theta^{(\\ell^*)} \\cup \\big\\{A^{(\\ell^*),\\,s_{\\ell^*}+1},\\, B^{(\\ell^*),\\,s_{\\ell^*}+1}\\big\\},\\qquad A \\in \\mathbb{R}^{d\\times d_{\\mathrm{low}}},\\; B \\in \\mathbb{R}^{d_{\\mathrm{low}}\\times d},\\; d_{\\mathrm{low}} \\ll d,\\qquad s_{\\ell^*} \\leftarrow s_{\\ell^*}+1",
+        "source": "[lm-need-sleep Sec. 3.2, p.7]",
+        "notes": "Each MLP^{(f_\\ell)} is assumed 'without loss of generality' to be a sparse MoE with router \\mathcal{R}^{(\\ell)} over experts {W^{(f_\\ell),1},...,W^{(f_\\ell),s_\\ell}}. \\ell^*-1 is the sender (faster) block, \\ell^* the receiver (slower). \\dim\\Theta strictly increases at every sleep -- this is the single largest departure from the canonical (U-Theta), which assumes fixed dimension."
+      },
+      {
+        "label": "(S-5) compute -> consolidate -> update protocol",
+        "latex": "\\text{(a) compute } \\theta^{(\\ell^*-1)}_{\\mathrm{new}} \\text{ from } e_{i,\\ell^*-1} \\text{ but DO NOT apply;}\\quad \\text{(b) teacher } \\Theta \\text{ (pre-update)},\\; \\text{student } \\Theta_{\\exp} = \\big(\\theta^{(\\ell^*-1)}_{\\mathrm{new}}, \\text{experts reset}\\big) \\cup \\{A,B\\};\\quad \\text{(c) apply } \\theta^{(\\ell^*-1)}\\!\\to\\!\\theta^{(\\ell^*-1)}_{\\mathrm{new}},\\; \\mathrm{reset}\\big(\\text{experts of } \\ell^*-1\\big),\\; \\mathrm{activate}\\{A,B\\} \\text{ in } \\ell^*",
+        "source": "[lm-need-sleep Sec. 3.3, p.7-8, steps (a)/(b)/(c)]",
+        "notes": "The teacher is the model's own PAST self at smaller effective state; the student is the same model with the prospective update plus the new expert. Step (c)(b) -- 'the low-rank experts previously added to MLP^{(f_{\\ell^*-1})} are reset (synaptic pruning)' -- is a DELETION operator with no analogue anywhere in (U-W)/(U-Theta)/(U-E)."
+      },
+      {
+        "label": "(S-6) GKD on-policy distillation term",
+        "latex": "\\mathcal{L}(\\Theta,\\Theta_{\\exp}) \\;=\\; (1-\\lambda_{\\mathrm{on}})\\,\\mathbb{E}_{(x,y)\\sim\\mathcal{D}}\\Big[\\mathcal{F}\\big(\\mathrm{LM}_{\\Theta}\\,\\|\\,\\mathrm{LM}_{\\Theta_{\\exp}}\\big)(y|x)\\Big] \\;+\\; \\lambda_{\\mathrm{on}}\\,\\mathbb{E}_{x\\sim\\mathcal{D}}\\,\\mathbb{E}_{y\\sim\\mathrm{LM}_{\\Theta_{\\exp}}(\\cdot|x)}\\Big[\\mathcal{F}\\big(\\mathrm{LM}_{\\Theta}\\,\\|\\,\\mathrm{LM}_{\\Theta_{\\exp}}\\big)(y|x)\\Big]",
+        "source": "[lm-need-sleep Sec. 3.3, UNNUMBERED equation between Eq. 2 and Eq. 3, p.8]",
+        "notes": "Paper's \\lambda -> \\lambda_{\\mathrm{on}} per STYLE-NOTATION Sec. 1.7.6. \\mathcal{D} is built 'by sampling from the teacher model'. Two explicit design decisions stated in the same paragraph: 'we do not backpropagate through the sampling distribution of the student' and 'we freeze all the parameters in the student model and only updates the expanded parameters.' The second is what makes this a rank-bounded write."
+      },
+      {
+        "label": "(S-7) Learning-to-Imitate reward",
+        "latex": "r\\big(\\hat d^{(i)};d^{(i)};\\mathrm{LM}_{\\Theta_{\\exp}}\\big) \\;=\\; \\rho_{r}\\, r_{\\mathrm{sem}}\\big(\\hat d^{(i)};d^{(i)};\\mathrm{LM}_{\\Theta_{\\exp}}\\big) \\;+\\; (1-\\rho_{r})\\, r_{\\mathrm{abs}}\\big(\\hat d^{(i)};d^{(i)};\\mathrm{LM}_{\\Theta_{\\exp}}\\big)",
+        "source": "[lm-need-sleep Eq. 3]",
+        "notes": "LTI samples a random prefix of each teacher-generated d^{(i)} and asks the student to complete it. r_{sem} is binary (1 if semantics match) from 'a reward model that is frozen'; the reward model is never named or sized anywhere in the paper. SYMBOL: paper's \\gamma; STYLE-NOTATION Sec. 1.7.6 renames it \\rho -- but S0 Sec. 2.4 already reserves \\rho for the forgetting rate, so this note uses \\rho_{r}. See notation_conflicts."
+      },
+      {
+        "label": "(S-8) absolute (Levenshtein) reward",
+        "latex": "r_{\\mathrm{abs}}(\\cdot) \\;=\\; \\begin{cases}\\displaystyle 1 - \\frac{z(\\hat d^{(i)},d^{(i)})}{\\max\\{|\\hat d^{(i)}|,|d^{(i)}|\\}} & \\text{if } z(\\hat d^{(i)},d^{(i)}) \\le z_0,\\\\[6pt] 0 & \\text{otherwise,}\\end{cases}",
+        "source": "[lm-need-sleep Eq. 4]",
+        "notes": "z(\\cdot,\\cdot) is Levenshtein distance; z_0 is 'a similarity threshold', value never given."
+      },
+      {
+        "label": "(S-9) Knowledge Seeding objective -- the actual sleep-time write",
+        "latex": "\\mathcal{L}_{\\mathrm{KS}}(\\Theta,\\Theta_{\\exp}) \\;=\\; \\mathbb{E}_{x\\sim\\mathcal{D}}\\Big[(1-\\lambda_{\\mathrm{KD}})\\,\\mathbb{E}_{y\\sim\\mathrm{LM}_{\\Theta_{\\exp}}(\\cdot|x)}\\big[r(y)\\big] \\;-\\; \\lambda_{\\mathrm{KD}}\\,\\mathbb{E}_{y\\sim\\mathrm{LM}_{\\Theta_{\\exp}}(\\cdot|x)}\\,\\mathcal{D}\\big(\\mathrm{LM}_{\\Theta}\\,\\|\\,\\mathrm{LM}_{\\Theta_{\\exp}}\\big)(y|x)\\Big]",
+        "source": "[lm-need-sleep Sec. 3.3, UNNUMBERED equation after Eq. 4, p.8]",
+        "notes": "Paper's \\alpha -> \\lambda_{\\mathrm{KD}} per STYLE-NOTATION Sec. 1.7.6 (collision with the retention gate \\alpha_t). ORIGINAL DEFECT: the same symbol \\mathcal{D} denotes both the sampling dataset (\\mathbb{E}_{x\\sim\\mathcal{D}}) and the divergence (\\mathcal{D}(\\cdot\\|\\cdot)) inside one line, and the divergence here is written \\mathcal{D} while (S-6) writes it \\mathcal{F}. SIGN: written as reward-minus-divergence, so it is a quantity to MAXIMISE, but the surrounding prose says 'minimize the distillation loss between teacher and student' (Sec. 3.3(b)) -- the paper never states the optimisation direction of \\mathcal{L}_{KS} explicitly."
+      },
+      {
+        "label": "(S-10) Dreaming -- generation, selection, inner SFT",
+        "latex": "\\{\\mathrm{DREAM}^{(i)}\\}_{i=1}^{m} \\sim \\mathrm{LM}_{\\Theta}(\\cdot\\,|\\,c_{\\mathrm{task}}),\\qquad g^{(i)}_{\\mathrm{DR}} = \\nabla_{\\Theta}\\mathcal{L}_{\\mathrm{SFT}}\\big(\\mathrm{DREAM}^{(i)},\\Theta\\big),\\qquad \\theta'^{(i)} \\leftarrow \\mathrm{SFT}\\big(\\theta^{(i)},\\mathrm{DREAM}^{(i)}\\big)\\ \\text{(LoRA)}",
+        "source": "[lm-need-sleep Sec. 3.4, p.9-10]",
+        "notes": "Sampling deliberately perturbs routing: 'each router in MoE blocks additionally chooses a random expert and so incorporates random irrelevant knowledge to the dreaming.' Selection keeps Top-k by \\|g^{(i)}_{DR}\\| plus b random samples 'to maintain diversity'. Each kept dream is applied to an ISOLATED instance of the model. SYMBOL: the paper's task context is C in the pair (C,\\tau) -- renamed c_{\\mathrm{task}} here because C is chunk size in STYLE-NOTATION and state capacity in S0 Sec. 2.4."
+      },
+      {
+        "label": "(S-11) Dreaming reward (SEAL-style, binary)",
+        "latex": "r\\big(\\mathrm{DREAM}^{(i)},\\tau(\\cdot),\\mathrm{LM}_{\\theta^{(i)}}\\big) = \\begin{cases}1 & \\text{if } \\mathrm{LM}_{\\theta'^{(i)}} \\text{ improves over } \\mathrm{LM}_{\\theta^{(i)}} \\text{ under } \\tau,\\\\ 0 & \\text{otherwise,}\\end{cases}\\qquad \\text{optimised with ReST}^{\\mathrm{EM}}",
+        "source": "[lm-need-sleep Eq. 5; ReST^EM cited to Singh et al. 2024a]",
+        "notes": "\\tau(\\cdot) is 'a measure to asses the performance in the downstream evaluation'. This means sleep is TASK-AWARE: an evaluable downstream metric must be available during sleep. The paper never discusses what replaces \\tau in a task-free deployment."
+      },
+      {
+        "label": "(S-12) reduction to the S0 canonical (U-Theta)",
+        "latex": "\\Theta_{k+1} \\;=\\; \\Theta_k \\;-\\; \\eta_\\Theta \\nabla_{\\Theta}\\,\\mathcal{L}\\big(\\mathcal{R}_k;\\Theta_k\\big),\\qquad \\mathcal{R}_k = \\mathrm{gen}\\big(\\mathcal{H}_k;B_s\\big)\\;\\;\\longrightarrow\\;\\; \\Theta_{k+1} = \\Pi_{\\mathrm{grow}}\\big(\\Theta_k\\big) - \\eta_\\Theta\\,P_{\\{A,B\\}}\\nabla_{\\Theta}\\mathcal{L}_{\\mathrm{KS}}\\big(\\mathcal{R}_k;\\Theta_k\\big) \\;\\;\\text{then}\\;\\; \\Pi_{\\mathrm{reset}}^{(\\ell^*-1)}",
+        "source": "note-writer's reduction; components from [lm-need-sleep Sec. 3.2, Sec. 3.3(c)]",
+        "notes": "\\Pi_{\\mathrm{grow}} = dimension-increasing embedding (S-4); P_{\\{A,B\\}} = projection onto the newly activated low-rank expert only (all else frozen); \\Pi_{\\mathrm{reset}}^{(\\ell^*-1)} = zeroing of the sender block's accumulated experts. \\mathcal{R}_k = \\mathcal{D}, sampled from LM_\\Theta itself, so \\mathcal{H}_k in the canonical form is not stored experience but the teacher's own output distribution."
+      }
+    ],
+    "notation_conflicts": [
+      {
+        "paper_symbol": "\\gamma (Eq. 3, reward mixing coefficient)",
+        "collides_with": "\\gamma_{t,i}, the Atlas Omega-rule window gate (STYLE-NOTATION Sec. 1.2, Sec. 1.5)",
+        "style_notation_says": "rename to \\rho (STYLE-NOTATION Sec. 1.7.6)",
+        "new_collision_in_STC_v2": "S0 Sec. 2.4 reserves \\rho for the forgetting / degradation rate -- one of the four mandatory cost quantities. Applying the NM rename would put the reward-mixing coefficient and the forgetting rate on the same glyph in a book whose every chapter carries a \\rho row in its cost table.",
+        "resolution_used_here": "\\rho_{r} for the reward-mixing coefficient; \\rho stays reserved for the forgetting rate. This needs to be ratified in style/STC-STYLE-NOTATION.md before ch-Theta-5 is written."
+      },
+      {
+        "paper_symbol": "\\alpha (\\mathcal{L}_{KS}, distill-vs-reward coefficient)",
+        "collides_with": "\\alpha_t \\in [0,1], the retention gate (STYLE-NOTATION Sec. 1.2, P4)",
+        "resolution_used_here": "\\lambda_{\\mathrm{KD}} (already fixed by STYLE-NOTATION Sec. 1.7.6). No new conflict."
+      },
+      {
+        "paper_symbol": "\\lambda (GKD on-policy fraction)",
+        "collides_with": "\\lambda, outer weight decay (STYLE-NOTATION Sec. 1.2)",
+        "resolution_used_here": "\\lambda_{\\mathrm{on}} (already fixed by STYLE-NOTATION Sec. 1.7.6). No new conflict."
+      },
+      {
+        "paper_symbol": "C in the sampled task pair (C, \\tau) (Sec. 3.4)",
+        "collides_with": "C = chunk size (STYLE-NOTATION Sec. 1.2) AND C = state capacity in bytes (S0 Sec. 2.4). A triple collision, and the paper itself uses C^{(\\ell)} for chunk size two sections earlier.",
+        "resolution_used_here": "c_{\\mathrm{task}} for the dreaming task context. NEW -- not covered by STYLE-NOTATION Sec. 1.7.6."
+      },
+      {
+        "paper_symbol": "\\mathcal{D}",
+        "collides_with": "itself -- used for the sampling dataset and for the divergence in the same displayed equation (Sec. 3.3)",
+        "resolution_used_here": "\\mathcal{D} = dataset only; the divergence is \\mathcal{F} throughout, matching the paper's own earlier usage in (S-6). This is a defect in the source, not a notation choice."
+      },
+      {
+        "paper_symbol": "L / T (sequence length, used interchangeably in Sec. 2.1)",
+        "collides_with": "L_w, the S0 wake-latency cost quantity, and \\mathcal{L}, the outer loss",
+        "resolution_used_here": "L = sequence length (STYLE-NOTATION Sec. 1.2); L_w kept for wake latency; \\mathcal{L} for outer loss."
+      },
+      {
+        "paper_symbol": "f(\\cdot) (Eq. 2, the optimizer error component)",
+        "collides_with": "f_\\ell, the update frequency, used in the same equation's superscripts",
+        "resolution_used_here": "\\varepsilon(\\cdot) for the optimizer error term (STYLE-NOTATION (M5) already does this); f_\\ell stays as frequency. The paper genuinely overloads f in Eq. 2."
+      },
+      {
+        "paper_symbol": "\\boldsymbol{\\theta}^{(f_\\ell)}",
+        "collides_with": "\\theta_t (lowercase, time-subscripted) is BANNED as inner-lr notation (STYLE-NOTATION Sec. 1.5)",
+        "resolution_used_here": "\\theta^{(\\ell)} with a level superscript, never a bare time subscript. No semantic conflict."
+      }
+    ]
+  },
+  "outer_vs_inner": {
+    "reader_note": "Read the 'when' column as a clock. Outer-loop = before the model was ever deployed, once. Sleep-time = a scheduled offline job that runs during the model's deployed life, at step indices {C^{(l)} b}. Wake-time = while tokens are being served. The paper's thesis is that the middle column exists at all.",
+    "rows": [
+      {
+        "learnable_object": "Backbone weights of the pre-trained LM (Llama-3B/8B, Llama-3.2-1B, Qwen3-1.7B/8B)",
+        "who_learns_it": "Someone else, before this paper starts",
+        "when": "outer-loop training (inherited checkpoint)",
+        "moves_at_wake": "no",
+        "moves_at_sleep": "no (frozen: 'we freeze all the parameters in the student model and only updates the expanded parameters')",
+        "source": "[lm-need-sleep Sec. 3.3, p.8; Sec. 4.1; App. B.3]"
+      },
+      {
+        "learnable_object": "Hope / CMS architecture parameters and the frequency ladder itself (f_1 >= ... >= f_k, C^{(l)})",
+        "who_learns_it": "Nested Learning's end-to-end pre-training; frequencies are hyperparameters chosen by hand",
+        "when": "outer-loop training + hand-set schedule",
+        "moves_at_wake": "no (the ladder is fixed)",
+        "moves_at_sleep": "no",
+        "source": "[lm-need-sleep Sec. 2.2, Def. 1; Fig. 7 gives the concrete ladder 1k -> 5k -> 10k]"
+      },
+      {
+        "learnable_object": "theta^{(l)} for finite-frequency CMS blocks -- the base weights of each MLP block",
+        "who_learns_it": "the model itself, from the tokens it is serving",
+        "when": "WAKE-TIME, applied once every C^{(l)} steps",
+        "moves_at_wake": "YES -- this is the S0 W-layer motion, even though the paper calls them parameters",
+        "moves_at_sleep": "the sender block's base update is COMPUTED during wake accumulation but APPLIED at the sleep boundary, step (c)",
+        "source": "[lm-need-sleep Eq. 2; Sec. 3.3 steps (a) and (c)]"
+      },
+      {
+        "learnable_object": "Sequence-layer state (KV cache for attention, or a Titans/TTT fixed-size memory)",
+        "who_learns_it": "the model, per token",
+        "when": "wake-time, every token",
+        "moves_at_wake": "YES (f -> infinity endpoint of the frequency spectrum)",
+        "moves_at_sleep": "not discussed; the paper treats the sequence layer as a black box",
+        "source": "[lm-need-sleep Sec. 2.2, p.5-6]"
+      },
+      {
+        "learnable_object": "New low-rank expert {A^{(l*),s+1}, B^{(l*),s+1}} in the receiver block",
+        "who_learns_it": "the model, distilling from its own pre-expansion self",
+        "when": "SLEEP-TIME -- created and trained inside one sleep step; the ONLY trainable object during Knowledge Seeding",
+        "moves_at_wake": "no (frozen after the sleep step that created it, until it is itself consolidated upward)",
+        "moves_at_sleep": "YES -- this is the paper's write operation",
+        "source": "[lm-need-sleep Sec. 3.2, p.7; Sec. 3.3, p.8]"
+      },
+      {
+        "learnable_object": "Previously added low-rank experts of the sender block l*-1",
+        "who_learns_it": "nobody -- they are DESTROYED",
+        "when": "sleep-time, step (c)(b): 'the low-rank experts previously added to MLP^{(f_{l*-1})} are reset (synaptic pruning)'",
+        "moves_at_wake": "no",
+        "moves_at_sleep": "reset to (unspecified) initial values -- the paper does not say to zero, to random, or to a stored init",
+        "source": "[lm-need-sleep Sec. 3.3(c), p.8]"
+      },
+      {
+        "learnable_object": "MoE router R^{(l)} of each block",
+        "who_learns_it": "UNSPECIFIED. The paper never states how the router learns to dispatch to a newly activated expert, nor to stop dispatching to a reset one.",
+        "when": "unstated",
+        "moves_at_wake": "unstated",
+        "moves_at_sleep": "unstated (except that at DREAM sampling time the router is deliberately perturbed to also pick a random expert)",
+        "source": "[lm-need-sleep Sec. 3.2, p.7; Sec. 3.4, p.10] -- gap, see unfavorable_facts"
+      },
+      {
+        "learnable_object": "Per-dream LoRA adapters theta'^{(i)}",
+        "who_learns_it": "an isolated instance of the model, supervised on one dream",
+        "when": "sleep-time (dreaming). Also WAKE/TEST time in the ARC protocol: at test the model generates 5 dreams and applies each independently before predicting",
+        "moves_at_wake": "YES in the ARC protocol -- gradient updates inside the serving loop",
+        "moves_at_sleep": "YES",
+        "source": "[lm-need-sleep Sec. 3.4, p.10; App. B.3, p.25]"
+      },
+      {
+        "learnable_object": "Dream-generation policy (which dreams to produce)",
+        "who_learns_it": "the model, via ReST^EM on the binary improvement reward of Eq. 5",
+        "when": "sleep-time",
+        "moves_at_wake": "no",
+        "moves_at_sleep": "YES",
+        "source": "[lm-need-sleep Sec. 3.4, Eq. 5, p.10]"
+      },
+      {
+        "learnable_object": "Semantic reward model used by r_sem",
+        "who_learns_it": "nobody -- 'we use a reward model that is frozen'",
+        "when": "never (external, pre-existing, unidentified)",
+        "moves_at_wake": "no",
+        "moves_at_sleep": "no",
+        "source": "[lm-need-sleep Sec. 3.3, p.8]"
+      },
+      {
+        "learnable_object": "Sleep hyperparameters lambda_on, lambda_KD, rho_r, z_0, m, Top-k, b",
+        "who_learns_it": "nobody -- hand-set, and no values are reported anywhere in the paper",
+        "when": "n/a",
+        "moves_at_wake": "no",
+        "moves_at_sleep": "no",
+        "source": "[lm-need-sleep Sec. 3.3, Sec. 3.4; Table 5 reports only LR / batch / steps / LoRA r / LoRA alpha]"
+      },
+      {
+        "learnable_object": "External store E (text / vector / graph records)",
+        "who_learns_it": "does not exist in this paper",
+        "when": "n/a",
+        "moves_at_wake": "n/a",
+        "moves_at_sleep": "n/a",
+        "source": "[lm-need-sleep App. A.3, p.23 -- E-path work is cited and explicitly declared out of scope]"
+      }
+    ]
+  },
+  "update_layer": {
+    "primary": "(U-Theta)",
+    "also_touches": "(U-W), as the substrate it consumes -- and the order matters",
+    "order": "W first, Theta second, within every cycle. WAKE: the sequence layer and the high-frequency CMS blocks absorb the session (W-layer motion, [Eq. 2]). SLEEP: the accumulated W content is read out and written into newly grown Theta capacity ([Sec. 3.2] + [Sec. 3.3]), then the W-side low-rank experts are wiped ([Sec. 3.3(c)]). The wipe is what makes it a transfer rather than a copy.",
+    "E_layer": "untouched, and deliberately so [lm-need-sleep App. A.3, p.23].",
+    "how_it_differs_from_canonical_U_Theta": [
+      "DIMENSION IS NOT CONSTANT. Canonical (U-Theta) subtracts a gradient from a fixed-size Theta. Here Theta_{k+1} lives in a strictly larger space than Theta_k: one low-rank expert (A in R^{d x d_low}, B in R^{d_low x d}) is appended per consolidated pair per sleep [Sec. 3.2]. The paper's whole diagnosis of CF is that fixed dimension is the disease.",
+      "THE GRADIENT IS PROJECTED ONTO A SUBSPACE THAT DID NOT EXIST BEFORE. All other parameters are frozen: 'we freeze all the parameters in the student model and only updates the expanded parameters. This ensures that the transferred knowledge does not interfere with the old knowledge, causing catastrophic forgetting' [Sec. 3.3, p.8]. So the write is rank-bounded by construction and the old Theta is bit-identical after a sleep -- a much stronger non-interference guarantee than EWC-style regularisation, bought by never touching the old weights at all.",
+      "THE TRAINING SET IS SELF-GENERATED. R_k = D is sampled from LM_Theta, the model's own pre-expansion self [Sec. 3.3, p.8]. There is no replay buffer of real data. H_k in the canonical form is therefore not stored experience -- it is a distribution the model re-samples from itself.",
+      "THE OBJECTIVE IS NOT A TASK LOSS. It is L_KS = (1-lambda_KD) * (imitation reward) - lambda_KD * (teacher-student divergence) [Sec. 3.3, unnumbered]. The 'target' is the model's own past output distribution, both at the token level (GKD) and at the sampling level (LTI).",
+      "THERE IS A DESTRUCTIVE OPERATOR. Canonical (U-Theta) has no deletion. Here every sleep ends by resetting the sender block's accumulated experts ('synaptic pruning') [Sec. 3.3(c)]. In the S0 cost frame this is what keeps C bounded, and it is also the only place rho could be measured -- and is not.",
+      "IT FIRES ON A FIXED CLOCK, NOT ON A TRIGGER. Sleep occurs at {C^{(l)} b} for all b [Sec. 3.2]. Nothing in the paper learns WHEN to sleep; the schedule is inherited from the frequency ladder.",
+      "IT IS APPLIED k-1 TIMES PER CYCLE, NOT ONCE. Consolidation runs between every consecutive pair of blocks [App. A.4 (ii), p.24: 'our method operates over a chain of memory blocks with strictly ordered update frequencies and performs consolidation between each pair of consecutive blocks'].",
+      "DREAMING IS A SECOND, DIFFERENT (U-Theta) IN THE SAME CYCLE. Its R_k is synthetic data generated under deliberately corrupted routing, filtered by gradient norm, and its update is a per-dream LoRA SFT scored by a binary improvement reward and optimised with ReST^EM [Sec. 3.4]. So one sleep instantiates (U-Theta) twice with different R_k, different loss, and different trainable subsets."
+    ]
+  },
+  "cost_table": {
+    "B_s": {
+      "value": "absent (no FLOPs, no token count, no absolute wall-clock anywhere in the paper)",
+      "what_the_paper_does_state": [
+        "'With the same number of steps, SFT is 4x more efficient than our method' [App. B.5, p.26] -- i.e. one Sleep step costs 4x an SFT step. This is the only per-step cost ratio given.",
+        "'we trained the models so they achieve the same performance in AIME-24, AIME-25, and HMMT-25. In this case, SFT requires 4.3x, 3.6x, and 4.8x wall-clock time to match the performance of our design.' [App. B.5, p.26] -- iso-accuracy ratios, still relative, and only against SFT.",
+        "Sleep: 100 training steps, effective batch size 32, LR 5e-6 [Table 5, p.26]. GRPO baseline: 500 steps. SFT baseline: 100 steps. Same LR and batch for all three.",
+        "Dreaming volume, ARC: 'For each task, we sample 60 dreams and reject 45 of them.' [App. B.3, p.25] -- 60 generations + 60 backward passes for gradient-based selection + 15 isolated LoRA SFT runs per task per sleep cycle.",
+        "Dreaming volume, SQuAD CPT: 'For each passage, we sample five dreams and combine them into an aggregated synthetic dataset for training', with n = 200 passages [Sec. 4.1, p.12] -- 1000 dreams per continued-pretraining run."
+      ],
+      "not_stated": "Number of teacher samples in D; number of on-policy student rollouts; number of LTI prefix-completions; sequence lengths used during sleep; number of sleep cycles per experiment; GPU count, GPU-hours, or energy for any run."
+    },
+    "L_w": {
+      "value": "absent -- no latency, TTFT, ms/token or throughput number appears anywhere in the paper.",
+      "closest_adjacent_statements": [
+        "'we use 5 MLP blocks with dimension 64 as the additional parameters and keep the active parameter count unchanged (I.e., the same as the base model, which is either 8B or 3B).' [App. B, p.25] -- an ACTIVE-PARAMETER claim, not a latency measurement. It implies the wake-time FLOP count per token is unchanged, but no timing is reported to confirm it.",
+        "'Implementing the growing sparse modules can be extremely challenging if it requires a direct change in the dimensionality of tensors ... Alternatively, we can initially have those parameters in the model, but masked them in the forward and backward pass, before their initial activation' [Sec. 3.3, Note on the Implementation, p.9] -- static shapes are chosen for implementability; the cost of carrying masked parameters is not quantified.",
+        "The wake phase itself is not free under Eq. 2: every active block accumulates an optimizer error term per token and writes its weights every C^{(l)} steps. No cost is attached to this in the paper.",
+        "ARC test-time protocol: 'for each unseen task, the model generates 5 dreams and applies them independently before predicting the held-out output' [App. B.3, p.25] -- 5 generations plus 5 LoRA fits INSIDE the wake path, unquantified."
+      ]
+    },
+    "C": {
+      "value": "partially stated in parameters, never in bytes, and never per-session or per-user (the paper maintains one global model, not per-user state).",
+      "what_the_paper_does_state": [
+        "Per consolidation, one low-rank expert: A in R^{d x d_low}, B in R^{d_low x d}, d_low << d [Sec. 3.2, p.7]. Numerically that is 2 * d * d_low parameters per consolidated pair per sleep.",
+        "Total added capacity in the experiments: '5 MLP blocks with dimension 64 as the additional parameters' [App. B, p.25].",
+        "Active parameter count held equal to the 3B or 8B base [App. B, p.25].",
+        "LoRA rank r = 64, LoRA alpha = 128 for the dreaming SFT [Table 5, p.26].",
+        "The expert pool is pre-allocated and masked rather than grown [Sec. 3.3, Note on the Implementation, p.9] -- so C has a hard ceiling set at t=0, whose size is never given."
+      ],
+      "not_stated": "d, d_low as numbers (only 'dimension 64' for the added blocks, and only 'd_low << d' in the formulation); bytes per expert; total pre-allocated pool size; growth rate as a function of number of sleeps; what happens when the pool is exhausted."
+    },
+    "rho": {
+      "value": "absent -- no per-round degradation number is reported anywhere.",
+      "what_the_paper_does_state": [
+        "Qualitative, figure-only: 'Under continual learning setup, ICL exhibits a sharp performance drop, largely reverting to pre-trained behavior, whereas Hope retains substantially more of its gains. Performance improves monotonically with additional consolidation stages, and Hope-3 nearly recovers its single-language performance despite sequential exposure.' [Sec. 4.1, CTNL, p.11-12; numbers only in Figure 5, ChRF axes, no table].",
+        "'both methods [Cartridges and SFT] faced catastrophic forgetting in at least on of the languages, performing even weaker than ICL in at least one of the tasks (placing them outside of the plot in Figure 5)' [Sec. 4.1, p.12] -- forgetting reported as off-plot, i.e. unquantified.",
+        "'increasing the lowest frequency reduces performance, suggesting that making the most persistent memory more adaptive weakens retention' [Sec. 4.1, p.11; Figure 4 only]."
+      ],
+      "the_finding": "The paper's entire thesis is a LIFECYCLE -- repeated wake/sleep cycles over a deployed life -- and it reports no experiment in which the number of sleep cycles is the independent variable. Hope-1 / Hope-2 / Hope-3 vary the number of consolidation LEVELS, not the number of ROUNDS [Sec. 4.1, p.11]. rho is therefore not merely unreported; it is unmeasurable from the evidence given. For a Theta-path paper this is the single most consequential missing number."
+    },
+    "amortisation_N_q": "S0's amortisation identity C_avg = C_wake + C_sleep / N_q cannot be instantiated for this paper. N_q -- the number of queries sharing one consolidation -- has no analogue here because the write is not per-context but per-schedule: sleep fires at fixed step indices {C^{(l)} b} [Sec. 3.2] and the beneficiary is every subsequent query to the whole model, unboundedly. The Theta path's amortisation denominator is 'all future traffic', which is why it can look arbitrarily cheap and why the real question moves to rho (does the write survive?) and C (does the capacity last?) -- neither of which this paper reports."
+  },
+  "experiments": {
+    "models_and_scales": [
+      "Llama-3B and Llama3-8B -- class-incremental learning backbones [Sec. 4.1, p.11].",
+      "Hope architecture (from Nested Learning) -- used for consolidation experiments; 'Hope is augmented with our memory consolidation mechanism' [Sec. 4.1, p.11].",
+      "Qwen3-1.7B and Qwen3-8B -- mathematical reasoning [Tables 1, 2, p.11-12].",
+      "Llama-3.2-1B -- few-shot ARC backbone [Sec. 4.1, p.12; App. B.3, p.25].",
+      "Knowledge incorporation backbone: NOT NAMED. 'We follow the experimental setup of Zweiger et al. (2025), including the choice of models and parameters, for the sake of fair comparison.' [Sec. 4.1, p.12]. Table 3 rows say only 'Sleep (Transformer)' and 'Sleep (Transformer + four-level)'.",
+      "Added parameters in all runs: '5 MLP blocks with dimension 64', active parameter count unchanged from the 3B/8B base [App. B, p.25].",
+      "Training config for GRPO / SFT / Sleep: LR 5e-6; effective batch size 32; steps 500 / 100 / 100; LoRA rank 64; LoRA alpha 128 [Table 5, p.26]."
+    ],
+    "token_and_data_scales": [
+      "CLINC150: 150 in-scope intents, 10 domains, 23.7K total queries (22.5K in-scope, 1.2K OOS) [App. B.1, p.25].",
+      "Banking77: 77 intents, 13,083 examples, imbalanced [App. B.1, p.25].",
+      "DBpedia: 70-class level-2 setting, 10K training and 1K test instances subsampled [App. B.1, p.25].",
+      "LongHealth: 20 case documents of about 5.1K-6.8K words each; 200 questions sampled [App. B.1, p.25].",
+      "QASPER: roughly 5K questions over about 1.6K papers, full paper text used as context [App. B.1, p.25].",
+      "MK-NIAH from RULER: multi-key needle-in-a-haystack [App. B.1, p.25]. No length grid stated.",
+      "BABILong: evaluated up to 10M tokens of context [Sec. 4.1, p.11; App. B.2, p.26].",
+      "SQuAD knowledge incorporation: single passage n = 1; continued pretraining n = 200 passages, evaluated on 'the full set of 974 associated questions', 5 dreams sampled per passage [Sec. 4.1, p.12].",
+      "ARC: 11 tasks for training, 8 held-out tasks for evaluation; 60 dreams sampled and 45 rejected per task; 5 dreams generated and applied independently per test task [Sec. 4.1, p.12; App. B.3, p.25].",
+      "CTNL: MTOB (Kalamang) + Manchu translation datasets, scored in ChRF [Sec. 4.1, p.11]."
+    ],
+    "headline_numbers": [
+      {
+        "benchmark": "AIME-24 / AIME-25 / HMMT-25, avg@16, Qwen3-1.7B",
+        "numbers": "Base (Instruct) 49.8 / 34.5 / 25.7; SFT 47.3 / 36.1 / 22.9; GRPO 51.0 / 38.6 / 26.1; OPSD 51.6 / 40.0 / 28.1; Sleep 53.2 / 40.2 / 29.3",
+        "source": "[lm-need-sleep Table 2, p.12]",
+        "reading": "SFT is BELOW the base model on AIME-24 (47.3 vs 49.8) and HMMT-25 (22.9 vs 25.7). Sleep's margin over the strongest baseline OPSD is +1.6 / +0.2 / +1.2."
+      },
+      {
+        "benchmark": "AIME-24 / AIME-25 / HMMT-25, avg@16, Qwen3-8B",
+        "numbers": "Base (Instruct) 73.8 / 68.1 / 42.4; SFT 75.5 / 66.4 / 43.7; GRPO 76.4 / 68.1 / 44.9; OPSD 76.6 / 67.4 / 45.1; Sleep 79.2 / 69.0 / 46.1",
+        "source": "[lm-need-sleep Table 2, p.12]",
+        "reading": "Sleep's margin over OPSD is +2.6 / +1.6 / +1.0. SFT is BELOW base on AIME-25 (66.4 vs 68.1). GRPO ties base on AIME-25 (68.1). Column assignment cross-checked against Table 1, whose Sleep row is identically 79.2 / 69.0 / 46.1."
+      },
+      {
+        "benchmark": "Consolidation ablation, Qwen3-8B, AIME-24 / AIME-25 / HMMT-25",
+        "numbers": "Sleep 79.2 / 69.0 / 46.1; - Imitation Learning 76.8 / 67.9 / 45.0; - Semantic Reward 78.9 / 69.2 / 44.5; - w/o Expansion 78.2 / 67.9 / 44.9; OPSD 76.6 / 67.4 / 45.1; OPSD + Expansion 77.9 / 68.2 / 45.9",
+        "source": "[lm-need-sleep Table 1, p.11]",
+        "reading": "Removing the Semantic Reward IMPROVES AIME-25 (69.2 > 69.0). Expansion alone lifts the OPSD baseline by +1.3 / +0.8 / +0.8, i.e. roughly half of Sleep's total margin over OPSD comes from the architectural expansion rather than from Knowledge Seeding."
+      },
+      {
+        "benchmark": "SQuAD knowledge incorporation, mean no-context accuracy, single passage (n=1) / CPT (n=200)",
+        "numbers": "Base model 31.9 / 31.9; Fine-tuned Model with No Dreaming 33.4 / 32.0; SEAL 46.7 / 43.2; Sleep (Transformer) 48.1 / 44.3; Sleep (Transformer + four-level) 48.9 / 46.2",
+        "source": "[lm-need-sleep Table 3, p.12]",
+        "reading": "Margin over SEAL: +2.2 / +3.0 for the four-level variant. Going from two-level to four-level buys +0.8 / +1.9."
+      },
+      {
+        "benchmark": "SQuAD dreaming ablations, single passage / CPT",
+        "numbers": "removing gradient-based selection 47.1 / 45.2; removing random expert 48.0 / 44.7; removing Dreaming 35.7 / 36.2",
+        "source": "[lm-need-sleep Table 3, p.12]",
+        "reading": "Dreaming carries the result: removing it costs -13.2 / -10.0. The two dreaming sub-components are worth about -1.8 / -1.0 and -0.9 / -1.5 respectively -- both within the range where single-run variance would matter, and no variance is reported."
+      },
+      {
+        "benchmark": "Few-shot abstract reasoning (ARC), success rate %",
+        "numbers": "ICL 0; TTT 10; SEAL 72.5; Sleep 80",
+        "source": "[lm-need-sleep Table 4, p.12]",
+        "reading": "Metric is 'the fraction of dreams that yield a correct answer' [App. B.3], over 8 held-out tasks x 5 dreams = 40 binary outcomes. 80% = 32/40; SEAL's 72.5% = 29/40. The gap is 3 outcomes."
+      },
+      {
+        "benchmark": "Class-incremental text classification (CLINC / Banking / DBpedia)",
+        "numbers": "NO NUMBERS GIVEN. 'Results in Figure 3 show that Hope performs best across datasets, including over external-learner (InCA) and regularization (EWC) approaches.'",
+        "source": "[lm-need-sleep Sec. 4.1, p.11; Figure 3, p.10]",
+        "reading": "Baselines: ICL (same continual pre-training without sleep), EWC, InCA, and plain Hope. Figure-only."
+      },
+      {
+        "benchmark": "Effect of number of consolidation levels on long context (MK-NIAH / LongHealth / QASPER)",
+        "numbers": "NO NUMBERS GIVEN. Two stated trends: '(1) increasing the number of consolidation stages improves in-context learning and long-context understanding ... (2) increasing the lowest frequency reduces performance.'",
+        "source": "[lm-need-sleep Sec. 4.1, p.11; Figure 4, p.10]",
+        "reading": "Baselines: ICL, DuoAttention, Cartridges. Figure 4 caption warns 'Lower values indicate better performance for QASPER' -- an axis inversion for one of the three panels."
+      },
+      {
+        "benchmark": "Continual Translation of a Novel Language (Kalamang + Manchu, ChRF)",
+        "numbers": "NO NUMBERS GIVEN. 'Hope-3 nearly recovers its single-language performance despite sequential exposure.' Cartridges and SFT fall 'outside of the plot'.",
+        "source": "[lm-need-sleep Sec. 4.1, p.11-12; Figure 5, p.11]",
+        "reading": "The cleanest forgetting evidence in the paper exists only as a scatter plot."
+      },
+      {
+        "benchmark": "BABILong",
+        "numbers": "NO NUMBERS GIVEN. 'Hope achieve almost perfect score in scaling to 10M of tokens.' Baselines: GPT-4, GPT-4o-mini, Llama-8B + RAG, RMT, ARMT, Titans.",
+        "source": "[lm-need-sleep Sec. 4.1, p.11; App. B.2, p.26; Figure 6, p.11]",
+        "reading": "App. B.2 states large models fail beyond 128K-256K; Titans/ARMT/Hope comparable up to ~1M, after which Titans and ARMT 'degrade sharply' while Hope 'remains stable even at extreme lengths up to 10M tokens'. Authors' own caveat in the same paragraph: 'all small models, including Hope, suffer substantial performance drops without fine-tuning.'"
+      },
+      {
+        "benchmark": "Efficiency",
+        "numbers": "Per step: SFT is 4x more efficient than Sleep. Iso-accuracy: SFT requires 4.3x (AIME-24), 3.6x (AIME-25), 4.8x (HMMT-25) the wall-clock of Sleep.",
+        "source": "[lm-need-sleep App. B.5, p.26]",
+        "reading": "Only against SFT. No iso-compute comparison against GRPO (which ran 5x the steps, Table 5) or OPSD."
+      }
+    ]
+  },
+  "scale_ceiling": "Largest model demonstrated: 8B (Llama3-8B for class-incremental learning; Qwen3-8B for math reasoning) [Sec. 4.1, p.11; Table 2, p.12]. Smallest: Llama-3.2-1B [App. B.3]. No pre-training from scratch and no model above 8B anywhere in the paper. Largest DATA scale demonstrated: BABILong context to 10M tokens [Sec. 4.1 / App. B.2] -- but only for fine-tuned small models, and reported as a figure. Largest knowledge-incorporation scale: 200 passages / 974 questions [Sec. 4.1, p.12]. Largest sleep-time budget demonstrated: 100 optimisation steps at effective batch 32 [Table 5]. Number of wake/sleep cycles demonstrated: never stated for any experiment. Added capacity demonstrated: 5 MLP blocks of dimension 64 [App. B]. In short: the lifecycle claim is deployment-scale; the evidence is 1B-8B, single-digit consolidation levels, and an unreported number of cycles.",
+  "concept_ledger_delta": {
+    "new": [
+      "wake / sleep lifecycle -- replaces train/test as the top-level partition of a model's life [Sec. 3.1; boxed statements pp.3-4]. Owner chapter: Theta-5.",
+      "Knowledge Seeding (KS) / upward distillation -- distillation from a SMALLER teacher into a LARGER student, the inverse of the classical direction [Sec. 3.3, boxed 'Upward Distillation (Knowledge Seeding)', p.8].",
+      "self-Knowledge Seeding (SKS) -- KS where teacher and student are the same model before and after parameter expansion [Sec. 1 Contributions item 2, p.4; Sec. 3.3].",
+      "Learning to Imitate (LTI) -- RL term that rewards the student for reproducing the teacher's SAMPLING behaviour, not just its logits [Sec. 3.3, p.8-9]. STYLE-NOTATION Sec. 2.4 flags the abbreviation clash with linear time-invariant; the ch-Theta-5 disambiguation sentence is mandatory.",
+      "Dreaming -- REM-analogue self-improvement phase with deliberately randomised expert routing [Sec. 3.4].",
+      "periodic parameter (de)activation / parameter expansion -- capacity growth as a scheduled operation [Sec. 1 Contributions item 1, p.4; Sec. 3.2].",
+      "synaptic-pruning reset -- scheduled DELETION of the sender block's accumulated experts [Sec. 3.3(c), p.8]. In S0 terms this is the only bounded-C mechanism on the Theta path.",
+      "random expert selection for dreaming -- routing corruption as a novelty source [Sec. 1 Contributions item 4, p.4; Sec. 3.4].",
+      "CF-as-capacity-shortage -- the reframing of catastrophic forgetting as insufficient parameters rather than distribution shift [App. A.4 (i), p.24]."
+    ],
+    "extended_or_renamed": [
+      "Continuum Memory System (CMS), update frequency f_l, Definition 1 -- imported verbatim from Nested Learning [Sec. 2.2, Def. 1]. Not new here; ch-Theta-4 (NL) owns the definition.",
+      "online vs offline consolidation -- NL owns 'online'; this paper builds 'offline' and gives both the boxed definitions used in the monograph [Sec. 1, pp.2-3; Sec. 3.1, p.6].",
+      "GKD (Agarwal et al. 2024) extended with an RL imitation term -> 'Generalized Distillation for Knowledge Seeding' [Abstract; Sec. 3.3].",
+      "SEAL's self-edits -> 'dreams'; SEAL's binary improvement reward and ReST^EM retained unchanged [Sec. 3.4, Eq. 5]."
+    ],
+    "retired_or_contested": [
+      "'training time' and 'test time' as a partition -- explicitly retired for continual learners [boxed statement p.3: 'For a continual learner, there is no boarder and clear distinction between training and test time.'].",
+      "'sleep-time compute' as a text-space operation -- the paper contests Lin et al. 2025's ownership of the term while conceding the name collision: 'Despite similarity in the name, their method is fundamentally different from our work' [App. A.3, p.23]. For the monograph this is the naming collision that motivates S0's three-path split in the first place."
+    ]
+  },
+  "open_questions": [
+    "Repeated-cycle stability is never measured. The paper's own Sec. 3.2 identifies repeated consolidation into a fixed-size slow block as 'a critical bottleneck', proposes expansion as the fix, and then reports no experiment in which the number of sleep cycles is varied. Does expansion + reset stay stable over hundreds of sleeps? [gap between Sec. 3.2, p.7 and all of Sec. 4]",
+    "Pool exhaustion. The implementation note pre-allocates all prospective experts and masks them [Sec. 3.3, p.9], which converts unbounded growth into a hard ceiling. What happens at the ceiling is not discussed, and the pool size is never given.",
+    "When to sleep. The schedule {C^{(l)} b} is inherited from the frequency ladder [Sec. 3.2]; nothing learns the trigger. Under real serving traffic the wake phase is not a uniform token stream, and the paper does not address irregular arrival.",
+    "Task-free dreaming. Eq. 5 requires a downstream measure tau(.) available during sleep [Sec. 3.4, p.9]. A deployed model idling at 3am has no tau. The paper never says what replaces the binary improvement reward.",
+    "Router learning. How R^{(l)} learns to route to a newly activated expert -- and to stop routing to a reset one -- is never specified [Sec. 3.2, Sec. 3.3(c)]. This is the load-bearing implementation gap.",
+    "What 'reset' means numerically. Sec. 3.3(c) says the sender's experts 'are reset (synaptic pruning)' without stating the target values (zero, re-initialised, or restored from a stored init). The distinction changes both the forgetting behaviour and the checkpoint story.",
+    "What upward distillation actually preserves. The paper asserts that consolidation extracts 'abstractions' rather than replaying raw data [Sec. 1, p.3; Sec. 3.3, p.8] but offers no measurement of what is kept versus discarded, and no rate-distortion style statement of the lossy compression.",
+    "How much capacity per consolidation. CF is reframed as a capacity problem [App. A.4 (i)] with no formal statement of how much added rank prevents how much forgetting. d_low is only constrained as d_low << d.",
+    "Reward-model dependence and drift. r_sem uses an unidentified frozen reward model [Sec. 3.3, p.8] scoring a student that changes every sleep. Drift, bias, and reward hacking are not examined -- and the one ablation touching it improves a benchmark (Table 1, AIME-25).",
+    "Composition with the E path. App. A.3 declares Lin et al. 2025's text-space sleep-time compute 'fundamentally different' [p.23] but never tests the obvious composition (external summary AND parametric consolidation). The paper closes the question by definition rather than by experiment.",
+    "Composition with the W path at its own scale. The mechanism is defined over a CMS/Hope backbone, yet the dreaming results run on 'Sleep (Transformer)' [Table 3] and Llama-3.2-1B [App. B.3]. Whether the full two-stage sleep works on the architecture it was designed for is not shown.",
+    "Safety and governance of recursive self-modification. A model that rewrites its own weights on a schedule, with deliberately randomised routing injecting 'random irrelevant knowledge' [Sec. 3.4, p.10], is discussed nowhere in the paper -- no limitations section, no broader-impact statement. The paper has no limitations section at all; Sec. 5 Conclusion is 5 sentences.",
+    "Serving accounting. No wall-clock breakdown of an end-to-end wake/sleep cycle at serving scale; no cost attributed to the 60-backward-passes-per-ARC-task selection step [App. B.3]; no comparison against a plain replay-buffer baseline at matched compute, despite replay being the classical alternative the biology framing invokes [Sec. 2.3]."
+  ],
+  "unfavorable_facts": [
+    "ABLATION REVERSAL. Removing the Semantic Reward IMPROVES AIME-25: 69.2 versus full Sleep's 69.0 [Table 1, p.11]. Sec. 4.2 nonetheless states 'All the components contribute positively to the performance of our method' [p.13]. The claim is contradicted by the table it cites.",
+    "THE HEADLINE STRUCTURAL CONTRIBUTION IS WORTH ABOUT ONE POINT. 'Sleep w/o Expansion' scores 78.2 / 67.9 / 44.9 against full Sleep's 79.2 / 69.0 / 46.1 [Table 1, p.11]. Conversely, bolting expansion onto the plain OPSD baseline moves it 76.6 / 67.4 / 45.1 -> 77.9 / 68.2 / 45.9, i.e. roughly half of Sleep's margin over the strongest concurrent baseline is obtainable without Knowledge Seeding at all.",
+    "FOUR OF THE SEVEN EXPERIMENTS HAVE NO NUMBERS. Class-incremental learning (Fig. 3), the level-count study (Fig. 4), CTNL (Fig. 5) and BABILong (Fig. 6) are reported only as figures; no table in the paper or appendix carries their values [Sec. 4.1, pp.11-12]. The most-quoted claim in the paper -- 'Hope achieve almost perfect score in scaling to 10M of tokens' [Sec. 4.1, p.11] -- has no number attached anywhere.",
+    "THE 10M-TOKEN RESULT IS A FINE-TUNED RESULT, CONCEDED BY THE AUTHORS. 'Finally, we observe that all small models, including Hope, suffer substantial performance drops without fine-tuning.' [App. B.2, p.26]. All small baselines were 'fine-tuned using the official BABILong training protocol', so the comparison against zero-shot GPT-4 / GPT-4o-mini is not like-for-like -- and the paper's own figure caption says so: 'Red points correspond to fine-tuned models, whereas blue points correspond to zero-shot evaluations of large-scale models' [Fig. 6 caption, p.11].",
+    "THE WINNING SYSTEM AND A BASELINE SHARE A NAME. Sec. 4.1 introduces plain Hope as a baseline ('We also include Hope (Behrouz et al. 2025) as a multi-level in-context updating baseline without explicit distillation process') and then writes 'Results in Figure 3 show that Hope performs best across datasets' [p.11]. The sentence announcing the win names the baseline. Since the results are figure-only, a reader cannot disambiguate from the text.",
+    "SLEEP IS 4x MORE EXPENSIVE PER STEP, AND THE FAVOURABLE COMPARISON IS ONLY AGAINST SFT. 'With the same number of steps, SFT is 4x more efficient than our method' [App. B.5, p.26]. The iso-accuracy win (4.3x / 3.6x / 4.8x) is measured against SFT alone -- the baseline that in Table 2 is BELOW the base model on AIME-24 (47.3 vs 49.8), HMMT-25 (22.9 vs 25.7) at 1.7B and on AIME-25 (66.4 vs 68.1) at 8B. No iso-compute comparison is offered against GRPO or OPSD.",
+    "BASELINE COMPUTE BUDGETS ARE NOT MATCHED. Table 5 gives GRPO 500 training steps against SFT's and Sleep's 100, at identical LR and batch size [p.26]. No justification is given, and no learning curve shows whether any arm had converged.",
+    "THE FULL PARADIGM IS NEVER RUN ON THE ARCHITECTURE IT IS DEFINED FOR. Sec. 3 defines everything over a CMS/MoE backbone; Sec. 4.1's consolidation results use Hope; but the Dreaming results use 'Sleep (Transformer)' and 'Sleep (Transformer + four-level)' [Table 3, p.12] and Llama-3.2-1B [App. B.3, p.25]. There is no experiment anywhere running consolidation AND dreaming on the Hope/CMS backbone. The two halves of the contribution are validated on disjoint substrates and their composition is untested.",
+    "THE KNOWLEDGE-INCORPORATION BACKBONE IS NEVER NAMED. 'We follow the experimental setup of Zweiger et al. (2025), including the choice of models and parameters' [Sec. 4.1, p.12] is the only model statement for Table 3, the table that carries the SEAL comparison.",
+    "THE ARC HEADLINE RESTS ON 40 BINARY OUTCOMES. 8 held-out tasks x 5 dreams, scored as 'the fraction of dreams that yield a correct answer' [App. B.3, p.25]. 80% vs SEAL's 72.5% is 32 vs 29 successes -- a 3-outcome gap. The training pool is 11 tasks, and the task set was filtered 'to avoid tasks that remain unsolvable under standard configurations'.",
+    "NO VARIANCE, NO SEEDS, NO ERROR BARS ANYWHERE. avg@16 is reported for the math tables [Table 1/2 captions] but no confidence interval; several ablation deltas are 0.2-1.5 points [Tables 1, 3] with nothing to distinguish them from run-to-run noise.",
+    "SLEEP IS TASK-AWARE, WHICH UNDERCUTS THE 'ISOLATED LEARNING SYSTEM' FRAMING. The boxed definition on p.3 says a sleeping model 'receives minimal (or none) input data', but Eq. 5 requires a sampled task (c_task, tau) with an evaluable downstream measure during sleep [Sec. 3.4, p.9], and the ARC protocol generates dreams 'from the few-shot demos' [App. B.3, p.25].",
+    "AN UNIDENTIFIED EXTERNAL REWARD MODEL IS IN THE LOOP. 'For semantic similarity, we use a reward model that is frozen' [Sec. 3.3, p.8]. It is never named, sized, or counted in the efficiency comparison of App. B.5 -- and it is the one component whose removal helps a benchmark.",
+    "THE PRIORITY CLAIM SUBSTITUTES FOR A CONTROLLED COMPARISON. App. A.2, p.23: 'In addition to the fact that this study is older than such methods, Sleep fundamentally delivers a different messages that...' -- publication order is offered as the first of three differentiators against the concurrent OPSD line, supported by a footnote that a version 'has been publicly available from September 2025 on OpenReview' [p.1 footnote].",
+    "INTERNAL REFERENCING IS BROKEN AT THE POINT OF THE ABLATION CLAIM. Sec. 4.2, p.13: 'We ablate the design choices for the memory consolidation process on the mathematical reasoning. The results are reported in Figure 1.' -- Figure 1 is the conventional-ML-vs-continual-learning schematic; the results are in Table 1. The same sentence then says 'we further ablate the design choices on self-improvement in Table 3', which is the knowledge-incorporation table. Tables 1 and 2 carry byte-identical captions ('Performance of different methods on mathematical reasoning benchmarks. We use different variants of Qwen models and report average@16').",
+    "EQUATION-LEVEL DEFECTS. (a) Eq. 2's sum runs from t = i - C^{(l)} inclusive, giving C^{(l)}+1 terms for a chunk of size C^{(l)}. (b) The teacher definition in Sec. 3.3(b) reads 'MLP^{(f_{l*})}(.) still uses its original parameters theta^{(f_{l*-1})}' -- mismatched level indices. (c) The Knowledge Seeding objective uses D for the dataset and D for the divergence in one line, after using F for the divergence one paragraph earlier. (d) The two central objectives (the GKD mixture and L_KS) are both UNNUMBERED, while Eqs. 3-5 number the reward details.",
+    "THE OPTIMISATION DIRECTION OF THE MAIN OBJECTIVE IS NEVER STATED. L_KS is written as (reward) - lambda_KD * (divergence), which must be maximised, while Sec. 3.3(b) says the low-rank parameters 'are then optimized via the Knowledge Seeding objective to minimize the distillation loss'. Both readings appear within one page.",
+    "NO LIMITATIONS SECTION. Sec. 5 Conclusion is five sentences and contains no caveat, no failure mode, and no negative result [p.13]. Every unfavourable fact above had to be recovered from tables, appendices, or internal inconsistency.",
+    "NO SLEEP HYPERPARAMETER VALUES. lambda_on, lambda_KD, rho_r, z_0, m (dreams generated), Top-k, and b (random samples kept) are all defined in Sec. 3.3-3.4 and none is given a value anywhere, including Table 5 and App. B. The method is not reproducible from the paper.",
+    "BIBLIOGRAPHY DUPLICATION SUGGESTS A MECHANICAL SWEEP. Refs [85]/[86] (Pang et al.), [90]/[91] (Singh et al.), [133]/[134] (Shenfeld et al.), [139]/[141] (Zhang et al. OPSDL), [143]/[144] (Zhao et al.) are duplicate entries [pp.17-21]. App. A.4, the 2-page survey of the concurrent OPSD wave, is where most of these land."
+  ],
+  "cross_path_citations": {
+    "verdict": "Partial and asymmetric. The paper engages the E path by NAME and dismisses it in two sentences without ever running it as a baseline; it engages the W path's ARCHITECTURE line heavily (Titans, TTT, Mamba, xLSTM, NL) but cites NONE of the W path's sleep-time papers; and it cites none of the capacity/theory falsifiers. So the silence the monograph will report is specific, not general.",
+    "E_path": {
+      "cited": [
+        "Lin et al. 2025, 'Sleep-time compute: Beyond inference scaling at test-time', arXiv:2504.13171 -- ref [117], the Letta paper that named this line.",
+        "Packer et al. 2023, MemGPT, arXiv:2310.08560 -- ref [61]."
+      ],
+      "how_engaged": [
+        "Sec. 2.3, p.6: 'Lin et al. (2025) suggest an offline self-study process as a form of \"sleep-time compute\" that summarizes the past context for the next user session, mainly is designed as a proposal for spending compute on the context rather than training the model itself.'",
+        "App. A.3, p.23: 'In a similar direction to compression in the token space, Lin et al. (2025) present sleep-time compute. Despite similarity in the name, their method is fundamentally different from our work. While this method aim to find a good summary of the interactions of the model with users in the text space, when the model is idle, our proposal is on using distillation to transfer text data knowledge into a form of parametric weight update.'",
+        "App. A.3, p.23, on MemGPT: 'orchestration systems like MemGPT manage context via virtual memory paging rather than architectural modification.'"
+      ],
+      "not_cited": [
+        "Mem0 (arXiv:2504.19413) -- absent (grep: 0 hits).",
+        "Zep (arXiv:2501.13956) -- absent (grep: 0 hits).",
+        "ReasoningBank (arXiv:2509.25140) -- absent (grep: 0 hits)."
+      ],
+      "the_finding": "The two paths know each other's names and refuse each other's ontology. Neither Letta's numbers nor any E-path system appears as a baseline in any of the seven experiments -- including the SQuAD knowledge-incorporation task, where a retrieval or summary baseline would be the obvious control. The dismissal is definitional ('text space' vs 'parametric weight update'), not empirical."
+    },
+    "W_path": {
+      "cited_architecture_line": [
+        "Titans, Behrouz et al., arXiv:2501.00663 -- ref [71]; also RUN as a BABILong baseline [App. B.2], where it 'degrade[s] sharply' past ~1M tokens.",
+        "TTT, Sun et al. 2024, arXiv:2407.04620 -- ref [92]; TTT also appears as an ARC baseline [Table 4, 10%].",
+        "Nested Learning, Behrouz et al. 2025, arXiv:2512.24695 -- ref [108], the direct parent.",
+        "Linear attention (Katharopoulos et al. 2020) [39], Mamba (Gu & Dao 2023) [56], xLSTM (Beck et al. 2024) [70], Arora et al. 2024 [69] -- App. A.3 'Architectural Innovations'.",
+        "Fast Weight Programs, Schmidhuber 1992 [4] -- used as the canonical update-frequency example [Sec. 2.2]; self-referential weight matrix, Irie et al. 2022 [48].",
+        "Cartridges, Eyuboglu et al. 2025, arXiv:2506.06266 -- ref [114]; run as a baseline in Fig. 4 and Fig. 5 (where it catastrophically forgets and falls off the plot).",
+        "DuoAttention, Xiao et al. 2025 [124] -- baseline in Fig. 4."
+      ],
+      "not_cited": [
+        "'Do Language Models Need Sleep?' arXiv:2605.26099 -- ABSENT (grep: 0 hits). This is the W-path sleep paper with a nearly identical title to this one, and it is not in the bibliography.",
+        "'Memory Caching' arXiv:2602.24281 -- ABSENT (grep: 0 hits)."
+      ],
+      "the_finding": "The paper is exhaustive on W-path ARCHITECTURE and silent on W-path SLEEP. The title collision with arXiv:2605.26099 is uncited in either direction from this side. Two papers about making language models sleep, one month apart, do not cite each other -- that is the single sharpest instance of inter-path silence in the S0 corpus and belongs in the branching chapter."
+    },
+    "Theta_path_siblings": {
+      "cited": [
+        "SEAL: Self-Adapting LMs, Zweiger et al. 2025, arXiv:2506.10943 -- ref [125]; the direct substrate for Dreaming AND a baseline in Tables 3 and 4.",
+        "LoRA, Hu et al. 2022, arXiv:2106.09685 -- ref [47]; used for the per-dream SFT.",
+        "EWC, Kirkpatrick et al. 2017 -- ref [27]; run as a class-incremental baseline [Fig. 3].",
+        "The entire 2026 on-policy self-distillation wave, surveyed over two pages in App. A.4: OPSD (Zhao et al. 2026b), On-Policy Context Distillation (Ye et al. 2026b), GATES (Stein et al. 2026), SD-Zero (He et al. 2026), COPSD (Liu et al. 2026), SDFT (Shenfeld et al. 2026b), OEL (Ye et al. 2026a), pi-Play (Zhang et al. 2026d), CRISP (Sang et al. 2026), MTP (Kirchenbauer et al. 2026), OPSDL (Zhang et al. 2026c), Skill-SD (Wang et al. 2026), MSD (Qin et al. 2026), and the failure analysis of Kim et al. 2026."
+      ],
+      "not_cited": [
+        "SCM: Sleep-Consolidated Memory, arXiv:2604.20943 -- ABSENT (grep: 0 hits). The other Theta-path sleep paper in the S0 roster.",
+        "ROME (arXiv:2202.05262) / MEMIT (arXiv:2210.07229) -- absent. Direct model editing, the other way to write to Theta, is not engaged at all.",
+        "Generative Adapter (arXiv:2411.05877) / Memory Layers (arXiv:2412.09764) -- absent.",
+        "Deep Generative Replay (arXiv:1705.08690) -- absent, despite replay being the biological mechanism the paper's own framing rests on."
+      ]
+    },
+    "theory_and_capacity_axis": {
+      "not_cited": [
+        "'How much do LMs memorize' (arXiv:2505.24832) -- absent (grep: 0 hits).",
+        "'LoRA as Knowledge Memory' (arXiv:2603.01097) -- absent (grep: 0 hits).",
+        "Rate-distortion memory compaction (arXiv:2607.08032) and 'Can a LM Learn Facts Continually in Its Weights?' (arXiv:2607.11020) -- absent; both are 2607.* and therefore postdate the v2 stamp of 10 Jul 2026, so their absence is chronological, not elective. grep confirms NO reference in the bibliography carries a 2607.* identifier."
+      ],
+      "the_finding": "The paper reframes catastrophic forgetting as a CAPACITY problem [App. A.4 (i)] and cites nothing from the literature that measures capacity. arXiv:2505.24832 (May 2025) and arXiv:2603.01097 (March 2026) were both available and are both absent. The capacity claim is therefore made without contact with the capacity literature -- which is exactly the falsification axis S0 Sec. 6 candidate A4 proposes to build."
+    },
+    "bio_and_CLS_axis": {
+      "cited": [
+        "McClelland, McNaughton & O'Reilly 1995, complementary learning systems -- ref [5].",
+        "Kumaran, Hassabis & McClelland 2016 -- ref [23]; Hassabis et al. 2017 -- ref [26].",
+        "Gonzalez et al. 2020, 'Can sleep protect memories from catastrophic forgetting?', eLife -- ref [37]; Tadros et al. 2022, 'Sleep-like unsupervised replay reduces catastrophic forgetting in artificial neural networks', Nature Communications -- ref [49].",
+        "Tononi & Cirelli 2006 (synaptic homeostasis) [11]; Stickgold 2005 [9]; Rasch & Born 2013 [17]; Li et al. 2017, REM sleep prunes synapses [28]; Yang et al. 2024, sharp-wave ripples select experience for memory [102]; Squire et al. 1995/2015 [6][21]; Foster & Wilson 2006 [10]; Ji & Wilson 2007 [13]; Peyrache et al. 2009 [15]; Scoville & Milner 1957 [1].",
+        "World Models / Dreamer as dreaming precedents: Ha & Schmidhuber 2018 [30][31]; Hafner et al. 2020 [38]; Lin 1992 [3]; Mnih et al. 2015 [20]."
+      ],
+      "the_finding": "This is the most densely cited axis in the paper -- Sec. 1 spends roughly two pages on human sleep neuroscience. The biology is used as motivation only: no biological result is turned into a quantitative prediction, and the two most directly relevant computational-neuroscience results (Gonzalez et al. 2020, Tadros et al. 2022 -- both showing sleep-like replay reduces CF in ANNs) are cited in a single list at Sec. 2.3, p.6 and never compared against."
+    }
+  },
+  "figures": [
+    {
+      "figure": "Figure 1 (p.2)",
+      "shows": "Conventional ML (train/test split) versus continual learning (wake/sleep alternation). The definitional picture of the paper's central move.",
+      "worth_reproducing": "YES -- ch-Theta-5 opens on this. It is the only image in the corpus that states the lifecycle claim without any mechanism attached."
+    },
+    {
+      "figure": "Figure 2 (p.7)",
+      "shows": "Overview of Memory Consolidation: the model first increases its own parameter count (Sec. 3.2), then knowledge-seeds abstractions from the higher-frequency into the lower-frequency memory (Sec. 3.3).",
+      "worth_reproducing": "YES -- this is the expand-then-seed order, and the order is the mechanism. Pair it with (S-4) and (S-5)."
+    },
+    {
+      "figure": "Figure 3 (p.10)",
+      "shows": "Class-incremental text classification accuracy on CLINC / Banking / DBpedia against ICL, EWC, InCA and plain Hope.",
+      "worth_reproducing": "OPTIONAL -- the only continual-learning-benchmark comparison, but figure-only, and the caption's 'Hope' is ambiguous between the proposed system and the baseline. If reproduced, the ambiguity must be flagged in the caption."
+    },
+    {
+      "figure": "Figure 4 (p.10)",
+      "shows": "Effect of the number of memory levels (sleep phases) on MK-NIAH, LongHealth and QASPER, against ICL, DuoAttention and Cartridges.",
+      "worth_reproducing": "YES -- it is the paper's only sweep over its own design knob, and it carries the counter-intuitive second trend (raising the LOWEST frequency hurts retention). Warn the reader that lower is better on the QASPER panel, per the original caption."
+    },
+    {
+      "figure": "Figure 5 (p.11)",
+      "shows": "Continual Translation of a Novel Language: ChRF for Manchu->English (x) against Kalamang->English (y); red points = single-language training, blue = continual. ICL collapses under continual exposure; Hope-1/2/3 retain, monotone in consolidation stages.",
+      "worth_reproducing": "YES -- the cleanest forgetting evidence in the paper, and the clearest statement of what 'retention' buys. Also the place to say that Cartridges and SFT are off-plot, i.e. their forgetting is unquantified."
+    },
+    {
+      "figure": "Figure 6 (p.11)",
+      "shows": "BABILong accuracy versus context length; red = fine-tuned small models (RMT, ARMT, Titans, Hope), blue = zero-shot large models (GPT-4, GPT-4o-mini). Hope holds to 10M tokens where Titans/ARMT break past ~1M.",
+      "worth_reproducing": "YES, WITH THE CAVEAT ATTACHED -- reproduce it only alongside App. B.2's admission that all small models collapse without fine-tuning, and the caption's own red/blue distinction."
+    },
+    {
+      "figure": "Figure 7 (p.22)",
+      "shows": "Multi-frequency memory hierarchy: updates enter the High-Frequency FFN via repeated Parameter Expansion; when the window f_W expires, knowledge is consolidated to Mid- then Low-Frequency FFNs, with the concrete ladder 1k -> 5k -> 10k.",
+      "worth_reproducing": "YES, HIGHEST PRIORITY FOR THE SYSTEMS CHAPTER -- it is the ONLY place in the paper where a concrete update cadence appears in tokens. Every B_s and L_w estimate a reader might make has to start here."
+    },
+    {
+      "figure": "Figure 8 (p.22)",
+      "shows": "Memory consolidation by routed expert updates across successive sleep cycles (left to right): a router selects and updates a small set of experts (solid) leaving others inactive (hatched), expanding capacity while limiting interference.",
+      "worth_reproducing": "YES -- the capacity-growth-over-cycles picture, and the visual counterpart of the C row of the cost table. Note that the router behaviour it depicts is never specified in the text."
+    }
+  ],
+  "systems_implications": [
+    {
+      "claim": "Inference stops being forward-only, and the change lands at wake time, not just at sleep time.",
+      "grounding": "PAPER: Eq. 2 requires every finite-frequency block to accumulate an optimizer error term eta_t * epsilon(theta_t; x_t) per token and apply it every C^{(l)} steps; Figure 7 gives the cadence 1k -> 5k -> 10k tokens. NOTE-WRITER'S INFERENCE: the serving engine therefore needs backward-capable kernels resident in the decode path and one parameter-sized accumulator per active block. The paper attaches no cost to this."
+    },
+    {
+      "claim": "Wake-time FLOPs per token are claimed unchanged, but only as a parameter count, never as a measurement.",
+      "grounding": "PAPER, App. B: '5 MLP blocks with dimension 64 as the additional parameters and keep the active parameter count unchanged (I.e., the same as the base model, which is either 8B or 3B).' NOTE-WRITER'S INFERENCE: with sparse MoE dispatch, added-but-inactive experts cost dispatch bookkeeping rather than GEMM work -- but the masked pre-allocation of Sec. 3.3's implementation note means those weights occupy HBM from t=0 regardless of activation. Neither the residency nor the dispatch cost is measured."
+    },
+    {
+      "claim": "Static tensor shapes are a deliberate serving decision, and the reason is stated.",
+      "grounding": "PAPER, Sec. 3.3 Note on the Implementation, p.9: 'Implementing the growing sparse modules can be extremely challenging if it requires a direct change in the dimensionality of tensors in the implementation. Alternatively, we can initially have those parameters in the model, but masked them in the forward and backward pass, before their initial activation in a sleep stage.' NOTE-WRITER'S INFERENCE: this keeps compiled graphs, kernel autotuning and checkpoint layouts stable across sleeps -- the single most serving-friendly decision in the paper -- at the price of a hard, unstated capacity ceiling."
+    },
+    {
+      "claim": "The durable state moves out of the KV cache and into weights, which changes the state class, not just its size.",
+      "grounding": "PAPER: the BABILong setting reaches 10M tokens of context [Sec. 4.1 / App. B.2], where an O(L) KV cache is not an option -- GPT-4-class models are reported to fail beyond 128K-256K [App. B.2]. PAPER: per consolidation the durable delta is one low-rank expert, A in R^{d x d_low}, B in R^{d_low x d} [Sec. 3.2]. NOTE-WRITER'S INFERENCE: 2 * d * d_low values per consolidated pair, i.e. a LoRA-shaped object, so the serving problem becomes adapter versioning and eviction rather than paged-KV management. CAUTION FOR THE MONOGRAPH: unlike the E path, this state is GLOBAL, not per-user -- the paper maintains one model, and nothing in it is per-session. The per-user weight-delta serving story that S0 Sec. 6 candidate A2 wants is NOT supported by this paper's design and must not be attributed to it."
+    },
+    {
+      "claim": "Sleep is a scheduled offline job that is generation-heavy, not gradient-heavy.",
+      "grounding": "PAPER: Knowledge Seeding needs a teacher-sampled dataset D, on-policy student rollouts, and LTI prefix-completions [Sec. 3.3]; Dreaming needs m generations, one backward pass per candidate for g_DR, and one isolated LoRA SFT per surviving dream [Sec. 3.4]; ARC uses 60 dreams sampled and 45 rejected per task [App. B.3]. NOTE-WRITER'S INFERENCE: the dominant cost shape is autoregressive DECODE, not training FLOPs -- which means a sleep job competes for the same serving hardware and the same memory-bandwidth-bound regime as wake traffic, rather than living naturally on a training cluster. The paper reports no absolute cost, so this cannot be checked."
+    },
+    {
+      "claim": "Gradient-based dream selection has a cost profile the paper never surfaces.",
+      "grounding": "PAPER: g_DR^{(i)} = grad_theta L_SFT(DREAM^{(i)}, theta) for EVERY candidate dream [Sec. 3.4], with 60 candidates per ARC task [App. B.3]. NOTE-WRITER'S INFERENCE: 60 full backward passes per task, before any dream is accepted, and this is not included in the 4x-per-step figure of App. B.5 (which compares Sleep steps against SFT steps, not selection overhead)."
+    },
+    {
+      "claim": "Every sleep produces a new model version, which turns release engineering into a continuous concern.",
+      "grounding": "PAPER: sleep fires at {C^{(l)} b} for all b and every l [Sec. 3.2], and each firing applies a base-weight update, activates an expert, and resets another block's experts [Sec. 3.3(c)]. NOTE-WRITER'S INFERENCE: checkpoint management, cache invalidation, regression testing and rollback become per-cycle operations. The paper has no rollback story, and the reset step [Sec. 3.3(c)] is destructive with unspecified target values, so a naive implementation cannot restore the pre-sleep model without an external snapshot."
+    },
+    {
+      "claim": "In the ARC protocol, gradient updates enter the WAKE path -- and this is the paper's only per-request state.",
+      "grounding": "PAPER, App. B.3: 'At test time, for each unseen task, the model generates 5 dreams and applies them independently before predicting the held-out output.' NOTE-WRITER'S INFERENCE: that is a 5-way fan-out of LoRA-adapted model instances plus 5 fine-tuning runs inside a single user-facing request. It breaks shared-weight batching in exactly the way the Rosetta table (STYLE-NOTATION Sec. 3) warns about. No latency number is given for it."
+    },
+    {
+      "claim": "The amortisation question the monograph cares about cannot be answered from this paper.",
+      "grounding": "PAPER: the only cost figures are ratios against SFT [App. B.5] and a step count [Table 5]. NOTE-WRITER'S INFERENCE: with C_avg = C_wake + C_sleep / N_q, the Theta path's N_q is 'all future traffic', so the amortised sleep cost tends to zero and the binding constraints become rho (does the write survive further sleeps?) and C (when does the pre-allocated pool run out?). This paper reports neither. That is the precise shape of the Theta-path evidence gap for Part III."
+    },
+    {
+      "claim": "Consolidation competes with, and is measured against, KV-side compression -- and the comparison is figure-only.",
+      "grounding": "PAPER, Sec. 4.1: 'we observe that Hope outperforms Cartridges (Eyuboglu et al. 2025): while Cartridges improves efficiency by using an auxiliary model to compress KV representations, Hope instead performs on-policy self-distillation during sleep'; DuoAttention is also a baseline [Fig. 4]. NOTE-WRITER'S INFERENCE: for a systems reader this is the load-bearing head-to-head -- sleep-time parametric write versus sleep-time KV-cache authoring -- and it exists only as Figure 4 and Figure 5 with no numbers."
+    }
+  ],
+  "stc_vs_nm_reading_delta": {
+    "nm_note": "/home/jimmy/repos/neural-memory-study/notes/2606.03979.json (Neural Memory monograph, ch17)",
+    "what_the_NM_reading_did": "NM read this paper as the CAPSTONE of the TTT/neural-memory architecture line: (M5)/CMS is the unifying equation, the paper is 'lifecycle stacked on top of the architecture', and the emphasis falls on inner-loop-vs-outer-loop mechanics, chunkwise training, and the fact that the sleep machinery is a graft onto pre-trained backbones rather than an end-to-end meta-learned object.",
+    "what_changes_under_STC": [
+      "THE PAPER STOPS BEING A CAPSTONE AND BECOMES ONE OF THREE COMPETING ANSWERS. Under S0 the operative question is not 'how does the memory update rule work' but 'which of Theta / W / E does the idle compute write to, and what does that cost'. Read that way, this paper is the Theta-path exemplar, and its nearest rivals (Letta STC on E, arXiv:2605.26099 on W) are not descendants of it at all.",
+      "THE NAMING COLLISION BECOMES A PRIMARY OBJECT. NM treated Lin et al. 2025 as one of several 'closest prior offline-processing systems'. Under S0 it is the paper that owns the term, and App. A.3's 'Despite similarity in the name, their method is fundamentally different from our work' is evidence for the three-path thesis rather than a related-work footnote.",
+      "THE FOUR COST QUANTITIES BECOME THE DELIVERABLE, AND THREE OF THEM ARE ABSENT. NM recorded cost narratively ('4x per step, 3.6-4.8x iso-accuracy'). S0 forces B_s / L_w / C / rho into a table and the result is that only relative B_s survives; L_w, C in bytes, and rho are all absent. rho's absence is newly damning under S0 because rho is the quantity that decides whether repeated sleep is sustainable -- which is the paper's entire thesis.",
+      "THE W -> Theta TRANSFER BECOMES THE MECHANISM, NOT THE SUBSTRATE. NM described Eq. 2 as inherited CMS machinery. Under S0's layer split, Eq. 2 IS W-layer motion and Sec. 3.3 IS the W -> Theta operator, with the synaptic-pruning reset as the step that makes it a transfer rather than a copy. That reading makes this paper the bridge chapter between the W path and the Theta path.",
+      "THE 'GRAFT NOT META-LEARNED' CAVEAT SURVIVES UNCHANGED. S0 Sec. 7 already lists it as a mandatory caveat for ch-Theta-5, carried over from NM ch17. This re-read confirms it and adds a sharper version: the two halves of the contribution (consolidation on Hope, dreaming on Transformer/Llama) are never run together on one backbone.",
+      "AMORTISATION (A) DOES NOT APPLY. NM had no amortisation identity. S0's C_avg = C_wake + C_sleep / N_q presumes a context shared by N_q queries -- an E-path shape. Here the write is schedule-triggered and globally beneficial, so N_q is unbounded and the identity degenerates. That is a finding about the FRAME, and S0 Sec. 2.4 should record that (A) is an E-path/W-path instrument that the Theta path does not accept.",
+      "A NEW NOTATION CONFLICT APPEARS THAT NM COULD NOT HAVE SEEN. STYLE-NOTATION Sec. 1.7.6 renamed this paper's reward-mixing gamma to rho; S0 Sec. 2.4 independently reserved rho for the forgetting rate. The collision is created by the two documents together and must be resolved in style/STC-STYLE-NOTATION.md before drafting."
+    ]
+  },
+  "todo_verify": [
+    {
+      "item": "Exact numeric values in Figures 3, 4, 5, 6. The vendored text extraction carries captions only; no data labels survive.",
+      "how_to_settle": "Open the PDF/HTML source of arXiv:2606.03979v2 and read the figure panels directly. Search terms: 'Figure 3', 'CLINC', 'ChRF', 'BABILong'. If the values are not printed on the axes, they are unrecoverable and the monograph must say so."
+    },
+    {
+      "item": "Page numbers cited in this note are the running page markers present in the text extraction (the bare '1'..'26' lines). Section/table/figure/equation identifiers are exact; page numbers should be re-checked against the rendered PDF before they appear in print.",
+      "how_to_settle": "Render the PDF and confirm; or drop page numbers from citations and cite section/table only."
+    },
+    {
+      "item": "The backbone used for Table 3 (knowledge incorporation). The paper defers entirely to Zweiger et al. 2025.",
+      "how_to_settle": "Read arXiv:2506.10943 (SEAL) Sec. 4 / knowledge-incorporation setup and record the model it uses. Search term in SEAL: 'knowledge incorporation' + 'Qwen'."
+    },
+    {
+      "item": "Whether v1 of this paper (the September 2025 OpenReview version referenced in the p.1 footnote) contains the OPSD comparison in Table 1/Table 2, or whether those rows were added in v2 after the 2026 OPSD wave appeared.",
+      "how_to_settle": "Fetch arXiv:2606.03979v1 and diff Tables 1-2 and App. A.4 against v2. Search term: 'OPSD' in v1."
+    },
+    {
+      "item": "Whether 'Do Language Models Need Sleep?' (arXiv:2605.26099) cites THIS paper. The silence established here is one-directional only.",
+      "how_to_settle": "grep the vendored 2605.26099 text for '2606.03979', 'Knowledge Seeding', 'Behrouz'. Required before the branching chapter asserts mutual silence."
+    },
+    {
+      "item": "Whether Letta's Sleep-time Compute (arXiv:2504.13171) cites this paper or its September 2025 OpenReview version.",
+      "how_to_settle": "grep the vendored 2504.13171 text for 'Knowledge Seeding', 'Behrouz', 'Nested Learning'. Note the date ordering makes a citation unlikely; establish it rather than assume it."
+    },
+    {
+      "item": "The identity of the frozen semantic reward model used for r_sem.",
+      "how_to_settle": "Search the PDF (including any supplementary material not present in the text extraction) for 'reward model'. If absent from the PDF too, record as unreproducible."
+    },
+    {
+      "item": "Values of lambda_on, lambda_KD, rho_r, z_0, m, Top-k, b.",
+      "how_to_settle": "Search the PDF for 'lambda', 'threshold', 'Top-k'. If absent, this is a reproducibility finding, not a note gap."
+    }
+  ],
+  "notes_path": "/home/jimmy/repos/neural-memory-study/notes/stc-v2/lm-need-sleep.json"
+}

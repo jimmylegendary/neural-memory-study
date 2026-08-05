@@ -1,0 +1,587 @@
+{
+  "paper_id": "rate-distortion-compaction",
+  "arxiv": "2607.08032v1",
+  "title": "What to Keep, What to Forget: A Rate–Distortion View of Memory Compaction in LLMs and Agents",
+  "authors": [
+    "Ashwin Gerard Colaco (acolaco@uci.edu, University of California, Irvine)",
+    "Nada Lahjouji (nlahjouj@uci.edu, University of California, Irvine)"
+  ],
+  "venue": "arXiv preprint, cs.LG. No venue string appears in the vendored text; the manuscript is typeset in ACM style (it carries 'CCS Concepts' [p.1] and 'Keywords' [p.1] blocks and an ACM-style reference list), which indicates an ACM-venue submission but does not name one. Recorded as 'unstated — arXiv preprint'.",
+  "date": "2026-07-09 (arXiv:2607.08032v1 [cs.LG] 9 Jul 2026, stamp on p.1 left margin)",
+  "path": "papers/stc/2607.08032.txt",
+  "axis": "theory",
+  "document_type": "Survey + formalism + benchmark proposal + small reference experiment. The authors state this explicitly: 'This is a survey: it proposes a formalism and a benchmark protocol but does not provide large-scale empirical validation of either.' [Limitations, first sentence]",
+
+  "problem_stated": {
+    "as_the_paper_states_it": "Four separate research communities — KV-cache compression, prompt/context compression, bounded-state architectures, and agent memory consolidation — each independently solve 'a rate–distortion decision about what context-derived information to retain versus discard, at what fidelity, under a resource budget, so as to preserve downstream task utility.' [Abstract, sentence 4]",
+    "the_operational_framing": "'A method at any level takes the history H of everything the model has read and produces a smaller representation Z that fits a budget B; call this the compaction operator C. The model then runs on Z in place of the original, through a usage operator U. Stated or not, the method is solving one optimization: keep Z small while giving up as little downstream accuracy as possible.' [§1, ¶4]",
+    "the_three_differences_that_remain": "'What unit do they compress: a bit, a token, an attention head, a span of text, a vector, a stored fact? Where in the model's life do they act: pretraining, prefill, decoding, serving, inside a task, or between tasks? And do they decide what to keep before the query is known, or after?' [§1, ¶4]",
+    "scope_restriction": "'We restrict attention to the compaction of memory that comes from a model's context, drawing mostly on work from 2023 to 2026... Weight-level compression (pruning, distillation, weight quantization) is out of scope, as is long-context training that imposes no memory bound, except where such work builds in a bounded memory.' [§1, final ¶]",
+    "why_this_matters_for_v2": "[해설] This is the only paper in the v2 corpus that states a budget/quality tradeoff as a constrained optimization with a lower bound that is indifferent to which of Θ / W / E holds the state. It is therefore the capacity chapter's formal machinery: the object it bounds is exactly S0 §2.4's C (state capacity)."
+  },
+
+  "inherited_open_question": {
+    "from": "Prior agent-memory surveys — [47] 'Memory in the Age of AI Agents' and [66] 'A Survey on Long-Term Memory Security in LLM Agents' — plus the benchmark precursors SCBench [61] and KVPress [84].",
+    "question": "Prior surveys named lossy consolidation and memory integrity as THE open problems of agent memory but did not measure what repeated consolidation costs; and no existing benchmark holds one budget axis across the compaction layers. This paper takes up both: it turns 'lossy consolidation is the open problem' into a falsifiable prediction (super-linear error growth under repeated irreversible summarization) and runs it.",
+    "evidence": [
+      "§7, final subsection 'Reversibility and the compounding of loss': 'Benchmarks such as LOCOMO and LongMemEval probe single-shot recall, multi-session reasoning, and knowledge updates, but not the compounding curve over many consolidation cycles [74, 118]. That gap is why we test it directly in Section 14, and why recent surveys of agent memory and its security flag lossy consolidation and memory integrity as the open problems [47, 66].'",
+      "§13.1, final ¶ of 'What exists': 'Two efforts come closest to compaction itself. SCBench studies long-context methods through a KV-cache-centric lens... KVPress [84] supplies a harness that standardizes KV compression... We treat both as direct precursors and build on them rather than around them.'",
+      "§13.2: 'Our response is COMPACT-Bench, an extension of SCBench [61] and KVPress rather than a replacement: it keeps their task corpora and KV harness and supplies the axes and task families they leave out.'",
+      "§1, ¶6 (positioning against prior surveys): 'We are not the first to connect these areas. One recent survey gathers token-level, parametric, latent, and agent memory under a Forms/Functions/Dynamics scheme [47], and another casts agent memory as a write–manage–read POMDP [31]. What this survey adds is a single optimization objective with a provable bound rather than a descriptive grouping...'"
+    ],
+    "what_it_does_NOT_inherit": "[평가] It inherits nothing from the Θ-path or the W-path sleep lines. It does not pick up any stated open question from Letta's Sleep-time Compute [65] even though it cites that paper four times, and it never engages the sleep/consolidation literature that names Θ as the write target. See cross_path_citations."
+  },
+
+  "core_mechanism": {
+    "one_line": "A single constrained optimization — pick a compaction operator cmp_Θ that maps the history 𝓗 to a compact state Z of size ≤ C so as to minimize the expected task loss 𝓛 of the downstream reader use(Z, q) — together with a Fano/data-processing lower bound on the error rate that holds for ANY Z, whatever layer (Θ, W, E, or the KV cache) physically holds it.",
+
+    "notation_conflicts": {
+      "policy": "Every reserved symbol in style/STYLE-NOTATION.md §1.2/§1.5 and the S0 frame wins. This paper collides with the reserved set in seven places, three of them severe (ℓ, C, Q). Reproduced below as a Part II 표기 대응표 row set — copy this table verbatim into the chapter's core-mechanism section.",
+      "table": [
+        {"paper_symbol": "H", "meaning_in_paper": "the history: prompt tokens and activations, KV cache, recurrent state, memory of prior turns [§2, ¶2]", "unified": "\\mathcal{H}", "note": "SEVERE-ADJACENT. The paper uses H for BOTH the history and Shannon entropy (H(Y|Q), H(Q)) in the same two equations. Unified notation disambiguates by font: \\mathcal{H} = history (matches S0 (U-Θ)'s \\mathcal{H}_k = 그 라운드까지의 경험), plain H(·) = Shannon entropy."},
+        {"paper_symbol": "Z", "meaning_in_paper": "the compact representation produced by C [§2, ¶2]", "unified": "Z", "note": "No collision. Z is not in the reserved table. Kept."},
+        {"paper_symbol": "C_θ", "meaning_in_paper": "compaction operator, H ↦ Z, with learnable parameters θ [§2, ¶2]", "unified": "\\mathrm{cmp}_\\Theta(\\cdot)", "note": "SEVERE. Reserved C = chunk 크기 (STYLE §1.2, §1.5) and, in v2, C = 상태 용량 (S0 §2.4). Renamed to a lowercase operator name, matching S0's \\mathrm{wr}, \\mathrm{ret}, \\mathrm{gen}, S(·;B_s) convention. The subscript θ is slow weights → \\Theta."},
+        {"paper_symbol": "U", "meaning_in_paper": "usage operator: consumes Z (and q) to produce Ŷ [§2, ¶2]", "unified": "\\mathrm{use}(\\cdot,\\cdot)", "note": "No reserved collision, but renamed for symmetry with \\mathrm{cmp}. In S0 terms \\mathrm{use} = the composition of \\mathrm{ret}(E,q) with f in (R)."},
+        {"paper_symbol": "B", "meaning_in_paper": "the rate budget: rate(Z) ≤ B, 'GPU bytes for a KV cache, tokens for a prompt, state dimensions for a recurrent model, store size for an agent' [§2, ¶2]", "unified": "C", "note": "SEVERE. The paper's B is a STATE budget, not a compute budget, so it maps onto S0 §2.4's C (상태 용량, bytes/세션), NOT onto B_s (sleep 계산 예산) or B_t (wake 예산). Writing it as B would be the single most damaging notation error the chapter could make. Consequence: within this chapter C is state capacity (S0 §2.4), which itself overrides the NM-era C = chunk 크기 — declare this override once, in the chapter's first equation block."},
+        {"paper_symbol": "Q", "meaning_in_paper": "the query, a random variable [§2, ¶2]", "unified": "q", "note": "SEVERE. Reserved Q ∈ ℝ^{L×d_k} = row-stacked query matrix (STYLE §1.2). S0's read equation (R) already uses unsubscripted q for the query, so the chapter follows S0 and declares a chapter-local override of STYLE §1.5's 'unsubscripted q = norm 차수'. Norm order does not appear in this paper, so the override is free of ambiguity."},
+        {"paper_symbol": "Y", "meaning_in_paper": "the target/ground-truth answer [§2, ¶2]", "unified": "y^\\star", "note": "Reserved y_t = layer 출력. y^\\star marks it as the ground truth, and \\star does not collide with \\mathcal{M}^\\star (argmin) since it sits on a lowercase Latin letter."},
+        {"paper_symbol": "Ŷ", "meaning_in_paper": "the model's output, Ŷ = U(Z,Q) [§2, ¶2]", "unified": "\\hat y", "note": "Matches S0's read equation (R), which already writes \\hat y for the model's output."},
+        {"paper_symbol": "𝒴", "meaning_in_paper": "the answer space, |𝒴| its size [§2, Eq. 2]", "unified": "\\mathcal{Y}", "note": "No collision. Kept."},
+        {"paper_symbol": "ℓ(·,·)", "meaning_in_paper": "the TASK loss, ℓ(U(C_θ(H),Q), Y) [§2, Eq. 1]", "unified": "\\mathcal{L}(\\cdot,\\cdot)", "note": "SEVERE. STYLE §0 rule 4: inner loss = ℓ, outer/task loss = \\mathcal{L}. The paper's ℓ is a task loss over a full forward pass, i.e. an OUTER loss, so it MUST become \\mathcal{L}. This is exactly the same reversal already recorded for [TNT] (STYLE §1.7.4: TNT's \\mathcal{L} = inner loss → ℓ) — the two papers invert the same pair in opposite directions. Flag this in a footnote or the reader will conflate them."},
+        {"paper_symbol": "D(θ)", "meaning_in_paper": "the distortion: the expected-loss term in Eq. (1) [§2, Eq. 1 underbrace]", "unified": "\\mathrm{Dist}(\\Theta)", "note": "Reserved \\mathcal{D} = dataset (Sleep/GKD, STYLE §1.2). Renamed to a spelled-out operator."},
+        {"paper_symbol": "I★(Q)", "meaning_in_paper": "task-conditioned information content, I★(Q) = I(Y;H|Q), 'the number of bits of H genuinely required to answer Q' [§2, ¶4]", "unified": "I^\\star(q) = \\mathrm{I}(y^\\star; \\mathcal{H} \\mid q)", "note": "New symbol, no collision. Distinguish the mutual-information operator \\mathrm{I}(\\cdot;\\cdot) (upright) from the quantity I^\\star (italic)."},
+        {"paper_symbol": "P_e", "meaning_in_paper": "error probability Pr[Ŷ ≠ Y] [§2, ¶4]", "unified": "P_e", "note": "No collision. Kept."},
+        {"paper_symbol": "rate(·)", "meaning_in_paper": "memory measured 'in a currency appropriate to the layer' [§2, ¶2]", "unified": "\\mathrm{rate}(\\cdot)", "note": "Kept. Its layer-agnostic instantiation is BPT (bytes-per-token-of-history), §14."},
+        {"paper_symbol": "f", "meaning_in_paper": "fraction of tokens kept by an evictor [§14, ¶2]", "unified": "f_{\\mathrm{keep}}", "note": "Reserved f_\\ell = update frequency (NL/Sleep, STYLE §1.2). Subscripted to disambiguate."},
+        {"paper_symbol": "b", "meaning_in_paper": "bit-width of quantization [§14, ¶2]", "unified": "b_{\\mathrm{q}}", "note": "STYLE §1.5 forbids b for Titans' inner mini-batch; b is otherwise free, but subscript it so the reader does not read it as a batch size."},
+        {"paper_symbol": "m, n", "meaning_in_paper": "compressed / original token counts for a prompt or summary [§14, ¶2]", "unified": "m, n", "note": "Chapter-local. n is not the reserved chunk index here — declare locally."},
+        {"paper_symbol": "s", "meaning_in_paper": "the bit-size of an architectural fixed state, 'a state of s bits' [§6, ¶1]", "unified": "C_W", "note": "Reserved S_t = inner momentum; lowercase s is unclaimed but adjacent. Since the paper's s IS the same object as its B specialized to the W layer, write it as C_W (the W-layer share of state capacity) so the chapter's three-layer capacity accounting stays visible."},
+        {"paper_symbol": "(P-rev), (P-q), (P-fid)", "meaning_in_paper": "reversibility / query-conditioning / fidelity profile [§2, ¶6]", "unified": "(P-rev), (P-q), (P-fid)", "note": "고유명사 취급. Kept verbatim — these three labels are the paper's load-bearing contribution and are cited by label throughout §§4–15."}
+      ]
+    },
+
+    "equations": [
+      {
+        "id": "compaction objective",
+        "source": "[rate-distortion-compaction Eq. 1]",
+        "unified_latex": "\\min_{\\Theta}\\; \\mathbb{E}_{(\\mathcal{H},q,y^\\star)}\\underbrace{\\Big[\\mathcal{L}\\big(\\mathrm{use}(\\mathrm{cmp}_{\\Theta}(\\mathcal{H}),\\,q),\\; y^\\star\\big)\\Big]}_{\\mathrm{Dist}(\\Theta)\\;=\\;\\text{distortion}} \\qquad \\text{s.t.}\\quad \\mathrm{rate}(Z) \\le C,\\quad Z = \\mathrm{cmp}_\\Theta(\\mathcal{H})",
+        "paper_original": "min_θ E_{(H,Q,Y)}[ ℓ(U(C_θ(H), Q), Y) ]  s.t.  rate(Z) ≤ B.   with the expectation underbraced 'D(θ) = distortion'",
+        "reading": "This is a rate–distortion problem: trade memory rate against task distortion. [§2, sentence after Eq. 1]"
+      },
+      {
+        "id": "information-bottleneck form",
+        "source": "[rate-distortion-compaction §2, ¶3 — unnumbered, cites 109, 115]",
+        "unified_latex": "\\max\\; \\mathrm{I}(Z;\\, y^\\star \\mid q) \\qquad \\text{s.t.}\\qquad \\mathrm{I}(Z;\\, \\mathcal{H}) \\;\\le\\; C",
+        "paper_original": "maximize I(Z;Y|Q) subject to I(Z;H) ≤ B",
+        "reading": "'keep the bits of the history that predict the answer, spend nothing on the rest.' [§2, ¶3]"
+      },
+      {
+        "id": "data-processing step",
+        "source": "[rate-distortion-compaction §2, ¶4 — unnumbered]",
+        "unified_latex": "\\mathrm{I}(y^\\star;\\, \\hat y \\mid q) \\;\\le\\; \\min\\big(I^\\star(q),\\; C\\big)",
+        "paper_original": "I(Y;Ŷ|Q) ≤ min(I★(Q), B)",
+        "reading": "Holds 'Because Ŷ = U(Z,Q) is a function of (Z,Q) and, for a query-agnostic C, the chain Y − H − Z is Markov given Q'. [§2, ¶4] — note the Markov step is asserted only for a QUERY-AGNOSTIC operator; see unfavorable_facts."
+      },
+      {
+        "id": "layer-agnostic lower bound (the paper's central result)",
+        "source": "[rate-distortion-compaction Eq. 2]",
+        "unified_latex": "P_e \\;=\\; \\Pr[\\hat y \\ne y^\\star] \\;\\ge\\; \\frac{H(y^\\star \\mid q) \\;-\\; C \\;-\\; 1}{\\log |\\mathcal{Y}|}, \\qquad \\text{whenever } C < I^\\star(q)",
+        "paper_original": "P_e ≥ (H(Y|Q) − B − 1) / log|𝒴|,  whenever B < I★(Q).",
+        "reading": "Obtained by applying Fano's inequality to the data-processing step. 'The bound holds for any compact memory Z, whether a KV cache, a gist vector, a recurrent state, or an agent's note store, which is what lets it unify the field.' [§2, ¶4]"
+      },
+      {
+        "id": "consequence (i) — no architectural escape",
+        "source": "[rate-distortion-compaction §2, ¶5, item (i)]",
+        "unified_latex": "C < I^\\star(q) \\;\\Longrightarrow\\; P_e > 0 \\quad \\text{for every layer } \\in \\{\\Theta, W, E, \\text{KV}\\}",
+        "paper_original": "'Below the task's information requirement I★(Q), every layer must make errors, at a rate governed by the same expression; there is no architecture-specific escape.'"
+      },
+      {
+        "id": "consequence (ii) — task-dependent compressibility",
+        "source": "[rate-distortion-compaction §2, ¶5, item (ii)]",
+        "unified_latex": "\\text{compression ratio at fixed quality} \\;\\propto\\; \\frac{1}{I^\\star(q)}",
+        "paper_original": "'The compression ratio achievable at fixed quality is task-dependent, ∝ 1/I★(Q): tasks whose answers carry many bits (exact or multi-hop retrieval) compress poorly, while tasks whose answers are low-entropy (classification, gisting of redundant prose) compress well.'",
+        "reading": "'This is exactly why the same KV evictor that is near-lossless on summarization collapses on retrieval.' [§2, ¶5]"
+      },
+      {
+        "id": "consequence (iii) — the price of not knowing the query",
+        "source": "[rate-distortion-compaction §2, ¶5, item (iii)]",
+        "unified_latex": "C_{\\mathrm{eff}}^{\\text{(query-agnostic)}} \\;\\approx\\; C - H(q), \\qquad C_{\\mathrm{eff}}^{\\text{(query-conditioned)}} \\;=\\; C",
+        "paper_original": "'A query-agnostic operator must spread its budget across the whole query distribution, so its effective per-query budget is roughly B − H(Q), whereas a query-conditioned operator can spend all of B on the answer-relevant bits; the gap H(Q) is the precise price of not knowing the query.'",
+        "reading": "[해설] This is the single quantity the monograph should carry out of this paper: sleep-time compute, by S0's own definition, acts BEFORE q arrives, so every sleep-time path pays H(q) unless it stores enough to be re-queried. The paper says this of Letta STC explicitly: 'it spends budget speculatively on bits that may never be queried, the dual of the query-agnostic penalty H(Q) in Eq. (2).' [§7, 2nd family]"
+      },
+      {
+        "id": "BPT — the layer-agnostic instantiation of rate(·)",
+        "source": "[rate-distortion-compaction §14, ¶2]",
+        "unified_latex": "\\mathrm{rate}(Z) \\;=\\; \\mathrm{BPT} \\;=\\; \\frac{\\text{bytes of retained memory state}}{\\text{tokens of original context}}; \\quad \\text{evict}\\!\\to\\! f_{\\mathrm{keep}},\\;\\; b_{\\mathrm{q}}\\text{-bit quant}\\!\\to\\! \\tfrac{b_{\\mathrm{q}}}{16},\\;\\; \\text{prompt } m\\text{ of }n \\!\\to\\! \\tfrac{m}{n}",
+        "paper_original": "'Every method sits on bytes-per-token-of-history (BPT), the bytes of retained memory state over the tokens of original context. The retained state is a KV cache in the end, so all four mechanisms collapse onto one currency: token eviction that keeps a fraction f costs f of the full per-token KV bytes, b-bit quantization costs b/16 of it, prompt or summary compression to m of n tokens costs m/n, and the full cache anchors the top.'",
+        "reading": "[평가] The b/16 denominator fixes fp16 as the uncompressed reference. The paper does not state the per-token KV byte formula itself, so BPT is only ever reported as a PERCENTAGE of the full cache, never as an absolute byte count. That is why cost_table.C below cannot be filled with a number."
+      }
+    ],
+
+    "three_first_class_properties": {
+      "source": "[rate-distortion-compaction §2, ¶6 — 'Three first-class properties separate methods that fail from those that do not.']",
+      "P-rev": "Reversibility: 'can content dropped by C be re-derived if a later query needs it? Retrieval-backed and archival schemes can; eviction and summarization cannot.'",
+      "P-q": "Query-conditioning: 'does C see the query (or its distribution) when it decides what to keep? Offline gisting does not; LongLLMLingua and Quest do.'",
+      "P-fid": "Fidelity profile: 'is the representation lossless, near-lossless, uniformly lossy, or multi-fidelity (a small high-fidelity tier plus a large lossy tier)?'",
+      "why_promoted": "'Two schemes can sit at the same budget B and the same average distortion yet behave completely differently on the queries that matter... three properties that Eq. (1) leaves implicit and that we promote to the center of the survey.'"
+    },
+
+    "four_falsifiable_predictions": {
+      "source": "[rate-distortion-compaction §2, final ¶ — 'The formalism yields four falsifiable predictions']",
+      "1_KV": "'for attention-score eviction, needle recall collapses once the per-token budget falls below the needle's share of attention mass, and the collapse point tracks the entropy of the answer's location, worsening in mid-context.' — TESTED in §14.1.",
+      "2_prompt": "'query-aware compression shifts the accuracy-versus-ratio curve to the right of query-agnostic compression by exactly the mutual-information gap.' — NOT tested by this paper; asserted from cited LongLLMLingua results [§5.1].",
+      "3_architectural": "'a state of s bits cannot answer a query requiring more than s bits, so state-space and linear-attention models exhibit a hard accuracy cliff on multi-key recall at a key count proportional to state size, while attention degrades gracefully.' — NOT tested by this paper; rests on cited theory [117] and [44] [§12].",
+      "4_agent": "'under repeated irreversible summarization, end-task error grows super-linearly in the number of compaction events, whereas a reversible, retrieval-backed memory stays flat.' — TESTED in §14.2, but see unfavorable_facts on whether super-linearity was actually established.",
+      "authors_own_statement": "'We test (1) and (4) directly in Section 14.' [§2, final sentence]"
+    },
+
+    "distortion_surrogate_thesis": {
+      "claim": "'Importance heuristics are best understood as distortion surrogates. No method can evaluate D directly, because Y is unknown at compaction time. Each instead picks a surrogate, a cheap proxy for how much will dropping this hurt the answer.' [§2, ¶5]",
+      "the_named_surrogates": [
+        "accumulated attention mass — H2O [142], SnapKV [60]",
+        "token self-information or perplexity — LLMLingua [49]",
+        "an explicit mutual-information estimate — QUITO-X [115]",
+        "a bound on the induced output error — Ada-KV [34]",
+        "an LLM's own judgment of salience — Mem0 [21], reflection [88]"
+      ],
+      "why_it_matters": "'Naming them as estimators of one quantity is precisely what makes them comparable, and transferable, across layers.' [§2, ¶5]",
+      "unified_reading": "[해설] In S0 terms every one of these is an estimator of ∇ of the same distortion Dist(Θ). The retention gate α_t of the W-path (STYLE §2.4, ch13) is the LEARNED member of this family — the paper reaches this conclusion for the KV layer ('retention gate = 학습된 eviction' is already in STYLE §3's Rosetta table) but never connects it to α_t by name, because it never cites Miras."
+    },
+
+    "seven_axis_taxonomy": {
+      "source": "[rate-distortion-compaction §3; layer-wise values in Table 2; per-method values in Appendix A Table 6]",
+      "axes": [
+        "(1) Granularity of the compressed unit — bit-width, hidden dimension or rank, token / KV entry, page or block, layer or head, natural-language span, dense soft token, recurrent state, semantic item, visual token, inter-agent message.",
+        "(2) Lifecycle stage — architecture and pretraining; prompt/prefill time; prefill-to-decode KV formation; decode-time dynamic selection; the serving runtime across requests; within-task working-context curation; between-task consolidation; offline corpus indexing.",
+        "(3) Lossiness and fidelity — lossless reuse, near-lossless, uniformly lossy, or multi-fidelity; cross-cutting: reversible vs irreversible (P-rev).",
+        "(4) Query/task adaptivity — query-agnostic and offline-cacheable, query-conditioned and online, or task-aware via a learned reward (P-q); plus which importance signal is used.",
+        "(5) Learnability — training-free heuristic, post-training adapter, trained-from-scratch architecture, RL-learned policy, or LLM-as-controller with no weight change.",
+        "(6) Mechanism — drop/evict, select/retrieve (keep all), merge/cluster, quantize/encode, factorize/low-rank, abstractive summarize/rewrite, encode-to-latent, recurrent write–forget, structure/graph build, or internalize-to-weights.",
+        "(7) Storage substrate — on-GPU KV, a host/SSD/remote tier, model parameters, an external text or vector store, a knowledge graph, in-context dense vectors, or a hybrid parametric/nonparametric store."
+      ],
+      "which_axes_actually_separate_the_layers": "'The differences sit in three columns: granularity, lifecycle, and adaptivity. These are the three dimensions the lens flags as decisive, and the remaining axes vary far less across layers.' [§3, after the axis list]",
+      "note_for_v2": "[해설] Axis (7) 'model parameters' and axis (6) 'internalize-to-weights' are exactly S0's Θ-path; axis (7) 'external text or vector store' is the E-path; axis (1) 'recurrent state' is the W-path. So the taxonomy CONTAINS the three-path split of S0 §2.3 as axis values, but the paper never treats the split as load-bearing — it explicitly demotes learnability and substrate as the axes that 'vary far less'."
+    }
+  },
+
+  "outer_vs_inner": {
+    "preface": "[해설] This paper trains nothing. Its own reference experiment runs a frozen Qwen2.5-1.5B-Instruct [§14]. The table below therefore answers 'who learns this, and when' for every LEARNABLE OBJECT the paper catalogues, since that catalogue (the learnability axis, §3 axis 5) is what the monograph reader needs. Column 'when' uses S0's three timescales: outer-loop training (Θ moves during a training round), sleep-time update (compute spent after the context is fixed but before q arrives), wake-time test-time movement (state moves while serving the query).",
+    "columns": ["learnable_object", "which_layer_in_S0_terms", "who_learns_it", "when", "source"],
+    "rows": [
+      {"learnable_object": "the bound (Eq. 2) itself and I★(q)", "which_layer_in_S0_terms": "none — a constraint on all layers", "who_learns_it": "nobody; it is derived", "when": "n/a", "source": "§2, Eq. 2; §12 'estimating I★(Q) for real tasks is itself open'"},
+      {"learnable_object": "attention-score / recency scorers (H2O, SnapKV, StreamingLLM, TOVA, Scissorhands, Keyformer, Knorm, expected-attention)", "which_layer_in_S0_terms": "KV cache (non-parametric state; S0 has no letter for it — see update_layer)", "who_learns_it": "nobody — 'training-free heuristic' on the learnability axis", "when": "wake-time: the retain decision is computed at prefill (SnapKV's observation window) or per decode step (TOVA, H2O)", "source": "§3 axis 5; §4.1; Table 6 rows 'free'"},
+      {"learnable_object": "per-head / per-layer budget allocators (PyramidKV, PyramidInfer, Ada-KV)", "which_layer_in_S0_terms": "KV cache", "who_learns_it": "nobody — 'allocation layers stacked on existing scorers'", "when": "wake-time (prefill), from a fixed heuristic layer profile", "source": "§4.1 final ¶: 'These are allocation layers stacked on existing scorers; they improve budget utilization but inherit the underlying query-agnostic bias, and the layer profile remains a heuristic.'"},
+      {"learnable_object": "quantization codebooks / outlier sets (KIVI, KVQuant, Coupled Quantization, Atom, GEAR)", "which_layer_in_S0_terms": "KV cache", "who_learns_it": "KIVI 'tuning-free'; others calibrate offline (sensitivity weighting, joint channel codes)", "when": "KIVI wake-time; KVQuant/CQ an offline calibration pass = a sleep-time step in S0's sense", "source": "§4.3"},
+      {"learnable_object": "low-rank K/V projections (Palu)", "which_layer_in_S0_terms": "KV cache", "who_learns_it": "a post-training decomposition + rank search on an existing checkpoint", "when": "offline, once per checkpoint (sleep-time, amortized over all future queries)", "source": "§4.4: 'post-training low-rank-decomposes the K/V projections... roughly halving the cache on existing checkpoints'"},
+      {"learnable_object": "MLA latent projections (DeepSeek-V2)", "which_layer_in_S0_terms": "Θ (baked into pretrained weights)", "who_learns_it": "outer-loop pretraining", "when": "outer-loop training, from scratch — 'at the cost of pretraining from scratch and decoupled-RoPE handling'", "source": "§4.4"},
+      {"learnable_object": "GQA→MLA conversion (TransMLA)", "which_layer_in_S0_terms": "Θ", "who_learns_it": "a cheap conversion procedure on an existing checkpoint", "when": "offline retrofit (sleep-time, once per checkpoint)", "source": "§4.4, §6 final ¶"},
+      {"learnable_object": "perplexity-based prompt pruners (Selective Context, LLMLingua, LongLLMLingua)", "which_layer_in_S0_terms": "the input, upstream of all three layers", "who_learns_it": "nobody; uses a small pretrained LM's own uncertainty as the surrogate", "when": "wake-time, before the target model reads the prompt", "source": "§5.1"},
+      {"learnable_object": "LLMLingua-2's preserve/discard token classifier", "which_layer_in_S0_terms": "a separate small Θ", "who_learns_it": "outer-loop supervised training on a GPT-4-distilled extractive dataset", "when": "outer-loop training; applied at wake-time prefill", "source": "§5.1: 'training a small encoder on a GPT-4 distilled extractive dataset... but, supervised by a fixed teacher, it inherits a query-agnostic notion of importance'"},
+      {"learnable_object": "TACO-RL's classifier", "which_layer_in_S0_terms": "a separate small Θ", "who_learns_it": "outer-loop RL against a task-specific reward (output divergence under a ratio constraint)", "when": "outer-loop training; applied at wake-time", "source": "§5.1: 'turning a static surrogate into one optimized for the actual downstream loss in Eq. (1)'"},
+      {"learnable_object": "QUITO-X's cross-attention MI scorer", "which_layer_in_S0_terms": "a separate small Θ", "who_learns_it": "outer-loop training of a cross-attention relevance estimator", "when": "outer-loop; applied at wake-time, query-conditioned", "source": "§5.1; §12 (cites 115)"},
+      {"learnable_object": "gist tokens / memory slots (Gisting, AutoCompressor, ICAE, 500xCompressor)", "which_layer_in_S0_terms": "E in soft form — 'in-context dense vectors' substrate (axis 7)", "who_learns_it": "outer-loop: instruction tuning with a restricted attention mask (Gisting), a LoRA-adapted encoder copy (ICAE)", "when": "outer-loop training learns the encoder; the ENCODE itself is a sleep-time step ('reusable, cacheable activations'); the read is wake-time", "source": "§5.2"},
+      {"learnable_object": "Activation Beacon / KV-Distill", "which_layer_in_S0_terms": "KV cache, distilled", "who_learns_it": "outer-loop: trainable plug-in on a frozen base (Beacon); student–teacher KL between long and short caches (KV-Distill)", "when": "outer-loop training; compression applied at prefill (wake) or offline (sleep, since KV-Distill is question-independent)", "source": "§5.2: 'Being query-independent buys offline caching but forfeits the per-query budget advantage of consequence (iii); these methods pay the H(Q) price by construction.'"},
+      {"learnable_object": "Cartridges — a trained KV 'cartridge' per corpus", "which_layer_in_S0_terms": "between W and Θ: a trained cache artifact, reused across queries", "who_learns_it": "offline per-corpus self-study", "when": "SLEEP-TIME, explicitly. 'a query-agnostic compaction whose cost is hidden from the serving path, akin to sleep-time compute [65]'", "source": "§5.2, final ¶ of soft compaction"},
+      {"learnable_object": "Context Distillation", "which_layer_in_S0_terms": "Θ — the pure Θ-path move in this paper", "who_learns_it": "per-prompt retraining of the model's own weights", "when": "SLEEP-TIME (offline), 'at the price of per-prompt retraining and no swappable artifact'", "source": "§5.2"},
+      {"learnable_object": "recurrent state of Mamba / RWKV / RMT / Infini-attention / MemoryLLM", "which_layer_in_S0_terms": "W", "who_learns_it": "the WRITE RULE is learned outer-loop (pretraining, 'scr' on the learnability axis); the STATE itself is not learned", "when": "outer-loop learns the rule; the state moves at WAKE time, per token", "source": "§6; Table 6 rows RMT/Infini-attn/Mamba = 'pre' lifecycle, 'scr' learnability"},
+      {"learnable_object": "Titans' memory module weights", "which_layer_in_S0_terms": "W, with Θ meta-learned", "who_learns_it": "Θ outer-loop; W by gradient descent on a surprise signal", "when": "'whose weights are updated at test time by gradient descent on a surprise (memory-prediction-error) signal with momentum and adaptive forgetting' — WAKE-time movement of W", "source": "§6: 'This is a learned C_θ that re-optimizes its own distortion surrogate online.' Table 6 classifies Titans as Arch / st / pre / qry / scr."},
+      {"learnable_object": "delta-rule write/forget gates (DeltaNet, Gated DeltaNet, GLA, xLSTM)", "which_layer_in_S0_terms": "W", "who_learns_it": "outer-loop pretraining", "when": "outer-loop learns the gate; the gate FIRES at wake time per token", "source": "§6: 'All four learn a write/forget policy, a surrogate for which bits of s to overwrite, the very policy Infini-attention lacked.'"},
+      {"learnable_object": "DMC's append-vs-accumulate decision", "which_layer_in_S0_terms": "KV cache, retrofitted into Θ", "who_learns_it": "continued pretraining, per head", "when": "outer-loop (continued pretraining); decision applied at wake time per token", "source": "§6 final ¶"},
+      {"learnable_object": "NSA / MoBA / DSA sparsity patterns", "which_layer_in_S0_terms": "Θ", "who_learns_it": "outer-loop, end-to-end with the weights — 'the sparsity pattern is a parameter the model is trained around, so the weights and the retain/discard rule co-adapt instead of fighting'", "when": "outer-loop training; selection is query-conditioned at wake time", "source": "§8"},
+      {"learnable_object": "DuoAttention's per-head retrieval/streaming label", "which_layer_in_S0_terms": "Θ-adjacent metadata", "who_learns_it": "a lightweight optimization learns a binary label per head", "when": "offline (sleep-time), once per model; applied at wake time", "source": "§8"},
+      {"learnable_object": "RazorAttention's head split", "which_layer_in_S0_terms": "same", "who_learns_it": "nobody — inferred training-free from attention structure", "when": "offline analysis; applied at wake time", "source": "§8: 'They differ on the learnability axis, DuoAttention learning the label and RazorAttention inferring it'"},
+      {"learnable_object": "SeerAttention's block-sparsity gate", "which_layer_in_S0_terms": "Θ", "who_learns_it": "self-distillation", "when": "outer-loop (self-distilled); queried at wake time", "source": "§8"},
+      {"learnable_object": "MInference's per-head attention pattern assignment", "which_layer_in_S0_terms": "metadata over frozen Θ", "who_learns_it": "offline calibration, model weights fixed", "when": "sleep-time (offline, once); the nonzero regions are located at wake-time prefill", "source": "§8"},
+      {"learnable_object": "agent memory store contents (MemGPT, Mem0, A-MEM, MemoryBank, MIRIX, Generative Agents, Reflexion, ExpeL)", "which_layer_in_S0_terms": "E", "who_learns_it": "an LLM controller writes it; NO weights move ('ctrl' on the learnability axis, 'LLM-as-controller with no weight change')", "when": "within-task (wake) for MemGPT/ACON; BETWEEN-task (sleep) for Mem0, MemoryBank, reflections, A-MEM, MIRIX", "source": "§3 axis 5; §7; Table 6 lifecycle column 'task' vs 'x-task'"},
+      {"learnable_object": "RL-learned compaction policies (Context-Folding/FoldGRPO, Memory-as-Action, MEM1, ReSum-GRPO)", "which_layer_in_S0_terms": "Θ of the agent policy, writing to E", "who_learns_it": "outer-loop RL, trained end-to-end with task solving", "when": "outer-loop training learns the policy; the policy compacts at WAKE time, within-task", "source": "§7, 1st family: 'The 2025–2026 frontier replaces hand-tuned operators with RL-learned compaction policies that optimize a proxy for D(θ) directly.'"},
+      {"learnable_object": "Letta Sleep-time Compute's cached inferences", "which_layer_in_S0_terms": "E", "who_learns_it": "the LLM itself, no weight change", "when": "SLEEP-TIME by definition — 'moving consolidation offline so that the LLM thinks about a context before any query arrives and caches useful inferences, amortizing the per-compaction LLM-call cost across future queries'", "source": "§7, 2nd family"},
+      {"learnable_object": "ROME / MEMIT weight edits", "which_layer_in_S0_terms": "Θ", "who_learns_it": "a closed-form rank-one (ROME) / batched (MEMIT) update, no gradient training round", "when": "sleep-time (edit time), off the serving path; 'U becomes a forward pass' at wake time", "source": "§7, 3rd family: 'Parametric editing eliminates retrieval latency, since U becomes a forward pass, but it is maximally irreversible and hard to audit, and at scale it induces the catastrophic forgetting that is the parametric analogue of summary collapse.'"},
+      {"learnable_object": "EM-LLM's event segmentation + retrieval", "which_layer_in_S0_terms": "KV cache used as E", "who_learns_it": "training-free (surprise-based segmentation)", "when": "wake time, per decode step", "source": "§7, EM-LLM ¶: 'It is at once a KV-cache method... and an agent-memory method'"},
+      {"learnable_object": "this paper's own reference experiment", "which_layer_in_S0_terms": "KV (Exp 1) and E (Exp 2)", "who_learns_it": "NOTHING IS TRAINED", "when": "wake-time only; Qwen2.5-1.5B-Instruct is frozen throughout", "source": "§14"}
+    ]
+  },
+
+  "update_layer": {
+    "verdict": "None exclusively. This paper does not instantiate (U-W), (U-Θ) or (U-E) — it states a CONSTRAINT that all three must satisfy simultaneously. It is the only paper in the v2 corpus whose contribution is layer-indifferent by construction.",
+    "the_paper_s_own_statement": "'The bound holds for any compact memory Z, whether a KV cache, a gist vector, a recurrent state, or an agent's note store, which is what lets it unify the field.' [§2, ¶4] and 'there is no architecture-specific escape' [§2, consequence (i)].",
+    "mapping_onto_S0_s_three_rules": {
+      "U-E": "The paper's canonical instance. Its 𝓗 = 'the accumulated trace of an agent's life: tool calls, observations, dialogue turns, and prior reflections' and its Z = 'an external, mostly natural-language store of summaries, extracted facts, structured notes, or a knowledge graph', with U = 'a retrieval step that pages a subset of Z back into the window before generation' [§7, ¶1]. In S0 notation cmp_Θ(𝓗) IS S0's S(c_k; B_s) and wr(E_k, ·), and use(Z,q) IS ret(E,q) composed with f in (R). Its own Experiment 2 [§14.2] is a pure (U-E) experiment.",
+      "U-W": "Covered as §6 'Architectural and Bounded-State Compaction'. The paper's specialization is that S0's W has a fixed bit-size C_W set at training time: 'B = s is fixed once, before any query is seen' [§6, ¶1]. Its prediction (3) is a statement about (U-W): a hard accuracy cliff at a key count proportional to state size. It cites Titans [6] as 'a learned C_θ that re-optimizes its own distortion surrogate online' [§6] — i.e. the paper reads (U-W) as an online-learned compaction operator, which is a genuinely useful re-reading for the monograph.",
+      "U-Θ": "The thinnest coverage, and deliberately so: 'Weight-level compression (pruning, distillation, weight quantization) is out of scope' [§1, final ¶]. What survives is Θ as a STORAGE SUBSTRATE (axis 7 'model parameters', axis 6 'internalize-to-weights'), instantiated by Context Distillation [§5.2], Cartridges [§5.2], ROME/MEMIT [§7], and Nichani et al.'s parametric-capacity result [§12]. The paper's Θ-relevant claim is a capacity accounting one: 'facts already amortized into parameters contribute zero to I(Y;H|Q)' [§12], i.e. a successful (U-Θ) write REDUCES I★(q) and therefore relaxes the bound on the other two layers.",
+      "the_fourth_thing": "[평가] The paper's dominant object — the KV cache — has no letter in S0 §2.1. S0's three-way split (Θ / W / E) leaves the non-parametric attention state unnamed, and NM's Rosetta table (STYLE §3) calls it 'non-parametric memory state; softmax attention = capacity 무한의 associative memory'. §§4, 8, 11 of this paper (KV eviction, trainable sparse attention, serving substrate) all live there. The capacity chapter must either (a) name it explicitly as the C→∞ limit of W, following STYLE §1.6's 'softmax attention = 압축하지 않는 극한 (f→∞, capacity 무한)', or (b) admit a fourth store. Option (a) is consistent with the existing style document and is recommended."
+    },
+    "order_if_more_than_one": "The paper argues explicitly that the layers are NOT sequential stages of one pipeline but three tiers of one hierarchy running at different timescales, all answering the same Eq. (1): KV cache 'sub-second, on-GPU, near-lossless at the granularity of a token'; working context 'inside the context window for the span of a task'; long-term store 'external and semantic, persists across sessions'. 'Their timescales span many orders of magnitude, but all three answer the same Eq. (1).' [§10.1; Figure 4]",
+    "how_it_differs_from_the_canonical_forms": "S0's (U-W)/(U-Θ)/(U-E) are all UPDATE rules: they say how the state moves. This paper supplies no update rule at all. It supplies (a) an objective the update rule should be minimizing (Eq. 1), (b) a floor no update rule can beat (Eq. 2), and (c) three binary properties (P-rev, P-q, P-fid) that predict which update rules fail. [해설] In the monograph this makes it a Part III paper wearing Part II clothes: it belongs to the 용량 axis of S0 §3.1, not to any single path."
+  },
+
+  "cost_table": {
+    "preamble": "Reported strictly per S0 §2.4. Where the paper is silent the entry is exactly 'absent'. No estimation, no inference. Numbers reproduced at the paper's own precision.",
+    "B_s": {
+      "value": "absent",
+      "detail": "The paper never reports a sleep-time compute budget in FLOPs or tokens, for any method, anywhere. The nearest quantities are (a) the SWEEP VARIABLE of Experiment 2 — 'the number of compaction events', plotted over 5 to 25 events [Figure 6 x-axis, §14.2] — which is a count of LLM calls, not a budget; and (b) a qualitative statement that at the agent tier the compaction decision is itself an LLM call: 'every compaction event is an LLM call, so the savings a smaller context buys are partly repaid in inference overhead' [§7, ¶1] and 'agent consolidation is itself an expensive, error-prone LLM call, so the agent tier pays a budget the cache does not: the cost of deciding what to keep' [§10.4]. Neither is quantified. The paper's amortization argument for Letta STC — 'amortizing the per-compaction LLM-call cost across future queries' [§7] — carries no N_q and no cost figure.",
+      "finding": "[평가] For a paper whose thesis is a budget/quality frontier, the total absence of any sleep-side compute number is itself the finding. Its budget axis is exclusively a STATE budget (bytes), never a COMPUTE budget. S0's amortization identity (A), C_avg = C_wake + C_sleep/N_q, cannot be instantiated from this paper at all."
+    },
+    "L_w": {
+      "value": "absent",
+      "detail": "No measured latency number of any kind (ms/token, TTFT, TPOT) appears in the paper. What appears: (a) order-of-magnitude timescale labels in Figure 4 — 'KV cache: sub-token, on-GPU, microseconds, near-lossless, one forward pass' / 'Working context: tokens, in-window, milliseconds to seconds, within a task' / 'Long-term store: semantic items, external, hours to days, across sessions'; (b) the comparative statement 'KV compaction is a microsecond arithmetic decision, whereas agent consolidation is itself an expensive, error-prone LLM call' [§10.4]; (c) a REQUIREMENT rather than a measurement — COMPACT-Bench's third piece 'reports accuracy, latency, memory, and dollar cost together on one sheet, because a frontier that ignores decode latency or store cost conceals the very trade a deployment has to make' [§13.2]; (d) DistServe is described as 'optimizing TTFT and TPOT independently for goodput' [§11], a description of a cited system, not a measurement. Experiment 1 and Experiment 2 report accuracy and recall only — no latency column."
+    },
+    "C": {
+      "value": "Reported, but only as RELATIVE ratios and as a defined unit — never as an absolute byte count per session or per user.",
+      "unit_defined": "BPT = bytes-per-token-of-history = 'the bytes of retained memory state over the tokens of original context' [§14, ¶2]. Conversions given: eviction keeping fraction f costs f; b-bit quantization costs b/16; prompt or summary compression to m of n tokens costs m/n; the full cache anchors the top [§14, ¶2].",
+      "own_experiment": "Experiment 1 sweeps 'five budgets' per method with the full cache at 100% [§14.1]; the Figure 5 x-axis is labelled 'BPT budget (% of full cache)' with ticks at 10, 25, 50, 75, 100. Collapse threshold stated in prose: 'below roughly a quarter of the full budget every method sits at or near zero accuracy' [§14.1].",
+      "reductions_quoted_from_cited_work_Table_3": "StreamingLLM: const. mem · H2O: ~5× · SnapKV: ~8× · PyramidKV: ~8× · Ada-KV: varies · Quest: read-only · KIVI: ~2.6× · KVQuant: ~5× · Palu: ~2× · MLA: ≫MHA · CaM: add-on. Table 3 caption: 'Reductions are reported KV savings from the cited works and are not directly comparable across setups.'",
+      "other_ratios_in_prose": "xKV: 'up to 8× reduction' [§4.5] · YOCO: 'saving roughly an L-fold factor' [§4.5] · Palu: 'roughly halving the cache' [§4.4] · Perceiver Resampler: 'a fixed budget of, say, 64 visual tokens' [§9] · visual streams generally: 'in practice an 8–18× reduction costs almost nothing' [§9] · LLaVA-PruMerge: '∼18× compression' [§9] · 500xCompressor: 'as few as one token' [§5.2] · xRAG: 'one vector, capacity hard-capped at the embedding' [§5.2] · agent within-task methods: 'These methods report 3–10× active-context reduction at matched accuracy' [§7] · field-wide: 'the 80–93% KV reductions and ∼20× prompt compression that practice routinely achieves, with quantization reportedly within ∼2.7× of the information-theoretic limit' [§12, final ¶] · RMT: 'finds needles in an 11M-token haystack' [§6, citing 54, 55] · KVQuant: 'reaching million-token contexts on one GPU' [§4.3] · Activation Beacon: 'extending context to hundreds of thousands of tokens at fixed quality' [§5.2].",
+      "absent": "Absolute bytes per session or per user: absent. Per-token KV byte formula: absent. Any per-user state-capacity figure for the E layer or the Θ layer: absent. The paper's motivating claim that 'the cached keys and values of everything it has already read take up more of the accelerator than the model's own weights' [§1, ¶1] is asserted with citations [56, 72] and no number of its own."
+    },
+    "rho": {
+      "value": "Partially reported, as an end-to-end recall gap under repeated compaction — not as a per-round rate.",
+      "measured": "Experiment 2 [§14.2, Figure 6], Qwen2.5-1.5B-Instruct: reversible (retrieve) operator 'holds recall near 0.95 at every compaction frequency'; irreversible (summarize) operator 'runs far below it, between 0.33 and 0.56, and is weakest at the highest compaction frequency'. Separation: 'Two operators at the same average budget therefore part by roughly 0.5 in recall once memory is reused over a horizon.' Sweep range: 5 to 25 compaction events [Figure 6 x-axis]. Task: 'An agent reads a long document in chunks, accumulating twelve key–value facts spread throughout, and periodically compacts its working memory... At the end we ask for all twelve facts and report recall.'",
+      "predicted_but_not_fitted": "Prediction (4) asserts 'end-task error grows super-linearly in the number of compaction events' [§2, §7, §13.2]. No growth exponent, no fit, and no super-linearity test appears anywhere; the reported irreversible recall is a bounded interval (0.33–0.56) over the whole 5–25 sweep. See unfavorable_facts.",
+      "third_party_number": "LongMemEval 'sees ∼30% drops on sustained interaction' over ∼115K-token histories [§13.1, citing 118] — a degradation figure, but for a benchmark, not for a compaction operator.",
+      "per_round_rate": "absent"
+    }
+  },
+
+  "experiments": {
+    "framing": "'It is one thing to argue that the layers share a budget axis and a failure mode, another to watch it happen. So we ran two small studies on a single commodity GPU... We are not chasing state of the art here; we want to demonstrate the methodology the survey advocates.' [§14, ¶1]",
+    "hardware_and_model": {
+      "gpu": "one NVIDIA RTX 4060 with 8 GB [§14, ¶1]",
+      "model": "Qwen2.5-1.5B-Instruct [§14, ¶1] — the only model used, in both experiments",
+      "training": "none; the model is used as released",
+      "artifacts": "'Code and configurations accompany the survey.' [§14, ¶1] — no URL or repository name appears in the vendored text"
+    },
+    "experiment_1": {
+      "name": "The unified accuracy–budget frontier [§14.1, Figure 5]",
+      "task": "needle-in-a-haystack retrieval with natural filler text drawn from Wikitext: 'we plant a unique key–value needle at controlled depths (10% to 90%) in contexts of 2k to 8k tokens and ask for the value'",
+      "context_lengths": "2k to 8k tokens",
+      "needle_depths": "10% to 90%",
+      "methods_swept": "six KV-compaction methods — SnapKV [60], StreamingLLM [123], TOVA [85], the Knorm scorer, the expected-attention scorer, and a random-eviction control",
+      "budgets": "'each at five budgets'; Figure 5 x-axis 'BPT budget (% of full cache)' with ticks at 10, 25, 50, 75, 100",
+      "averaging": "'Accuracy is averaged over depths, lengths, and three trials, with the full cache anchoring the top at 100% budget.'",
+      "total_generations": "1,395 generations [§14.1: 'Figure 5 reports the result over 1,395 generations']",
+      "headline_numbers": [
+        "full cache accuracy = 1.00 ('The full cache answers perfectly (accuracy 1.00)')",
+        "'below roughly a quarter of the full budget every method sits at or near zero accuracy'"
+      ],
+      "authors_own_qualification": "'The random-eviction control does the diagnostic work. At high budget it stays competitive, because keeping most tokens keeps the needle by luck, but it collapses fastest as the budget tightens, so the gap between a real method and the random line measures how much its scoring buys at a given budget. The gaps are modest at this scale, and the ordering of methods is beside the point; what matters is the comparability the BPT axis delivers.'",
+      "prediction_tested": "prediction (1)",
+      "per_method_numbers": "absent — no per-method accuracy value at any budget is stated in prose; only Figure 5 carries them, and the vendored text does not include the plotted values"
+    },
+    "experiment_2": {
+      "name": "Error accumulation under repeated compaction [§14.2, Figure 6]",
+      "task": "'An agent reads a long document in chunks, accumulating twelve key–value facts spread throughout, and periodically compacts its working memory. We compare two operators as the number of compaction events grows... At the end we ask for all twelve facts and report recall.'",
+      "operators": [
+        "irreversible: 'overwrites working memory with an LLM-generated summary'",
+        "reversible: 'keeps all chunks in an archive and retrieves the relevant chunk at query time, the Quest and MemGPT-archival discipline of P1'"
+      ],
+      "sweep": "number of compaction events, 5 to 25 [Figure 6 x-axis]",
+      "headline_numbers": [
+        "reversible: 'holds recall near 0.95 at every compaction frequency'",
+        "irreversible: 'between 0.33 and 0.56, and is weakest at the highest compaction frequency'",
+        "separation: 'Two operators at the same average budget therefore part by roughly 0.5 in recall once memory is reused over a horizon, even though a single-turn needle test cannot tell them apart.'",
+        "Figure 6 caption: 'Reversible memory stays near 0.95; irreversible memory loses roughly half its facts at every frequency. The two look identical under single-turn evaluation and diverge only when compaction repeats.'"
+      ],
+      "prediction_tested": "prediction (4)",
+      "document_length": "absent — the paper says 'a long document' and 'in chunks' without stating a token count or chunk count",
+      "summarizer_model": "absent — the paper does not state which model performs the LLM-generated summary (presumably the same Qwen2.5-1.5B-Instruct; NOT stated)"
+    },
+    "predictions_NOT_tested": "predictions (2) and (3). The paper states only 'We test (1) and (4) directly in Section 14.' [§2, final sentence]. Prediction (2) (query-aware compression right-shifts the accuracy–ratio curve by the MI gap) is supported only by citing LongLLMLingua's reported behavior [§5.1]; prediction (3) (hard accuracy cliff for fixed-state models) only by citing Wen et al. [117] and Haris & Onak [44] [§12].",
+    "benchmarks_reviewed_not_run": {
+      "source": "§13.1 and Table 5",
+      "synthetic": "Needle-in-a-Haystack [51]; RULER [46] — 'thirteen multi-key, multi-hop, and aggregation tasks, finding that barely half of the models advertising ≥32K actually survive at 32K'; BABILong [54] — 'reports that models exploit only 10–20% of their stated window'",
+      "realistic": "LongBench [3] — '21 multitask datasets'; InfiniteBench [139] — 'drives average length past 100K'; HELMET [133]",
+      "interactive": "LOCOMO [74]; LongMemEval [118] — 'separates five memory abilities (extraction, cross-session and temporal reasoning, knowledge updates, and abstention) over ∼115K-token histories, where it sees ∼30% drops on sustained interaction'",
+      "compaction_specific": "SCBench [61]; KVPress [84]",
+      "cautionary": "NoLiMa [78] — 'Strip the lexical overlap between needle and query so that recall has to pass through latent association, and accuracy falls far below the NIAH heatmap.'",
+      "caution_on_Table_5": "Table 5's per-cell marks (●/◐/○) are glyph-garbled in the vendored text extraction and MUST NOT be quoted cell-by-cell. Only the column definitions are safe to reproduce: 'Multi-budget? sweeps a memory-rate axis; Cross-layer? compares KV, prompt, architectural, and agent methods on one axis; Repeated-compaction? measures degradation under repeated compaction events.'"
+    },
+    "theory_results_collected_not_proved_here": {
+      "source": "§12 'Theory of Compaction' — these are the results the paper collects as instances of its bound, all from cited work",
+      "items": [
+        "Haris & Onak [44]: 'any algorithm performing exact attention-based generation over a length-n, dimension-d context must use Θ(nd) space, with a matching Ω(d·e^d) barrier in the low-dimensional regime and no non-adaptive sublinear-time online attention.'",
+        "Wen et al. [117]: 'fixed-size RNN/SSM states provably cannot solve the in-context associative recall or tree recognition that attention solves, that chain-of-thought alone does not close the gap, and that a single attention layer (or RAG) restores it.'",
+        "Nichani et al. [83]: 'transformers store facts as associative memories whose capacity scales linearly in parameter count, with a single attention-plus-MLP block near-optimal.' — the paper's Θ-capacity anchor.",
+        "Xiao et al. [123]: 'retaining ∼4 sink tokens plus a sliding window streams to millions of tokens.'",
+        "Gu et al. [41]: sinks 'are universal, emerge only after enough optimization, act as key biases that absorb surplus attention without contributing to value computation, and vanish under un-normalized (sigmoid) attention.'",
+        "Ran-Milo [94]: 'for a natural family of trigger-conditional tasks, any softmax model that solves them must develop a sink' — hence 'evicting them is not lossy compression but a violation of budget feasibility in (1)'.",
+        "de Llano et al. [26]: sinks and depth-localized 'compression valleys' (sharp drops in residual-stream rank) are 'two faces of the same massive-activation mechanism concentrated in middle layers'.",
+        "Liu et al. [68]: 'a U-shaped recall curve: accuracy is highest when the evidence sits at the context's start or end and collapses in the middle.'",
+        "Tishby et al. [109] / Wang et al. [115]: the IB objective and its operationalization for context compression."
+      ],
+      "the_gap_the_theory_leaves": "'Every result above is worst-case or mechanistic, and none predicts the 80–93% KV reductions and ∼20× prompt compression that practice routinely achieves... The gap between the lower bounds and observed compressibility is thus the gap between worst-case and data-conditional I★(Q), and that gap is not yet characterized.' [§12, final ¶]"
+    }
+  },
+
+  "scale_ceiling": "Qwen2.5-1.5B-Instruct, single NVIDIA RTX 4060 (8 GB), contexts 2k–8k tokens, 1,395 generations in Experiment 1; Experiment 2 tracks twelve facts over 5–25 compaction events on the same model. No training of any kind. Everything above that scale in the paper is quoted from cited work (e.g. the 11M-token BABILong/RMT result [54, 55], KVQuant's million-token contexts, LongMemEval's ∼115K-token histories) and is not reproduced by the authors. The authors state the ceiling themselves: 'Our reference experiment (Section 14) runs at reference scale (a small open model on a single commodity GPU), so its absolute numbers should be read as illustrations of the methodology, not as a leaderboard.' [Limitations]",
+
+  "concept_ledger_delta": {
+    "신설": [
+      {"term": "memory compaction (as one problem)", "definition": "'a rate–distortion decision about what context-derived information to retain versus discard, at what fidelity, under a resource budget, so as to preserve downstream task utility' [Abstract]", "owner_chapter_candidate": "the 용량 chapter (S0 §3.1 '용량' block)"},
+      {"term": "compaction operator / usage operator (cmp_Θ, use)", "definition": "the pair (C_θ, U): cmp maps history to a budget-obeying compact state; use consumes it to produce the output [§2, ¶2]", "note": "reserved-symbol renaming required; see core_mechanism.notation_conflicts"},
+      {"term": "task-conditioned information content I★(q)", "definition": "I★(Q) = I(Y;H|Q), 'the number of bits of H genuinely required to answer Q' [§2, ¶4]", "note": "THE central quantity of the capacity chapter. Never measured, by this paper or anyone it cites."},
+      {"term": "the query-entropy penalty H(q)", "definition": "'the gap H(Q) is the precise price of not knowing the query' [§2, consequence (iii)]", "note": "directly applicable to S0's definition of sleep-time compute, which is query-agnostic by construction"},
+      {"term": "(P-rev) reversibility, (P-q) query-conditioning, (P-fid) fidelity profile", "definition": "the three properties Eq. (1) leaves implicit, promoted to first class [§2, ¶6]"},
+      {"term": "distortion surrogate", "definition": "the reading of every 'importance' heuristic in the field as a cheap estimator of the same unmeasurable distortion [§2, ¶5]", "note": "renames a whole family: attention mass, perplexity, MI estimate, output-error bound, LLM salience"},
+      {"term": "BPT (bytes-per-token-of-history)", "definition": "'total retained memory in bytes over raw history tokens, the layer-agnostic form of rate(Z)' [§13.2]"},
+      {"term": "COMPACT-Bench", "definition": "'an extension of SCBench [61] and KVPress rather than a replacement', with a shared budget axis, three new task families (loss attribution, reversibility, calibrated compaction confidence), and joint accuracy/latency/memory/dollar reporting [§13.2]"},
+      {"term": "loss attribution", "definition": "'checks whether a method knows what it dropped: after compaction, probe recall on a held-out set of history facts and compare the method's own predicted retention against the truth, a direct test of its distortion surrogate' [§13.2]"},
+      {"term": "calibrated compaction confidence", "definition": "'checks whether a method's stated confidence tracks its real post-compaction accuracy, so that an agent can abstain or re-expand instead of answering from a lossy state' [§13.2]"},
+      {"term": "compaction event", "definition": "one application of cmp; the x-axis of Figure 6 and the unit in which prediction (4) is stated"},
+      {"term": "operator algebra / composition map", "definition": "'an honest empirical operator algebra, which pairs are synergistic, redundant, or destructive, within a layer (quant × low-rank × evict) and across layers (KV × prompt × agent)' [§15, third item] — explicitly 'a measured map, not a set of proven laws'"},
+      {"term": "predictive compression scaling law", "definition": "'a closed-form estimate of I★(Q), and hence of the achievable ratio at fixed quality, as a function of model size, context length, head/layer structure, and task type' [§12, final ¶] — named 'the central unsolved problem this survey leaves open'"},
+      {"term": "the three-tier memory hierarchy (KV cache / working context / long-term store)", "definition": "[§10.1, Figure 4], with the five shared design knobs of Table 4"},
+      {"term": "P1–P5 compaction-aware design principles", "definition": "[§10.5]; see systems_implications for the two that bear on sleep-time compute"}
+    ],
+    "확장·개명": [
+      {"from": "'importance heuristic' / 'saliency score' (field-wide)", "to": "distortion surrogate", "warrant": "§2, ¶5"},
+      {"from": "'forgetting' / 'eviction policy'", "to": "an irreversible cmp, i.e. a violation of (P-rev)", "warrant": "§2, ¶6; §7 final subsection"},
+      {"from": "'compression ratio at fixed perplexity/accuracy'", "to": "a point on an accuracy-versus-budget frontier over a shared BPT axis", "warrant": "§13.2: 'reported as a full accuracy-versus-budget frontier instead of one operating point'"},
+      {"from": "'sleep-time compute' as an economics move (Letta)", "to": "a query-agnostic operator that pays H(q) — 'it spends budget speculatively on bits that may never be queried, the dual of the query-agnostic penalty H(Q) in Eq. (2)' [§7]", "warrant": "the sharpest re-reading in the paper for v2's purposes"},
+      {"from": "STYLE §3 Rosetta row 'cache eviction policy → retention gate = 학습된 eviction'", "to": "confirmed and generalized: every retention gate is a learned distortion surrogate, and every distortion surrogate is a retention gate", "warrant": "§2 ¶5 + §6 'All four learn a write/forget policy, a surrogate for which bits of s to overwrite'"}
+    ],
+    "폐기": [
+      {"term": "per-layer compression ratio as a cross-method metric", "reason": "'KV work reports tokens or GPU bytes, prompt work reports a compression ratio, recurrent work reports state dimensions, and agent work reports store size. The units never line up, so the frontiers are incommensurable and each method's budget is set by whoever wrote the paper.' [§13.2]"},
+      {"term": "post-compaction end-task accuracy as a sufficient evaluation", "reason": "'Post-compaction end-task accuracy is an integral over D(θ). It averages away the lost bits instead of locating them, so it cannot say which unseen query will fail.' [§13.2]"},
+      {"term": "literal-match needle probes as a quality signal", "reason": "NoLiMa [78]: 'NIAH measures I★(Q) only in the easy regime where the answer-bearing bits are lexically marked, and NoLiMa shows that the bits compaction actually discards are the unmarked ones.' [§13.1] — hence COMPACT-Bench mandates latent-association needles."}
+    ]
+  },
+
+  "open_questions": {
+    "the_prioritized_agenda": {
+      "source": "§15 'Open Problems and Research Agenda', 'ordered by impact times tractability'",
+      "items": [
+        {"n": 1, "title": "Query-conditioned, reversible, multi-fidelity compaction at every layer", "text": "'The single highest-leverage target follows directly from the bound... build operators that satisfy (P-q) and (P-rev) simultaneously, with a (P-fid) profile that keeps a cheap lossy tier over a small recoverable high-fidelity tier, and to do so at each tier of the hierarchy, porting the query-conditioned, no-evict design of Quest [108] and the retrieval-backing of InfiniGen [57] up into prompt and agent memory. This is tractable because the components exist in isolation; the work is composing them and showing the predicted right-shift (Prediction 2) and flat error curve (Prediction 4).'"},
+        {"n": 2, "title": "Information-loss attribution and calibrated compaction confidence", "text": "'Because the surrogate scorers of Section 2 are all estimators of one distortion, they can in principle emit a calibrated estimate of residual I★(Q), a per-decision compaction confidence with provenance of loss. A method that knows it has fallen below B < I★(Q) can defer, fetch, or escalate fidelity; this attribution is the prerequisite for everything adaptive below.'"},
+        {"n": 3, "title": "A composition map for stacking operators", "text": "'Quantization, low-rank projection, eviction, and merging are treated as independent recipes, yet stacking them compounds or cancels distortion, and serving-level lossless reuse (RadixAttention; 145) directly conflicts with lossy budgeting (InfiniGen; 57)... We stress that this is a measured map, not a set of proven laws: distortion surrogates are not additive and composition order matters.'"},
+        {"n": 4, "title": "A predictive compression scaling law", "text": "'The bound makes the compression ratio at fixed quality scale as 1/I★(Q), but I★(Q) is never measured directly. The open problem is a predictive law that estimates I★(Q), and hence the achievable ratio, as a function of model size, context length, head and layer structure, and task type, closing the gap between worst-case lower bounds (Θ(nd), sink necessity) and the reported 80–93% KV reductions. Such a law would turn budget selection from tuning into calculation.' — also named in §12 as 'the central unsolved problem this survey leaves open'."},
+        {"n": 5, "title": "An episodic-to-semantic consolidation bridge and a stop rule", "text": "'Within-task curation (ACON; 53, Context-Folding; 105) and cross-session memory (Mem0; 21, MemGPT; 86) use disjoint mechanisms with no principled promotion from a lossless, recoverable episodic tier to a lossy, abstracted semantic tier. The formalism supplies the missing pieces: promote a span only when its marginal I★ over the query distribution justifies abstracting it, and, because repeated irreversible summarization grows error super-linearly (Prediction 4), adopt an output-error stop rule for agent summarization in the spirit of Ada-KV's bound.'", "v2_relevance": "This is the CLS/consolidation question of S0's 공통조상 block, restated as a promotion rule with a budget test."},
+        {"n": 6, "title": "Cheap, asynchronous, RL-stable agent self-curation", "text": "'Reflection, note-, and update-based memory is LLM-call-heavy and self-reinforcing: it spends calls that erode the savings and stores errors that bias all future retrieval. The target is curation that is asynchronous (off the critical path, as sleep-time compute [65] begins to be), learned rather than hand-triggered (MemAct; 141, MEM1; 148), and stable under RL so the reward does not collapse into degenerate forgetting.'", "v2_relevance": "The paper's single most direct statement about sleep-time compute as a research direction. Note 'begins to be' — it treats Letta STC as an incomplete instance, not a solution."},
+        {"n": 7, "title": "Multimodal × multi-agent shared-memory compaction", "text": "'Nobody has compacted multimodal context shared across collaborating agents, where the governing quantity is cross-modal versus inter-message redundancy under per-agent query distributions, a clean multi-source instance of objective (1).'"},
+        {"n": 8, "title": "Adaptivity with guarantees", "text": "'The bound says the right allocation equalizes the residual I★(Q) across units, budgeting by marginal task-utility rather than uniform ratio, so the open problem is content- and query-adaptive allocation that comes with a guarantee on the resulting distortion rather than an empirical sweep.'"},
+        {"n": 9, "title": "Safety, auditability, and rollback of evolving memory", "text": "'Self-editing memory that satisfies (P-rev) for utility also creates an attack surface: poisoning, leakage, and irreversible drift (AgentPoison; 18, MINJA; 30). Reversibility cuts both ways, enabling rollback and audit but also persistent injection, so the agenda is auditable, version-able compacted memory with a forgetting and revocation primitive.'"}
+      ]
+    },
+    "buried_in_body_sections": [
+      {"where": "§4.6 'Cross-Cutting Tensions', final sentences", "question": "'Composition is the open frontier. Quantization, low-rank, and eviction attack orthogonal axes, yet whether their errors compound or cancel, and which combinations help, remains largely uncharted, and it is where a rate–distortion account should be doing the design work.'"},
+      {"where": "§9, final ¶", "question": "'Their intersection has no information-theoretic account... The bound of Eq. (2) is stated for a single Z answering a single Q, and it says nothing yet about how to size a shared B when agents draw different I★(Q) from one compressed multimodal store, or how irreversible visual merging collides with the provenance a downstream agent may later need. We still lack a theory that quantifies how much visual and temporal redundancy is compressible without task loss.'", "note": "An explicit admission that the bound does not extend to multi-consumer stores — directly relevant to any per-user shared memory in a serving fleet."},
+      {"where": "§10.2 and Table 4 (the empty cell)", "question": "'The last knob, a calibrated stop rule for when compaction has gone too far, exists at the KV layer as an output-error bound [34] and is all but absent for agent summarization, a gap the bridge brings into view.' Table 4 caption: 'an empty cell (a principled stop rule for agent summarization) is a research opportunity the alignment makes visible.'"},
+      {"where": "§10.4 'Where the analogy breaks'", "question": "Which cross-tier ports are clean and which need adaptation, given that (a) 'a KV cache that keeps a token's entries can attend to it exactly, while a store that keeps a summary of an episode has already paid an irreversible distortion', (b) at the KV tier the query 'is the next-token computation, implicit in the current hidden state; at the agent tier it is a future user request, genuinely unknown and possibly adversarial', and (c) 'the agent tier pays a budget the cache does not: the cost of deciding what to keep'."},
+      {"where": "§11, final ¶", "question": "'When should KV stay reversible and exact, paying storage and bandwidth, and when should it go lossy and cheap, paying distortion? And how does one stop a lossy decision made for a single request from silently degrading every descendant that later reuses it?'", "note": "The sharpest systems question in the paper."},
+      {"where": "§6, Infini-attention ¶", "question": "Why Infini-attention 'proved hard to reproduce, which the formalism reads as a missing content-aware write policy: it spends s without a surrogate for what to overwrite.' — an unresolved reproduction failure, offered with an explanation but no test."},
+      {"where": "§12, final ¶ and Limitations", "question": "'estimating I★(Q) for real tasks is itself open' — the paper's own formalism rests on a quantity nobody can compute."}
+    ]
+  },
+
+  "unfavorable_facts": [
+    {
+      "fact": "The paper's central quantity, I★(q), is never measured — not once, for any task, by this paper or any paper it cites. The bound (Eq. 2) therefore cannot be numerically evaluated anywhere in the survey; every use of it is qualitative ('below I★(Q) errors are forced'). The authors concede this twice.",
+      "source": "Limitations: 'The lower bound (Eq. 2) assumes a query-agnostic operator for its cleanest form and treats the task-conditioned information content I★(Q) as given; estimating I★(Q) for real tasks is itself open (Section 12).' Also §12, final ¶: 'I★(Q) is never measured directly.'",
+      "why_it_hurts": "The survey's own claim to novelty over prior surveys is 'a single optimization objective with a provable bound rather than a descriptive grouping' [§1, ¶6]. If the bound's only free parameter is uncomputable, the bound organizes the field but never adjudicates any design decision numerically."
+    },
+    {
+      "fact": "The bound's derivation assumes a query-agnostic operator. The Markov chain step 'Y − H − Z is Markov given Q' is asserted 'for a query-agnostic C'; the paper does not state or prove the corresponding bound for the query-conditioned operators that the entire §15 agenda advocates building.",
+      "source": "§2, ¶4: 'Because Ŷ = U(Z,Q) is a function of (Z,Q) and, for a query-agnostic C, the chain Y − H − Z is Markov given Q, the data-processing inequality gives...' — and Limitations: 'The lower bound (Eq. 2) assumes a query-agnostic operator for its cleanest form.'",
+      "why_it_hurts": "Consequence (iii), the H(q) gap, is the paper's most-cited result and is a COMPARISON between query-agnostic and query-conditioned operators — but only one side of that comparison is derived."
+    },
+    {
+      "fact": "The entire empirical contribution runs on one 1.5B model on one 8 GB consumer GPU, at 2k–8k context — three orders of magnitude below the long-context regime the survey is about (its own §1 motivates the problem with 'a hundred thousand tokens', §13.1 cites 115K-token and 11M-token results).",
+      "source": "§14, ¶1: 'a single commodity GPU, an NVIDIA RTX 4060 with 8 GB, using Qwen2.5-1.5B-Instruct'; §14.1: 'contexts of 2k to 8k tokens'. Limitations: 'runs at reference scale... its absolute numbers should be read as illustrations of the methodology, not as a leaderboard.'"
+    },
+    {
+      "fact": "In Experiment 1 the six compaction methods are not distinguishable from a random-eviction control in any way the paper is willing to defend. The random control 'stays competitive' at high budget, and the authors themselves write off both the gaps and the ranking.",
+      "source": "§14.1, final ¶: 'The gaps are modest at this scale, and the ordering of methods is beside the point; what matters is the comparability the BPT axis delivers.'",
+      "why_it_hurts": "The paper's thesis is that distortion surrogates differ in quality and are transferable across layers (§2, §10.3). Its own experiment supplies no evidence that ANY surrogate beats random at a fixed budget — it only shows the collapse below ~25% budget, which the random control also exhibits."
+    },
+    {
+      "fact": "Prediction (4) claims SUPER-LINEAR error growth in the number of compaction events. The experiment does not establish super-linearity: it reports an interval (irreversible recall 'between 0.33 and 0.56' over 5–25 events, 'weakest at the highest compaction frequency') with no fitted curve, no exponent, and no comparison against a linear-growth null.",
+      "source": "Prediction stated in §2 (prediction 4), §7 final subsection, and §13.2 ('it should climb super-linearly'). Result reported in §14.2 and Figure 6 caption: 'irreversible memory loses roughly half its facts at every frequency' — note 'at every frequency', which reads as roughly FLAT-and-bad, not accelerating.",
+      "why_it_hurts": "The paper's Conclusion lists this as one of 'two results [that] stand out'. What was actually demonstrated is a level gap between reversible and irreversible operators, not the compounding dynamics the prediction asserts."
+    },
+    {
+      "fact": "Experiment 2's two operators are not matched on compute or on state budget in any accounted way. The paper asserts they are 'at the same average budget' but reports no BPT value, no archive size, no retrieval index cost, and no count of summarizer LLM calls for either arm. BPT is defined only in the KV currency of Experiment 1.",
+      "source": "§14.2: 'Two operators at the same average budget therefore part by roughly 0.5 in recall'; the BPT definition at §14, ¶2 covers 'token eviction... b-bit quantization... prompt or summary compression to m of n tokens' but the reversible arm keeps ALL chunks in an archive, which the BPT formula does not price.",
+      "why_it_hurts": "The survey's headline methodological complaint is that the field compares methods on incommensurable budgets [§13.2]. Its own agent-layer experiment does exactly that: an operator that retains the full history is compared, at nominally 'the same average budget', against one that does not."
+    },
+    {
+      "fact": "Only two of the four falsifiable predictions are tested. Prediction (2), the mutual-information right-shift, and prediction (3), the fixed-state accuracy cliff, are supported entirely by citing other people's results.",
+      "source": "§2, final sentence: 'We test (1) and (4) directly in Section 14.' Prediction (2) support = §5.1's reading of LongLLMLingua; prediction (3) support = §12's citation of Wen et al. [117] and Haris & Onak [44]."
+    },
+    {
+      "fact": "COMPACT-Bench is the authors' own benchmark, its evaluation criteria (multi-budget / cross-layer / repeated-compaction) are the authors' own, and Table 5 scores every existing benchmark against those criteria with COMPACT-Bench as the final row.",
+      "source": "§13.2 and Table 5. Also Table 1 does the same for surveys: it scores seven prior surveys against eight columns and marks the authors' own three claimed novelties ('RD/IB objective', 'X-layer transfer', 'Unified benchmark') — 'Recent surveys span the first four columns (notably 47); our novelty is the last three.' [Table 1 caption]",
+      "why_it_hurts": "Both comparison tables are self-authored on self-chosen axes. In the vendored text the ●/◐/○ glyphs of Tables 1 and 5 are garbled, so the specific cell claims cannot even be audited from this copy."
+    },
+    {
+      "fact": "The paper advertises 'the explicit transfer of mechanisms between layers' as one of four claimed novelties, but no ported mechanism is ever implemented or tested. All three ports in §10.3 are proposals.",
+      "source": "Novelty claim: §1, ¶6 and Table 1 column 'X-layer transfer'. The ports: §10.3 — MemoryBank's Ebbinghaus curve 'drops straight in as a scoring alternative' for KV eviction; Quest's no-evict discipline 'gives agent memory a template'; Ada-KV's output-error bound 'supplies the stop rule agent summarization lacks'. None is run. The only cross-tier evidence offered is EM-LLM [35], someone else's system.",
+      "why_it_hurts": "One of the three columns on which the survey claims superiority over prior surveys is, at the end of the paper, still entirely programmatic."
+    },
+    {
+      "fact": "§3 promises that 'Appendix A carries the full per-method classification of roughly seventy methods'. Appendix A's Table 6 classifies 35 methods and is titled 'Master Method-by-Axis Table' with the caption 'Representative methods classified along the seven axes'.",
+      "source": "Promise: §3, final ¶. Delivery: Appendix A opening — 'Table 6 classifies representative methods from across the survey along the seven axes of Section 3'; the table's rows are 10 KV + 6 Prompt + 5 Arch + 6 Agent + 4 Sparse + 2 MM + 2 Sys = 35.",
+      "caveat_on_this_finding": "The row count is from the vendored plain-text extraction; a PDF-layout table could in principle lose rows in extraction. Recorded in todo_verify with a search term."
+    },
+    {
+      "fact": "Table 3, the survey's headline KV comparison table, carries the same defect the survey exists to fix: its numbers are not comparable. The caption says so.",
+      "source": "Table 3 caption: 'Reductions are reported KV savings from the cited works and are not directly comparable across setups.' Compare §13.2: 'The units never line up, so the frontiers are incommensurable and each method's budget is set by whoever wrote the paper.'"
+    },
+    {
+      "fact": "The paper takes two incompatible positions on sleep-time compute and never reconciles them. §7 charges it with the query-agnostic penalty ('it spends budget speculatively on bits that may never be queried, the dual of the query-agnostic penalty H(Q) in Eq. (2)'); §10.5's principle P4 then recommends it ('sleep-time consolidation [65] move[s] the decision off the critical path and learn[s] it'); §15's sixth item hedges ('asynchronous (off the critical path, as sleep-time compute [65] begins to be)'). No quantity is offered that would say when the amortization beats the H(q) penalty.",
+      "source": "§7, 2nd family, final sentences; §10.5, P4; §15, sixth item.",
+      "why_it_hurts_v2_specifically": "[평가] This is the exact tradeoff S0's amortization identity (A) is meant to arbitrate, and the paper that supplies the formal machinery declines to instantiate it. The monograph must supply N_q itself or admit the identity is unresolvable from the literature — which is already S0 §7's standing caveat ('실제 서빙에서 N_q 분포는 어느 논문도 보고하지 않음')."
+    },
+    {
+      "fact": "The 'roughly 80–93% KV reductions and ∼20× prompt compression that practice routinely achieves, with quantization reportedly within ∼2.7× of the information-theoretic limit' is stated in §12 with no per-number citation and no source for the 2.7× figure in that sentence.",
+      "source": "§12, final ¶. Compare §1's own scope statement: 'Much of the literature is recent and unrefereed, so we treat preprint numbers as provisional and flag results that have not been reproduced.'",
+      "why_it_hurts": "These three numbers are the empirical anchor for the paper's headline theory gap (worst-case vs data-conditional I★(q)), and they are the least sourced numbers in the paper."
+    },
+    {
+      "fact": "The architectural (W) layer, the layer whose bound is stated most sharply (prediction 3, 'a state of s bits cannot answer a query whose answer requires more than s bits'), receives no experiment at all. Neither does the prompt layer.",
+      "source": "§14 contains exactly two experiments, on the KV layer and the agent layer. §6 and §5 contribute no measurements.",
+      "why_it_hurts": "The survey's claim is that one budget axis unifies four layers; its demonstration of that axis covers two."
+    },
+    {
+      "fact": "Experiment 2 leaves the experimental setup underspecified to a degree that blocks replication: the document length, chunk size, chunk count, retrieval method, and the identity of the summarizing model are all unstated. Only 'a long document', 'in chunks', 'twelve key–value facts' and 'an LLM-generated summary' are given.",
+      "source": "§14.2, full text of the setup paragraph. 'Code and configurations accompany the survey' [§14, ¶1] but no URL appears in the vendored text."
+    }
+  ],
+
+  "cross_path_citations": {
+    "method": "Checked the full reference list (152 numbered entries, [1]–[148] plus in-text technical reports) by arXiv ID and by author, plus every in-text mention of the three paths' representative works.",
+    "E_path": {
+      "verdict": "FULLY ENGAGED — the E path is one of the survey's four named layers (§7).",
+      "cited": [
+        "MemGPT/Letta [86] — arXiv:2310.08560, §7 ¶2 (the OS-paging framing) and §15 fifth item",
+        "Sleep-time Compute (Letta) [65] — Lin, Snell, Wang, Packer, Wooders, Stoica, Gonzalez 2025, arXiv:2504.13171. Cited FOUR times: Figure 3 (cross-task lifecycle stage), §5.2 (Cartridges 'akin to sleep-time compute [65]'), §10.5 P4, §15 sixth item.",
+        "Mem0 [21] — arXiv:2504.19413, §2 (LLM-judged salience surrogate), §7, Table 4, Table 6, §15",
+        "Zep [95] — arXiv:2501.13956, §7 ('of the family it preserves reversibility best: a superseded fact is retired, not deleted')",
+        "RAPTOR [97], GraphRAG [32], HippoRAG / HippoRAG 2 [42, 43], Generative Agents [88], Reflexion [101], ExpeL [143], A-MEM [125], MemoryBank [146], MIRIX [113], ACON [53], Context-Folding [105], Memory-as-Action [141], MEM1 [148], ReSum [120], IterResearch [15], G-Memory [136], EM-LLM [35], AgentPoison [18], MINJA [30], LOCOMO [74], LongMemEval [118]"
+      ],
+      "not_cited_from_S0_roster": "ReasoningBank (2509.25140) — absent."
+    },
+    "W_path": {
+      "verdict": "PARTIALLY ENGAGED — the architectural/recurrent line is a named layer (§6), but the W-path's SLEEP papers are entirely absent.",
+      "cited": [
+        "Titans [6] — Behrouz, Zhong, Mirrokni, arXiv:2501.00663. §6 ('makes the recurrent memory a deep module whose weights are updated at test time by gradient descent on a surprise (memory-prediction-error) signal with momentum and adaptive forgetting'), Figure 1, Table 6.",
+        "Mamba [40], RWKV [90], DeltaNet [130], Gated DeltaNet [128], GLA [129], xLSTM [5], Griffin [25], Samba [96], Jamba [64], RMT [10], Transformer-XL [23], Compressive Transformer [93], Infini-attention [81], Memorizing Transformers [121], RETRO [8], Landmark Attention [79], Larimar [24], MemoryLLM [114], Activation Beacon [137], DMC [82]"
+      ],
+      "NOT_cited": [
+        "Do Language Models Need Sleep? (2605.26099) — ABSENT. This is S0's W-1 chapter paper.",
+        "Memory Caching (2602.24281) — ABSENT. S0's W-2.",
+        "Miras (2504.13173) — ABSENT.",
+        "Atlas (2505.23735) — ABSENT.",
+        "TNT (2511.07343) — ABSENT.",
+        "TTT / Sun et al. (2407.04620) — ABSENT."
+      ],
+      "reading": "[평가] The paper knows the W layer exists as an ARCHITECTURE (Mamba, Titans, delta rule) but not as a SLEEP path. Titans is cited once, in a single paragraph of §6, and read purely as 'a learned C_θ that re-optimizes its own distortion surrogate online'. The NM monograph's entire TTT lineage after Titans is invisible to it."
+    },
+    "Theta_path": {
+      "verdict": "MINIMALLY ENGAGED, AND BY EXPLICIT EXCLUSION. Θ appears as a storage substrate (axis 7 'model parameters') and a mechanism (axis 6 'internalize-to-weights'), but the Θ-path sleep literature is absent, and weight-level work is declared out of scope.",
+      "cited": [
+        "ROME [76] — arXiv:2202.05262, §7 3rd family",
+        "MEMIT [77] — arXiv:2210.07229, §7 3rd family",
+        "Context Distillation [102] — §5.2 ('internalizing context into the weights for zero inference tokens, at the price of per-prompt retraining and no swappable artifact')",
+        "Cartridges [33] — §5.2 ('offline per-corpus self-study, amortizing a long fixed corpus into a small trained KV cartridge')",
+        "Nichani et al. [83] — §12, the parametric-capacity result: 'transformers store facts as associative memories whose capacity scales linearly in parameter count, with a single attention-plus-MLP block near-optimal.'"
+      ],
+      "NOT_cited": [
+        "Language Models Need Sleep (2606.03979) — ABSENT. S0's Θ-5.",
+        "SEAL: Self-Adapting LMs (2506.10943) — ABSENT. S0's Θ-3.",
+        "Nested Learning (2512.24695) — ABSENT. S0's Θ-4.",
+        "SCM: Sleep-Consolidated Memory (2604.20943) — ABSENT. S0's Θ-6.",
+        "LoRA (2106.09685) — ABSENT as a citation; 'LoRA-adapted' appears only in the description of ICAE [§5.2], uncited.",
+        "Generative Adapter (2411.05877) — ABSENT. Memory Layers (2412.09764) — ABSENT.",
+        "EWC (1612.00796) / Deep Generative Replay (1705.08690) — ABSENT.",
+        "How much do LMs memorize (2505.24832) — ABSENT.",
+        "LoRA as Knowledge Memory (2603.01097) — ABSENT.",
+        "Can a LM Learn Facts Continually in Its Weights? (2607.11020) — ABSENT."
+      ],
+      "the_explicit_exclusion": "§1, final ¶: 'Weight-level compression (pruning, distillation, weight quantization) is out of scope, as is long-context training that imposes no memory bound, except where such work builds in a bounded memory.'",
+      "what_it_says_about_Theta_anyway": "Two substantive Θ claims survive the exclusion, and both matter to the capacity chapter: (a) 'facts already amortized into parameters contribute zero to I(Y;H|Q)' [§12] — a successful Θ write shrinks I★(q) and relaxes the bound on W and E; (b) parametric editing 'is maximally irreversible and hard to audit, and at scale it induces the catastrophic forgetting that is the parametric analogue of summary collapse' [§7] — Θ is the (P-rev)-worst layer."
+    },
+    "the_finding": "[평가] This is the sharpest cross-path silence in the v2 corpus, and it runs in the direction the monograph should report. The paper cites Letta's Sleep-time Compute four times and builds a design principle (P4) and an agenda item (§15 sixth) around it — so it is genuinely inside the E-path conversation. Yet it cites ZERO of the six Θ-path sleep papers and ZERO of the two W-path sleep papers on S0's roster, and it explicitly rules weight-level work out of scope. The consequence is that the only paper in the corpus with a layer-agnostic capacity bound never applies that bound to the two paths that actually write to weights. Conversely, none of the Θ-path or W-path sleep papers can have cited this one (it is dated 2026-07-09, after all of them except Can-a-LM-Learn-Facts 2607.11020), so the silence is at present one-directional and unrebutted. The monograph's 분기 장 should state exactly this: the rate–distortion account of what to keep was written for E and for the KV cache, and its extension to Θ and W is available but unperformed."
+  },
+
+  "figures": [
+    {"n": "Figure 1", "title": "Map of the survey", "shows": "The four compaction areas (KV cache §4, prompt/context §5, architectural §6, agent memory §7) plus cross-cutting (§8, §9) all funnelling into 'one rate–distortion decision', with representative methods under each branch (H2O/SnapKV/KIVI/Palu · LLMLingua/gisting/ICAE · RMT/Mamba/Titans · MemGPT/Mem0/RAPTOR · NSA/MoBA/ToMe/G-Memory).", "reproduce": "YES — the cleanest one-page statement of the paper's unification claim; use it to introduce the capacity chapter."},
+    {"n": "Figure 2", "title": "The rate–distortion view of Section 2", "shows": "Task utility versus budget B (bytes/token). Two curves: query-conditioned (blue) and query-agnostic (red), both saturating at full-context utility. The horizontal gap between them is labelled H(Q); the region left of I★(Q) is labelled 'forced error'.", "reproduce": "YES — THE figure of the paper and the one the monograph needs most. It is the single picture that shows why sleep-time compute, being pre-query by definition, sits on the red curve."},
+    {"n": "Figure 3", "title": "Where compaction acts across the model and agent lifecycle", "shows": "Six lifecycle stages left to right — Pretraining (Mamba, MLA, RMT, NSA) · Prompt/prefill (LLMLingua, gisting, SnapKV) · Decode (H2O, Quest, KIVI, TOVA) · Serving (PagedAttention, InfiniGen) · Within-task (ACON, MEM1, Context-Folding) · Cross-task (Mem0, RAPTOR, sleep-time).", "reproduce": "YES — it places 'sleep-time' on an axis with prefill and decode, which is precisely the translation S0 asks every chapter to make."},
+    {"n": "Figure 4", "title": "The memory hierarchy of Section 10", "shows": "Three tiers with timescales — KV cache (sub-token, on-GPU, microseconds, near-lossless, one forward pass) · Working context (tokens, in-window, milliseconds to seconds, within a task) · Long-term store (semantic items, external, hours to days, across sessions) — over a bar of the five shared design knobs.", "reproduce": "YES — the timescale ladder is the systems reader's entry point, and it is the only place the paper commits to any latency figure at all."},
+    {"n": "Figure 5", "title": "The accuracy–budget frontier", "shows": "Needle accuracy (%) versus BPT budget (% of full cache, ticks 10/25/50/75/100) for six KV methods (ExpectedAttn, Knorm, Random, SnapKV, StreamingLLM, TOVA) plus the full-cache anchor, on Qwen2.5-1.5B.", "reproduce": "YES, but ONLY with the authors' own qualification attached ('The gaps are modest at this scale, and the ordering of methods is beside the point'). Reproducing it without that sentence would sharpen the result beyond what the paper claims."},
+    {"n": "Figure 6", "title": "Fact recall against the number of compaction events", "shows": "Two curves over 5–25 compaction events: reversible (retrieve) near 0.95 flat; irreversible (summarize) between 0.33 and 0.56.", "reproduce": "YES — the single most transferable empirical picture in the paper for the monograph's E-path chapters. Attach the caveat that super-linearity was predicted but not established."},
+    {"n": "Table 1", "title": "Coverage of this survey relative to the closest prior surveys", "shows": "Seven prior surveys × eight columns (four layers, systems substrate, RD/IB objective, cross-layer transfer, unified benchmark).", "reproduce": "ONLY as a described object, not cell-by-cell — the harvey-ball glyphs are garbled in the vendored extraction. Useful as evidence for the self-scoring point in unfavorable_facts."},
+    {"n": "Table 2", "title": "The layers and their characteristic axis values", "shows": "Five layer rows × (granularity, lifecycle stage, typical fidelity, adaptivity, mechanism/substrate). E.g. KV-cache = bit/rank/token/head, prefill-to-decode & decode-time, near-lossless usually irreversible, mostly query-agnostic; Agent/semantic = fact/note/summary, within- and between-task, lossy partly reversible, LLM- or RL-driven.", "reproduce": "YES — the compact cross-layer comparison the monograph's 분기 장 needs."},
+    {"n": "Table 3", "title": "Representative KV-cache compaction methods by mechanism axis", "shows": "Eleven methods × (mechanism, granularity, query-conditioning, reversibility, reduction). Reductions: H2O ~5×, SnapKV ~8×, PyramidKV ~8×, KIVI ~2.6×, KVQuant ~5×, Palu ~2×, StreamingLLM const. mem, Quest read-only, MLA ≫MHA, CaM add-on, Ada-KV varies.", "reproduce": "YES, with its own caption caveat quoted ('not directly comparable across setups')."},
+    {"n": "Table 4", "title": "The bridge", "shows": "Six design knobs × two columns (KV cache, agent long-term memory): importance signal (attention score ↔ LLM salience), forgetting (window/eviction ↔ decay curve), query-conditioning (per-query pages ↔ recall-time retrieval), reversibility (keep-all vs evict ↔ archive vs summarize), budget allocation (per-head/layer ↔ per-memory-type), stop rule (output-error bound ↔ OPEN).", "reproduce": "YES — the empty cell is the paper's best single piece of research-agenda rhetoric and reproduces as a one-line teaching point."},
+    {"n": "Table 5", "title": "Benchmarks against the properties the lens requires", "shows": "Ten existing benchmarks + COMPACT-Bench × (multi-budget? cross-layer? repeated-compaction?).", "reproduce": "Column definitions only, not the cells — glyphs garbled in extraction, and the row for COMPACT-Bench is self-scored."},
+    {"n": "Table 6 (Appendix A)", "title": "Master Method-by-Axis Table", "shows": "35 methods × (layer, granularity, lifecycle, reversibility, adaptivity, learnability, mechanism), with the abbreviation key given in the appendix preamble.", "reproduce": "OPTIONAL — useful as a source table if the monograph builds its own three-path classification, but it is smaller than §3 advertises."}
+  ],
+
+  "systems_implications": {
+    "framing_for_the_v2_reader": "[해설] The reader's standing question is '그래서 그게 decode에서 뭘 바꾸는데?'. This paper's answer is unusual: it changes nothing in the decode kernel, and instead supplies the accounting unit in which every decode-side memory decision can be compared. What follows separates what the paper states (with location) from note-writer inference (marked [추론]).",
+    "decode_cost": [
+      {"claim": "At long context and large batch the cache, not the weights, dominates both GPU memory and decode bandwidth, because 'every layer rereads every cached key and value at every step'.", "source": "§4, ¶1 — paper's statement", "number": "none given"},
+      {"claim": "'Run a transformer over a hundred thousand tokens and the cached keys and values of everything it has already read take up more of the accelerator than the model's own weights.'", "source": "§1, ¶1, citing [56, 72]", "number": "none of the paper's own"},
+      {"claim": "Sparse-retrieval methods (Quest, Landmark Attention) change decode BANDWIDTH, not capacity. 'These methods cut bandwidth, not capacity: they convert what to forget into what to fetch, which is why the bound's I★(Q) penalty does not bind on them as it does on evictors.' Table 3 marks Quest's reduction as 'read-only'.", "source": "§4.2, final sentences; Table 3", "why_it_matters": "For a decode-bound serving system this is the distinction that decides whether a method buys HBM capacity or HBM traffic. The paper is unusually explicit about it."},
+      {"claim": "The same caveat applies to the retrieval-augmented architectural family: 'these methods sparsify retrieval but not storage. The full KV still lives somewhere, so the true rate(Z) is unchanged and the compression is of compute, not memory.'", "source": "§6, ¶4 (Memorizing Transformers / RETRO / Landmark)"},
+      {"claim": "Prefill and decode have different compaction needs and should get different budgets: 'SCOPE [119] observes that prefill and decode have different compaction needs, since decoding accumulates its own heavy hitters, and allocates separate KV budgets to the two phases with a sliding decode strategy, dropping the assumption built into decode-time evictors that one budget fits both stages of the lifecycle.'", "source": "§8"}
+    ],
+    "state_bytes_moved": [
+      {"claim": "The layer-agnostic accounting unit is BPT = retained bytes / raw history tokens, with three explicit conversions: eviction keeping fraction f costs f; b-bit quantization costs b/16; prompt or summary compression to m of n tokens costs m/n; full cache = 1.0.", "source": "§14, ¶2 — paper's own definition", "worked_reading": "[추론] At the paper's fp16 reference, 2-bit quantization sits at b/16 = 0.125 BPT and 4-bit at 0.25 BPT; an evictor at 25% of the cache also sits at 0.25 BPT. The paper's Experiment 1 says every method is 'at or near zero accuracy' below roughly 0.25 BPT [§14.1], so on ITS task and ITS model a 4-bit quantizer and a 4× evictor sit at the same point on the axis where eviction has already failed. The paper does not draw this comparison itself — it is note-writer inference from the BPT formula plus the §14.1 collapse threshold, and it is exactly the kind of comparison the BPT axis was built to make."},
+      {"claim": "Per-token KV byte formula (layers × kv-heads × head-dim × 2 tensors × dtype bytes)", "source": "ABSENT — the paper never writes it. BPT is only ever reported as a percentage of the full cache.", "consequence": "No absolute bytes/session or bytes/user figure can be extracted from this paper for S0 §2.4's C."},
+      {"claim": "In disaggregated serving, rate(Z) reappears as a BANDWIDTH budget rather than an occupancy budget: 'Splitwise [89], DistServe [147], and Mooncake [92] disaggregate the two phases onto separate machines, which turns the KV cache into a tensor that must be transferred between prefill and decode pools over the interconnect... Here rate(Z) returns not as an occupancy budget but as a bandwidth budget: the cost of an exact, reversible representation is the time to ship it, which is what makes the lossy and the transmissible families below attractive even when memory is not scarce.'", "source": "§11, ¶2", "why_it_matters": "[해설] This is the paper's most directly useful systems sentence for the monograph: it shows that the SAME budget C can be denominated in HBM bytes, in interconnect bytes, or in tokens, and that the choice of denomination is what makes a method look good or bad."}
+    ],
+    "batching": {
+      "what_the_paper_says": "One sentence only: 'At long context and large batch it is the cache, not the weights, that dominates GPU memory and decode bandwidth.' [§4, ¶1]",
+      "what_it_does_not_say": "The paper performs no batching analysis. It does not discuss how per-request compaction state interacts with shared-weight batching, does not discuss grouped-GEMM decode, and does not discuss whether per-request BPT budgets can be scheduled jointly across a batch. Its Experiment 1 and 2 are single-stream.",
+      "finding": "[평가] For a paper whose §11 is titled 'Systems and Serving Substrate', the absence of any batching treatment is a real gap. NM's pair thesis — that per-request fast-weight state breaks shared-weight batching (STYLE §3, Rosetta row 'batching') — has no counterpart here, even though the paper's own §11 tension (lossless reuse vs lossy budgeting) is fundamentally a multi-request scheduling problem."
+    },
+    "memory_hierarchy_landing": [
+      {"tier": "on-GPU HBM", "what_lands": "the KV cache; 'sub-token, on-GPU, microseconds, near-lossless, one forward pass'", "source": "Figure 4"},
+      {"tier": "host DRAM and SSD", "what_lands": "CachedAttention 'stretches the horizon across conversational turns, spilling KV to DRAM and SSD tiers with layer-wise prefetch to hide slow-tier latency'; FlexGen 'aggregates GPU, CPU, and disk, solves a linear program for tensor placement, and quantizes weights and the cache to four bits'; InfiniGen 'keeps only a working set on-GPU, rehearsing the next layer with partial weights to guess which few tokens will matter and prefetching only their KV from host memory'; ShadowKV 'offloads the value cache, retains a low-rank key cache plus landmarks and outliers, and reconstructs keys to fetch only the values it needs'; Mooncake 'pools idle CPU, DRAM, and SSD across the cluster into a disaggregated KVCache store driven by a cache-centric scheduler'.", "source": "§11"},
+      {"tier": "the interconnect", "what_lands": "CacheGen 'encodes the cache into a compact bitstream that exploits its layer- and token-locality and streams it, trading a controlled, near-lossless quantization error for far lower transfer time'; CacheBlend 'reuses each chunk's independently precomputed KV and recomputes only the small fraction of cross-attention entries that the chunks' new neighbors change' — 'a multi-fidelity operator (P-fid) in the wild: a large reused tier plus a tiny recomputed tier sized by an error budget'.", "source": "§11"},
+      {"tier": "external store", "what_lands": "agent long-term memory; 'semantic items, external, hours to days, across sessions'", "source": "Figure 4"}
+    ],
+    "the_serving_hazard_worth_carrying_into_part_III": {
+      "claim": "Distortion is INHERITED through the prefix-reuse tree. 'Lossless reuse (PagedAttention, RadixAttention, prefix caches) assumes the stored KV is exactly what attention would have produced; lossy budgeting (InfiniGen, ShadowKV, quantized offload) assumes it may be approximated. Composing the two operators costs something: reusing a prefix that was itself evicted or quantized propagates the earlier distortion into every request that shares it, and the errors compound across the reuse tree instead of staying local to one sequence.'",
+      "source": "§11, final ¶",
+      "open_question_it_states": "'When should KV stay reversible and exact, paying storage and bandwidth, and when should it go lossy and cheap, paying distortion? And how does one stop a lossy decision made for a single request from silently degrading every descendant that later reuses it?'",
+      "note": "[해설] This is the systems statement that generalizes most directly to the sleep-time setting: a sleep-time artifact (a Cartridge, a consolidated E record, a Θ delta) is shared by every downstream request in exactly the way a cached prefix is, so any distortion written during sleep is inherited by all N_q wake queries — the amortization denominator of S0's identity (A) amortizes the ERROR as well as the cost. The paper does not say this about sleep-time compute; it says it about prefix caches. Marked as note-writer extension."
+    },
+    "prefix_reuse_has_no_floor": {
+      "claim": "'Their leverage comes not from spending fewer bits but from amortizing bits already spent, which is why the gains are entirely workload-dependent and collapse to nothing without prefix overlap. Reuse, unlike compression, buys nothing when there is nothing to reuse.'",
+      "source": "§11, ¶1",
+      "relevance": "The exact structural analogue of S0's caveat that the amortization identity (A) presumes a known N_q. Reuse and sleep-time amortization share the same failure mode: no shared context, no gain."
+    },
+    "the_cost_of_deciding_what_to_keep": {
+      "claim": "'KV compaction is a microsecond arithmetic decision, whereas agent consolidation is itself an expensive, error-prone LLM call, so the agent tier pays a budget the cache does not: the cost of deciding what to keep.'",
+      "source": "§10.4",
+      "and_the_prescription": "Principle P4: 'Make compaction asynchronous and learnable, not a blocking heuristic. When deciding what to keep is itself an LLM call on the critical path, it erodes the savings it buys. RL-learned policies [105, 141] and sleep-time consolidation [65] move the decision off the critical path and learn it; fixed-threshold auto-compaction does neither.' [§10.5]",
+      "relevance": "[해설] This is the paper's own derivation of WHY sleep-time compute exists, arrived at from a rate–distortion premise rather than from a biological metaphor: the decision cost of compaction is itself a wake-time latency contribution L_w, and moving it off the critical path is the only way to stop it eating the savings. The monograph can use this as an independent, non-neuroscientific justification for the sleep/wake split."
+    },
+    "the_five_design_principles_verbatim": {
+      "source": "§10.5",
+      "P1": "'Never discard irreversibly what you cannot re-derive cheaply. At equal budget a reversible operator (retrieval-backed eviction, archival memory) weakly dominates an irreversible one (permanent eviction, lossy summarization): the two can differ only on queries whose evidence was dropped, and there the reversible one wins. Quest [108] follows P1; H2O [142] and fixed-schedule summarization violate it.'",
+      "P2": "'Condition on the query distribution, not just the current query. The bound charges a query-agnostic operator the entropy H(Q). Trainable sparse attention (Section 8) and query-aware compression [50] pay less of this penalty; offline gisting pays it in full.'",
+      "P3": "'Separate a cheap reversible episodic tier from a lossy semantic tier, with explicit promotion and demotion. Multi-fidelity memory (P-fid) dominates a single lossy tier: keep raw episodes cheaply and recoverably, and abstract only what proves reusable. MIRIX's typed modules [113] and the Compressive Transformer's dual tier [93] are built this way; a flat summarization buffer is not.'",
+      "P4": "'Make compaction asynchronous and learnable, not a blocking heuristic.' (full text above)",
+      "P5": "'Budget by marginal task-utility, not a uniform ratio. The bound is governed by I★(Q), which spreads unevenly across heads, layers, and memory items. Non-uniform allocation [11, 34] respects this; a global fixed ratio ignores it and spends budget on low-utility state.'"
+    },
+    "what_the_reader_should_take_to_the_capacity_chapter": "[평가] Three things, in order of durability. (1) The unit: BPT makes a KV evictor, a quantizer, a prompt compressor and an agent summary commensurable, and S0 §2.4's C should be denominated this way. (2) The floor: below I★(q) every layer errs at the same rate, so the three-path comparison of S0 §2.3 cannot be settled by architecture — only by how well each path estimates the distortion surrogate and whether it keeps (P-rev). (3) The penalty: sleep-time compute is query-agnostic by S0's own definition, so by consequence (iii) it pays H(q) — and the only escape the paper offers is (P-rev), i.e. a sleep-time path that keeps a recoverable tier rather than overwriting. That is a design constraint the monograph can state as a proposition, and it cuts against the Θ-path (weight edits are 'maximally irreversible', §7) and for the E-path (archives and temporal graphs retire rather than delete, §7)."
+  },
+
+  "todo_verify": [
+    {"item": "The five budget values swept in Experiment 1. The prose says 'each at five budgets'; Figure 5's x-axis ticks read 10, 25, 50, 75, 100 (% of full cache), but the paper does not state in prose that these ARE the five swept values.", "search_term": "\"five budgets\" AND Figure 5 x-axis tick labels in the PDF"},
+    {"item": "The per-method accuracy values in Figure 5. Only the full-cache 1.00 anchor and the '<~25% budget → near zero' threshold appear in prose.", "search_term": "Figure 5 plotted series values / accompanying code+configs"},
+    {"item": "Experiment 2 setup: document length in tokens, chunk size, chunk count, the retrieval method used by the reversible arm, and which model generates the summary.", "search_term": "\"twelve key–value facts\" / \"compaction events\" / §14.2 setup paragraph in the PDF"},
+    {"item": "Whether 'Code and configurations accompany the survey' [§14, ¶1] resolves to a public repository. No URL appears in the vendored text.", "search_term": "\"Code and configurations\" / arXiv ancillary files for 2607.08032"},
+    {"item": "The exact number of rows in Appendix A Table 6. Counted 35 in the plain-text extraction (10 KV + 6 Prompt + 5 Arch + 6 Agent + 4 Sparse + 2 MM + 2 Sys) against §3's claim of 'roughly seventy methods'. PDF table extraction could in principle have dropped rows.", "search_term": "\"roughly seventy\" AND Table 6 row count in the PDF"},
+    {"item": "The per-cell marks of Table 1 (survey coverage) and Table 5 (benchmark coverage). The ●/◐/○ glyphs are garbled and interleaved in the vendored plain text and must not be quoted cell-by-cell.", "search_term": "Table 1 / Table 5 harvey-ball cells in the PDF"},
+    {"item": "Citations for the 'Knorm' and 'expected-attention' scorers used in Experiment 1 — neither carries a bracket citation in §14.1. They appear to be KVPress-provided baselines but the paper does not say so.", "search_term": "\"Knorm\" / \"expected-attention\" / KVPress baseline list"},
+    {"item": "The venue. The manuscript carries ACM CCS Concepts and Keywords blocks and ACM-style references, but no venue string, DOI, or conference footer survives in the vendored text.", "search_term": "ACM Reference Format / conference footer on page 1 of the PDF"},
+    {"item": "Whether the paper states a source for the '∼2.7× of the information-theoretic limit' quantization figure in §12's final paragraph. No bracket citation attaches to that clause in the extracted text.", "search_term": "\"2.7\" AND \"information-theoretic limit\" in §12"},
+    {"item": "Total reference count. Numbered entries run [1]–[148] with 152 lines matching the entry pattern in the extraction; the discrepancy is probably line-wrapping artifacts, not extra entries.", "search_term": "final reference entry number in the PDF bibliography"}
+  ],
+
+  "note_file": "notes/stc-v2/rate-distortion-compaction.json"
+}

@@ -1,0 +1,620 @@
+{
+  "paper_id": "seal",
+  "arxiv": "2506.10943",
+  "version_read": "v2, 18 Sep 2025",
+  "title": "Self-Adapting Language Models",
+  "authors": [
+    "Adam Zweiger (equal contribution)",
+    "Jyothish Pari (equal contribution, Improbable AI Lab, CSAIL MIT)",
+    "Han Guo",
+    "Ekin Akyürek",
+    "Yoon Kim",
+    "Pulkit Agrawal (Improbable AI Lab, CSAIL MIT)"
+  ],
+  "affiliation": "Massachusetts Institute of Technology",
+  "venue": "39th Conference on Neural Information Processing Systems (NeurIPS 2025) [stated on p.1 footer]",
+  "date": "arXiv v2 dated 18 Sep 2025 [p.1 arXiv line]",
+  "path": "/home/jimmy/repos/neural-memory-study/papers/stc/2506.10943.txt",
+  "axis": "Theta",
+
+  "problem_stated": {
+    "abstract_form": "\"Large language models (LLMs) are powerful but static; they lack mechanisms to adapt their weights in response to new tasks, knowledge, or examples.\" [Abstract, p.1]",
+    "intro_form": "\"we explore an intriguing hypothesis: can an LLM self-adapt by transforming or generating its own training data and learning procedure?\" [§1 Introduction, p.1]",
+    "sharpened_form": "Current LLMs \"consume and learn from the task data 'as-is' via finetuning or in-context learning\", and \"such data may not be in an optimal format (or volume) for learning, and current approaches do not enable models to develop bespoke strategies for how to best transform and learn from their training data.\" [§1, pp.1-2]",
+    "two_target_capabilities": "(1) integrate new information into weights so it is recalled without context (no-context SQuAD); (2) generalize to a novel task from few examples (ARC). [§3.2 opening, p.5]"
+  },
+
+  "inherited_open_question": {
+    "verbatim_prior_open_question_present": false,
+    "statement": "The paper does NOT quote or cite an explicit 'open question' sentence from any prior work. What it explicitly takes up is a stated *limitation of practice* in two prior lines, both by overlapping authors.",
+    "from_1": {
+      "work": "Akyürek et al. [36], 'The surprising effectiveness of test-time training for few-shot learning' (arXiv:2411.07279) — the TTT-for-ARC protocol SEAL adopts wholesale.",
+      "question_taken_up": "How should the augmentation set and the optimization hyperparameters of a test-time-training round be chosen, instead of being fixed by hand for all tasks?",
+      "evidence": "\"We adopt the test-time training (TTT) protocol of Akyürek et al. [36] ... Rather than relying on manually tuned heuristics for selecting augmentations and optimization settings, we train SEAL to learn these decisions.\" [§3.2 Few-Shot Learning, p.6]. And: \"note that Akyürek et al. [36] used the same TTT configuration for all tasks, and thus we do not need a large training set for learning a fixed self-edit.\" [§4.1, p.6]"
+    },
+    "from_2": {
+      "work": "Akyürek et al. [30], 'Deductive closure training' (Findings ACL 2024) — the implication-generation format SEAL adopts as 'the canonical format'; with Lampinen et al. [31] and Park et al. [32].",
+      "question_taken_up": "Given that finetuning on model-generated implications of a passage beats finetuning on the raw passage (and can beat in-context learning), what is the *right* generation strategy — since prior work fixes it by prompt heuristic?",
+      "evidence": "\"SEAL builds on this line of work by using reinforcement learning to train a generative policy that directly maximizes the downstream utility of synthetic data when applied for gradient-based self-updates, rather than relying on static or heuristic generation strategies that are manually tuned.\" [§2 Synthetic Data Generation, p.2]. And: \"We build on these approaches by training models through RL to generate more optimal finetuning data.\" [§2 Knowledge Updating, p.2]"
+    },
+    "what_it_implicitly_answers": "It answers, for the Theta-path, the question left standing by LoRA/model-editing and by GenerativeAdapter-style hypernetworks (both cited: [72], [54]): *who writes the training set for a weight update at deployment time?* SEAL's answer is that the model itself writes it, in natural language, and that the writing policy can be trained by RL with the post-update task score as reward. It also implicitly answers the Titans/TTT line's question of what the 'inner loop' should be — SEAL's inner loop is an SFT run over generated text, not a per-token gradient on the token stream.",
+    "bridge_in_sentence_for_the_chapter": "GenerativeAdapter (2411.05877) and the model-editing line put a weight delta on the table but left the *content* of the update to a hand-fixed rule; SEAL asks who should author that content and answers: the model, trained by RL on whether the resulting weights answer the question."
+  },
+
+  "core_mechanism": {
+    "one_line": "SEAL is a two-timescale (U-Theta): an inner update moves Theta by SFT on a model-written training set R (the 'self-edit'), and an outer RL loop moves the same Theta so that it writes better R next time — gen(.) in (U-Theta) is itself parameterized by Theta and is trained.",
+
+    "notation_conflicts": {
+      "note": "SEAL's symbols collide with three reserved symbols in style/STYLE-NOTATION.md §1.2/§1.5 and with one S0 cost symbol. Mapping is mandatory; original symbols may appear only in direct quotation.",
+      "table": [
+        {"seal_symbol": "$\\theta$ — 'the parameters of the language model $\\mathrm{LM}_\\theta$' [§3.1, p.3]", "unified": "$\\Theta$", "why": "These are the pretrained/slow weights. STYLE §1.2 reserves $\\Theta$ for slow weights and forbids lowercase $\\theta_t$ with a time subscript (STYLE §1.5)."},
+        {"seal_symbol": "$\\theta'$ — post-inner-update parameters, $\\theta' \\leftarrow \\mathrm{SFT}(\\theta, SE)$ [§3.1, p.4]", "unified": "$\\Theta'$ (transient adapted slow weights); at deployment $\\Theta' = \\Theta_{k+1}^{\\text{deploy}}$", "why": "Must be visibly distinct from the outer-loop $\\Theta_{k+1}$, because in SEAL the two are different movements at different timescales and, during RL training, $\\Theta'$ is discarded."},
+        {"seal_symbol": "$\\theta_t$ — parameters at *outer RL iteration* $t$ [Eq. 1, Alg. 1]", "unified": "$\\Theta_k$, $k$ = outer round index", "why": "$t$ is reserved for the token index (STYLE §1.2). CRITICAL: SEAL's $t$ is not a token index."},
+        {"seal_symbol": "$C$ — the context (a SQuAD passage, or the few-shot demonstrations) [§3.1, p.3]", "unified": "$c$ (context / experience item), matching S0 §2.2 (U-E)'s $c_k$", "why": "STYLE §1.2 reserves $C$ for chunk size, and S0 §2.4 reserves $C$ for state capacity in bytes. Both would be misread. Residual collision: STYLE reserves lowercase $c$ for the Atlas Omega-rule window length — this chapter must declare locally that $c$ means context and that the Atlas window does not appear here."},
+        {"seal_symbol": "$\\tau$ — the downstream evaluation (a QA set, or a held-out ARC query/answer pair) [§3.1, p.3]", "unified": "$\\mathcal{T}$", "why": "STYLE §1.2 reserves $\\tau$ as a token index."},
+        {"seal_symbol": "$SE$ — the self-edit (generated implications, or a JSON tool/hyperparameter spec)", "unified": "$\\mathcal{R}$ (with round index $\\mathcal{R}_k$)", "why": "This is exactly S0 (U-Theta)'s training set $\\mathcal{R}_k = \\mathrm{gen}(\\mathcal{H}_k; B_s)$. Naming it $\\mathcal{R}$ is what makes the paper reduce to the frame."},
+        {"seal_symbol": "$L_{RL}$ — the RL objective [Eq. 1]", "unified": "$\\mathcal{L}_{\\mathrm{RL}}$", "why": "STYLE §1.2/§0 rule 4: outer loss is calligraphic $\\mathcal{L}$; bare $L$ is sequence length (STYLE §1.5)."},
+        {"seal_symbol": "$y_s^{(i,j)}$ — the $s$-th token of self-edit $SE_{ij}$; $T$ — its length [Eq. 4]", "unified": "$z_s^{(i,j)}$; length $L_{\\mathcal{R}}$", "why": "STYLE §1.2 reserves $y_t$ for the layer output and $L$ for sequence length; SEAL's $T$ is a per-self-edit length."},
+        {"seal_symbol": "$\\alpha$ — LoRA alpha [Tables 3, 4; §A.2; §B.2]", "unified": "$\\alpha_{\\mathrm{LoRA}}$", "why": "STYLE §1.5 reserves $\\alpha_t \\in [0,1]$ for the retention gate; LoRA alpha is a scaling constant and would invert the reader's intuition."},
+        {"seal_symbol": "$r$ — used for BOTH the binary reward [Eq. 2] AND the LoRA rank ('LoRA Rank (r)' in Table 3)", "unified": "reward $r$; rank $d_{\\mathrm{low}}$", "why": "In-paper self-collision. $d_{\\mathrm{low}}$ is already the reserved low-rank symbol (STYLE §1.2, Sleep row)."},
+        {"seal_symbol": "learning rate — 'Learning Rate' appears for the inner SFT (Tables 3, 4; model-chosen in few-shot) and for the outer ReST$^{EM}$ SFT (3e-4, §B.2)", "unified": "inner $\\eta_{\\mathrm{in}}$ (data-dependent in the few-shot instantiation, hence subscript-free constant elsewhere); outer $\\eta_\\Theta$", "why": "STYLE §1.5: a time subscript on a gate means data-dependence. In SEAL's few-shot domain the inner learning rate IS generated by the model, so it is genuinely data-dependent; in knowledge incorporation it is a swept constant."},
+        {"seal_symbol": "$D$ — the dataset of $(C,\\tau)$ pairs [Alg. 1 line 1]", "unified": "$\\mathcal{D}$", "why": "STYLE §1.2 reserves $\\mathcal{D}$ for dataset; bare $D$ is Atlas's lifted dimension."},
+        {"seal_symbol": "$N$, $M$ — number of contexts per minibatch, number of self-edits sampled per context [Eq. 3]", "unified": "$N$, $M$ (kept)", "why": "No collision."}
+      ]
+    },
+
+    "equations": [
+      {
+        "name": "(SEAL-1) sleep-time generation — the self-edit is a decode pass",
+        "latex": "\\mathcal{R}_k \\;\\sim\\; \\mathrm{LM}\\big(\\,\\cdot\\;\\big|\\;c\\,;\\ \\Theta_k\\big), \\qquad \\mathcal{R}_k=\\{s_1,s_2,\\dots,s_n\\}",
+        "source": "[SEAL §3.1, p.4: 'Given C, the model generates a self-edit SE'; Alg. 1 line 4: 'Generate self-edit SE ~ LM_theta(. | C)'; the implication format and the split into documents s_i is [SEAL §3.2 Knowledge Incorporation, p.5]]",
+        "frame_mapping": "This is exactly $\\mathcal{R}_k=\\mathrm{gen}(\\mathcal{H}_k;B_s)$ of S0 (U-Theta), with $\\mathrm{gen}=\\mathrm{LM}(\\cdot;\\Theta_k)$ and $\\mathcal{H}_k = \\{c\\}$ (a single context, not accumulated history)."
+      },
+      {
+        "name": "(SEAL-2) inner update — (U-Theta) restricted to a LoRA subspace",
+        "latex": "\\Theta' \\;\\leftarrow\\; \\mathrm{SFT}\\big(\\Theta_k,\\ \\mathcal{R}_k\\big), \\qquad \\Theta' = \\Theta_k + \\Delta,\\quad \\Delta = \\tfrac{\\alpha_{\\mathrm{LoRA}}}{d_{\\mathrm{low}}}\\,B A,\\quad B\\in\\mathbb{R}^{d\\times d_{\\mathrm{low}}},\\ A\\in\\mathbb{R}^{d_{\\mathrm{low}}\\times d}",
+        "expanded": "\\Theta' \\;=\\; \\Theta_k \\;-\\; \\eta_{\\mathrm{in}}\\sum_{e=1}^{E_{\\mathrm{ep}}}\\ \\sum_{s\\in\\mathcal{R}_k} \\nabla_{\\Delta}\\,\\mathcal{L}_{\\mathrm{CE}}\\big(s;\\ \\Theta_k+\\Delta\\big)",
+        "source": "[SEAL §3.1, p.4: 'updates its parameters via supervised finetuning: theta' <- SFT(theta, SE)'; §3.2, p.5: 'we compute the standard causal language-modeling loss over each sequence s_i and update the model parameters, yielding theta'' and 'we use low-rank adapters (LoRA [72]) for efficient, lightweight tuning']",
+        "faithfulness_caveat": "THE PAPER NEVER WRITES THIS EQUATION. There is no numbered equation for the inner update anywhere in SEAL — §3.1/§3.2 give it in prose only, and the LoRA reparameterization $\\Delta=\\frac{\\alpha}{r}BA$ is inherited from Hu et al. [72] without being restated. The expanded form above is the note-writer's reconstruction from the prose plus the hyperparameter tables (§A.2, §B.2, Tables 3-4). $E_{\\mathrm{ep}}$ = epochs; in the few-shot domain both $\\eta_{\\mathrm{in}}$ and $E_{\\mathrm{ep}}$ are GENERATED BY THE MODEL [§3.2, Fig. 3], in knowledge incorporation they are swept [Tables 3, 4]."
+      },
+      {
+        "name": "(SEAL-3) outer objective",
+        "latex": "\\mathcal{L}_{\\mathrm{RL}}(\\Theta_k) \\;:=\\; -\\,\\mathbb{E}_{(c,\\mathcal{T})\\sim\\mathcal{D}}\\Big[\\ \\mathbb{E}_{\\mathcal{R}\\sim \\mathrm{LM}(\\cdot|c;\\Theta_k)}\\big[\\,r(\\mathcal{R},\\mathcal{T},\\Theta_k)\\,\\big]\\Big]",
+        "source": "[SEAL Eq. 1, §3.1, p.4]",
+        "note": "The reward depends on $\\Theta_k$ itself, not only on the action — 'Unlike in standard RL setups, the reward assigned to a given action in our setting depends on the model parameters theta at the time the action is taken' [§3.1, p.4]. The RL state is therefore $(c,\\Theta)$ while the observation is only $c$ ('placing theta directly in context is infeasible')."
+      },
+      {
+        "name": "(SEAL-4) binary reward — the wake-time score IS the reward",
+        "latex": "r(\\mathcal{R},\\mathcal{T},\\Theta_k) \\;=\\; \\begin{cases} 1 & \\text{if, on } \\mathcal{T},\\ \\text{adaptation using }\\mathcal{R}\\ \\text{improves } \\mathrm{LM}_{\\Theta_k}\\text{'s performance}\\\\ 0 & \\text{otherwise}\\end{cases}",
+        "source": "[SEAL Eq. 2, §3.1, p.4]",
+        "note": "Footnote 2 on p.4 modifies this: 'The reward may also be assigned to the single self-edit that yields the greatest improvement among sampled candidates, which we do in knowledge incorporation, rather than to all edits that yield a positive improvement.' So in the headline knowledge-incorporation experiments the operative reward is argmax-of-$M$, not the Eq. 2 threshold."
+      },
+      {
+        "name": "(SEAL-5) outer gradient estimator (ReST^EM = filtered behavior cloning)",
+        "latex": "\\nabla_{\\Theta_k}\\mathcal{L}_{\\mathrm{RL}} \\;\\approx\\; -\\frac{1}{NM}\\sum_{i=1}^{N}\\sum_{j=1}^{M} r_{ij}\\,\\nabla_{\\Theta_k}\\log p_{\\Theta_k}\\big(\\mathcal{R}_{ij}\\,\\big|\\,c_i\\big)",
+        "token_level": "\\;=\\; -\\frac{1}{NM}\\sum_{i=1}^{N}\\sum_{j=1}^{M} r_{ij}\\sum_{s=1}^{L_{\\mathcal{R}}} \\nabla_{\\Theta_k}\\log p_{\\Theta_k}\\big(z_s^{(i,j)}\\,\\big|\\,z_{<s}^{(i,j)},\\,c_i\\big)",
+        "source": "[SEAL Eq. 3 and Eq. 4, §3.1, p.4]",
+        "note": "The reward is treated as fixed w.r.t. $\\Theta_k$: 'the reward term r(SE, tau, theta_t) depends on theta_t in our setup but is not differentiable. We address this by treating the reward as fixed with respect to theta_t.' [§3.1, p.4] — an acknowledged approximation (stop-gradient). Because $r=0$ terms vanish, the estimator reduces to 'SFT on good self-edits'."
+      },
+      {
+        "name": "(SEAL-6) outer step",
+        "latex": "\\Theta_{k+1} \\;=\\; \\Theta_k \\;-\\; \\eta_\\Theta\\,\\nabla_{\\Theta_k}\\mathcal{L}_{\\mathrm{RL}} \\quad\\text{(implemented as LoRA SFT on the reward-1 self-edits)}",
+        "source": "[SEAL Alg. 1 line 8: 'Update: theta_{t+1} <- RL_Update(theta_t, r, SE)'; §3.1, p.4: adopt ReST^EM [40], 'a simpler approach based on filtered behavior cloning — also known as rejection sampling + SFT'; hyperparameters §B.2, p.20: batch 10, 2 epochs, lr 3e-4, LoRA rank 64 alpha 128 on all MLP and attention projection layers]",
+        "note": "The outer step is itself a LoRA SFT. Both timescales of Theta movement in the knowledge-incorporation experiments are low-rank."
+      },
+      {
+        "name": "(SEAL-7) wake-time read — no external state, no context",
+        "latex": "\\hat y \\;=\\; f\\big(q;\\ \\Theta',\\ W=\\varnothing,\\ \\mathrm{ret}(E,q)=\\varnothing\\big)",
+        "source": "[SEAL §3.2, p.5: 'The updated model is evaluated on questions about the passage without access to the original text' (Fig. 2 caption); §B.3 answer prompt, p.20: 'Let's answer a question directly and concisely. Question: {question} Answer:']",
+        "frame_mapping": "In S0 (R), SEAL zeroes out both $W$ and $E$: the entire adaptation lives in $\\Theta'$, and the wake-time prompt contains neither the passage nor a retrieved record. This is the purest Theta-path read in the corpus."
+      }
+    ],
+
+    "algorithm_as_stated": "Alg. 1 [p.4]: for outer iteration t = 1,2,...: (3) sample (C, tau) ~ D; (4) generate SE ~ LM_theta(.|C); (5) inner loop update theta'_t <- SFT(theta_t, SE); (6) evaluate Ans ~ LM_{theta'_t}(.|tau); (7) compute reward r <- r(Ans, tau); (8) theta_{t+1} <- RL_Update(theta_t, r, SE).",
+
+    "what_is_actually_new": "Not the weight update (LoRA SFT on synthetic implications is Akyürek et al. [30] / Yang et al. [25]) and not the RL algorithm (ReST^EM [40]). What is new is closing the loop: the downstream score of the *post-update* model is used as the training signal for the *generator of the update's data*, inside one model. And, in the few-shot domain, the self-edit contains the optimizer configuration itself — the model writes its own learning rate, epoch count, loss mask and augmentation set [§3.2, Fig. 3]."
+  },
+
+  "outer_vs_inner": {
+    "reader_note": "Three distinct time scales appear, and the paper's word 'inner loop' does NOT mean what it means in the Titans/TTT line. In SEAL, 'inner loop' = one whole SFT run over generated text (seconds to minutes). There is NO per-token inner loop anywhere in this paper.",
+    "columns": ["learnable_object", "who_learns_it", "when_it_moves", "what_moves_it", "persists_after_the_query?", "source"],
+    "rows": [
+      {
+        "learnable_object": "$\\Theta$ — the pretrained backbone (Qwen2.5-7B / Llama-3.2-1B-Instruct)",
+        "who_learns_it": "not learned here; taken off the shelf",
+        "when_it_moves": "never, in this paper",
+        "what_moves_it": "—",
+        "persists": "n/a",
+        "source": "[§4.1 p.6 'Llama-3.2-1B-Instruct, a small open-source model with no ARC-specific pretraining'; §B.1 p.20 'We use the Qwen-2.5-7B base model']"
+      },
+      {
+        "learnable_object": "The self-edit generation policy — i.e. $\\Theta_k$ viewed as a generator of $\\mathcal{R}$",
+        "who_learns_it": "OUTER-LOOP RL TRAINING (offline, before deployment)",
+        "when_it_moves": "once per ReST$^{EM}$ round; 2 rounds total in knowledge incorporation, 1 round in few-shot",
+        "what_moves_it": "(SEAL-5)/(SEAL-6): filtered behavior cloning on the reward-1 self-edits; LoRA rank 64 alpha 128, lr 3e-4, 2 epochs, batch 10",
+        "persists": "yes — this is the shipped model",
+        "source": "[§3.1 pp.3-4; §B.2 p.20; §A.2 p.18 'We trained SEAL using a single outer loop of reinforcement learning on the 11 training problems']"
+      },
+      {
+        "learnable_object": "$\\mathcal{R}$ — the self-edit itself (the implications text, or the JSON config)",
+        "who_learns_it": "not a parameter; it is GENERATED at sleep time by a decode pass",
+        "when_it_moves": "once per new context $c$, before any query arrives",
+        "what_moves_it": "sampling from $\\mathrm{LM}(\\cdot|c;\\Theta_k)$ at temperature 1 [§B.2]; 5 samples per passage in knowledge incorporation, 15 per task in few-shot training / 5 per task at few-shot eval",
+        "persists": "the TEXT is discarded after the update in the single-passage regime; in the CPT regime the aggregate of all self-edits is kept as a training corpus",
+        "source": "[§B.2 p.20; §4.1 p.6; §4.2 p.7 'we sample 5 self-edit generations for each passage and take the aggregate synthetic dataset for continued pretraining']"
+      },
+      {
+        "learnable_object": "$\\Delta$ — the LoRA adapter produced by the inner SFT (the actual new knowledge)",
+        "who_learns_it": "SLEEP-TIME UPDATE (per context, gradient-based)",
+        "when_it_moves": "once per context, before the query; not during decoding",
+        "what_moves_it": "(SEAL-2): causal-LM loss over the generated sequences",
+        "persists": "YES at deployment ('persistent weight updates, enabling lasting adaptation', Abstract). NO during RL training — each of the 750 inner-loop iterations per round is evaluated and then thrown away.",
+        "source": "[Abstract p.1; §3.2 p.5; §B.5 p.21 'a batch of 50 passages over 5 completions and 3 runs per completion, meaning 750 inner loop iterations']"
+      },
+      {
+        "learnable_object": "Inner optimization hyperparameters: learning rate, epochs, loss-token mask",
+        "who_learns_it": "FEW-SHOT DOMAIN ONLY: generated by the model as part of $\\mathcal{R}$, and the generator is trained by RL. KNOWLEDGE-INCORPORATION DOMAIN: swept by the authors, not learned.",
+        "when_it_moves": "few-shot: per task, at sleep time. knowledge incorporation: fixed offline by hyperparameter search.",
+        "what_moves_it": "few-shot: the same outer RL loop that trains the text generator. knowledge incorporation: grid search over lr in [1e-4, 3e-4, 5e-4, 1e-3, 2e-3], epochs in [1,5,10,15,20], batch in [1,4]",
+        "persists": "the policy that emits them persists; the values themselves are per-task",
+        "source": "[§3.2 p.6 and Fig. 3 p.5; §A.2 p.18 'Learning rate: N/A (model chooses it)', 'num_train_epochs: N/A (model chooses it)'; Table 3 p.20, Table 4 p.21]"
+      },
+      {
+        "learnable_object": "Augmentation tool selection (rotations, flips, size, chain, repeat)",
+        "who_learns_it": "FEW-SHOT ONLY: generated by the model; the tools themselves are fixed functions from Akyürek et al. [36]",
+        "when_it_moves": "per task, at sleep time",
+        "what_moves_it": "outer RL loop",
+        "persists": "policy persists",
+        "source": "[§3.2 p.6 'we define a set of tools, each of which is a pre-defined function from Akyürek et al. [36]'; prompt in §A.2 p.18]"
+      },
+      {
+        "learnable_object": "LoRA rank / alpha / target modules",
+        "who_learns_it": "fixed by the authors — never learned, never generated",
+        "when_it_moves": "never",
+        "what_moves_it": "—",
+        "persists": "n/a",
+        "source": "[§A.2 p.18: TTT LoRA rank 128, alpha 16, into q_proj, v_proj, gate_proj, down_proj, up_proj; §B.2 p.20: RL SFT LoRA rank 64 alpha 128 'applied to all MLP and attention projection layers'; Tables 3-4 search spaces r in [32,64], alpha in [32,64]]"
+      },
+      {
+        "learnable_object": "$W$ — fast weights / test-time recurrent state",
+        "who_learns_it": "DOES NOT EXIST IN THIS PAPER",
+        "when_it_moves": "—",
+        "what_moves_it": "—",
+        "persists": "—",
+        "source": "[absent throughout; the architecture is an unmodified transformer, and no per-token state update is defined anywhere]"
+      },
+      {
+        "learnable_object": "$E$ — external store",
+        "who_learns_it": "DOES NOT EXIST IN THIS PAPER (see cross_path_citations)",
+        "when_it_moves": "—",
+        "what_moves_it": "—",
+        "persists": "—",
+        "source": "[absent; the wake-time prompt contains no passage and no retrieved record, §B.3 p.20. The nearest thing to $E$ is the aggregated synthetic corpus in the CPT regime, which is consumed by training and never queried.]"
+      },
+      {
+        "learnable_object": "Wake-time movement of anything at all",
+        "who_learns_it": "NOTHING MOVES AT WAKE TIME",
+        "when_it_moves": "—",
+        "what_moves_it": "—",
+        "persists": "—",
+        "source": "[§3.2 p.5 and Fig. 2: after adaptation the model simply answers the question. This is the defining systems property of the paper — all of its compute is displaced to before the query.]"
+      }
+    ]
+  },
+
+  "update_layer": {
+    "instantiates": "(U-Theta), twice, at two different timescales, plus zero use of (U-W) and (U-E).",
+    "canonical_form_for_reference": "$\\Theta_{k+1} = \\Theta_k - \\eta_\\Theta \\nabla_\\Theta \\mathcal{L}(\\mathcal{R}_k;\\Theta_k)$, $\\mathcal{R}_k = \\mathrm{gen}(\\mathcal{H}_k;B_s)$ [S0 §2.2]",
+    "order_of_operations": "Per outer round $k$: (i) $\\mathcal{R}_k \\sim \\mathrm{LM}(\\cdot|c;\\Theta_k)$; (ii) INNER (U-Theta): $\\Theta_k \\to \\Theta'$ by SFT on $\\mathcal{R}_k$; (iii) score $\\Theta'$ on $\\mathcal{T}$, obtain $r$; (iv) DISCARD $\\Theta'$; (v) OUTER (U-Theta): $\\Theta_k \\to \\Theta_{k+1}$ by reward-filtered SFT on the *tokens of* $\\mathcal{R}_k$. At deployment only (i)-(ii) run, and $\\Theta'$ is kept.",
+    "differences_from_canonical": [
+      "1. gen(.) IS Theta. The canonical rule treats gen as an exogenous procedure; SEAL sets gen = LM(.;Theta_k), so the same parameter vector both authors and receives the update. This is what makes the loop self-referential ('SEAL directly uses the model's generation to parameterize and control its own adaptation process', Abstract).",
+      "2. The outer objective is NOT the outer loss on R_k. Canonical (U-Theta) takes a gradient of L(R_k; Theta). SEAL's outer gradient is a REINFORCE/filtered-BC gradient of log p(R_k | c), weighted by a binary reward measured on Theta' — i.e. the gradient flows through the *likelihood of having written R*, never through the SFT that consumed R. The reward is stop-gradiented [§3.1, p.4].",
+      "3. H_k is a single context, not accumulated experience. 'Although our method is trained using single-example TTT episodes...' [§2 Test-Time Training, p.3]. The paper shows the policy transfers to a many-document regime (CPT over n=200 and n=2067) that it was never trained on [§4.2, p.7].",
+      "4. The update is subspace-constrained. Inner (U-Theta) is restricted to a LoRA subspace in the single-passage regime, but is FULL finetuning in the CPT regime [Table 2 column headers: 'n=1; LoRA' vs 'n=200; full-FT'].",
+      "5. gen(.) emits update-rule parameters, not only data. In the few-shot domain R contains eta_in, epoch count and the loss mask [Fig. 3, §3.2 p.6]. Canonical (U-Theta) has no channel for this. This is the sharpest formal extension SEAL makes to the frame and the chapter should say so.",
+      "6. The reward requires a labelled downstream task tau paired with every context — an oracle the canonical rule does not assume, and the paper's own stated blocker to scaling [§5 Context-dependent evaluation, p.9]."
+    ],
+    "does_not_touch": "(U-W): no fast-weight state exists; the backbone is an unmodified transformer. (U-E): nothing is written to or retrieved from an external store; the wake-time prompt is bare [§B.3 p.20]."
+  },
+
+  "cost_table": {
+    "B_s": {
+      "value": "PARTIALLY REPORTED — in wall-clock only, and only for the RL TRAINING loop, never for a deployment-time sleep step, and never in tokens or FLOPs.",
+      "reported_numbers": [
+        "'each self-edit evaluation takes approximately 30-45 seconds' [§5 Limitations, Computational overhead, p.9]",
+        "one ReST^EM round in knowledge incorporation = 50 passages x 5 completions x 3 seeds = 750 inner-loop iterations, 'about 6 hours on 2xH100s' [§B.5, p.21]",
+        "2 rounds of ReST^EM used for the headline result [§4.2 p.7; §B.2 p.20]",
+        "few-shot: 'Each TTT per problem requires between half a minute to a few minutes'; 'Overall ReSTEM took around 2-3 hours' on a single A100/H100/H200 [§A.4, p.19]",
+        "proxy-reward variant: whole RL training takes ~5 min vs ~6 hr for the full loop [Table 9, §B.10, p.23]"
+      ],
+      "absent": "FLOPs: absent. Self-edit token counts: absent (Fig. 5 shows edits growing longer across RL iterations but no count is given). Deployment-time sleep cost for one passage (one decode + one LoRA SFT), isolated from the reward evaluation: absent. Cost of the CPT run at n=200 or n=2067: absent.",
+      "source": "[§5 p.9; §A.4 p.19; §B.5 p.21; §B.10 Table 9 p.23]"
+    },
+    "L_w": {
+      "value": "absent",
+      "detail": "The paper reports no latency, no TTFT, no tokens/s, no per-query cost of any kind. The only wake-time statement is structural: evaluation is 'without access to the original text' [Fig. 2 caption, p.5] and the answer prompt is two lines [§B.3, p.20]. No number is attached to the prefill saving this implies.",
+      "source": "[searched the full text for latency/throughput/TTFT/FLOP terms — none occur]"
+    },
+    "C": {
+      "value": "PARTIALLY REPORTED as adapter rank; absent in bytes or parameter count.",
+      "reported_numbers": [
+        "few-shot TTT adapter: LoRA rank 128, alpha 16, inserted into q_proj, v_proj, gate_proj, down_proj, up_proj [§A.2, p.18]",
+        "few-shot RL SFT adapter: lora_rank 16, lora_alpha 16 [§A.2, p.18]",
+        "knowledge-incorporation RL SFT adapter: LoRA rank 64, alpha 128, 'applied to all MLP and attention projection layers' [§B.2, p.20]",
+        "knowledge-incorporation inner adapter search space: rank in [32,64], alpha in [32,64] [Table 3 p.20 (single-passage), Table 4 p.21 (multi-passage)]"
+      ],
+      "absent": "Bytes per adapter: absent. Trainable-parameter count: absent. Per-user or per-session state budget: absent. Whether adapters are retained, merged or discarded after a query: not stated. In the CPT regime the update is full finetuning, so C = the entire 7B model, but this is stated only as the column header 'full-FT' [Table 2, p.8] and never costed.",
+      "note_writer_inference": "The rank alone does not determine adapter size without the full module dimension list, which the paper does not give for the knowledge-incorporation runs ('all MLP and attention projection layers'). Any byte figure in the chapter must be marked as the chapter's own computation, not the paper's."
+    },
+    "rho": {
+      "value": "QUALITATIVE ONLY — the paper demonstrates degradation but publishes no rate.",
+      "reported": [
+        "'As shown in Figure 6, performance on earlier tasks gradually declines as the number of edits increases, suggesting that SEAL is still susceptible to catastrophic forgetting. Still, it can perform multiple updates without complete collapse' [§5 Catastrophic forgetting, p.8-9]",
+        "Figure 6 is a heatmap over self-edit iteration x passage index, running to 8 [Fig. 6, p.8]",
+        "Table 5 [§B.6, p.22] gives ENTRYWISE STANDARD ERRORS for Figure 6 (range 0.0211 to 0.0406 among nonzero entries, with structural zeros in the lower triangle), i.e. the error bars are published but the accuracies themselves are not tabulated in the text."
+      ],
+      "absent": "Percentage-point loss per additional edit: absent. Number of edits before a stated failure threshold: absent. Any comparison of rho against a no-forgetting baseline or a replay/EWC control: absent — 'We do not explicitly optimize for retention in our current training setup' [§5, p.8].",
+      "note_writer_inference": "Because Table 5's zeros sit exactly where passage index > self-edit iteration, the experiment evaluates each passage only from the edit at which it was introduced onward, over 8 sequential edits. This reading is the note-writer's, from the shape of Table 5; the paper does not state it."
+    },
+    "amortization": {
+      "N_q": "The paper never reports how many queries share one adapted state. In knowledge incorporation there are 974 evaluation questions over a 200-passage subset, 'roughly 5 corresponding to each passage' [§B.4, p.20]. Taken as a proxy, N_q ~ 5 — but the paper does not present this as an amortization factor and runs no amortization analysis. Any use of S0 formula (A) with N_q=5 is the chapter's inference."
+    }
+  },
+
+  "experiments": [
+    {
+      "id": "E1",
+      "domain": "Few-shot abstract reasoning (ARC)",
+      "model": "Llama-3.2-1B-Instruct",
+      "data": "11 ARC tasks from the training split (RL environment) + 8 from the evaluation split, both 'filtered to ensure that they are solvable under optimal TTT configurations for a base Llama-3.2-1B-Instruct'",
+      "protocol": "15 self-edits sampled per training task, each applied to produce a separate adapted model; reinforce only self-edits producing the correct output. At eval: 5 self-edits per held-out task = 40 configurations total; metric = % of configurations that lead to correct output.",
+      "results": [
+        {"method": "ICL (In-Context Learning)", "success_rate_pct": 0},
+        {"method": "TTT + Self-Edit (w/o prior RL)", "success_rate_pct": 20},
+        {"method": "SEAL", "success_rate_pct": 72.5},
+        {"method": "Oracle TTT (optimal human-crafted config from Akyürek et al. [36])", "success_rate_pct": 100}
+      ],
+      "source": "[§4.1 pp.6-7; Table 1 p.7; §A.1 p.18; §A.3 p.19]",
+      "paper_own_hedge": "'though performance remains below Oracle TTT, suggesting room for further improvement' [§4.1 p.6]"
+    },
+    {
+      "id": "E2",
+      "domain": "Knowledge incorporation — no-passage-in-context SQuAD v1.1",
+      "model": "Qwen2.5-7B (base)",
+      "data": "SQuAD v1.1 training set for RL; 200-article subset of the evaluation set with 974 questions for evaluation; also the full validation set n=2067 for CPT. 'there is no overlap between these sets, so we can be sure that there is no data contamination of the test passages due to RL training' [§B.1, p.20]",
+      "grading": "gpt-4.1-2025-04-14 as automated grader via the OpenAI API with greedy decoding [§B.4, p.20]",
+      "results_table_2": {
+        "columns": ["Single Passage (n=1; LoRA)", "Continued Pretraining (n=200; full-FT)", "Continued Pretraining (n=2067; full-FT)"],
+        "rows": [
+          {"method": "Base model", "values": [32.7, 32.7, 29.0]},
+          {"method": "Train on Passage", "values": [33.5, 36.0, 31.2]},
+          {"method": "Train on Passage + Synthetic (base-model self-edits, no RL)", "values": [39.7, 50.6, 43.4]},
+          {"method": "Train on Passage + GPT-4.1 Synthetic", "values": [46.3, 59.4, 49.2]},
+          {"method": "SEAL", "values": [47.0, 58.2, 46.4]}
+        ]
+      },
+      "headline_claim": "'improves question-answering performance on the no-passage-in-context variant of SQuAD [13] from 33.5% to 47.0%' and 'self-generated data from SEAL outperforms synthetic data generated by GPT-4.1' [Abstract and §1, p.1]",
+      "what_the_headline_omits": "The GPT-4.1 comparison holds only in the n=1 column (47.0 vs 46.3). In BOTH CPT columns GPT-4.1 synthetic data wins (59.4 vs 58.2 at n=200; 49.2 vs 46.4 at n=2067). The paper states this in §4.2: 'we observe a similar ranking of methods as in the single-passage case, but with synthetic data from GPT-4.1 slightly outperforming SEAL' [p.7].",
+      "source": "[§4.2 pp.7-8; Table 2 p.8; §B.1-B.4 pp.20-21]"
+    },
+    {
+      "id": "E3",
+      "domain": "RL iteration curve",
+      "content": "Accuracy after each ReST^EM outer iteration (0, 1, 2), 5 series (Qwen 2.5 7B Base, Raw Passage, Qwen-Base Synthetic, GPT-4.1 Synthetic, SEAL). 'Each iteration consists of a minibatch of 50 contexts, each with 5 sampled self-edits. SEAL surpasses GPT-4.1 synthetic data after two iterations of ReSTEM on the no-context SQuAD set.'",
+      "numbers_recoverable_from_table_10_implications_row": "Original 39.7 -> Round 1 43.7 -> Round 2 47.0 [Table 10, §B.11, p.24]",
+      "finding": "'Two iterations suffice for SEAL to overtake GPT-4.1 data; subsequent iterations yield diminishing returns, suggesting that the policy quickly converges to an edit style that distills the passage into easily learnable atomic facts' [§4.2, p.7]",
+      "source": "[Figure 4 p.7; §4.2 p.7; Table 10 p.24]"
+    },
+    {
+      "id": "E4",
+      "domain": "Model-size scaling",
+      "model": "Qwen2.5-3B vs Qwen2.5-7B, single-passage setup",
+      "results": [
+        {"model": "Qwen2.5-3B", "base_no_training": 25.1, "base_model_self_edit": 31.9, "SEAL": 37.0},
+        {"model": "Qwen2.5-7B", "base_no_training": 32.7, "base_model_self_edit": 39.7, "SEAL": 47.0}
+      ],
+      "derived_ratio_in_paper": "ratio of SEAL's improvement over base to the improvement from base-model self-edits: 1.75x for 3B, 2.04x for 7B",
+      "paper_own_hedge": "'We acknowledge that it is hard to draw conclusions though without actually scaling up further.' [§B.7, p.22]",
+      "source": "[§B.7 pp.21-22; Table 6 p.22]"
+    },
+    {
+      "id": "E5",
+      "domain": "Comparison to Generative Adapter (a hypernetwork that emits LoRA weights from context)",
+      "results": [
+        {"model": "SEAL (Qwen2.5-7B)", "base": 32.0, "single_passage_n1": 47.0, "CPT_n200": 58.2},
+        {"model": "Generative Adapter (Mistral-7B based [85])", "base": 24.4, "single_passage_n1": 66.8, "CPT_n200": 28.0}
+      ],
+      "note": "Generative Adapter beats SEAL by 19.8 points in the single-passage setting; SEAL beats it by 30.2 points in CPT. The paper's framing: 'Generative Adapter achieves strong performance in the n=1 case, but underperforms SEAL in the CPT setting.'",
+      "confound_stated_in_paper": "'We use the Mistral-7B-based model [85] for Generative Adapter, since that was the closest model for comparison.' Different base model; SEAL is not run on Mistral.",
+      "source": "[§B.8 p.22; Table 7 p.22]"
+    },
+    {
+      "id": "E6",
+      "domain": "Comparison to Entigraph [25] (heuristic entity-graph synthetic CPT, no RL)",
+      "results": [
+        {"method": "SEAL (5 generations/doc)", "CPT_n200": 58.2, "CPT_n2067": 46.4},
+        {"method": "Entigraph (pairs; 5 generations)", "CPT_n200": 46.2, "CPT_n2067": 38.6},
+        {"method": "Entigraph (pairs+triples; 10 generations)", "CPT_n200": 56.0, "CPT_n2067": 48.6}
+      ],
+      "paper_own_reading": "'Entigraph with all 10 synthetic data generations sampling is competitive with SEAL, especially at the larger scale. These results suggest that RL-trained self-edits and structured heuristic methods are both strong approaches for synthetic data generation.' [§B.9, p.23]",
+      "source": "[§B.9 pp.22-23; Table 8 p.23]"
+    },
+    {
+      "id": "E7",
+      "domain": "Proxy reward ablation — remove the inner loop from the reward entirely",
+      "setup": "Replace the TTT-based reward with a GPT-4.1 rubric grader over 4 categories (length, diversity, quality, correctness), 1-5 each, summed.",
+      "results": [
+        {"method": "SEAL (full reward)", "base": 32.0, "post_RL": 47.0, "time": "≈6 hr"},
+        {"method": "SEAL w/ Proxy-Reward", "base": 32.0, "post_RL": 45.6, "time": "≈5 min"}
+      ],
+      "paper_own_reading": "'proxy metrics offer dramatically lower cost, and with refinement, they may even surpass the \"true\" reward of directly optimizing for post-finetuning performance.' [§B.10, p.23]",
+      "source": "[§B.10 p.23; Table 9 p.23]"
+    },
+    {
+      "id": "E8",
+      "domain": "Prompt sensitivity — 7 self-edit prompts x 2 ReST^EM rounds, single-document knowledge incorporation",
+      "results_table_10": [
+        {"method": "No self-edit", "original": 33.5, "round1": null, "round2": null, "gpt41_synthetic": null},
+        {"method": "Implications (the paper's main setting)", "original": 39.7, "round1": 43.7, "round2": 47.0, "gpt41_synthetic": 46.3},
+        {"method": "Implications-long", "original": 49.3, "round1": 52.4, "round2": 54.4, "gpt41_synthetic": 54.1},
+        {"method": "Implications-very-long", "original": 45.0, "round1": 51.5, "round2": 52.1, "gpt41_synthetic": 40.9},
+        {"method": "Rewrite", "original": 49.4, "round1": 55.3, "round2": 55.6, "gpt41_synthetic": 54.4},
+        {"method": "Self-QA", "original": 37.3, "round1": 42.8, "round2": 48.7, "gpt41_synthetic": 39.2},
+        {"method": "No-Prompt", "original": 13.8, "round1": 12.7, "round2": 18.9, "gpt41_synthetic": 28.6},
+        {"method": "Implications-chain-of-thought", "original": 38.7, "round1": null, "round2": null, "gpt41_synthetic": null},
+        {"method": "Chain-of-thought-eval", "original": 37.8, "round1": null, "round2": null, "gpt41_synthetic": null}
+      ],
+      "paper_own_reading": "'In all cases, ReSTEM enhanced performance by roughly 6 to 11 percentage points.' And, on the no-prompt row: 'Letting the model \"determine its own\" self-edit format, with no-prompt, was not able to achieve the same results as predefined prompting formats in our experiments, achieving only 18.9% after 2 rounds of training.' [§B.11, pp.23-24]",
+      "textual_defect": "The sentence 'Notably, the baselines for implications-long and rewrite the RL-trained version of implications.' [p.23 of the .txt] is missing its verb (presumably 'outperform'/'exceed'). The numbers are unambiguous: 49.3 and 49.4 both exceed 47.0.",
+      "source": "[§B.11 pp.23-25; Table 10 p.24]"
+    },
+    {
+      "id": "E9",
+      "domain": "Catastrophic forgetting under sequential self-edits",
+      "setup": "A stream of test passages, each triggering a new self-edit; after each update the model is re-evaluated on all previously seen tasks. Runs to 8 sequential edits.",
+      "result": "'performance on earlier tasks gradually declines as the number of edits increases' ... 'it can perform multiple updates without complete collapse'. Numeric accuracies are shown only in the Figure 6 heatmap; only the entrywise standard errors are tabulated (Table 5, range 0.0211-0.0406 among nonzero entries).",
+      "source": "[§5 pp.8-9; Figure 6 p.8; §B.6 Table 5 p.22]"
+    },
+    {
+      "id": "E10",
+      "domain": "Compute footprint",
+      "few_shot": "single A100, H100 or H200; TTT per problem 0.5 min to a few minutes; total ReST^EM ~2-3 hours; configurations requiring more than 375 training steps were discarded [§A.2 p.18, §A.4 p.19]",
+      "knowledge_incorporation": "2xH100 or 2xH200; DeepSpeed ZeRO-3 for SFT; vLLM for inference; one ReST^EM round = 750 inner-loop iterations ≈ 6 hours [§B.5 p.21]",
+      "source": "[§A.2 p.18; §A.4 p.19; §B.5 p.21]"
+    }
+  ],
+
+  "scale_ceiling": {
+    "largest_model": "Qwen2.5-7B (knowledge incorporation). The few-shot / ARC domain — the one where the model writes its own optimizer configuration, i.e. the paper's most novel mechanism — runs only at Llama-3.2-1B-Instruct.",
+    "scaling_points": "Exactly two: Qwen2.5-3B and Qwen2.5-7B [Table 6, §B.7]. No 13B+, no frontier-scale run.",
+    "data_ceiling": "RL training touches 2 rounds x 50 SQuAD contexts = 100 contexts (5 self-edits each, 3 seeds each) in knowledge incorporation, and 11 ARC tasks x 15 self-edits in a SINGLE outer round in few-shot [§B.2 p.20; §A.2 p.18]. Evaluation: 200 SQuAD passages / 974 questions; CPT to 2067 documents; 8 held-out ARC tasks / 40 configurations.",
+    "token_budget": "Not reported anywhere — neither self-edit lengths nor total tokens trained on.",
+    "hardware_ceiling": "2xH100 or 2xH200 (knowledge incorporation); one A100/H100/H200 (few-shot) [§A.4 p.19; §B.5 p.21].",
+    "distance_to_deployment": "Note-writer's assessment: the demonstrated regime is one 7B model, one adapter per document, 5 questions per document, and a labelled QA set attached to every context. Nothing in the paper is run at a scale, model size, or supervision regime resembling a served fleet."
+  },
+
+  "concept_ledger_delta": {
+    "new_concepts": [
+      {"name": "self-edit (SE)", "definition": "A model-generated artifact that specifies how to update the model's own weights: in the simplest case the finetuning data itself, in the richer case the data plus the optimization hyperparameters and tool invocations. Unified symbol: $\\mathcal{R}_k$.", "source": "[Abstract; §3.1 p.4; §3.2 p.6]"},
+      {"name": "SEAL / Self-Adapting LLM", "definition": "The framework: a model trained by RL to generate self-edits, with the post-update downstream score as reward.", "source": "[Abstract; §3]"},
+      {"name": "self-edit RL loop (outer) / inner update loop", "definition": "SEAL's own words for its two nested loops. WARNING for the ledger: 'inner loop' here is a whole SFT run, NOT the per-token inner loop of the TTT/Titans line. The chapter must flag this collision explicitly — it is the single most likely place for the monograph's reader to be misled.", "source": "[§3 opening p.3: 'an outer RL loop, which optimizes the self-edit generation, and an inner update loop, which uses the generated self-edit to update the model via gradient descent']"},
+      {"name": "generated update directive", "definition": "The model emitting its own learning rate, epoch count, loss mask and augmentation set as text. Extends S0's gen(.) from a data generator to an update-rule generator.", "source": "[§3.2 Few-Shot Learning p.6; Figure 3 p.5; §A.2 prompt p.18]"},
+      {"name": "TTT-as-reward-oracle", "definition": "Using an actual finetune-and-evaluate cycle as the reward function of an RL loop, rather than a preference model or a regex.", "source": "[§5 Computational overhead p.9]"}
+    ],
+    "extended_or_renamed": [
+      {"name": "test-time training (TTT)", "change": "Extended from a wake-time adaptation technique to (a) the inner loop of a meta-learning procedure and (b) the reward oracle. 'SEAL can be viewed as incorporating a round of TTT in its inner-loop optimization' [§2 p.3].", "owner_chapter_note": "TTT is owned by NM ch08; this is a use, not a redefinition."},
+      {"name": "ReST^EM [40]", "change": "Repurposed from self-training on task answers to self-training on *training-data generations*. 'SEAL applies RL not to optimize final answers or trace revisions, but to optimize the generation of self-edit data that is then used for weight updates.' [§2 p.3]"},
+      {"name": "synthetic continued pretraining (SCPT)", "change": "Used as an evaluation regime for a policy trained on single-example episodes; the generalization from n=1 to n=2067 is a claim of the paper.", "source": "[§4.2 p.7; §B.9 p.22]"}
+    ],
+    "deprecated": []
+  },
+
+  "open_questions": [
+    {"question": "Can sequences of self-edits accumulate without catastrophic forgetting? The paper establishes a baseline and shows degradation, with no mitigation implemented.", "source": "[§5 Catastrophic forgetting, pp.8-9]", "paper_suggested_directions": "reward shaping to penalize regressions on earlier tasks [75,76,77]; null-space constrained edits (AlphaEdit [78]); representational superposition [79]; using RL instead of SFT in the inner loop, 'since RL has been shown to forget less than SFT' [80]"},
+    {"question": "Can the reward loop be made cheap enough to scale? Each self-edit evaluation costs 30-45 s because it requires finetuning and evaluating an entire model.", "source": "[§5 Computational overhead, p.9]"},
+    {"question": "Can SEAL be trained on unlabelled corpora? Every context currently must arrive bundled with a downstream task; 'This coupling simplifies reward computation but prevents RL training of SEAL from scaling to unlabeled corpora.' Proposed fix: have the model also generate its own evaluation questions while the content is in context.", "source": "[§5 Context-dependent evaluation, p.9]"},
+    {"question": "Does the benefit grow with model size? The 3B/7B ratio (1.75x vs 2.04x) hints at compounding benefits, but 'it is hard to draw conclusions though without actually scaling up further.'", "source": "[§B.7, p.22]"},
+    {"question": "Does the teacher-student decoupling work? Proposed in full but never run: 'a student model would be updated using edits proposed by a separate teacher model. The teacher would then be trained via RL to generate edits that maximize student improvement.'", "source": "[§3.1 final paragraph, p.4]"},
+    {"question": "Can a dedicated SEAL generator produce fresh PRETRAINING corpora, as a response to the projected 2028 data wall [81]?", "source": "[§6 Discussion, p.9]"},
+    {"question": "Can weight updates be interleaved with chain-of-thought reasoning — mid-trajectory to steer it, or post-hoc to distill insights into parameters?", "source": "[§6 Discussion, p.9]"},
+    {"question": "Can agents synthesize a self-edit after each interaction, so behaviour aligns with prior experience over extended operation?", "source": "[§6 Discussion, p.9]"},
+    {"question": "Why were GRPO and PPO unstable here? Reported as a fact with no diagnosis and no data.", "source": "[§3.1, p.4: 'We experimented with various on-policy methods such as Group Relative Policy Optimization (GRPO) [66] and Proximal Policy Optimization (PPO) [67], but found the training to be unstable.']"},
+    {"question": "Could a refined proxy reward beat the true reward? 'with refinement, they may even surpass the \"true\" reward of directly optimizing for post-finetuning performance.'", "source": "[§B.10, p.23]"},
+    {"question": "What is the right self-edit format? The paper shows format dominates, tests 7 prompts, and does not resolve it — while 'no-prompt' (the model choosing freely) is by far the worst.", "source": "[§B.11, pp.23-24; Table 10]"},
+    {"question": "Implicit and unaddressed (note-writer): nothing in the paper says what happens to the adapter after the query — whether it is retained per user, merged, evicted, or versioned. The state lifecycle of the Theta-path is simply not discussed.", "source": "[absent throughout; nearest statement is 'persistent weight updates, enabling lasting adaptation', Abstract p.1]"}
+  ],
+
+  "unfavorable_facts": [
+    {
+      "fact": "The headline 'outperforms GPT-4.1' claim survives in only one of three columns. In both continued-pretraining settings, GPT-4.1 synthetic data beats SEAL: 59.4 vs 58.2 at n=200, and 49.2 vs 46.4 at n=2067. Only the n=1 single-passage column (47.0 vs 46.3, a 0.7-point margin) supports the abstract's claim.",
+      "source": "[Table 2, p.8; §4.2 p.7, where the paper does state it: 'with synthetic data from GPT-4.1 slightly outperforming SEAL']",
+      "severity": "high — the abstract and §1 both foreground the GPT-4.1 comparison without the scope condition"
+    },
+    {
+      "fact": "A prior hypernetwork method beats SEAL by 19.8 points on SEAL's own single-passage benchmark: Generative Adapter 66.8 vs SEAL 47.0. This is the exact setting of the headline number.",
+      "source": "[Table 7, §B.8, p.22]",
+      "caveat_in_paper": "Generative Adapter runs on Mistral-7B, SEAL on Qwen2.5-7B, so the base models differ and the paper does not run SEAL on Mistral. The paper reframes the comparison around the CPT column (58.2 vs 28.0), where SEAL wins, and toward qualitative advantages ('generated data can be reused for CPT or applied to arbitrary base models')."
+    },
+    {
+      "fact": "A non-RL heuristic beats SEAL at the largest data scale tested: Entigraph (pairs+triples) 48.6 vs SEAL 46.4 at n=2067. The paper concedes it is 'competitive with SEAL, especially at the larger scale'. The direction of the trend — heuristic catching up as scale grows — is unfavourable to the paper's thesis that a trained generation policy is what is needed.",
+      "source": "[Table 8, §B.9, pp.22-23]",
+      "caveat": "Entigraph uses 10 generations per document vs SEAL's 5, so the comparison is not compute-matched; the paper states this."
+    },
+    {
+      "fact": "Changing one word in the prompt beats the entire RL loop. The no-RL baseline for 'implications-long' is 49.3 and for 'rewrite' is 49.4 — both above the paper's fully RL-trained headline of 47.0 for 'implications'. The mechanism the paper sells (RL over self-edit generation) is worth less than the choice of prompt it holds fixed in the main text.",
+      "source": "[Table 10, §B.11, p.24; the paper acknowledges it in a sentence that is missing its verb: 'Notably, the baselines for implications-long and rewrite the RL-trained version of implications.']",
+      "counterweight_stated_by_paper": "Using the better prompts as the RL base yields further gains (rewrite reaches 55.6, implications-long 54.4), and 'In all cases, ReSTEM enhanced performance by roughly 6 to 11 percentage points.' The RL contribution is real; it is the choice of *reported baseline* that flatters it."
+    },
+    {
+      "fact": "Deleting the paper's central expensive component costs almost nothing. Replacing the TTT-based reward — the finetune-and-evaluate inner loop that is the paper's defining contribution over prior synthetic-data work — with a GPT-4.1 rubric grader yields 45.6 vs 47.0, at ≈5 minutes vs ≈6 hours. That is a ~72x reduction in RL training cost for 1.4 points.",
+      "source": "[Table 9, §B.10, p.23]",
+      "severity": "high — this is an ablation whose result partially reverses the paper's design argument, and the paper itself speculates the proxy 'may even surpass the \"true\" reward'"
+    },
+    {
+      "fact": "The few-shot benchmark is author-constructed and filtered so that the ceiling is guaranteed. 11 training and 8 evaluation ARC tasks were 'filtered to ensure that they are solvable under optimal TTT configurations for a base Llama-3.2-1B-Instruct'. Oracle TTT scoring exactly 100% is therefore a definitional consequence of the filter, not an empirical finding, and the 0% ICL floor is likewise an artifact of selecting tasks that ICL cannot do but TTT can.",
+      "source": "[§4.1 p.6; §A.1 p.18; Table 1 p.7]",
+      "severity": "high — the entire few-shot result (0 / 20 / 72.5 / 100) sits on a 19-task hand-picked subset"
+    },
+    {
+      "fact": "A 27.5-point gap to hand-crafted configuration survives in the few-shot domain: SEAL 72.5 vs Oracle TTT 100. The learned policy does not reach the fixed human-chosen configuration it was meant to replace.",
+      "source": "[Table 1, p.7; §4.1 p.6 acknowledges 'performance remains below Oracle TTT']"
+    },
+    {
+      "fact": "The operative reward is not the reward in the equations. Eq. 2 defines r=1 for any self-edit that improves performance, but footnote 2 states that in knowledge incorporation the reward instead goes to 'the single self-edit that yields the greatest improvement among sampled candidates' — i.e. argmax over 5 samples x 3 seeds. In the few-shot domain a further undocumented filter applies: 'we discarded configurations requiring more than 375 training steps, retained only configurations with reward 1 and acceptable cost'. Neither modification appears in Eq. 2 or Alg. 1.",
+      "source": "[footnote 2, p.4; §A.2 p.18]"
+    },
+    {
+      "fact": "The choice of RL algorithm rests on an unsupported negative result. 'We experimented with various on-policy methods such as GRPO [66] and PPO [67], but found the training to be unstable.' No curves, no diagnostics, no hyperparameters for the failed runs. ReST^EM is adopted by elimination.",
+      "source": "[§3.1, p.4]"
+    },
+    {
+      "fact": "The objective actually optimized is an acknowledged approximation. The reward genuinely depends on Theta_t, but is treated as constant so the gradient can be taken; the paper states this explicitly ('We address this by treating the reward as fixed with respect to theta_t. With this approximation...'). The claim proved is therefore that ReST^EM optimizes Eq. 1 'under the binary reward (2) (with a stop-gradient applied to the reward term)' — not Eq. 1 as written.",
+      "source": "[§3.1, p.4, text around Eq. 3-4]"
+    },
+    {
+      "fact": "All knowledge-incorporation accuracies are produced by an LLM judge (gpt-4.1-2025-04-14), not by exact match. Every number in Table 2, 6, 7, 8, 9 and 10 depends on that grader, and no human-agreement study or grader-variance figure is reported. The same vendor model is simultaneously the strongest baseline (GPT-4.1 synthetic data) and the grader.",
+      "source": "[§B.4, p.20-21]",
+      "severity": "medium-high — the grader/baseline overlap is not discussed anywhere in the paper"
+    },
+    {
+      "fact": "The base-model accuracy is inconsistent across the paper's own tables: 32.7 in Table 2 and Table 6, but 32.0 in Table 7 and Table 9. The paper does not reconcile them.",
+      "source": "[Table 2 p.8; Table 6 p.22; Table 7 p.22; Table 9 p.23]"
+    },
+    {
+      "fact": "The forgetting result — the paper's only retention evidence — publishes error bars without accuracies. Table 5 gives entrywise SEMs for Figure 6; the accuracy values themselves appear only inside the figure and are not tabulated. Consequently no rho can be quoted, and 'without complete collapse' is unquantified. There is also no baseline (no replay, no EWC, no no-edit control) against which the decline is measured.",
+      "source": "[§5 pp.8-9; Figure 6 p.8; §B.6 Table 5 p.22]"
+    },
+    {
+      "fact": "The two knowledge-incorporation regimes use different update mechanisms, so the columns of Table 2 are not comparable as a scaling series: n=1 uses LoRA, n=200 and n=2067 use full finetuning. Any reading of 'SEAL improves with more documents' (58.2 > 47.0) is confounded by the switch from low-rank to full-parameter updates.",
+      "source": "[Table 2 column headers, p.8; §B.8 p.22: 'CPT batches updates over all documents while single-passage trains and evaluates an adapter separately for each document']"
+    },
+    {
+      "fact": "Performance falls when the corpus grows from 200 to 2067 documents, for every method including SEAL (58.2 -> 46.4). Even the base model drops (32.7 -> 29.0). The regime the paper points at as the future (continued pretraining at scale) is the one where its margin is worst and where a heuristic overtakes it.",
+      "source": "[Table 2, p.8; Table 8, p.23]"
+    },
+    {
+      "fact": "'Self-directed adaptation' is contradicted by the paper's own ablation: when the model is left to determine its own self-edit format ('no-prompt'), it reaches 13.8 without RL and only 18.9 after two RL rounds — far below every hand-specified prompt, and below GPT-4.1's 28.6 on the same setting. The self-editing is only effective inside an author-chosen format.",
+      "source": "[Table 10, §B.11, pp.23-24]"
+    },
+    {
+      "fact": "The RL training set is tiny and the two domains are trained asymmetrically: 2 rounds x 50 contexts = 100 SQuAD contexts, and in the few-shot domain 'a single outer loop of reinforcement learning on the 11 training problems' — while the main text and Figure 1 present SEAL as an iterated outer loop.",
+      "source": "[§B.2 p.20; §A.2 p.18]"
+    },
+    {
+      "fact": "Every composition the paper proposes is untested. The teacher-student split [§3.1], the interleaving of self-edits with chain-of-thought reasoning [§6], the agentic post-interaction self-edit [§6], the meta-trained pretraining-corpus generator [§6], and the RL-instead-of-SFT inner loop [§5] are all stated as prospects with no experiment.",
+      "source": "[§3.1 p.4; §5 p.9; §6 p.9]"
+    },
+    {
+      "fact": "No cost of the mechanism at deployment is reported at all — no latency, no FLOPs, no adapter size, no tokens. A paper proposing to move computation before the query publishes no measurement of the computation it moves or of the wake-time saving it buys. The only figures given (30-45 s per self-edit evaluation; 6 h per RL round) are training-loop costs.",
+      "source": "[§5 p.9; §A.4 p.19; §B.5 p.21; and the absence of any such number elsewhere]",
+      "severity": "high for this monograph specifically — the S0 cost table cannot be filled from this paper"
+    },
+    {
+      "fact": "The scaling argument rests on two points with different starting accuracies. The 1.75x vs 2.04x improvement-ratio comparison between 3B and 7B is computed from base accuracies of 25.1 and 32.7 respectively; the paper offers it as 'some evidence' of compounding benefits and immediately concedes the conclusion cannot be drawn.",
+      "source": "[§B.7, p.22; Table 6 p.22]"
+    }
+  ],
+
+  "cross_path_citations": {
+    "method": "Full-text scan of the 85-entry bibliography and of §2 Related Work for terms of each path: E-path (MemGPT, retrieval, RAG, vector store, external memory, Letta, Mem0, Zep), W-path (TTT, fast weights, self-referential weight matrix, Titans, Mamba, linear attention, state-space), bio/CLS (McClelland, complementary learning systems, sleep, consolidation, hippocampus, dreaming, replay, EWC).",
+    "W_path": {
+      "verdict": "ENGAGED, substantively — but only the pre-2025 TTT/fast-weight branch, not the fast-weight sequence-model branch this monograph's NM volume covers.",
+      "cited": [
+        "Sun et al. 2020 [33], TTT with self-supervision (ICML)",
+        "Gandelsman et al. [34], TTT with masked autoencoders (NeurIPS 2022)",
+        "Sun et al. 2024 [35], 'Learning to (learn at test time)' (arXiv:2310.13807)",
+        "Akyürek et al. 2025 [36], 'The surprising effectiveness of test-time training for few-shot learning' (arXiv:2411.07279) — SEAL adopts its protocol and its tool set wholesale",
+        "Schmidhuber [42] (1987) and [50] (1992), self-referential learning",
+        "Irie et al. [51], 'A modern self-referential weight matrix that learns to modify itself' (ICML 2022)",
+        "Chen et al. [54], Generative Adapter (ICLR 2025) — cited AND benchmarked against [§B.8]",
+        "Sun, Cetin, Tang [49], Transformer-Squared: self-adaptive LLMs (arXiv:2501.06252)",
+        "Hu et al. [53], meta-learning online adaptation of LMs (EMNLP 2023)"
+      ],
+      "not_cited": "No Titans (2501.00663), no Miras, no Atlas, no TNT, no Nested Learning, no DeltaNet/Gated DeltaNet, no Mamba/Mamba-2, no linear attention, no RWKV. The words 'fast weights', 'linear attention', 'state space' and 'Mamba' do not occur in the paper. SEAL's contact with the W-path is with TTT-as-a-technique and with self-referential networks as a lineage, not with the fast-weight sequence-layer line."
+    },
+    "E_path": {
+      "verdict": "TOTAL SILENCE. This is a clean, reportable gap.",
+      "evidence": "The strings 'MemGPT', 'retrieval', 'retrieve' (except in ref [21]'s title, 'retrieving and transforming existing datasets', which is about dataset construction not memory), 'RAG', 'vector', 'external memory', 'Letta', 'Mem0', 'Zep' do not appear anywhere in the 85-reference bibliography or the body. Sleep-time Compute (Letta, arXiv:2504.13171) is not cited despite being contemporaneous and despite SEAL's §6 proposing exactly the agentic setting Letta targets.",
+      "why_it_matters": "SEAL's §6 argues for 'agentic systems — models that operate over extended interactions and adapt dynamically to evolving goals ... after an interaction, the agent could synthesize a self-edit which triggers a weight update' [p.9]. This is the E-path's stated problem statement, solved by writing to a store instead of to weights. SEAL neither cites nor compares against that alternative, and offers no argument for why a weight update should be preferred to a memory record. For the monograph's branch chapter this is the primary exhibit of the Theta/E disconnection."
+    },
+    "bio_and_CLS": {
+      "verdict": "NOT ENGAGED.",
+      "evidence": "No McClelland 1995 CLS paper, no sleep/consolidation/hippocampal/dreaming reference of any kind, no replay, no EWC (Kirkpatrick), no generative replay. Catastrophic forgetting is cited only through McCloskey & Cohen 1989 [73] and Goodfellow et al. 2014 [74] — the classical framing, with no consolidation theory attached. The single occurrence of the name 'McClelland' in the file is as a co-author of Lampinen et al. [31], a study of in-context-learning vs finetuning generalization, not the CLS paper.",
+      "note": "The paper's proposed forgetting remedies are all engineering-side (reward shaping [75-77], AlphaEdit null-space edits [78], superposition [79], RL-instead-of-SFT [80]) — none from the CLS/sleep tradition. SEAL reaches the sleep-time problem without any of the sleep-time vocabulary, and never uses the word 'sleep'."
+    },
+    "theory_capacity": {
+      "verdict": "NOT ENGAGED. No memorization-capacity result, no rate-distortion, no scaling law for knowledge storage. The nearest is Allen-Zhu & Li [17], 'Physics of language models: Part 3.1, knowledge storage and extraction', cited once in the synthetic-data list [§2 p.2] and never used to bound anything."
+    },
+    "summary_for_the_monograph": "SEAL sits squarely on the Theta-path, cites the TTT branch of the W-path densely (it inherits its protocol from there and benchmarks against a hypernetwork), and cites the E-path and the CLS/biological-sleep tradition ZERO times. It arrives at catastrophic forgetting, at continual learning, and at agentic memory by its own route, and cites none of the three literatures that own those problems. This is the strongest single instance in the corpus of a path that does not know the others exist."
+  },
+
+  "figures": [
+    {"number": "Figure 1 (p.1)", "reproduce": "yes — as the chapter's anchor diagram", "shows": "The two-loop structure: within one RL outer-loop iteration, the model emits candidate self-edits SE1/SE2/SE3 from context Ctx, each is applied ('Optimize'), each adapted model is tested, checkmarks/crosses become rewards, and the policy is updated. The (Ctx -> SE -> reward) row underneath labels state/action/reward explicitly. This is the picture that lets a reader who has never trained a model see where the gradient goes."},
+    {"number": "Figure 2 (p.5)", "reproduce": "yes", "shows": "The knowledge-incorporation pipeline end to end: Apollo-program passage -> LM -> self-edit as a list of implications -> LoRA SFT -> question asked WITHOUT the passage -> correct answer 'Jerome Wiesner' -> that correctness is the reward. Best single illustration in the corpus of a Theta-path read: the passage is gone at query time."},
+    {"number": "Figure 3 (p.5)", "reproduce": "yes — this is the paper's most under-appreciated figure", "shows": "The few-shot self-edit is a configuration, not data: basic_augmentations true, size/chain/repeat false, 'strategy: loss on all tokens', learning rate 1e-05, epochs 3. The model is writing its own optimizer settings in JSON. For the monograph this is the concrete evidence that gen(.) in (U-Theta) can emit the update rule, not just the training set."},
+    {"number": "Figure 4 (p.7)", "reproduce": "yes", "shows": "Accuracy vs ReST^EM iteration (0,1,2) for five series. Two iterations suffice for SEAL to pass GPT-4.1 synthetic data; the curve flattens after. This is the paper's only evidence about the shape of returns to sleep-time budget B_s, and it saturates in two rounds. Note the numbers on the SEAL series are recoverable exactly from Table 10's 'Implications' row: 39.7 / 43.7 / 47.0."},
+    {"number": "Figure 5 (p.8)", "reproduce": "yes, with a caveat block", "shows": "The same Amazon/remote-sensing passage's self-edits at RL iterations 0, 1, 2, with the resulting QA marked correct/incorrect. The visible change is that edits get longer and break into more atomic facts. Reproduce it together with Table 10, because Table 10 shows that simply prompting for length ('implications-long', 49.3 with no RL) already exceeds the RL result — so this figure illustrates a confound as much as a mechanism. The paper itself flags this: 'RL appears to have dramatically increased the length of the response of the example. We therefore experiment with prompting for longer generations' [§B.11 p.23]."},
+    {"number": "Figure 6 (p.8)", "reproduce": "yes — it is the only rho evidence in the paper", "shows": "Catastrophic-forgetting heatmap: self-edit iteration (rows) x passage index (columns), to 8 edits; earlier passages degrade as later edits land. Reproduce it with the explicit warning that the accuracies are not tabulated anywhere in the paper (only the SEMs, Table 5), so no forgetting rate can be quoted from it."},
+    {"number": "Table 1 (p.7)", "reproduce": "yes", "shows": "0 / 20 / 72.5 / 100 for ICL / TTT+Self-Edit / SEAL / Oracle TTT. Reproduce with the filter caveat attached in the same block."},
+    {"number": "Table 2 (p.8)", "reproduce": "yes — the central table", "shows": "Five methods x three regimes. The place where the reader can see for themselves that GPT-4.1 wins two of the three columns."},
+    {"number": "Table 9 (p.23)", "reproduce": "yes", "shows": "47.0 in ~6 hr vs 45.6 in ~5 min. The most economically informative number in the paper for a systems reader."},
+    {"number": "Table 10 (p.24)", "reproduce": "yes", "shows": "Seven prompts x (no-RL, round 1, round 2, GPT-4.1). The prompt-sensitivity picture, including the two no-RL baselines that beat the paper's headline."},
+    {"number": "Alg. 1 (p.4)", "reproduce": "yes", "shows": "Eight lines, the whole method. Worth setting beside the unified (U-Theta) so the reader sees line 5 (inner) and line 8 (outer) as two different Theta movements."}
+  ],
+
+  "systems_implications": {
+    "framing": "This paper is a Theta-path paper with no W state and no E store, so its systems footprint is unusual: at wake time it is a completely ordinary transformer, and 100% of the added cost sits before the query. Every claim below is tagged [PAPER] if a number in the paper supports it, or [INFERENCE] if it is the note-writer's reasoning from the paper's structure.",
+    "decode_cost": [
+      {"claim": "Wake-time decode is unchanged. The adapted model is an ordinary transformer with a merged or attached LoRA adapter (or, in CPT, plain weights). No extra state is read during decoding, no retrieval hop, no recurrent update.", "tag": "[INFERENCE from the absence of any wake-time mechanism; the architecture is never modified — §3 defines only data and optimizer changes]"},
+      {"claim": "The wake-time prompt shrinks to nothing: evaluation asks the question with no passage and no retrieved context, using a two-line prompt ('Let's answer a question directly and concisely. / Question: {question} / Answer:').", "tag": "[PAPER, §B.3 p.20; Fig. 2 caption p.5]"},
+      {"claim": "The prefill saving per query equals the passage length that would otherwise be in context. SQuAD passages are order 100-200 tokens; the paper never states the token count, so no saving figure can be quoted from it.", "tag": "[INFERENCE; the passage-length figure is NOT in the paper — do not print a number in the chapter]"},
+      {"claim": "Against the E-path this is the cleanest possible contrast: a retrieval system pays its cost in prefill on every query, SEAL pays zero on every query and everything once. Formula (A) with C_wake ~ 0 means SEAL's average cost is C_sleep/N_q — it is entirely an amortization bet.", "tag": "[INFERENCE, using S0 §2.4 formula (A); the paper performs no amortization analysis and never reports N_q]"}
+    ],
+    "state_and_bytes": [
+      {"claim": "The state moved per session is a LoRA adapter of rank 32-64 over all MLP and attention projection layers of a 7B model (single-passage regime), or rank 128 over {q_proj, v_proj, gate_proj, down_proj, up_proj} of a 1B model (few-shot regime).", "tag": "[PAPER, Tables 3-4 p.20-21; §A.2 p.18; §B.2 p.20]"},
+      {"claim": "Byte counts, parameter counts and per-user state budgets are absent from the paper. The chapter must compute any size figure itself and label it as such — 'all MLP and attention projection layers' is not a precise enough module list to reconstruct the count for the Qwen2.5-7B runs.", "tag": "[PAPER, by absence]"},
+      {"claim": "In the CPT regime the state is not an adapter at all: the update is full finetuning of the whole model over the aggregated synthetic corpus. Per-document isolation is traded for a single shared weight set.", "tag": "[PAPER, Table 2 column header 'full-FT' p.8; §B.8 p.22]"},
+      {"claim": "What crosses the wire at sleep time is TEXT, not weights. The self-edit is a natural-language artifact; the weight delta is produced locally by an SFT run that consumes it. This is a real architectural property the paper argues for: 'generated data can be reused for CPT or applied to arbitrary base models' and 'the framework is not restricted to LoRA finetuning'.", "tag": "[PAPER, §B.8 p.22]"},
+      {"claim": "Consequence for a memory-centric reading: the durable artifact is a token sequence of unreported length, and the expensive artifact is a training run. The traffic profile of the sleep phase is that of training (activations, gradients, optimizer state on HBM), not that of a memory write.", "tag": "[INFERENCE]"}
+    ],
+    "batching": [
+      {"claim": "The single-passage regime explicitly 'trains and evaluates an adapter separately for each document'. That is per-document weight state, which breaks the shared-weight assumption of ordinary batched serving and requires multi-adapter serving (grouped GEMM / per-request adapter routing).", "tag": "[PAPER for the quoted setup, §B.8 p.22; INFERENCE for the serving consequence — the paper never discusses batching, adapter routing, or serving at all]"},
+      {"claim": "The CPT regime restores batching (one set of weights for everyone) but abandons per-document/per-user isolation and, at n=2067, scores below a heuristic baseline (46.4 vs Entigraph 48.6). The two regimes are the two horns of the Theta-path's serving problem and the paper reports both without naming the trade-off.", "tag": "[PAPER for the numbers, Table 2 p.8 and Table 8 p.23; INFERENCE for the framing]"},
+      {"claim": "The RL training loop is not batchable in the usual sense either: one round is 750 sequential finetune-and-evaluate units (50 passages x 5 completions x 3 seeds), ~6 h on 2xH100 — roughly 29 s per unit, consistent with the stated '30-45 seconds' per self-edit evaluation.", "tag": "[PAPER for 750/6h/30-45s, §B.5 p.21 and §5 p.9; the ~29 s arithmetic is the note-writer's]"}
+    ],
+    "where_the_traffic_lands": [
+      {"claim": "The sleep phase needs BOTH a serving stack and a training stack co-resident: vLLM for the generation and evaluation passes, DeepSpeed ZeRO-3 for the SFT. A fleet running SEAL is running a training job per context.", "tag": "[PAPER, §B.5 p.21]"},
+      {"claim": "The proxy-reward result relocates the sleep budget from a training-shaped workload to an inference-shaped one: ~6 h of finetune-and-evaluate becomes ~5 min of grader calls, for 47.0 -> 45.6. For a capacity planner this is the difference between reserving training GPUs and issuing API calls, and it is the paper's own ablation.", "tag": "[PAPER, Table 9 §B.10 p.23]"},
+      {"claim": "The forgetting result caps how long one weight-state can be reused: performance on earlier passages declines monotonically over 8 sequential edits with no mitigation. Any serving design that keeps writing to one shared Theta needs a re-baselining policy the paper does not provide, and the decline rate cannot be read off the paper.", "tag": "[PAPER for the qualitative decline, §5 pp.8-9 and Fig. 6; the serving consequence is INFERENCE]"},
+      {"claim": "The reward oracle is the real deployment blocker, not the compute: SEAL's RL loop requires a labelled downstream task attached to every context. In a serving fleet no such labels exist. The paper names this itself as what 'prevents RL training of SEAL from scaling to unlabeled corpora'.", "tag": "[PAPER, §5 Context-dependent evaluation p.9]"}
+    ],
+    "one_sentence_for_the_reader_who_asks_what_changes_at_decode": "Nothing changes at decode — that is the whole point and the whole risk: SEAL buys a shorter prompt and a smarter model by running a training job per context beforehand, and the paper measures the training job in hours while measuring the decode saving not at all."
+  },
+
+  "todo_verify": [
+    {"item": "The numeric accuracy values inside Figure 6 (catastrophic forgetting heatmap). Only the SEMs are tabulated (Table 5). Needed to state any rho.", "search_term": "Figure 6 heatmap cell values / 'Catastrophic Forgetting' figure data in the arXiv source or the project website https://jyopari.github.io/posts/seal"},
+    {"item": "Self-edit token lengths (mean tokens per self-edit, before and after RL). Figure 5 shows growth qualitatively; §B.11 discusses length; no count appears.", "search_term": "tokens per self-edit / generation length / max_new_tokens in the released code"},
+    {"item": "LoRA adapter size in parameters or bytes for the Qwen2.5-7B runs. §B.2 says 'all MLP and attention projection layers' without enumerating them.", "search_term": "target_modules in the released training config"},
+    {"item": "Whether the §B.11 sentence 'Notably, the baselines for implications-long and rewrite the RL-trained version of implications.' is missing a verb in the published PDF or only in this text extraction.", "search_term": "\"Notably, the baselines for implications-long and rewrite\""},
+    {"item": "Reconciliation of the base-model accuracy 32.7 (Tables 2, 6) vs 32.0 (Tables 7, 9).", "search_term": "'Base' column definition in Table 7 / Table 9 vs 'Base model' row in Table 2"},
+    {"item": "SQuAD passage length in tokens, needed for any prefill-saving estimate. Not stated in the paper.", "search_term": "passage length / average tokens per SQuAD passage (external, not in this paper)"},
+    {"item": "In-text cross-reference labels 'Table 4.1' and 'Table 4.2' (§4.1, §4.2) vs the actual captions 'Table 1' and 'Table 2' — confirm this is a LaTeX ref artifact and not a reference to different tables.", "search_term": "\"We record results in Table 4.1\" / \"Table 4.2 reports mean no-context SQuAD accuracy\""},
+    {"item": "Whether the deployed (non-RL-training) sleep step is ever timed in isolation — one generation + one LoRA SFT for one passage, without the 3-seed reward evaluation.", "search_term": "'inner loop' timing / per-passage adaptation time"}
+  ],
+
+  "chapter_hooks": {
+    "bridge_in": "From GenerativeAdapter/model-editing: the weight delta exists, but who writes its content? SEAL: the model, and the writing policy is trained by RL on whether the resulting weights answer the question.",
+    "bridge_out_candidates": [
+      "To Nested Learning (2512.24695): SEAL has exactly two update frequencies (per-context inner, per-round outer) chosen by hand. NL asks what happens when the frequency axis is made continuous.",
+      "To 'Language Models Need Sleep' (2606.03979): SEAL's forgetting result (Fig. 6) with no mitigation is precisely the gap that a consolidation/dreaming lifecycle claims to close.",
+      "To SCM (2604.20943) and to the capacity/falsifier line: SEAL never asks how much can be written before the Theta-path saturates, and its n=2067 result (46.4, below a heuristic) is the first hint that it does."
+    ],
+    "mandatory_caveat_rows_for_S0_section_7": [
+      "SEAL's headline 'beats GPT-4.1' holds only in the n=1 column; GPT-4.1 wins both CPT columns [Table 2].",
+      "SEAL's few-shot benchmark is a 19-task subset filtered for TTT-solvability, which makes Oracle TTT = 100% true by construction [§4.1, §A.1].",
+      "Removing SEAL's defining inner-loop reward and replacing it with a GPT-4.1 rubric costs 1.4 points and saves ~72x compute [Table 9].",
+      "Two no-RL prompt baselines (49.3, 49.4) exceed SEAL's RL-trained headline (47.0) [Table 10].",
+      "SEAL reports no wake-time latency, no adapter bytes and no forgetting rate — the S0 cost table cannot be completed from this paper."
+    ]
+  }
+}
