@@ -1,0 +1,402 @@
+# STC-STYLE-NOTATION — Sleep-Time Compute v2 통일 표기·용어·템플릿 기준
+
+**버전**: v0.1 (2026-08-06, S1 초판. §1.7 논문별 대응표와 §6.4 의무 caveat은 S0 deep-read 종료 후 확정)
+**지위**: v2의 모든 장의 집필자는 이 문서를 따른다. 이 문서와 충돌하는 표기·용어·구조는 감사에서 결함으로 처리한다.
+**근거 문서**: `dossier/stc-v2/S0-DESIGN.md`(프레임), `notes/stc-v2/*.json`(사실 기반),
+`style/STYLE-NOTATION.md`(Neural Memory 기준 — 기호는 승계, 재정의 금지).
+
+**대상 독자(전 장 공통)**: transformer inference와 efficient-transformer를 잘 아는 AI system
+infra·architecture exploration 엔지니어. **Neural Memory 모노그래프를 읽었다.** 따라서 backward
+pass, optimizer state, inner/outer loop, test-time learning은 전제한다. 반면 **training 실무는
+모른다** — fine-tuning 레짐, LoRA/PEFT, distillation, RL, synthetic data, replay, 지속학습 평가.
+모든 장은 이 독자 한 명을 상정하고 쓴다.
+
+---
+
+## 0. 요약 카드 (집필 중 항상 옆에 둘 것)
+
+**7대 규칙**
+
+1. **상태는 세 층이다: $\Theta$(slow weights) · $W$(fast weights) · $E$(external store).**
+   $\Theta$와 $W$의 의미는 Neural Memory에서 **글자 그대로 승계**한다. 재정의 금지.
+2. **모든 논문은 "어느 층을, 어느 시간척도로, 무슨 규칙으로, 얼마의 비용에" 쓰는가로 환원한다.**
+   이 4항이 안 채워진 장은 미완성이다.
+3. **비용은 항상 네 값이다**: $B_s$(sleep 예산) · $L_w$(wake 지연) · $C$(상태 용량) · $\rho$(망각률).
+   논문에 없으면 **"논문에 없음"**이라고 쓴다. 추정치를 본문 수치로 쓰지 않는다.
+4. **읽기와 쓰기를 분리한다.** 읽기는 식 (R), 쓰기는 (U-W)/(U-$\Theta$)/(U-E) 중 하나.
+   "sleep한다"처럼 층을 특정하지 않는 서술은 금지한다.
+5. **sleep-time compute은 단일 축이 아니라 세 경로다.** 경로를 지정하지 않은 일반화 주장은
+   §6.2의 [평가] 블록으로만 쓸 수 있다.
+6. 기술 용어는 영어 원어(로마자) 유지, 조사는 한글 발음 기준으로 직접 결합("chunk가", "replay를").
+7. **경로 간 침묵도 서술 대상이다.** 어떤 논문이 다른 경로를 인용하지 않으면 그 사실을 쓴다.
+
+**master frame (v2의 기준 — 모든 Part II 장이 이 형태로 환원해 설명한다)**
+
+읽기:
+
+$$
+\hat y \;=\; f\big(q;\ \Theta,\ W,\ \mathrm{ret}(E, q)\big)
+\tag{R}
+$$
+
+쓰기 세 규칙:
+
+$$
+W_t \;=\; \alpha_t\, W_{t-1} + S_t,
+\qquad
+S_t \;=\; \beta_t\, S_{t-1} - \eta_t \nabla_W\, \ell\big(W_{t-1}; k_t, v_t\big)
+\tag{U-W}
+$$
+
+$$
+\Theta_{k+1} \;=\; \Theta_k \;-\; \eta_\Theta\, \nabla_\Theta\, \mathcal{L}\big(\mathcal{R}_k;\ \Theta_k\big),
+\qquad
+\mathcal{R}_k \;=\; \mathrm{gen}\big(\mathcal{H}_k;\ B_s\big)
+\tag{U-$\Theta$}
+$$
+
+$$
+E_{k+1} \;=\; \mathrm{wr}\big(E_k,\ \hat c_k\big),
+\qquad
+\hat c_k \;=\; S\big(c_k;\ B_s\big)
+\tag{U-E}
+$$
+
+상각:
+
+$$
+C_{\text{avg}} \;=\; C_{\text{wake}} \;+\; \frac{C_{\text{sleep}}}{N_q}
+\tag{A}
+$$
+
+**(U-W)는 Neural Memory의 master equation (M)과 동일하다.** 두 모노그래프는 같은 척추를 공유한다 —
+NM은 $W$층만 다뤘고, v2는 그 위(($\Theta$))와 밖($E$)으로 확장한다. 이 연속성을 각 장의 bridge-in에서
+활용하되, NM의 서술을 반복하지 않고 참조로 넘긴다("→ NM ch12 §12.3").
+
+---
+
+## 1. 통일 표기법
+
+### 1.1 설계 원칙
+
+이 corpus는 서로 다른 세 공동체(지속학습·에이전트 기억·test-time learning)에서 왔고, 같은 대상을
+상충하는 기호로 쓴다. 통일 원칙:
+
+| # | 원칙 | 이유 |
+|---|---|---|
+| P1 | Neural Memory에서 이미 예약한 기호는 **그대로 승계**한다 | 두 책을 나란히 읽는 독자가 실제 독자다 |
+| P2 | 층을 나타내는 기호($\Theta, W, E$)는 **어떤 논문의 국소 표기로도 덮어쓰지 않는다** | 3층 프레임이 무너지면 책 전체가 무너진다 |
+| P3 | 시간 첨자는 척도를 드러낸다: $t$=토큰/청크, $k$=sleep 라운드, $\tau$=세션 | 시간척도 혼동이 이 분야 최대의 서술 오류다 |
+| P4 | 비용 기호는 §1.2의 4종 외에 신설하지 않는다 | 비교 가능성 유지 |
+| P5 | 논문 고유 기호는 본문에서 쓰지 않고, §1.7 대응표와 직접 인용에서만 쓴다 | 독자가 원문과 대조 가능하되 본문은 일관 |
+
+### 1.2 예약 기호 전역표
+
+**층·상태 (Neural Memory 승계 — 재정의 절대 금지)**
+
+| 기호 | 의미 | 출처 |
+|---|---|---|
+| $\Theta$ | slow weights. outer-loop에서 학습되는 파라미터 | NM 승계 |
+| $W$ | fast weights. inner-loop/test-time에 움직이는 상태 | NM 승계 |
+| $S_t$ | $W$ 갱신의 momentum(surprise) 항 | NM 승계 |
+| $\ell$ | inner loss (소문자) | NM 승계 |
+| $\mathcal{L}$ | outer/task loss (대문자) | NM 승계 |
+| $\eta_t,\ \beta_t,\ \alpha_t$ | inner learning rate · momentum decay · retention gate($\alpha_t$는 **남기는 비율**) | NM 승계 |
+| $\mathcal{M}(\cdot; W)$ | memory 읽기 함수 | NM 승계 |
+| $C$ (청크) | chunk 크기 | NM 승계 — **§1.5 충돌 주의** |
+
+**v2 신설**
+
+| 기호 | 의미 |
+|---|---|
+| $E$ | external store. text·vector·graph 기억의 총칭 |
+| $\mathrm{ret}(E,q)$ | 질의 $q$에 대한 검색 연산 |
+| $\mathrm{wr}(E,\hat c)$ | 기록 연산 |
+| $\hat c$ | learned context. 질의 전 오프라인 추론의 산출물 |
+| $\mathcal{R}_k$ | $k$번째 sleep 라운드의 학습 집합(replay·distill·합성) |
+| $\mathcal{H}_k$ | $k$라운드까지 누적된 경험 |
+| $\mathrm{gen}(\cdot; B_s)$ | 예산 $B_s$로 $\mathcal{R}$을 만드는 절차 |
+| $S(c; B_s)$ | 예산 $B_s$로 문맥 $c$를 오프라인 처리하는 절차 |
+| $\eta_\Theta$ | outer/sleep learning rate. $\eta_t$(inner)와 **반드시 구분** |
+| $k$ | sleep 라운드 첨자 |
+| $\tau$ | 세션 첨자 |
+| $N_q$ | 한 문맥을 공유하는 질의 수 |
+
+**비용 4종 (신설 금지)**
+
+| 기호 | 의미 | 단위 |
+|---|---|---|
+| $B_s$ | sleep-time 계산 예산 | FLOPs 또는 tokens |
+| $B_t$ | wake-time(test-time) 계산 예산 | FLOPs 또는 tokens |
+| $L_w$ | wake 지연 기여 | ms, TTFT/ITL |
+| $C_{\text{cap}}$ | 상태 용량 | bytes/세션 또는 bytes/사용자 |
+| $\rho$ | 망각·열화율 | 라운드당 성능 손실 |
+
+### 1.3 벡터·행렬·연산 규약
+
+- 벡터는 소문자 볼드 없이 $q_t, k_t, v_t$; 행렬·텐서는 대문자 $W, \Theta$.
+- $d$ = 모델 폭, $L$ = 층 수, $r$ = LoRA rank, $n$ = 저장된 항목 수.
+- bytes 계산은 항상 dtype을 명시한다("bf16 기준 2 bytes/elem").
+- 로그는 자연로그. 정보량은 bits, 명시한다.
+
+### 1.4 표준형 수식
+
+§0의 (R), (U-W), (U-$\Theta$), (U-E), (A)가 전역 번호다. 어느 장에서든 "식 (U-$\Theta$)"로 인용한다.
+파생형은 장 번호를 붙인다: 식 (7-3).
+
+### 1.5 기호 충돌·금지 사항
+
+- **$C$ 충돌**: NM에서 $C$는 chunk 크기다. v2에서 용량은 반드시 $C_{\text{cap}}$으로 쓴다. 맨 $C$는
+  chunk 크기로만 쓴다.
+- **$S$ 충돌**: NM의 $S_t$(momentum)와 v2의 $S(c;B_s)$(오프라인 처리 절차)는 다른 것이다.
+  전자는 항상 첨자 $t$를 달고, 후자는 항상 인자를 괄호로 받는다. 첨자 없는 맨 $S$ 금지.
+- $\eta_t$(inner)와 $\eta_\Theta$(sleep)를 섞어 쓰는 것은 결함이다.
+- "memory"를 수식어 없이 쓰지 않는다 — $W$, $E$, 또는 HBM/DRAM 중 무엇인지 밝힌다.
+- "sleep"을 동사로 쓰지 않는다. "sleep 라운드에서 $\Theta$를 갱신한다"처럼 층을 밝힌다.
+
+### 1.6 경로 카탈로그 (한 줄 정의)
+
+| 경로 | 정의 | 판별식 |
+|---|---|---|
+| **E-경로** | 질의 전 오프라인 추론의 산출물을 모델 **밖**에 텍스트·벡터·그래프로 적재 | (U-E)만 실행. $\Theta,W$ 불변 |
+| **W-경로** | 문맥을 fast weight로 접어 넣고 원 문맥을 버림 | (U-W)를 wake가 아닌 **오프라인**에 추가 실행 |
+| **Θ-경로** | 경험을 slow weights로 증류·통합 | (U-$\Theta$) 실행. 배포 가중치가 바뀜 |
+
+경로를 걸치는 논문은 **순서**를 밝힌다("(U-E)로 $\hat c$를 만든 뒤 그것을 $\mathcal{R}$로 삼아
+(U-$\Theta$)를 돈다").
+
+### 1.7 논문별 표기 대응표
+
+> **PENDING** — S0 deep-read 종료 후 `notes/stc-v2/*.json`의 `core_mechanism.notation_conflicts`를
+> 모아 확정한다. 각 논문 1표, 행 삭제·의미 변경 금지, 장-국소 행 추가만 허용.
+
+---
+
+## 2. 용어 정책
+
+### 2.1 영어 원어 유지
+
+sleep-time compute, wake, consolidation, replay, distillation, fine-tuning, adapter, retrieval,
+forgetting, capacity, amortization은 원어로 쓴다. 번역·음차하지 않는다.
+
+### 2.2 조사 결합
+
+한글 발음 기준으로 직접 결합한다: "replay가", "distillation을", "$\Theta$를", "LoRA의".
+괄호·중점으로 분리하지 않는다.
+
+### 2.3 처음 등장 시 정의
+
+각 용어의 **정의 소유 장**이 있다. 소유 장에서 볼드 + 정의문으로 도입하고, 다른 장은 참조만 한다.
+재정의는 결함이다.
+
+### 2.4 공식 명칭 확정표
+
+| 확정 명칭 | 쓰지 않을 것 |
+|---|---|
+| sleep-time compute | 수면 계산, 슬립타임 컴퓨트 |
+| learned context ($\hat c$) | 학습된 문맥(단독), 요약 |
+| consolidation | 공고화(단독) — 첫 등장 시 괄호 병기만 허용 |
+| external store ($E$) | 외부 메모리(모호), long-term memory |
+| slow/fast weights | 느린/빠른 가중치 |
+| Θ-경로 / W-경로 / E-경로 | parametric/non-parametric(이분법이 부정확) |
+
+### 2.5 논문 명칭·인용
+
+본문 인용은 `[Letta STC §3.1]`, `[SEAL Table 2]`, `[LM Need Sleep Eq. 4]` 형식. arXiv ID는 처음
+등장 시 한 번만 병기한다. 원문 수식 번호와 이 책의 번호를 **절대 혼용하지 않는다**.
+
+---
+
+## 3. Rosetta 사전 (inference 어휘 ↔ sleep-time 어휘)
+
+독자가 이미 아는 것으로 새 개념을 정의한다. 각 장은 최소 한 번 이 사전을 쓴다.
+
+| 독자가 아는 것 | 이 라인의 대응물 | 정확한 대응 관계 |
+|---|---|---|
+| prefix cache / prompt cache | E-경로의 $\hat c$ | 둘 다 재사용 목적이나, cache는 **같은 계산의 재사용**, $\hat c$는 **새 추론의 선행 수행** |
+| KV cache | $W$ (fast weights) | KV는 append-only 무손실, $W$는 고정 크기 손실 압축 |
+| vector DB 조회 | $\mathrm{ret}(E,q)$ | 동일. 비용도 동일하게 회계 |
+| 모델 재배포 | (U-$\Theta$) 1회 | Θ-경로는 **배포 아티팩트가 바뀐다** — 이것이 E/W와의 결정적 차이 |
+| batch로 weight 공유 | Θ-경로에서 깨짐 | per-user delta가 생기면 shared-weight batching이 성립하지 않는다 |
+| warm-up / 사전 컴파일 | sleep 라운드 | 둘 다 유휴 시간 활용. 단 sleep은 **품질**을 바꾼다 |
+| checkpoint 크기 | $C_{\text{cap}}$ | Θ-경로 상태량은 checkpoint 회계로 직접 읽힌다 |
+
+---
+
+## 4. 장 템플릿
+
+공통: 각 장은 하나의 `.md` 파일. 제목은 `# chNN. <제목>` 한 줄. 1p ≈ 500–550 한국어 단어 + 수식.
+
+### 4.1 Part I 장 템플릿 (배경 — T-모듈)
+
+```markdown
+# chNN. <제목>
+
+> **이 장의 목표** — 독자가 이 장을 마치면 할 수 있어야 하는 것 2–4개 (동사로).
+> **왜 필요한가** — Part II의 어느 논문의 어떤 절/수식이 이 장을 요구하는지 명시.
+> **NM과의 관계** — Neural Memory에서 이미 다룬 부분은 참조로 넘기고, 이 장이 더하는 것만 명시.
+
+## N.1 <본문 절> …  (절마다 systems 독자 관점의 접점 한 번 이상)
+## N.x (state, update, cost) 정리
+   — 이 장의 개념을 세 층 프레임의 어디에 놓는지. 표 하나.
+## N.y Worked micro-example
+   — 손으로/암산으로 따라갈 수 있는 최소 수치 예제. 실제 숫자. Part I 전 장 필수.
+## 요약
+   — 5–8개 bullet. 각 bullet은 단정문.
+## 자가 점검 체크리스트
+   — [ ] 4–7개. 마지막 항목은 항상 Rosetta 항목.
+## 다음 장으로
+```
+
+### 4.2 Part II 장 템플릿 (논문장 — 8절 고정)
+
+```markdown
+# chNN. <논문 제목>
+
+## N.1 Bridge-in: 전작이 남긴 문제
+   — 전작이 **명시적으로** 남긴 open question을 인용으로 복원 (notes의 inherited_open_question).
+   — 전작이 없으면(경로의 시작) 어느 공동체의 어떤 공백에서 출발했는지.
+## N.2 문제의식
+   — 논문이 스스로 정의한 문제. §6.2 규칙으로 논문 주장과 이 책의 재구성을 구분.
+## N.3 Core mechanism (통일 표기)
+   — 모든 수식은 §1 표기. (R)/(U-*) 표준형과의 **차이**로 서술.
+   — 원문 수식 번호 병기. 소절 N.3.x에 표기 대응표(§1.7 해당 표 복사 + 장-국소 행).
+## N.4 어느 층을 언제 쓰는가
+   — **필수 독립 절.** (U-W)/(U-Θ)/(U-E) 중 무엇을, 어느 시간척도로, 어떤 순서로.
+   — "이 값은 누가 학습하는가?"에 전부 답하는 표 하나 + 산문.
+## N.5 비용 4종
+   — $B_s$, $L_w$, $C_{\text{cap}}$, $\rho$ 표. 논문에 없는 칸은 "논문에 없음". 추정 금지.
+   — 식 (A)로 상각 손익분기 $N_q^*$를 계산할 수 있으면 계산하고, 없으면 왜 못 하는지.
+## N.6 실험과 스케일
+   — 모델 크기·토큰 수·벤치마크를 정확한 수치로. 출처 절 병기. 반올림 금지.
+   — 실증 상한을 이 절에서 정직하게. 자체 제작 벤치마크면 그 사실을 명시.
+## N.7 Systems/serving 함의
+   — 독자의 세계로 번역: decode 비용, 상태 바이트, batching·kernel·memory 계층 함의.
+   — **제약**: memory-centric 논증은 근거가 실제로 있는 지점에만. NM D4의 억지 연결 금지 규칙 승계.
+## N.8 한계와 bridge-out
+   — 논문 자신의 open questions + 이 책의 [평가] + 다음 장이 무엇을 받아가는지.
+   — **경로 간 인용 여부**를 여기서 밝힌다(notes의 cross_path_citations).
+```
+
+### 4.3 Part III 장 템플릿 (판정)
+
+```markdown
+# chNN. <제목>
+
+## N.1 판정할 질문
+   — 한 문장 질문. 답이 될 수 있는 것과 될 수 없는 것을 먼저 못 박는다.
+## N.2 증거
+   — Part II에서 확립된 사실 + 이 책의 실험(warrant). 각 항목에 등급 표시.
+## N.3 분석
+## N.4 판정
+   — [평가] 블록. 단정. 조건부면 조건을 명시.
+## N.5 반증 조건
+   — **필수.** 이 판정이 틀렸음을 보일 관측을 구체적으로. 반증 불가능한 판정은 쓰지 않는다.
+```
+
+### 4.4 분량 가이드
+
+> **PENDING** — S0의 ToC 확정 시 장별 목표 페이지를 배정한다. 총 목표 300pp+
+> (Part I ≈ 90 / Part II ≈ 140 / Part III ≈ 70 + front·back). 허용 오차 ±15%.
+
+---
+
+## 5. Cross-reference 규약
+
+- 장·절 참조는 텍스트로 통일: "7장", "7장 §7.3", "→ 12장". Neural Memory 참조는 "→ NM ch12".
+- 재참조되는 표시 수식만 번호: `$$ … \tag{7-3} $$`. 전역 표준형 (R)/(U-*)/(A)는 그대로 인용.
+- 그림 "그림 7-1", 표 "표 7-1". 캡션은 표 **위**, 그림 **아래**. 볼드 캡션 금지.
+- 원 논문 그림을 재작도하면 캡션에 "([SEAL Fig. 3] 재구성)". 원본 이미지를 그대로 실을 때는
+  "원저자 그림, 본서 결과 아님" 출처 표기를 반드시 단다.
+- `notes/`·dossier를 본문에서 직접 인용하지 않는다. 사실의 출처는 항상 원 논문 위치.
+
+---
+
+## 6. 문체 규칙
+
+### 6.1 기본 문체
+
+- 문어체 평서형("-이다/-한다"). 경어체 금지.
+- **단정적으로 쓴다.** "~인 것 같다", "~로 보인다", "아마도" 금지. 단정할 수 없으면
+  (a) 논문 주장으로 귀속시키거나 (b) `TODO-VERIFY`로 처리한다. hedging은 둘 중 하나의 회피다.
+- 한 문단 = 한 논지. 두괄식. 수식 앞뒤로 "이 식이 무엇을 말하는가" 산문 한 문장 이상.
+
+### 6.2 논문 주장 vs 이 책의 해설 vs 평가 (필수)
+
+1. **논문의 주장/보고**: 항상 논문에 귀속 + 위치 병기.
+   - "…이다. [SEAL §4.2]" (사실 서술)
+   - "[Letta STC]는 test-time compute이 5× 줄었다고 **보고한다**(§5.1, 저자 제작 벤치)." (논쟁적 주장)
+2. **이 책의 해설**(논문 내용을 독자의 어휘로 재서술): 일반 산문. 경계가 흐려질 위험이 있으면 블록.
+   > **[해설]** inference 관점에서 (U-E)는 prompt cache를 "미리 추론까지 해둔 cache"로 바꾼 것이다. …
+3. **이 책의 평가/비판**(논문과 다른 판단): **반드시 블록**.
+   > **[평가]** 이 상각 논증은 $N_q$ 분포를 안다고 가정한다. 실서빙에서 그 분포를 보고한 논문은 없다. …
+
+### 6.3 TODO-VERIFY
+
+확신 없는 서술은 본문에 남기지 않는다.
+
+```markdown
+<!-- TODO-VERIFY: SEAL의 self-edit이 LoRA인지 full FT인지 원문 §3.2 확인. 확인 방법: papers/stc/2506.10943.txt 검색 "self-edit" -->
+```
+
+- 주장 + **확인 방법**(어느 파일/절을 보면 판정되는지)을 반드시 포함한다.
+- **수치는 TODO-VERIFY 상태로 본문에 쓰지 않는다.** 확인된 것만 쓴다.
+- 해소 시 주석을 삭제하고 원문 위치를 병기한다. 판정 불가면 단정을 삭제하거나 [평가]로 전환한다.
+  무기한 잔류는 결함이다.
+
+### 6.4 정직성 규칙 — 의무 서술 caveat
+
+논문에 불리한 사실의 완곡화·누락은 결함이다. deep-read의 `unfavorable_facts`는 **전부** 해당 장
+본문에 반영한다. 확정된 의무 항목:
+
+| caveat | 의무 장 |
+|---|---|
+| Letta STC의 5×·13%·18%는 저자가 제작한 Stateful GSM-Symbolic / Stateful AIME에서 나온 값 | E-2 |
+| Letta STC의 "learned context"는 가중치 갱신이 아니다 — 논문이 본문에서 명시 | E-2, Part III |
+| `Language Models Need Sleep`의 기제는 pre-trained Llama/Qwen 위의 graft — end-to-end meta-learn 아님 | Θ-5 |
+| 식 (A)는 $N_q$를 안다고 가정 — 실서빙 $N_q$ 분포를 보고한 논문은 corpus에 없음 | E-2, Part III |
+| 세 경로가 서로를 인용하지 않는 구간이 존재 | 분기 장, Part III |
+
+> **PENDING** — S0 종료 시 나머지 항목을 이 표에 추가한다.
+
+### 6.5 숫자·단위
+
+- 모델 크기 "1.3B", 토큰 "100B tokens", 문맥 "32K", rank "r=16".
+- 배율 "5×", 퍼센트 "13%". 논문 수치는 **원문 그대로** — 반올림 금지.
+- 바이트는 항상 dtype 병기. 시간은 ms 단위 통일.
+- 모든 논문 수치에 출처 병기: "5× [Letta STC §5.1]".
+
+### 6.6 실험 수치의 등급화 (Neural Memory 승계)
+
+이 책의 자체 실험 수치는 `experiments/stc/results.json`의 caveat 태그와 함께 인용한다.
+**비율·crossover·순서·bound 분류는 본문 단정문으로**, **절대치는 하한/방향성으로만** 쓴다.
+NM `experiments/REPRODUCE.md` §0의 정직성 계약을 그대로 승계한다.
+
+---
+
+## 7. 집필자 pre-flight checklist
+
+집필 시작 전:
+- [ ] §0 요약 카드와 자기 장의 대응표(§1.7)를 확인했다.
+- [ ] 자기 장의 `notes/stc-v2/<slug>.json`을 읽었다.
+- [ ] 자기 장이 소유하지 않는 개념의 정의 장을 확인했다(재정의 금지).
+
+제출 전 자가 감사:
+- [ ] 본문 수식에 원 논문 고유 표기가 남아 있지 않다(대응표·직접 인용 제외).
+- [ ] $\Theta$/$W$/$E$ 구분이 전 수식에서 지켜졌다. $\eta_t$와 $\eta_\Theta$를 섞지 않았다.
+- [ ] $C$(chunk)와 $C_{\text{cap}}$(용량)을 혼용하지 않았다.
+- [ ] (Part II) 8개 절 구조 완비. 특히 §N.4(어느 층을 언제)와 §N.5(비용 4종).
+- [ ] 비용 4종 표에서 논문이 침묵한 칸을 "논문에 없음"으로 적었다(추정치 삽입 없음).
+- [ ] 모든 수치 주장에 원문 위치가 있고, 미확인 주장은 `TODO-VERIFY`로 빠졌다.
+- [ ] 주장/해설/평가 3층 구분(§6.2)이 적용되었다.
+- [ ] `unfavorable_facts`가 전부 본문에 있다.
+- [ ] bridge-in이 전작의 실제 open question에서 시작하고, bridge-out이 다음 장을 지목한다.
+- [ ] 경로 간 인용 여부를 §N.8에서 밝혔다.
+
+---
+
+## 8. 버전 이력
+
+### v0.1 (2026-08-06) — S1 초판
+Neural Memory `style/STYLE-NOTATION.md` v1.1의 구조를 승계하고, 상태 3층·경로 3분·비용 4종을
+신설했다. §1.7(논문별 대응표), §4.4(분량 배정), §6.4 잔여 항목은 S0 deep-read 종료 후 확정한다.
