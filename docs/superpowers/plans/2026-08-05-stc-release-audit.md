@@ -235,9 +235,9 @@ git commit -m "release: finalize sleep-time compute study artifacts"
 - Consumes: release-ready feature branch
 - Produces: remote feature branch and fast-forwarded remote `main`
 
-- [ ] **Step 1: Invoke `superpowers:verification-before-completion` and rerun its required fresh checks**
-- [ ] **Step 2: Invoke `superpowers:finishing-a-development-branch`**
-- [ ] **Step 3: Push `codex/stc-study-rebuild` and verify local/remote SHA**
-- [ ] **Step 4: In the main worktree, fetch, verify tracked clean, verify zero untracked overlap, and fast-forward merge**
-- [ ] **Step 5: Run smoke QA in main and push `main`**
-- [ ] **Step 6: Verify local main SHA equals `origin/main` and report test counts, artifact paths, commit SHA, and preserved untracked count**
+- [x] **Step 1: Invoke `superpowers:verification-before-completion` and rerun its required fresh checks**
+- [x] **Step 2: Invoke `superpowers:finishing-a-development-branch`**
+- [x] **Step 3: Push `codex/stc-study-rebuild` and verify local/remote SHA**
+- [x] **Step 4: In the main worktree, fetch, verify tracked clean, verify zero untracked overlap, and fast-forward merge**
+- [x] **Step 5: Run smoke QA in main and push `main`**
+- [x] **Step 6: Verify local main SHA equals `origin/main` and report test counts, artifact paths, commit SHA, and preserved untracked count**
