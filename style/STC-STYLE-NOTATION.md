@@ -167,8 +167,21 @@ NM은 $W$층만 다뤘고, v2는 그 위(($\Theta$))와 밖($E$)으로 확장한
 
 ### 1.7 논문별 표기 대응표
 
-> **PENDING** — S0 deep-read 종료 후 `notes/stc-v2/*.json`의 `core_mechanism.notation_conflicts`를
-> 모아 확정한다. 각 논문 1표, 행 삭제·의미 변경 금지, 장-국소 행 추가만 허용.
+각 논문의 대응표는 그 논문의 deep-read 노트가 소유한다 —
+`notes/stc-v2/<slug>.json`의 `notation_conflicts` 필드다. 28편의 표를 여기 복제하지 않는 이유는
+단일 SoT를 유지하기 위해서다(복제하면 두 곳이 갈라진다).
+
+집필 규약:
+
+- Part II 각 장은 §N.3.x 소절에 자기 노트의 `notation_conflicts`를 표로 옮긴다.
+  **행 삭제·의미 변경 금지**, 장-국소 행 추가만 허용한다.
+- 옮긴 표에는 항상 원 논문 기호 → 이 책 기호의 방향을 명시하고, 원문 수식 번호를 병기한다.
+- 노트에 없는 충돌을 집필 중 발견하면 **노트를 먼저 고치고** 본문에 반영한다. 본문에만
+  적는 것은 결함이다.
+- 예약 기호(§1.2)를 논문 쪽 의미로 덮어쓰는 것은 어떤 경우에도 금지한다. 충돌하면
+  논문 기호를 바꿔 쓴다.
+
+전역 충돌 두 건은 §1.5에 이미 고정되어 있다($C$ vs $C_{\text{cap}}$, $S_t$ vs $S(\cdot;B_s)$).
 
 ---
 
@@ -296,8 +309,9 @@ forgetting, capacity, amortization은 원어로 쓴다. 번역·음차하지 않
 
 ### 4.4 분량 가이드
 
-> **PENDING** — S0의 ToC 확정 시 장별 목표 페이지를 배정한다. 총 목표 300pp+
-> (Part I ≈ 90 / Part II ≈ 140 / Part III ≈ 70 + front·back). 허용 오차 ±15%.
+장별 목표 페이지의 단일 SoT는 **`dossier/stc-v2/PRE-RESEARCH.md` §6**이다(ch01–ch30,
+Part I ≈ 92 / Part II ≈ 140 / Part III ≈ 72 + front·back ≈ 16 = **약 320pp**).
+허용 오차 ±15%. 1p ≈ 500–550 한국어 단어 + 수식.
 
 ---
 
@@ -347,17 +361,21 @@ forgetting, capacity, amortization은 원어로 쓴다. 번역·음차하지 않
 ### 6.4 정직성 규칙 — 의무 서술 caveat
 
 논문에 불리한 사실의 완곡화·누락은 결함이다. deep-read의 `unfavorable_facts`는 **전부** 해당 장
-본문에 반영한다. 확정된 의무 항목:
+본문에 반영한다.
 
-| caveat | 의무 장 |
-|---|---|
-| Letta STC의 5×·13%·18%는 저자가 제작한 Stateful GSM-Symbolic / Stateful AIME에서 나온 값 | E-2 |
-| Letta STC의 "learned context"는 가중치 갱신이 아니다 — 논문이 본문에서 명시 | E-2, Part III |
-| `Language Models Need Sleep`의 기제는 pre-trained Llama/Qwen 위의 graft — end-to-end meta-learn 아님 | Θ-5 |
-| 식 (A)는 $N_q$를 안다고 가정 — 실서빙 $N_q$ 분포를 보고한 논문은 corpus에 없음 | E-2, Part III |
-| 세 경로가 서로를 인용하지 않는 구간이 존재 | 분기 장, Part III |
+의무 caveat 표의 단일 SoT는 **`dossier/stc-v2/PRE-RESEARCH.md` §4**이다(26항, 장 배정 포함).
+집필자는 자기 장에 배정된 항목을 전부 본문에 담았는지 §7 체크리스트에서 확인한다. 표에 없는
+`unfavorable_facts` 항목도 누락 금지 — 표는 최소선이지 상한이 아니다.
 
-> **PENDING** — S0 종료 시 나머지 항목을 이 표에 추가한다.
+특히 다음 세 유형은 완곡화가 잦으므로 명시적으로 금지한다.
+
+1. **자기 표와 어긋나는 캡션·본문 주장**을 논문 주장 그대로 옮기고 표를 생략하는 것.
+   corpus에서 최소 5편이 "모든 구성요소가 기여한다"류 문장을 자기 ablation 표가 반증하는
+   상태로 싣고 있다. 반드시 표의 수치와 함께 병기한다.
+2. **baseline이 이기는 사실의 생략.** $E$-경로에서 품질 1위가 "기억 시스템 없음"인 사례가
+   반복된다. 해당 장은 그 수치를 본문에 쓴다.
+3. **비용 침묵을 성능 주장으로 메우는 것.** 비용 4종이 absent이면 "효율적"이라는 서술을
+   본문에 쓰지 않는다. "논문에 없음"이라고 쓴다.
 
 ### 6.5 숫자·단위
 
