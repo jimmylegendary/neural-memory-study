@@ -7,11 +7,11 @@
 > 4. **upward distillation**(작은 자기 → 큰 자기)이 통상의 방향과 반대라는 사실을 말하고, 그 절차에서 실제로 옮겨지는 것이 지식이 아니라 좌표라는 것을 [LM Need Sleep]의 식으로 논증할 수 있다.
 >
 > **왜 필요한가** — Part II의 세 지점이 이 장을 전제하고 쓰인다.
-> - **21장 [LM Need Sleep]** (*Language Models Need Sleep*, arXiv:2606.03979) §3.3: Knowledge Seeding의 목적함수는 GKD 항과 imitation reward 항의 볼록결합이다. 그 GKD 항의 형태·표본 출처·frozen 범위를 이 장이 소유한다. 같은 절의 boxed 문단 제목이 그대로 "Upward Distillation (Knowledge Seeding)"이다.
-> - **20장 [SEAL]** (*Self-Adapting LMs*, arXiv:2506.10943) §3.1 마지막 문단: teacher와 student를 서로 다른 모델로 분리하는 확장을 제안한다 — 제안만 하고 실행하지 않는다. 그 제안이 무엇을 바꾸는 제안인지 읽으려면 teacher/student가 역할이지 개체가 아니라는 이 장의 정의가 필요하다.
-> - 21장이 최강 baseline으로 세운 OPSD 계열, 그리고 [LM Need Sleep] App. A.4가 두 페이지에 걸쳐 열거하는 2026년 논문군 전체가 **on-policy self-distillation**이다. 그 이름이 무엇을 뜻하는지가 이 장 §04.4다.
+> - **ch21 [LM Need Sleep]** (*Language Models Need Sleep*, arXiv:2606.03979) §3.3: Knowledge Seeding의 목적함수는 GKD 항과 imitation reward 항의 볼록결합이다. 그 GKD 항의 형태·표본 출처·frozen 범위를 이 장이 소유한다. 같은 절의 boxed 문단 제목이 그대로 "Upward Distillation (Knowledge Seeding)"이다.
+> - **ch20 [SEAL]** (*Self-Adapting LMs*, arXiv:2506.10943) §3.1 마지막 문단: teacher와 student를 서로 다른 모델로 분리하는 확장을 제안한다 — 제안만 하고 실행하지 않는다. 그 제안이 무엇을 바꾸는 제안인지 읽으려면 teacher/student가 역할이지 개체가 아니라는 이 장의 정의가 필요하다.
+> - ch21이 최강 baseline으로 세운 OPSD 계열, 그리고 [LM Need Sleep] App. A.4가 두 페이지에 걸쳐 열거하는 2026년 논문군 전체가 **on-policy self-distillation**이다. 그 이름이 무엇을 뜻하는지가 이 장 §04.4다.
 >
-> **NM과의 관계** — Neural Memory 모노그래프에 대응 장이 없다. 이 장은 NM이 세운 기계 위에서 시작한다: backward pass와 optimizer state는 → NM ch02, inner/outer loop의 이중 구조는 → NM ch04, chunk 단위 갱신은 → NM ch09로 넘긴다. 이 장이 더하는 것은 하나다 — **gradient의 출처를 label에서 다른 모델의 출력 분포로 바꾸면 무엇이 달라지는가.** NM은 $W$가 무엇을 배우는지를 다뤘고, 이 장은 $\Theta$에 무엇을 어떻게 써넣을 수 있는지의 두 번째 도구를 다룬다(첫 번째 도구는 3장의 PEFT다).
+> **NM과의 관계** — Neural Memory 모노그래프에 대응 장이 없다. 이 장은 NM이 세운 기계 위에서 시작한다: backward pass와 optimizer state는 → NM ch02, inner/outer loop의 이중 구조는 → NM ch04, chunk 단위 갱신은 → NM ch09로 넘긴다. 이 장이 더하는 것은 하나다 — **gradient의 출처를 label에서 다른 모델의 출력 분포로 바꾸면 무엇이 달라지는가.** NM은 $W$가 무엇을 배우는지를 다뤘고, 이 장은 $\Theta$에 무엇을 어떻게 써넣을 수 있는지의 두 번째 도구를 다룬다(첫 번째 도구는 ch03의 PEFT다).
 
 ---
 
@@ -29,7 +29,7 @@
 
 독자에게 이미 익숙한 사례가 하나 있다. speculative decoding의 draft model은 target model의 분포를 근사하도록 학습된 student이고, 그 학습 절차의 표준형이 바로 distillation이다. acceptance rate는 두 분포가 얼마나 가까운지의 직접 측정치다. 즉 독자는 distillation의 산출물을 이미 serving하고 있다 — 이 장은 그 산출물이 어떻게 만들어지는지를 연다.
 
-이 장이 이 책에서 차지하는 자리도 여기서 정해진다. $\Theta$-경로가 sleep 라운드에 (U-$\Theta$)를 돌리려면 두 가지가 필요하다: **어디에 쓸 것인가**(파라미터의 어느 부분공간을 움직일 것인가 — 3장의 PEFT)와 **무엇을 목표로 쓸 것인가**(gradient를 만들어 낼 신호 — 이 장). 이 corpus에서 sleep 라운드의 목표는 거의 예외 없이 사람이 붙인 label이 아니다. 모델 자신이거나, 자신의 과거이거나, 다른 모델의 분포다. 그래서 distillation은 이 경로에서 선택지가 아니라 **기본 문법**이다.
+이 장이 이 책에서 차지하는 자리도 여기서 정해진다. $\Theta$-경로가 sleep 라운드에 (U-$\Theta$)를 돌리려면 두 가지가 필요하다: **어디에 쓸 것인가**(파라미터의 어느 부분공간을 움직일 것인가 — ch03의 PEFT)와 **무엇을 목표로 쓸 것인가**(gradient를 만들어 낼 신호 — 이 장). 이 corpus에서 sleep 라운드의 목표는 거의 예외 없이 사람이 붙인 label이 아니다. 모델 자신이거나, 자신의 과거이거나, 다른 모델의 분포다. 그래서 distillation은 이 경로에서 선택지가 아니라 **기본 문법**이다.
 
 ---
 
@@ -64,11 +64,11 @@ $$
 \tag{4-3}
 $$
 
-이고, 괄호 안의 확률 차이 자체도 $T$가 커질수록 작아진다. 두 효과가 겹쳐 gradient의 크기가 대략 $1/T^2$로 줄어든다. 보정을 넣지 않으면 $T$를 바꿀 때마다 $w_{\mathrm{KD}}$의 실효 의미가 함께 변해 두 항의 균형을 다시 튜닝해야 한다. $T^2$은 그 결합을 끊는 정규화 상수이며, **$1/T^2$ 근사가 정확한 것은 고온 극한에서뿐이다** — §04.8의 micro-example이 $T=4$에서 실제 어긋남을 숫자로 보인다.
+이고, 괄호 안의 확률 차이 자체도 $T$가 커질수록 작아진다. 두 효과가 겹쳐 gradient의 크기가 대략 $1/T^2$로 줄어든다. 보정을 넣지 않으면 $T$를 바꿀 때마다 $w_{\mathrm{KD}}$의 실효 의미가 함께 변해 두 항의 균형을 다시 튜닝해야 한다. $T^2$은 그 결합을 끊는 정규화 상수이며, **$1/T^2$ 근사가 정확한 것은 고온 극한에서뿐이다** — 이 장의 Worked micro-example이 $T=4$에서 실제 어긋남을 숫자로 보인다.
 
 > **[해설]** $\mathcal{F}$의 방향이 실무에서 갈린다. forward KL $\mathcal{F}(p^{\mathrm{te}}\|p^{\mathrm{st}})$는 teacher가 확률을 준 곳을 student가 비우는 것을 강하게 벌하므로 student를 mode-covering으로 만들고, reverse KL $\mathcal{F}(p^{\mathrm{st}}\|p^{\mathrm{te}})$는 반대로 mode-seeking이다. student의 용량이 teacher보다 작을 때 forward KL은 teacher의 모든 mode를 평균하려다 어느 쪽도 아닌 분포를 만든다. [LM Need Sleep §3.3]이 채택한 GKD(Agarwal et al. 2024)가 divergence를 고정하지 않고 $\mathcal{F}$를 인자로 남겨 둔 이유가 이것이다.
 
-systems 접점은 저장이다. logit distillation을 하려면 teacher의 출력 분포를 student의 backward가 소비할 때까지 들고 있어야 하는데, 그 텐서의 크기가 $L\times|\mathcal{V}|$다. 어휘가 십만 단위인 현대 LM에서 이것은 activation 하나가 아니라 **모델 가중치와 같은 자릿수의 텐서**다(§04.8에서 센다). 그래서 실무의 선택지는 둘뿐이다: teacher를 student와 같은 step에 함께 돌려 logit을 즉시 소비하고 버리거나(HBM에 두 모델 상주), teacher logit을 top-$k$로 잘라 디스크에 캐시하거나(top-$k$의 $k$는 남길 좌표 수를 뜻하는 장-국소 용법이며, 이 책 전역의 sleep 라운드 첨자 $k$와 무관하다). 전자는 sleep job의 메모리 상한을, 후자는 정확히 dark knowledge의 꼬리를 잘라낸다. 공짜 선택지는 없다.
+systems 접점은 저장이다. logit distillation을 하려면 teacher의 출력 분포를 student의 backward가 소비할 때까지 들고 있어야 하는데, 그 텐서의 크기가 $L\times|\mathcal{V}|$다. 어휘가 십만 단위인 현대 LM에서 이것은 activation 하나가 아니라 **모델 가중치와 같은 자릿수의 텐서**다(이 장의 Worked micro-example에서 센다). 그래서 실무의 선택지는 둘뿐이다: teacher를 student와 같은 step에 함께 돌려 logit을 즉시 소비하고 버리거나(HBM에 두 모델 상주), teacher logit을 top-$k$로 잘라 디스크에 캐시하거나(top-$k$의 $k$는 남길 좌표 수를 뜻하는 장-국소 용법이며, 이 책 전역의 sleep 라운드 첨자 $k$와 무관하다). 전자는 sleep job의 메모리 상한을, 후자는 정확히 dark knowledge의 꼬리를 잘라낸다. 공짜 선택지는 없다.
 
 ---
 
@@ -111,11 +111,11 @@ $$
 
 둘째, **목표가 label보다 부드럽다.** one-hot label은 정답 이외 좌표를 전부 0으로 밀지만 자기 자신의 분포는 그렇지 않다. 자기 출력을 목표로 두는 것은 정칙화로 작동한다.
 
-셋째, **teacher가 앵커가 된다.** 라운드 $k$의 자기를 목표로 두면 라운드 $k{+}1$의 갱신은 옛 행동에서 멀어지는 것을 loss로 벌받는다. 이것은 옛 데이터를 다시 넣는 것과 목적은 같고 기제는 다르다 — 데이터가 아니라 함수를 붙잡는다. 옛 데이터를 다시 넣는 쪽(replay)은 7장이 소유한다.
+셋째, **teacher가 앵커가 된다.** 라운드 $k$의 자기를 목표로 두면 라운드 $k{+}1$의 갱신은 옛 행동에서 멀어지는 것을 loss로 벌받는다. 이것은 옛 데이터를 다시 넣는 것과 목적은 같고 기제는 다르다 — 데이터가 아니라 함수를 붙잡는다. 옛 데이터를 다시 넣는 쪽(replay)은 ch07이 소유한다.
 
-> **[해설]** on-policy 항이 sleep job의 비용 **형태**를 바꾼다. $\lambda_{\mathrm{on}}=0$이면 sleep은 평범한 training job이고 지배 비용은 forward+backward GEMM이다. $\lambda_{\mathrm{on}}>0$이면 매 optimizer step 앞에 student의 autoregressive 생성이 붙는다 — 즉 sleep job의 지배 커널이 훈련의 compute-bound GEMM이 아니라 decode의 memory-bandwidth-bound 구간이 된다. 결과적으로 sleep job은 training 클러스터가 아니라 **wake 트래픽과 같은 하드웨어·같은 병목을 놓고 경쟁한다.** [LM Need Sleep App. B.5]가 보고하는 "같은 step 수에서 SFT가 자기 방법보다 4× 효율적"이라는 비율은 이 형태 변화의 값이다(반대로 같은 성능에 도달하려면 SFT가 4.3× / 3.6× / 4.8× 벽시계 시간을 쓴다고 같은 절이 보고한다).
+> **[해설]** on-policy 항이 sleep job의 비용 **형태**를 바꾼다. $\lambda_{\mathrm{on}}=0$이면 sleep은 평범한 training job이고 지배 비용은 forward+backward GEMM이다. $\lambda_{\mathrm{on}}>0$이면 매 optimizer step $s$ 앞에 student의 autoregressive 생성이 붙는다(한 sleep 라운드 $k$ 안에 step $s$가 여러 번 돈다 — 두 첨자는 다른 시간척도다) — 즉 sleep job의 지배 커널이 훈련의 compute-bound GEMM이 아니라 decode의 memory-bandwidth-bound 구간이 된다. 결과적으로 sleep job은 training 클러스터가 아니라 **wake 트래픽과 같은 하드웨어·같은 병목을 놓고 경쟁한다.** [LM Need Sleep App. B.5]가 보고하는 "같은 step 수에서 SFT가 자기 방법보다 4× 효율적"이라는 비율은 이 형태 변화의 값이다(반대로 같은 성능에 도달하려면 SFT가 4.3× / 3.6× / 4.8× 벽시계 시간을 쓴다고 같은 절이 보고한다).
 
-경계 하나를 못 박아 둔다. 모델이 **텍스트로** 자기 학습 데이터를 써낸 다음 그 텍스트로 자기를 SFT하는 절차 — [SEAL §3.1]의 self-edit이 그것이다 — 도 흔히 self-distillation이라 불리지만, 그것은 데이터 공간의 절차이고 이 장의 대상이 아니다. 데이터를 만드는 법과 그 위험(자기생성 분포로 반복 학습할 때의 붕괴)은 6장이 소유한다. 이 장은 **분포 공간에서 divergence를 최소화하는 절차**만 다룬다. 두 절차는 이름을 공유할 뿐 loss의 형태도 실패 양식도 다르다.
+경계 하나를 못 박아 둔다. 모델이 **텍스트로** 자기 학습 데이터를 써낸 다음 그 텍스트로 자기를 SFT하는 절차 — [SEAL §3.1]의 self-edit이 그것이다 — 도 흔히 self-distillation이라 불리지만, 그것은 데이터 공간의 절차이고 이 장의 대상이 아니다. 데이터를 만드는 법과 그 위험(자기생성 분포로 반복 학습할 때의 붕괴)은 ch06이 소유한다. 이 장은 **분포 공간에서 divergence를 최소화하는 절차**만 다룬다. 두 절차는 이름을 공유할 뿐 loss의 형태도 실패 양식도 다르다.
 
 ---
 
@@ -133,30 +133,32 @@ upward distillation은 그 손상을 되돌리는 절차다. teacher는 확장 �
 
 역방향이 자명하지 않은 두 번째 이유는 **수렴 목표가 다르다**는 데 있다. 통상의 distillation에서 student의 상한은 teacher다 — divergence가 0이면 완벽한 성공이고, 그 이상은 정의상 목표가 아니다. upward distillation은 그럴 수 없다. divergence를 0으로 만든 student는 더 큰 파라미터 공간에서 더 작은 함수를 정확히 흉내 내는 모델일 뿐이고, 늘린 용량은 한 비트도 쓰이지 않은 채로 남는다. 즉 이 절차의 성공 기준은 "완전한 모방"이 아니라 **"옛 함수를 망가뜨리지 않으면서 새 자유도를 열어 둔 상태"**이며, 그 둘 사이의 지점이 어디인지를 정하는 값이 (4-6)의 $\lambda_{\mathrm{KD}}$다. 그 값이 논문 어디에도 없다는 것이 이 절 끝에서 다시 문제가 된다.
 
-무엇이 버려지는지도 짚어야 한다. 새 expert가 표현할 수 있는 것은 rank $d_{\mathrm{low}}$의 부분공간뿐이고, 정식화에서 논문이 $d_{\mathrm{low}}$에 대해 말하는 것은 $d_{\mathrm{low}}\ll d$ 하나다 [LM Need Sleep §3.2, p.7]. 실험 부록이 밝히는 것도 "차원 64의 MLP 블록 5개를 추가 파라미터로 쓴다"까지이며, $d$와 $d_{\mathrm{low}}$의 값 자체는 논문 어디에도 없다 [LM Need Sleep App. B, p.25]. 옛 함수 전체가 그 rank 안에 들어간다는 보장은 없으므로 seeding은 원리적으로 **손실 압축**이며, 무엇이 남고 무엇이 버려지는지에 대한 측정도 rate–distortion 형태의 진술도 논문에 없다. 얼마의 rank가 얼마의 망각을 막는지 역시 정식화되어 있지 않다. 용량의 상한 자체는 9장이, 이 공백의 판정은 21장과 22장이 받는다.
+무엇이 버려지는지도 짚어야 한다. 새 expert가 표현할 수 있는 것은 rank $d_{\mathrm{low}}$의 부분공간뿐이고, 정식화에서 논문이 $d_{\mathrm{low}}$에 대해 말하는 것은 $d_{\mathrm{low}}\ll d$ 하나다 [LM Need Sleep §3.2, p.7]. 실험 부록이 밝히는 것도 "차원 64의 MLP 블록 5개를 추가 파라미터로 쓴다"까지이며, $d$와 $d_{\mathrm{low}}$의 값 자체는 논문 어디에도 없다 [LM Need Sleep App. B, p.25]. 옛 함수 전체가 그 rank 안에 들어간다는 보장은 없으므로 seeding은 원리적으로 **손실 압축**이며, 무엇이 남고 무엇이 버려지는지에 대한 측정도 rate–distortion 형태의 진술도 논문에 없다. 얼마의 rank가 얼마의 망각을 막는지 역시 정식화되어 있지 않다. 용량의 상한 자체는 ch09가, 이 공백의 판정은 ch21과 ch22가 받는다.
 
-이 절차가 복사가 아니라 **전송**인 이유는 마지막 단계에 있다. [LM Need Sleep §3.3(c), p.8]은 seeding이 끝난 뒤 sender 블록에 그동안 쌓인 low-rank expert들을 리셋한다("synaptic pruning"). 지운다는 사실이 이것을 전송으로 만든다 — 같은 내용이 빠른 블록과 느린 블록에 동시에 남아 있지 않다. 표준형 (U-$\Theta$)에는 대응하는 연산자가 없다는 점을 명시해 둔다. (U-$\Theta$)는 고정 차원에서 gradient를 빼는 식이고, 여기서는 차원이 늘고 일부가 지워진다.
+이 절차가 복사가 아니라 **전송**인 이유는 마지막 단계에 있다. [LM Need Sleep §3.3(c), p.8]은 seeding이 끝난 뒤 sender 블록에 그동안 쌓인 low-rank expert들을 리셋한다("synaptic pruning"). 지운다는 사실이 이것을 전송으로 만든다 — 같은 내용이 빠른 블록과 느린 블록에 동시에 남아 있지 않다.
+
+> **[평가]** 이 절차는 이 책의 표준형 (U-$\Theta$)에 담기지 않는다. (U-$\Theta$)는 고정 차원에서 gradient를 빼는 식인데, 여기서는 차원이 늘고 그 뒤 일부가 지워진다. 확장과 리셋에 대응하는 연산자가 표준형에 없다는 것은 프레임의 결함이 아니라 관할 밖이라는 뜻이다 — ch01이 세운 세 층은 상태가 **어디에** 있는지를 정하지, 그 상태의 차원이 라운드마다 바뀌는 경우를 정하지 않는다. 이 장은 그 두 연산을 (U-$\Theta$)의 바깥에 붙는 전후 처리로 읽고, 차원 변동을 회계에 넣는 문제는 ch09와 ch21로 넘긴다.
 
 systems 접점은 텐서 모양이다. 차원이 실제로 늘어나면 컴파일된 그래프도 kernel autotuning도 sleep마다 무효가 되므로, 논문은 확장분을 처음부터 모델에 넣어 두고 활성화 전까지 forward·backward에서 masking하는 구현을 제시한다 [LM Need Sleep §3.3 Note on the Implementation, p.9]. 즉 자라는 $\Theta$는 서빙 쪽에 고정 모양으로 위장되고, 그 대가로 용량 상한이 배포 시점에 못 박힌다 — 그 상한의 크기는 논문에 없다.
 
-> **[평가]** upward distillation의 정당화는 논리적으로 깔끔하지만, **그 기여의 크기는 논문 자신의 표에서 작다.** [LM Need Sleep Table 1, p.11](Qwen3-8B, AIME-24 / AIME-25 / HMMT-25, avg@16)에서 전체 Sleep은 79.2 / 69.0 / 46.1이고, 확장을 뺀 "Sleep w/o Expansion"은 78.2 / 67.9 / 44.9다. 반대 방향으로, 확장만 baseline OPSD에 얹은 "OPSD + Expansion"은 77.9 / 68.2 / 45.9로 OPSD의 76.6 / 67.4 / 45.1보다 +1.3 / +0.8 / +0.8 오른다. Sleep이 OPSD를 이기는 총 마진이 +2.6 / +1.6 / +1.0이므로, **그 마진의 절반가량 — HMMT-25에서는 1.0 중 0.8 — 이 Knowledge Seeding 없이 구조적 확장만으로 얻어진다.** 이 표에는 시드도 신뢰구간도 없다. 판정은 21장으로 넘긴다.
+> **[평가]** upward distillation의 정당화는 논리적으로 깔끔하지만, **그 기여의 크기는 논문 자신의 표에서 작다.** [LM Need Sleep Table 1, p.11](Qwen3-8B, AIME-24 / AIME-25 / HMMT-25, avg@16)에서 전체 Sleep은 79.2 / 69.0 / 46.1이고, 확장을 뺀 "Sleep w/o Expansion"은 78.2 / 67.9 / 44.9다. 반대 방향으로, 확장만 baseline OPSD에 얹은 "OPSD + Expansion"은 77.9 / 68.2 / 45.9로 OPSD의 76.6 / 67.4 / 45.1보다 +1.3 / +0.8 / +0.8 오른다. Sleep이 OPSD를 이기는 총 마진이 +2.6 / +1.6 / +1.0이므로, **그 마진의 절반가량 — HMMT-25에서는 1.0 중 0.8 — 이 Knowledge Seeding 없이 구조적 확장만으로 얻어진다.** 이 표에는 시드도 신뢰구간도 없다. 판정은 ch21로 넘긴다.
 
 > **[평가]** 같은 표의 다른 행은 더 직접적이다. Semantic Reward를 제거하면 AIME-25가 **오른다**(69.2 대 전체 Sleep의 69.0) [LM Need Sleep Table 1, p.11]. 그런데 §4.2 p.13은 "All the components contribute positively to the performance of our method"라고 쓴다. 자기 표가 반증하는 문장이다. Imitation Learning 제거는 76.8 / 67.9 / 45.0으로 세 열 모두 내려가므로, 이 논문에서 실제로 하중을 받는 항은 semantic 쪽이 아니라 imitation 쪽이다.
 
 seeding의 목적함수 자체는 §04.6의 좌표로 그대로 읽힌다. [LM Need Sleep §3.3, Eq. 4 뒤의 무번호 식]은 divergence 항과 reward 항을 섞는다.
 
 $$
-\mathcal{L}_{\mathrm{KS}}\;=\;\mathbb{E}_{x\sim\mathcal{D}}\Big[(1-\lambda_{\mathrm{KD}})\;\mathbb{E}_{y\sim\mathrm{LM}_{\Theta^{\mathrm{st}}}(\cdot|x)}\big[r(y)\big]\;-\;\lambda_{\mathrm{KD}}\;\mathbb{E}_{y\sim\mathrm{LM}_{\Theta^{\mathrm{st}}}(\cdot|x)}\,\mathcal{F}\big(\mathrm{LM}_{\Theta^{\mathrm{te}}}\,\big\|\,\mathrm{LM}_{\Theta^{\mathrm{st}}}\big)(y|x)\Big]
+\mathcal{L}_{\mathrm{KS}}\;=\;\mathbb{E}_{x\sim\mathcal{D}}\Big[(1-\lambda_{\mathrm{KD}})\;\mathbb{E}_{y\sim\mathrm{LM}_{\Theta^{\mathrm{st}}}(\cdot|x)}\big[R(y)\big]\;-\;\lambda_{\mathrm{KD}}\;\mathbb{E}_{y\sim\mathrm{LM}_{\Theta^{\mathrm{st}}}(\cdot|x)}\,\mathcal{F}\big(\mathrm{LM}_{\Theta^{\mathrm{te}}}\,\big\|\,\mathrm{LM}_{\Theta^{\mathrm{st}}}\big)(y|x)\Big]
 \tag{4-6}
 $$
 
-$r(\cdot)$는 teacher의 생성 $d^{(i)}$의 임의 접두사를 student가 이어 쓰게 하고 그 결과를 채점하는 imitation reward이며, semantic 항과 Levenshtein 기반 절대 항의 볼록결합이다 [LM Need Sleep Eq. 3, Eq. 4]. reward로 $\Theta$를 움직이는 절차 일반은 5장이 소유한다 — 여기서 볼 것은 그 항이 **distillation loss와 같은 식 안에 앉는다**는 사실뿐이다. 즉 (4-6)은 "teacher의 분포를 따라가라"(divergence 항)와 "teacher가 쓸 법한 문장을 실제로 써내라"(reward 항)를 하나의 목적으로 묶는다.
+$R(\cdot)$는 teacher의 생성 $d^{(i)}$의 임의 접두사를 student가 이어 쓰게 하고 그 결과를 채점하는 imitation reward이며, semantic 항과 Levenshtein 기반 절대 항의 볼록결합이다 [LM Need Sleep Eq. 3, Eq. 4]. (표기 대응: 원문은 이 보상을 $r(\cdot)$, 두 성분을 $r_{\mathrm{sem}}$·$r_{\mathrm{abs}}$로 쓴다 [LM Need Sleep Eq. 3]. 이 책에서 $r$은 LoRA rank로 예약되어 있으므로 보상은 $R$로 옮긴다.) reward로 $\Theta$를 움직이는 절차 일반은 ch05가 소유한다 — 여기서 볼 것은 그 항이 **distillation loss와 같은 식 안에 앉는다**는 사실뿐이다. 즉 (4-6)은 "teacher의 분포를 따라가라"(divergence 항)와 "teacher가 쓸 법한 문장을 실제로 써내라"(reward 항)를 하나의 목적으로 묶는다.
 
-세 개의 caveat을 여기에 붙여 둔다. 첫째, **(4-6)의 최적화 방향이 원문에 없다.** reward에서 divergence를 뺀 형태이므로 최대화해야 하지만, 같은 페이지의 산문은 "minimize the distillation loss between teacher and student"라고 쓴다 [LM Need Sleep §3.3(b)]. 둘째, 원문은 같은 줄에서 $\mathcal{D}$를 데이터셋과 divergence 양쪽에 쓰고, 한 문단 앞 (4-5)에서는 divergence를 $\mathcal{F}$로 쓴다 — 이 책은 $\mathcal{F}$로 통일하고 $\mathcal{D}$는 데이터셋 전용으로 둔다. 셋째, $\lambda_{\mathrm{on}}$, $\lambda_{\mathrm{KD}}$, reward 혼합 계수, Levenshtein 임계값 어느 것도 **논문 어디에도 값이 없다** — Table 5는 learning rate·batch·steps·LoRA rank/alpha만 싣는다. 이 절차는 논문만으로 재현되지 않는다.
+> **[평가]** 세 개의 caveat을 여기에 붙여 둔다. 첫째, **(4-6)의 최적화 방향이 원문에 없다.** reward에서 divergence를 뺀 형태이므로 최대화해야 하지만, 같은 페이지의 산문은 "minimize the distillation loss between teacher and student"라고 쓴다 [LM Need Sleep §3.3(b)]. 둘째, 원문은 같은 줄에서 $\mathcal{D}$를 데이터셋과 divergence 양쪽에 쓰고, 한 문단 앞 (4-5)에서는 divergence를 $\mathcal{F}$로 쓴다 — 이 책은 $\mathcal{F}$로 통일하고 $\mathcal{D}$는 데이터셋 전용으로 둔다. 셋째, $\lambda_{\mathrm{on}}$, $\lambda_{\mathrm{KD}}$, reward 혼합 계수, Levenshtein 임계값 어느 것도 **논문 어디에도 값이 없다** — Table 5는 learning rate·batch·steps·LoRA rank/alpha만 싣는다. 세 항을 합치면 판정은 하나다: **이 절차는 논문만으로 재현되지 않는다.**
 
-<!-- TODO-VERIFY: [LM Need Sleep]이 Knowledge Seeding에 쓰는 frozen semantic reward model의 정체. 확인 방법: papers/2606.03979v2.txt 검색 "reward model"; 없으면 재현 불가로 21장에 기록. -->
+<!-- TODO-VERIFY: [LM Need Sleep]이 Knowledge Seeding에 쓰는 frozen semantic reward model의 정체. 확인 방법: papers/2606.03979v2.txt 검색 "reward model"; 없으면 재현 불가로 ch21에 기록. -->
 
-기제 전체가 pre-trained Llama/Qwen 위에 얹은 graft이며 end-to-end로 meta-learn된 것이 아니라는 사실은 NM ch17에서 이미 확정되었고, 21장이 그대로 승계한다.
+기제 전체가 pre-trained Llama/Qwen 위에 얹은 graft이며 end-to-end로 meta-learn된 것이 아니라는 사실은 NM ch17에서 이미 확정되었고, ch21이 그대로 승계한다.
 
 한 가지 더. [SEAL §3.1, p.4] 마지막 문단은 teacher와 student를 **다른 모델**로 분리하는 확장을 제안한다 — teacher가 편집을 제안하고, student가 그것으로 갱신되며, teacher는 student의 개선을 최대화하도록 학습된다는 구도다. 제안만 되어 있고 실행된 실험은 없다. 이 장의 정의가 teacher/student를 역할로만 규정한 이유가 여기서 드러난다: 같은 프레임 안에서 self-distillation, upward distillation, 그리고 이 분리형 제안이 전부 **$\Theta^{\mathrm{te}}$와 $\Theta^{\mathrm{st}}$의 관계를 무엇으로 두느냐**의 선택지로 정리된다.
 
@@ -190,7 +192,7 @@ $$
 
 ---
 
-## 04.7 (state, update, cost) 정리
+## (state, update, cost) 정리
 
 이 장의 개념을 세 층 프레임에 놓으면 표 4-2가 된다. 요점은 단순하다 — **distillation은 전부 $\Theta$ 층의 도구다.** $W$도 $E$도 건드리지 않는다.
 
@@ -209,7 +211,9 @@ $L_w$(wake 지연)는 이 장의 어떤 절차에서도 직접 오르지 않는�
 
 ---
 
-## 04.8 Worked micro-example — temperature 하나가 gradient와 바이트에 하는 일
+## Worked micro-example — temperature 하나가 gradient와 바이트에 하는 일
+
+이 절의 수치는 전부 **이 책의 예시 계산**이다. 논문에서 가져온 값이 하나도 없고, 손으로 검산할 수 있도록 로짓·어휘 크기·시퀀스 길이를 이 책이 골랐다.
 
 어휘가 세 개인 장난감 모델을 쓴다. 한 토큰 위치에서 teacher logit이 $z^{\mathrm{te}}=(4,\,2,\,0)$, student logit이 $z^{\mathrm{st}}=(2,\,2,\,2)$라 하자. student는 아직 아무것도 모르는 균등분포다.
 
@@ -261,8 +265,8 @@ $$
 ## 요약
 
 - distillation은 gradient의 출처를 label에서 다른 모델의 출력 분포로 바꾸는 절차이고, teacher와 student는 크기가 아니라 **파라미터의 이동 여부**로 정의된다.
-- temperature $T$는 teacher 분포의 꼬리를 학습 신호로 끌어올리는 다이얼이며, $T^2$ 보정은 hard/soft 혼합 비율 $w_{\mathrm{KD}}$의 실효 의미를 $T$와 분리하기 위한 것이다. 그 보정이 정확한 것은 고온 극한뿐이고, $T=4$의 예제에서 실제 비는 12.32 대 16이다.
-- logit distillation의 비용은 $|\mathcal{V}|$ 폭 텐서의 저장이고 feature distillation의 비용은 teacher activation의 수명 연장이다. 전자는 top-$k$로 666.7배 줄일 수 있으나 그 대가가 정확히 dark knowledge의 꼬리다.
+- temperature $T$는 teacher 분포의 꼬리를 학습 신호로 끌어올리는 다이얼이며, $T^2$ 보정은 hard/soft 혼합 비율 $w_{\mathrm{KD}}$의 실효 의미를 $T$와 분리하기 위한 것이다. 그 보정이 정확한 것은 고온 극한뿐이고, 이 책의 예시 계산($T=4$)에서 실제 비는 12.32 대 16이다.
+- logit distillation의 비용은 $|\mathcal{V}|$ 폭 텐서의 저장이고 feature distillation의 비용은 teacher activation의 수명 연장이다. 전자는 top-$k$로 줄일 수 있으나(이 책의 예시 계산에서 666.7배) 그 대가가 정확히 dark knowledge의 꼬리다.
 - self-distillation이 이득을 내는 이유는 지식의 이동이 아니라 세 가지다: 표본 출처의 정합(on-policy), 목표의 부드러움, 그리고 옛 함수를 붙잡는 앵커 효과.
 - on-policy 비율 $\lambda_{\mathrm{on}}$은 sleep job의 지배 커널을 GEMM에서 autoregressive decode로 바꾼다. 그 결과 sleep은 training 클러스터가 아니라 wake 트래픽과 같은 병목을 놓고 경쟁한다.
 - upward distillation에서 옮겨지는 것은 정보량이 아니라 좌표다. 용량 확장 자체가 옛 함수에 대한 손상이고, Knowledge Seeding은 그 손상을 되돌려 **비어 있고 정렬된 용량**을 남긴다. sender 블록의 리셋이 이것을 복사가 아니라 전송으로 만든다.
@@ -283,4 +287,4 @@ $$
 
 이 장의 모든 절차는 하나의 전제 위에 서 있다 — **teacher의 출력이 따라갈 만하다**는 전제다. 그 전제가 성립할 때 divergence를 줄이는 것은 곧 개선이다. 그러나 sleep-time compute의 목표는 배포된 모델이 **자기보다 나아지는 것**이고, 자기 자신을 teacher로 삼는 순간 divergence를 0으로 만드는 최적해는 아무것도 바꾸지 않는 것이다. 실제로 (4-6)은 이미 그 벽을 넘고 있었다: divergence 항 옆에 붙은 imitation reward 항은 "teacher를 닮아라"가 아니라 "채점을 통과하라"는 신호이며, 그것은 distillation의 문법이 아니다.
 
-따라서 다음 질문은 이것이다 — **teacher가 없거나 teacher를 넘어서야 할 때, 학습 신호를 어디서 얻는가.** 5장이 그 답을 다룬다: 정답 분포 대신 스칼라 보상으로 $\Theta$를 움직이는 절차, 그 절차가 요구하는 채점기, 그리고 채점기가 있으면 반드시 따라오는 reward hacking이다. [SEAL]과 [LM Need Sleep]이 공유하는 ReST$^{\mathrm{EM}}$ 루프도 거기서 정의된다.
+따라서 다음 질문은 이것이다 — **teacher가 없거나 teacher를 넘어서야 할 때, 학습 신호를 어디서 얻는가.** ch05가 그 답을 다룬다: 정답 분포 대신 스칼라 보상으로 $\Theta$를 움직이는 절차, 그 절차가 요구하는 채점기, 그리고 채점기가 있으면 반드시 따라오는 reward hacking이다. [SEAL]과 [LM Need Sleep]이 공유하는 ReST$^{\mathrm{EM}}$ 루프도 거기서 정의된다.

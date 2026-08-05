@@ -160,6 +160,37 @@ Nested Learning, Mem0, ReasoningBank)을 구분해 서술한다. 전자는 계�
 | 상각식 (A)는 $N_q$를 안다고 가정한다. 실서빙 $N_q$ 분포를 보고한 논문이 corpus에 없다 | ch14, ch25 |
 | corpus 전체에서 상태 용량을 바이트로 보고한 논문이 0편이다 | ch26 |
 
+### 4.1 Part I에서 이송한 불리 사실 (해당 장이 반드시 흡수한다)
+
+Part I은 개념 장이라 논문 평가에 속하는 불리 사실을 싣지 않았다. 아래는 **이송 대상**이며,
+받는 장이 본문에 담지 않으면 결함이다. 근거는 각 노트의 `unfavorable_facts`에 있다.
+
+| 이송 항목 | 출처 노트 | 받는 장 | 이송 사유 |
+|---|---|---|---|
+| EWC 7항(replay buffer 크기 불일치, Fisher를 stale off-policy buffer에서 추정, 20M frame gating, $o(n/\log n)$ 조건 미검증, Fig. 3C 단일 게임, A/B 라벨 오기, v2 초고 흔적) | `ewc` | ch22 | ch07 분량 상한 |
+| DGR 2항(3자 결합 권고 미검증, 생물학 근거가 인용 신경과학에만 의존) | `deep-generative-replay` | ch22 | 〃 |
+| GEM 10항(F2–F14: Table 2↔App. B 불일치, γ ablation 부재, 단일 시드, MNIST 스트림 25.6% 원문 저장 등) | `gem` | ch22 | 〃 |
+| 기억용량 논문의 membership-inference 내부 결함(U4·U6·U7·U8·U9·U13·U14·U16·U17·U20) | `lm-memorization-capacity` | ch22 | ch09 논지 밖 |
+| rate–distortion: Experiment 1에서 어느 압축법도 random-eviction 대조군을 유의하게 이기지 못함, 저자가 "방법 순서는 논점이 아니다"라고 씀. 예측 (4)의 super-linearity 미확립 | `rate-distortion-compaction` | ch22 | 〃 |
+| LoRA: RAG에 LoRA를 붙이면 QuALITY 63.79→42.42로 무너짐, KMSDCD가 절반의 모델에서 single-LoRA를 이김, Table 2의 42.42 반복(복사 오류 정황), LongBench v2 30문서·∞Bench 20문서의 통계적 공백, Adapter가 QQP·SST-2에서 LoRA를 이기는 행 | `lora`, `lora-as-knowledge-memory` | ch19 | ch03 분량 상한 |
+| Memory Layers: 채택된 +swilu가 자기 ablation 표에서 최고가 아님, vanilla Memory가 PEER에 짐(1.3b NQ 9.83 vs 12.33), MOE 학습/평가 불일치, 8B에서 Llama3.1 8B에 9개 중 7개 뒤짐 | `memory-layers` | ch19 | ch09는 용량 항목만 실었다 |
+| RAG 8항(TriviaQA split 의존성 56.8 < DPR 57.9, MS-MARCO 비대칭 비교, Jeopardy 저자 제안 과제·452쌍 human study, Table 4 Specificity 합 93.0%, 산문-표 불일치 17% vs 11.7%, null-document 3변형 폐기, RAG-Seq/Tok 순서 비일관, 단일 corpus 증거) | `rag` | ch13 | ch10은 $E$층 형태·비용 분해만 다룬다 |
+
+전달해야 할 단서 하나: GEM App. B.1.1의 **인쇄된 BWT와 같은 행렬에서 직접 계산한 값이 어긋난다**
+(원문 자체 불일치). ch07이 이를 정정·명시했다. 같은 인쇄값을 재사용할 수 있는 ch18·ch25·ch30은
+ch07의 처리를 따른다.
+
+### 4.2 Part I 형식 정리 목록 (S5 조립 QA에서 일괄 처리)
+
+개별 장을 다시 열지 않고 조립 직전 한 번에 처리한다.
+
+- ch08: 표 8-1~8-6 캡션이 표 **아래**에 있다 → 위로(§5.4).
+- ch02: 템플릿 고정 절에 번호가 붙어 있다(`## 02.11 (state, update, cost) 정리`) → 번호 제거(§5.2).
+- ch02 §02.3: `(→ NM STYLE §1.2)`로 기준 문서를 지목한다 → 책 안의 위치로(§5.5).
+- ch03 §03 머리말: $\mathcal{S}$를 "장-국소 기호"로 선언한다 → v0.2에서 전역 등록됨을 반영.
+- ch06 §06.4: 채택식의 표본 기호 $s$가 SGD step 첨자와 충돌 → $z$로 교체(§1.3).
+- ch09: 절 자기 참조가 `09.2`와 `(§09.3)`로 섞여 있다 → `§` 통일(§5.2).
+
 ---
 
 ## 5. 척추 논지 — A1 확정

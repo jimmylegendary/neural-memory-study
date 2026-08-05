@@ -1,0 +1,629 @@
+{
+  "paper_id": "gem",
+  "arxiv": "1706.08840",
+  "arxiv_version": "v6 [cs.LG] 13 Sep 2022 (as printed on the vendored text, line 3). v1 was 2017-06-26. The vendored text is therefore a LATE revision of a 2017 paper; any numeric claim below is sourced to this file, not to the v1 preprint.",
+  "title": "Gradient Episodic Memory for Continual Learning",
+  "authors": [
+    "David Lopez-Paz (Facebook Artificial Intelligence Research)",
+    "Marc'Aurelio Ranzato (Facebook Artificial Intelligence Research)"
+  ],
+  "affiliations": "Facebook Artificial Intelligence Research; {dlp,ranzato}@fb.com [lines 5-7]",
+  "venue": "STATED IN THE VENDORED TEXT: '31st Conference on Neural Information Processing Systems (NIPS 2017), Long Beach, CA, USA.' [line 54, the footnote on the first page]. Unlike ewc.json, the venue is printed in the file and may be cited to it.",
+  "date": "2017-06-26 (v1); vendored text is v6, 2022-09-13 [line 3]",
+  "path": "/home/jimmy/repos/neural-memory-study/papers/stc/1706.08840.txt",
+  "code": "https://github.com/facebookresearch/GradientEpisodicMemory [lines 69-70]",
+  "axis": "Theta",
+
+  "axis_note": "Theta-path, but a THIRD kind of Theta-path that the S0 taxonomy did not anticipate. EWC (1612.00796) protects the past by adding a data-free penalty to the objective; generative replay (1705.08690) protects the past by regenerating data and putting it back into calR_k. GEM does neither: it keeps raw past examples in a trainer-side buffer, never trains on them, and instead uses them only to compute reference gradients that CONSTRAIN THE DIRECTION of the current update. The objective is untouched; the feasible set of updates is what changes. In frame terms GEM is (U-Theta) with a projection operator applied to the gradient, not with a modified calL. There is no W anywhere (nothing moves at answer time), and the episodic memory is NOT an external store E in the §1.6 sense: ret(E,q) is never invoked, no retrieved content ever enters a forward pass at query time, and the deployed artifact after the last task is one ordinary weight vector (plus per-task linear heads on CIFAR-100). Calling GEM an 'E-path' method because it stores examples would be a defect; the store is consumed by the optimiser, exactly like EWC's Atari replay buffers.",
+
+  "problem_stated": {
+    "statement": "Standard supervised learning assumes iid samples from one fixed distribution and multiple passes over a training set; humans instead see an ordered stream, rarely see the same example twice, can memorise only a few pieces of data, and the stream spans different tasks. 'In fact, straightforward applications of ERM lead to \"catastrophic forgetting\" [McCloskey and Cohen, 1989]. That is, the learner forgets how to solve past tasks after it is exposed to new tasks.' [lines 36-41]",
+    "the_object_of_study": "A CONTINUUM OF DATA: '(x_1, t_1, y_1), ..., (x_i, t_i, y_i), ..., (x_n, t_n, y_n)' [Eq. (1), line 44], where t_i is a TASK DESCRIPTOR. 'Importantly, examples are not drawn iid from a fixed probability distribution over triplets (x, t, y), since a whole sequence of examples from the current task may be observed before switching to the next task.' [lines 49-51]. The only structural assumption retained is local iid-ness: 'we assume that the continuum is locally iid, that is, every triplet (x_i, t_i, y_i) satisfies (x_i, y_i) ~iid P_{t_i}(X, Y).' [lines 77-80]",
+    "three_named_challenges": "1. Non-iid input data; 2. Catastrophic forgetting; 3. Transfer learning -- 'when the tasks in the continuum are related, there exists an opportunity for transfer learning. This would translate into faster learning of new tasks, as well as performance improvements in old tasks.' [lines 56-63]",
+    "the_evaluation_complaint_that_motivates_half_the_paper": "'Most of the literature about learning over a sequence of tasks [Rusu et al., 2016, Fernando et al., 2017, Kirkpatrick et al., 2017, Rebuffi et al., 2017] describes a setting where i) the number of tasks is small, ii) the number of examples per task is large, iii) the learner performs several passes over the examples concerning each task, and iv) the only metric reported is the average performance across all tasks. In contrast, we are interested in the \"more human-like\" setting where i) the number of tasks is large, ii) the number of training examples per task is small, iii) the learner observes the examples concerning each task only once, and iv) we report metrics that measure both transfer and forgetting.' [lines 98-104]",
+    "why_this_matters_for_the_monograph": "This is the paper that supplies the corpus with its MEASUREMENT LANGUAGE for forgetting. Every later claim in the Theta path that says 'we forget less' is, directly or indirectly, a BWT claim in GEM's sense. The frame's rho has no other operational definition anywhere in this corpus.",
+    "source": "Abstract lines 9-19; §1 lines 21-70; §2 lines 72-108"
+  },
+
+  "inherited_open_question": {
+    "verdict": "inherited-implicitly-from-EWC, and stated as a LIMITATION of EWC rather than as a quotation of EWC's own open question",
+    "detail": "GEM quotes no prior paper's stated open question verbatim. Its bridge-in is a two-part complaint against the state of the art it names -- [Kirkpatrick et al., 2017] (= EWC) and [Rebuffi et al., 2017] (= iCaRL).",
+    "part_1_the_protocol_complaint": "EWC and iCaRL are charged with evaluating in a regime that is too easy and too coarse: few tasks, many examples per task, multiple passes, and only average accuracy reported [lines 98-104]. GEM's answer is the (K=20 tasks, 1000 or 2500 examples per task, single pass) protocol plus the three metrics ACC/BWT/FWT [Eqs. (2)-(4)].",
+    "part_2_the_mechanism_complaint": "The decisive inherited limitation is that BOTH prior families forbid positive backward transfer. Of the loss-on-memory option: 'Obviously, minimizing the loss at the current example together with (5) results in overfitting to the examples stored in M_k. As an alternative, we could keep the predictions at past tasks invariant by means of distillation [Rebuffi et al., 2017]. However, this would deem positive backward transfer impossible. Instead, we will use the losses (5) as inequality constraints, avoiding their increase but allowing their decrease.' [lines 194-198]. And explicitly against EWC: 'In contrast to the state-of-the-art [Kirkpatrick et al., 2017, Rebuffi et al., 2017], our model therefore allows positive backward transfer.' [lines 200-201]",
+    "what_EWC_actually_left_open_that_this_answers": "EWC's memory of a past task is a Gaussian centred on the OLD SOLUTION [ewc, §2 lines 137-146], so any movement away from Theta*_{k-1} is penalised regardless of whether it helps or hurts the old task. EWC never asks whether the penalty could be made one-sided. GEM's whole mechanism is that question answered: replace the two-sided quadratic well by a one-sided inequality on the past loss, so downhill motion on old tasks is free and only uphill motion is blocked.",
+    "restated_for_the_bridge_chain": "EWC compresses the past into a SHAPE (a quadratic well). Generative replay compresses the past into a SAMPLER. GEM refuses to compress at all -- it keeps a small raw sample and spends it on a DIRECTION TEST. The three are the three ways a Theta-path system can carry calH_{<k} forward, and ch07 is where the corpus first has all three in hand.",
+    "source": "§1 lines 42-63; §2 lines 97-108; §3 lines 194-201; §5 lines 651-658"
+  },
+
+  "core_mechanism": {
+    "one_line": "Keep m raw examples per past task; at every optimiser step compute the current gradient g and one reference gradient g_k per past task; if any inner product <g, g_k> is negative, replace g by the nearest gradient (in squared L2) whose inner products with all g_k are non-negative, obtained by solving a QP whose dual has only (k-1) variables.",
+    "in_frame_words": "Canonical (U-Theta) is Theta_{k+1} = Theta_k - eta_Theta grad_Theta calL(calR_k; Theta_k) with calR_k = gen(calH_k; B_s). GEM keeps calR_k = the CURRENT task's stream (like EWC, the history is not trained on) and keeps calL unchanged (unlike EWC, which adds a penalty term). The history re-enters through a PROJECTION applied to the gradient before the step: grad -> Pi_feasible(grad). There is no sleep round at all -- the projection is paid at every single optimiser step, inside the wake-time training loop.",
+
+    "notation_conflicts": [
+      {"paper_symbol": "R, R_{i,j}", "paper_meaning": "the performance matrix. 'we construct the matrix R in R^{T x T}, where R_{i,j} is the test classification accuracy of the model on task t_j after observing the last sample from task t_i' [lines 122-125]", "reserved_meaning": "R = reinforcement-learning REWARD [STC-STYLE §1.3]; calR_k = the k-th sleep round's training set [STC-STYLE §1.2]. Two separate collisions.", "remap": "R -> Pi (capital pi). THIS IS THE BOOK'S SYMBOL FOR THE PERFORMANCE MATRIX and it is introduced here; ch07 owns the definition and ch22 must reuse it unchanged. Pi_{k,j} = test accuracy on task j after finishing task k. Pi in [0,1]^{K x K}. Mnemonic: Pi for 'performance'. Never write R for this matrix anywhere in the monograph."},
+      {"paper_symbol": "b-bar (b̄)", "paper_meaning": "'the vector of test accuracies for each task at random initialization' [lines 125-126]; printed in the appendix as the first row of each block, above a horizontal rule: 'The first row of each matrix (above the line) is the baseline test accuracy b̄ before training starts.' [lines 813-815]", "reserved_meaning": "none, but b is used for bias vectors in neighbouring notes", "remap": "b-bar -> pi-bar, and identify it with row zero of the matrix: pi-bar_i := Pi_{0,i}. This makes FWT a statement purely about Pi and removes a free-floating vector from the book's notation."},
+      {"paper_symbol": "t, t_i", "paper_meaning": "TASK index / task descriptor. 'the learner observes t_i in T, a task descriptor identifying the task associated to the pair (x_i, y_i) ~ P_{t_i}' [lines 48-49]", "reserved_meaning": "t = TOKEN or CHUNK index (P3: the time subscript must reveal the scale). k = round index.", "remap": "t -> k. GEM's task boundary IS the frame's round boundary. Write 'task k', 'round k'. Any monograph sentence that writes GEM's t as a time index is a defect: GEM has no token index at all."},
+      {"paper_symbol": "T", "paper_meaning": "OVERLOADED IN THE PAPER ITSELF. (i) the space of task descriptors: 't_i in T' [line 48] -- in the typeset original this is a calligraphic T, a distinction the vendored plain text DESTROYS. (ii) the number of tasks: 'the matrix R in R^{T x T}' [line 124], 'For all the datasets, we considered T = 20 tasks' [line 331].", "reserved_meaning": "none reserved, but the collision with sequence length is a live risk for this reader", "remap": "(i) -> calT (the descriptor space), used only when descriptors are discussed. (ii) -> K, the number of tasks/rounds; K = 20 in every experiment. Write Pi in R^{K x K}."},
+      {"paper_symbol": "theta, theta in R^p, f_theta, f_theta^{t-1}", "paper_meaning": "the predictor's parameters; the predictor; 'f_theta^{t-1} is the predictor state at the end of learning of task t-1' [line 208]", "reserved_meaning": "Theta = slow weights (NM inheritance, not redefinable)", "remap": "theta -> Theta; f_theta -> f(.; Theta); f_theta^{t-1} -> f(.; Theta_{k-1}). Note that GEM, unlike EWC, does NOT need to keep Theta_{k-1}: 'it is unnecessary to store old predictors f_theta^{t-1}, as long as we guarantee that the loss at previous tasks does not increase after each parameter update g' [lines 209-211]. This is a real storage advantage over EWC's anchor Theta*_{k-1} and must be stated in ch07."},
+      {"paper_symbol": "p", "paper_meaning": "OVERLOADED IN THE PAPER ITSELF, inside a single sentence. (i) the number of parameters: 'theta in R^p' [line 184], 'This is a QP on p variables (the number of parameters of the neural network), which could be measured in the millions' [lines 260-261]. (ii) the linear coefficient vector of the generic QP: 'where C in R^{p x p}, p in R^p' [line 242].", "reserved_meaning": "none", "remap": "(i) p -> |Theta| (write the parameter count as |Theta|; the paper's only printed value is |Theta| = 1109240 for CIFAR-100, line 598). (ii) p -> c_lin. The two must never appear in one equation."},
+      {"paper_symbol": "M, M_t, m", "paper_meaning": "'an episodic memory M_t, which stores a subset of the observed examples from task t' [line 174]; 'the learner has a total budget of M memory locations. If the number of total tasks T is known, we can allocate m = M/T memories for each task' [lines 179-181]", "reserved_meaning": "calM(.; W) = the memory READ function (NM inheritance); C_cap = state capacity; E = external store", "remap": "M_t -> E^{tr}_k, the TRAINER-SIDE episodic store for round k. The superscript tr is not decorative: it marks that ret(E,q) is never applied to it, so §1.6's E-path test fails. M (the budget) -> C_cap measured in SLOTS, since M is literally the capacity number this paper reports. m -> C_cap / K (= 256 in every reported GEM run)."},
+      {"paper_symbol": "l (script ell)", "paper_meaning": "the supervised loss, 'l : Y x Y -> [0, inf) is a loss function penalizing prediction errors' [line 34]; also the per-memory average loss l(f_theta, M_k) [Eq. (5)]", "reserved_meaning": "script-l = INNER loss (per-token fast-weight loss); calL = outer/task loss", "remap": "l -> calL. GEM has no inner loop and therefore no inner loss. Writing GEM's loss as script-l would falsely place it in the W path."},
+      {"paper_symbol": "alpha", "paper_meaning": "the SGD learning rate in Algorithm 1: 'theta <- theta - alpha g-tilde' [line 305]", "reserved_meaning": "alpha_t = the RETENTION GATE of (U-W), the fraction of fast-weight state kept", "remap": "alpha -> eta_Theta. Grid-searched values are in App. A [lines 788-805]; GEM's best is 0.1 on all three datasets [line 803]."},
+      {"paper_symbol": "g, g-tilde, g_k, G", "paper_meaning": "the proposed gradient of the current example; the projected gradient actually applied; the gradient of the memory loss of past task k; G = (g_1, ..., g_{t-1}) [lines 227-260]", "reserved_meaning": "none; g_k's subscript k happens to agree with the frame's round index after the t->k remap", "remap": "keep g, g-tilde, g_k, G. State the shape explicitly in ch07: G in R^{(k-1) x |Theta|}."},
+      {"paper_symbol": "C, A, b, z, u, v", "paper_meaning": "the generic QP of Eq. (9)-(10): minimize_z (1/2) z^T C z + p^T z subject to A z >= b; dual variables u, v [lines 235-249]", "reserved_meaning": "C = CHUNK SIZE (NM inheritance); C_cap = capacity; b collides with b-bar", "remap": "C -> Q; b -> h; keep A, z, u, v. Bare C in the monograph always means chunk size, never a QP matrix."},
+      {"paper_symbol": "gamma", "paper_meaning": "'In practice, we found that adding a small constant gamma >= 0 to v* biased the gradient projection to updates that favoured benefitial backwards transfer.' [lines 271-272]; grid [0.0, 0.1, ..., 0.5 (rot, perm, cifar), ..., 1.0] [line 805]", "reserved_meaning": "none", "remap": "keep gamma. Flag it in ch07: gamma is a tuned knob that acts directly on the paper's headline claim (positive BWT), and its chosen value 0.5 is the midpoint of the grid, not 0."},
+      {"paper_symbol": "n", "paper_meaning": "the length of the continuum: '(x_n, t_n, y_n)' [Eq. (1)]; also |D_tr| = n [line 25]", "reserved_meaning": "n = the number of stored items [STC-STYLE §1.3]", "remap": "n -> N_cont (the number of examples in the stream). Reserve n for stored items; GEM's stored-item count is C_cap = 5120."},
+      {"paper_symbol": "i", "paper_meaning": "OVERLOADED. (i) the index of an example in the continuum [Eq. (1)]. (ii) the row index of the performance matrix R_{i,j} [line 124]. (iii) the summation index in Eqs. (2)-(4), where it ranges over TASKS.", "reserved_meaning": "none", "remap": "use k for the round/row index and j for the task/column index throughout; reserve i for continuum position only when it is actually needed (it is not needed in the book's presentation)."},
+      {"paper_symbol": "P, P_t, D_tr", "paper_meaning": "the data distribution of task t; the training set [lines 25-34, 76-80]", "reserved_meaning": "calR_k = the round-k training set; calH_k = accumulated experience", "remap": "P_t -> P_k. The examples of round k drawn from P_k are calR_k; the union of all past rows is calH_{k-1}, which GEM stores a 5120-slot subsample of."},
+      {"paper_symbol": "r (Algorithm 1)", "paper_meaning": "the accuracy vector returned by EVALUATE: 'r <- 0 in R^T' [line 285]; it becomes a row of R: 'R_{t,:} <- EVALUATE(f_theta, Continuum_test)' [line 307]", "reserved_meaning": "r = LoRA RANK [STC-STYLE §1.3, v0.2 decision]", "remap": "r -> pi (the row vector), so that Pi_{k,:} <- pi. Never write r for an accuracy vector in the monograph."},
+      {"paper_symbol": "precedes/succeeds relations (k < t, k > t)", "paper_meaning": "'a previous task k precedes t' and 'a future task k succeeds t' [lines 113, 119]", "reserved_meaning": "none", "remap": "write j < k and j > k. GLYPH LOSS WARNING: line 119 in the vendored text reads 'the performance on a future task k  t' -- the succeeds glyph is dropped. Do not quote that sentence verbatim without repairing it."},
+      {"paper_symbol": "script-l glyph", "paper_meaning": "line 34 of the vendored text renders the loss symbol as a backtick: '` : Y x Y -> [0, inf)'. Similar glyph loss appears at line 231 (the L2 norm subscript) and line 221 (the inner-product brackets, rendered 'hg, gk i').", "reserved_meaning": "n/a", "remap": "n/a -- recorded so that any future re-extraction from this file does not mistake the artefacts for the paper's notation."}
+    ],
+
+    "equations": [
+      {
+        "id": "gem-1",
+        "latex": "(x_1, k_1, y_1),\\ \\ldots,\\ (x_i, k_i, y_i),\\ \\ldots,\\ (x_{N_{\\mathrm{cont}}}, k_{N_{\\mathrm{cont}}}, y_{N_{\\mathrm{cont}}}), \\qquad (x_i, y_i) \\overset{\\text{iid}}{\\sim} P_{k_i}(X, Y)",
+        "source": "[gem Eq. (1)], line 44; local-iid assumption lines 77-80",
+        "comment": "The continuum. The triplet -- input, TASK DESCRIPTOR, target -- is the paper's structural contribution to the problem statement. The descriptor is what makes the setting different from plain online learning."
+      },
+      {
+        "id": "gem-2",
+        "latex": "\\Pi \\in [0,1]^{K \\times K}, \\qquad \\Pi_{k,j} = \\text{test accuracy on task } j \\text{ after finishing training on task } k, \\qquad \\bar\\pi_j := \\Pi_{0,j}",
+        "source": "prose, not numbered: lines 122-126 ('After the model finishes learning about the task t_i, we evaluate its test performance on all T tasks'); baseline row lines 125-126 and 813-815",
+        "comment": "THE PERFORMANCE MATRIX. Lower-triangle-plus-diagonal entries are retention; strict-upper-triangle entries are zero-shot/forward performance. The appendix prints all 15 of these matrices in full (§B, lines 809-1283), which is why this note can recompute the paper's own scalars. Note the CONVENTION: rows are 'after task k', columns are 'evaluated on task j'."
+      },
+      {
+        "id": "gem-3",
+        "latex": "\\mathrm{ACC} \\;=\\; \\frac{1}{K}\\sum_{j=1}^{K} \\Pi_{K,j}",
+        "source": "[gem Eq. (2)], lines 129-137",
+        "comment": "Average accuracy at the END of the stream: the last row of Pi, averaged. Verified against the appendix: this formula reproduces every printed 'Final Accuracy' value in all 15 blocks to 4 decimals."
+      },
+      {
+        "id": "gem-4",
+        "latex": "\\mathrm{BWT} \\;=\\; \\frac{1}{K-1}\\sum_{j=1}^{K-1}\\big(\\Pi_{K,j} - \\Pi_{j,j}\\big)",
+        "source": "[gem Eq. (3)], lines 139-148",
+        "comment": "Backward transfer. Per task j, compare its accuracy at the END of the stream with its accuracy immediately AFTER it was learned. Negative = forgetting. 'Large negative backward transfer is also known as (catastrophic) forgetting.' [lines 116-117]. THE DENOMINATOR PRINTED IN THE PAPER IS K-1; THE PAPER'S OWN APPENDIX NUMBERS USE K. See unfavorable_facts F1."
+      },
+      {
+        "id": "gem-5",
+        "latex": "\\mathrm{FWT} \\;=\\; \\frac{1}{K-1}\\sum_{j=2}^{K}\\big(\\Pi_{j-1,j} - \\bar\\pi_j\\big)",
+        "source": "[gem Eq. (4)], lines 150-159",
+        "comment": "Forward transfer: how much better than random-init the model is on task j BEFORE task j is trained. 'positive forward transfer is possible when the model is able to perform zero-shot learning' [lines 118-120]. 'Note that it is meaningless to discuss backward transfer for the first task, or forward transfer for the last task.' [lines 162-163]. Same denominator defect as gem-4."
+      },
+      {
+        "id": "gem-6",
+        "latex": "\\mathcal{L}\\big(\\Theta;\\ E^{tr}_j\\big) \\;=\\; \\frac{1}{|E^{tr}_j|}\\sum_{(x_i, j, y_i) \\in E^{tr}_j} \\ell_{\\mathrm{sup}}\\big(f(x_i, j;\\Theta),\\, y_i\\big)",
+        "source": "[gem Eq. (5)], lines 186-192",
+        "comment": "The loss evaluated on the stored memory of past task j. It is NEVER MINIMISED. It exists only to be differentiated (gem-8) and to define an inequality (gem-7)."
+      },
+      {
+        "id": "gem-7",
+        "latex": "\\min_{\\Theta}\\ \\mathcal{L}\\big(f(x,k;\\Theta),\\, y\\big) \\quad \\text{s.t.}\\quad \\mathcal{L}\\big(\\Theta;\\ E^{tr}_j\\big) \\;\\le\\; \\mathcal{L}\\big(\\Theta_{k-1};\\ E^{tr}_j\\big) \\ \\ \\text{for all } j < k",
+        "source": "[gem Eq. (6)], lines 202-208",
+        "comment": "The defining program. One-sided: the past loss may DECREASE freely, it may not increase. This inequality -- as opposed to EWC's two-sided quadratic well and iCaRL/LwF's equality-flavoured distillation -- is the entire reason GEM can show positive BWT."
+      },
+      {
+        "id": "gem-8",
+        "latex": "\\langle g,\\, g_j\\rangle \\;:=\\; \\Big\\langle \\frac{\\partial \\mathcal{L}(f(x,k;\\Theta), y)}{\\partial \\Theta},\\ \\frac{\\partial \\mathcal{L}(\\Theta;\\, E^{tr}_j)}{\\partial \\Theta} \\Big\\rangle \\;\\ge\\; 0 \\quad \\text{for all } j < k",
+        "source": "[gem Eq. (7)], lines 214-223; the two enabling observations at lines 209-214",
+        "comment": "The linearisation. Two assumptions are stated and are the paper's soft spot: 'assuming that the function is locally linear (as it happens around small optimization steps) and that the memory is representative of the examples from past tasks, we can diagnose increases in the loss of previous tasks by computing the angle between their loss gradient vector and the proposed update' [lines 211-214]. The guarantee is hedged in the paper's own words: 'the proposed parameter update g is UNLIKELY to increase the loss at previous tasks' [lines 224-225, emphasis added by this note]. Also note the storage consequence: 'it is unnecessary to store old predictors f_theta^{t-1}' [lines 209-211] -- GEM needs no anchor vector, unlike EWC."
+      },
+      {
+        "id": "gem-9",
+        "latex": "\\tilde g \\;=\\; \\arg\\min_{\\tilde g}\\ \\tfrac12\\,\\|g - \\tilde g\\|_2^2 \\quad \\text{s.t.}\\quad \\langle \\tilde g, g_j\\rangle \\ge 0 \\ \\ \\text{for all } j < k",
+        "source": "[gem Eq. (8)], lines 227-234",
+        "comment": "If any constraint is violated, project onto the feasible cone -- the nearest gradient that hurts no stored task. If no constraint is violated, g-tilde = g and GEM costs nothing beyond the gradient evaluations."
+      },
+      {
+        "id": "gem-10",
+        "latex": "\\text{primal: } \\min_z\\ \\tfrac12 z^\\top z - g^\\top z + \\tfrac12 g^\\top g \\ \\ \\text{s.t. } Gz \\ge 0, \\qquad G = (g_1,\\ldots,g_{k-1}) \\in \\mathbb{R}^{(k-1)\\times|\\Theta|}",
+        "source": "lines 252-260",
+        "comment": "'This is a QP on p variables (the number of parameters of the neural network), which could be measured in the millions.' [lines 260-261]. Stated only to be discarded in favour of gem-11."
+      },
+      {
+        "id": "gem-11",
+        "latex": "\\text{dual: } \\min_{v \\ge 0}\\ \\tfrac12 v^\\top G G^\\top v + g^\\top G^\\top v, \\qquad \\tilde g = G^\\top v^\\star + g, \\qquad v \\leftarrow v^\\star + \\gamma",
+        "source": "[gem Eq. (11)], lines 262-272; the gamma trick lines 271-272; QP duality [Dorn, 1960] cited at line 250",
+        "comment": "THE cost argument of the paper. 'This is a QP on t-1 << p variables, the number of observed tasks so far.' [line 269]. K-1 = 19 variables at most in every experiment. The Gram matrix GG^T is (k-1)x(k-1), at most 19x19. Note the gamma addition is an UNJUSTIFIED heuristic applied on top of the solution: 'we found that adding a small constant gamma >= 0 to v* biased the gradient projection to updates that favoured benefitial backwards transfer' [lines 271-272]."
+      },
+      {
+        "id": "gem-12",
+        "latex": "\\Theta \\;\\leftarrow\\; \\Theta \\;-\\; \\eta_\\Theta\\, \\tilde g, \\qquad E^{tr}_k \\leftarrow E^{tr}_k \\cup \\{(x,y)\\}, \\qquad \\Pi_{k,:} \\leftarrow \\mathrm{EVALUATE}\\big(f(\\cdot;\\Theta),\\ \\mathrm{Continuum}_{\\mathrm{test}}\\big)",
+        "source": "Algorithm 1, lines 283-310 (the update at line 305, the memory write at line 301, the matrix row at line 307)",
+        "comment": "The full loop, per example: write to memory, compute g, compute k-1 reference gradients, project, step. Evaluation of the whole test suite happens once per task, producing one row of Pi."
+      }
+    ],
+
+    "reduction_to_frame": "GEM = (U-Theta) with the gradient replaced by its projection onto a feasible cone defined by stored past gradients. calL is UNCHANGED (contrast EWC, which changes calL). calR_k is the current task's stream only (same as EWC). gen(calH_k; B_s) is not a generator at all: a fixed-size subsample of calH_{<k} is retained verbatim (last m examples per task) and is used only as a source of constraint directions. B_s in the frame's sense is zero -- there is NO offline round -- and the entire consolidation cost is paid inline, at every optimiser step. Read side: equation (R) collapses to y-hat = f(q; Theta) on MNIST, and to y-hat = f(q, k; Theta) on CIFAR-100, where the task descriptor selects one of K per-task linear heads [§4.2, lines 341-343]. W is empty; ret(E,q) is never called.",
+
+    "three_way_contrast_for_ch07": {
+      "note": "This is the table ch07 exists to build. All three rows are about the SAME question -- how does calH_{<k} survive into round k -- and they answer it in three structurally different places.",
+      "columns": ["method", "what is stored", "where the past enters", "shape of the constraint", "positive BWT possible?", "state cost beyond Theta"],
+      "rows": [
+        {"method": "EWC [1612.00796]", "what is stored": "two vectors of size |Theta|: the anchor Theta*_{k-1} and the Fisher diagonal F^{(k-1)}", "where the past enters": "the OBJECTIVE -- an added data-free term in calL [ewc Eq. 3]", "shape of the constraint": "two-sided quadratic well; any movement from the anchor is penalised, in either direction", "positive BWT possible?": "NO -- GEM asserts this: 'In contrast to the state-of-the-art [Kirkpatrick et al., 2017, Rebuffi et al., 2017], our model therefore allows positive backward transfer.' [lines 200-201]", "state cost beyond Theta": "'three values have to be stored for each synapse' [ewc §3 lines 369-370]; O(|Theta|) or O(K|Theta|) depending on the unresolved merge choice"},
+        {"method": "replay / distillation (iCaRL [Rebuffi 2017], LwF [Li & Hoiem 2016]; and generatively, DGR [1705.08690])", "what is stored": "raw exemplars, or a generator", "where the past enters": "the OBJECTIVE -- past data (real or synthetic) is added to calR_k and its loss is minimised, or past predictions are matched by distillation", "shape of the constraint": "pull toward INVARIANCE of past predictions; GEM's objection: 'this would deem positive backward transfer impossible' [lines 196-197], and direct minimisation 'results in overfitting to the examples stored in M_k' [lines 194-195]", "positive BWT possible?": "NO (distillation branch), by GEM's argument", "state cost beyond Theta": "the exemplar set, or the generator's parameters"},
+        {"method": "GEM [1706.08840]", "what is stored": "C_cap = 5120 raw examples total, m = 256 per task [App. A line 804; §3 lines 179-183]", "where the past enters": "the FEASIBLE SET -- calL is untouched; the gradient is projected [gem Eq. (8)]", "shape of the constraint": "one-sided inequality per past task: the past loss may fall, may not rise [gem Eq. (6)-(7)]", "positive BWT possible?": "YES, and observed: GEM's BWT is positive on all three datasets (+0.0247 perm, +0.0048 rot, +0.0042 cifar; App. B.1.5/B.2.5/B.3.5)", "state cost beyond Theta": "the 5120 stored examples, PLUS a transient G in R^{(k-1) x |Theta|} at every step -- 19 x 1109240 floats = 84.3 MB in fp32 on CIFAR (arithmetic by this note from |Theta| = 1109240, line 598)"}
+      ],
+      "the_sentence_ch07_should_carry": "EWC changes what you are optimising. Replay changes what you are optimising it on. GEM changes neither, and instead changes which directions you are allowed to move in. Only the third one is one-sided, and one-sidedness is exactly what buys positive backward transfer."
+    },
+
+    "causal_reading_the_paper_offers": "'We can interpret GEM as a model that learns the subset of correlations common to a set of distributions (tasks). Furthermore, GEM can (and will in our MNIST experiments) be used to predict target vectors associated to previous or new tasks without making use of task descriptors. This is a desired feature in causal inference problems, since causal predictions are invariant across different environments [Peters et al., 2016], and therefore provide the most compressed representation of a set of distributions [Scholkopf et al., 2016].' [lines 278-282]. This is the paper's only theoretical gesture and it is a one-paragraph analogy, not a result."
+  },
+
+  "outer_vs_inner": {
+    "columns": ["object", "symbol", "who_learns_it", "when_it_moves", "source"],
+    "rows": [
+      {"object": "network weights (shared body)", "symbol": "Theta", "who_learns_it": "plain SGD on the CURRENT example's loss, with the gradient projected onto the feasible cone", "when_it_moves": "at every mini-batch of 10 samples during the stream; frozen during EVALUATE", "source": "§4.2 lines 343-344; Algorithm 1 lines 300-306"},
+      {"object": "per-task final linear classifier (CIFAR-100 ONLY)", "symbol": "head_k", "who_learns_it": "plain SGD, but only the head selected by the task descriptor", "when_it_moves": "during the round in which task k is streamed", "source": "§4.2 lines 341-343: 'Also on CIFAR100, the network has a final linear classifier per task. This is one simple way to leverage the task descriptor, in order to adapt the output distribution to the subset of classes for each task.'"},
+      {"object": "episodic memory contents", "symbol": "E^{tr}_k", "who_learns_it": "NOT learned. Filled by a fixed rule: 'we assume that the memory is populated with the last m examples from each task, although better memory update strategies could be employed (such as building a coreset per task)' [lines 182-184]. Algorithm 1 appends every observed example [line 301].", "when_it_moves": "during the stream; the retained window is the last m = 256 examples of each task", "source": "§3 lines 179-184; Algorithm 1 line 301"},
+      {"object": "reference gradients", "symbol": "g_j, G", "who_learns_it": "NOT learned. Recomputed from scratch at EVERY optimiser step by one backward pass per past task.", "when_it_moves": "recomputed every step; never stored across steps", "source": "Algorithm 1 line 303; §4.4 line 599 ('GEM's bottleneck is the necessity of computing previous task gradients at each learning iteration'); §6 lines 682-683"},
+      {"object": "dual variables of the projection QP", "symbol": "v*", "who_learns_it": "NOT learned. Solved fresh at every step where a constraint is violated, on k-1 <= 19 variables.", "when_it_moves": "every step", "source": "[gem Eq. (11)] lines 262-270"},
+      {"object": "BWT bias constant", "symbol": "gamma", "who_learns_it": "NOT learned. Grid-searched hyperparameter; best value 0.5 on all three datasets.", "when_it_moves": "never during a run", "source": "lines 271-272; App. A line 805"},
+      {"object": "learning rate", "symbol": "eta_Theta", "who_learns_it": "NOT learned. Grid-searched; GEM's best = 0.1 on rot, perm and cifar.", "when_it_moves": "never during a run", "source": "App. A lines 802-804"},
+      {"object": "memory budget", "symbol": "C_cap (slots)", "who_learns_it": "NOT learned. Fixed at 5120 for all three GEM runs.", "when_it_moves": "never", "source": "App. A line 804"},
+      {"object": "anything at inference / answer time", "symbol": "-", "who_learns_it": "NOTHING", "when_it_moves": "never. EVALUATE in Algorithm 1 is a plain forward pass over the test partition; no memory is consulted, no gradient is taken, no state is written.", "source": "Algorithm 1 lines 284-294"}
+    ],
+    "readers_first_answer": "Everything GEM learns, it learns by ordinary SGD while streaming. The only thing that distinguishes a GEM step from an SGD step is that the gradient is filtered before it is applied. At answer time GEM is indistinguishable from any other network of the same architecture -- the same forward pass, the same weights, no retrieval, no adaptation. All of GEM's machinery lives in the optimiser.",
+    "which_is_the_sleep_round": "THERE IS NONE. This is the single most important structural fact about GEM for this monograph. EWC at least concentrates its consolidation work at the task boundary (snapshot + Fisher). GEM distributes it uniformly over every optimiser step: k-1 extra backward passes and one small QP, per mini-batch of 10 examples. In the frame's vocabulary, GEM has B_s = 0 and a permanently inflated wake-time training cost. Any ch07 sentence that calls GEM a 'sleep' or 'consolidation phase' method is a defect."
+  },
+
+  "update_layer": {
+    "instantiates": "(U-Theta) ONLY, with a projection operator inserted between the gradient and the step.",
+    "not_instantiated": [
+      "(U-W): absent. No fast-weight state, no per-token or per-chunk update, no retention gate alpha_t, no momentum/surprise S_t. Read equation (R) collapses to y-hat = f(q; Theta) (MNIST) or f(q, k; Theta) (CIFAR).",
+      "(U-E): absent BY THE §1.6 TEST, despite the paper's word 'memory'. The episodic memory E^{tr} is written during training and read by the optimiser; it is never read by ret(E,q) and never enters a forward pass at answer time. The distinction matters because GEM is frequently mis-shelved as a retrieval method. It is not: a deployed GEM model can throw the memory away."
+    ],
+    "difference_from_canonical": [
+      "calL is untouched. This is the exact inverse of EWC, whose entire mechanism is an added term in calL. Two Theta-path papers, adjacent in the same year, intervene at two different places in the same update rule.",
+      "gen(calH_k; B_s) is replaced by a fixed-size verbatim retention window (last m per task), and its product is consumed as CONSTRAINT DIRECTIONS rather than as training data. The paper is explicit that consuming it as training data would be wrong: 'minimizing the loss at the current example together with (5) results in overfitting to the examples stored in M_k' [lines 194-195].",
+      "The step is Theta <- Theta - eta_Theta * Proj(grad), not Theta <- Theta - eta_Theta * grad. Proj is the Euclidean projection onto {u : <u, g_j> >= 0 for all j < k}, computed by the dual QP (gem-11).",
+      "The per-step cost scales with the ROUND INDEX: at round k there are k-1 extra backward passes. Canonical (U-Theta) has per-step cost independent of k. This is the property that decides whether GEM survives to LLM scale (it does not, in this form -- see systems_implications).",
+      "eta_Theta is not modulated. GEM never adjusts a learning rate; it rotates and rescales the direction. Contrast the effective-learning-rate rhetoric EWC uses about its own penalty."
+    ],
+    "order_within_a_round": "(1) observe (x, k, y); (2) append (x, y) to E^{tr}_k; (3) g <- grad of the current loss; (4) for each j < k, g_j <- grad of the memory loss (gem-6) -- k-1 backward passes; (5) if any <g, g_j> < 0, solve the (k-1)-variable dual QP (gem-11), add gamma to v*, set g-tilde = G^T v* + g; else g-tilde = g; (6) Theta <- Theta - eta_Theta g-tilde. Steps 3-5 repeat for EVERY mini-batch of 10 examples. (7) At the end of round k only: run EVALUATE on all K test partitions and write row Pi_{k,:}.",
+    "gating": "None. Unlike EWC's Atari 20M-frame gate, GEM's constraints become active as soon as there is at least one past task -- i.e. from the first example of round 2."
+  },
+
+  "cost_table": {
+    "note_on_units": "GEM is a 2017 training-time algorithm with no notion of a query, a session, or a user, and -- unlike the rest of this corpus -- with no offline phase at all. Two of the four cells are therefore absent. Where the paper does report cost, it reports it in wall-clock CPU seconds and in memory SLOTS, never in FLOPs or bytes. Nothing below is estimated; arithmetic performed by this note is labelled as such.",
+    "B_s": {
+      "value": "absent",
+      "why": "The frame defines B_s as compute spent BEFORE a query arrives, in an idle period. GEM has no such period. Its consolidation cost is paid inside the training loop at every optimiser step, so there is no quantity in the paper that B_s could name. This is a structural absence, not an omission.",
+      "what_is_measured_instead": "Total CPU training time for the whole 20-task MNIST continuum, Table 1 [caption line 475, values lines 476-505], in seconds: permutations -- single 11, independent 11, multimodal 14, EWC 179, GEM 77; rotations -- single 11, independent 16, multimodal 13, EWC 169, GEM 135. GEM is 7.0x (perm) and 12.3x (rot) the cost of the unregularised 'single' baseline, and 0.43x (perm) / 0.80x (rot) the cost of the paper's EWC implementation. The ratios are this note's arithmetic on the paper's printed integers.",
+      "what_the_paper_claims_from_it": "'Overall, GEM performs significantly better than other continual learning methods like EWC, while spending less computation (Table 1). GEM's efficiency comes from optimizing over a number of variables equal to the number of tasks (T = 20 in our experiments), instead of optimizing over a number of variables equal to the number of parameters (p = 1109240 for CIFAR100 for instance). GEM's bottleneck is the necessity of computing previous task gradients at each learning iteration.' [§4.4, lines 595-599]",
+      "what_is_absent": "No FLOPs. No GPU time (Table 1 is CPU only). NO CIFAR-100 TIMING AT ALL -- the table covers MNIST only, and CIFAR is where |Theta| = 1109240 makes the k-1 backward passes most expensive. No per-step breakdown between the gradient passes and the QP solve. No wall-clock for the QP. No energy.",
+      "source": "Table 1 lines 475-505; §4.4 lines 595-599; §6 lines 682-683"
+    },
+    "L_w": {
+      "value": "absent",
+      "detail": "No latency, TTFT, throughput, ms/example or ms/token figure appears anywhere. Structurally the answer-time cost is exactly the unmodified network's forward pass: Algorithm 1's EVALUATE procedure [lines 284-294] takes no gradient, consults no memory, and writes no state. On CIFAR-100 the only answer-time addition is head selection by the task descriptor [§4.2, lines 341-343], whose cost is a single linear layer and is never measured.",
+      "source": "absence across the paper; Algorithm 1 lines 284-294; §4.2 lines 341-343"
+    },
+    "C_cap": {
+      "value": "REPORTED IN MEMORY SLOTS (examples), never in bytes.",
+      "stated_budget": "'the learner has a total budget of M memory locations. If the number of total tasks T is known, we can allocate m = M/T memories for each task.' [§3, lines 179-181]. The selected budget for every GEM run is 5120: 'memory size: [5120 (rot, perm, cifar)]' [App. A, line 804]. With K = 20 that is m = 256 examples per task (arithmetic by this note).",
+      "the_only_capacity_sweep": "Table 2 [caption line 523, values lines 524-546], CIFAR-100 ACC as a function of total memory size: 200 -> GEM 0.487 / iCARL 0.436; 1,280 -> 0.579 / 0.494; 2,560 -> 0.633 / 0.500; 5,120 -> 0.654 / 0.508. The paper's reading: 'the final ACC of GEM is an increasing function of the size of the episodic memory, eliminating the need to carefully tune this hyper-parameter. GEM outperforms iCARL for a wide range of memory sizes.' [lines 606-608]. Note that monotone increase over the whole sweep means the curve has NOT saturated at 5120 -- the reported operating point is the largest one tried.",
+      "as_a_fraction_of_the_stream": "MNIST: 20 tasks x 1000 examples = 20,000 examples in the stream, of which 5,120 are retained verbatim = 25.6%. CIFAR-100: 20 x 2500 = 50,000, of which 5,120 = 10.24%. Both fractions are this note's arithmetic on §4.1 lines 331-333 and App. A line 804; NEITHER APPEARS IN THE PAPER. ch07 must state them: GEM is a large-footprint rehearsal method wearing a constraint-method's clothes.",
+      "transient_state": "G in R^{(k-1) x |Theta|} must exist at every step. On CIFAR-100 with |Theta| = 1109240 [line 598] and k-1 = 19 that is 21,075,560 floats = 84.3 MB in fp32 (arithmetic by this note). The paper never mentions this cost.",
+      "bytes": "absent",
+      "dtype": "absent",
+      "parameter_counts": "|Theta| = 1109240 is printed ONCE, for the CIFAR-100 network only [line 598]. No parameter count for the MNIST networks; only the shape, 'fully-connected neural networks with two hidden layers of 100 ReLU units' [§4.2, lines 339-340].",
+      "at_serving_time": "1x |Theta| (plus K per-task linear heads on CIFAR). The episodic memory and the gradient matrix are trainer-side and can be discarded at deployment.",
+      "source": "§3 lines 179-184; §4.1 lines 331-333; §4.2 lines 339-343; §4.4 line 598; Table 2 lines 523-546; App. A lines 802-805"
+    },
+    "rho": {
+      "value": "PRESENT, in a re-interpreted form -- and this paper is the reason the frame's rho has an operational definition at all.",
+      "what_maps_to_rho": "BWT (gem-4) is end-to-end forgetting over the whole 20-task stream: the mean drop from 'just after learning task j' to 'at the end of everything'. It is NOT a per-round rate. To get a per-round figure one would have to read the diagonal-versus-column structure of Pi, which the appendix makes possible but the paper never does.",
+      "reported_values_end_to_end": "MNIST permutations -- single -0.1980, independent 0.0000, multimodal -0.0275, EWC -0.1653, GEM +0.0247 [App. B.1.1-B.1.5, lines 845, 875, 907, 937, 967]. MNIST rotations -- single -0.0896, independent 0.0000, multimodal -0.0243, EWC -0.2047, GEM +0.0048 [App. B.2.1-B.2.5]. CIFAR-100 -- single -0.1226, independent 0.0000, iCARL -0.0830, EWC -0.0799, GEM +0.0042 [App. B.3.1-B.3.5, lines 1281 etc.]. ALL OF THESE PRINTED VALUES ARE COMPUTED WITH THE WRONG DENOMINATOR; see unfavorable_facts F1 for the corrected set.",
+      "rho_versus_number_of_passes": "Table 3 [caption line 548, values lines 549-584] is the corpus's only rho-versus-training-effort curve. On MNIST rotations, ACC/BWT at 1 / 2 / 5 epochs per task: single 0.53/-0.08, 0.49/-0.25, 0.43/-0.40; independent 0.56/-0.00, 0.64/-0.00, 0.67/-0.00; multimodal 0.76/-0.02, 0.72/-0.11, 0.59/-0.28; EWC 0.55/-0.19, 0.59/-0.17, 0.61/-0.11; GEM 0.86/+0.05, 0.88/+0.02, 0.89/-0.02; and the iid oracle 'single, shuffled data' 0.83/-0.00, 0.87/-0.00, 0.89/-0.00. The paper's reading: 'Multiple training passe[s] exacerbate the catastrophic forgetting problem ... memory-less methods (like \"single\" and \"multimodal\") exhibit higher negative BWT, leading to lower ACC. On the other hand, memory-based methods such as EWC and GEM lead to higher ACC as the number of passes through the data increases.' [lines 609-616]",
+      "the_finding_for_the_monograph": "rho is not a property of a method alone; it is a property of (method x how hard you train on the new round). More optimisation on the new task buys more forgetting, and the memory-free methods pay for it monotonically. This is the sharpest statement of the sleep-round sustainability problem anywhere in the corpus, and it comes from a 2017 MNIST table.",
+      "per_round_rate": "absent",
+      "source": "Eq. (3) lines 139-148; Table 3 lines 548-584; §4.4.1 lines 609-621; App. B lines 809-1283"
+    },
+    "amortization_A": {
+      "value": "not applicable and not computable",
+      "detail": "N_q -- the number of queries sharing one context -- has no referent. There is no offline work to amortise (B_s = 0 structurally), and C_wake at answer time is identical to the baseline model's by construction. Equation (A) cannot be instantiated. What GEM does have is a different ratio the frame does not name: consolidation cost per TRAINING step, which grows linearly in the number of past rounds.",
+      "source": "structural; no N_q-like quantity anywhere in the file"
+    },
+    "cells_absent_summary": "B_s absent (structurally -- no offline round; total CPU seconds reported instead, MNIST only). L_w absent. C_cap present in slots (5120 total, 256/task, swept 200-5120 on CIFAR) but absent in bytes and with no dtype; |Theta| printed once (1109240, CIFAR only). rho present end-to-end as BWT and as a 3-point curve versus epochs, but absent as a per-round rate -- and every printed BWT/FWT value carries the denominator defect of F1."
+  },
+
+  "experiments": [
+    {
+      "id": "E0-common-protocol",
+      "section": "§4.1 lines 317-334; §4.2 lines 335-345; App. A lines 780-805",
+      "datasets": [
+        "MNIST Permutations [Kirkpatrick et al., 2017]: 'each task is transformed by a fixed permutation of pixels. In this dataset, the input distribution for each task is unrelated.' [lines 322-324]",
+        "MNIST Rotations (introduced by this paper): 'a variant of MNIST where each task contains digits rotated by a fixed angle between 0 and 180 degrees.' [lines 324-326]",
+        "Incremental CIFAR100 [Rebuffi et al., 2017]: 'each task introduces a new set of classes. For a total number of T tasks, each new task concerns examples from a disjoint subset of 100/T classes. Here, the input distribution is similar for all tasks, but different tasks require different output distributions.' [lines 326-331]"
+      ],
+      "scale_exact": "'For all the datasets, we considered T = 20 tasks. On the MNIST datasets, each task has 1000 examples from 10 different classes. On the CIFAR100 dataset each task has 2500 examples from 5 different classes. The model observes the tasks in sequence, and each example once.' [lines 331-334]. Stream length therefore 20,000 (MNIST) and 50,000 (CIFAR) examples.",
+      "architectures_exact": "MNIST: 'fully-connected neural networks with two hidden layers of 100 ReLU units.' CIFAR100: 'a smaller version of ResNet18 [He et al., 2015], with three times less feature maps across all layers. Also on CIFAR100, the network has a final linear classifier per task.' [§4.2, lines 339-343]. |Theta| = 1109240 for the CIFAR network [line 598]; no parameter count given for the MNIST networks.",
+      "optimiser_exact": "'We train all the networks and baselines using plain SGD on mini-batches of 10 samples. All hyper-parameters are optimized using a grid-search (see Appendix A), and the best results for each model are reported.' [lines 343-345]",
+      "baselines": "single (one predictor across all tasks); independent (one predictor per task, 'with T times less hidden units than single', optionally initialised as a clone of the last trained predictor, decided by grid-search); multimodal (single architecture with 'a dedicated input layer per task (only for MNIST datasets)'); EWC; iCARL ('this method only applies to our experiment on CIFAR100'). 'GEM, iCaRL and EWC have the same architecture as \"single\", plus episodic memory.' [§4.3, lines 507-520]",
+      "selected_hyperparameters": "GEM: learning rate 0.1 (rot, perm, cifar), memory size 5120 (rot, perm, cifar), gamma 0.5 (rot, perm, cifar) [App. A lines 802-805]. EWC: learning rate 0.01 (rot) / 0.1 (perm) / 1.0 (cifar), regularization 1000 (rot) / 3 (perm) / 1 (cifar) [lines 795-797]. single: lr 0.003 (rot) / 0.03 (perm) / 1.0 (cifar). independent: lr 0.1 (rot) / 0.03 (perm) / 0.3 (cifar), finetune yes everywhere. multimodal: lr 0.1 (rot, perm). iCARL: lr 1.0, regularization 1, memory 5120 (cifar) [lines 788-801].",
+      "note_this_note_verified": "The appendix matrices are internally consistent with these grids. On MNIST permutations EWC and GEM share lr = 0.1 and their round-1 rows of Pi are BYTE-IDENTICAL (lines 916 and 946), as they must be when no constraint or penalty is yet active; 'single' at lr = 0.03 differs (line 824). On CIFAR, 'single' and EWC share lr = 1.0 and their round-1 rows are identical (lines 1136 and 1228) while GEM at lr = 0.1 differs (line 1260). The three blocks of each dataset also share one pi-bar row. This is evidence that the runs share seeds and that the matrices were produced by one harness."
+    },
+    {
+      "id": "E1-headline-ACC-BWT-FWT",
+      "section": "Figure 1 (left) caption lines 472-473; §4.4 lines 586-599; full matrices App. B lines 809-1283",
+      "setup": "One 20-task run per (dataset, method); the printed scalars in Appendix B are the values the Figure 1 bar charts display. Figure 1 itself prints no numbers, so Appendix B is the only numeric source.",
+      "results_table": {
+        "reading_note": "ACC is as printed and is correct. BWT_printed / FWT_printed are the values the paper prints; BWT_eq3 / FWT_eq4 are this note's recomputation from the same matrix using the denominator K-1 = 19 that Eqs. (3) and (4) actually typeset. The printed values all use K = 20 -- see unfavorable_facts F1. ACC is unaffected because Eq. (2)'s denominator really is K.",
+        "columns": ["dataset", "method", "ACC", "BWT_printed", "BWT_eq3", "FWT_printed", "FWT_eq4", "appendix block"],
+        "rows": [
+          ["MNIST permutations", "single", 0.6018, -0.198, -0.2085, 0.0093, 0.0098, "B.1.1, lines 822-846"],
+          ["MNIST permutations", "independent", 0.4523, 0.0, 0.0, 0.0, 0.0, "B.1.2, lines 852-876"],
+          ["MNIST permutations", "multimodal", 0.7561, -0.0275, -0.0289, 0.0059, 0.0062, "B.1.3, lines 884-908"],
+          ["MNIST permutations", "EWC", 0.6185, -0.1653, -0.174, 0.0054, 0.0057, "B.1.4, lines 914-938"],
+          ["MNIST permutations", "GEM", 0.826, 0.0247, 0.026, 0.0088, 0.0092, "B.1.5, lines 944-968"],
+          ["MNIST rotations", "single", 0.5307, -0.0896, -0.0943, 0.4254, 0.4478, "B.2.1, lines 980-1004"],
+          ["MNIST rotations", "independent", 0.6241, 0.0, 0.0, 0.0, 0.0, "B.2.2, lines 1010-1034"],
+          ["MNIST rotations", "multimodal", 0.7585, -0.0243, -0.0255, 0.0177, 0.0187, "B.2.3, lines 1040-1064"],
+          ["MNIST rotations", "EWC", 0.5461, -0.2047, -0.2155, 0.5524, 0.5814, "B.2.4, lines 1072-1096"],
+          ["MNIST rotations", "GEM", 0.8607, 0.0048, 0.0051, 0.6647, 0.6997, "B.2.5, lines 1102-1126"],
+          ["CIFAR-100", "single", 0.4631, -0.1226, -0.1291, -0.0006, -0.0006, "B.3.1, lines 1134-1158"],
+          ["CIFAR-100", "independent", 0.4235, 0.0, 0.0, 0.0, 0.0, "B.3.2, lines 1166-1190"],
+          ["CIFAR-100", "iCARL", 0.5462, -0.083, -0.0874, 0.0, 0.0, "B.3.3, lines 1196-1220"],
+          ["CIFAR-100", "EWC", 0.4984, -0.0799, -0.0841, -0.0077, -0.0081, "B.3.4, lines 1226-1250"],
+          ["CIFAR-100", "GEM", 0.6783, 0.0042, 0.0044, -0.0078, -0.0082, "B.3.5, lines 1258-1282"]
+        ],
+        "instruction_for_ch07": "The monograph must NOT silently substitute the corrected column for the printed one. Quote the printed value with its source, then state the recomputation and the reason, then note that no ranking changes because the error is a uniform 19/20 rescaling. Presenting only the corrected numbers would make the book's figures uncheckable against the paper."
+      },
+      "paper_summary_of_this_table": "'Overall, GEM performs similarly or better than the multimodal model (which is very well suited to the MNIST tasks). GEM minimizes backward transfer, while exhibiting negligible or positive forward transfer.' [lines 590-592]",
+      "the_single_most_quotable_cell": "MNIST permutations, task 1. GEM: Pi_{1,1} = 0.7289 (line 946) -> Pi_{20,1} = 0.8024 (line 965), i.e. +0.0735 AFTER nineteen unrelated pixel-permutation tasks. EWC from the identical starting point (Pi_{1,1} = 0.7289, line 916) -> Pi_{20,1} = 0.4839 (line 935), i.e. -0.2450. 'single' -> 0.4690 from 0.7838, i.e. -0.3148 (lines 824, 843). One task, three methods, one shared seed: this is ch07's worked example."
+    },
+    {
+      "id": "E2-first-task-retention-curve",
+      "section": "Figure 1 (right), caption lines 472-473; §4.4 lines 593-594",
+      "setup": "'evolution of the test accuracy at the first task, as more tasks are learned', one panel per dataset. In matrix terms this is the first COLUMN of Pi plotted against the row index.",
+      "finding_stated": "'GEM exhibits minimal forgetting, and positive backward transfer in CIFAR100.' [lines 593-594]",
+      "headline_numbers": "NONE printed in the figure. The underlying column is fully recoverable from Appendix B."
+    },
+    {
+      "id": "E3-memory-size-sweep-CIFAR",
+      "section": "Table 2, caption line 523, values lines 524-546; discussion §4.4.1 lines 605-608",
+      "setup": "Final ACC on CIFAR-100 for GEM and iCARL as a function of the TOTAL episodic memory budget.",
+      "values": {"200": {"GEM": 0.487, "iCARL": 0.436}, "1280": {"GEM": 0.579, "iCARL": 0.494}, "2560": {"GEM": 0.633, "iCARL": 0.5}, "5120": {"GEM": 0.654, "iCARL": 0.508}},
+      "findings_stated": "'the final ACC of GEM is an increasing function of the size of the episodic memory, eliminating the need to carefully tune this hyper-parameter. GEM outperforms iCARL for a wide range of memory sizes.' [lines 606-608]",
+      "note": "The curve is monotone increasing across the whole grid and the reported operating point (5120) is the largest tried, so no saturation is demonstrated. Also: this table's GEM value at 5120 (0.654) does NOT match the same configuration's value in Appendix B.3.5 (0.6783), and iCARL's (0.508) does not match B.3.3 (0.5462). See unfavorable_facts F2."
+    },
+    {
+      "id": "E4-multiple-passes-MNIST-rotations",
+      "section": "Table 3, caption line 548, values lines 549-584; discussion §4.4.1 lines 609-621",
+      "setup": "ACC/BWT on MNIST rotations when each task is shown 1, 2 or 5 times before the switch. 'in the last column of Table 3 (except for the result in the first row), each model is shown examples of a task five times (in random order) before switching to the next task.' [lines 611-613]. The first row is an iid oracle: 'the first row of Table 3 reports the ACC of \"single\" when trained with iid data from all tasks. This mimics usual multi-task learning, where each mini-batch contains examples taken from a random selection of tasks.' [lines 617-620]",
+      "values_ACC_slash_BWT": {
+        "single, shuffled data (iid oracle)": {"1 epoch": "0.83/-0.00", "2 epochs": "0.87/-0.00", "5 epochs": "0.89/-0.00"},
+        "single": {"1 epoch": "0.53/-0.08", "2 epochs": "0.49/-0.25", "5 epochs": "0.43/-0.40"},
+        "independent": {"1 epoch": "0.56/-0.00", "2 epochs": "0.64/-0.00", "5 epochs": "0.67/-0.00"},
+        "multimodal": {"1 epoch": "0.76/-0.02", "2 epochs": "0.72/-0.11", "5 epochs": "0.59/-0.28"},
+        "EWC": {"1 epoch": "0.55/-0.19", "2 epochs": "0.59/-0.17", "5 epochs": "0.61/-0.11"},
+        "GEM": {"1 epoch": "0.86/+0.05", "2 epochs": "0.88/+0.02", "5 epochs": "0.89/-0.02"}
+      },
+      "findings_stated": [
+        "'Multiple training passe[s] exacerbate the catastrophic forgetting problem.' [line 610]",
+        "'memory-less methods (like \"single\" and \"multimodal\") exhibit higher negative BWT, leading to lower ACC. On the other hand, memory-based methods such as EWC and GEM lead to higher ACC as the number of passes through the data increases. However, GEM suffers less negative BWT than EWC, leading to a higher ACC.' [lines 612-616]",
+        "'By comparing the first and last row of Table 3, we see that GEM matches the \"oracle performance upper-bound\" ACC provided by iid learning, and minimizes negative BWT.' [lines 620-621]"
+      ],
+      "note": "The paper calls EWC 'memory-based' here [line 614], which contradicts its own §5 taxonomy where EWC is placed under 'synaptic' memory as opposed to 'episodic' memory [lines 651-657]. The word is being used in two senses one page apart. Also: GEM EXCEEDS the stated 'upper-bound' at 1 epoch (0.86 vs 0.83) and at 2 epochs (0.88 vs 0.87); see unfavorable_facts F4. And GEM's 1-epoch BWT here (+0.05) disagrees with Appendix B.2.5 (+0.0048) by a factor of ten; see F3."
+    },
+    {
+      "id": "E5-cost-CPU-time",
+      "section": "Table 1, caption line 475, values lines 476-505; §4.4 lines 595-599",
+      "setup": "'CPU Training time (s) of MNIST experiments for all methods.' Whole 20-task continuum, one pass.",
+      "values_seconds": {"permutations": {"single": 11, "independent": 11, "multimodal": 14, "EWC": 179, "GEM": 77}, "rotations": {"single": 11, "independent": 16, "multimodal": 13, "EWC": 169, "GEM": 135}},
+      "findings_stated": "'GEM performs significantly better than other continual learning methods like EWC, while spending less computation (Table 1).' [lines 595-596], attributed to the (K-1)-variable dual instead of an |Theta|-variable primal [lines 596-599].",
+      "note": "This is a CPU measurement of a 2-layer 100-unit MLP on 20,000 examples; it does not license any claim about GEM's cost at scale. No CIFAR timing is given, which is where |Theta| = 1109240 and 19 backward passes per step would bite hardest. See unfavorable_facts F7."
+    }
+  ],
+
+  "scale_ceiling": {
+    "largest_model": "A ResNet18 variant 'with three times less feature maps across all layers', |Theta| = 1109240 [§4.2 lines 340-341; §4.4 line 598]. The MNIST networks are 2 x 100-unit MLPs.",
+    "largest_data": "50,000 examples total (CIFAR-100, 20 tasks x 2500), single pass. MNIST: 20,000 examples.",
+    "largest_task_count": "K = 20, on every dataset [line 331]. The paper's own stated ambition was 'the number of tasks is large' [line 102]; 20 is what was run.",
+    "modality": "image classification only. No language, no sequence model, no transformer, no generative task.",
+    "hardware": "CPU (Table 1 is titled 'CPU Training time'). No GPU numbers anywhere.",
+    "what_the_ceiling_forbids": "Any claim in this monograph that GEM-style constraint projection is practical at LLM scale. The mechanism requires K-1 full gradients of |Theta| resident simultaneously; at |Theta| = 1109240 that is 84.3 MB in fp32 and invisible, but the same construction at 7B parameters and 19 tasks is 19 x 14 GB = 266 GB in bf16 (arithmetic by this note, not in the paper). GEM's cost argument -- 'a QP on t-1 << p variables' -- is about the QP, and the QP was never the expensive part.",
+    "single_run_caveat": "Every number in the paper is from ONE run. No seeds, no error bars, no confidence intervals, no repetition, anywhere in the main text or the appendices.",
+    "source": "§4.1 lines 317-334; §4.2 lines 335-345; §4.4 lines 595-599; Table 1 line 475"
+  },
+
+  "concept_ledger_delta": {
+    "new_concepts_introduced_here": [
+      {"concept": "performance matrix Pi", "definition": "Pi_{k,j} = test accuracy on task j after finishing training on task k, with row 0 = accuracy at random initialisation", "owner_chapter": "ch07", "source": "lines 122-126, 813-815", "note": "The book's symbol is Pi, NOT the paper's R. This note is the origin of that decision; see notation_conflicts."},
+      {"concept": "ACC / BWT / FWT", "definition": "the three scalars extracted from Pi by Eqs. (2)-(4)", "owner_chapter": "ch07", "source": "lines 129-159", "note": "BWT is the corpus's operational definition of the frame's rho, restricted to end-to-end rather than per-round."},
+      {"concept": "continuum of data", "definition": "an ordered stream of (input, task descriptor, target) triplets, locally iid, seen once", "owner_chapter": "ch07", "source": "Eq. (1) line 44; lines 76-80"},
+      {"concept": "task descriptor", "definition": "an object t_i identifying which task an example belongs to; integers in this paper, but 'task descriptors t_i could be structured objects, such as a paragraph of natural language explaining how to solve the i-th task' [lines 87-89]", "owner_chapter": "ch07", "source": "lines 85-95", "note": "The structured-descriptor idea is left entirely unimplemented and becomes the paper's first stated open question."},
+      {"concept": "positive backward transfer as an achievable design goal", "definition": "learning a later task IMPROVES a previously learned one", "owner_chapter": "ch07", "source": "lines 113-117, 196-201", "note": "Before this paper the field's ceiling was 'forget less'. GEM makes 'improve the past' a target and reports it as achieved."},
+      {"concept": "episodic memory used as a CONSTRAINT SET rather than as training data", "definition": "stored examples generate reference gradients that define a feasible cone; their loss is never minimised", "owner_chapter": "ch07", "source": "lines 194-234"},
+      {"concept": "memory budget as a first-class hyperparameter (M total, m = M/K per task)", "definition": "capacity measured in slots and swept", "owner_chapter": "ch07 (and ch2x on capacity)", "source": "lines 179-184; Table 2"}
+    ],
+    "extended_or_renamed": [
+      {"from": "EWC's 'synaptic consolidation'", "to": "the 'synaptic memory' vs 'episodic memory' split", "detail": "GEM's §5 supplies the corpus's cleanest two-way naming: '\"synaptic\" memory [Kirkpatrick et al., 2017, Zenke et al., 2017], where learning rates are adjusted to minimize changes in parameters important for previous tasks' versus '\"episodic\" memory [Jung et al., 2016, Li and Hoiem, 2016, Rannen Triki et al., 2017, Rebuffi et al., 2017], where examples from previous tasks are stored and replayed to maintain predictions invariant by means of distillation' [lines 651-657]. GEM then places itself in the second family while rejecting its mechanism.", "source": "§5 lines 651-658"},
+      {"from": "catastrophic forgetting (McCloskey & Cohen 1989)", "to": "large negative BWT", "detail": "'Large negative backward transfer is also known as (catastrophic) forgetting.' [lines 116-117] -- the qualitative phenomenon becomes a signed scalar.", "source": "lines 113-117"}
+    ],
+    "retired_or_demoted": [
+      {"concept": "'average accuracy across all tasks' as a sufficient report", "reason": "GEM's §2 argues it hides both transfer directions [lines 98-104]. After this paper, an ACC-only continual-learning result is incomplete by the field's own standard."},
+      {"concept": "the assumption that protecting the past necessarily costs the past's improvability", "reason": "shown false by construction: a one-sided constraint protects without freezing [lines 196-201]."}
+    ]
+  },
+
+  "open_questions": [
+    {
+      "id": "OQ1",
+      "question": "How should structured task descriptors be exploited to obtain positive FORWARD transfer (zero-shot learning)?",
+      "verbatim": "'GEM does not leverage structured task descriptors, which may be exploited to obtain positive forward transfer (zero-shot learning).' [§6, lines 679-680]. Foreshadowed at lines 87-95 ('task descriptors t_i could be structured objects, such as a paragraph of natural language') and conceded at lines 175-178 ('When using integer task descriptors, one cannot expect significant positive forward transfer (zero-shot learning)').",
+      "who_takes_it_up_in_this_corpus": "Nobody in the Theta path. The descriptor-as-natural-language idea is picked up, unwittingly, by the E path a decade later: a 'paragraph of natural language explaining how to solve the i-th task' is precisely what ReasoningBank (2509.25140) stores and what MemGPT (2310.08560) pages in. ch07's bridge-out should name this as a dormant question that the E path answers without citing it."
+    },
+    {
+      "id": "OQ2",
+      "question": "What is the right memory management policy? The paper uses the crudest possible one.",
+      "verbatim": "'we did not investigate advanced memory management (such as building coresets of tasks [Lucic et al., 2017]).' [§6, lines 680-681]; and at the point of definition, 'we assume that the memory is populated with the last m examples from each task, although better memory update strategies could be employed (such as building a coreset per task).' [lines 182-184]",
+      "who_takes_it_up_in_this_corpus": "Rate-Distortion Memory Compaction (2607.08032) is the corpus's direct answer -- what to keep when you cannot keep everything -- and SCM (2604.20943) answers it as algorithmic forgetting. Neither cites GEM."
+    },
+    {
+      "id": "OQ3",
+      "question": "How do you avoid paying one backward pass per past task at every single step?",
+      "verbatim": "'each GEM iteration requires one backward pass per task, increasing computation time.' [§6, lines 682-683]; 'GEM's bottleneck is the necessity of computing previous task gradients at each learning iteration.' [§4.4, line 599]",
+      "why_it_matters_here": "This is the question that decides GEM's fate at scale, and it is the one the paper leaves in the weakest state -- it is stated as a fact, with no proposal. In the frame's terms: GEM has no B_s to amortise the cost into, so the cost has nowhere to go but into wake-time training."
+    },
+    {
+      "id": "OQ4",
+      "question": "When does the local-linearity assumption behind Eq. (7) actually hold, and what happens when it does not?",
+      "verbatim": "Implicit. The paper states the assumption -- 'assuming that the function is locally linear (as it happens around small optimization steps) and that the memory is representative of the examples from past tasks' [lines 211-213] -- and immediately hedges the conclusion: 'the proposed parameter update g is unlikely to increase the loss at previous tasks' [lines 224-225]. No condition, bound or diagnostic is offered, and no experiment measures how often the projected step still increases a past loss.",
+      "status": "the paper never returns to it"
+    },
+    {
+      "id": "OQ5",
+      "question": "What is gamma and why does it work?",
+      "verbatim": "'In practice, we found that adding a small constant gamma >= 0 to v* biased the gradient projection to updates that favoured benefitial backwards transfer.' [lines 271-272]",
+      "status": "purely empirical, never analysed, never ablated, and grid-searched to 0.5 on all three datasets [App. A line 805]. Since positive BWT is the paper's headline differentiator, an unexplained knob that directly promotes positive BWT is the weakest link in the argument."
+    },
+    {
+      "id": "OQ6",
+      "question": "Does any of this survive when tasks are not signposted? GEM requires the task boundary and, on CIFAR, the task identity at test time.",
+      "status": "implicit; the paper notes only that on MNIST it can predict 'without making use of task descriptors' [lines 279-281] because a single 10-way head is shared, while on CIFAR 'the network has a final linear classifier per task' [lines 341-342]. Task-free continual learning is never raised."
+    }
+  ],
+
+  "unfavorable_facts": [
+    {
+      "id": "F1",
+      "severity": "high -- affects every BWT and FWT number the paper prints",
+      "claim": "Every printed BWT and FWT value in Appendix B is computed with denominator K = 20, not the K-1 = 19 that Eqs. (3) and (4) print. All printed magnitudes are therefore 5% too small (a factor of exactly 19/20).",
+      "how_verified": "This note re-derived ACC, BWT and FWT directly from all fifteen printed Pi matrices (App. B.1.1-B.3.5, lines 822-1282) using the formulas as typeset. ACC matches all 15 printed 'Final Accuracy' values to 4 decimals -- Eq. (2)'s denominator really is K. BWT and FWT match NONE of the printed values with denominator K-1, and match ALL of them to 4 decimals with denominator K.",
+      "worked_case_App_B_1_1": "MNIST permutations, model 'single' (block B.1.1, matrix at lines 822-843, scalars at lines 844-846). Sum over j = 1..19 of (Pi_{20,j} - Pi_{j,j}) = -3.961000 exactly. Divided by K-1 = 19 this gives -0.208474, i.e. -0.2085 as Eq. (3) is written. Divided by K = 20 it gives -0.198050, which is exactly the printed 'Backward: -0.1980'. The same block's FWT: sum = 0.185800; /19 = 0.009779; /20 = 0.009290, and the printed value is 'Forward: 0.0093'.",
+      "the_full_corrected_set": "given in experiments.E1-headline-ACC-BWT-FWT.results_table, columns BWT_eq3 and FWT_eq4",
+      "what_it_does_NOT_change": "No ranking, no sign, and no qualitative claim. The defect is a uniform rescaling applied identically to every method and every dataset, so GEM still has the only positive BWT everywhere and every ordering in Figure 1 survives. The three 'independent' blocks print 0.0000 and are unaffected.",
+      "why_ch07_must_still_state_it": "(a) the monograph will quote these numbers, and a reader who recomputes from the printed matrices will get different values; (b) it is direct evidence that the reference implementation and the typeset equations diverged, which bears on how much weight the corpus should put on the other cross-table inconsistencies below; (c) ch22 will reuse Pi and the BWT formula as book-internal definitions, and must adopt the K-1 form that Eq. (3) states, not the K form the code used.",
+      "source": "Eqs. (3)-(4) lines 139-159; App. B lines 809-1283; recomputation by this note"
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "claim": "Table 2 and Appendix B.3 disagree about the same CIFAR-100 configuration. At memory size 5120 -- the configuration App. A says was selected for both methods -- Table 2 reports GEM ACC 0.654 and iCARL ACC 0.508 [lines 536-546], while Appendix B.3.5 reports GEM 'Final Accuracy: 0.6783' [line 1280] and B.3.3 reports iCARL 0.5462. Both appendix values are higher. The paper offers no reconciliation and never mentions that the two tables differ.",
+      "source": "Table 2 lines 523-546; App. A lines 798-804; App. B.3.3 and B.3.5"
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "claim": "Table 3's '1 epoch' column disagrees with Appendix B.2 on the same MNIST-rotations single-pass runs. GEM: Table 3 says BWT +0.05, App. B.2.5 prints +0.0048 -- a factor of ten. 'independent': Table 3 says ACC 0.56, App. B.2.2 prints 0.6241. EWC: Table 3 says -0.19, App. B.2.4 prints -0.2047. 'single': Table 3 says -0.08, App. B.2.1 prints -0.0896.",
+      "note": "The ACC column of Table 3 otherwise agrees with the appendix to two decimals (single 0.53/0.5307, multimodal 0.76/0.7585, EWC 0.55/0.5461, GEM 0.86/0.8607), which makes the 'independent' 0.56-vs-0.6241 gap and the GEM BWT factor-of-ten stand out rather than look like rounding. The GEM discrepancy is consistent with a misplaced decimal point, but the paper says nothing, so the monograph must report the disagreement rather than diagnose it.",
+      "source": "Table 3 lines 548-584; App. B.2.1-B.2.5"
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "claim": "The claimed 'oracle performance upper-bound' is exceeded by GEM in two of three columns, so it is not an upper bound. Table 3: iid oracle 0.83 / 0.87 / 0.89 at 1 / 2 / 5 epochs; GEM 0.86 / 0.88 / 0.89. The paper's sentence is 'we see that GEM matches the \"oracle performance upper-bound\" ACC provided by iid learning' [lines 620-621] -- 'matches' understates what its own table shows and simultaneously conceals that the bound is loose. The oracle is the SAME small 2x100 MLP trained on shuffled data, i.e. a weak reference, not a ceiling.",
+      "source": "Table 3 lines 549-584; §4.4.1 lines 617-621"
+    },
+    {
+      "id": "F5",
+      "severity": "high for this monograph's cost framing",
+      "claim": "GEM retains a large fraction of the raw stream verbatim, and the paper never says so. M = 5120 of 20,000 MNIST examples = 25.6%; 5120 of 50,000 CIFAR examples = 10.24% (arithmetic by this note from §4.1 lines 331-333 and App. A line 804). GEM is therefore a heavy rehearsal method by storage, even though its mechanism is not rehearsal. This is exactly the capacity objection EWC raised against replay -- 'it would require the amount of memories being stored and replayed to be proportional to the number of tasks' [ewc §1 lines 50-54] -- and GEM does not answer it; it accepts it and fixes the budget by hand.",
+      "source": "§3 lines 179-184; §4.1 lines 331-333; App. A line 804"
+    },
+    {
+      "id": "F6",
+      "severity": "medium",
+      "claim": "The memory-size ablation exists only on CIFAR-100. On both MNIST datasets GEM is run at a single budget (5120) with no sweep [App. A line 804], so the paper's MNIST headline numbers -- its strongest results, including the +0.0247 positive BWT on permutations -- have no capacity ablation behind them. Table 2 also stops at the largest grid point without saturating.",
+      "source": "Table 2 lines 523-546; App. A lines 802-805"
+    },
+    {
+      "id": "F7",
+      "severity": "medium",
+      "claim": "The cost table (Table 1) covers MNIST only and is CPU-only. The CIFAR-100 setting -- the one with |Theta| = 1109240 and therefore the one where 19 extra backward passes per step actually cost something -- is never timed. The paper's efficiency claim ('spending less computation', line 596) is thus supported only where the model is a 2x100 MLP.",
+      "source": "Table 1 line 475; §4.4 lines 595-599"
+    },
+    {
+      "id": "F8",
+      "severity": "medium",
+      "claim": "On CIFAR-100 the network 'has a final linear classifier per task' [lines 341-343]. That is a per-task parameter slice, so the CIFAR comparison is not a comparison of methods sharing one Theta -- it is the same confound class as EWC's per-task gains and biases in the Atari experiment [ewc Eq. 4]. It also means GEM on CIFAR requires the task descriptor at TEST time, contradicting the causal-compression paragraph's boast that GEM 'can ... be used to predict target vectors associated to previous or new tasks without making use of task descriptors' [lines 279-281], which holds only on MNIST.",
+      "source": "§4.2 lines 341-343; §3 lines 278-282"
+    },
+    {
+      "id": "F9",
+      "severity": "medium",
+      "claim": "FWT mostly measures dataset similarity, not method quality, and the paper does not say so. On MNIST permutations every method's FWT is within 0.0054-0.0093 of zero, because permutations destroy input-space transfer by construction ('the input distribution for each task is unrelated', line 323). On MNIST rotations the same metric reaches 0.4254 for the do-nothing 'single' baseline and 0.5524 for EWC -- neither of which has any forward-transfer mechanism at all. GEM's headline FWT of 0.6647 on rotations is therefore largely an artefact of rotations being nearly the same task twenty times over. On CIFAR-100, FWT is ~0 or negative for everyone (-0.0078 for GEM) because the classes are disjoint.",
+      "source": "§4.1 lines 322-331; App. B.1-B.3"
+    },
+    {
+      "id": "F10",
+      "severity": "medium",
+      "claim": "gamma is a tuned knob acting directly on the headline claim. The paper's differentiator from EWC and iCaRL is positive backward transfer; gamma is introduced with the single sentence 'we found that adding a small constant gamma >= 0 to v* biased the gradient projection to updates that favoured benefitial backwards transfer' [lines 271-272] and is then grid-searched to 0.5 -- the midpoint of the [0.0, ..., 1.0] grid, not 0 -- on all three datasets [line 805]. There is no gamma = 0 ablation anywhere, so the paper never shows how much of its positive BWT comes from the constraint mechanism and how much from this bias term.",
+      "source": "lines 271-272; App. A line 805"
+    },
+    {
+      "id": "F11",
+      "severity": "medium",
+      "claim": "The mechanism's guarantee is explicitly hedged and never measured. Eq. (7) is a linearisation whose validity requires local linearity and a representative memory [lines 211-213]; the paper's own conclusion is that a satisfying update is 'unlikely to increase the loss at previous tasks' [lines 224-225]. No experiment counts how often a projected step nonetheless raised a past loss, though this is directly measurable with the code that produced Pi.",
+      "source": "§3 lines 209-234"
+    },
+    {
+      "id": "F12",
+      "severity": "medium",
+      "claim": "Single run, no seeds, no variance. Fifteen 20-task runs are reported; not one is repeated, and no error bar, standard deviation or confidence interval appears in any figure, table or appendix. GEM's CIFAR BWT (+0.0042) and rotations BWT (+0.0048) are within a few thousandths of zero, and the paper's central qualitative claim -- that BWT is POSITIVE rather than merely near-zero -- rests on those two numbers with no dispersion estimate.",
+      "source": "absence across the paper"
+    },
+    {
+      "id": "F13",
+      "severity": "low",
+      "claim": "The EWC baseline is a reimplementation with two grid-searched hyperparameters (learning rate, regularization strength) and nothing else specified. The number of samples used to estimate the Fisher, whether penalties were kept per-task or merged (EWC's own unresolved fork, [ewc §2 lines 158-160]), and whether the diagonal was recomputed at every boundary are all unstated. Selected regularization strengths span three orders of magnitude across datasets (1 cifar / 3 perm / 1000 rot) [line 797], which is itself a sign of an unstable baseline.",
+      "source": "§4.3 line 516; App. A lines 795-797"
+    },
+    {
+      "id": "F14",
+      "severity": "low",
+      "claim": "Terminology is inconsistent within two pages: §5 splits the field into 'synaptic' memory (EWC, Zenke) versus 'episodic' memory (iCaRL, LwF) [lines 651-657], but §4.4.1 calls EWC a 'memory-based method' alongside GEM [line 614]. The monograph must not inherit this looseness -- ch07 should use the §5 split and say so.",
+      "source": "§4.4.1 line 614; §5 lines 651-657"
+    }
+  ],
+
+  "cross_path_citations": {
+    "method": "The reference list of the vendored text (lines 690-776) was read in full and classified against the S0 three-path taxonomy. 'Cited' below means the reference appears in that list AND is used in the body; the body location is given.",
+    "Theta_path": {
+      "verdict": "densely cited, and treated as the state of the art to beat",
+      "items": [
+        "EWC [Kirkpatrick et al., 2017] -- reference line 720-721. Used as the named state of the art (lines 99, 200, 516), as the source of the MNIST Permutations benchmark (line 322), and as a baseline in every experiment.",
+        "Synaptic Intelligence [Zenke, Poole and Ganguli, 2017] -- reference line 776. Cited once, in the 'synaptic memory' grouping with EWC (line 653). Not compared against.",
+        "iCaRL [Rebuffi et al., 2017] -- reference line 752-753. Named state of the art (lines 99, 200), source of the Incremental CIFAR100 benchmark (line 326), source of the shrinking-m idea (line 181), and the CIFAR-only baseline (line 517).",
+        "Learning without Forgetting [Li and Hoiem, 2016] -- line 728; Encoder Based Lifelong Learning [Rannen Triki et al., 2017] -- line 749; Less-forgetting Learning [Jung et al., 2016] -- line 719. All three cited only in the §5 'episodic memory + distillation' grouping (lines 654-657).",
+        "Progressive Neural Networks [Rusu et al., 2016] -- line 757-758; PathNet [Fernando et al., 2017] -- line 712-713; Expert Gate [Aljundi et al., 2016] -- line 691. The capacity-growth family, cited and dismissed on scaling grounds: 'it has been very hard to scale up these methods to lots of modules and tasks, given the combinatorial number of compositions of modules' [lines 649-650].",
+        "ELLA [Ruvolo and Eaton, 2013] -- line 759. Cited once as a lifelong-learning implementation (line 631).",
+        "Distillation [Hinton et al., 2015] -- line 718, cited as the mechanism of the episodic-memory family (line 657)."
+      ]
+    },
+    "replay_and_CLS": {
+      "verdict": "CLS is cited only as a forgetting reference, never as a design source; and the generative-replay branch is ABSENT",
+      "items": [
+        "McClelland, McNaughton and O'Reilly 1995 (CLS) -- reference line 734-736. It appears in exactly one place: a parenthetical list of catastrophic-forgetting citations, '[McCloskey and Cohen, 1989, French, 1999, Ratcliff, 1990, McClelland et al., 1995, Goodfellow et al., 2013]' [lines 642-643]. GEM never invokes the two-system argument, never mentions consolidation, and never mentions sleep or any offline phase.",
+        "Deep Generative Replay [Shin et al., 2017] -- NOT CITED. It appeared on arXiv in May 2017, roughly a month before GEM's v1; the vendored text is v6 (2022) and still does not cite it, across five revisions. GEM's episodic memory and DGR's generator are the two 2017 answers to the same EWC objection, and they never meet.",
+        "Pseudo-rehearsal (Robins 1995) -- NOT CITED. Rehearsal as such is never named as a baseline; GEM's 'independent' and 'single' baselines contain no rehearsal arm, so the paper never shows what plain replay on its own 5120-example buffer would achieve. That missing baseline is the most consequential omission in the experiment section for ch07's three-way comparison."
+      ]
+    },
+    "E_path": {
+      "verdict": "touched once, in a list, not as a mechanism",
+      "items": [
+        "Memory-augmented neural networks [Santoro et al., 2016] -- reference line 760-761. Cited only inside the one-shot-learning enumeration at lines 664-666. The external-memory architecture it proposes is never discussed.",
+        "Matching Networks [Vinyals et al., 2016] -- line 775, same enumeration.",
+        "No retrieval, no vector store, no key-value memory, no attention over stored items appears anywhere in the paper. GEM's 'memory' is a Python list consumed by the optimiser."
+      ]
+    },
+    "W_path": {
+      "verdict": "one reference, and it is not used as a fast-weight citation",
+      "items": [
+        "Learning feed-forward one-shot learners [Bertinetto et al., 2016] -- reference line 701-702. This is a fast-weight/hypernetwork paper (one network predicts another's parameters), but GEM cites it only in the one-shot-learning list at lines 664-666.",
+        "No Schmidhuber fast weights, no Ba et al. 2016 'Using fast weights to attend to the recent past', no Hebbian or test-time-learning reference of any kind. The W path does not exist for this paper."
+      ]
+    },
+    "the_silence_to_write_up_in_ch07_bridge_out": "GEM is a pure Theta-path paper that reads only Theta-path literature. It inherits the problem from EWC, competes with iCaRL, and looks nowhere else. The CLS citation is decorative. There is no sleep, no offline phase, no biological framing at all -- which makes GEM the corpus's cleanest demonstration that the forgetting problem can be attacked WITHOUT any of the machinery the rest of this monograph is about. That is the honest negative control for Part III: if a 2017 constraint on the gradient direction gets positive backward transfer on 20 tasks with no consolidation phase, then any later paper claiming that an offline phase is NECESSARY for retention owes an explanation.",
+    "who_cites_GEM_later_in_this_corpus": "TODO-VERIFY -- to be filled by cross-checking the other notes' reference sections; see todo_verify T6."
+  },
+
+  "systems_implications": {
+    "what_changes_at_answer_time": "Nothing. The deployed artifact is one weight vector (plus K linear heads on CIFAR). No retrieval, no adaptation, no extra state, identical forward pass, identical batching behaviour, identical weight sharing across users. In Rosetta terms (STC-STYLE §3): GEM is a 'model redeploy' -- (U-Theta) run once -- and everything the reader knows about serving a static checkpoint still applies.",
+    "what_changes_at_training_time": "Per optimiser step, at round k: k-1 extra full backward passes plus a (k-1)-variable dense QP. The QP is negligible -- at most a 19x19 Gram matrix. The gradients are not: G in R^{(k-1) x |Theta|} must be materialised. This is the load-bearing systems fact and the paper's own efficiency argument sidesteps it by talking about the QP dimension instead.",
+    "the_scale_arithmetic_ch07_should_show": "At the paper's own CIFAR scale, |Theta| = 1109240 [line 598] and k-1 = 19, so G is 21,075,560 floats = 84.3 MB in fp32 -- invisible. Carry the same construction to a 7B-parameter model in bf16 and 19 past tasks and G is 19 x 14 GB = 266 GB, plus 19 backward passes per step. THIS ARITHMETIC IS THIS NOTE'S, NOT THE PAPER'S, and must be marked as such in the text. The conclusion for the monograph: GEM's mechanism does not scale by construction, and the reason is not the QP but the requirement that all past-task gradients coexist.",
+    "the_obvious_degradation_the_paper_does_not_discuss": "One could keep a single aggregated constraint direction instead of k-1 separate ones, reducing G to one row. The paper never mentions this, and it is exactly the move that would turn GEM into something deployable. [평가] material for ch07: the k-1-row structure is what buys per-task guarantees, and collapsing it trades the guarantee for O(|Theta|) state -- i.e. it converges toward EWC's storage profile from the other side.",
+    "memory_hierarchy_reading": "GEM's per-step traffic is k-1 gradient reads/writes of size |Theta|, i.e. a bandwidth-bound streaming workload on top of the ordinary training step, with essentially no arithmetic intensity in the projection itself (the inner products are one pass over G). Contrast EWC, whose remembering cost is a single elementwise AXPY over |Theta| per step. Both are bandwidth-bound; GEM's constant is (k-1)x larger and grows with the round index.",
+    "capacity_and_privacy": "GEM stores RAW user data (25.6% of the MNIST stream, 10.24% of the CIFAR stream -- F5). In any per-user or per-session deployment this is a retention liability that neither EWC nor generative replay incurs, and it is the concrete cost the E path later makes explicit and pays deliberately. ch07 should state it: the three answers to 'how does the past survive' also differ in WHAT THEY OBLIGE YOU TO KEEP ABOUT YOUR USERS.",
+    "what_this_paper_gives_the_serving_reader_that_nothing_else_does": "BWT is an SLA. It is a single signed number, measurable from a matrix any serving team could already produce (evaluate the whole regression suite after each update round), that says whether the last deployment made earlier capabilities worse. Table 3 then shows the knob: more optimisation on the new round buys more regression on the old ones, monotonically, for methods without memory. That is the closest thing this corpus has to a control law for repeated Theta updates in production.",
+    "constraint_reminder": "No memory-centric hardware argument is available from this paper and none is made here. GEM reports CPU seconds on a 2x100 MLP; NM D4's prohibition on forced connections applies."
+  },
+
+  "figures": [
+    {
+      "id": "Figure 1 (left)",
+      "location": "caption lines 472-473; referenced §4.4 lines 588-592",
+      "shows": "Three stacked panels (MNIST permutations, MNIST rotations, CIFAR-100), each a grouped bar chart of ACC, BWT and FWT for all methods. Legends differ by dataset: MNIST panels show single / independent / multimodal / EWC / GEM; the CIFAR panel shows single / independent / iCARL / EWC / GEM.",
+      "citation_value": "high -- this is the paper's headline visual and the natural thing for ch07 to redraw. IF REDRAWN, the caption must say '([GEM Fig. 1] 재구성)' per STC-STYLE §5, and the bar values must come from Appendix B with F1's denominator issue stated.",
+      "caveat": "the figure prints no numbers; the axis text captured in the vendored file (lines 348-471) is a scrambled OCR of the axis labels and tick values and must not be read as data."
+    },
+    {
+      "id": "Figure 1 (right)",
+      "location": "caption lines 472-473; §4.4 lines 593-594",
+      "shows": "'evolution of the test accuracy at the first task, as more tasks are learned' -- one curve per method per dataset, x-axis 0..20 tasks.",
+      "citation_value": "high -- this is the single clearest picture of forgetting-versus-time in the corpus, and its data is exactly column 1 of Pi, which Appendix B provides in full. ch07 can redraw it with real numbers rather than tracing the original."
+    },
+    {
+      "id": "Algorithm 1",
+      "location": "lines 283-310",
+      "shows": "TRAIN and EVALUATE pseudocode, including the construction of Pi row by row.",
+      "citation_value": "high -- eight lines that contain the whole method. Worth reproducing in ch07 in the book's notation (see gem-12), because the placement of the projection inside the inner loop is what makes the 'no sleep phase' point visually obvious."
+    },
+    {"id": "Table 1", "location": "line 475, values 476-505", "shows": "CPU training time in seconds, MNIST only.", "citation_value": "medium -- the only cost measurement, and small enough to quote whole."},
+    {"id": "Table 2", "location": "line 523, values 524-546", "shows": "CIFAR-100 ACC vs episodic memory size, GEM and iCARL.", "citation_value": "high -- the corpus's cleanest capacity-versus-quality curve, and the natural anchor for C_cap discussion."},
+    {"id": "Table 3", "location": "line 548, values 549-584", "shows": "ACC/BWT on MNIST rotations at 1 / 2 / 5 passes, six methods including the iid oracle.", "citation_value": "highest of the four tables for this monograph -- it is the only rho-versus-training-effort measurement anywhere in the corpus."},
+    {"id": "Appendix B matrices", "location": "lines 809-1283", "shows": "all fifteen 21x20 Pi matrices in full text.", "citation_value": "high as a DATA SOURCE rather than as a figure; it is what makes F1 provable and what lets ch07 compute per-task forgetting for individual tasks."}
+  ],
+
+  "todo_verify": [
+    {
+      "id": "T1",
+      "claim": "The BWT/FWT denominator defect (F1) originates in the released implementation rather than in the typesetting of the tables.",
+      "status": "unresolved -- the vendored text alone cannot decide it",
+      "how_to_settle": "Read the metric computation in https://github.com/facebookresearch/GradientEpisodicMemory (linked at lines 69-70) and check whether the backward/forward reductions divide by the number of tasks. If they do, the defect is in the code and the appendix simply printed what the code produced. NOTE: this requires network access and is outside the vendored corpus; until settled, ch07 must state only the observable fact (printed value = sum/K in all 15 blocks), not the cause."
+    },
+    {
+      "id": "T2",
+      "claim": "The disagreements of F2 (Table 2 vs App. B.3) and F3 (Table 3 vs App. B.2) come from separate runs rather than from transcription errors.",
+      "status": "unresolved; the paper offers no reconciliation",
+      "how_to_settle": "No internal evidence exists. ch07 must report both numbers with their locations and refrain from diagnosing. If the monograph needs one number for CIFAR GEM ACC, use the appendix value 0.6783 and say why (the appendix prints the matrix it was computed from; Table 2 prints nothing checkable)."
+    },
+    {
+      "id": "T3",
+      "claim": "Figure 1's bars display the same scalars printed in Appendix B.",
+      "status": "highly likely but not literally stated",
+      "how_to_settle": "The text says 'We provide the full evaluation matrices R in Appendix B' [lines 589-590] immediately after introducing Figure 1, which implies the same runs, but no sentence asserts that the bars equal the appendix scalars. Since the figure's numbers are not machine-readable from the vendored text, ch07 should cite Appendix B for every value and cite Figure 1 only for the shape of the comparison."
+    },
+    {
+      "id": "T4",
+      "claim": "GEM's MNIST networks' parameter count.",
+      "status": "not in the paper",
+      "how_to_settle": "Only the shape is given ('two hidden layers of 100 ReLU units', line 339). A 784-100-100-10 MLP is trivially countable, but the input dimension for the rotated/permuted images and the presence of biases are not stated, so the count must NOT be printed in the monograph as a fact. Leave it out or mark the arithmetic as this book's."
+    },
+    {
+      "id": "T5",
+      "claim": "Whether the 'independent' baseline's shrunken width ('T times less hidden units than single', lines 511-512) means 100/20 = 5 units per hidden layer.",
+      "status": "ambiguous",
+      "how_to_settle": "The phrase is unambiguous arithmetically but implausible as an implementation (5 hidden units). If ch07 uses the 'independent' baseline as a reference point -- and it should, since it is the only zero-forgetting-by-construction arm -- state the phrase verbatim and do not compute the width."
+    },
+    {
+      "id": "T6",
+      "claim": "Which later papers in this corpus cite GEM, and whether any of them adopt ACC/BWT/FWT as their reporting format.",
+      "status": "not yet checked",
+      "how_to_settle": "Grep the other notes' cross_path_citations and the vendored texts in papers/stc/ for '1706.08840', 'Gradient Episodic Memory', 'backward transfer' and 'BWT'. This determines whether ch07's metric definitions can be presented as corpus-wide standard or must be presented as ch07-local. Blocks the ch22 reuse decision."
+    },
+    {
+      "id": "T7",
+      "claim": "Whether the vendored v6 text differs numerically from the NIPS 2017 camera-ready.",
+      "status": "unknown",
+      "how_to_settle": "The vendored file is v6 (2022-09-13, line 3) while the venue footnote is NIPS 2017 (line 54). Five revisions separate them. Every number in this note is sourced to the vendored file; if the monograph ever cites 'the NIPS 2017 paper' it must either verify against the proceedings version or say 'arXiv v6' explicitly. Recommend the latter."
+    },
+    {
+      "id": "T8",
+      "claim": "Whether the same seed was used across methods within a dataset.",
+      "status": "not stated, but strongly evidenced",
+      "how_to_settle": "This note verified that the pi-bar rows are byte-identical across blocks of the same dataset, and that round-1 rows are byte-identical between methods sharing a learning rate (EWC and GEM on permutations, lines 916 and 946; single and EWC on CIFAR, lines 1136 and 1228). That is consistent with a shared seed but the paper never says so. State it as an observation about the printed matrices, not as a claim about the experimental protocol."
+    }
+  ],
+
+  "note_metadata": {
+    "written_for": "Part I ch07 (망각과 replay) primary source; ch07 re-edit and ch22 must collate against this note, not against the chapter text.",
+    "extraction_basis": "the vendored text only, /home/jimmy/repos/neural-memory-study/papers/stc/1706.08840.txt (1286 lines, arXiv v6). No external source consulted. Every factual claim carries a line number in that file.",
+    "arithmetic_performed_by_this_note": [
+      "recomputation of ACC/BWT/FWT from all 15 Appendix-B matrices (basis of F1 and of the BWT_eq3 / FWT_eq4 columns in experiments.E1.results_table)",
+      "m = C_cap / K = 5120 / 20 = 256 slots per task",
+      "memory as a fraction of the stream: 5120/20000 = 25.6% (MNIST), 5120/50000 = 10.24% (CIFAR)",
+      "G footprint: 19 x 1109240 = 21,075,560 floats = 84.3 MB fp32 (CIFAR); the 7B/266 GB extrapolation in systems_implications",
+      "Table 1 ratios: GEM/single = 7.0x (perm), 12.3x (rot); GEM/EWC = 0.43x (perm), 0.80x (rot)",
+      "per-task deltas quoted in E1.the_single_most_quotable_cell"
+    ],
+    "reserved_symbol_decisions_made_here": "R -> Pi (performance matrix) is DECIDED BY THIS NOTE and must be propagated to STC-STYLE §1.7 usage in ch07. Also decided: t -> k (task/round index), T -> K (number of tasks), p -> |Theta|, M_t -> E^{tr}_k, M -> C_cap in slots, alpha -> eta_Theta, l -> calL, r -> pi, n -> N_cont, QP C -> Q, QP b -> h, QP p -> c_lin, b-bar -> pi-bar = Pi_{0,:}.",
+    "fields_that_may_not_be_empty": "unfavorable_facts (14 entries), inherited_open_question (present), cross_path_citations (present).",
+    "version": "v0.1, 2026-08-06"
+  },
+
+  "_pass": "S0 deep-read v0.1"
+}

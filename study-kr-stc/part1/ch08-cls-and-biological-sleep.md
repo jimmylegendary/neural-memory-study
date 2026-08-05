@@ -65,7 +65,9 @@ Sequential 학습은 옛 과제를 chance로 떨어뜨린다(0.70 → 0.52). sle
 
 기제에 대한 논문 자신의 설명은 다음과 같다: "Having a sleep phase after a short period of Task 2 training enables spontaneous forward replay between hidden and output layers (H->O) that preferentially benefits the strongest synapses. Thus, if Task 1 synapses are still strong enough to maintain replay, they are replayed and weights are increased" [PLOS Sleep Results, L307-311]. 각성 중에는 입력층이 현재 과제의 통계를 은닉층에 강제하므로 형성되는 상관은 새 과제의 것이다. 입력을 끊고 무구조 noise로 대체해야만 **가중치 행렬 자신이** 어떤 상관을 되살릴지 고를 수 있다. 그 선택은 가중치만의 성질이고, 그래서 각성 절차로는 재현되지 않는다.
 
-이 지점에서 계보상의 공백을 하나 기록한다. 저장 없이 $\mathcal{R}_k$를 만든다는 목표에는 두 개의 독립된 해법이 있다 — 생성 모델을 따로 학습시켜 과거 분포를 그리게 하는 것(Deep Generative Replay, → ch07)과, 모델 자신을 noise로 돌려 나오는 활동을 그대로 쓰는 것(이 논문)이다. PLOS Sleep은 **DGR을 인용하지 않는다.** 참고문헌 77편은 대부분 신경과학·심리학·spiking network 모델링과 고전 연결주의 망각 문헌이고, 기계학습 쪽 인용은 EWC [Results, L546-547], deep learning replay 리뷰와 지속학습 문헌 [Introduction, L102-105; Discussion, L673-674], meta-learning 한 건 [Discussion, L647-648], 그리고 같은 그룹이 이 기제를 feedforward ANN에 옮긴 자기 인용 [Discussion, L677-679]에 한정된다. 같은 문제의 두 해법이 서로를 보지 않고 나란히 자란 것이며, 이 침묵은 Part II의 경로 간 침묵 지도에서 되풀이되는 형태의 첫 사례다(→ ch11).
+이 지점에서 계보상의 공백을 하나 기록한다. 저장 없이 $\mathcal{R}_k$를 만든다는 목표에는 두 개의 독립된 해법이 있다 — 생성 모델을 따로 학습시켜 과거 분포를 그리게 하는 것(Deep Generative Replay, → ch07)과, 모델 자신을 noise로 돌려 나오는 활동을 그대로 쓰는 것(이 논문)이다. PLOS Sleep은 **DGR을 인용하지 않는다.** 참고문헌 77편은 대부분 신경과학·심리학·spiking network 모델링과 고전 연결주의 망각 문헌이고, 기계학습 쪽 인용은 EWC [Results, L546-547], deep learning replay 리뷰와 지속학습 문헌 [Introduction, L102-105; Discussion, L673-674], meta-learning 한 건 [Discussion, L647-648], 그리고 같은 그룹이 이 기제를 feedforward ANN에 옮긴 자기 인용 [Discussion, L677-679]에 한정된다.
+
+> **[평가]** 같은 목표의 두 해법이 서로를 보지 않고 나란히 자랐다. 이 침묵은 연대가 강제한 것이 아니다 — DGR은 2017년이고 이 논문은 2022년이다. 인용이 가능했는데 이루어지지 않은 자리이므로 이 책은 이것을 계보 사실이 아니라 발견으로 취급하며, Part II의 경로 간 침묵 지도에서 되풀이되는 형태의 첫 사례로 둔다(→ ch11).
 
 sleep을 정적 보호와 구분하는 통제도 있다. Task 1 학습 후 상위 x% 시냅스를 얼려 두는 baseline은 1%에서 0.54/0.68, 5%에서 0.65/0.61, 10%에서 0.70/0.53을 낸다 [PLOS Sleep S6 Fig, L1181-1189]. 세 점 모두 두 축을 맞바꾸는 곡선 위에 있고, sleep의 0.70/0.68은 세 점 전부를 두 축에서 동시에 지배한다. 논문은 이 baseline을 EWC와 같은 계열로 명시적으로 연결한다 [PLOS Sleep Results, L517-547] — 다만 EWC 자체는 실행하지 않는다(→ ch07).
 
@@ -77,7 +79,7 @@ sleep을 정적 보호와 구분하는 통제도 있다. Task 1 학습 후 상�
 
 나머지 제약도 함께 기록한다. 이 논문에는 **어떤 통계 검정도 없다** — 모든 수치가 10회 이상 시행의 평균 ± 표준편차이고, "significantly"라는 단어를 최소 세 번 쓰면서 검정 이름도 p-값도 제시하지 않는다 [L168-169; L418, L444, L506]. 과제는 **두 개뿐이며** 같은 네 방향 어휘에서 뽑은 대칭 상보 과제다 — 논문 자신이 유사성을 특징으로 강조한다 [L233-237]. 따라서 반복 sleep 라운드에 걸친 열화율 $\rho$는 **측정되지 않았다**: 세 번째 과제도, 두 번째 Interleaved 위상도 실행되지 않았다. 보호되는 성능 밴드는 chance 0.5에서 천장 0.70까지 **0.20 폭**이고 조건별 표준편차가 0.02–0.05로 밴드의 10–25%다. 과제·환경·평가 지표가 모두 저자 제작이며 표준 지속학습 벤치마크는 하나도 쓰이지 않았다 [L166-167, L1037-1095]. 그리고 sleep은 **복원하지 않고 보존한다** — "a single episode of new task training using reinforcement learning could quickly erase old memories to the point that they cannot be recovered by subsequent sleep" [PLOS Sleep Discussion, L639-640]. 각성 손상이 아직 부분적인 창 안에서만 오프라인 위상이 각성 위상이 못 하는 일을 한다.
 
-마지막으로 비용이다. 이 논문은 **FLOPs·wall-clock·메모리 사용량·에너지를 하나도 보고하지 않는다.** $B_s$는 계산량이 아니라 시뮬레이션 시간으로만 존재한다 — 한 sleep 구간은 100 movement cycle이고 이는 직전 각성 구간과 정확히 같아 duty ratio가 1:1이다 [PLOS Sleep Results, L301-303; Methods: Simulated sleep, L985-986]. sleep 길이·비율·교대 횟수에 대한 sweep은 없다. §6.4의 규칙대로, 비용 4종이 비어 있으므로 이 논문을 근거로 "효율적"이라고 쓸 수 없다.
+마지막으로 비용이다. 이 논문은 **FLOPs·wall-clock·메모리 사용량·에너지를 하나도 보고하지 않는다.** $B_s$는 계산량이 아니라 시뮬레이션 시간으로만 존재한다 — 한 sleep 구간은 100 movement cycle이고 이는 직전 각성 구간과 정확히 같아 duty ratio가 1:1이다 [PLOS Sleep Results, L301-303; Methods: Simulated sleep, L985-986]. sleep 길이·비율·교대 횟수에 대한 sweep은 없다. ch01 §01.5가 정한 회계 규칙대로, 비용 4종이 비어 있으므로 이 논문을 근거로 "효율적"이라고 쓸 수 없다.
 
 > **[해설]** 그럼에도 systems 독자가 이 논문에서 가져갈 구조적 사실이 하나 있다. sleep 위상을 구동하는 데 필요한 각성 유래 상태는 은닉 뉴런 784개의 목표 발화율 스칼라인데, Uniform-Noise Sleep 통제에서 이것을 **집단 평균 하나로 축약해도 결과가 유지된다**(0.67 ± 0.05 / 0.69 ± 0.03) [PLOS Sleep Results, L355-362; S4E/F, L1144-1150]. 즉 이 모델에서 각성→sleep 경계를 넘는 상태는 $O(1)$ 스칼라 하나로 줄어든다. 이것이 이 논문에서 나오는 **유일한** 용량 주장이고, gradient로 학습되는 모델로의 이송은 이 논문이 보이지 않았다.
 
@@ -107,7 +109,7 @@ PAD의 한 wake–sleep 사이클 $k$는 세 위상으로 구성되고 위상마
 |---|---|---|
 | $E$, $E_z$, $E_d$ | encoder 신경망과 그 두 출력 [PAD Methods: Network architecture] | $\Theta^{\mathrm{enc}}$, $\Theta^{\mathrm{disc}}$ — 예약된 $E$(external store)는 **논문이 이름을 주지 않은 hippocampal buffer**에 배정 |
 | $W$ | 선형 readout 가중치 $W \in \mathbb{R}^{10\times 256}$ [PAD Eq. 10] | $W_{\text{ro}}$ — 모델이 얼려진 뒤 학습되는 **평가용 probe**이며 fast weights가 아니다 |
-| epoch | 데이터셋 1회 통과 [PAD Methods] | 한 wake–sleep 사이클 $k$는 **미니배치 하나**다. 논문 그림의 x축은 epoch이므로 $k$의 수는 그보다 훨씬 많다 |
+| epoch | 데이터셋 1회 통과 [PAD Methods] | 한 wake–sleep 사이클 $k$는 **미니배치 하나**다 — 이 모델에서는 sleep 라운드 $k$와 optimizer step $s$가 1:1로 겹친다. 논문 그림의 x축은 epoch이므로 $k$의 수는 그보다 훨씬 많다 |
 
 표 8-2. PAD 표기 대응 — 예약 기호를 덮어쓰는 두 충돌과 시간 단위 충돌.
 
@@ -126,7 +128,7 @@ PAD의 한 wake–sleep 사이클 $k$는 세 위상으로 구성되고 위상마
 
 REM을 제거하면 두 데이터셋 모두 크게 무너진다(58.25 → 46.00, 78.92 → 42.30). REM을 두되 여러 기억의 혼합도 noise도 없이 단일 기억만 재생하면 역시 떨어진다(53.87, 60.87) [PAD Results, L547-549]. 논문의 결론은 여기서 나온다 — 표현을 만드는 것은 오프라인이라는 사실 자체가 아니라 **오프라인에서 무엇을 생성하는가**다.
 
-그러나 표를 그대로 읽으면 논문의 두 번째 주장은 훨씬 약하다. **CIFAR-10에서 w/o NREM은 58.00 ± 0.34로 PAD의 58.25 ± 0.70과 오차 안에서 같다.** NREM의 기여는 깨끗한 이미지의 선형 분리도가 아니라 가림이 있을 때의 견고성으로만 나타난다 [PAD Results, L571-577]. 논문은 이 구분을 지키지만, 표 없이 요약만 읽으면 "네 구성요소가 모두 기여한다"로 읽히기 쉽다.
+> **[평가]** 표를 그대로 읽으면 논문의 두 번째 주장은 훨씬 약하다. **CIFAR-10에서 w/o NREM은 58.00 ± 0.34로 PAD의 58.25 ± 0.70과 오차 안에서 같다** [PAD Appendix 1—table 1]. NREM의 기여는 깨끗한 이미지의 선형 분리도가 아니라 가림이 있을 때의 견고성으로만 나타난다 [PAD Results, L571-577]. 논문은 본문에서 이 구분을 지키지만, 표 없이 요약만 읽으면 "네 구성요소가 모두 기여한다"로 읽히기 쉽다.
 
 더 무거운 사실이 Methods에 있다. **절제 대조군은 손봐진 상태로 비교된다.** REM을 제거한 모델은 "we observed a decrease of linear separability after some (>25) epochs"라는 이유로 encoder 출력에 $\epsilon \sim \mathcal{N}(0,\,0.5 I)$를 더한 변형 재구성 손실로 학습되고 [PAD Eq. 12], 나아가 "we reduced the effect of NREM by scaling down its loss with a factor of 0.5"라는 조정까지 받는다 [PAD Methods: Modifications specific to pathological models]. 논문은 이 조정을 공정 비교를 위한 것이라고 밝히며 숨기지 않는다.
 
@@ -158,6 +160,10 @@ REM을 제거하면 두 데이터셋 모두 크게 무너진다(58.25 → 46.00,
 | 오프라인 위상이 하나가 아니라 목적함수가 다른 둘일 때 서로 다른 성질(정확도 / 섭동 견고성)이 갈라져 나온다 | PAD Results, L534-577; Appendix 1—table 1 |
 
 표 8-4. 생물학 두 편에서 이송 가능한 구조적 주장.
+
+셋째 행은 이 표에서 유일하게 자기 근거와 긴장 관계에 있으므로 그 자리에서 긴장을 밝힌다. 이 행이 이송하는 주장은 PAD의 절제 결과(w/o memory mix 53.87 vs PAD 58.25)에서 나오는데, 같은 저자가 통제에서 "we do not observe significant differences between using a combination of episodic memories with spontaneous activity or only using spontaneous activity"라고 보고한다 [PAD Discussion, L1034-1036; Appendix 1—figure 4].
+
+> **[평가]** 두 결과를 함께 놓으면 이송되는 것은 **"오프라인에서 무엇을 생성하는가가 중요하다"의 약한 형태**뿐이다 — 생성물이 자발 활동으로 넓게 퍼져야 한다는 것까지다. 논문 제목이 가리키는 강한 형태(**혼합된 에피소드로부터의** dreaming)는 저자 자신의 통제에서 효과를 보이지 않았으므로 이송되지 않는다. 표 8-4의 나머지 세 행과 달리 이 행은 그 절단선을 달고서만 인용할 수 있다.
 
 이송되지 않는 것은 더 길다. PLOS 모델에는 **loss도 gradient도 optimizer도 backward pass도 없다** — 갱신은 국소 eligibility trace를 낀 Hebbian 곱과 열 합을 고정하는 정규화 사영이고, 학습률 $\eta_\Theta$는 독립된 존재조차 아니다 [PLOS Sleep Methods: Synaptic plasticity, L861-963]. 그 기제는 transformer가 갖지 않은 장치에 의존한다: spike timing이라는 상관 신호, 뉴런별 목표 발화율 항상성, 열 합을 보존하는 heterosynaptic 정규화, 균형 잡힌 전방 억제. 논문이 sleep의 우위를 설명할 때 기대는 것이 바로 이 정규화 제약이다 [L509-517]. 제약을 빼면 그 설명에는 대체물이 없다. 규모도 이송되지 않는다 — 연속적으로 가소적인 시냅스 6272개, 과제 2개, 밴드 0.20이다. PAD는 gradient를 쓰지만 언어도 토큰도 attention도 없고, 저장은 2슬롯이며, 두 논문 모두 **replay·dream의 내용이 의미상 옳은지를 한 번도 검사하지 않는다**. LLM에서 이 검사 누락에 대응하는 실패 — 유창하지만 거짓인 생성물로 $\Theta$를 갱신하는 것 — 이 Θ-경로의 중심 위험이며(→ ch06), 생물학 쪽 두 편은 그것에 대해 아무 말도 하지 않는다.
 
@@ -198,7 +204,7 @@ REM을 제거하면 두 데이터셋 모두 크게 무너진다(58.25 → 46.00,
 
 ## Worked micro-example — 밴드 정규화 점수와 상각 불능
 
-PLOS Sleep의 네 조건을 손으로 다시 계산해, "sleep이 interleaving을 이겼다"는 문장이 얼마나 큰 주장인지 재어 본다. 필요한 수치는 표 8-1과 S6뿐이고 계산은 나눗셈 네 번이다.
+PLOS Sleep의 네 조건을 손으로 다시 계산해, "sleep이 interleaving을 이겼다"는 문장이 얼마나 큰 주장인지 재어 본다. 필요한 수치는 표 8-1과 S6뿐이고 계산은 나눗셈 네 번이다. 입력만 논문 수치이고 **이 절에서 나오는 유도값은 전부 이 책의 예시 계산이다** — 논문은 정규화 점수도, 밴드 환산도, 바이트 환산도 보고하지 않는다.
 
 **1단계 — 밴드 정규화.** 이 과제의 chance는 0.50이고 단일 과제 천장은 Task 1이 0.70, Task 2가 0.69다 [PLOS Sleep Results, L166-167, L228-229, L276]. 따라서 보호 대상 밴드는 각각 0.20과 0.19다. 정규화 점수를 $g(x) = (x - 0.50)/(\text{천장} - 0.50)$으로 두면 $g=1$이 "단일 과제 학습과 같음", $g=0$이 "chance"다.
 
@@ -208,6 +214,8 @@ PLOS Sleep의 네 조건을 손으로 다시 계산해, "sleep이 interleaving�
 | Interleaved$_{T1,T2}$ | $0.18/0.20 = 0.90$ | $0.15/0.19 = 0.79$ | 1.69 |
 | Interleaved$_{S,T2}$ | $0.20/0.20 = 1.00$ | $0.18/0.19 = 0.95$ | 1.95 |
 | Freeze 5% | $0.15/0.20 = 0.75$ | $0.11/0.19 = 0.58$ | 1.33 |
+
+표 8-6. 밴드 정규화 점수 — 표 8-1과 S6의 논문 수치를 입력으로 이 책이 계산한 값이며, 논문이 보고한 값이 아니다.
 
 Sequential은 옛 과제 밴드의 90%를 잃는다. sleep은 0%를 잃는다. freezing은 두 축을 맞바꿔 1.33에 머문다.
 

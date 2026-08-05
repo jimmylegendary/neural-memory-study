@@ -10,7 +10,7 @@
 >
 > **NM과의 관계** — Neural Memory에 대응 장이 없다. 새로 쓴다. 다만 backward pass, optimizer state, outer loop의 의미는 전제한다(→ NM ch02, → NM ch04). 이 장이 더하는 것은 하나다: (U-$\Theta$)를 **전부가 아니라 부분적으로** 도는 방법, 그리고 그 부분이 **파일로 떨어져 배포 아티팩트가 된다**는 사실. NM이 300쪽에 걸쳐 다룬 $W$(fast weights)는 이 장에 한 번도 등장하지 않는다 — 이 장의 모든 기제는 test-time에 아무것도 움직이지 않는다.
 
-> **[표기 경고 — 이 장 전용]** LoRA 원문은 사전학습 weight 행렬을 $W$로 쓰고, 학습되는 소수의 파라미터 집합을 $\Theta$로 쓴다 [lora §4.1, lora Eq. 2]. 이 책의 예약 기호와 **둘 다 정반대**다. 이 책에서 $W$는 fast weights(test-time에 움직이는 상태)이고 $\Theta$는 slow weights 전체다. 이 장의 모든 수식은 통일 표기로 옮긴다: 원문 $\Phi_0 \to \Theta_0$, 원문 $W_0 \to \Theta_0^{(m)}$, 원문 $\Theta \to (A, B)$, 원문 $\alpha \to \alpha_{\mathrm{LoRA}}$, 원문 $L$(층 수) $\to L_{\mathrm{layer}}$. attention의 네 투영 행렬도 같은 규칙을 따른다: 원문 $W_q, W_k, W_v, W_o \to \Theta^{(q)}, \Theta^{(k)}, \Theta^{(v)}, \Theta^{(o)}$ — 위첨자는 식 (3-2)의 행렬 인덱스 $m$이 취하는 값이며, 시간 첨자가 아니다. 원문 기호는 이 문단과 원문 직접 인용 밖에 등장하지 않는다. 또 이 장은 LoRA를 적용한 행렬들의 집합을 $\mathcal{S}$로 쓰는데, 이는 장-국소 기호이고 예약 기호 $S_t$(momentum)·$S(c; B_s)$(오프라인 처리 절차) 어느 쪽과도 무관하다.
+> **[표기 경고 — 이 장 전용]** LoRA 원문은 사전학습 weight 행렬을 $W$로 쓰고, 학습되는 소수의 파라미터 집합을 $\Theta$로 쓴다 [lora §4.1, lora Eq. 2]. 이 책의 예약 기호와 **둘 다 정반대**다. 이 책에서 $W$는 fast weights(test-time에 움직이는 상태)이고 $\Theta$는 slow weights 전체다. 이 장의 모든 수식은 통일 표기로 옮긴다: 원문 $\Phi_0 \to \Theta_0$, 원문 $W_0 \to \Theta_0^{(m)}$, 원문 $\Theta \to (A, B)$, 원문 $\alpha \to \alpha_{\mathrm{LoRA}}$, 원문 $L$(층 수) $\to L_{\mathrm{layer}}$. attention의 네 투영 행렬도 같은 규칙을 따른다: 원문 $W_q, W_k, W_v, W_o \to \Theta^{(q)}, \Theta^{(k)}, \Theta^{(v)}, \Theta^{(o)}$ — 위첨자는 식 (3-2)의 행렬 인덱스 $m$이 취하는 값이며, 시간 첨자가 아니다. 원문 기호는 이 문단과 원문 직접 인용 밖에 등장하지 않는다. 또 이 장은 LoRA를 적용한 행렬들의 집합을 $\mathcal{S}$로 쓴다 — ch01 §1.3에서 예약된 기호이며 이 장이 정의를 소유한다. 예약 기호 $S_t$(momentum)·$S(c; B_s)$(오프라인 처리 절차) 어느 쪽과도 무관하다.
 
 ---
 
@@ -23,9 +23,9 @@ $$
 \tag{3-1}
 $$
 
-이 식이 말하는 것은 단순하다. 학습 집합 $\mathcal{D}$의 모든 (입력, 정답) 쌍에 대해 정답 토큰의 로그확률 합이 커지도록 $\Theta$를 옮기고, 초기값은 $\Theta_0$다 [lora Eq. 1]. 이것이 S0의 (U-$\Theta$)를 실제 목적함수로 채운 가장 평범한 형태이며, 이 장의 나머지 방법은 전부 "같은 목적함수를, 더 작은 부분공간에서" 푸는 변형이다.
+이 식이 말하는 것은 단순하다. 학습 집합 $\mathcal{D}$의 모든 (입력, 정답) 쌍에 대해 정답 토큰의 로그확률 합이 커지도록 $\Theta$를 옮기고, 초기값은 $\Theta_0$다 [lora Eq. 1]. 이것이 ch01이 세운 표준형 (U-$\Theta$)를 실제 목적함수로 채운 가장 평범한 형태이며, 이 장의 나머지 방법은 전부 "같은 목적함수를, 더 작은 부분공간에서" 푸는 변형이다.
 
-표준형 (U-$\Theta$)와 대조하면 이 장 전체의 위치가 정해진다. 표준형은 $\Theta_{k+1} = \Theta_k - \eta_\Theta \nabla_\Theta \mathcal{L}(\mathcal{R}_k; \Theta_k)$이고 $\mathcal{R}_k = \mathrm{gen}(\mathcal{H}_k; B_s)$인데, 식 (3-1)에서는 $\mathcal{R}_k$가 사람이 미리 만들어 놓은 $\mathcal{D}$로 고정되어 $\mathrm{gen}(\cdot)$이 항등이 된다. 또 $k$는 sleep 라운드가 아니라 한 번의 adaptation run 안의 SGD step이다. **즉 이 장의 방법은 (U-$\Theta$)의 왼쪽 절반(무엇을, 어떻게 움직이는가)만 채우고 오른쪽 절반(학습 집합을 어떻게 만드는가)은 비워 둔다.** 그 빈칸을 채우는 것이 ch04 이후의 일이다.
+표준형 (U-$\Theta$)와 대조하면 이 장 전체의 위치가 정해진다. 표준형은 $\Theta_{k+1} = \Theta_k - \eta_\Theta \nabla_\Theta \mathcal{L}(\mathcal{R}_k; \Theta_k)$이고 $\mathcal{R}_k = \mathrm{gen}(\mathcal{H}_k; B_s)$인데, 식 (3-1)에서는 $\mathcal{R}_k$가 사람이 미리 만들어 놓은 $\mathcal{D}$로 고정되어 $\mathrm{gen}(\cdot)$이 항등이 된다. 또 반복 첨자가 sleep 라운드 $k$가 아니라 한 번의 adaptation run 안의 SGD step $s$다 — 이 장은 step 첨자로 $s$만 쓰고, $k$는 ch04 이후의 sleep 라운드에 남겨 둔다. **즉 이 장의 방법은 (U-$\Theta$)의 왼쪽 절반(무엇을, 어떻게 움직이는가)만 채우고 오른쪽 절반(학습 집합을 어떻게 만드는가)은 비워 둔다.** 그 빈칸을 채우는 것이 ch04 이후의 일이다.
 
 먼저 왜 이 절차가 필요한지부터 정한다. 문맥에 예시를 넣는 것으로는 대체되지 않기 때문이다. GPT-3 175B에서 few-shot과 fine-tuning의 격차는 MNLI-m 40.6 대 89.5, RTE 69.0 대 85.4다 [lora Table 8, lora App. A]. 40점 이상의 격차는 프롬프트 기법으로 메울 수 있는 종류가 아니다. **가중치에 쓰는 것과 문맥에 쓰는 것은 같은 일이 아니다** — 이 사실이 Θ-경로 전체의 존재 이유이며, Part III에서 E-경로와 비교할 때 다시 불려 나온다.
 
@@ -100,16 +100,16 @@ $$
 학습 규칙은 (U-$\Theta$)를 $(A, B)$로 제한한 것이다.
 
 $$
-(A, B)_{k+1} \;=\; (A, B)_{k} \;-\; \eta_\Theta \nabla_{(A,B)}\, \mathcal{L}\!\left(\mathcal{D};\ \Theta_0 + \tfrac{\alpha_{\mathrm{LoRA}}}{r} B_k A_k\right),
+(A, B)_{s+1} \;=\; (A, B)_{s} \;-\; \eta_\Theta \nabla_{(A,B)}\, \mathcal{L}\!\left(\mathcal{D};\ \Theta_0 + \tfrac{\alpha_{\mathrm{LoRA}}}{r} B_s A_s\right),
 \qquad \Theta_0\ \text{frozen}
 \tag{3-4}
 $$
 
 표준형 (U-$\Theta$)와의 차이는 세 가지이고, 셋 다 이 책의 논지에 직접 관계한다.
 
-1. **부분공간 제약.** gradient를 $\Theta$ 전체가 아니라 $(A, B)$에 대해 취하므로 $\Theta_k - \Theta_0$가 모든 $k$에서 rank $\le r$ manifold에 갇힌다 [lora §4.1].
+1. **부분공간 제약.** gradient를 $\Theta$ 전체가 아니라 $(A, B)$에 대해 취하므로 $\Theta_s - \Theta_0$가 모든 step $s$에서 rank $\le r$ manifold에 갇힌다 [lora §4.1].
 2. **$B_s$ knob이 없다.** 표준형의 $\mathcal{R}_k = \mathrm{gen}(\mathcal{H}_k; B_s)$에서 $\mathrm{gen}(\cdot)$이 항등이다. 학습 집합은 사람이 만든 고정 dataset(GLUE, WikiSQL, SAMSum, E2E, DART, WebNLG)이고 [lora §2, lora App. C], replay도 합성 데이터도 없다. **sleep 예산이라는 축 자체가 존재하지 않는다.**
-3. **$k$가 라운드가 아니다.** 여기서 $k$는 한 번의 adaptation run 안의 평범한 SGD step이다(GPT-3은 2 epoch, GPT-2는 5 epoch [lora App. D]). 라운드가 반복되지 않으므로 누적 열화 문제가 제기되지 않는다.
+3. **첨자가 라운드가 아니다.** 식 (3-4)의 $s$는 한 번의 adaptation run 안의 평범한 SGD step이며, sleep 라운드 첨자 $k$가 **아니다**(GPT-3은 2 epoch, GPT-2는 5 epoch [lora App. D]). 이 구분이 이 장의 논지다 — step을 아무리 많이 돌려도 그것은 라운드 하나 안의 일이고, 라운드가 반복되지 않으므로 누적 열화 문제가 제기되지 않는다. 라운드 첨자 $k$가 실제로 1보다 커지는 것은 ch20·ch21에 가서다.
 
 품질은 GPT-3 175B에서 full fine-tuning과 사실상 같다. LoRA 4.7M이 WikiSQL 73.4 / MNLI-m 91.7 / SAMSum 53.8·29.8·45.9, full fine-tuning 175,255.8M이 73.8 / 89.5 / 52.0·28.0·44.5다 [lora Table 4]. 학습 파라미터가 $2.7\times10^{-5}$배(4.7M / 175,255.8M ≈ 1/37,000, 이 책의 산술)인데 MNLI-m과 SAMSum에서는 오히려 앞선다.
 
@@ -141,7 +141,9 @@ $$
 
 > **[평가] 이 표의 결론은 논문 본문의 결론과 다르다.** [lora §7.1]은 "adapting both $W_q$ and $W_v$ yields the best result" / "Adapting both $W_q$ and $W_v$ gives the best performance overall"이라고 쓴다. 그러나 같은 표에서 $\{\Theta^{(q)}, \Theta^{(k)}, \Theta^{(v)}, \Theta^{(o)}\}$($r=2$)는 WikiSQL 73.7로 **동률**이고 MultiNLI 91.7로 $\{\Theta^{(q)},\Theta^{(v)}\}$의 91.3보다 **높다**. 표가 실제로 보여주는 것은 "$\{\Theta^{(q)},\Theta^{(v)}\}$가 최선"이 아니라 "**같은 파라미터 예산이면 rank를 낮추더라도 더 많은 행렬에 나누어 거는 편이 열등하지 않다**"이다. 이 책은 후자를 채택한다. 2차 문헌이 널리 인용하는 "q와 v에 걸어라"라는 실무 규칙은 이 표에서 유도되지 않는다.
 
-$r$ 자체의 스윕은 더 조심해서 읽어야 한다. GPT-3 $\{\Theta^{(q)},\Theta^{(v)}\}$의 WikiSQL은 $r=1,2,4,8,64$에서 각각 73.4 / 73.3 / 73.7 / 73.8 / 73.5다 [lora Table 6]. 전체 폭이 0.5인데, 같은 표의 캡션이 밝힌 변동 폭이 ±0.5%다. **rank 차이를 이 데이터로는 해상할 수 없다.** "$r=1$이면 충분하다"는 널리 인용되는 결론의 근거가 자기 오차막대 안에 있다.
+$r$ 자체의 스윕은 더 조심해서 읽어야 한다. GPT-3 $\{\Theta^{(q)},\Theta^{(v)}\}$의 WikiSQL은 $r=1,2,4,8,64$에서 각각 73.4 / 73.3 / 73.7 / 73.8 / 73.5다 [lora Table 6]. 다섯 점의 전체 폭은 0.5이고, 같은 표의 캡션이 밝힌 변동 폭은 ±0.5%다 [lora Table 6].
+
+> **[평가] rank 차이를 이 데이터로는 해상할 수 없다.** 스윕 전체의 폭이 논문 자신이 선언한 변동 폭과 같은 크기이므로, 이 표는 rank들 사이의 **순서조차** 결정하지 못한다. "$r=1$이면 충분하다"는 널리 인용되는 결론은 자기 오차막대 안에 근거를 두고 있다. 이 책은 이 스윕을 "작은 $r$이 큰 $r$에 크게 밀리지 않았다"는 부재 서술로만 쓰고, 특정 $r$의 우열 논거로 쓰지 않는다.
 
 작은 모델에서는 결론이 뒤집힌다. GPT-2 Medium의 E2E 스윕에서 저자 스스로 "Unlike on GPT-3 where $r=1$ suffices for many tasks, here the performance peaks at $r=16$ for validation loss and $r=4$ for BLEU"라고 쓴다 [lora Table 18 캡션, lora App. H.2]. 게다가 같은 캡션이 "some of our hyperparameters are tuned on $r=4$ ... and thus might not be optimal for other choices of $r$"이라고 인정하므로, rank 축을 단독 변수로 읽을 수도 없다. 논문 자신의 정리가 정확하다: "the relationship between model size and the optimal rank for adaptation is still an open question" [lora App. H.2].
 
@@ -201,7 +203,7 @@ $$
 
 $N_{\mathrm{mod}}$는 LoRA를 적용한 weight 행렬의 총 개수이고, 계수 2는 $A$와 $B$ 두 장에서 온다 [lora §5.1]. 이 식이 $d$·$L_{\mathrm{layer}}$·$r$·$\mathcal{S}$ 넷에만 의존하고 모델 파라미터 총수에는 의존하지 않는다는 점이 중요하다 — **delta의 크기는 모델의 크기가 아니라 모델의 폭과 깊이가 정한다.** 바이트로 옮기면 $C_{\mathrm{cap}} = |\Delta\Theta| \times (\text{bytes/elem})$이며, dtype을 명시하지 않은 delta 크기 진술은 무의미하다.
 
-논문의 실측 값이 이 식의 기준점이다. GPT-3 175B에 $r=4$로 $\mathcal{S}=\{\Theta^{(q)}, \Theta^{(v)}\}$를 적용하면 checkpoint가 350GB → 35MB, 약 10,000배 줄어든다 [lora §4.2]. task 100개를 얹어도 350GB + 35MB × 100 ≈ 354GB이고, 독립 fine-tune이면 약 35TB다 [lora §4.2 각주 4]. **Θ-경로의 per-task 상태량은 base weights의 $10^{-4}$ 수준이다** — 이것이 이 장이 Part III에 넘기는 첫 번째 숫자다.
+논문의 실측 값이 이 식의 기준점이다. GPT-3 175B에 $r=4$로 $\mathcal{S}=\{\Theta^{(q)}, \Theta^{(v)}\}$를 적용하면 checkpoint가 350GB → 35MB, 약 10,000배 줄어든다 [lora §4.2]. task 100개를 얹어도 350GB + 35MB × 100 ≈ 354GB이고(이 책의 예시 계산), 독립 fine-tune이면 약 35TB다 [lora §4.2 각주 4]. **Θ-경로의 per-task 상태량은 base weights의 $10^{-4}$ 수준이다** — 이것이 이 장이 Part III에 넘기는 첫 번째 숫자다.
 
 여기서 자주 혼동되는 두 개념을 분리한다.
 
@@ -213,7 +215,7 @@ $N_{\mathrm{mod}}$는 LoRA를 적용한 weight 행렬의 총 개수이고, 계�
 
 이 구분이 왜 중요한지는 저장 바이트당 정보량을 계산해 보면 드러난다. 이 책의 실험 [X2 Q2]는 $d=4096$, $L_{\mathrm{layer}}=32$, $\mathcal{S}=\{\Theta^{(q)}, \Theta^{(v)}\}$, $r=16$인 dense-8B 앵커(파라미터 8,388,608개)에 대해 다음을 회계한다.
 
-표 3-3. delta의 dtype별 저장 바이트당 정보량 [X2 Q2]. 분자는 [lm-memorization-capacity Fig. 6 캡션]의 3.64 bits/param을 파라미터 수에 곱한 값이고, 이 책은 이것을 회계용 참고값으로만 쓴다(BPP-EXTRAPOLATED — 무작위 균등 문자열을 from-scratch 학습시킨 소형 GPT에서 잰 값이며 LoRA delta 적용은 외삽이다. 이 수의 지위(원 논문은 하한이라고 쓴다)와 용량 상한 논의는 ch09가 소유한다).
+표 3-3. delta의 dtype별 저장 바이트당 정보량 [X2 Q2]. 분자는 [lm-memorization-capacity Fig. 6 캡션]의 3.64 bits/param을 파라미터 수에 곱한 값이고, 이 책은 이것을 회계용 참고값으로만 쓴다(BPP-EXTRAPOLATED — 무작위 균등 문자열을 from-scratch 학습시킨 소형 GPT에서 잰 값이며 LoRA delta 적용은 외삽이다). **원 논문은 이 값을 하한으로 못 박는다** — "we are only ever measuring a lower bound on model capacity" [lm-memorization-capacity §3.2]. 따라서 이 표의 어느 칸도 용량 상한이 아니며, 실제 밀도는 이보다 높을 수 있다. 이 값의 지위와 용량 상한 논의의 정본은 ch09가 소유한다.
 
 | dtype | 저장 바이트 | 저장 MB | 저장 바이트당 bits |
 |---|---|---|---|
@@ -223,7 +225,7 @@ $N_{\mathrm{mod}}$는 LoRA를 적용한 weight 행렬의 총 개수이고, 계�
 
 같은 앵커에서 E-경로의 텍스트 상태(14K 토큰, 3:1 압축 가정)는 2.67 bits/byte다. 두 경로의 비는 dtype에 따라 bf16 1.47, int8 0.73, int4 0.37이다 [X2 Q2]. 즉 **bf16에서는 텍스트가 바이트당 정보 밀도에서 앞서고, int8에서 순서가 뒤집히며, int4에서는 Θ가 텍스트의 2.7배가 된다.** 순서가 뒤집히는 지점이 bf16과 int8 사이에 있다는 것 — 이것이 이 절의 결론이다.
 
-> **[해설]** 이 역전의 기제는 알고리즘이 아니라 표현이다. 파라미터 하나에 담기는 정보량으로 측정된 값이 약 3.64 bits인데 [lm-memorization-capacity Fig. 6 캡션] bf16은 그것을 16 bits 자리에 넣는다. 낭비되는 것은 용량이 아니라 **저장 폭**이다. 그러므로 "Θ-경로는 바이트 비효율이다"라는 흔한 인상은 dtype을 고정했을 때만 참이며, 알고리즘의 성질이 아니다 [X2 F3].
+> **[해설]** 이 역전의 기제는 알고리즘이 아니라 표현이다. 파라미터 하나에 담기는 정보량의 측정된 **하한**이 3.64 bits인데 [lm-memorization-capacity Fig. 6 캡션, lm-memorization-capacity §3.2] bf16은 그것을 16 bits 자리에 넣는다. 낭비되는 것은 용량이 아니라 **저장 폭**이다. 그러므로 "Θ-경로는 바이트 비효율이다"라는 흔한 인상은 dtype을 고정했을 때만 참이며, 알고리즘의 성질이 아니다 [X2 F3].
 
 사용자 수로 곱하면 이 선택이 어디에 나타나는지 보인다. 같은 8B 앵커에서 사용자 $10^6$명분의 웜 스토리지는 $r=16$·bf16에서 16.777 TB, int4로 내리면 4.194 TB, $r=64$·bf16이면 67.109 TB다 [X2 Q3]. 절대치는 회계이지 측정이 아니므로 자릿수와 방향으로만 읽어야 하지만, 방향은 분명하다 — **dtype 하나가 웜 계층 규모를 4배 움직인다.**
 
@@ -282,11 +284,11 @@ $$
 
 **4단계 — 바이트.** dtype을 곱한다. bf16은 2 bytes/elem이므로 $8{,}388{,}608 \times 2 = 16{,}777{,}216$ bytes = **16.78 MB**. int8이면 8.39 MB, int4면 4.19 MB다 [X2 Q1].
 
-**교차 검증 — 논문의 값이 나오는가.** 같은 식에 GPT-3을 넣는다: $d = 12{,}288$, $L_{\mathrm{layer}} = 96$ [lora §1, lora §7.1], $\mathcal{S} = \{\Theta^{(q)}, \Theta^{(v)}\}$, $r = 4$. $N_{\mathrm{mod}} = 96 \times 2 = 192$. $2 \times 192 = 384$, $384 \times 12{,}288 = 4{,}718{,}592$, $\times 4 = 18{,}874{,}368$ — **약 18.9M**이다. 논문이 같은 설정을 "18M parameters (roughly 35MB if stored in FP16), 96 layers"로 적은 것과 파라미터 수에서 일치한다 [lora §7.1]. 바이트는 $18{,}874{,}368 \times 2 = 37{,}748{,}736$ = 37.7 MB이므로 논문의 "35MB"는 반올림 표기이며, 논문의 "10,000배 감소"(350GB → 35MB, [lora §4.2])도 그 반올림 값을 쓴 것이다. 식 (3-5)로 계산하면 $350\,\mathrm{GB} / 37.7\,\mathrm{MB} \approx 9{,}300$배다. 이 책은 계산값과 원문 표기를 이렇게 병기하고, 어느 쪽도 상대를 지우지 않는다.
+**교차 검증 — 논문의 값이 나오는가.** 같은 식에 GPT-3을 넣는다: $d = 12{,}288$, $L_{\mathrm{layer}} = 96$ [lora §1, lora §7.1], $\mathcal{S} = \{\Theta^{(q)}, \Theta^{(v)}\}$, $r = 4$. $N_{\mathrm{mod}} = 96 \times 2 = 192$. $2 \times 192 = 384$, $384 \times 12{,}288 = 4{,}718{,}592$, $\times 4 = 18{,}874{,}368$ — **약 18.9M**이다. 논문이 같은 설정을 "18M parameters (roughly 35MB if stored in FP16), 96 layers"로 적은 것과 파라미터 수에서 일치한다 [lora §7.1]. 바이트는 $18{,}874{,}368 \times 2 = 37{,}748{,}736$ = 37.7 MB이므로 논문의 "35MB"는 반올림 표기이며, 논문의 "10,000배 감소"(350GB → 35MB, [lora §4.2])도 그 반올림 값을 쓴 것이다. 식 (3-6)이 준 계산값으로 다시 나누면 $350\,\mathrm{GB} / 37.7\,\mathrm{MB} \approx 9{,}300$배다(이 책의 예시 계산). 이 책은 계산값과 원문 표기를 이렇게 병기하고, 어느 쪽도 상대를 지우지 않는다.
 
-**두 knob의 감도.** 3단계로 돌아가 $r$만 16 → 64로 올리면 4배가 되어 67.11 MB, $\mathcal{S}$만 $\{\Theta^{(q)},\Theta^{(v)}\}$ → $\{\Theta^{(q)},\Theta^{(k)},\Theta^{(v)},\Theta^{(o)}\}$로 늘리면 2배가 되어 33.55 MB다 [X2 Q1]. 두 knob은 식 (3-5)에 **곱으로** 들어가므로 둘 다 키우면 8배(134.22 MB)다. 표 3-2가 보인 "같은 예산이면 rank를 낮추고 행렬을 늘려라"는 이 곱셈을 고정한 채 배분만 바꾸는 조작이다.
+**두 knob의 감도.** 3단계로 돌아가 $r$만 16 → 64로 올리면 4배가 되어 67.11 MB, $\mathcal{S}$만 $\{\Theta^{(q)},\Theta^{(v)}\}$ → $\{\Theta^{(q)},\Theta^{(k)},\Theta^{(v)},\Theta^{(o)}\}$로 늘리면 2배가 되어 33.55 MB다 [X2 Q1]. 두 knob은 식 (3-6)에 **곱으로** 들어가므로 둘 다 키우면 8배(134.22 MB)다. 표 3-2가 보인 "같은 예산이면 rank를 낮추고 행렬을 늘려라"는 이 곱셈을 고정한 채 배분만 바꾸는 조작이다.
 
-**정보 밀도.** 8,388,608 파라미터에 3.64 bits/param을 곱하면 30,534,533 bits ≈ 3.82 MB다(BPP-EXTRAPOLATED — 회계용 참고값. 이 수의 지위는 ch09) [X2 Q2]. bf16 저장 16.78 MB로 나누면 저장 바이트당 1.82 bits, int4 저장 4.19 MB로 나누면 7.28 bits다. **같은 정보를 4분의 1 바이트에 담는 것**이 delta 양자화가 하는 일의 전부다.
+**정보 밀도.** 8,388,608 파라미터에 3.64 bits/param을 곱하면 30,534,533 bits ≈ 3.82 MB다 — 이 책의 예시 계산이다(BPP-EXTRAPOLATED — 회계용 참고값이며, 3.64는 원 논문이 하한이라고 밝힌 값이므로 이 결과도 하한이다 [lm-memorization-capacity §3.2]. 정본 서술은 ch09) [X2 Q2]. bf16 저장 16.78 MB로 나누면 저장 바이트당 1.82 bits, int4 저장 4.19 MB로 나누면 7.28 bits다. **같은 정보를 4분의 1 바이트에 담는 것**이 delta 양자화가 하는 일의 전부다.
 
 **서빙 산술.** 분리된 delta 형태에서 추가되는 토큰당 MAC은 base 대비 $2r/d = 32/4096 = 1/128 \approx 0.78\%$다(이 책의 산술). **사용자 스케일.** 16.78 MB를 사용자 $10^6$명에 곱하면 웜 스토리지 16.777 TB, int4면 4.194 TB다 [X2 Q3] — 절대치는 회계이므로 자릿수로 읽되, 4배의 차이가 dtype 하나에서 나온다는 순서 관계는 그대로 성립한다.
 
@@ -300,7 +302,7 @@ $$
 - [lora §7.1]의 "$\{\Theta^{(q)},\Theta^{(v)}\}$가 최선"이라는 결론은 자기 Table 5와 어긋난다. $\{\Theta^{(q)},\Theta^{(k)},\Theta^{(v)},\Theta^{(o)}\}$($r=2$)가 WikiSQL 73.7로 동률, MultiNLI 91.7로 우위다 [lora Table 5].
 - merge는 $L_w=0$을 shared-weight batching과 맞바꾼 것이며, 분리된 delta 형태의 latency는 논문에 측정값이 없다 [lora §4.1, lora §4.2 Limitations].
 - delta 아티팩트의 크기는 $2N_{\mathrm{mod}}dr$로 정확히 주어지고, 모델 파라미터 총수가 아니라 폭·깊이·rank·적용 집합이 결정한다 [lora §5.1].
-- 저장 바이트당 정보 밀도는 bf16 1.82, int8 3.64, int4 7.28 bits/byte이며, 텍스트(3:1 압축 가정 2.67) 대비 순서가 bf16과 int8 사이에서 뒤집힌다 [X2 Q2].
+- 저장 바이트당 정보 밀도는 bf16 1.82, int8 3.64, int4 7.28 bits/byte이며, 텍스트(3:1 압축 가정 2.67) 대비 순서가 bf16과 int8 사이에서 뒤집힌다 — 3.64 bits/param 하한 위에 세운 이 책의 회계다 [X2 Q2, lm-memorization-capacity §3.2].
 - LoRA의 $\rho$는 논문에 없다. 반복 write·delta 누적·forgetting 측정이 하나도 없으므로 이 논문은 Θ-경로의 지속가능성을 warrant하지 못한다.
 
 ---
