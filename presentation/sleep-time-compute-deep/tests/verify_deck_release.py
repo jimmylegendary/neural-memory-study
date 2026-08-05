@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import json
 import math
 import re
@@ -31,6 +32,14 @@ def close_bbox(left: list[float] | None, right: list[float] | None, tolerance: f
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Validate the committed deck and optional build-time visual evidence.")
+    parser.add_argument(
+        "--artifact-only",
+        action="store_true",
+        help="skip gitignored preview/layout checks for clean-checkout smoke validation",
+    )
+    parser.add_argument("--no-write-report", action="store_true")
+    args = parser.parse_args()
     failures: list[str] = []
     with zipfile.ZipFile(PPTX) as archive:
         names = archive.namelist()
@@ -54,35 +63,41 @@ def main() -> None:
         if placeholder_hits:
             failures.append(f"placeholder hits={len(placeholder_hits)}")
 
-    starter_files = sorted(
-        STARTER_LAYOUT.glob("starter-slide-*.layout.json"),
-        key=lambda path: int(path.name.split("-")[-1].split(".")[0]),
-    )
-    final_files = sorted(FINAL_LAYOUT.glob("slide-*.layout.json"), key=lambda path: int(path.stem.split("-")[-1].split(".")[0]))
-    if len(starter_files) != 112 or len(final_files) != 112:
-        failures.append(f"layout files starter/final={len(starter_files)}/{len(final_files)}")
-    geometry_mismatches = []
-    element_count_mismatches = []
-    for index, (starter, final) in enumerate(zip(starter_files, final_files), start=1):
-        before = layout_elements(starter)
-        after = layout_elements(final)
-        if set(before) != set(after):
-            element_count_mismatches.append(index)
-            continue
-        for name in before:
-            if not close_bbox(before[name].get("bbox"), after[name].get("bbox")):
-                geometry_mismatches.append((index, name))
-    if element_count_mismatches:
-        failures.append(f"element inventory mismatch slides={element_count_mismatches}")
-    if geometry_mismatches:
-        failures.append(f"geometry mismatches={geometry_mismatches[:12]}")
+    starter_files: list[Path] = []
+    final_files: list[Path] = []
+    geometry_mismatches: list[tuple[int, str]] = []
+    element_count_mismatches: list[int] = []
+    previews: list[Path] = []
+    if not args.artifact_only:
+        starter_files = sorted(
+            STARTER_LAYOUT.glob("starter-slide-*.layout.json"),
+            key=lambda path: int(path.name.split("-")[-1].split(".")[0]),
+        )
+        final_files = sorted(FINAL_LAYOUT.glob("slide-*.layout.json"), key=lambda path: int(path.stem.split("-")[-1].split(".")[0]))
+        if len(starter_files) != 112 or len(final_files) != 112:
+            failures.append(f"layout files starter/final={len(starter_files)}/{len(final_files)}")
+        for index, (starter, final) in enumerate(zip(starter_files, final_files), start=1):
+            before = layout_elements(starter)
+            after = layout_elements(final)
+            if set(before) != set(after):
+                element_count_mismatches.append(index)
+                continue
+            for name in before:
+                if not close_bbox(before[name].get("bbox"), after[name].get("bbox")):
+                    geometry_mismatches.append((index, name))
+        if element_count_mismatches:
+            failures.append(f"element inventory mismatch slides={element_count_mismatches}")
+        if geometry_mismatches:
+            failures.append(f"geometry mismatches={geometry_mismatches[:12]}")
 
-    previews = list(PREVIEW_DIR.glob("slide-*.png"))
-    if len(previews) != 112:
-        failures.append(f"preview count={len(previews)}")
+        previews = list(PREVIEW_DIR.glob("slide-*.png"))
+        if len(previews) != 112:
+            failures.append(f"preview count={len(previews)}")
 
     result = {
         "status": "pass" if not failures else "fail",
+        "mode": "artifact-only" if args.artifact_only else "full",
+        "ephemeralChecksSkipped": args.artifact_only,
         "pptx": str(PPTX),
         "slideXmlCount": len(slides),
         "notesXmlCount": len(notes),
@@ -94,8 +109,9 @@ def main() -> None:
         "elementInventoryMismatchCount": len(element_count_mismatches),
         "failures": failures,
     }
-    REPORT.parent.mkdir(parents=True, exist_ok=True)
-    REPORT.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
+    if not args.no_write_report:
+        REPORT.parent.mkdir(parents=True, exist_ok=True)
+        REPORT.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
     print(json.dumps(result, ensure_ascii=False))
     if failures:
         raise SystemExit(1)

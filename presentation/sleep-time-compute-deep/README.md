@@ -40,6 +40,13 @@ python3 <presentations-skill>/container_tools/slides_test.py \
 
 Expected gates: content test 4/4, slide XML 112, notes XML 112, source marker 112, placeholder 0, geometry mismatch 0, element inventory mismatch 0, overflow 0, PDF 112 pages.
 
+Gitignored preview/layout intermediates가 없는 clean checkout에서는 committed PPTX만 검사하는 smoke mode를 사용한다. 이 mode는 report를 덮어쓰지 않는다.
+
+```bash
+python3 presentation/sleep-time-compute-deep/tests/verify_deck_release.py \
+  --artifact-only --no-write-report
+```
+
 ## 권리·공개 경계
 
 Deck은 저자 작성 synthesis지만 인용 source와 일부 source-derived visual을 포함한다. 외부 공개 전 organizational legal/publication review가 필요하며, `internal-only` translation PDF나 source plate를 deck package와 함께 공개하지 않는다.
