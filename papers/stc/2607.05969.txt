@@ -1,0 +1,3897 @@
+MemDefrag: Latent Memory Defragmentation for Large Language Models
+Ruiyi Yan*
+Kyoto University
+ruiyi@nlp.ist.i.kyoto-u.ac.jp
+
+Zhuoyuan Mao
+LIGHTSPEED
+zhuoyuanmao@global.tencent.com
+
+Yiwen Guo†
+Independent Researcher
+guoyiwen89@gmail.com
+
+arXiv:2607.05969v2 [cs.CL] 15 Jul 2026
+
+Abstract
+
+kens, while it is bottlenecked by the context window and is vulnerable to the lost-in-the-middle
+phenomenon (Liu et al., 2024). (2) Parametric
+memory either encodes knowledge into the base
+model (Zhao et al., 2025) or into auxiliary adapters
+such as LoRA (Hu et al., 2022). This form incurs
+no extra inference cost but requires costly tuning
+and is susceptible to catastrophic forgetting (Kirkpatrick et al., 2017). (3) Latent memory carries
+information implicitly in the model’s internal representations such as KV-caches, activations, or perlayer hidden states. The long-term form (e.g., MemoryLLM (Wang et al., 2024), M+ (Wang et al.,
+2025), and NextMem (Zhang et al., 2026)) maintains a persistent pool of per-layer hidden states.
+By avoiding the repeated re-encoding of the full
+context and compressing information more densely
+in latent representations than discrete text tokens,
+this latent paradigm offers a compelling foundation
+for continually updatable LLMs.
+However, the current long-term latent memory
+paradigm encounters the following limitations. (1)
+Positional encoding misalignment: When a new
+knowledge fragment is appended, the concatenated memory fragments are indexed with positions that no longer match those they were formed
+at, distorting the attention computation at inference
+time (Gao et al., 2024). (2) The absence of any
+tracing mechanism: Existing methods treat all
+memory fragments as a flat, undifferentiated prefix
+and cannot dispel the noise information or single
+out fragment(s) relevant to the current query.
+To address these issues, we propose MemDefrag, a training-free and model-agnostic framework that reinvents the way long-term latent memory is used and evolved. MemDefrag is fully plugand-play: it requires neither additional training nor
+auxiliary modules to the underlying LLM. Specifically, the contributions of this work are:
+(1) We first uncover an inherent tracing signal
+in transformer layers. Inspired by the query-aware
+
+Latent memory, which stores past knowledge fragments as per-layer hidden states, has
+emerged as a promising paradigm (e.g., MemoryLLM and M+) for long-term memory in
+large language models (LLMs). However, the
+paradigm suffers from significant performance
+degradation during memory updates, due to positional encoding misalignment and the absence
+of any tracing mechanism to distinguish target
+memory fragments from irrelevant ones. To discover such a tracing mechanism, we probe the
+layer-wise attention density over stored memory fragments, and find that a small set of middle transformer layers consistently concentrates
+the highest density on the target fragment — exposing an inherent tracing signal. In light of
+this, we propose MemDefrag, a training-free
+and model-agnostic framework that (1) uses a
+middle-layer tracing signal to conduct memory defragmentation (rank, reorder, and filter
+memories), and (2) applies an informativenessguided proportional forgetting mechanism once
+capacity is exceeded. Experiments show that
+MemDefrag substantially outperforms MemoryLLM and M+ on knowledge retention (e.g.,
+43.0% vs. 17.4%/17.6% after 50 memory updates) and long-context benchmarks, and generalizes well across various LLMs and latentmemory variants. The code is available at
+§ github.com/ryehr/MemDefrag.
+
+1
+
+Introduction
+
+Despite the impressive capabilities of Large Language Models (LLMs), a long-standing challenge
+persists: how can a deployed LLM continually absorb new knowledge, while faithfully retaining what
+has already been stored? Previous solutions can
+be broadly grouped into three classes. (1) Tokenlevel memory (Packer et al., 2024; Chhikara et al.,
+2025) stores past information as explicit text to* This work was done during internship at LIGHTSPEED.
+†
+
+Corresponding author.
+
+1
+
+2
+
+Investigation: Positional Distortion of
+Latent Memory
+
+2.1
+
+Preliminaries: Vanilla Latent Memory
+
+……
+
+……
+
+sparsity of tracing token criticality across layerwise KV cache pages during self-attention (Tang
+et al., 2024), we first ask a diagnostic question: is
+there any intrinsic signal in a transformer, that can
+trace specific relevant and crucial fragments inside
+the latent memory? By probing the layer-wise attention density that each stored fragment receives
+with respect to a given prompt, we find a clear and
+robust pattern: a small set of middle transformer
+layers consistently concentrate the highest attention
+density on the target fragment.
+(2) In light of this finding, we propose inferencetime memory defragmentation. At each prompt,
+MemDefrag computes the attention density of every stored fragment at a tracer layer and conducts
+defragmentation (ranks, reorders, and filters the
+memory fragments by their density). This simultaneously mitigates the irrelevant semantic noise and
+the accumulated positional distortion.
+(3) Considering a bounded memory and compute
+budget, we propose an informativeness-based proportional forgetting strategy for memory evolution.
+When memory capacity is reached, MemDefrag
+allocates forgetting quotas proportionally across
+fragments, and within each fragment, evicts the
+tokens with the lowest self-information.
+(4) Experiments show that MemDefrag substantially outperforms MemoryLLM and M+ on both
+knowledge retention and long-context QA. For
+instance in knowledge retention, on NaturalQA
+at step 50, MemDefrag (based on Llama-3.1-8BInstruct) retains 43.0% accuracy, compared with
+17.4% and 17.6% for the two baselines. Moreover, experiments support the generality and compatibility of our MemDefrag across models, latentmemory variants, and prompt compression.
+
+𝑚𝑛𝑙 = ℎ𝑙
+……
+
+𝑚1𝑙
+
+𝑚2𝑙
+
+𝑚1𝑛 = ℎ1
+
+𝑚11
+
+𝑚12
+
+𝑚10
+
+𝑚20
+
+……
+𝑙
+𝑚𝑛−1
+
+𝑚𝑛𝑙
+
+Layer 𝑙: 𝜃𝑛𝑙
+……
+
+……
+
+𝑚1𝑛−1
+
+𝑚1𝑛
+
+Layer 1: 𝜃𝑛1
+
+……
+
+0
+𝑚𝑛−1
+
+𝑚𝑛0
+
+Layer 0: 𝜃𝑛0
+
+……
+
+……
+
+Transformer layer 𝜙
+
+0
+
+𝑚𝑛0 = ℎ0
+ℎ0 = Embed(𝑥𝑛 )
+
+Latent memory 𝜃𝑛
+
+(a) Memory formation of a new knowledge fragment xn by
+prefilling in transformer layers. It is concatenated to the existing latent memory θn−1 to yield θn (memory evolution).
+……
+Layer 𝑙 + 1
+Layer 𝑙
+
+ℎ𝑙+1
+
+Transformer layer 𝜙
+𝑚1𝑙
+
+𝑚2𝑙
+
+……
+
+𝑙
+
+𝑚𝑛𝑙
+
+ℎ𝑙
+
+𝑙-layer latent memory 𝜃𝑛𝑙
+
+(b) Model inference where the latent memory θn serves as a
+prefix of hidden states.
+
+Figure 1: Memory formation, evolution and model inference under the paradigm of vanilla latent memory.
+
+sion N × d, corresponding to N hidden states with
+hidden dimension d in ϕ.
+Model parameters ϕ remain static, while the
+memory parameters θ evolve upon encountering
+new knowledge. Crucially, in a training-free manner, the evolution requires neither gradient descent
+nor backpropagation. Given a new textual knowledge fragment as x, the evolution is carried out
+by an update function Uϕ (which is based on the
+model parameters ϕ), that stores x into θ to yield
+updated memory parameters θ′ :
+θ′ = Uϕ (θ, x).
+
+(1)
+
+Extending this to multi-step, long-term evolution, consider a sequence of textual knowledge fragments (x1 , . . . , xn ), where xn denotes the knowledge fragment received at time step n. The model
+successively integrates all knowledge to obtain the
+memory parameters θn with its length Nn :
+θn = Uϕ (· · · (Uϕ (θ0 , x1 )), xn ).
+
+To introduce the latent memory paradigm and investigate its positional distortion, we first introduce
+a vanilla framework of latent memory, aiming to
+exclude irrelevant or redundant designs.
+A language model equipped with latent memory
+is denoted as Mθ,ϕ comprising two sets of parameters: memory parameters θ and model parameters
+ϕ. Specifically, ϕ consists of L transformer layers,
+denoted as ϕ = {ϕl }L
+l=1 . The memory parameters
+θ are prefix hidden vectors within each transformer
+l
+layer, denoted as θ = {θl }L
+l=1 . Each θ has dimen-
+
+(2)
+
+Memory Formation by Prefilling Consider
+storing a new knowledge fragment xn =
+(0) (1)
+(|x |)
+[xn , xn , . . . , xn n ], a sequence of tokens at
+time step n. The formed memory fragment mn =
+{mln }L
+l=1 = fform (xn ) for xn consists of the perlayer hidden states produced by passing (prefilling)
+xn through the model Mθ=∅,ϕ (i.e., without latent
+memory):
+|xn |×d
+mln = ϕl (hl−1
+,
+n )∈R
+
+2
+
+(3)
+
+80%
+Accuracy
+
+where hl−1
+n denotes the input hidden states to layer
+l, with h0n being the token embeddings of xn .
+Memory Evolution by Concatenation Memory
+parameters are initialized as empty, i.e., θ0 = ∅
+(with initial length N0 = 0). Given the current
+memory parameters θn−1 and the formed memory
+fragment mn , the evolution proceeds by concatenation: θn = concat(θn−1 , mn ).
+
+n=5
+
+40%
+20%
+0%0
+
+n=10
+
+n=15
+
+n=20
+
+2000 4000 6000 8000 10000
+Memory Length (tokens)
+
+(a) QA accuracy decreasing as the memory length
+(in tokens) increases.
+0
+2
+4
+6
+8
+10
+12
+14
+16
+18
+20
+22
+24
+26
+28
+30
+
+10 3
+
+Attention Density
+
+Layer Index (l)
+
+Inference with Latent Memory During inference, at each layer l, latent memory θnl serves as
+the prefix of the hidden states hl .
+For the whole processes of the paradigm of
+vanilla latent memory, Figure 1 shows the sketch of
+memory formation, evolution and model inference.
+MemoryLLM (Wang et al., 2024), M+ (Wang et al.,
+2025), and NextMem (Zhang et al., 2026) represent
+the latent memory paradigm, and follow the vanilla
+memory evolution by concatenation and inference
+with the whole latent memory.
+From Figure 1, it can be inferred that, in such
+systems, the position encodings of concatenated
+memory fragments are misaligned with those expected during inference. Note that this positional
+distortion refers to the position encodings of memory fragments (including the target fragments and
+other fragments) being misaligned with those expected. This distortion can be accumulated and
+significantly degrade generation quality (Gao et al.,
+2024; Li et al., 2025). We are therefore motivated
+to examine the effects of positional distortion.
+
+10 4
+
+10 5
+
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
+Time Step (n)
+
+(b) Attention density ρl1 of the target knowledge
+fragment x1 across layers l and time steps n.
+×10 3
+
+Effects of Positional Distortion
+
+To investigate how positional distortion affects inference performance, we conduct experiments based on vanilla latent memory, using Llama-3.1-8B-Instruct1 with greedy decoding (max_new_tokens = 32). The dataset used
+is NaturalQuestions (NaturalQA) (Kwiatkowski
+et al., 2019)2 , where each item is a (context,
+question, answer) triple. We sample 500 groups
+for evaluation. Within each group, the protocol
+(largely following the setup of MemoryLLM and
+M+) is defined as follows:
+(1) Each context serves as the knowledge xi
+(|xi | ≤ 512) stored at time step i.
+
+1.0
+
+Accuracy
+Attention Density (Layer 13)
+
+60%
+
+3
+
+Attention Density
+
+Accuracy
+
+80%
+
+Correlation Coefficient (r)
+
+2.2
+
+60%
+
+40%
+
+2
+
+20%
+
+1
+
+0%0
+
+2000 4000 6000 8000 10000
+Memory Length (tokens)
+
+(c) QA accuracy and attention density ρ13
+1 of the
+target memory fragment m1 at layer 13.
+Pearson
+Spearman
+
+0.8
+0.6
+0.4
+0.2
+0.0 0
+
+4
+
+8 12 16 20 24 28
+Layer
+
+0
+
+4
+
+8 12 16 20 24 28
+Layer
+
+(d) Per-layer Pearson and Spearman correlation coefficients
+between attention density ρli and QA accuracy across 20 steps.
+
+Figure 2: Effects and analyses of positional distortion
+and attention density in latent memory.
+
+(2) After every memory update that obtains θi
+(1 ≤ i ≤ 20), the first knowledge x1 is evaluated.
+(3) The model Mθi ,ϕ is queried with the
+question corresponding to x1 . A response is
+deemed correct if the gold answer appears as a
+substring of the model output.
+Figure 2a shows that the accuracy drops sharply
+as n and Nn (memory length at step n) increase,
+with performance collapsing once Nn exceeds
+
+1
+
+https://huggingface.co/meta-llama/Llama-3.
+1-8B-Instruct.
+2
+We use a filtered subset of the dataset to ensure low data leakage and mutual independence among
+contexts: https://huggingface.co/datasets/YuWangX/
+KnowledgeRetentionProcessed.
+
+3
+
+Intuitively, ρli summarizes how strongly layer l
+routes the prompt’s attention toward the memory
+region occupied by xi .3
+
+2000. It indicates that positional distortion of latent
+memory is much more severe than the degradation
+observed in the phenomenon (Liu et al., 2024) of
+long contexts where positional encodings are correctly assigned throughout the input sequence. Experiments and analyses based on the setting without
+positional distortion are shown in Appendix C.1.
+2.3
+
+2.3.2 Analyses of Attention Density
+Figure 2b presents a heatmap of the attention density ρl1 for the target knowledge across each layer
+l and time step n, following the setup described
+in Section 2.2. A clear trend emerges: in several
+layers (particularly layers 13–20) attention density
+decreases markedly as the time step increases. Figure 2c uses two curves to show that QA accuracy is
+highly aligned with the attention density allocated
+to the target memory fragment at layer 13.
+To quantify the layer-wise correlation between
+accuracy degradation and attention density reduction, we compute the Pearson and Spearman correlation coefficients at each layer l, as shown in
+Figure 2d.4 Notably, both coefficients exceed 0.95
+across the majority of layers 13-20, indicating a
+near-perfect monotonic relationship between attention density reduction and accuracy decline. This
+strong correlation suggests that attention density is
+a key indicator associated with accuracy.
+Moreover, according to Eq. 5 and its previous
+derivation, a straightforward approach to increasing the attention density (correlated with the QA
+performance) of the target memory fragment is to
+remove non-target ones (temporarily) during inference. In this case, the first step is to trace and
+identify the target memory fragment.
+
+Attention Density as an Indicator
+
+Although positional distortion is a fundamental
+issue inherent to the latent-memory paradigm, it
+is not directly addressable within this framework.
+This motivates us to seek a quantifiable indicator
+correlated with performance degradation. To this
+end, we introduce layer-wise attention density ρli
+for each knowledge item xi , which captures queryaware cruciality at the granular level of fragments.
+A related but distinct line of work, exemplified by
+SnapKV (Li et al., 2024), uses per-token attention
+cruciality for KV-cache compression rather than
+long-term memory retention.
+2.3.1 Attention Density
+We define a per-layer, per-fragment relevance score
+ρli called the attention density of the stored knowledge fragment xi at layer l, which measures how
+much attention the current prompt p pays to xi .
+Let l denote a designated transformer layer. At
+inference time, the memory is stored as a per-layer
+prefix: the layer-l input is formed by prepending
+the bos token and the stored memory hidden states
+to the prompt’s layer-l states,
+
+3
+
+H l = [bosl ; ml1 ; . . . ; mln ; Hpl ] ∈ RS×d , (4)
+P
+with S = 1 + Nn + |p| and Nn = ni=1 Li the
+total number of retained memory positions (where
+Li is the current retained length of xi ). Since only
+the prompt tokens need to query the memory, we
+run multi-head self-attention on H l under a causal
+mask, restrict the queries to the |p| prompt positions, and average across heads. This yields a
+head-averaged prompt-to-sequence attention matrix Āl ∈ R|p|×S (full derivation in Appendix B.1).
+Taking its last row gives the per-position attention
+score from the prompt’s last token, ālt = Āl|p|, t .
+We then collapse these per-position scores into
+a single relevance score for each fragment xi by
+averaging over the positions Pi that xi occupies in
+the concatenated memory (excluding bos):
+ρli =
+
+1 X l
+āt ,
+Li
+
+i = 1, . . . , n,
+
+Attention Density as a Tracing Signal
+
+In this section, we provide an insight that attention
+density serves not only as an indicator correlated
+with performance, but also as a tracing signal: Certain layers exhibit an inherent tracing capability,
+consistently identifying the target fragment through
+attention density ranking. Our insight can be illustrated by the following experiments.
+We evaluate 500 groups from the NaturalQA
+dataset. For each group, 20 knowledge fragments
+are stored, where the target fragment is placed at
+each of the 20 positions in turn (from first to last) to
+mitigate positional bias. Table 1 reports the average
+attention density rank of the target fragment across
+3
+We also consider an all-token variant that averages ālt
+over all prompt positions rather than only the last one; details
+are in Appendix B.2.
+4
+The two coefficients are complementary: Pearson captures linear co-variation, while Spearman, being rank-based,
+is robust to the heavy-tailed distribution of attention density
+and reflects monotonic (but possibly non-linear) dependence.
+
+(5)
+
+t∈Pi
+
+4
+
+∗
+
+∗
+
+∗
+
+∗
+
+𝑚2𝑙
+
+𝑚11
+
+𝑚12
+
+……
+
+𝑚10
+
+𝑚20
+
+……
+
+……
+
+……
+
+𝑚4𝑙
+
+……
+
+Filter (Top-3)
+∗
+𝑚5𝑙
+
+……
+𝑚1𝑙
+
+∗
+
+𝑚6𝑙
+
+𝑚1𝑙
+𝑝
+Latent memory 𝜃𝑛 (𝑛 = 8)
+
+𝑝 𝑙
+
+𝑚8𝑙
+
+∗
+
+Layer 𝑙 ∗ : 𝜃𝑛
+
+𝑚18
+
+Layer 1: 𝜃𝑛
+
+𝑚80
+
+Layer 0: 𝜃𝑛
+
+∗
+𝑚8𝑙
+
+∗
+𝑚2𝑙
+
+∗
+
+𝑝 1
+𝑝 0
+
+(a) The stored latent memory before defragmentation.
+
+∗
+𝑚3𝑙
+
+∗
+𝑚1𝑙
+
+∗
+𝑚7𝑙
+
+∗
+𝑚6𝑙
+
+∗
+
+𝑚1𝑙
+
+∗
+𝑚4𝑙
+
+Reorder by attention density
+Rank 3
+
+Rank 7
+
+Rank 5
+
+Rank 1
+
+Rank 8
+
+Rank 2
+
+Rank 4
+
+∗
+
+𝑚6𝑙
+
+Rank 6
+
+∗
+
+Layer 𝑙 ∗ : 𝜃𝑛
+
+∗
+
+∗
+
+𝑚2𝑙
+
+∗
+
+𝑚3𝑙
+
+∗
+
+𝑚4𝑙
+
+∗
+
+∗
+
+𝑚6𝑙
+
+𝑚5𝑙
+
+∗
+
+𝑚7𝑙
+
+∗
+
+𝑚16
+
+𝑚14
+
+Layer 1: 𝜃𝑛
+
+𝑚10
+
+𝑚60
+
+𝑚40
+
+Layer 0: 𝜃𝑛
+
+𝑝 0
+
+𝑝
+
+∗
+
+𝑚8𝑙
+
+𝑝 1
+
+𝑚11
+
+Compute and rank attention density at a tracer layer 𝑙 ∗
+𝑚1𝑙
+
+∗
+𝑝 𝑙
+
+𝑚4𝑙
+
+……
+
+Inference-time latent memory 𝜃𝑛 (𝑛 = 8)
+
+ℎ𝑙 (query)
+
+(b) Defragmentation, which involves ranking, reordering,
+and filtering memory fragments).
+
+(c) The defragmented latent
+memory for inference.
+
+Figure 3: An example for the defragmentation processes of our MemDefrag framework, in which the time step is 8
+and Top-3 filtering strategy is adopted. At each layer, the defragmented latent memory follows the ordered and
+filtered fragment indexes at the tracer layer l∗ .
+
+Layer
+
+Rank ↓
+
+Top-1 ↑
+
+Top-2 ↑
+
+Top-3 ↑
+
+Top-4 ↑
+
+Top-5 ↑
+
+13
+9
+14
+17
+11
+
+1.66
+2.14
+3.19
+4.34
+5.01
+
+85.6
+78.3
+75.1
+68.2
+60.7
+
+94.7
+84.9
+83.2
+76.7
+72.3
+
+95.7
+92.2
+85.3
+78.1
+73.9
+
+96.3
+93.2
+86.2
+79.2
+74.7
+
+96.6
+93.8
+86.9
+79.9
+75.5
+
+memory designs, without loss of generality, we
+present it as an extension of the memory formation and concatenation-based memory evolution in
+vanilla latent memory (Section 2.1).
+4.1 Inference-Time Memory Defragmentation
+
+Table 1: Layers with the highest tracing capability based
+on 32-layer Llama-3.1-8B-Instruct, NaturalQA and lasttoken attention, ranked by average attention density
+rank, with Top-K accuracies (%) across all positions.
+
+At inference time, given a prompt p and the accumulated memory θn = {m1 , . . . , mn }, the function fdefrag (θn , p) defragments them to a promptspecific inference-time temporary memory θnp .
+To defragment the whole memory θn , all n memory fragments are first sorted by their attention density in ascending order:
+
+all positions for each layer. Layer 13 achieves the
+lowest mean rank of 1.66, with a Top-1 accuracy of
+85.6% and a Top-3 accuracy of 95.7%, indicating
+that it consistently assigns the highest attention density to the target fragment regardless of its position.
+Notably, this aligns with findings in activation
+steering studies (Turner et al., 2024; Panickssery
+et al., 2024; Zou et al., 2025), which identify specific middle layers as the most effective intervention point to control model behaviors. One possible
+explanation is that intermediate layers can encode
+richer representations than both earlier layers and
+final layers, holding implications for feature relevance and extraction (Skean et al., 2025; Li et al.,
+2026a). Further, analyses about the tracing capabilities based on the setting without positional distortion are shown in Appendix C.2.
+
+4
+
+∗
+
+∗
+
+π = argsort(ρl1 , . . . , ρln ),
+∗
+
+∗
+
+(6)
+
+∗
+
+such that ρlπ(1) ≤ ρlπ(2) ≤ · · · ≤ ρlπ(n) . The entire
+memory θn is then reordered by π at each layer:
+θ̃nl = [mlπ(1) ; mlπ(2) ; . . . ; mlπ(n) ], l = 1, . . . , L.
+(7)
+This places the most relevant memory fragments at
+the end (i.e., closest to the prompt), thereby leveraging the recency bias of causal attention.
+Finally, we filter only the Top-K most relevant
+memory fragments by truncating the reordered sequence from the front:
+
+MemDefrag
+
+θnp = {mπ(n−K+1) , . . . , mπ(n) },
+
+We propose MemDefrag of which latent memory
+defragmentation, given a prompt, traces and consolidates the most relevant memory fragments for inference while discarding irrelevant ones to mitigate
+accumulated positional distortion and to improve
+the attention density allocated to the relevant fragments. Tracing the relevant fragment(s) is guided
+by attention density at one tracer layer l∗ (such as
+layer 13 or 9 listed in Table 1 in Section 3).
+As MemDefrag is generally applicable to latent
+
+(8)
+
+i.e., the hidden states at each layer are:
+(θnp )l = [mlπ(n−K+1) ; . . . ; mlπ(n) ] ∈ RNK ×d ,
+(9)
+P
+where NK = nk=n−K+1 Lπ(k) , in which Li denotes the current retained length of xi . The promptspecific memory θnp is then used for inference:
+output = Mθnp ,ϕ (p). Algorithm 1 shows the process of defragmenting θnp from θn .
+5
+
+Vanilla
+Top-all
+
+Algorithm 1 Memory Defragmentation
+Input: Accumulated memory θn = {m1 , . . . , mn } with at∗
+∗
+tention density {ρl1 , . . . , ρln } of a tracer layer l∗ based
+on a prompt p, number of retained knowledge K
+Output: Inference-time temporary memory θnp
+∗
+∗
+1: π ← argsort(ρl1 , . . . , ρln )
+▷ Ascending order
+2: for each layer l = 1, . . . , L do
+3:
+θ̃nl ← [mlπ(1) ; mlπ(2) ; . . . ; mlπ(n) ]
+4: θnp ← {mπ(n−K+1) , . . . , mπ(n) }
+relevant memories
+5: return θnp
+
+4.2
+
+100%
+
+Top-5
+Top-6
+
+SQuAD
+
+Accuracy
+
+60%
+40%
+20% Borderline = 14.6%
+
+▷ Filter Top-K
+
+0% 2 4 6 8 10 12 14 16 18 20
+Time Step (n)
+
+Borderline = 7.4%
+
+2 4 6 8 10 12 14 16 18 20
+Time Step (n)
+
+Figure 4: 20-step knowledge retention on NaturalQA
+and SQuAD. Vanilla refers to the vanilla concatenationbased latent memory introduced in Section 2.1. All
+other variants are instances of memory defragmentation (Section 4.1): in which Top-all applies reordering
+alone without truncation, while Top-K filters only the
+K highest-ranked memory fragments after reordering.
+
+Memory Evolution with
+Informativeness-Guided Forgetting
+
+memory fragment based on the informativeness of
+the corresponding tokens. Detailed descriptions of
+this forgetting strategy is shown in Appendix D.
+
+5
+
+Experiments
+
+We adopt MemoryLLM (Wang et al., 2024) and
+M+ (Wang et al., 2025), latent-memory methods that explicitly account for forgetting and
+knowledge retention, as baselines for our MemDefrag. Following their evaluation protocols, we assess MemDefrag across knowledge retention (Section 5.1) and long-context QA benchmarks (Section 5.2). We also provide analyses on generality
+and compatibility on various aspects (Section 5.3).
+Memoryllm-8b5 and M+-8b6 serve as baseline models. Although MemDefrag is modelagnostic and applicable to backbone architectures,
+we conduct all comparative experiments (in Section 5.1 and 5.2) on Llama-3.1-8B-Instruct for consistency. All three models are built upon Llama-3.18B (Grattafiori et al., 2024), ensuring a fair comparison. The maximum length Nmax of MemDefrag is
+set as 12,800, which is equal to the memory token
+numbers of Memoryllm-8b and M+-8b. The layer
+13 serves as the tracer layer of MemDefrag because
+of its highest tracing capability in Llama-3.1-8BInstruct discussed in Section 3 and Appendix B.2.
+All experiments are conducted on 4× GPUs that
+feature 141 GB of HBM3e memory.
+
+Sketch of Memory Evolution
+
+Given the current length Nn−1 , the formed memory mn of new knowledge xn , and a maximum
+length Nmax (set empirically), Nforget (Nforget =
+Nn−1 + |xn | − Nmax ) hidden states are needed to
+be dropped. The evolution proceeds in two cases:
+θn = Uϕ (θn−1 , fform (xn )) = Uϕ (θn−1 , mn )
+equals concat(θn−1 , mn ) when Nforget ≤ 0,
+and equals concat(fforget (θn−1 , Nforget ), mn ) when
+Nforget > 0, where |xn | ≤ Nmax , and the function
+fforget (·) prunes Nforget states from θn−1 to store
+the incoming memory. Algorithm 2 in Appendix
+sketches the memory evolution with the forgetting
+mechanism.
+4.2.2
+
+NaturalQA
+
+Top-3
+Top-4
+
+80%
+
+Beyond defragmentation, our MemDefrag further
+incorporates an informativeness-based forgetting
+mechanism for memory evolution (e.g., updating
+θn−1 to θn ). The presence of forgetting is essential
+for latent memory, as practical deployment constraints demand an effective eviction strategy.
+Unlike MemoryLLM (Wang et al., 2024) and
+M+ (Wang et al., 2025) that randomly drop memory states independently at each layer, indiscriminately losing information, MemDefrag introduces
+a selective strategy that operates coherently across
+all layers of each token.
+4.2.1
+
+Top-1
+Top-2
+
+Informativeness-Based Proportional
+Forgetting of Memory
+
+Our forgetting function fforget (·) performs proportional forgetting: when Nforget hidden states need to
+be dropped, the quota is distributed proportionally
+across all stored memory fragments.
+Inspired by the ideas proposed in Selective Context (Li et al., 2023) and other techniques of
+prompt compression (Jiang et al., 2023b; Pan et al.,
+2024), which identify and prune redundant tokens,
+fforget (·) prunes hidden states within each stored
+
+5
+6
+
+6
+
+https://huggingface.co/YuWangX/memoryllm-8b
+https://huggingface.co/YuWangX/mplus-8b
+
+MemoryLLM
+M+
+
+80%
+
+MemDefrag (Top-1)
+MemDefrag (Top-2)
+
+NaturalQA
+
+MemDefrag (Top-3)
+MemDefrag (Top-4)
+
+NaturalQA
+
+SQuAD
+
+Accuracy
+
+60%
+40%
+
+5 10 15 20 25 30 35 40 45 50
+Time Step (n)
+
+Figure 5: 50-step knowledge retention on NaturalQA
+and SQuAD, comparing MemDefrag (Top-1 through
+Top-4 with informativeness-based forgetting) against
+MemoryLLM and M+.
+
+5.1
+
+n=20
+
+n=30
+
+MemoryLLM
+M+
+
+23.4
+26.2
+
+18.2
+19.6
+
+18.4
+21.0
+
+Top-1
+Top-2
+Top-3
+Top-4
+
+66.0
+66.8
+62.8
+59.0
+
+67.2
+67.4
+62.0
+59.2
+
+63.2
+62.2
+59.2
+52.6
+
+n=40 n=50
+Baselines
+18.0
+17.4
+17.2
+17.6
+MemDefrag
+53.2
+43.0
+50.0
+37.8
+44.6
+36.2
+41.6
+33.6
+
+SQuAD
+n=10
+
+n=20
+
+n=30
+
+n=40
+
+n=50
+
+29.0
+44.0
+
+24.2
+36.4
+
+20.2
+33.2
+
+19.0
+29.6
+
+15.4
+20.2
+
+76.6
+78.2
+76.8
+72.0
+
+67.6
+74.0
+73.8
+73.0
+
+54.2
+60.8
+60.2
+59.2
+
+35.0
+40.0
+41.6
+37.2
+
+21.6
+27.2
+25.0
+23.2
+
+NaturalQA, vanilla accuracy eventually falls below
+the borderline, indicating that the accumulated positional distortion can compromise even the standard
+inference capacity of the language model.
+(2) All MemDefrag variants substantially slow
+down the degradation curve compared to the vanilla.
+Even Top-all, which only reorders fragments without filtering, maintains higher accuracy throughout
+the 20 steps (e.g., 22.6% vs. 9.4% at step 20 on
+NaturalQA), demonstrating that solely placing the
+target memory fragment at a position closer to the
+prompt contributes to performance improvement.
+(3) Top-2 achieves the highest accuracy on NaturalQA (67.2%) at step 20, while Top-3 achieves the
+highest on SQuAD (72.2%) at step 20. Top-6 (as
+well as Top-all) achieves lower accuracy in both
+datasets, revealing a trade-off: a larger K improves
+the chance of tracing the target memory fragment
+but reduces its attention density. Attention density
+is highly correlated with QA accuracy (discussed
+in Section 2.3.2 and Figure 2d).
+
+Knowledge Retention Experiments
+
+To evaluate the ability of MemDefrag to recall long-term knowledge, we follow the setup
+in MemoryLLM and M+ on datasets NaturalQA (Kwiatkowski et al., 2019) and SQuAD (Rajpurkar et al., 2016), where each item is a
+(context, question, answer) triple. The implementation details follow Section 2.2. We calculate last-token attention for NaturalQA and alltoken attention for SQuAD as discussed in Appendix B.2. To eliminate positional bias of evaluation, i.e., to prevent the target fragment from consistently occupying the first position, the stored memory fragments are shuffled after each memory update. For each dataset, 500 groups are sampled for
+evaluation.7 Besides, we report the QA accuracy
+obtained without storing any memory fragments
+(NaturalQA: 14.6%; SQuAD: 7.4%), referred to as
+the borderline accuracy.
+5.1.1
+
+n=10
+
+Table 2: QA accuracy (%) of knowledge retention at
+selected time steps on NaturalQA and SQuAD. Bold
+indicates the best result in each column.
+
+20%
+0% 5 10 15 20 25 30 35 40 45 50
+Time Step (n)
+
+Method
+
+5.1.2 Ablation Study of Forgetting Strategies
+We study the differences of forgetting strategies:
+informativeness-based (Section 4.2.2) vs. random
+proportional forgetting. The detailed results to
+validate the informativeness-based forgetting are
+shown in Appendix E.1.
+
+Ablation Study of Different K
+
+We first study the effects of different K, which
+is used to keep Top-K memory fragments for
+inference-time memory Defragmentation (Section 4.1). The maximum time step is 20. As
+the maximum memory length N20 is less than
+Nmax = 12, 800, which does not trigger any forgetting strategy. Figure 4 shows the results of knowledge retention, which reveals several key findings:
+(1) Vanilla latent memory suffers from severe
+degradation as the number of time steps increases:
+accuracy drops from 73.2% to below 9.4% on NaturalQA and from 77.6% to 19.0% on SQuAD. On
+
+5.1.3 Comparison with MemoryLLM and M+
+In MemoryLLM and M+, each 512-token chunk
+is compressed into 256 memory vectors per layer
+in a fixed 2:1 ratio.8 Figure 5 presents the results
+comparing MemoryLLM, M+ and, our MemDefrag from Top-1 to Top-4 memory defragmentation with informativeness-based forgetting. Several
+findings stand out:
+(1) All MemDefrag variants substantially and
+consistently outperform both MemoryLLM and M+
+
+7
+Note that the sampled groups used here are disjoint from
+those in Section 2, ensuring that hyperparameter selection is
+not biased by prior observations on the same data.
+
+8
+To ensure a fair comparison that accounts for this compression, each knowledge fragment xi injected into MemoryLLM and M+ is 512 tokens.
+
+7
+
+Method
+MemoryLLM
+M+
+MemDefrag (Top-2)
+MemoryLLM
+M+
+MemDefrag (Top-2)
+MemoryLLM
+M+
+MemDefrag (Top-2)
+MemoryLLM
+M+
+MemDefrag (Top-2)
+MemoryLLM
+M+
+MemDefrag (Top-2)
+MemoryLLM
+M+
+MemDefrag (Top-2)
+
+String match
+F1
+ROUGE-L
+2WikiMultihopQA
+35.00
+9.21
+10.13
+35.60
+9.41
+9.79
+36.00
+9.51
+9.53
+HotpotQA
+37.50
+8.10
+8.23
+38.00
+8.56
+8.34
+39.00
+8.88
+8.43
+MuSiQue
+16.00
+5.08
+5.16
+19.50
+6.03
+5.84
+20.00
+6.16
+5.65
+MultiFieldQA-en
+3.33
+14.76
+14.83
+6.00
+14.11
+14.41
+6.00
+15.74
+15.51
+NarrativeQA
+9.84
+3.37
+3.79
+4.92
+3.07
+3.63
+11.48
+7.81
+7.77
+Qasper
+17.77
+8.58
+8.14
+17.26
+8.34
+8.34
+18.27
+9.29
+8.66
+
+is 16,384 tokens. Four metrics are used for evaluation: (1) String match (the rule referring to Section 2.2, (2) F1 score (3) ROUGE-L (Lin, 2004),
+and (4) BERTScore (Zhang* et al., 2020). Detailed
+settings are shown in Appendix E.2.
+Table 3 reports the results, of which Top-2 memory defragmentation for MemDefrag is adopted,
+and the attention computation is based on all
+prompt tokens (Appendix B.2). MemDefrag consistently outperforms MemoryLLM and M+ in the
+majority of datasets and metrics, achieving the
+best results in 20 out of 24 dataset-metric combinations. It suggests that MemDefrag effectively
+preserves long-context information and generalizes
+well across diverse question-answering scenarios.
+
+BERTScore
+82.32
+81.81
+83.82
+83.15
+82.84
+84.22
+81.38
+81.37
+83.49
+85.92
+85.06
+85.37
+81.27
+81.60
+82.69
+81.81
+81.36
+82.36
+
+5.3
+
+Generality across Models. Beyond Llama-3.18B-Instruct, we study the effects of MemDefrag in another three language models: Qwen2.57B-Instruct (Team, 2024b), Mistral-7B-Instructv0.3 (Jiang et al., 2023a), Gemma-2-9b-it (Team,
+2024a) (see Appendix E.4).
+
+Table 3: LongBench results (×100) comparison across
+three models. Best results per dataset are in bold.
+
+across the 50 steps on both datasets. Table 2 summarizes the accuracy at {10, 20, 30, 40, 50} time
+steps. By step 50, Top-1 retains an accuracy of
+43.0% on NaturalQA vs. 17.4% for MemoryLLM
+and 17.6% for M+.
+(2) The optimum K remains small and does not
+increase with the number of steps. This suggests
+that concentrating attention density on the traced
+target fragment (achieved by filtering fewer candidates) can be more beneficial than broadening
+the candidate pool to increase the likelihood of
+including the target.
+(3) Even at the earliest time steps, MemDefrag
+substantially outperforms MemoryLLM and M+,
+despite all three methods being built upon the same
+Llama-3.1-8B backbone. This indicates that: The
+fixed compression of MemoryLLM and M+ incurs
+a non-trivial information loss during memory formation, leading to a significant accuracy reduction
+before any long-term degradation occurs.
+Further, Appendix E.3 analyzes the running-time
+efficiency of conducting an experimental group
+which includes 50 memory fragment formation
+along with per-step evaluation.
+5.2
+
+Generality and Compatibility
+
+Compatibility with Latent-Memory Variants.
+We study the compatibility of the inference-time
+memory defragmentation (Section 4.1) with MemoryLLM and M+ (see Appendix E.5).
+Compatibility with Prompt Compression.
+MemDefrag supports flexible-length memory
+fragments, making it compatible with prompt
+compression. We study the effects of compressing
+knowledge fragments (see Appendix E.6).
+
+6
+
+Conclusion
+
+We identified two long-standing obstacles that
+cause degradation under repeated updates in the
+long-term latent memory paradigm: positionalencoding misalignment and the absence of a tracing mechanism. Through a layer-wise probing of
+attention density, we showed that a small set of middle transformer layers consistently concentrates the
+highest density on the target fragment, exposing a
+reliable tracing signal. Building on this signal, we
+proposed MemDefrag, which (1) defragments the
+stored memory by ranking, reordering, and filtering fragments at inference time, and (2) operates
+an informativeness-guided proportional forgetting
+strategy. The experiments show the superiority of
+MemDefrag compared to MemoryLLM and M+.
+As the tracing signal and the defragmentation procedure are decoupled from any specific backbone,
+
+Long Context Experiments
+
+In this section, we evaluate the long-context modeling capabilities of MemDefrag. Following the
+experiment settings of MemoryLLM and M+, six
+datasets of the LongBench (Bai et al., 2024) are
+adopted, where the maximum length of each item
+8
+
+they are transferable to other models and latentmemory variants. More broadly, according to the
+analyses in Appendix C.2, defragmentation based
+on attention density is also potentially applicable
+to plain long-context inference.
+
+Aaron Grattafiori, Abhimanyu Dubey, Abhinav Jauhri,
+Abhinav Pandey, Abhishek Kadian, Ahmad AlDahle, Aiesha Letman, Akhil Mathur, Alan Schelten, Alex Vaughan, Amy Yang, Angela Fan, Anirudh
+Goyal, Anthony Hartshorn, Aobo Yang, Archi Mitra, Archie Sravankumar, Artem Korenev, Arthur
+Hinsvark, and 542 others. 2024. The llama 3 herd of
+models. Preprint, arXiv:2407.21783.
+
+Limitations
+Top-K filtering is chosen empirically and held
+static throughout inference, rather than being predicted per prompt and per step. A natural remedy would be to make K adaptive, for instance
+by selecting it from the shape of the per-fragment
+attention-density distribution at the tracer layer. In
+practice, however, we find that the benefit for such
+an adaptive scheme is narrow. Across the LLMs
+and the QA benchmarks we study, the best accuracy
+is almost always concentrated at Top-1 or Top-2,
+which leaves very little room for an adaptive K to
+improve on a well-chosen static K. The one exception is Gemma-2-9b, where Top-1 deteriorates beyond roughly 20 update steps while Top-2 remains
+stable (Figure 8c). This suggests that an adaptive K
+is primarily useful for coping with long-term drift
+on particular (model, dataset) pairs, rather than as
+a universal replacement for the static choice. In
+this paper, therefore, we focus on a fixed small K,
+treating adaptive K as an orthogonal design choice
+rather than a core component of MemDefrag.
+
+Edward J Hu, yelong shen, Phillip Wallis, Zeyuan AllenZhu, Yuanzhi Li, Shean Wang, Lu Wang, and Weizhu
+Chen. 2022. LoRA: Low-rank adaptation of large
+language models. In International Conference on
+Learning Representations.
+Yuyang Hu, Shichun Liu, Yanwei Yue, Guibin Zhang,
+Boyang Liu, Fangyi Zhu, Jiahang Lin, Honglin Guo,
+Shihan Dou, Zhiheng Xi, Senjie Jin, Jiejun Tan, Yanbin Yin, Jiongnan Liu, Zeyu Zhang, Zhongxiang
+Sun, Yutao Zhu, Hao Sun, Boci Peng, and 28 others.
+2026. Memory in the age of ai agents. Preprint,
+arXiv:2512.13564.
+Albert Q. Jiang, Alexandre Sablayrolles, Arthur Mensch, Chris Bamford, Devendra Singh Chaplot, Diego
+de las Casas, Florian Bressand, Gianna Lengyel, Guillaume Lample, Lucile Saulnier, Lélio Renard Lavaud,
+Marie-Anne Lachaux, Pierre Stock, Teven Le Scao,
+Thibaut Lavril, Thomas Wang, Timothée Lacroix,
+and William El Sayed. 2023a. Mistral 7b. Preprint,
+arXiv:2310.06825.
+Huiqiang Jiang, Qianhui Wu, Chin-Yew Lin, Yuqing
+Yang, and Lili Qiu. 2023b. LLMLingua: Compressing prompts for accelerated inference of large language models. In Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing, pages 13358–13376, Singapore. Association
+for Computational Linguistics.
+
+References
+Yushi Bai, Xin Lv, Jiajie Zhang, Hongchang Lyu,
+Jiankai Tang, Zhidian Huang, Zhengxiao Du, Xiao
+Liu, Aohan Zeng, Lei Hou, Yuxiao Dong, Jie Tang,
+and Juanzi Li. 2024. LongBench: A bilingual, multitask benchmark for long context understanding. In
+Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1:
+Long Papers), pages 3119–3137, Bangkok, Thailand.
+Association for Computational Linguistics.
+
+James Kirkpatrick, Razvan Pascanu, Neil Rabinowitz,
+Joel Veness, Guillaume Desjardins, Andrei A. Rusu,
+Kieran Milan, John Quan, Tiago Ramalho, Agnieszka Grabska-Barwinska, Demis Hassabis, Claudia Clopath, Dharshan Kumaran, and Raia Hadsell.
+2017. Overcoming catastrophic forgetting in neural
+networks. Proceedings of the National Academy of
+Sciences, 114(13):3521–3526.
+
+Prateek Chhikara, Dev Khant, Saket Aryan, Taranjeet
+Singh, and Deshraj Yadav. 2025. Mem0: Building
+production-ready ai agents with scalable long-term
+memory. Preprint, arXiv:2504.19413.
+
+Tom Kwiatkowski, Jennimaria Palomaki, Olivia Redfield, Michael Collins, Ankur Parikh, Chris Alberti,
+Danielle Epstein, Illia Polosukhin, Jacob Devlin, Kenton Lee, Kristina Toutanova, Llion Jones, Matthew
+Kelcey, Ming-Wei Chang, Andrew M. Dai, Jakob
+Uszkoreit, Quoc Le, and Slav Petrov. 2019. Natural questions: A benchmark for question answering
+research. Transactions of the Association for Computational Linguistics, 7:452–466.
+
+Bin Gao, Zhuomin He, Puru Sharma, Qingxuan Kang,
+Djordje Jevdjic, Junbo Deng, Xingkun Yang, Zhou
+Yu, and Pengfei Zuo. 2024. Cost-Efficient large language model serving for multi-turn conversations
+with CachedAttention. In 2024 USENIX Annual
+Technical Conference (USENIX ATC 24), pages 111–
+126, Santa Clara, CA. USENIX Association.
+
+Huayang Li, Yahui Liu, Hongyu Sun, Deng Cai, Leyang
+Cui, Wei Bi, Peilin Zhao, and Taro Watanabe. 2025.
+Seqpe: Transformer with sequential position encoding. Preprint, arXiv:2506.13277.
+
+Samuel J Gershman, Ila Fiete, and Kazuki Irie.
+2025. Key-value memory in the brain. Neuron,
+113(11):1694–1707.
+
+9
+
+Huayang Li, Tianyu Zhao, Deng Cai, and Richard
+Sproat. 2026a. Repo: Language models with context
+re-positioning. Preprint, arXiv:2512.14391.
+
+Oscar Skean, Md Rifat Arefin, Dan Zhao, Niket Nikul
+Patel, Jalal Naghiyev, Yann Lecun, and Ravid
+Shwartz-Ziv. 2025. Layer by layer: Uncovering
+hidden representations in language models. In Proceedings of the 42nd International Conference on
+Machine Learning, volume 267 of Proceedings of
+Machine Learning Research, pages 55854–55875.
+PMLR.
+
+Weixian Waylon Li, Jiaxin Zhang, Xianan Jim Yang,
+Tiejun Ma, and Yiwen Guo. 2026b. Time is not
+a label: Continuous phase rotation for temporal
+knowledge graphs and agentic memory. Preprint,
+arXiv:2604.11544.
+
+Jiaming Tang, Yilong Zhao, Kan Zhu, Guangxuan Xiao,
+Baris Kasikci, and Song Han. 2024. QUEST: Queryaware sparsity for efficient long-context LLM inference. In Forty-first International Conference on Machine Learning.
+
+Yucheng Li, Bo Dong, Frank Guerin, and Chenghua Lin.
+2023. Compressing context to enhance inference efficiency of large language models. In Proceedings of
+the 2023 Conference on Empirical Methods in Natural Language Processing, pages 6342–6353, Singapore. Association for Computational Linguistics.
+
+Gemma Team. 2024a. Gemma.
+
+Yuhong Li, Yingbing Huang, Bowen Yang, Bharat
+Venkitesh, Acyr Locatelli, Hanchen Ye, Tianle Cai,
+Patrick Lewis, and Deming Chen. 2024. SnapKV:
+LLM knows what you are looking for before generation. In The Thirty-eighth Annual Conference on
+Neural Information Processing Systems.
+
+Qwen Team. 2024b. Qwen2.5: A party of foundation
+models.
+Alexander Matt Turner, Lisa Thiergart, Gavin Leech,
+David Udell, Juan J. Vazquez, Ulisse Mini, and
+Monte MacDiarmid. 2024. Steering language
+models with activation engineering.
+Preprint,
+arXiv:2308.10248.
+
+Chin-Yew Lin. 2004. ROUGE: A package for automatic evaluation of summaries. In Text Summarization Branches Out, pages 74–81, Barcelona, Spain.
+Association for Computational Linguistics.
+
+Yu Wang, Yifan Gao, Xiusi Chen, Haoming Jiang,
+Shiyang Li, Jingfeng Yang, Qingyu Yin, Zheng
+Li, Xian Li, Bing Yin, Jingbo Shang, and Julian
+McAuley. 2024. Memoryllm: towards self-updatable
+large language models. In Proceedings of the
+41st International Conference on Machine Learning,
+ICML’24. JMLR.org.
+
+Nelson F. Liu, Kevin Lin, John Hewitt, Ashwin Paranjape, Michele Bevilacqua, Fabio Petroni, and Percy
+Liang. 2024. Lost in the middle: How language models use long contexts. Transactions of the Association
+for Computational Linguistics, 12:157–173.
+Charles Packer, Sarah Wooders, Kevin Lin, Vivian Fang,
+Shishir G. Patil, Ion Stoica, and Joseph E. Gonzalez.
+2024. Memgpt: Towards llms as operating systems.
+Preprint, arXiv:2310.08560.
+
+Yu Wang, Dmitry Krotov, Yuanzhe Hu, Yifan Gao,
+Wangchunshu Zhou, Julian McAuley, Dan Gutfreund,
+Rogerio Feris, and Zexue He. 2025. M+: Extending
+memoryLLM with scalable long-term memory. In
+Forty-second International Conference on Machine
+Learning.
+
+Zhuoshi Pan, Qianhui Wu, Huiqiang Jiang, Menglin Xia,
+Xufang Luo, Jue Zhang, Qingwei Lin, Victor Rühle,
+Yuqing Yang, Chin-Yew Lin, H. Vicky Zhao, Lili Qiu,
+and Dongmei Zhang. 2024. LLMLingua-2: Data distillation for efficient and faithful task-agnostic prompt
+compression. In Findings of the Association for Computational Linguistics: ACL 2024, pages 963–981,
+Bangkok, Thailand. Association for Computational
+Linguistics.
+
+Yuhuai Wu, Markus Norman Rabe, DeLesley Hutchins,
+and Christian Szegedy. 2022. Memorizing transformers. In International Conference on Learning Representations.
+Hongkang Yang, Zehao Lin, Wenjin Wang, Hao Wu,
+Zhiyu Li, Bo Tang, Wenqiang Wei, Jinbo Wang,
+Zeyun Tang, Shichao Song, Chenyang Xi, Yu Yu,
+Kai Chen, Feiyu Xiong, Linpeng Tang, and Weinan
+E. 2024. Memory3 : Language modeling with
+explicit memory. Journal of Machine Learning,
+3(3):300–346.
+
+Nina Panickssery, Nick Gabrieli, Julian Schulz, Meg
+Tong, Evan Hubinger, and Alexander Matt Turner.
+2024. Steering llama 2 via contrastive activation
+addition. Preprint, arXiv:2312.06681.
+Changle Qu, Sunhao Dai, Xiaochi Wei, Hengyi Cai,
+Shuaiqiang Wang, Dawei Yin, Jun Xu, and Ji-Rong
+Wen. 2025. Tool learning with large language models: A survey. Frontiers of Computer Science,
+19(8):198343.
+
+Tianyi Zhang*, Varsha Kishore*, Felix Wu*, Kilian Q.
+Weinberger, and Yoav Artzi. 2020. Bertscore: Evaluating text generation with bert. In International
+Conference on Learning Representations.
+
+Pranav Rajpurkar, Jian Zhang, Konstantin Lopyrev, and
+Percy Liang. 2016. SQuAD: 100,000+ questions for
+machine comprehension of text. In Proceedings of
+the 2016 Conference on Empirical Methods in Natural Language Processing, pages 2383–2392, Austin,
+Texas. Association for Computational Linguistics.
+
+Zeyu Zhang, Quanyu Dai, Xiaohe Bo, Chen Ma, Rui Li,
+Xu Chen, Jieming Zhu, Zhenhua Dong, and Ji-Rong
+Wen. 2025. A survey on the memory mechanism of
+large language model-based agents. ACM Trans. Inf.
+Syst., 43(6).
+
+10
+
+for storing and retrieving information from ongoing conversations. Although token-level memory
+offers great modularity and interpretability, these
+approaches suffer from the lost-in-the-middle phenomenon (Liu et al., 2024) and context window
+bottleneck (Wang et al., 2025).
+Parametric memory stores information directly
+within the model’s parameters. One major type is
+memory encoded in the model’s original parameters. For example, LMLM (Zhao et al., 2025) embeds retrievable knowledge during the pre-training
+phase, while CharacterGLM (Zhou et al., 2024)
+fine-tunes the LLM to exhibit distinct character
+traits. The other type resides in auxiliary parameter sets, such as adapters and LoRA modules (Hu
+et al., 2022), which are attached alongside the base
+model. The primary advantage of parametric memory is that it incurs no additional inference-time
+overhead. However, it suffers from costly retraining requirements and the risk of catastrophic forgetting (Kirkpatrick et al., 2017).
+Latent memory refers to information carried implicitly in the model’s internal representations, such
+as key-value caches, activations, and hidden states.
+Most existing methods in this category operate as
+short-term (working) memory, primarily reusing
+the key-value (KV) cache as a form of latent storage (Wu et al., 2022; Gershman et al., 2025). The
+most closely related to MemDefrag proposed in this
+paper is long-term latent memory, as exemplified
+by MemoryLLM (Wang et al., 2024), M+ (Wang
+et al., 2025), and Memory^3 (Yang et al., 2024).
+They avoid repeatedly processing the full context
+and introduce substantially less inference latency.
+However, transferring information into latent representations may incur information loss or semantic
+bias, and training a dedicated module to generate
+such representations introduces additional computational overhead.
+
+Zeyu Zhang, Rui Li, Xiaoyan Zhao, Yang Zhang,
+Wenjie Wang, Xu Chen, and Tat-Seng Chua. 2026.
+Nextmem: Towards latent factual memory for llmbased agents. Preprint, arXiv:2603.15634.
+Linxi Zhao, Sofian Zalouk, Christian K. Belardi, Justin
+Lovelace, Jin Peng Zhou, Ryan Thomas Noonan,
+Dongyoung Go, Kilian Q. Weinberger, Yoav Artzi,
+and Jennifer J. Sun. 2025. Pre-training limited
+memory language models with internal and external
+knowledge. Preprint, arXiv:2505.15962.
+Jinfeng Zhou, Zhuang Chen, Dazhen Wan, Bosi Wen,
+Yi Song, Jifan Yu, Yongkang Huang, Pei Ke, Guanqun Bi, Libiao Peng, JiaMing Yang, Xiyao Xiao,
+Sahand Sabour, Xiaohan Zhang, Wenjing Hou, Yijia Zhang, Yuxiao Dong, Hongning Wang, Jie Tang,
+and Minlie Huang. 2024. CharacterGLM: Customizing social characters with large language models. In
+Proceedings of the 2024 Conference on Empirical
+Methods in Natural Language Processing: Industry
+Track, pages 1457–1476, Miami, Florida, US. Association for Computational Linguistics.
+Andy Zou, Long Phan, Sarah Chen, James Campbell,
+Phillip Guo, Richard Ren, Alexander Pan, Xuwang
+Yin, Mantas Mazeika, Ann-Kathrin Dombrowski,
+Shashwat Goel, Nathaniel Li, Michael J. Byun, Zifan
+Wang, Alex Mallen, Steven Basart, Sanmi Koyejo,
+Dawn Song, Matt Fredrikson, and 2 others. 2025.
+Representation engineering: A top-down approach
+to ai transparency. Preprint, arXiv:2310.01405.
+
+A
+
+Related Work
+
+LLM memory serves as a cornerstone for transforming static LLMs into adaptive tools, particularly when their parameters cannot be promptly
+updated in response to interactive environment
+changes (Hu et al., 2026). Moreover, LLM memory
+is widely recognized as one of the most important
+capabilities (alongside reasoning, planning, perception, and tool use) that supports LLM-based
+agents (Zhang et al., 2025; Qu et al., 2025; Li et al.,
+2026b).
+A.1
+
+LLM Memory Forms
+
+A.2
+
+We categorize LLM memory into three types: (1)
+token-level memory, (2) parametric memory, and
+(3) latent memory.
+Token-level memory is organized as explicit and
+discrete text tokens that can be persistently stored
+in a structured form. Substantial methods in this
+category typically focus on storing, summarizing,
+managing, and preventing the forgetting of dialog
+contents. For example, MemGPT (Packer et al.,
+2024) proposes an operating-system metaphor with
+hierarchical management, and Mem0 (Chhikara
+et al., 2025) establishes standardized operations
+
+Long-Term Latent Memory
+
+Our proposed MemDefrag falls into the category
+of long-term latent memory, which generally supports persistent knowledge retention, efficient retrieval across extended interactions, and graceful
+integration of new information without catastrophic
+forgetting. Our method stores information in perlayer hidden states, especially aligning with the
+paradigm of MemoryLLM (Wang et al., 2024),
+M+ (Wang et al., 2025), and NextMem (Zhang
+et al., 2026).
+MemoryLLM incorporates a substantial portion
+11
+
+of self-updatable prefix hidden states (referred to
+as a memory pool) enabling the model to integrate
+new knowledge both effectively and efficiently. M+
+extends MemoryLLM by introducing a co-trained
+retriever that provides scalable long-term memory;
+specifically, the retriever extracts and reuses evicted
+tokens during inference.
+Beyond their strategies for updating the memory
+pool, both MemoryLLM and M+ rely on a series
+of continual training strategies for knowledge incorporation and forgetting mitigation. The computational overhead of such continual training has
+limited their publicly released models to relatively
+small scales (based on Llama-2-7B or Llama-3.18B). Moreover, their paradigm of concatenating
+hidden states introduces substantial positional encoding misalignment, as the appended states no
+longer correspond to their original positions.
+
+B
+
+Supplementary Descriptions for
+Attention Density
+
+B.1
+
+Derivation of Attention Density
+
+prompt tokens to the full sequence. We therefore
+project queries from the prompt hidden states Hpl
+and keys from the full sequence H l , and apply
+scaled dot-product attention under a causal mask
+Mcausal ∈ R|p|×S that prevents each prompt position from attending to later prompt positions:
+l
+Qlh = Hpl WQ,h
+∈ R|p|×dk ,
+l
+Khl = H l WK,h
+∈ RS×dk ,
+ l l⊤
+
+Qh Kh
+l
+√
+Ah = softmax
++ Mcausal ∈ R|p|×S .
+dk
+(12)
+l
+Equivalently, Ah is the last |p| rows of the full
+S × S self-attention matrix, which is all that is
+needed for computing ρli .
+
+Head averaging and last-position extraction.
+The per-head attention matrices are averaged across
+heads,
+H
+
+Āl =
+
+This appendix provides the full derivation of the
+head-averaged attention matrix Āl used in Equation 5.
+
+1 X l
+Ah ∈ R|p|×S ,
+H
+
+(13)
+
+h=1
+
+and the last-position attention score used in Equation 5 is the final row of Āl (i.e., the attention emitted by the prompt’s last token):
+
+l
+l
+Notation. Let WQ,h
+∈ Rd×dk and WK,h
+∈
+d×d
+R k be the query and key projection matrices
+of layer l for the h-th attention head, where H is
+the total number of heads and dk = d/H.
+
+ālt = Āl|p|, t ,
+
+Memory as a per-layer prefix. The memory is
+stored as a per-layer prefix: at every transformer
+layer l, the stored per-layer hidden states
+
+B.2
+
+t = 1, . . . , S.
+
+(14)
+
+Variants of Attention Computation
+
+Equation 14 extracts the attention at the last position. This extends to the mean attention across all
+prompt tokens:
+
+Hθl = [bosl ; ml1 ; ml2 ; . . . ; mln ] ∈ R(1+Nn )×d
+(10)
+are prepended to whatever prompt-side states the
+layer is currently processing. The prompt hidden
+states are therefore produced inside this memoryconditioned forward pass: denoting the promptside output of layer l as Hpl ∈ R|p|×d , the full
+sequence seen by layer l is
+
+|p|
+
+ātl =
+
+1 X l
+Āpos, t ,
+|p|
+
+t = 1, . . . , S.
+
+(15)
+
+pos=1
+
+Correspondingly, we extend the investigation
+of attention density as a tracing signal (Section 3
+and Table 1) (originally based on NaturalQA with
+last-token attention) to additional configurations:
+NaturalQA with all-token attention, and SQuAD
+with both last-token and all-token attention. The
+results are reported in Table 4. Layer 13 consistently exhibits the highest tracing capacity across
+all configurations. In this experiment set, last-token
+attention is better suited to NaturalQA, while alltoken attention is better suited to SQuAD.
+
+H l = [Hθl ; Hpl ] ∈ RS×d ,
+
+S = 1 + Nn + |p|,
+(11)
+which is exactly the input used in Equation 4. Note
+that Hpl depends on Hθl through the layer’s selfattention, so the memory prefix shapes the prompt
+representation at every layer.
+Per-head attention. For each head h ∈
+{1, . . . , H}, we only need the attention from the
+12
+
+Layer
+
+Rank ↓
+
+13
+9
+14
+17
+11
+
+1.66
+2.14
+3.19
+4.34
+5.01
+
+13
+9
+11
+8
+14
+
+2.82
+3.68
+4.38
+4.71
+4.86
+
+13
+14
+17
+30
+20
+
+2.61
+3.60
+3.74
+4.81
+5.21
+
+13
+14
+9
+8
+10
+
+1.90
+2.80
+3.22
+3.66
+4.18
+
+Top-1 ↑ Top-2 ↑ Top-3 ↑ Top-4 ↑
+NaturalQA, last-token attention
+85.6
+94.7
+95.7
+96.3
+78.3
+84.9
+92.2
+93.2
+75.1
+83.2
+85.3
+86.2
+68.2
+76.7
+78.1
+79.2
+60.7
+72.3
+73.9
+74.7
+NaturalQA, all-token attention
+58.7
+86.1
+88.5
+89.4
+38.0
+72.1
+81.0
+83.5
+37.9
+74.8
+77.8
+79.7
+40.5
+69.3
+74.6
+77.2
+53.0
+75.2
+77.3
+78.4
+SQuAD, last-token attention
+74.8
+82.1
+85.9
+85.9
+69.3
+76.6
+80.1
+82.5
+75.1
+81.0
+82.5
+83.6
+53.9
+66.7
+71.5
+74.0
+69.1
+73.0
+74.6
+75.6
+SQuAD, all-token attention
+80.2
+86.1
+91.8
+93.1
+75.4
+82.7
+86.7
+88.0
+43.9
+62.8
+79.2
+85.7
+45.1
+68.1
+74.4
+82.5
+44.6
+67.0
+76.0
+80.6
+
+Top-5 ↑
+
+Layer
+
+Rank ↓
+
+96.6
+93.8
+86.9
+79.9
+75.5
+
+16
+15
+18
+19
+14
+
+1.80
+2.00
+2.28
+2.53
+3.51
+
+90.3
+84.9
+80.8
+78.5
+79.1
+
+15
+16
+11
+18
+12
+
+1.70
+2.32
+2.42
+2.76
+2.79
+
+89.2
+83.8
+84.2
+76.1
+76.3
+
+16
+18
+15
+19
+17
+
+1.40
+1.41
+1.45
+1.74
+3.27
+
+94.0
+89.0
+87.7
+84.5
+82.3
+
+15
+12
+16
+18
+9
+
+1.22
+1.55
+1.60
+1.63
+1.80
+
+Rank ↓
+
+27
+26
+2
+3
+13
+
+3.38
+4.81
+5.06
+5.12
+6.44
+
+14
+19
+16
+27
+22
+
+2.02
+2.97
+3.00
+3.04
+4.27
+
+27
+26
+25
+2
+3
+
+2.60
+3.61
+5.29
+5.31
+6.20
+
+14
+19
+27
+22
+16
+
+1.45
+1.64
+1.86
+1.89
+1.97
+
+Top-1 ↑ Top-2 ↑ Top-3 ↑ Top-4 ↑
+NaturalQA, last-token attention
+56.9
+75.5
+79.9
+83.0
+61.2
+68.0
+71.2
+73.2
+18.6
+49.6
+51.3
+61.8
+8.2
+27.9
+58.5
+67.8
+37.2
+57.2
+63.1
+67.7
+NaturalQA, all-token attention
+86.9
+90.3
+92.1
+92.9
+75.0
+84.7
+86.7
+87.7
+77.4
+85.4
+86.8
+87.9
+60.4
+76.4
+83.2
+85.7
+73.3
+77.1
+79.0
+80.0
+SQuAD, last-token attention
+60.6
+73.8
+80.4
+85.5
+61.7
+70.0
+74.5
+79.0
+55.7
+63.5
+68.7
+71.7
+12.6
+27.7
+30.8
+53.5
+5.3
+10.7
+38.9
+51.5
+SQuAD, all-token attention
+92.5
+95.2
+96.2
+97.0
+85.4
+93.7
+95.3
+96.3
+69.7
+85.9
+90.6
+93.3
+87.0
+91.2
+92.8
+93.9
+85.0
+90.9
+93.1
+94.2
+
+Top-5 ↑
+94.9
+93.8
+91.1
+90.4
+83.0
+95.4
+91.4
+92.9
+89.5
+91.2
+97.5
+97.6
+97.2
+95.3
+85.4
+98.3
+97.0
+96.4
+96.1
+95.6
+
+Table 6: Layers with the highest tracing capability based
+on 32-layer Mistral-7B-Instruct-v0.3, ranked by average attention density rank, with Top-K accuracies (%)
+across all positions. Results are shown for two datasets
+(NaturalQA, SQuAD) under two attention computation
+strategies (last-token and all-token).
+
+Table 4: Layers with the highest tracing capability
+based on 32-layer Llama-3.1-8B-Instruct, ranked by average attention density rank, with Top-K accuracies (%)
+across all positions. Results are shown for two datasets
+(NaturalQA, SQuAD) under two attention computation
+strategies (last-token and all-token).
+
+Layer
+
+Top-1 ↑ Top-2 ↑ Top-3 ↑ Top-4 ↑
+NaturalQA, last-token attention
+80.0
+88.3
+91.3
+93.6
+82.4
+89.2
+91.6
+93.0
+76.1
+87.0
+89.1
+90.3
+72.3
+84.3
+87.1
+89.3
+65.1
+72.8
+79.6
+81.4
+NaturalQA, all-token attention
+86.2
+93.4
+94.4
+95.0
+75.2
+88.4
+89.7
+90.6
+54.4
+88.3
+90.3
+92.0
+73.4
+85.8
+87.3
+88.5
+55.7
+88.9
+90.2
+90.7
+SQuAD, last-token attention
+87.9
+92.8
+95.3
+96.8
+89.9
+93.8
+95.7
+96.8
+88.8
+92.9
+95.2
+96.5
+84.5
+90.5
+93.0
+94.4
+64.4
+76.9
+81.2
+83.8
+SQuAD, all-token attention
+94.0
+96.6
+97.4
+97.9
+81.8
+92.4
+95.0
+96.3
+87.3
+92.4
+94.4
+95.5
+87.3
+93.0
+94.8
+95.6
+75.6
+88.8
+92.8
+94.6
+
+Top-5 ↑
+84.7
+75.1
+63.2
+74.2
+69.2
+93.7
+88.4
+88.6
+87.2
+80.7
+88.7
+81.7
+74.1
+55.3
+60.6
+97.4
+96.8
+95.0
+94.5
+94.5
+
+Layer
+
+Rank ↓
+
+15
+17
+9
+19
+13
+
+1.24
+1.43
+1.73
+2.08
+2.68
+
+15
+17
+9
+19
+7
+
+1.25
+1.46
+1.66
+2.21
+2.24
+
+15
+17
+9
+19
+23
+
+1.44
+1.46
+1.97
+2.39
+2.52
+
+15
+17
+9
+23
+13
+
+1.27
+1.41
+1.83
+1.98
+2.13
+
+Top-1 ↑ Top-2 ↑ Top-3 ↑ Top-4 ↑
+NaturalQA, last-token attention
+78.6
+97.8
+99.5
+99.9
+61.9
+95.6
+99.7
+100.0
+32.4
+94.6
+99.9
+100.0
+31.2
+75.4
+94.4
+97.2
+20.3
+44.5
+79.7
+90.8
+NaturalQA, all-token attention
+79.1
+96.9
+99.2
+100.0
+61.4
+93.7
+99.2
+99.6
+37.0
+97.5
+99.6
+100.0
+26.5
+68.7
+95.1
+96.7
+11.2
+73.6
+93.2
+98.8
+SQuAD, last-token attention
+61.7
+95.7
+99.4
+100.0
+54.5
+99.0
+99.9
+99.9
+9.4
+93.9
+99.0
+99.9
+18.8
+65.9
+88.9
+93.3
+60.4
+75.4
+81.3
+84.8
+SQuAD, all-token attention
+73.9
+99.3
+100.0
+100.0
+59.3
+99.9
+100.0
+100.0
+17.2
+99.4
+100.0
+100.0
+65.4
+82.2
+86.9
+91.0
+13.3
+75.6
+98.7
+99.8
+
+Top-5 ↑
+99.9
+100.0
+100.0
+98.3
+97.4
+100.0
+100.0
+100.0
+98.1
+99.7
+100.0
+99.9
+99.9
+96.5
+87.7
+100.0
+100.0
+100.0
+93.1
+99.9
+
+Table 7: Layers with the highest tracing capability based
+on 42-layer Gemma-2-9b-it, ranked by average attention
+density rank, with Top-K accuracies (%) across all positions. Results are shown for two datasets (NaturalQA,
+SQuAD) under two attention computation strategies
+(last-token and all-token).
+
+Table 5: Layers with the highest tracing capability based
+on 28-layer Qwen2.5-7B-Instruct, ranked by average attention density rank, with Top-K accuracies (%) across
+all positions. Results are shown for two datasets (NaturalQA, SQuAD) under two attention computation strategies (last-token and all-token).
+
+C
+
+Results and Analyses in Settings
+without Positional Distortion
+
+C.1
+
+Analyses of Attention Density without
+Positional Distortion
+
+This section presents a mirrored version of the experiments in Section 2.2 and Section 2.3, where
+13
+
+80%
+60%
+
+n=5
+
+n=15
+
+n=10
+
+n=20
+
+40%
+20%
+0%0
+
+2000 4000 6000 8000 10000
+Memory Length (tokens)
+
+0
+2
+4
+6
+8
+10
+12
+14
+16
+18
+20
+22
+24
+26
+28
+30
+
+10 3
+
+Attention Density
+
+Layer Index (l)
+
+(a) QA accuracy decreasing as the memory length
+(in tokens) increases.
+
+10 4
+
+10 5
+
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
+Time Step (n)
+
+(b) Attention density ρl1 of the target knowledge
+fragment x1 across layers l and time steps n.
+×10
+Accuracy
+Attention Density (Layer 10)
+
+Analyses of Tracing Capacities without
+Positional Distortion
+
+Correlation Coefficient (r)
+
+This section presents a mirrored version of the experiments in Section 3, where the latent-memory
+paradigm is removed and the concatenated input is
+entirely text tokens. Thus, positional encodings are
+correctly assigned throughout the input sequence.
+Table 8 reports the average attention density rank
+with Top-K accuracy of the target fragment across
+all positions for all layers. We make the following
+observations:
+(1) Layer 13 exhibits the highest tracing capability, which is consistent with the results observed
+under positional distortion in Table 1. This result is
+also implied by the high attention density of layer
+13 of the target fragment shown in Figure 6b.
+(2) Overall, layer-wise tracing capabilities are
+substantially higher in settings without positional
+distortion than in positional-distortion settings.
+This suggests that positional distortion can compromise the ability of attention density to trace
+relevant information across layers, even though
+this tracing capability remains effective under the
+latent-memory paradigm, as discussed in Section 3.
+(3) As shown by the layer distribution in Table 8,
+intermediate layers exhibit much higher tracing
+capabilities than earlier or final layers. This observation is consistent with the explanation proposed
+in Section 3: Intermediate layers can encode richer
+representations, which benefits feature relevance
+
+3
+
+1.5
+
+Attention Density
+
+80%
+Accuracy
+
+C.2
+
+Accuracy
+
+the latent-memory paradigm is removed and all
+updates are performed over text tokens. As a result, positional encodings are correctly assigned
+throughout the input sequence. Figure 6 reports
+the corresponding results on Llama-3.1-8B-Instruct
+and NaturalQA. Comparing Figure 6 with the
+positional-distortion results in Figure 2, we make
+two observations.
+(1) In settings without positional distortion, accuracy remains more stable as the number of update
+steps increases, even though layer 10, which exhibits the highest correlation with accuracy, shows
+a substantial drop.
+(2) As shown in Figure 6d, the layer-wise Pearson and Spearman correlation coefficients between
+attention density and QA accuracy are generally
+lower in settings without positional distortion.
+These observations suggest that, when positional
+distortion is absent, attention density is no longer
+as significant an indicator of performance as it is
+when positional distortion is present.
+
+60%
+40%
+
+1.0
+
+20%
+
+0.5
+
+0%0
+
+2000 4000 6000 8000 10000
+Memory Length (tokens)
+
+(c) QA accuracy and attention density ρ10
+1 of the
+target knowledge fragment at layer 10.
+Pearson
+Spearman
+0.8
+0.6
+0.4
+0.2
+0.0
+0.2
+
+0
+
+4
+
+8 12 16 20 24 28
+Layer
+
+0
+
+4
+
+8 12 16 20 24 28
+Layer
+
+(d) Per-layer Pearson and Spearman correlation coefficients
+between attention density ρli and QA accuracy across 20 steps.
+
+Figure 6: Effects and analyses attention density without
+positional distortion.
+
+and extraction (Skean et al., 2025).
+(4) An interesting finding stands out: Tracing
+capabilities can vary substantially between neighboring layers (especially the gap observed between
+layer 12 and layer 13). This sharp transition and
+the general varying tendency suggest that tracing
+capabilities do not evolve smoothly across depth.
+14
+
+Layer
+
+Rank ↓
+
+Top-1 ↑
+
+Top-2 ↑
+
+Top-3 ↑
+
+Top-4 ↑
+
+Top-5 ↑
+
+Algorithm 2 Memory Evolution with Forgetting
+
+13
+14
+17
+15
+16
+18
+19
+21
+26
+20
+27
+25
+29
+24
+30
+9
+22
+23
+10
+28
+11
+8
+31
+7
+6
+3
+4
+5
+12
+2
+1
+0
+
+1.00
+1.00
+1.00
+1.00
+1.00
+1.01
+1.01
+1.01
+1.01
+1.02
+1.02
+1.02
+1.02
+1.03
+1.03
+1.03
+1.03
+1.04
+1.04
+1.09
+1.13
+1.29
+1.88
+1.94
+2.22
+2.83
+2.96
+3.52
+3.83
+4.89
+7.11
+13.34
+
+100.0%
+99.9%
+99.9%
+99.5%
+99.7%
+99.2%
+98.8%
+98.4%
+98.9%
+98.7%
+99.0%
+98.4%
+98.9%
+98.2%
+98.8%
+98.2%
+98.0%
+97.4%
+98.3%
+95.6%
+92.0%
+87.6%
+54.4%
+62.3%
+34.6%
+32.1%
+19.6%
+12.1%
+39.7%
+9.1%
+5.2%
+5.0%
+
+100.0%
+100.0%
+100.0%
+99.9%
+100.0%
+99.7%
+99.7%
+99.7%
+99.7%
+99.9%
+99.7%
+99.5%
+99.6%
+99.4%
+99.6%
+99.3%
+99.2%
+99.3%
+99.1%
+98.0%
+97.8%
+94.0%
+89.9%
+84.8%
+80.1%
+66.1%
+57.8%
+51.8%
+64.2%
+41.4%
+24.4%
+8.5%
+
+100.0%
+100.0%
+100.0%
+99.9%
+100.0%
+99.8%
+99.8%
+99.8%
+99.8%
+99.9%
+99.9%
+99.7%
+99.8%
+99.7%
+99.7%
+99.6%
+99.7%
+99.6%
+99.5%
+98.8%
+98.8%
+97.1%
+93.0%
+87.3%
+81.3%
+71.3%
+72.0%
+55.1%
+71.8%
+45.4%
+30.9%
+11.0%
+
+100.0%
+100.0%
+100.0%
+99.9%
+100.0%
+99.9%
+99.9%
+99.8%
+99.8%
+99.9%
+100.0%
+99.8%
+99.9%
+99.7%
+99.8%
+99.7%
+99.8%
+99.7%
+99.6%
+99.1%
+99.3%
+98.3%
+94.7%
+89.9%
+96.5%
+84.7%
+90.8%
+77.6%
+75.8%
+55.4%
+35.6%
+17.1%
+
+100.0%
+100.0%
+100.0%
+99.9%
+100.0%
+99.9%
+99.9%
+99.8%
+99.8%
+100.0%
+100.0%
+99.9%
+100.0%
+99.8%
+99.9%
+99.8%
+99.9%
+99.8%
+99.7%
+99.3%
+99.6%
+98.8%
+95.9%
+96.6%
+97.1%
+90.4%
+91.9%
+89.1%
+79.1%
+68.5%
+53.2%
+19.8%
+
+Input: Current memory θn−1 = {m1 , . . . , mn−1 } with retained lengths {L1 , . . . , Ln−1 }, new knowledge xn , maximum capacity Nmax
+Output: Updated memory θn
+1: mn ← fform (xn )
+▷ Memory formation
+2: Ln ← |xn |
+Pn−1
+3: Nn−1 ← i=1 Li
+▷ Current total memory length
+4: if Nn−1 + Ln ≤ Nmax then
+5:
+θn ← concat(θn−1 , mn )
+6: else
+7:
+Nforget ← Nn−1 + Ln − Nmax
+8:
+θn−1 ← fforget (θn−1 , Nforget )
+▷ Alg. 3
+9:
+θn ← concat(θn−1 , mn )
+10: return θn
+
+Algorithm 3 Proportional Forgetting Based on
+Self-Information
+Input: Memory θn−1 = {m1 , . . . , mn−1 }, retained lengths
+{L1 , . . . , Ln−1 }, precomputed self-information scores
+(t)
+{I(xi )} for each knowledge i and position t, forgetting
+budget Nforget
+Output: Pruned
+P memory θn−1 with updated lengths
+1: Nn−1 ← n−1
+i=1 Li
+2: for i = 1 to n −1 do ▷ Proportional
+quota allocation
+
+Li
+3:
+Nforget,i ← Nforget ·
+Nn−1
+P
+4: Distribute remaining Nforget − i Nforget,i to entries
+with the largest fractional remainders
+5: for i = 1 to n − 1 do
+▷ Pruning
+6:
+if Nforget,i > 0 then
+7:
+Di
+←
+argtopkt∈{1,...,Li }
+−
+
+(t)
+I(xi ), Nforget,i
+8:
+for each layer l = 1, . . . , L do
+
+9:
+mli ← mli {1, . . . , Li } \ Di , :
+10:
+Li ← Li − Nforget,i
+11: return θn−1
+
+Table 8: Layer-wise tracing capability (free from positional distortion) based on 32-layer Llama-3.1-8BInstruct, NaturalQA and last-token attention, ranked by
+average attention density rank, with Top-K accuracies
+(%) across all positions.
+
+D
+
+Descriptions of Informativeness-Based
+Proportional Forgetting
+
+Let Li (i = 1, . . . , n − 1) denote the current number of hidden states retained for knowledge xi (initially Li = |xi |; this quantity decreases monotonically as forgetting is applied). For each retained
+position t in the current memory, we measure the
+self-information of the corresponding token as:
+(t)
+
+(t)
+
+(<t)
+
+I(xi ) = − log pϕ (xi | xi
+
+),
+
+largest values. The pruned memory at layer l is
+then obtained by removing these positions:
+
+
+
+mli ← mli 1, . . . , Li \ Di ; : ∈ R(Li −Nforget,i )×d ,
+(18)
+and the retained length is updated accordingly:
+
+(16)
+
+where pϕ (·) denotes the token probability estimated
+by the language model. Tokens with lower selfinformation are deemed more redundant. Given a
+forgetting quota of Nforget,i for knowledge xi , we
+select the Nforget,i positions with the lowest selfinformation for removal:
+
+(t)
+Di = argtopkt∈1,...,Li −I(xi ), Nforget,i , (17)
+
+Li ← Li − Nforget,i .
+
+(19)
+
+This ensures that the most informative hidden states
+are preferentially retained under a fixed capacity
+budget, while the retained length of each knowledge fragment shrinks over successive evolution
+steps. Algorithm 3 details the process of proportional forgetting.
+
+where Di is the index set of positions to be dropped,
+and argtopk(·, k) returns the indices of the k
+15
+
+Random
+
+100%
+
+NaturalQA (Top-2)
+
+NaturalQA (Top-3)
+
+Forgetting
+starts
+
+Forgetting
+starts
+
+80%
+Accuracy
+
+Informativeness-based
+
+potQA, and MuSiQue), the context is split at each
+delimiter of “Passage N”, treating each passage
+as a natural chunk. This preserves the inherent
+document boundaries provided by the dataset.
+(2) Token-based chunking: For single-doc
+QA datasets where the context is a continuous document without explicit passage markers
+(MultiFieldQA-en, NarrativeQA, and Qasper), the
+context is split into chunks of at least 256 tokens
+each, breaking at sentence boundaries (periods or
+newlines). If the last chunk is shorter than 256 tokens, it is merged into the preceding chunk to avoid
+overly short trailing segments.
+
+60%
+40%
+20% Borderline = 14.6%
+
+Borderline = 14.6%
+
+0%
+100%
+
+SQuAD (Top-2)
+
+SQuAD (Top-3)
+
+Forgetting
+starts
+
+Forgetting
+starts
+
+Accuracy
+
+80%
+60%
+40%
+20%
+
+Borderline = 7.4%
+
+0% 5
+
+15 25 35
+Time Step (n)
+
+Borderline = 7.4%
+
+45
+
+5
+
+15 25 35
+Time Step (n)
+
+E.3
+
+45
+
+For the two datasets, NaturalQA and SQuAD, respectively, we list the efficiency of various methods
+in Table 9, including vanilla latent memory, MemoryLLM, M+, and several Top-K variants of our
+MemDefrag. From this table, we observe that:
+(1) The running time of MemDefrag generally
+increases as K becomes larger. This is expected,
+since a larger K requires the model to keep more
+candidate memory fragments at each step, thereby
+introducing additional computational overhead for
+inference.
+(2) When K ∈ {1, 2, 3, 4}, MemDefrag not only
+outperforms MemoryLLM and M+ in terms of accuracy, as shown in Figure 5, but also achieves
+higher efficiency than M+. Thus, this range of K
+provides a favorable trade-off between effectiveness and efficiency.
+
+Figure 7: 50-step knowledge retention comparing
+informativeness-based vs. random forgetting on NaturalQA and SQuAD, of which Top-2 or Top-3 highestranked memory fragments are filtered of defragmentation.
+
+E
+
+Supplementary Analyses and
+Descriptions for Experiments
+
+E.1 Supplementary Results of Ablation Study
+of Forgetting Strategies
+The maximum time step is 50, which allows the
+memory length Ni (when i ≥ 26) to reach its
+maximum length Nmax and triggers the forgetting strategy after time step 26. Both Top-2 and
+Top-3 defragmentation settings are evaluated on
+NaturalQA and SQuAD. Figure 7 presents the results, from which we find that: The advantage of
+informativeness-based forgetting is validated and
+their gap increases over time. Specifically, on NaturalQA with Top-2, informativeness-based forgetting sustains an accuracy of 37.8% at step 50, compared to 20.8% for random forgetting, indicating
+an improvement of 81.73%.
+E.2
+
+Efficiency Analyses
+
+E.4
+
+Generality across Models
+
+In addition to Llama-3.1-8B-Instruct, we study
+the effects of MemDefrag in Qwen2.5-7BInstruct (Team, 2024b), Mistral-7B-Instructv0.3 (Jiang et al., 2023a), Gemma-2-9b-it (Team,
+2024a). Table 10 reports the Top-ranked tracer
+layer for each model on NaturalQA and SQuAD
+under last-token or all-token attention computation
+strategy. Two consistent patterns emerge:
+(1) The Top-ranked tracer layer is consistently
+the middle transformer layers, concentrating within
+layers 13–15 for the four models.
+(2) At these top layers, Top-2 tracing accuracy generally exceeds 90% across both datasets
+(reaching up to 99.3% on Gemma-2-9b-it and
+SQuAD). This shows that the tracing signal is not
+an artifact of a single model, but a general phenomenon across various instruction-tuned LLMs.
+
+Setups for Long Context Experiments
+
+As MemoryLLM and M+ adopt a fixed (512 to
+256) compression strategy, for each long context,
+it is split into 512-token chunks for memory injection. For MemDefrag which can take advantage of
+flexible chunking size, for the six datasets, there
+are two chunking strategies:
+(1) Passage-based chunking: For multi-doc QA
+datasets where the context is explicitly structured
+into labeled passages (2WikiMultihopQA, Hot16
+
+Method
+
+Vanilla
+
+MemoryLLM
+
+M+
+
+Top-1
+
+Top-2
+
+Top-3
+
+Top-4
+
+Top-5
+
+Top-6
+
+Top-all
+
+(NaturalQA) Time (s)
+(SQuAD) Time (s)
+
+59.30
+60.11
+
+64.19
+65.71
+
+87.24
+88.98
+
+75.07
+79.23
+
+76.49
+81.01
+
+78.96
+82.38
+
+82.15
+84.44
+
+86.81
+87.62
+
+90.53
+92.20
+
+103.67
+107.95
+
+Table 9: Average time per experimental group. Top-K refers to Top-K filtering variant of our MemDefrag.
+
+Model
+
+NaturalQA
+
+Layers
+
+Llama-3.1-8B-Instruct
+Qwen2.5-7B-Instruct
+Mistral-7B-Instruct-v0.3
+Gemma-2-9b-it
+
+32
+28
+32
+42
+
+SQuAD
+
+Layer
+
+Rank ↓
+
+Top-2↑
+
+Layer
+
+Rank ↓
+
+Top-2↑
+
+13 (last-token)
+14 (all-token)
+15 (all-token)
+15 (last-token)
+
+1.66
+2.02
+1.70
+1.24
+
+94.7
+90.3
+93.4
+97.8
+
+13 (all-token)
+14 (all-token)
+15 (all-token)
+15 (all-token)
+
+1.90
+1.45
+1.22
+1.27
+
+86.1
+95.2
+96.6
+99.3
+
+Table 10: Top-ranked tracer layer (i.e., the layer with the lowest Rank) for each model on NaturalQA and SQuAD.
+For each (model, dataset) pair, we report the better of the two attention computation strategies, with the chosen
+strategy indicated in parentheses after the layer index. Top-2 accuracies (%) of tracing are also reported.
+Vanilla
+
+Top-1
+
+100%
+
+Top-3
+
+Top-4
+
+Detailed results of the tracing capabilities of the
+four models are shown in Tables 4, 5, 6, and 7.
+Further, Figure 8 presents the results of 50step knowledge retention based on the models: Qwen2.5-7B-Instruct, Mistral-7B-Instructv0.3, and Gemma-2-9b-it. The attention computation strategy for each (model, dataset) pair follows
+the configurations reported shown in Table 10. We
+make the following observations.
+(1) The performance achieved by MemDefrag
+with Top-1 to Top-4 filtering substantially outperforms that of vanilla latent memory. This suggests
+that MemDefrag is broadly effective and can be
+generalized to various language models.
+(2) Similar to experiment results (Figure 5 and
+Table 2) of knowledge retention based on Llama3.1-8B-Instruct, Top-1 or Top-2 filtering generally
+achieves the best performance across all time steps
+on Qwen2.5-7B-Instruct and Mistral-7B-Instructv0.3.
+(3) However, for Gemma-2-9b-it, the performance of Top-1 filtering drops significantly once
+the time step exceeds 20 and Top-1 cannot serve
+as the optimum choice any longer. These results
+indicate that, in some cases, as the time step increases, adaptive Top-K may have the potential
+to serve as an effective strategy for maintaining
+optimal performance across different time steps.
+
+SQuAD
+
+Forgetting
+starts
+
+80%
+Accuracy
+
+Top-2
+
+NaturalQA
+
+Forgetting
+starts
+
+60%
+40%
+20% Borderline = 15.8%
+0% 5
+
+Borderline = 13.0%
+
+15 25 35
+Time Step (n)
+
+45
+
+5
+
+15 25 35
+Time Step (n)
+
+45
+
+(a) Qwen2.5-7B-Instruct.
+Vanilla
+
+100%
+
+Top-2
+
+Top-3
+
+Top-4
+
+SQuAD
+
+Forgetting
+starts
+
+80%
+Accuracy
+
+Top-1
+
+NaturalQA
+
+Forgetting
+starts
+
+60%
+40%
+20% Borderline = 20.4%
+0% 5
+
+Borderline = 10.4%
+
+15 25 35
+Time Step (n)
+
+45
+
+5
+
+15 25 35
+Time Step (n)
+
+45
+
+(b) Mistral-7B-Instruct-v0.3.
+Vanilla
+
+100%
+
+Top-2
+
+Top-3
+
+Top-4
+
+SQuAD
+
+Forgetting
+starts
+
+80%
+Accuracy
+
+Top-1
+
+NaturalQA
+
+Forgetting
+starts
+
+60%
+40%
+20%
+
+Borderline = 23.4%
+
+0% 5
+
+Borderline = 11.6%
+
+15 25 35
+Time Step (n)
+
+45
+
+5
+
+15 25 35
+Time Step (n)
+
+45
+
+(c) Gemma-2-9b-it.
+
+Plug-and-play justification of the tracer layer.
+A natural concern is whether selecting the tracer
+layer requires running an investigation for every
+new backbone. We argue that this is not the case.
+As summarized in Tables 4, 5, 6, and 7, across
+all four instruction-tuned LLMs we examined—
+
+Figure 8: 50-step knowledge retention comparing
+MemDefrag (with Top-1, 2, 3 or 4 filtering) vs. vanilla
+latent memory on NaturalQA and SQuAD.
+
+17
+
+MemoryLLM
+MemoryLLM w/ Defragmentation
+
+NaturalQA
+
+50%
+
+No Compression
+Compression 80%
+
+M+
+M+ w/ Defragmentation
+
+SQuAD
+
+Compression 50%
+Compression 40%
+
+NaturalQA
+
+100%
+
+Compression 30%
+
+SQuAD
+
+80%
+Accuracy
+
+40%
+Accuracy
+
+Compression 70%
+Compression 60%
+
+30%
+
+60%
+40%
+20% Borderline = 14.6%
+
+20%
+5 10 15 20 25 30 35 40 45 50
+Time Step (n)
+
+0% 5 10 15 20 25 30 35 40 45 50
+Time Step (n)
+
+5 10 15 20 25 30 35 40 45 50
+Time Step (n)
+
+Method
+
+n=10
+
+n=20
+
+MemoryLLM
+w/ Defragmentation
+
+23.4
+25.2
+
+18.2
+23.0
+
+M+
+w/ Defragmentation
+
+26.2
+29.0
+
+19.6
+21.6
+
+n=30 n=40 n=50
+MemoryLLM
+18.4
+18.0
+17.4
+18.8
+16.4
+18.0
+M+
+21.0
+17.2
+17.6
+23.0
+19.8
+19.2
+
+NaturalQA
+Ratio
+100%
+80%
+70%
+60%
+50%
+40%
+30%
+
+SQuAD
+n=10
+
+n=20
+
+n=30
+
+n=40
+
+n=50
+
+29.0
+30.2
+
+24.2
+24.8
+
+20.2
+21.4
+
+19.0
+19.6
+
+15.4
+18.0
+
+44.0
+45.2
+
+36.4
+39.6
+
+33.2
+37.6
+
+29.6
+33.0
+
+20.2
+23.8
+
+5 10 15 20 25 30 35 40 45 50
+Time Step (n)
+
+Figure 10: 50-step knowledge retention on NaturalQA
+and SQuAD under different compression ratios.
+
+Figure 9: 50-step knowledge retention on NaturalQA
+and SQuAD, comparing the presence and absence of
+defragmentation on MemoryLLM and M+.
+NaturalQA
+
+Borderline = 7.4%
+
+n=10
+62.8
+57.2
+58.4
+51.6
+50.8
+48.2
+41.2
+
+n=20
+62.0
+51.8
+52.0
+50.6
+47.0
+44.6
+37.8
+
+n=30
+59.2
+47.6
+50.2
+48.0
+46.0
+39.8
+36.2
+
+n=40
+44.6
+39.6
+40.2
+41.6
+39.2
+38.2
+34.0
+
+SQuAD
+n=50
+36.2
+27.0
+30.2
+35.2
+36.2
+34.8
+32.6
+
+n=10
+76.8
+69.6
+69.0
+62.8
+55.2
+46.0
+40.2
+
+n=20
+73.8
+60.2
+59.4
+56.4
+49.6
+42.0
+36.8
+
+n=30
+60.2
+51.8
+51.2
+48.0
+43.8
+39.4
+33.2
+
+n=40
+41.6
+34.4
+39.6
+42.8
+39.6
+36.2
+31.6
+
+n=50
+25.0
+22.6
+25.4
+34.0
+38.0
+35.8
+30.2
+
+Table 11: QA accuracy (%) of MemoryLLM and M+
+with and without defragmentation at selected time steps
+on NaturalQA and SQuAD. Bold indicates the best
+result in each column.
+
+Table 12: QA accuracy (%) under different compression
+ratios at selected time steps on NaturalQA and SQuAD.
+100% ratio denotes that no compression is used. Bold
+indicates the best result in each column.
+
+Llama-3.1-8B-Instruct (layer 13/32), Qwen2.5-7BInstruct (layer 14/28), Mistral-7B-Instruct-v0.3
+(layer 15/32), and Gemma-2-9b-it (layer 15/42)—
+the top-ranked tracer layer consistently falls within
+the band [L/3, L/2], where L denotes the total
+number of transformer layers. This band is narrow
+in absolute terms (5–7 candidate layers per model
+in our setup). In practice, this means that for a new
+backbone a user does not need to repeat the full investigation study of exploring the best tracing layer:
+A lightweight sweep over the ⌊L/3⌋–⌈L/2⌉ band
+is sufficient to identify a high-quality tracer layer.
+This keeps MemDefrag genuinely plug-and-play
+in deployment.
+
+results under the presence or absence of defragmentation for MemoryLLM and M+. Last-token
+attention computation strategy based on layer 13
+(the tracing layer) is used in defragmentation for
+both MemoryLLM and M+ and both datasets. Two
+observations stand out.
+(1) Defragmentation consistently improves
+both backbones. Across nearly all checkpoints
+on both NaturalQA and SQuAD, applying our defragmentation procedure yields a clear and stable
+accuracy gain over the corresponding vanilla baseline. This indicates that explicitly reorganizing
+memory fragments makes the stored knowledge
+substantially more retrievable. Further, as MemoryLLM and M+ compress knowledge fragments by
+their own models, they support the compatibility
+of our MemDefrag with model-level compression.
+(2) Random forgetting still drives a steady
+performance decay. Despite these gains, both
+MemoryLLM and M+ rely on a random forgetting
+strategy. As a result, even after defragmentation, accuracy continues to drop monotonically as n grows
+on both datasets.
+
+E.5
+
+Compatibility with Latent-Memory
+Variants
+
+We study the compatibility of our inference-time
+memory defragmentation (Section 4.1) with the
+other two latent-memory variants: MemoryLLM
+(Memoryllm-8b) and M+ (M+-8b). Considering
+that these two models have been with a fixed-length
+prefix latent memory, the defragmentation procedure in this section adopts only the ranking and
+reordering strategies, without Top-K filtering. The
+experiment setup follows that of the knowledge
+retention experiments in Section 5.1.
+Figure 9 and Table 11 show the 50-step accuracy
+
+E.6
+
+Compatibility with Prompt Compression
+
+Unlike MemoryLLM or M+ that construct memory fragments whose lengths are 256 in a fixed
+manner, our MemDefrag can take advantage of ap18
+
+proaches of prompt compression to save the memory storage. In this section, we study the effects of
+LLMLingua-2 (Pan et al., 2024) on MemDefrag.
+The experiment setup follows that of knowledge retention experiments (Section 5.1). Specifically, the
+filtering strategy is Top-3 and the adopted model is
+Llama-3.1-8B-Instruct. Each knowledge fragment
+is compressed by LLMLingua-2 with a compression ratio before being formed into its memory
+fragment.
+Figure 10 and Table 12 show the 50-step accuracy results under different compression ratios
+(from 30% to 100%, i.e., no compression). The
+results show that MemDefrag effectively leverages prompt compression to improve long-term
+knowledge retention. Compared with the nocompression setting, moderate compression ratios maintain competitive accuracies in early steps
+while achieving better performance as the step number increases. This improvement can be attributed
+to the shorter length of the compressed knowledge
+and the ability of the adopted compression technique to preserve informative tokens. The memory grows more slowly over time, which delays
+the triggering of the forgetting mechanism. This
+explains why compressed settings become particularly advantageous at later time steps, especially
+when n ≥ 40, where uncompressed knowledge
+(and memory) fragments have suffered from earlier
+forgetting and performance degradation.
+
+19
+
+Notation
+Mθ,ϕ
+ϕ = {ϕl }L
+l=1
+θ = {θl }L
+l=1
+d
+L
+xi
+|xi |
+mi = {mli }L
+l=1
+mli ∈ RLi ×d
+n
+θn = {m1 , . . . , mn }
+Nn
+Nmax
+Li
+Nforget
+Nforget,i
+Uϕ (·)
+fform (·)
+fforget (·)
+(t)
+I(xi )
+Di
+p
+θnp
+fdefrag (·)
+l∗
+Hpl ∈ R|p|×d
+l
+Hθ ∈ R(1+Nn )×d
+ālt
+ρli
+Pi
+π
+K
+NK
+
+Description
+Model & Memory
+Language model with memory parameters θ and model parameters ϕ
+Model parameters (L transformer layers)
+Memory parameters (per-layer hidden vectors)
+Hidden dimension
+Number of transformer layers
+Knowledge & Memory Formation
+Textual knowledge fragment received at time step i
+Number of tokens in knowledge fragment xi
+Formed memory fragment for knowledge fragment xi
+Hidden states of xi at layer l
+Current update step, equivalently the number of stored knowledge fragments
+Memory Evolution & Forgetting
+Accumulated memory after storing n knowledge
+fragments
+P
+Total number of hidden states in θn , i.e., ni=1 Li
+Maximum memory capacity (number of hidden states)
+Current retained length (number of hidden states) for knowledge fragment xi
+Total number of hidden states to be pruned
+Forgetting quota allocated to knowledge fragment xi
+Memory update function
+Memory formation function
+Forgetting function
+Self-information of the t-th token in xi
+Index set of positions to be dropped from xi
+Memory Utilization
+Prompt (e.g., a query) at inference time
+Prompt-specific inference-time temporary memory obtained from θn
+Defragmentation function
+Tracer layer used for attention scoring
+Prompt hidden states at layer l
+Concatenated memory hidden states (including bos) at layer l
+Per-position attention score at layer l
+Attention density of knowledge fragment xi at layer l
+Index set of positions corresponding to xi in concatenated memory
+Permutation that sorts knowledge fragments by attention density in ascending order
+Number of top-ranked memory fragments retained for inference
+Total number of hidden states in the retained Top-K memory fragments
+Table 13: Summary of key notations used in this paper.
+
+20
+
+

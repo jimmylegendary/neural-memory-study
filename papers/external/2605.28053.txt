@@ -1,0 +1,1632 @@
+RW-TTT: Batched Serving for Request-Owned Test-Time Training State
+Jian Yang1
+
+Zhizhuo Kou1
+
+Yao Tian1 Hao Zhang2 Han Chen3 Sirui Han1 Yike Guo1
+1
+HKUST 2 CUHK 3 NUS
+jyang827@connect.ust.hk, zkouaa@connect.ust.hk, ytianbc@cse.ust.hk
+zhanghaowuda12@gmail.com, chenhan@u.nus.edu , siruihan@ust.hk, yikeguo@ust.hk
+
+arXiv:2605.28053v1 [cs.LG] 27 May 2026
+
+Abstract
+
+long context, the model continues learning from
+the incoming context, yielding streaming learner
+state that changes as the context is processed (Tandon et al., 2025).This state is request-owned: it
+must not leak to other requests, and its updates
+must follow the backend’s prescribed state transition. A serial TTT path can keep this transition
+implicit by processing one stream at a time, but
+batched serving must make it explicit. In particular, if a write fails, falls back to a sequential path,
+or is rolled back after speculative execution, the
+runtime must know which state version remains
+valid. We call the resulting tension read-write TTT
+serving: READ steps apply request-owned state
+without mutation, while WRITE steps update the
+state and commit a new version.
+
+Test-time training (TTT) adapts an LLM during generation by reading and updating requestowned state, such as fast weights, low-rank
+deltas, or streaming learner state. This breaks
+batched LLM serving, which assumes shared
+static weights: serial execution is correct but
+slow, while naive batching can corrupt request
+state. We formulate this problem as read-write
+TTT serving and present RW-TTT, which tags
+each decode step with its owner, version, and
+READ/WRITE effect, batches only compatible phases, and commits updates only to the
+owner. On one GPU with eight fast-weight InPlace-TTT streams, RW-TTT reaches 274.61
+aggregate tok/s, 9.31× over sequential serving
+and 3.44× over per-stream replicas under the
+same memory budget. It preserves behavior on
+RULER, a long-context benchmark, and passes
+owner/version checks.
+
+1
+
+We propose RW-TTT, a serving system for this
+setting. RW-TTT tags each serving step with its
+owner and READ/WRITE effect, groups only compatible phases into legal batches, executes read
+and write operators separately, and commits updates exclusively to the owning requests. To support rollback, failed-write recovery, fallback paths,
+and speculative branches, RW-TTT maintains explicit state versions: READ steps preserve version
+v, while successful WRITE steps commit version
+v + 1. The same contract covers the mutablestate forms above—fast weights, low-rank deltas,
+and streaming learner state. The backend supplies
+the payload and update rule; RW-TTT supplies
+ownership, versioning, rollback-safe commit, and
+batch planning. On a long-context serving workload with a fast-weight In-Place-TTT checkpoint,
+RW-TTT reaches 274.61 aggregate tok/s, a 9.31×
+gain over the sequential TTT path and a 3.44× gain
+over naive independent replicas. RULER(Hsieh
+et al., 2024) long-context evaluations show that
+RW-TTT preserves the adapted checkpoint’s task
+behavior.
+
+Introduction
+
+Modern LLM serving batches requests over shared,
+read-only weights. vLLM manages dynamic
+activation-side state—paged KV cache—but every request still reads the same model parameters (Yu et al., 2022; Kwon et al., 2023; Agrawal
+et al., 2023, 2024; Zhong et al., 2024; Zheng et al.,
+2024). Adapter-serving systems such as S-LoRA
+and Punica add request-specific model-side state,
+yet those adapters are pre-existing and read-only
+during generation (Sheng et al., 2023; Chen et al.,
+2024). Test-time training (TTT) breaks this contract (Sun et al., 2020, 2024; Feng et al., 2026). A
+TTT request may carry mutable model-side adaptation state that is both read and updated during
+decoding. In In-Place TTT, this state is a set of
+request-specific fast weights in the MLP downprojection (Feng et al., 2026). In LoRA-style testtime learning, the mutable state can be represented
+as low-rank parameter deltas rather than full-model
+updates (Hu et al., 2025). In end-to-end TTT for
+
+The paper makes three contributions.
+1
+
+1. A read-write TTT serving contract. We
+formulate the serving problem for onlineadaptive TTT checkpoints and define its core
+primitives: request ownership, state versions,
+READ/WRITE effects, and owner-preserving
+commit (§3).
+
+local context. Serving such requests requires two
+logical operations:
+• READ, which applies the request’s current
+state version during token computation; and
+• WRITE, which updates the owning request’s
+state, typically at chunk boundaries such as
+every Cttt generated tokens.
+
+2. An owner/version-aware mutable-state
+batching planner. We design a planner that
+separates READ and WRITE phases, groups
+only compatible next steps, and commits updated versions exclusively to correct request
+owners (§4).
+
+Because requests arrive independently and advance
+at different rates, one request may be updating its
+state while others are still reading earlier state versions. Thus, READ and WRITE operations are not
+globally synchronized across requests.
+
+3. End-to-end serving evidence with behavior
+and correctness preservation. On the evaluated fast-weight TTT checkpoint, RW-TTT
+recovers 9.31× aggregate throughput over the
+sequential path while preserving RULER longcontext evaluation (32K/64K) scores and passing owner/version correctness gates. (§5).
+
+2
+
+Background
+
+2.1
+
+Serving with Mutable Model State
+
+2.2
+
+Serving Gap
+
+Table 1 summarizes the gap. Existing runtimes
+manage either request-local activation state, as in
+KV-cache systems, or immutable request-specific
+model-side state, as in adapter-serving systems.
+TTT instead requires owned, versioned, mutable
+model-side state. Compatible READs can be
+batched because they only observe existing versions. WRITEs, however, mutate the owning request’s state and must not become visible to incompatible READs. A TTT serving runtime must therefore track whose state a WRITE updates, which
+state version each READ observes, and when an
+updated version becomes visible.
+A straightforward way to support TTT is to serialize or isolate requests so that READ and WRITE
+operations cannot interfere. As shown in Table 2,
+these baselines preserve correctness but leave substantial batching opportunities unused. Sequential serving reaches only 29.51 tok/s with eight
+streams. Independent replicas improve throughput
+to 79.78 tok/s using three batch-1 processes under
+∼33 GiB, but still treat requests as isolated executions and therefore cannot share compute across
+compatible READ phases.
+This leaves the central runtime question: how
+can a serving system batch requests with mutable
+model-side state while preserving ownership and
+version semantics?
+
+Autoregressive serving has two phases: prefill,
+which builds the KV cache from the prompt, and
+decode, which generates tokens while extending
+that cache. Existing serving systems largely rely
+on an assumption of immutable model-side state.
+• Static-weight serving. Model parameters
+are shared across requests and are not modified during generation. This assumption
+underlies continuous batching in OrCA (Yu
+et al., 2022), paged KV-cache management in
+vLLM (Kwon et al., 2023), and structuredgeneration scheduling in SGLang (Zheng
+et al., 2024).
+• Adapter serving. S-LoRA (Sheng et al.,
+2023) and Punica (Chen et al., 2024) batch requests with different adapters (Hu et al., 2022;
+Mangrulkar et al., 2022), but each adapter is
+fixed during generation.
+
+3
+
+Test-time training (TTT) invalidates this assumption. TTT methods adapt model computation using
+inference-time information (Sun et al., 2020, 2024;
+Feng et al., 2026). From a serving perspective, the
+defining property is request-owned mutable modelside state: each request may carry fast weights,
+low-rank deltas, or tail buffers that evolve with its
+
+Serving Model
+
+Read-write TTT serving is the problem of batching
+generation requests whose model-side adaptation
+state is request-owned and mutable. Given active
+requests Rt , the serving system must decide which
+next transitions to issue together, and when to issue them, while preserving each request’s owner,
+2
+
+System / abstraction
+
+Native request state
+
+vLLM / PagedAttention
+SGLang
+Punica / S-LoRA
+Sequential TTT path
+RW-TTT
+
+KV cache
+KV / prefix cache
+pre-existing adapter
+mutable fast state
+request-owned TTTState
+
+Online WRITE
+
+Versioned commit
+
+Native batching key
+
+–
+–
+–
+✓
+✓
+
+–
+–
+–
+implicit / serial
+✓
+
+token position / KV page
+prefix or program state
+adapter id / rank
+single stream
+R/W phase + version + state
+
+Table 1: Serving-contract comparison. Existing systems batch read-only request state: KV/prefix caches or
+pre-existing adapters. Read-write TTT instead batches request-owned model state that mutates during decoding,
+requiring explicit ownership, versioned commit, and READ/WRITE-aware batching.
+
+state version, read/write effect, and sequential TTT
+behavior. The goal is to recover legal batching capacity under the semantic constraints introduced
+by online mutation.
+A request r contains ordinary inference state and
+mutable TTT state:
+
+Legal batching. Read and write transitions are
+never mixed in the same operator group. More
+generally, a group is legal only when its requests
+share the same state effect, backend state type, and
+operator shape class, and when each request is at
+the expected committed version. The backend state
+type separates fast-weight TTT, LoRA-style delta
+TTT, and streaming learner state. The operator
+shape class records the kernel-relevant dimensions
+for that backend, such as dtype, layer set, hidden
+dimensions, chunk size, rank, or active-row count.
+These keys make the batching rule explicit: ordinary activation compatibility is not enough when
+requests also read and write private model-side
+state.
+Formally, let the next transition exposed by request ri be
+
+qr = (xr , kr , pr , svr , mr ),
+
+ei = (ri , τi , σi , ρi , vi ),
+
+Execution strategy
+
+Streams/processes
+
+Throughput
+
+Sequential serving
+Independent replicas
+
+8 streams
+3 batch-1 processes
+
+29.51 tok/s
+79.78 tok/s
+
+Table 2: Throughput of straightforward TTT serving baselines on the evaluated In-Place-TTT checkpoint (Feng et al., 2026). Sequential execution preserves
+READ/WRITE semantics but loses batching opportunities, while independent replicas improve throughput by
+isolation but cannot share compute across compatible
+READ phases.
+
+(1)
+
+where xr is the current token or hidden input, kr
+is KV/cache state, pr is decode position, svr is the
+versioned request-owned TTT state, and mr stores
+serving-visible metadata such as tail length and
+update readiness. Base model parameters remain
+shared across requests; the mutable state svr does
+not.
+
+(2)
+
+where τi is backend state type, σi is operator shape
+class, ρi ∈ {R EAD, W RITE} is the state effect,
+and vi is the expected state version. At decode
+step t, the planner observes candidate transitions
+Et = {ei } and emits legal groups Gt = {Gk }. A
+group G is legal only if
+
+Ownership. Each mutable TTT state has exactly
+one owner. A read transition may consume the
+owner’s current state without changing its version:
+
+∀i, j ∈ G : (τi , σi , ρi ) = (τj , σj , ρj ),
+
+R EADθ (r, xr , svr ) → (yr , svr ).
+
+where V (ri ) is the serving system’s current committed version for owner ri . The group also carries
+an injective owner map: no two batch elements
+may commit to the same request-owned state slot
+in the same transition. Thus a legal read-write
+TTT batch is not merely an activation batch; it is
+a group of state-effect-compatible transitions with
+valid owner-version bindings.
+
+vi = V (ri ),
+
+A write transition consumes backend update evidence ur , produces a new state version, and must
+commit that version back to the same owner:
+W RITEθ (r, xr , ur , svr ) → (yr , sv+1
+r ).
+This ownership rule distinguishes TTT state from
+shared model weights and from activation-only KV
+cache. A serving schedule may reorder independent owners for batching, but it may not redirect,
+merge, or alias their mutable states.
+
+(3)
+
+Bounded waiting. The planner may delay a
+ready transition to improve compatibility, but only
+within a bounded wait budget. If transition e for
+3
+
+Primitive
+
+Ph. State
+
+Contract
+
+A PPLY S TATE
+TAIL B UFFERU PDATE
+
+R
+R
+
+weights / deltas
+tail metadata
+
+apply; keep version
+append; no version
+bump
+
+B OUNDARY U PDATE
+C OMMIT /ROLLBACK
+
+W TTT payload
+C owner/version log
+
+compute dirty state
+publish; restore; fork
+
+Table 3: Core read-write TTT serving primitives.
+R/W/C denote read, write, and control phases. The
+backend supplies the payload and update rule; the serving runtime preserves owner/version semantics.
+
+next step. A W RITE consumes backend-specific
+update evidence ur and produces a dirty candidate
+state s̃v+1
+r , which becomes visible only after commit. Legal serving must therefore preserve outputto-request mapping, per-request READ/WRITE order, and owner-local version transitions (Section 3).
+Figure 2 places this contract in the serving
+stack. Requests carry ordinary KV/cache state plus
+TTTState metadata: owner id, backend type, version, placement, and backend metadata. Payloads
+such as FastWeightState, DeltaAdapterState,
+and TailBufferState represent fast weights,
+adapter deltas, and update evidence. A StateView
+exposes the executable slice for the next step: read
+views are immutable, while write views carry update inputs and mark the candidate state dirty until
+commit.
+The planner only observes each request’s next
+transition. It batches compatible effects and backend shapes automatically, checks that every owner
+is at its expected committed version, and uses the
+owner map µ to connect physical batch slots back
+G
+to request semantics. For group G = {rb }B
+b=1 with
+µ(b) = rb , READ outputs keep all versions unchanged, while WRITE outputs commit only the
+owners in µ(G). Selective commit and rollback use
+the same owner-indexed state table by snapshotting
+cvr ← svr before speculative writes.
+
+Figure 1: Per-request READ/WRITE semantics. Each
+decode step evaluates the shared base model with the
+request-owned TTT state and exposes either a versionpreserving READ event or a version-creating WRITE
+event.
+
+request r becomes ready at decode step tready (r, e)
+and is issued at tissue (r, e), then
+0 ≤ tissue (r, e) − tready (r, e) ≤ w.
+
+(4)
+
+Thus w = 0 is greedy batching, and finite w bounds
+starvation in decode steps while permitting short
+phase-alignment waits. Waiting may change which
+compatible requests are issued together; it may not
+change an individual request’s read/write order or
+update rule.
+Correctness contract. The target behavior is the
+original sequential TTT execution using the same
+backend and update rule. An execution schedule is
+behavior-preserving if it preserves request-output
+mapping, read-step immutability, write order and
+count, version progression, owner-local commit,
+and tail/cache consistency for every request. In
+experiments, we validate this semantic contract
+through owner/version/tail invariants and by checking that per-token NLL and task scores match the
+sequential TTT reference within the reported tolerance. This is the serving contract: RW-TTT
+changes the execution plan, not the adapted TTT
+semantics.
+
+4
+
+RW-TTT Serving System
+
+4.1
+
+Serving a Mutable TTT Step
+
+4.2
+
+Primitives
+
+Table 3 lists the serving-visible primitive groups.
+A TTT backend owns the update rule; RW-TTT
+fixes how state is applied, when a candidate version
+is produced, and how successful writes become
+owner-visible.
+READ. The backend decides how svr affects
+model computation: fast weights, low-rank deltas,
+or another learner state. The runtime requires only
+that READ views are immutable and returned with
+the same version. Tail-buffer maintenance belongs
+
+Figure 1 shows the per-request transition that the
+runtime must preserve. At each decode step, request r reads its owner-visible TTT state svr and
+evaluates the shared base model with that state. A
+R EAD applies svr and leaves version v visible to the
+4
+
+Figure 2: RW-TTT serving architecture. Requests carry owner-versioned mutable state alongside ordinary KV
+cache. The planner automatically groups compatible READ/WRITE transitions by backend type, operator shape,
+placement, and valid owner version; batched operators return outputs and updated state through the owner map. The
+figure shows serving semantics, not the backend update rule.
+
+sion V (ri ), but different owners need not have
+equal numeric versions. Requests with different
+keys are never co-issued, so R EAD and W RITE
+steps are separated by construction. For each key,
+the planner emits a group at target batch size B
+or waits at most w decode steps for compatible arrivals. When the wait budget expires, it issues the
+current legal prefix after owner-version and ownermap checks. This changes only which independent
+owners are co-issued, not any request’s local order
+or backend update rule.
+
+here because it records request-local evidence for
+a later update boundary without publishing a new
+owner-visible TTT state version.
+WRITE. The update evidence ur is backendspecific. RW-TTT enforces that the update reads
+owner r’s committed version v and produces one
+dirty candidate state for that owner. The candidate is invisible to later READs until committed.
+The Triton experiments in Section 5 target WRITEside update and selective-commit kernels because
+ordinary static-weight kernels do not cover this
+state-management path.
+
+Serving loop. Algorithm 1 summarizes the periteration control flow.
+
+CONTROL. C OMMIT /ROLLBACK controls visibility. Commit publishes a dirty state as owner r’s
+next version only after the WRITE group succeeds;
+rollback restores the checkpointed owner slot and
+version; fork creates a separate owner/version lineage. The version counter changes here, not inside
+the backend update, and only owner-indexed TTT
+records are modified.
+4.3
+
+4.4
+
+Backend Instantiations
+
+This interface lets multiple TTT styles share
+the same serving contract. A backend exposes
+a request-owned payload, immutable read view,
+write evidence for its update rule, compatibility
+metadata (backend type, operator shape, and placement), and commit metadata for the owner slot
+and candidate version. The runtime uses only this
+interface; the backend retains its learning formula.
+For example, a fast-weight backend stores mutable fast weights in FastWeightState; a LoRAstyle backend stores request-owned low-rank deltas
+in DeltaAdapterState. Both expose R EAD ap-
+
+TTT-Aware Batch Planning
+
+For each ready transition ei , the planner computes
+κi = (ρi , τi , σi , πi ), covering effect, backend type,
+operator shape, and placement. The owner-local
+version vi is checked against the committed ver5
+
+Algorithm 1 RW-TTT TTT-aware serving loop
+
+Method
+
+Require: active requests R, target batch size B, wait budget
+w
+1: while R is not empty do
+2:
+E ←∅
+3:
+for all r ∈ R do
+4:
+vr ← V IEW(r.TTTState, r.metadata)
+5:
+er ← N EXT S TEP(r, vr )
+6:
+E ← E ∪ {er }
+7:
+end for
+8:
+G ← L EGAL G ROUPS(E, B, w)
+9:
+for all g ∈ G do
+10:
+(Y, ∆S) ← E XECUTE O PERATOR G ROUP(g)
+11:
+R ETURN O UTPUTS(Y, g.owner_map)
+12:
+if g.effect = W RITE then
+13:
+C OMMIT V ERSIONS(∆S, g.owner_map)
+14:
+end if
+15:
+U PDATE KVA ND TAIL M ETADATA(g)
+16:
+end for
+17: end while
+
+Serial TTT
+3 serial replicas
+Phase grouping
+RW-TTT full
+RW-TTT full
+RW-TTT full
+
+tok/s
+
+GiB
+
+29.51
+79.78
+226.24
+274.61
+177.55
+174.66
+
+—
+32.50
+33.39
+33.53
+33.38
+33.42
+
+Speedup
+vs. serial vs. replicas
+1.00×
+2.70×
+7.67×
+9.31×
+6.02×
+5.92×
+
+—
+1.00×
+2.84×
+3.44×
+2.23×
+2.19×
+
+Static no-TTT rows (Appendix B) provide a sharedweight capacity context but are not speedup denominators because they operate under a different
+read-only serving contract.
+Evidence scope. We separate throughput measurement from behavior validation. The throughput harness measures scheduler-inclusive aggregate
+tok/s under controlled traces. Full task behavior is
+evaluated on RULER-32K/64K (Hsieh et al., 2024),
+because throughput measurement and long-context
+task execution answer different validation questions. Mutable-state correctness is further validated
+by numerical gates and contract stress tests (§5.5).
+
+Evaluation
+
+We organize the evaluation around five questions:
+❶ Is the sequential serving collapse caused by
+mutable-state batching rather than per-request TTT
+cost? ❷ How much one-GPU serving capacity does
+RW-TTT recover? ❸ Does RW-TTT preserve the
+adapted checkpoint’s long-context behavior? ❹ Do
+owner or version correctness checks hold under
+numerical and state-contract tests? ❺ How broadly
+does the same read-write contract apply beyond the
+headline trace?
+5.1
+
+uniform
+uniform
+uniform
+uniform
+bursty update
+all-update stress
+
+Throughput Peak
+
+Table 4: One-GPU serving throughput for requestowned TTT state with eight streams, 4096 prompt tokens, and 512 decode tokens. Throughput is schedulerinclusive. The first four rows form the headline comparison against serial execution and memory-matched
+replicas; the final two rows stress the scheduler with
+higher update pressure.
+
+plication, W RITE update, owner/version commit
+metadata, and compatibility keys. Other streaming learners fit the same runtime when they expose
+equivalent read/write transitions.
+
+5
+
+Trace
+
+5.2
+
+Batching Bottleneck Diagnosis
+
+We first isolate single-request overhead from batching loss. The measured RW-TTT single-request
+overhead is small, so the sequential serving collapse is primarily a batching failure.
+Controlled batch-1 timing shows that
+RW-TTT’s per-request execution overhead
+is modest: median 1.4% total, 2.1% prefill, and
+0.4% decode. The serving bottleneck is therefore
+the inability to safely batch request-owned mutable
+streams. The sequential path yields only 29.51
+tok/s for eight concurrent requests because it
+serializes all mutable-state effects.
+
+Experimental Setup and Evidence Scope
+
+We evaluate a Qwen3-4B In-Place-TTT fastweight checkpoint (Yang et al., 2025; Feng et al.,
+2026). Headline serving results use one GPU,
+BF16 cached decode, eight request-private CUDA
+streams, 4096 prompt tokens, 512 decode tokens,
+and TTT chunk size 128. We report schedulerinclusive aggregate generated-token throughput,
+including grouping, waiting, fallback, and state
+movement.
+
+5.3
+
+GPU Serving Throughput
+
+We next measure aggregate throughput under the
+one-GPU memory class. RW-TTT recovers most
+of the lost serving capacity and remains effective
+under higher write pressure.
+Table 4 reports the main throughput and stress
+comparisons. The full RW-TTT path achieves
+274.61 tok/s: 9.31× over the sequential path and
+3.44× over memory-matched replicas. The uni-
+
+Baselines. Sequential In-Place TTT (29.51
+tok/s) is the original correctness-preserving serial
+mutable-state execution: one stream at a time.
+Naive sequential replicas place multiple unmodified batch-1 TTT processes on one GPU; at three
+replicas (∼32.50 GiB) this reaches 79.78 tok/s
+and is the memory-matched deployment reference.
+6
+
+Naive replicas
+
+RW-TTT
+
+Capacity vs. memory
+
+Capacity vs. streams
+
+Aggregate tok/s
+
+200
+OOM
+
+150
+
+Check
+
+Scope
+
+Result
+
+Task behavior
+NLL/PPL
+Relative drift
+State-contract stress
+
+RULER-32K/64K
+9 configs × 512 tokens
+α=1.0 gate
+5 injected failures
+
+preserved
+9/9 pass
+pass; top5_min 1.0
+5/5 pass
+
+100
+50
+
+Table 6: Correctness evidence summary. RULER
+checks task-level behavior; the NLL/PPL and relativedrift gates check calibrated numerical agreement; the
+state-contract row injects owner/version failure modes.
+Detailed RULER scores appear in Appendix D.
+
+OOM
+
+0
+20
+
+40
+
+60
+
+1
+
+Peak memory (GiB)
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+Concurrent units
+
+Figure 3: Scaling under a 16K prompt. Left: feasible
+runs ordered by peak memory. Right: same runs ordered
+by concurrent units. RW-TTT keeps request-private
+streams inside one read-write runtime.
+Benchmark
+
+In-Place TTT
+
+RW-TTT
+
+RULER-32K
+RULER-64K
+
+76.30
+67.72
+
+76.41
+67.72
+
+3.1x (0.72->0.23 ms)
+
+Commit
+
+2.5x (0.82->0.33 ms)
+
+Update
+
+1.2x (0.14->0.12 ms)
+
+Checkpoint
+0
+
+Table 5: Full RULER task scores for the adapted checkpoint executed by the original In-Place TTT path and by
+RW-TTT. Scores are averages over 13 tasks with 100
+examples each; per-task breakdowns are in Appendix D.
+
+3
+
+4
+
+modes. RULER scores validate that the adapted
+model produces correct task outputs. The NLL
+and relative gates validate numerical fidelity of the
+batched execution path. State-contract stress validates owner/version/rollback invariants that average scores may not expose. Together, these checks
+target task preservation, calibrated numerical fidelity, and hard state invariants rather than relying
+on exact BF16 token identity as the sole correctness
+criterion.
+
+Long-Context Behavior Preservation
+
+We then check whether executing the adapted
+checkpoint through RW-TTT changes longcontext task behavior. We compare against the original In-Place TTT path. Table 5 reports full RULER
+evaluation scores. The same adapted checkpoint
+is executed by the original In-Place TTT path and
+by RW-TTT on RULER, a 13-task long-context
+evaluation suite (Hsieh et al., 2024). The 32K score
+is essentially unchanged (76.41 vs. 76.30) and the
+64K score is identical (67.72), with the full per-task
+breakdown retained in Appendix D.
+5.5
+
+2
+
+Figure 4: WRITE-side operator speedups from Triton
+kernels over PyTorch eager. Parentheses show latency
+before and after kernelization in milliseconds.
+
+form trace contains 4064 read-owner steps and
+32 update-owner steps over 4096 generated tokens. Figure 3 show the scaling under the fixed
+memory and concurrent setting. Under burstyupdate and all-update stress traces, RW-TTT remains above 5.9× the sequential baseline, showing
+that throughput recovery is not limited to favorable
+read-dominant schedules. Additional denominator
+rows are in Appendix C.
+5.4
+
+1
+
+Speedup over PyTorch eager
+
+5.6
+
+Operator Evidence
+
+Finally, we look beyond the headline 4K serving
+trace. The same contract survives breadth sweeps,
+exposes the 16K memory boundary, carries a second adapter-shaped mutable state, and identifies
+WRITE-side operator targets.
+Figure 4 provides local evidence for the readwrite operator surface induced by mutable TTT
+state. Triton kernels reduce WRITE-side latency
+for selective commit, dense update, and checkpoint
+write by 3.1×, 2.5×, and 1.2×, respectively. These
+microbenchmarks are not the end-to-end serving
+denominator; they show that the unusual optimization surface lies in owner-indexed commit, state
+update, and checkpointing rather than ordinary
+shared-weight projection.
+
+Correctness Checks
+
+We combine task scores, calibrated numerical gates,
+and explicit state-contract stress tests to check the
+owner/version contract. All three evidence layers
+support the same correctness conclusion, showing
+in Table 6.
+These layers address complementary failure
+7
+
+6
+
+Discussion
+
+Adapter serving. S-LoRA and Punica make heterogeneous request-specific model-side state a firstclass serving concern (Hu et al., 2022; Sheng
+et al., 2023; Chen et al., 2024; Mangrulkar et al.,
+2022). Their core contract is read-side heterogeneity: different requests apply different low-rank
+weights, and the serving stack manages placement
+and batched execution, but adapters remain readonly during generation. Read-write TTT builds on
+the same insight that small request-specific model
+state can be served efficiently, then adds online mutation: a LoRA-style TTT state can be read like
+an adapter, dirtied by an update event, committed
+under a new version, and read again by the same
+request. Our LoRA-style stress test confirms that
+the same serving interface carries adapter-shaped
+payloads.
+
+Phase skew remains hard. Requests are not
+fixed as boundary or non-boundary streams; each
+stream alternates between READ and WRITE
+steps. When updates align, the planner forms dense
+WRITE batches, but phase skew fragments groups.
+The bounded wait budget trades latency for group
+density without changing semantics, leaving skewaware scheduling as future work.
+State movement and layout. Read-write TTT
+shifts the serving surface from shared-weight projection to mutable-state commit, checkpoint, and
+movement. State packing and ownership tracking
+grow with the number of owners, making state layout and memory management the next bottleneck
+after batching is restored.
+
+Test-time training. Test-time training adapts
+models using information available at inference
+time (Sun et al., 2020). Recent work uses test-time
+learning inside recurrent-style hidden states (Sun
+et al., 2024), while In-Place-TTT applies online updates to selected LLM layers during long-context
+generation (Feng et al., 2026). These are backend choices for producing mutable state and update
+rules. RW-TTT targets the missing serving-system
+layer needed when such methods read and write
+request-owned state during generation.
+
+Operator kernels. Microbenchmarks show local
+wins for selective commit and dense update operators, while read-path projection does not beat
+torch.bmm. Thus WRITE-side kernelization is a
+targeted follow-up, not a substitute for the serving
+contract.
+Validation scope. Our full validation uses fastweight In-Place-TTT checkpoints, which provide
+a sequential reference and long-context RULER
+tasks. The LoRA-style experiment tests the same
+owner/version contract on adapter-shaped payloads,
+but is not a full downstream adapter-serving evaluation.
+
+7
+
+8
+
+Conclusion
+
+Test-time training introduces request-owned mutable model state that breaks the static-weight batching contract behind current LLM serving systems.
+RW-TTT restores batching through a read-write
+serving contract: each decode step is tagged with
+its owner and READ/WRITE effect, only compatible phases are grouped, and updated state versions are committed exclusively to owning requests.
+On eight concurrent streams with a fast-weight InPlace-TTT checkpoint, this recovers 274.61 aggregate tok/s—9.31× over the sequential TTT
+path and 3.44× over memory-matched independent replicas—while preserving adapted RULER32K/64K behavior and passing owner/version correctness gates. The contribution is a serving contract and batching runtime for request-owned mutable state, not a new TTT learning rule or kernel
+system; RW-TTT separates TTT backend design
+from the serving semantics needed to batch onlineadaptive model state.
+
+Related Work
+
+KV/prefix-cache serving. Modern LLM serving has optimized the shared-weight contract
+through iteration-level scheduling (Yu et al., 2022),
+paged KV-cache management (Kwon et al., 2023),
+chunked-prefill/decode overlap (Agrawal et al.,
+2023, 2024), prefill/decode disaggregation (Zhong
+et al., 2024), program-level scheduling and cache
+reuse (Zheng et al., 2024), and further refinements
+in high-throughput generation, co-serving, and
+elastic disaggregation (Holmes et al., 2024; Qiao
+et al., 2024; Ruan et al., 2025; Borui et al., 2025).
+These systems manage dynamic activation-side
+state while model-side parameters remain shared
+and read-only. RW-TTT keeps the scheduling
+problem but changes the object being scheduled:
+each request also owns model-side state whose version may change during generation.
+8
+
+Limitations
+
+Cheng-Ping Hsieh, Simeng Sun, Samuel Kriman, Shantanu Acharya, Dima Rekesh, Fei Jia, Yang Zhang,
+and Boris Ginsburg. 2024. Ruler: What’s the real
+context size of your long-context language models?
+arXiv preprint arXiv:2404.06654.
+
+RW-TTT evaluates the serving layer for existing
+online TTT behavior rather than proposing a new
+adaptation rule. We therefore hold the backend
+update rule fixed and ask whether request-owned
+mutable state can be batched without changing the
+adapted checkpoint’s behavior. Full task evaluation uses the fast-weight In-Place-TTT checkpoints
+because they provide both a sequential reference
+and long-context adapted checkpoints; the LoRAstyle experiment exercises the same owner/version
+READ/WRITE contract on adapter-shaped mutable state. The throughput ladder is reported for the
+one-GPU memory class and eight-stream workload
+used by the prototype, with comparisons against the
+original sequential TTT path and memory-matched
+unmodified TTT replicas. Static-weight serving
+is a different contract: RW-TTT targets the case
+where model-side request state is read and written
+during generation.
+
+Edward J Hu, Yelong Shen, Phillip Wallis, Zeyuan
+Allen-Zhu, Yuanzhi Li, Shean Wang, Liang Wang,
+Weizhu Chen, and 1 others. 2022. Lora: Low-rank
+adaptation of large language models. Iclr, 1(2):3.
+Jinwu Hu, Zhitian Zhang, Guohao Chen, Xutao Wen,
+Chao Shuai, Wei Luo, Bin Xiao, Yuanqing Li, and
+Mingkui Tan. 2025. Test-time learning for large language models. arXiv preprint arXiv:2505.20633.
+Woosuk Kwon, Zhuohan Li, Siyuan Zhuang, Ying
+Sheng, Lianmin Zheng, Cody Hao Yu, Joseph Gonzalez, Hao Zhang, and Ion Stoica. 2023. Efficient
+memory management for large language model serving with pagedattention. In Proceedings of the 29th
+symposium on operating systems principles, pages
+611–626.
+Sourab Mangrulkar, Sylvain Gugger, Lysandre Debut,
+Younes Belkada, Sayak Paul, and Benjamin Bossan.
+2022. Peft: State-of-the-art parameter-efficient finetuning methods.
+
+References
+Amey Agrawal, Nitin Kedia, Ashish Panwar, Jayashree
+Mohan, Nipun Kwatra, Bhargav Gulavani, Alexey
+Tumanov, and Ramachandran Ramjee. 2024. Taming {Throughput-Latency} tradeoff in {LLM} inference with {Sarathi-Serve}. In 18th USENIX symposium on operating systems design and implementation (OSDI 24), pages 117–134.
+
+Yifan Qiao, Shu Anzai, Shan Yu, Haoran Ma, Shuo
+Yang, Yang Wang, Miryung Kim, Yongji Wu, Yang
+Zhou, Jiarong Xing, and 1 others. 2024. Conserve:
+Fine-grained gpu harvesting for llm online and offline
+co-serving. arXiv preprint arXiv:2410.01228.
+Chaoyi Ruan, Yinhe Chen, Dongqi Tian, Yandong Shi,
+Yongji Wu, Jialin Li, and Cheng Li. 2025. Dynaserve:
+Unified and elastic execution for dynamic disaggregated llm serving. arXiv preprint arXiv:2504.09285.
+
+Amey Agrawal, Ashish Panwar, Jayashree Mohan,
+Nipun Kwatra, Bhargav S Gulavani, and Ramachandran Ramjee. 2023. Sarathi: Efficient llm inference by piggybacking decodes with chunked prefills.
+arXiv preprint arXiv:2308.16369.
+
+Ying Sheng, Shiyi Cao, Dacheng Li, Coleman
+Hooper, Nicholas Lee, Shuo Yang, Christopher Chou,
+Banghua Zhu, Lianmin Zheng, Kurt Keutzer, and 1
+others. 2023. S-lora: Serving thousands of concurrent lora adapters. arXiv preprint arXiv:2311.03285.
+
+Wan Borui, Zhao Juntao, Jiang Chenyu, Guo Chuanxiong, and Wu Chuan. 2025. Efficient llm serving
+on hybrid real-time and best-effort requests. arXiv
+preprint arXiv:2504.09590.
+
+Yu Sun, Xinhao Li, Karan Dalal, Jiarui Xu, Arjun
+Vikram, Genghan Zhang, Yann Dubois, Xinlei Chen,
+Xiaolong Wang, Sanmi Koyejo, and 1 others. 2024.
+Learning to (learn at test time): Rnns with expressive
+hidden states. arXiv preprint arXiv:2407.04620.
+
+Lequn Chen, Zihao Ye, Yongji Wu, Danyang Zhuo,
+Luis Ceze, and Arvind Krishnamurthy. 2024. Punica:
+Multi-tenant lora serving. Proceedings of Machine
+Learning and Systems, 6:1–13.
+
+Yu Sun, Xiaolong Wang, Zhuang Liu, John Miller,
+Alexei Efros, and Moritz Hardt. 2020. Test-time
+training with self-supervision for generalization under distribution shifts. In International conference
+on machine learning, pages 9229–9248. PMLR.
+
+Guhao Feng, Shengjie Luo, Kai Hua, Ge Zhang, Di He,
+Wenhao Huang, and Tianle Cai. 2026. In-place testtime training. arXiv preprint arXiv:2604.06169.
+Connor Holmes, Masahiro Tanaka, Michael Wyatt,
+Ammar Ahmad Awan, Jeff Rasley, Samyam Rajbhandari, Reza Yazdani Aminabadi, Heyang Qin,
+Arash Bakhtiari, Lev Kurilenko, and 1 others. 2024.
+Deepspeed-fastgen: High-throughput text generation
+for llms via mii and deepspeed-inference. arXiv
+preprint arXiv:2401.08671.
+
+Arnuv Tandon, Karan Dalal, Xinhao Li, Daniel Koceja,
+Marcel Rød, Sam Buchanan, Xiaolong Wang, Jure
+Leskovec, Sanmi Koyejo, Tatsunori Hashimoto, and
+1 others. 2025. End-to-end test-time training for long
+context. arXiv preprint arXiv:2512.23675.
+
+9
+
+An Yang, Anfeng Li, Baosong Yang, Beichen Zhang,
+Binyuan Hui, Bo Zheng, Bowen Yu, Chang
+Gao, Chengen Huang, Chenxu Lv, and 1 others.
+2025. Qwen3 technical report. arXiv preprint
+arXiv:2505.09388.
+Gyeong-In Yu, Joo Seong Jeong, Geon-Woo Kim, Soojeong Kim, and Byung-Gon Chun. 2022. Orca: A
+distributed serving system for {Transformer-Based}
+generative models. In 16th USENIX symposium on
+operating systems design and implementation (OSDI
+22), pages 521–538.
+Lianmin Zheng, Liangsheng Yin, Zhiqiang Xie, Chuyue
+Sun, Jeff Huang, Cody H Yu, Shiyi Cao, Christos
+Kozyrakis, Ion Stoica, Joseph E Gonzalez, and 1 others. 2024. Sglang: Efficient execution of structured
+language model programs. Advances in neural information processing systems, 37:62557–62583.
+Yinmin Zhong, Shengyu Liu, Junda Chen, Jianbo Hu,
+Yibo Zhu, Xuanzhe Liu, Xin Jin, and Hao Zhang.
+2024. {DistServe}: Disaggregating prefill and decoding for goodput-optimized large language model
+serving. In 18th USENIX Symposium on Operating Systems Design and Implementation (OSDI 24),
+pages 193–210.
+
+10
+
+A
+
+Reproducibility Notes
+
+We distinguish three throughput scopes. Decode-only counts only the decode execution window after
+prompt state is available. Prefill+decode also includes prompt processing. Scheduler-inclusive further
+includes grouping, waiting, fallback, and state movement. The main-text serving rows use one canonical
+scheduler-inclusive scope; other scopes appear only in the appendix denominator map.
+Item
+
+Setting
+
+Primary model
+Precision
+Prompt/decode
+TTT chunk
+Target streams
+Throughput scope
+Memory
+
+Qwen3-4B In-Place-TTT checkpoint
+BF16 cached decode; FP32 spot checks
+4096 prompt tokens, 512 decode tokens
+128 for prototype serving harness
+8 request-private streams
+scheduler-inclusive unless stated otherwise
+one-GPU memory class around 33 GiB for the main rows
+
+Table 7: Compact setup for the main full-model serving rows.
+
+B
+
+Denominator Map
+Row
+
+GPUs
+
+Seq.
+
+Batch
+
+Scope tok/s
+
+1
+1
+1
+1
+1
+1
+1
+1
+8
+
+1024
+4096
+4096
+4096
+4096
+4096
+4096
+4096
+4096
+
+8
+1
+4
+8
+8 request streams
+3 replicas
+8 request streams
+8 request streams
+8 streams
+
+300.06
+37.08
+OOM
+OOM
+29.51
+79.78
+226.24
+274.61
+252.00
+
+Static short-context ceiling
+Static target-context row
+Static target-context batch4
+Static target-context batch8
+In-Place TTT sequential
+Naive sequential replicas
+READ/WRITE phase grouping
+RW-TTT full read/write
+Naive independent TTT
+
+Role
+context only
+feasible static row
+prefill limit
+prefill limit
+serial denominator
+memory-matched deployment baseline
+core batching component
+full serving row
+topology context
+
+Table 8: Denominator map. Rows with different GPU counts, sequence lengths, or timing scopes are context
+rows, not direct speedup denominators. The main-text headline comparison uses only the one-GPU, 4096-token,
+scheduler-inclusive rows.
+
+C
+
+Full Serving Rows
+
+Method
+
+Unit count
+
+Grouping mode
+
+Agg. tok/s
+
+Speedup
+
+Serial TTT
+3 serial replicas
+
+8 request streams
+3 replicas
+
+RW-TTT phase
+grouping
+RW-TTT + owner
+commit
+RW-TTT full
+read/write
+RW-TTT bursty
+update
+RW-TTT all-update
+stress
+
+Role
+
+serial groups
+independent batch-1 processes
+
+29.51
+79.78
+
+1.00
+2.70
+
+8 request streams
+
+phase-compatible groups
+
+226.24
+
+7.67
+
+8 request streams
+
+phase-compatible groups
+
+226.25
+
+7.67
+
+denominator
+memory-matched
+baseline
+core batching component
+commit ablation
+
+8 request streams
+
+read/write groups
+
+274.61
+
+9.31
+
+full system
+
+8 request streams
+
+phase-skewed groups
+
+177.55
+
+6.02
+
+stress setting
+
+8 request streams
+
+dense write groups
+
+174.66
+
+5.92
+
+stress setting
+
+Table 9: Full-model prototype serving-harness results. Speedup is relative to the serial In-Place TTT path on one
+GPU.
+
+Table 9 serving harness shows that phase-compatible batching is the dominant source of throughput
+recovery: RW-TTT phase grouping improves aggregate throughput from 29.51 to 226.24 tok/s, while
+11
+
+adding owner-commit semantics does not introduce measurable overhead. The full read/write system
+reaches 274.61 tok/s, or 9.31× over serial execution, and remains above 5.9× speedup even under
+bursty-update and all-update stress settings.
+Replicas
+
+Status
+
+1
+2
+3
+4
+
+Decode-only tok/s
+
+Worker-elapsed tok/s
+
+Startup-incl. tok/s
+
+Peak GiB
+
+38.76
+73.76
+79.78
+86.62
+
+21.42
+42.03
+44.91
+48.87
+
+6.31
+33.08
+36.90
+41.66
+
+10.84
+21.67
+32.50
+43.33
+
+ok
+ok
+ok
+ok
+
+Table 10: Single-GPU naive deployment baseline using multiple original sequential In-Place TTT batch-1 processes
+on one GPU. Three replicas are the memory-matched baseline for the main RW-TTT comparison; four replicas
+exceed that memory budget.
+
+Table 10 naive replica baseline improves throughput by placing more independent batch-1 processes on
+the same GPU, but the gains quickly saturate as memory usage grows. The memory-matched three-replica
+point reaches 79.78 decode-only tok/s at 32.50 GiB, which is substantially below the 274.61 tok/s achieved
+by the full RW-TTT read/write system under a comparable memory budget.
+
+D
+
+RULER Per-Task Scores
+Task
+
+In-Place TTT
+
+Repeat
+
+RW-TTT
+
+45.00
+48.00
+100.00
+89.00
+99.00
+66.00
+82.00
+32.00
+97.75
+94.50
+99.80
+96.00
+42.80
+
+45.00
+48.00
+100.00
+89.00
+99.00
+66.00
+82.00
+32.00
+97.75
+94.50
+99.80
+96.00
+42.80
+
+46.00
+48.00
+100.00
+90.00
+99.00
+66.00
+82.00
+32.00
+97.75
+94.50
+99.60
+95.67
+42.80
+
+ruler_qa_squad_32k
+ruler_qa_hotpotqa_32k
+ruler_niah_single_1_32k
+ruler_niah_single_2_32k
+ruler_niah_single_3_32k
+ruler_niah_multikey_1_32k
+ruler_niah_multikey_2_32k
+ruler_niah_multikey_3_32k
+ruler_niah_multivalue_32k
+ruler_niah_multiquery_32k
+ruler_vt_32k
+ruler_fwe_32k
+ruler_cwe_32k
+
+Table 11: Full step-aligned 32K RULER task scores for the adapted fast-weight checkpoint.
+
+E
+
+Breadth and 16K Capacity Stress
+
+Breadth . 36 trace/configuration rows tested across varying boundary fractions, TTT layer selections,
+and sequence lengths. All 36 rows complete successfully with no OOM events and no worker failures.
+16K capacity stress
+
+F
+
+Under 16384 prompt tokens and 512 decode tokens with 7 concurrent streams:
+
+PEFT/LoRA Adapter-State Path Check
+
+The LoRA-style experiment maps rank-8 PEFT adapter states to DeltaAdapterState and exercises the
+same ownership, versioning, READ/WRITE, and commit path used by fast-weight TTT state. This is an
+interface and path check, not a downstream LoRA-TTT quality benchmark.
+Four materialized adapter/domain pairs are tested. All pass exact apply/update operator equivalence
+checks with adapter-file NLL changes below 3.4×10−3 , confirming that the mutable-state serving contract
+carries a second payload shape without corruption.
+12
+
+Task
+
+In-Place TTT
+
+RW-TTT
+
+Delta
+
+44.00
+44.00
+100.00
+59.00
+96.00
+34.00
+85.00
+22.00
+95.25
+94.75
+100.00
+94.00
+12.40
+
+44.00
+44.00
+100.00
+59.00
+96.00
+34.00
+85.00
+22.00
+95.25
+94.75
+100.00
+94.00
+12.40
+
+0.00
+0.00
+0.00
+0.00
+0.00
+0.00
+0.00
+0.00
+0.00
+0.00
+0.00
+0.00
+0.00
+
+ruler_qa_squad_64k
+ruler_qa_hotpotqa_64k
+ruler_niah_single_1_64k
+ruler_niah_single_2_64k
+ruler_niah_single_3_64k
+ruler_niah_multikey_1_64k
+ruler_niah_multikey_2_64k
+ruler_niah_multikey_3_64k
+ruler_niah_multivalue_64k
+ruler_niah_multiquery_64k
+ruler_vt_64k
+ruler_fwe_64k
+ruler_cwe_64k
+
+Table 12: Full 64K RULER task scores for the matching qwen3-4b-64k-ttt-step1250 checkpoint.
+
+Method
+
+Streams
+
+Agg. tok/s
+
+Peak GiB
+
+7
+7
+7
+
+36.13
+152.58
+168.66
+
+44.39
+65.58
+65.58
+
+In-Place TTT sequential
+READ/WRITE phase grouping
+RW-TTT full
+
+Table 13: 16K capacity stress results. These are stress-test points, not the headline 4096-token denominator. At 8
+streams the configuration exceeds GPU memory, scoping the memory boundary for longer sequences.
+
+G
+
+Operator Microbench Details
+
+The read-write serving contract fixes the operator boundary: READ steps consume a versioned state view;
+WRITE steps compute updated state and commit it. On representative H800 BF16 shapes (Qwen3-4B
+dimensions), Triton kernels show WRITE-side opportunities:
+
+Operator
+Selective commit (ActiveStateUpdateInplace)
+Fused update + writeback (StateUpdateFused)
+Checkpoint write
+
+Best speedup
+
+Median speedup
+
+Win rows / total
+
+3.07×
+2.49×
+1.20×
+
+2.26×
+2.04×
+1.19×
+
+90/90
+24/24
+9/9
+
+Scope
+dirty-only write
+dense write
+rollback snapshot
+
+Table 14:
+WRITE-side operator opportunities.
+Read-path projection (MutableWeightLinear,
+FusedReadResidual) does not beat torch.bmm/cuBLAS in the current prototype. These are local microbenchmark wins, not integrated Triton serving speedups.
+
+H
+
+Serving Loop Pseudocode
+
+Algorithm 1 in the main text gives the compact serving iteration. The full loop below adds queue
+management, wait-budget logic, and fallback handling.
+13
+
+Algorithm 2 RW-TTT TTT-aware serving loop (full)
+Require: active requests R, target batch size B, wait budget w
+1: while R is not empty do
+2:
+E ←∅
+3:
+for all r ∈ R do
+4:
+vr ← V IEW(r.TTTState, r.metadata)
+5:
+er ← N EXT S TEP(r, vr )
+▷ R EAD or W RITE
+6:
+E ← E ∪ {er }
+7:
+end for
+8:
+G ← P LAN TTTAWARE BATCHES(E, B, w)
+9:
+for all g ∈ G do
+10:
+(Y, ∆S) ← E XECUTE O PERATOR G ROUP(g)
+11:
+R ETURN O UTPUTS(Y, g.owner_map)
+12:
+if g.effect = W RITE then
+13:
+C OMMIT V ERSIONS(∆S, g.owner_map)
+14:
+end if
+15:
+U PDATE KVA ND TAIL M ETADATA(g)
+16:
+end for
+17: end while
+
+I
+
+Mechanism-Level Comparison
+System class
+
+Model-side state
+
+Mutates
+
+Update-aware batch
+
+Contract
+
+Static LLM serving
+Paged KV / continuous batching
+Adapter serving
+Serial TTT execution
+RW-TTT
+
+no
+no
+selected adapter
+yes
+yes
+
+no
+no
+usually no
+yes
+yes
+
+no
+no
+read-side adapter batch
+no
+yes
+
+shared weights + KV cache
+activation-side cache placement
+read-only low-rank weights
+one mutable stream at a time
+owner-indexed read/write state
+
+Table 15: Mechanism-level comparison with existing serving abstractions.
+
+14
+
+

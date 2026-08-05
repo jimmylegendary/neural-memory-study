@@ -1,0 +1,2104 @@
+Test-time regression: a unifying framework for designing sequence models with
+associative memory
+1
+
+2
+
+12
+
+Ke Alexander Wang∗ , Jiaxin Shi† , and Emily B. Fox
+
+arXiv:2501.12352v3 [cs.LG] 2 May 2025
+
+1
+
+Department of Computer Science, Stanford University
+2
+Department of Statistics, Stanford University
+
+Abstract
+Sequence models lie at the heart of modern deep learning. However, rapid advancements have
+produced a diversity of seemingly unrelated architectures, such as Transformers and recurrent alternatives. In this paper, we introduce a unifying framework to understand and derive these sequence
+models, inspired by the empirical importance of associative recall, the capability to retrieve contextually relevant tokens. We formalize associative recall as a two-step process, memorization and retrieval,
+casting memorization as a regression problem. Layers that combine these two steps perform associative recall via “test-time regression” over its input tokens. Prominent layers, including linear attention,
+state-space models, fast-weight programmers, online learners, and softmax attention, arise as special
+cases defined by three design choices: the regression weights, the regressor function class, and the
+test-time optimization algorithm. Our approach clarifies how linear attention fails to capture intertoken correlations and offers a mathematical justification for the empirical effectiveness of query-key
+normalization in softmax attention. Further, it illuminates unexplored regions within the design space,
+which we use to derive novel higher-order generalizations of softmax attention. Beyond unification,
+our work bridges sequence modeling with classic regression methods, a field with extensive literature,
+paving the way for developing more powerful and theoretically principled architectures.
+
+1
+
+Introduction
+
+Sequences play a vital role in modern machine learning by providing a powerful abstraction: any computational task can be viewed as transforming one sequence into another (Sutskever et al., 2014). This sequential perspective has spread across diverse domains, including natural language processing (Sutskever
+et al., 2014; Devlin et al., 2019; Brown et al., 2020), computer vision (Dosovitskiy et al., 2021; Bertasius
+et al., 2021), time series analysis (Salinas et al., 2020; Gruver et al., 2023; Ansari et al., 2024), and computational biology (Jumper et al., 2021; Zhou and Troyanskaya, 2015; Nguyen et al., 2024), highlighting the
+importance of building generically applicable sequence layers (Vaswani et al., 2017).
+This development has produced a diversity of architectures, each with its own unique characteristics and performance trade-offs. While these architectures have achieved considerable success, they have
+largely emerged through separate lines of investigation. Such a fragmented and often empirically-driven
+approach to model development limits our ability to systematically understand and improve design choices.
+Moreover, the idiosyncratic notations of each architecture obscures their underlying connections (Rush,
+2024). Given the wide variety of sequence models, a natural question to ask is whether there is an underlying principle that explains why some sequence models work better than others.
+∗
+†
+
+Correspondence to alxwang@cs.stanford.edu
+Now at Google Deepmind
+
+1
+
+One empirical discovery that ties together disparate architectures is the strong correlation between an
+architecture’s associative recall ability and its language modeling performance (Olsson et al., 2022; Arora
+et al., 2023a). Associative recall is the act of retrieving contextually relevant information based on an
+association with a query. (Arora et al., 2023a) gives the following example of how associative memory
+and retrieval can improve language modeling. Consider the example sentence from Arora et al. (2023b):
+“Hakuna Matata, it means no worries for the rest of your days. Hakuna
+”. To predict the next word,
+we can first memorize the previous occurrence of “Hakuna” and its associated value “Matata”; the next time
+we encounter “Hakuna” again we can retrieve its associated value from memory as our prediction. Notice
+that we can perform this task using only in-context information and we can make an accurate prediction
+even if we have never encountered this strange phrase before. Indeed, transformer-based language models
+have been discovered to exhibit this kind of behavior via “induction heads” that emerge during training
+(Olsson et al., 2022).
+Given the empirical importance of associative recall, how can we systematically design neural
+network layers that can perform associative recall (AR)? In this paper, we introduce a simple but
+principled framework for deriving sequence layers designed to perform associative recall, which we call
+“test-time regression layers”. From the “Hakuna Matata” example, we see that associative recall has
+two-steps: memorization and retrieval. Our crucial observation is that we can implement the memorization step by solving a weighted regression problem. We can then generate an output by applying the
+regressor to a cue/query token, retrieving the most relevant token from our associative memory. Combining both memorization and retrieval into the forward pass of a sequence layer results in a layer that performs
+regression over the input tokens, a procedure that we call “test-time regression”, visualized in Figure 1.
+Our terminology reflects that the regressor is regenerated with each forward pass and depends only on
+the input tokens rather than a fixed training dataset.
+Since any regression method can be used, our framework provides a general recipe to derive a large
+class of sequence layers. Under our framework, an AR-based sequence layer is a mathematical
+consequence of choosing (1) the regression weights, (2) the regressor parameterization, and (3)
+the optimization algorithm for finding the regressor. In this paper, we consider a few choices of these
+three “ingredients”, and show how to derive many recently proposed classes of sequence layers, illustrating
+the generality of our framework. Our derivations reveal that linear attention (Katharopoulos et al., 2020),
+its feature-mapped variants (e.g. (Peng et al., 2020; Qin et al., 2021; Kasai et al., 2021; Zhang et al., 2023a;
+Aksenov et al., 2024; Chen et al., 2024)), its gated variants (Sun et al., 2023; Orvieto et al., 2023; Katsch, 2024;
+De et al., 2024; Qin et al., 2024; Peng et al., 2024; Yang et al., 2024b; Beck et al., 2024), state-space model
+layers (Gu and Dao, 2024; Dao and Gu, 2024), fast-weights layers (Schlag et al., 2021; Yang et al., 2024a,a),
+online learning layers (Liu et al., 2024; Sun et al., 2024; Yang et al., 2024a; Behrouz et al., 2024), and softmax
+self-attention (Vaswani et al., 2017) are all test-time regression layers, implicitly performing memorization
+followed by retrieval in their forward passes, despite being developed from different perspectives. Figure 1
+previews how existing architectures are instantiations of test-time regression layers within our framework.
+Our derivations also lead to new understandings of existing sequence layers. We show that layers based
+on linear attention underperform because they fail to account for the correlation between tokens. We also
+show that query-key normalization, an important technique in stabilizing the training of large language
+models (Dehghani et al., 2023; Wortsman et al., 2023), is mathematically necessary to ensure that softmax
+self-attention is a proper local constant regressor. Finally, we propose a higher order generalization of
+softmax attention, motivated by local linear regression.
+Outline of our paper. We start in Section 2 by examining a few of the most prominent classes of sequence layers. Although each class of layers was developed from distinct motivations, their similar computation pattern hints at a common unifying theme that underlies their effectiveness. We then introduce
+
+2
+
+Associative recall as a forward pass
+
+Memorization via test-time regression
+onlinear associative memory
+
+(more expressive)
+
+N
+
+or
+
+F
+
+Linear associative memory
+
+(less expressive)
+
+Step 1: Memorize key-value pairs
+
+Step 2: Retrieve a value from memory
+
+Parametric regression via
+
+batch gradient descent
+
+Parametric regression via 
+stochastic gradient descent
+
+A unified perspective on sequence layers
+
+DeltaNet
+
+Uniform weights
+
+Standard SGD
+
+Linear Attention
+
++ multiple updates
+
+Delta Product
+
++ adaptive step size
+
+Longhorn
+
++ L2 regularization
+
+Gated DeltaNet
+
+Decaying weights
+Gated Linear Attention
+
+RWKV-6
+
+Mamba
+
+RetNet
+
+HGRN
+
+Gateloop
+
+LRU
+
+mLSTM
+
++ Momentum
+
+Parametric regression via
+
+exact solution
+
+onparametric regression
+
+N
+
+K
+
+TTT
+Mesa-layer
+
+ernel regression
+
+Intention (kernelized)
+Skyformer
+SOFT
+
+Intention
+
+Titan-LMM
+
+Local constant regression
+Softmax attention
+
+Compatible with feature maps for nonlinear regression
+
+Performer
+
+cosFormer
+
+RFA
+
+Hedgehog
+
+Based
+
+Rebased
+
+DiJiang
+
+...
+
+Figure 1: Our framework provides a systematic way to derive sequence models that can perform associative recall, following a two step process of memorization and retrieval. The memorization step can be
+formalized as a solving a regression problem at test-time. Our perspective results in a “recipe” for derv(t)
+ing sequence layers by making three choices: the importance of each association {γi }ti=1 , the regressor
+function class M, and the optimization algorithm. Parametric regression layers tend to have an efficient
+recurrence for updating the memory mt , while non-parametric layers like softmax-attention do not. For
+simplicity, we discuss causal sequence models where prefix key-value pairs are memorized, but the same
+principles also apply to non-causal ones (e.g. generically masked attention).
+our test-time regression framework in Section 3 to formalize the connection between associative memorization and regression. Our perspective provides a systematic approach to designing sequence layers
+that produce its outputs via associative recall. In Section 4, we show that indeed all of the aforementioned
+classes of sequence layers can be understood from a single unified perspective using the principles of testtime regression and associative recall. We demonstrate the generality of our framework by deriving these
+layers simply by varying how we minimize the regression objective. Section 5 empirically validates that
+test-time regression layers implicitly perform regression over its input tokens with a single forward pass.
+Then, in Section 6 we examine how to construct effective key-value pairs for associative recall in nexttoken prediction tasks. We discuss prior work related to associative recall and memory in Section 7. We
+finish in Section 8 by discussing the broader implications of viewing sequence models through the lens of
+regression, including future directions for new architectures.
+
+2
+
+Background on existing sequence modeling layers
+
+The goal of sequence modeling is to transform a sequence of input tokens x1 , . . . , xT into output tokens
+y1 , . . . , yT (Sutskever et al., 2014). A common design pattern, first proposed by Vaswani et al. (2017)
+is to transform the input tokens into key-value pairs (k1 , v1 ), . . . , (kT , vT ) ∈ RDk × RDv and queries
+
+3
+
+q1 , . . . , qT ∈ RDk before applying operations that “mix” the sequences together to produce the output
+tokens. Typically, each qt , kt , and vt is a linear transform of the corresponding input token xt , which
+can be thought of as different “views” of xt . Most subsequent sequence layers have kept this pattern but
+propose other ways of “mixing” queries, keys, and values. We begin by reviewing a few classes of existing
+sequence layers that follow this pattern before unifying them under our test-time regression framework.
+Softmax attention. Given input tokens x1 , . . . , xT , and their query, key, value vectors, softmax attention (Vaswani et al., 2017) computes each output token by
+yt =
+
+t
+X
+
+s(ki , qt )
+j=1 s(kj , qt )
+
+vi Pt
+
+i=1
+
+(1)
+
+√
+for t ∈ [T ] where s(k, q) = exp(k⊤ q/ Dk ). Each output yt is a weighted sum of values {vi }ti=1 ,
+weighted by the similarity between the query qt and the keys {ki }ti=1 associated with the values. This
+mechanism can be seen as a continuous-valued lookup table,
+ using qt to lookup an interpolated value for
+yt . Though highly effective, self-attention requires O T 2 time to autoregressively compute the entire
+length T sequence even after caching the keys and values, which can be prohibitively slow for generating
+long sequences.
+Linear attention. To address the computational challenges of self-attention, there has been a wealth of
+methods that seek to develop more efficient alternatives; see the survey by Tay et al. (2022). One particular
+class of more efficient sequence models has its origins in a recurrent variant of attention, known as linear
+attention (Katharopoulos et al., 2020). To achieve this efficiency, linear attention uses the standard inner
+⊤
+product
+than using the exponentiated inner product s(ki , qt ), producing outputs of the form
+Ptk q, rather
+⊤
+yt ∝ i=1 vi ki qt up to a normalization. This change allows all T outputs to be recurrently
+P computed
+in O (T ) time, an asymptotic speedup, by updating a Dv × Dk “matrix-valued state” Mt = ti=1 vi ki ⊤ ,
+following the recurrence
+Mt = Mt−1 + vt kt ⊤ ,
+
+yt = Mt qt =
+
+t
+X
+
+vi ki ⊤ q t .
+
+(2)
+
+i=1
+
+Each rank-1 outer product vt kt ⊤ can be thought of as writing a new key-value pair into memory. Although
+Katharopoulos et al. (2020)’s original formulation of linear attention included a normalization like softmax
+attention, we drop the normalization here since later works found that this normalization method causes
+training instabilities (Qin et al., 2022; Dao and Gu, 2024) .
+To increase expressiveness, Katharopoulos et al. (2020) also proposed a variant of linear attention,
+inspired by the kernel trick (Schölkopf and Smola, 2001), that replaces the inner product k⊤ q with an
+inner product in a feature space ϕ(k)⊤ ϕ(q) where ϕ is a feature map ϕ : Dk → Dϕ . This modification
+results in the recurrence
+⊤
+
+Mt = Mt−1 + vt ϕ(kt ) ,
+
+yt = Mt ϕ(qt ) =
+
+t
+X
+
+vi ϕ(ki )⊤ ϕ(qt ).
+
+(3)
+
+i=1
+
+Katharopoulos et al. (2020) used ϕ = 1+ELU, but numerous alternative choices of feature maps have since
+been proposed, including the cosine function (Qin et al., 2021), deterministic parameter-free projections
+(Schlag et al., 2021), polynomial maps (Zhang et al., 2023a; Aksenov et al., 2024; Arora et al., 2024), random
+features (Peng et al., 2020; Choromanski et al., 2020; Chen et al., 2024), and more.
+
+4
+
+State-space models and linear attention with forgetting. Since the recurrent state Mt of linear
+attention has finite size (Dv × Dk numbers), Mt can only store a bounded amount of information. In
+Equation 2, Mt weighs all key value pairs equally across timesteps, trying to compress all key-value pairs
+equally well into its finite-sized state. As a result, the performance of linear attention can degrade as the
+sequence length increases. To address this limitation, various works have proposed adding a forgetting
+factor γt to allow Mt to retain only the most recent information, decaying out key-value pairs over time.
+This produces the recurrence
+Mt = γt Mt−1 + vt kt ⊤ ,
+
+yt = Mt qt .
+
+(4)
+
+At each step t, all previous values in Mt−1 are attenuated by a factor of γt ∈ [0, 1] before the new value
+is stored. When γt depends on xt , this forgetting factor can be seen as a forgetting gate, akin to that of an
+LSTM (Hochreiter and Schmidhuber, 1997). This class of linear attention with forgetting includes RetNet
+(Sun et al., 2023), gated linear attention (Yang et al., 2024b), Gateloop (Katsch, 2024), mLSTM (Beck et al.,
+2024), LRU (Orvieto et al., 2023), HGRN (Qin et al., 2024), and RWKV-6 (Peng et al., 2024). See Table 1 of
+Yang et al. (2024b) for how each model implements γt .
+The forgetting factor in linear attention is also equivalent to another class of sequence layers known as
+state-space models (SSMs), which includes Mamba (Gu and Dao, 2024) and Mamba-2 (Dao and Gu, 2024).
+State-space models originated from a line of work on optimal online orthogonal polynomial projections (Gu
+et al., 2020, 2021, 2022) that enabled the architecture to retain information over long sequences. However,
+many recent works (Han et al., 2024; Trockman et al., 2024; Ren et al., 2024), including the Mamba-2
+followup (Dao and Gu, 2024), have since shown that SSM layers are equivalent to linear attention with
+forgetting; the forgetting factor maps onto the time-varying step size and transition matrix used in SSMs.
+Fast-weight layers and test-time training layers. An alternative to attenuating all past information
+in Mt−1 is to forget only the values whose keys are most similar to the new key kt . This was the motivation
+behind DeltaNet (Schlag et al., 2021), which is a revival of classic fast weight layers (Schmidhuber, 1992).
+DeltaNet follows a recurrence
+vold
+
+t
+z }|
+{
+⊤
+Mt = Mt−1 − (Mt−1 kt ) kt + [βt vt + (1 − βt ) Mt−1 kt ] kt ⊤
+| {z }
+|
+{z
+}
+
+(5)
+
+vtnew
+
+vtold
+
+= Mt−1 (I − βt kt kt ⊤ ) + βt vt kt ⊤
+
+(6)
+
+where the first equation follows the notation of Schlag et al. (2021) in defining βt ∈ [0, 1], vtold , and
+vtnew . Like previous layers, the output at step t is also yt = Mt qt . Comparing the recurrence of DeltaNet
+(Equation 5) to that of linear attention (Equation 2), we can interpret the update rule as rewriting the value
+that was bound to key kt . The update rule deletes an old value vtold = Mt−1 kt retrieved from the previous
+timestep’s memory Mt−1 but using the new key kt . The layer then updates the recurrent state with a new
+interpolated value vtnew , binding it to kt .
+The iterates Mt are also known as “fast-weights”, originally proposed by Schmidhuber (1992). These
+weights/iterates are “fast” because they change with each timestep, rapidly adapting to the input tokens,
+in contrast to the “slow-weights” in the rest of the neural network, such as the linear projections weights,
+which are only adjusted at training time. The traditional “slow-weights” can be seen as the weights of a
+metalearner (Clark et al., 2022), learning to use the “fast-weights” to learn from the input sequence (Sun
+et al., 2024).
+
+5
+
+Online learning layers. The recurrences we have reviewed so far all share a common high-level behavior: at each timestep t, the recurrent state must be adapted to incorporate information from the latest
+key-value pair (kt , vt ). This property can be seen as making an online sequence of decisions, balancing
+between retaining historical information and adapting to new information.
+Motivated by this sequential decision making perspective, Liu et al. (2024) proposed to derive recurrences by minimizing an online sequence of objectives:
+Mt = argmin d(Mt−1 , M) + ℓt (M)
+
+(7)
+
+M
+
+where d(Mt−1 , M) is a measure of the discrepancy between M and the previous iterate Mt−1 , encouraging retention of older information, and ℓt is a loss function that encourages adapting to new information.
+Once again, the output is computed by yt = Mt qt . Recurrent layers derived via Equation 7 are called
+“online learning layers” or “online learners”. Recent examples of such layers include Longhorn (Liu et al.,
+2024), Gated DeltaNet(Yang et al., 2024a), and Titans (Behrouz et al., 2024), each of these layers was derived
+from specific choice of functions d and ℓt . See Table 2 from Yang et al. (2024a) for each layer’s choice of d
+and ℓt .
+
+3
+
+Test-time regression as a framework for designing sequence layers
+
+Having discussed a number of existing sequence layers, each motivated by an atomic architectural modification, we now present a unified framework to clarify their relationship to each other. Our approach is
+motivated by empirical findings that a model’s associative recall ability strongly correlates with its performance and in-context learning capabilities (Olsson et al., 2022; Arora et al., 2023a). We formalize the two
+step process of memorization and retrieval, presenting a principled recipe for deriving sequence layers
+with mathematically grounded recall abilities.
+Step 1: Memorization as regression. From our everyday experience, we already have an intuition for
+how associative memory should behave; for example, hearing a friend’s name should trigger a mental
+impression of that friend. This pairing of a “cue” and a “response” is known as an association. To reflect
+terminology in deep learning (Vaswani et al., 2017), we will refer to cues as “keys” and responses as “values”.
+With this intuition, we can define a mathematical model for associative memory. Given key-value pairs
+(k1 , v1 ), . . . , (kt , vt ) ∈ RDk × RDv to be memorized, an associative memory system is a function m :
+RDk → RDv such that m(ki ) ≈ vi for i = 1, . . . , t (Kohonen, 1972, 1989). Such a mapping m between
+two sets of related objects is also known as a hetero-associative memory in classic signal processing and
+neurocomputing literature (Hinton and Anderson, 1989).
+Our main observation is that finding a memory map that satisfies these constraints reduces to finding
+a vector-valued regressor m. We can then store a set of key-value associations into an associative memory
+system by solving the weighted regression problem
+t
+
+Memorize associations:
+
+1 X (t)
+mt ≈ argmin
+γi ∥vi − m(ki )∥22 ,
+m∈M 2
+
+(8)
+
+i=1
+
+(t)
+
+where the importance of each association is controlled by adjusting the relative weights {γi }ti=1 Classic
+works on associative memory are restricted to linear memory maps, corresponding to linear regression
+(Kohonen, 1989, Chapter 6.6), but here we allow M to be any function class. We refer to this relationship
+between regression and associative memory as the “regression-memory correspondence”.
+
+6
+
+Step 2: Memory retrieval as function application. Having derived a regression-based procedure to
+memorize a set of associations into m, we can now retrieve values from memory by applying m to a new
+vector, which we call a “query” q, producing output
+Memory retrieval:
+
+yt = mt (qt ).
+
+(9)
+
+The retrieval performance depends on how well Equation 8 is minimized. When Equation 8 attains zeroloss, mt memorizes all associations perfectly, and we get perfect retrieval: mt (ki ) = vi for i = 1, . . . , t.
+For certain function classes M, e.g. smooth functions, m can also extrapolate outside of the existing set
+of keys. In those cases, mt (q) instead retrieves a value based on the proximity of q to the existing set of
+keys.
+Sequence layers that memorize then retrieve. Having formalized memorization and retrieval via
+our regression framework, we can now combine the two to produce sequence layers that directly performs
+associative recall as a forward pass. Recall that we are given {qi }Ti=1 , {ki }Ti=1 , and {vi }Ti=1 , and we seek to
+produce a set of outputs {yi }Ti=1 with our sequence layer. The forward pass of a test-time regression layer
+first memorizes a set of key-value pairs and then produces yt by retrieving a value from its associative
+memory. More specifically, in causal modeling, at each timestep t, we first solve Equation 8 to get a
+regressor mt that memorizes the prefix {(ki , vi )}ti=1 ; then we apply mt to qt to get yt = mt (qt ). This
+naturally generalizes to non-causal tasks where mt can depend on suffix key-value pairs {ki , vi }i>t as well.
+Our procedure is compatible with multihead design patterns inspired by multihead attention (Vaswani
+et al., 2017), multi-query attention (Shazeer, 2019), and grouped query attention (Ainslie et al., 2023). For
+example, multihead test-time regression can be implemented using H independent sets of queries, keys,
+and values, resulting in H independent associative memory maps at each timestep.
+A recipe for designing your own sequence layer. Although Equation 8 succinctly summarizes the
+memorization step of our framework, it leaves many details unspecified. For example, over which class
+of regressors M should we consider? Additionally, which associations should we prioritize memorizing?
+Finally, which optimization procedure should we use to minimize the loss? The regression-memory correspondence thus allows for a vast design space. We partition this wide landscape into three simple design
+choices:
+1. the relative importance of each association, specified through weights in Equation 8,
+2. the function class M over which we search,
+3. the minimization algorithm,
+giving us a formulaic “recipe” for deriving sequence layers that can perform associative recall.
+
+4
+
+Deriving existing architectures from regression
+
+To demonstrate how our framework unifies our understanding of sequence models, we succinctly derive
+a swath of recently proposed sequence layers. We categorize existing sequence layers into four distinct
+classes: linear attention (possibly with feature maps), linear attention with gating (which includes statespace models like Mamba), fast-weight layers, online learners, and softmax self-attention.
+
+7
+
+Notation. We first explain the mathematical notation we will use in our derivations. We use bold lowercase letters to refer to vectors (e.g. x, k, v) and bold uppercase letters to refer to matrices (e.g. M, K, V).
+Assume we have a sequence of T inputs x1 , . . . , xT which have already transformed into a sequence of
+keys and values (k1 , v1 ), . . . , (kT , vT ). We
+these keys and
+for our test-time
+ ⊤the dataset
+ ⊤ will use
+ values as
+t×D
+t×D
+v
+k
+∈R
+be matrices that
+∈R
+and Vt = v1 . . . vt
+regression problem. Let Kt = k1 . . . kt
+contain t keys and t values respectively, for t = 1, . . . , T . Each key/value vector is a row of the key/value
+matrix.
+
+Vignette 1: Linear attention is (suboptimal) linear least squares regression
+We start by deriving an architecture from linear least squares, the most classic regression method. Linear
+least squares corresponds to the following choices in our recipe.
+(t)
+
+1. Choice of weights: assign equal weight γi = 1 to each association,
+t
+
+1X
+mlinear, t = argmin
+∥vi − m(ki )∥22 .
+2
+m∈Mlinear
+
+(10)
+
+i=1
+
+2. Choice of function class: linear functions Mlinear = {m | m(k) = Mk, M ∈ RDv ×Dk }.
+3. Choice of minimization algorithm: analytical solution equivalent to one step of Newton’s method1 .
+Since mlinear, t is a linear function, it is equivalent to a linear map Mt ∈ RDv ×Dk . Minimizing the linear
+least squares objective results in the solution:
+(
+t
+Vt ⊤ Kt (Kt ⊤ Kt )−1 , overdetermined, e.g. t ≥ Dk ,
+1X
+∥vi − Mki ∥22 =
+Mt = argmin
+(11)
+2
+Vt ⊤ (Kt Kt ⊤ )−1 Kt , underdetermined, e.g. t < Dk ,
+M
+i=1
+where we choose the min-norm solution in the underdetermined case. The overdetermined case corresponds to Kt having rank Dk (linearly independent columns) and the underdetermined case corresponds
+to Kt having rank t (linearly independent rows). In general, we can express the solution in terms of a
+Moore-Penrose pseudoinverse: Mt = Vt ⊤ (K†t )⊤ . We restrict our discussion to the case of t ≥ Dk with
+linearly independent columns, which is the case for typical applications.
+Relationship to linear attention. Although mlinear, t is the optimal linear memory with respect to
+our objective function, it can be expensive to compute, requiring us to invert a Dk × Dk matrix at every
+timestep. One crude but hardware-efficient simplification would be to assume that Kt ⊤ Kt = I, avoiding
+matrix inversion completely, at the cost of some recall ability. After making this rough approximation, we
+arrive exactly at the equations for linear attention:
+yt = mlinear (qt ) = Vt ⊤ Kt (Kt ⊤ Kt )−1 qt ≈ Vt ⊤ Kt qt =
+
+t
+X
+
+vi ki ⊤ qt .
+
+(12)
+
+i=1
+
+Our derivation clarifies exactly how linear attention underperforms as an associative memory. When
+the keys are zero mean, Kt ⊤ Kt is proportional to the empirical covariance matrix of the keys. Thus linear
+attention is a crude associative memory that ignores the covariance between the dimensions of the key vectors.
+In fact, it is an optimal linear memory only when t ≤ Dk and the keys are orthonormal ki ⊤ kj = δij .
+1
+
+Since the objective function is quadratic, the analytical solution is equivalent to one iteration of Newton’s method initializing
+from the origin.
+
+8
+
+From a training stability perspective, the inverse covariance factor helps prevent the output yt from
+becoming unbounded. We can bound the norm of the output of a least squares layer (Equation 11) by
+
+Pt
+∥qt ∥2
+i=1 ∥vi ∥2 ∥ki ∥2
+⊤
+⊤
+−1
+(13)
+∥yt ∥2 = ∥Vt Kt (Kt Kt ) qt ∥2 ≤
+λmin (Kt ⊤ Kt )
+where λmin (Kt ⊤ Kt ) is the minimum eigenvalue of Kt ⊤ Kt . See Appendix A for the derivation. When we
+ignore the covariance matrix, approximating it with the identity, the denominator disappears and the output yt can grow arbitrarily large with the sequence length, leading to training instability. This instability
+indeed shows up in practice for linear attention, and Qin et al. (2022) proposed output normalization to
+stabilize training. Our derivation shows that output normalization works by approximately restoring the
+self-normalizing property of Equation 11 that linear attention loses.
+Regardless of training stability, we will see in Section 6 that ignoring the covariance causes linear
+attention to perform worse at associative recall.
+Efficient computation. Conveniently, we can compute Mt in Equation 11 for t = 1, . . . T in parallel or
+sequentially. To compute them in parallel, we solve a batch of T independent linear systems. To compute
+them sequentially, we note that (Kt ⊤ Kt )−1 = (Kt−1 ⊤ Kt + kt kt ⊤ )−1 , allowing us to autoregressively
+compute the inverses via the Woodbury matrix identity. The sequential form is known as online linear
+regression or recursive least squares (RLS) (Haykin, 2014). Thus during training we can parallelize across
+the sequence axis by solving a batch of T linear systems, and during testing we can unroll the recurrence
+into a recurrent neural network. In prior deep learning literature, this idea of linear-regression-as-a-layer
+has been explored by Garnelo and Czarnecki (2023) and von Oswald et al. (2023) under the names “intention” and “mesa-layer”, respectively, motivated by heuristic similarities to softmax attention, rather than
+deriving them from first principles via enforcing associative recall as we do here.
+Nonlinear associative memory. So far we have only considered linear associative memory implemented by linear functions in Mlinear , which have limited expressiveness. We can derive nonlinear memory by using a feature map ϕ : RDk → RDϕ , replacing each key ki with ϕ(ki ). Then our function class
+is defined P
+by Mϕ = {m | m(k) = Mϕ(k), M ∈ RDv ×Dϕ } and we solve the least-squares objective
+argminM ti=1 ∥vi − Mϕ(ki )∥22 /2. Solving this least squares objective for M results in an optimal associative memory that is nonlinear with respect to the input keys. Parameterizing associative memory with
+a nonlinear feature map has a long history, dating back to Poggio (1975) which found polynomial feature
+maps to be highly effective, consistent with more recent works (Zhang et al., 2023a; Arora et al., 2024).
+If we make the same crude approximation as linear attention of disregarding the covariance among
+{ϕ(ki )}ti=1 , we arrive at a suboptimal nonlinear memory. Thus, recent works that apply linear attention
+with a nonlinear feature map, such as Schlag et al. (2021); Kasai et al. (2021); Zhang et al. (2023a); Chen
+et al. (2024), and others, can be understood within our framework as suboptimal nonlinear memory as
+well.
+
+Vignette 2: Gated linear attention and state-space models are (suboptimal) weighted
+linear least squares regression
+For many kinds of sequential data, such as time-series data and text data, recent tokens are more informative of predicting the next token. Thus a natural requirement is to encourage our memory mt to focus
+more on the recent history by downweighting the past. Fortunately, this can be straightforwardly enforced
+through classic weighted linear least squares regression together with geometrically decaying weights to
+forget older key-value pairs.
+9
+
+To develop an architecture from weighted linear least squares, we only need to add weights to the
+optimization objective relative to ordinary least squares:
+1. Choice of weights: assign time-decaying weights to associations,
+t
+
+1 X (t)
+γi ∥vi − m(ki )∥22 ,
+2
+m∈Mlinear
+
+mlinear, t = argmin
+
+(14)
+
+i=1
+
+(t)
+
+Here,
+Qt to connect to past literature, we focus on weights are geometrically decaying in time: γi =
+j=i+1 γj and γi ∈ [0, 1] for i = 1, . . . , t. Each association is down-weighted based on how far it is
+(t)
+
+(t)
+
+(t)
+
+from the current timestep t: γ1 ≤ . . . γt−1 ≤ γt = 1.
+2. Choice of function class: linear functions Mlinear = {m | m(k) = Mk, M ∈ RDv ×Dk }.
+3. Choice of minimization algorithm: analytical solution equivalent to one step of Newton’s method.
+We can solve weighted linear regression by instead solving an unweighted regression problem involving
+1/2
+1/2
+rescaled keys and values, Vt 7→ Γt Vt and Kt 7→ Γt Kt , where we defined a diagonal matrix Γt ∈ Rt×t
+(t)
+with entries (Γt )ii = γi . Making the rescaled substitution and reusing the analytical min-norm solution
+that we had before, we see that
+(
+Vt ⊤ Γt Kt (Kt ⊤ Γt Kt )−1 , overdetermined, e.g. t ≥ Dk
+Mt =
+(15)
+Vt ⊤ (Kt Kt ⊤ )−1 Kt , underdetermined, e.g. t < Dk .
+The underdetermined case has the same solution in both the weighted and unweighted case; intuitively
+this is because when the system is underdetermined, there are infinitely many solutions that interpolate
+the data points and attain zero regression loss, rendering the weights irrelevant.
+Relationship to linear attention with gating and state-space models. Once again, computing Mt
+requires matrix inversion which is not efficient on matrix-multiplication based hardware. Making a crude
+P
+(t)
+approximation similar to before of Kt ⊤ Γt Kt ≈ I results in Mt ≈ Vt ⊤ Γt Kt = ti=1 γi vi ki ⊤ . We can
+further unroll this equation into a recurrence due to the multiplicative structure of our weights:
+
+
+t
+t
+t
+t−1
+X
+X
+Y
+X
+(t)
+(t−1)
+⊤
+⊤
+
+
+Mt ≈
+γ i vi ki =
+γ j vi ki = γ t
+γi
+vi ki ⊤ + vt kt ⊤ = γt Mt−1 + vt kt ⊤ . (16)
+i=1
+
+i=1
+
+j=i+1
+
+i=1
+
+This is exactly the recurrence implemented by gated variants of linear attention, such as GLA (Yang et al.,
+2024b), RetNet (Sun et al., 2023), Gateloop (Katsch, 2024), RWKV-6 (Peng et al., 2024), mLSTM (Beck et al.,
+2024), LRU (Orvieto et al., 2023), as well as state-space models like Mamba-2 (Dao and Gu, 2024). Forgetting
+older tokens significantly improves performance, which was first discovered empirically (Hochreiter and
+Schmidhuber, 1997; Greff et al., 2017; van der Westhuizen and Lasenby, 2018). Our derivation of gating
+from weighted least squares provides a mathematical grounding for the forgetting heuristic upon which
+these sequence layers were based.
+Efficient computation. Like before, we can compute the memory of our architecture (without approximation) sequentially or in parallel as long as we are willing to invest FLOPs in matrix inversion. Parallel
+computation can be done by solving a batch of T Dk × Dk linear systems. The sequential version can be
+derived by applying the Woodbury matrix inversion formula while taking into account our geometricallydecaying weights. Geometrically-weighted recursive least squares (RLS) is a classic method from the adaptive filtering literature (Johnstone et al., 1982).
+10
+
+Vignette 3: Fast weight programmers and online learners are first-order methods for
+solving streaming least-squares
+Up until now we have derived linear associative memory architectures through direct analytical solution,
+equivalent to one step of Newton’s method, a second-order optimization method. However, second-order
+iterative methods are computationally expensive, requiring matrix inversions at each step. On the other
+hand, disregarding the matrix inversion as done by linear attention leads to poor performance, since it
+ignores the covariance structure of the data.
+A computationally cheaper alternative is to apply a first-order gradient-descent method. We consider
+this here with the following design choices:
+(t)
+
+1. Choice of weights: assign equal weight γi = 1 to each association,
+t
+
+1X
+∥vi − m(ki )∥22 .
+m∈Mlinear 2
+
+mlinear, t = argmin
+
+(17)
+
+i=1
+
+2. Choice of function class: linear functions Mlinear = {m | m(k) = Mk, M ∈ RDv ×Dk }.
+3. Choice of minimization algorithm: gradient descent, possibly with adaptive step sizes, momentum,
+or weight decay (L2 regularization).
+We can now derive the test-time regression layer corresponding to a first-order iterative method.
+Since we consider linear functions, solving Equation 17 is equivalent to minimizing the objective
+Lt (M) =
+
+t
+X
+
+Li (M) =
+
+i=1
+
+t
+X
+1
+i=1
+
+2
+
+∥vi − Mki ∥22 ,
+
+(18)
+
+using its gradient
+∇Lt (M) =
+
+t
+X
+
+∇Li (M) =
+
+t
+X
+(Mki − vi )ki ⊤ = (MKt ⊤ − Vt ⊤ )Kt .
+
+i=1
+
+(19)
+
+i=1
+(0)
+
+to find Mt . Let the initialization be at the origin Mt = 0. Iteratively solving this objective with full-batch
+(i)
+gradient descent and step size βt at each iteration results in
+(i)
+
+(i−1)
+
+Mt = Mt
+
+(i−1)
+
+= Mt
+
+(i)
+
+(i−1)
+
+− βt ∇Lt (Mt
+(i)
+
+− βt
+
+t
+X
+
+)
+
+(i−1)
+
+∇Lj (Mt
+
+(20)
+)
+
+(21)
+
+j=1
+(i−1)
+
+= Mt
+
+(i)
+
+− βt
+
+t
+X
+(i−1)
+(Mt
+kj − vj )kj ⊤
+
+(22)
+
+j=1
+(i−1)
+
+= Mt
+
+(I −
+
+t
+X
+
+(i)
+
+(i)
+
+β t k j kj ⊤ ) + β t
+
+j=1
+
+t
+X
+
+v j kj ⊤ .
+
+j=1
+(I)
+
+After I iterations, we produce the linear memory represented by Mt = Mt .
+
+11
+
+(23)
+
+Linear attention and variants as one-step of batch gradient descent Consider the I = 1 case with
+(i)
+step size βt = 1. Since we initialize at the origin, we obtain the equation for linear attention
+(1)
+(0)
+(0)
+Mt = Mt − ∇Lt (Mt ) = Vt ⊤ Kt =
+
+t
+X
+
+vi k i ⊤ .
+
+(24)
+
+i=1
+
+This is exactly the result of performing one-step of full batch gradient descent on the least square objective
+Lt . A similar result can be shown for layers that implement linear attention with forgetting, performing
+one step of full batch gradient descent on the weighted least square objective.
+A standard technique to accelerate the convergence of gradient descent is to precondition the gradient
+(Boyd and Vandenberghe, 2004). The optimal preconditioner in this case, due to the quadratic objective, is
+the constant Hessian of Lt , HLt (M) = Kt ⊤ Kt . This preconditioner allows gradient descent to converge
+in a single update
+(1)
+
+Mt
+
+(0)
+
+(0)
+
+(0)
+
+= Mt − ∇Lt (Mt )HLt (Mt )−1 = Vt ⊤ Kt (Kt ⊤ Kt )−1 ,
+
+(25)
+
+reproducing the analytic solution from Equation 11. The preconditioned recurrence is equivalent to one
+step of Newton’s method, a second order iterative method.
+By taking this iterative optimization perspective, we see that linear attention and the ideal linear associative memory lie on two extremes: one-step of batch gradient descent with no preconditioning (Equation 2)
+versus one-step of batch gradient descent with perfect preconditioning (Equation 11). The difference in performance comes from whether the optimizer accounts for the curvature of the objective, governed by
+the covariance of the keys (Boyd and Vandenberghe, 2004). Exploring other preconditioners, e.g. quasiNewton methods, that interpolates between the two extremes may be an interesting direction for future
+research.
+Stochastic gradient descent as a layer. An alternative to full-batch gradient descent is stochastic gradient descent (SGD) where we use a subset of the samples to compute the gradient at each step. This is
+particularly convenient in causal sequence modeling where keys and values typically are presented one at
+a time, rather than all at once. In this streaming setting, we can instead perform single-example SGD to iteratively minimize Equation 8. In the case of linear memories Mlinear , Equation 21 with a single-example
+(i)
+and variable step sizes βt becomes
+(i)
+
+(i−1)
+
+− βt ∇Lt (Mt
+
+(i−1)
+
++ βt (vt − Mt
+
+(i−1)
+
+(I − βt kt kt ⊤ ) + βt vt kt ⊤ ,
+
+Mt = Mt
+= Mt
+= Mt
+
+(i)
+
+(i−1)
+
+(i)
+
+(i−1)
+
+(i)
+
+)
+kt )kt ⊤
+(i)
+
+(26)
+(27)
+(28)
+
+where Mt is the matrix representation of mt . When we take only one gradient update per timestep t
+(0)
+and initialize our iterate using the previous timestep’s linear map, Mt = Mt−1 , we end up with the
+recurrence of DeltaNet (Schlag et al., 2021; Yang et al., 2024c) from Equation 6:
+(1)
+
+Mt = Mt
+
+= Mt−1 (I − βt kt kt ⊤ ) + βt vt kt ⊤ .
+
+(29)
+
+As we perform stochastic gradient descent, we produce an online sequence {Mi }ti=1 , each of which is an
+associative memory mi for key-value pairs up to (ki , vi ). The stochastic gradient approach to streaming
+inputs has the advantage that mt focuses more on recent key-value pairs, rather than uniformly over all
+timesteps as in the case of unweighted RLS and unweighted linear attention.
+
+12
+
+Equation 29 is known by many names, such as the delta rule or the Widrow-Hoff algorithm (Widrow
+and Hoff, 1988). Within the adaptive filtering literature this recurrence is known as Least-Mean Squares
+(LMS) (Haykin, 2014), serving as one of the most common algorithms for streaming signals processing.
+From this derivation, we see that the prevalence of the update across disciplines comes from the fact that
+the update rule is actually an SGD update.
+In our case of sequence layers, the SGD update occurs within the layer as part of the forward pass.
+One extension to Equation 29 is to consider SGD with nonlinear parametric regressors mt . Indeed, this
+extension is equivalent to test-time training (TTT) layers proposed by Sun et al. (2024), which apply SGD to
+a nonlinear memory mt , e.g. multilayer perceptrons or linear maps with layer normalizations. In contrast
+to our associative memory derivation here, Sun et al. (2024) motivated their method by viewing the squared
+loss as an self-supervised auto-encoding objective. Another extension is to take multiple gradient steps
+per example (kt , vt ), which was recently explored by DeltaProduct (Siems et al., 2025).
+Including adaptive step sizes. To further improve the performance of a gradient-descent-based sequence layer, we can consider adaptive step sizes. A common way to derive adaptive step sizes is to use
+the relationship between gradient descent and online learning (Cesa-Bianchi et al., 2004; Zinkevich, 2003),
+a connection that has produced many successful algorithms in the past, such as Adagrad (Duchi et al.,
+2011) and Adam (Kingma and Ba, 2015).
+Consider the Longhorn sequence layer derived by Liu et al. (2024) by solving the online learning objective
+Mt = argmin
+M
+
+1
+δt
+∥M − Mt−1 ∥2F + ∥vt − Mkt ∥22 .
+2
+2
+
+(30)
+
+This corresponds to d(Mt−1 , M) = ∥M − Mt−1 ∥2F /2 and ℓt (M) = δ∥vt − Mkt ∥22 / in Equation 7. The
+solution to Equation 30 is the recurrence
+
+
+δt
+δt
+⊤
+Mt = Mt−1 I −
+kt kt
+vt kt ⊤ .
++
+(31)
+2
+1 + δt ∥kt ∥2
+1 + δt ∥kt ∥22
+However, by comparing the Longhorn update in Equation 31 to the SGD update in Equation 29, we see
+that Longhorn’s recurrence implements SGD but with a conservative adaptive step size of βt = δt /(1 +
+δt ∥kt ∥22 ). Thus although the Longhorn layer was derived from an online learning perspective, its global
+objective is still the least squares regression objective.
+We can better understand the effects of this adaptive step size by looking at δt , which controls how
+much we care about memorizing the latest association (kt , vt ). When δt = 0, we see that Mt = Mt−1
+and the latest association is excluded completely. When δt → ∞, Equation 30 becomes equivalent to a
+constrained optimization problem
+Mt = argmin
+M
+
+1
+∥M − Mt−1 ∥2F
+2
+
+subject to Mt kt = vt .
+
+(32)
+
+Solving this constrained optimization problem results in a hyperparameter-free step size βt = 1/∥kt ∥22
+with update
+
+
+1
+1
+⊤
+Mt = Mt−1 I −
+kt kt
++
+vt kt ⊤ .
+(33)
+2
+2
+∥kt ∥2
+∥kt ∥2
+This special case is also known as the normalized LMS (NLMS) update in adaptive filtering (Castoldi and
+de Campos, 2009) and known as the projection method (Tanabe, 1971) or Kaczmarz’s method (Kaczmarz,
+1937) in optimization theory. The advantage of Equation 33 is that it is hyperparameter-free, which may
+make it easier to tune. However, to our knowledge, the recurrence in Equation 33 has not been explored
+as a sequence layer.
+13
+
+Including L2 regularization. In addition to adaptive step sizes, we can add regularization. Consider
+adding L2 regularizing to the least squares objective Equation 18
+Lreg,t (M) =
+
+t
+X
+
+Li (M) +
+
+i=1
+
+λi
+∥M∥22
+2
+
+(34)
+
+where λi ∈ [0, 1] is the regularization strength. When we minimize this regularized objective with singleexample stochastic gradient descent like in Equation 29, we obtain the recurrence
+Mt = Mt−1 − βt [∇Lt (Mt−1 ) + λt Mt−1 ]
+
+(35)
+
+= (1 − βt λt )Mt−1 − βt ∇Lt (Mt−1 )
+
+(36)
+
+= (1 − βt λt )Mt−1 + βt (vt − Mt−1 kt )kt ⊤ ,
+
+(37)
+
+which is known as Leaky LMS in adaptive filtering (Haykin, 2014). Notably, the first term of our new
+recurrence resembles Equation 27 but also includes a multiplicative factor similar to a forget gate.
+Recently, Yang et al. (2024a) proposed Gated DeltaNet motivated by combining DeltaNet (Schlag et al.,
+2021) with the forget gating of Mamba-2 (Dao and Gu, 2024), following the online learning perspective of
+Liu et al. (2024). Here we show that the Gated DeltaNet recurrence is actually an equivalent reparameterization of our recurrence in Equation 37. Starting with Equation 37, we have
+Mt = (1 − βt λt )Mt−1 + βt (vt − Mt−1 kt )kt ⊤
+
+
+= Mt−1 (1 − βt λt ) I − βt kt kt ⊤  + βt vt kt ⊤
+| {z }
+αt
+
+
+ βt
+
+βt
+⊤
+⊤
+k
+k
+= Mt−1 αt 
+I
+−
+t
+t
+t vt ) kt
+ + αt (α
+
+| {z }
+αt
+|{z}
+vt′
+ηt
+
+
+= Mt−1 αt I − ηt kt kt ⊤ + ηt vt′ kt ⊤ (Gated DeltaNet recurrence)
+
+(38)
+(39)
+
+(40)
+
+(41)
+
+Thus Gated DeltaNet is equivalent to L2-regularized regression via SGD where the regularization strength
+λt is coupled with the step size βt and vt is rescaled by αt . We can transform Equation 41 into Equation 37
+via the invertible mapping (αt , ηt , vt′ ) = (1 − βt λt , βt /(1 − βt λt ), (1 − βt λt )vt ). The inverse map is given
+by (λt , βt , vt ) = ((1 − αt )/(αt ηt ), αt ηt , vt′ /αt ). Past works have shown that decoupling weight decay
+from the step size results in better generalization and easier-to-tune hyperparameters (Loshchilov and
+Hutter, 2019), suggesting that similar modifications to Gated DeltaNet may improve model performance.
+
+Vignette 4: Softmax attention is nonparametric regression
+Having exhaustively derived multiple associative memory architectures via linear and nonlinear parametric regression, we can now derive self-attention-like architectures using the tools of nonparametric
+regression.
+Unnormalized softmax attention is (suboptimal) kernel regression. We start first from kernel regression as the most common nonparametric regression method (Schölkopf and Smola, 2001), and applying
+k
+the kernel trick to our feature-mapped linear memory.
+Let k : RDk ×D
+be a Mercer kernel such that
+
+⊤ → R
+⊤
+⊤
+t×D
+ϕ and ϕ : RDk → RDϕ is a
+k(ki , kj ) = ϕ(ki ) ϕ(kj ) = (ΦΦ )ij where Φ = ϕ(k1 ) . . . ϕ(kt )
+∈R
+possibly infinite-dimensional feature map. Following our recipe for model design, we make the following
+design choices:
+14
+
+(t)
+
+1. Choice of weights: assign equal weight γi = 1 to each association
+t
+
+1X
+∥vi − Mϕ(ki )∥22 ,
+2
+m∈Mk
+
+mk, t = argmin
+
+(42)
+
+i=1
+
+where ϕ is possibly an infinite-dimensional feature map.
+2. Choice of function class: linear functions Mk = {m | m(k) = Mϕ(k), M ∈ RDv ×Dϕ }.
+3. Choice of minimization algorithm: analytical solution.
+The output of the optimal kernelized nonlinear associative memory induced by the kernel k at timestep
+t is the standard kernel regression prediction equation (Schölkopf and Smola, 2001)
+mk, t (q) = Vt ⊤ k(Kt , Kt )−1 k(Kt , q).
+
+(43)
+
+Here we follow standard shorthand notation from the kernel learning literature: k(Kt , Kt ) is a shorthand for the matrix with k(ki , kj ) in entry (i, j); k(Kt , q) is a shorthand
+√ for the vector with k(ki , q) in
+entry i. When we use an exponential kernel k(ki , kj ) = exp(ki ⊤ kj / Dk ), corresponding to an infinitedimensional feature map, and make the crude approximation k(Kt , Kt ) ≈ I, we obtain
+mk,t (q) = Vt ⊤ k(Kt , Kt )−1 k(Kt , q)
+
+(45)
+
+t
+X
+
+(46)
+
+≈ Vt k(Kt , q)
+=
+
+=
+
+(44)
+
+⊤
+
+i=1
+t
+X
+
+vi k(ki , q)
+
+vi exp
+
+i=1
+
+ki ⊤ q
+√
+Dk
+
+
+,
+
+(47)
+
+an associative memory map equivalent to an unnormalized softmax attention. This relationship with kernel regression has been used by many previous works to derive more efficient versions of self-attention
+(Peng et al., 2020; Chen et al., 2021; Choromanski et al., 2020; Lu et al., 2021; Chen et al., 2024), borrowing
+techniques from kernel approximation methods. However unnormalized softmax attention is empirically
+known to be unstable to train (Lu et al., 2021). Thus we do not stop our derivations here; instead, we will
+see how the standard normalized softmax attention comes from another kind of nonparametric regressor.
+Softmax attention with QKNorm is a locally-constant nonparametric regressor. Local polynomial regression is another classic class of nonparametric estimators (Wasserman, 2006), which have been
+historically used as nonlinear smoothing functions in data analysis (Fan, 2018). Here, we consider the function class Mp , which is the set of all vector-valued functions that are locally approximated by a degree p
+polynomial around each point q ∈ RDk . Here locality is measured by some similarity function s that only
+depends on the distance to q, i.e. s(k, q) = s(∥k − q∥2 ). A classic example is the exponential smoothing
+kernel sexp, B (k, q) = exp(−∥k − q∥22 /B) where B is a parameter controlling the local neighborhood
+size around q. Local polynomial regression is most often discussed for one-dimensional data, but here we
+generalize it to the multivariate case.
+Nonparametric regression with local polynomial estimators corresponds to the following design choices:
+1. Choice of weights: assign weights to associations based on similarity to q,
+t
+
+1 X (t)
+γi ∥vi − m(ki )∥22
+m∈Mp 2
+
+mp, t (q) = argmin
+
+i=1
+
+15
+
+(48)
+
+(t)
+
+with weights given by γi = s(ki , q) = s(∥ki − q∥2 ).
+2. Choice of function class: Mp , the class of functions mp such that for all points q ∈ RDk , the function
+can be locally approximated by a polynomial
+m̂q (k) = M[0] + M[1] (k − q) + M[2] (k − q, k − q) + . . . + M[p] (k − q, . . . , k − q)
+|
+{z
+}
+
+(49)
+
+p arguments
+
+where M[j] is an order j multilinear map. Intuitively, Mp is the class of functions that can be well
+approximated by an order p Taylor expansion around each point. Consequently, the value retrieved
+from mp, t at a point q is given by the constant term of the polynomial: mp (q) = m̂q (q) = M[0] .
+3. Choice of minimization algorithm: analytical solution. Solving for the minimum is equivalent to
+solving for the set of tensors (M[0] , . . . , M[p] ) that minimize the least squares objective. Note that
+we need to jointly solve for all of (M[0] , . . . , M[p] ) to get the retrieved value M[0] = mp, t (q).
+Let us consider the simplest case of p = 0, corresponding to the class of locally constant functions
+around q, also known as Nadaraya-Watson estimators (Fan, 2018; Zhang et al., 2024; Goel and Bartlett,
+2024). With this simplification, the output of our nonparametric associative memory is
+t
+
+t
+
+i=1
+
+i=1
+
+X
+1X
+s(ki , q)
+m0, t (q) = argmin
+vi .
+s(ki , q)∥vi − M[0] ∥22 =
+Pt
+M[0] ∈RDk 2
+j=1 s(kj , q)
+
+(50)
+
+We may be disappointed at first that s needs to be a monotonic function of the distance ∥k−q∥2 to enforce
+the local approximation property of the estimator in Equation 48; in contrast, softmax attention relies on
+an exponentiated inner product. However, if we normalize√keys and queries such that ∥k∥2 = ∥q∥2 = 1,
+the exponential smoothing kernel with bandwidth B = 2 Dk is equivalent to the exponential scaled dot
+product:
+
+
+
+
+ ⊤ 
+2
+2 − ∥q∥2 + 2k⊤ q
+−∥k
+−
+q∥
+−∥k∥
+k q
+2
+2
+2
+√
+√
+= exp
+∝ exp √
+,
+(51)
+sexp,2√Dk (k, q) = exp
+2 Dk
+2 Dk
+Dk
+allowing us to exactly derive softmax attention in Equation 50. Moreover, this preprocessing step lines
+up with an existing technique called query-key normalization (QKNorm), empirically known to stablize
+the training of large Transformers (Dehghani et al., 2023; Wortsman et al., 2023) but lacks theoretical
+justification. Our derivation provides a simple explanation: softmax attention with QKNorm is a locally
+zeroth order non-parametric approximation of the true key-value map.
+By deriving self-attention from the same framework as the previous recurrent sequence layers, we can
+more clearly compare them through the perspective of how they do associative recall. Previous sequence
+layers that we derived maintained an explicit matrix-valued recurrent state to compress the prefix keyvalue pairs, relying on this constant-sized matrix to perform retrieval. In contrast, self-attention stores
+the entire set of prefix key-value pairs as its associative memory system, using all of them for retrieval.
+As a result, its memory (and expressiveness) grows with the sequence length, a typical property of nonparametric methods (Wang et al., 2019; Wasserman, 2006).
+Higher-order attention. Equation 48 suggests a path to higher-order generalizations of self-attention
+by considering p > 0 at the cost of more computation. By reducing Equation 48 to a weighted least squares
+problem, we see the p = 1 case of higher-order softmax self-attention is
+ [0]
+
+Wt ≜ diag(s(k1 , q), . . . , s(kt , q))
+(52)
+M
+M[1] = (Vt ⊤ Wt Xt )(Xt ⊤ Wt Xt )−1 ,
+
+
+
+
+1
+...
+1
+⊤
+Xt =
+V t = v1 . . . vt ⊤ ,
+(53)
+k1 − q . . . kt − q
+16
+
+where Wt ∈ Rt×t , Xt ∈ Rt×(1+Dk ) , M[0] ∈ RDv , and M[1] ∈ RDv ×Dk . These equations correspond to
+the standard prediction equations for local linear regression (Fan, 2018).
+An alternate form for the prediction M[0] that is more intuitive is
+M[0] = v̄ − M[1] d̄,
+
+v̄ ≜
+
+t
+X
+
+s(ki , q)
+vi ,
+j=1 s(kj , q)
+
+Pt
+i=1
+
+d̄ ≜
+
+t
+X
+
+s(ki , q)
+di ,
+j=1 s(kj , q)
+
+Pt
+i=1
+
+di ≜ ki − q,
+
+(54)
+
+resulting in an offset softmax attention as the output: m1, t (q) = M[0] = v̄ − M[1] d̄. This alternate form
+comes from the fact that if we already know M[1] , then we can solve the p = 0 case with an alternate
+regression problem with preprocessed data {(ki , vi − M[1] di )}ti=1 , resulting in M[0] being a normalized
+weighted sum of vi − M[1] di . Unlike standard softmax attention (the p = 0 case), which only considers
+the interaction between keys and queries, the p = 1 case in Equation 52 also accounts for the covariance
+between keys through the inverse term, similar to how linear regression improves upon linear attention
+from before.
+Unfortunately, directly computing Equation 52 for q ∈ {q1 , . . . , qT } in parallel to fully leverage
+hardware-acceleration is impractical for all but the
+ smallest sequence problems. Materializing all T prefix set of input tokens {Xt }Tt=1 requires O T 2 Dk space, and materializing all T prefix weighted sums of
+T
+2
+outer products {Xt ⊤ Wt Xt }Tt=1 requires O T Dk 2 space. Computing
+{X⊤
+t Wt Xt }t=1 requires O T Dk
+
+3
+time, and solving a batch of T linear systems requires O T Dk time. These challenges makes the current
+form computationally impractical for practical sequence tasks. Developing hardware-aware optimizations
+to compute Equation 52 similar to FlashAttention (Dao et al., 2022) is a promising future direction.
+
+5
+
+Online regression with sequence layers
+
+We now empirically illustrate that the sequence layers discussed so far do in fact perform regression implicitly via a single forward pass. We generate a sequence of keys according to a non-stationary, switching,
+autoregressive process:
+(
+0.9kt + 0.02εt , t < T /4
+kt+1 =
+(55)
+0.999kt + 0.02εt , t ≥ T /4
+with Dk = 64 and T = 256. Each εt ∼ Normal(0, Σ) where Σ has unit diagonals and non-zero offdiagonals. The choice of a non-identity Σ creates instantaneous correlation between the dimensions of
+the keys so that Kt ⊤ Kt ̸= I. We set the value vectors to be vt = kt+1 /∥kt+1 ∥2 , such that the dataset
+{(ki , vi )}Ti=1 imitates a next-token prediction task. We make one-step-ahead predictions by setting qt =
+kt+1 so that yt = mt (qt ) = mt (kt+1 ) is the test-time regressor’s out-of-sample prediction of the next
+timestep, conditioned on the prefix {(ki , vi )}ti=1 . To solve this online regression problem, we simply
+compute a single forward pass through each sequence layer.
+We evaluate layers derived both from parametric regression and non-parametric regression. For our
+parametric regression layers we choose linear attention (Equation 2) and recursive least squares (Equation 11) to show the effects of accounting for correlations between keys. For our non-parametric regression layers, we chose softmax attention (Equation 1) and our p = 1 generalization of softmax attention
+based on local linear regression (Equation 52). We also show the naive one-step forecaster baseline where
+we simply use vt−1 as the prediction given kt .
+We plot the one-step out-of-sample test loss ∥vt+1 − mt (kt+1 )∥22 in Figure 2. During the initial T /4
+timesteps, the dynamical system has a faster decay time with more rapid changes, making it less predictable. In the latter 3T /4 timesteps, the system slows down and is more predictable. However, unweighted recursive least squares is unable to adapt to this change since it cannot discount datapoints from
+17
+
+Figure 2: Solving a non-stationary online regression task without any learnable parameters. The regressionmemory correspondence enables us to perform regression via a single forward pass of a test-time regression layer. The inputs change more rapidly in initial T /4 timesteps, making it harder for regressors to
+learn. The latter 3T /4 timesteps are more stable; however, without decaying weights, linear attention and
+unweighted RLS are unable to adjust to the resulting non-stationary data.
+before the transition; as a result, it maintains a high error throughout the latter timesteps. In contrast, the
+nonparametric regressors are able to adapt quickly to the transition since earlier keys are dissimilar to the
+later keys. Interestingly, increasing our nonparametric softmax regressor from p = 0 to p = 1 allows the
+model to better adapt to both the initial fast-changing period and the sudden regime change. As expected,
+linear attention performs the worst since Kt ⊤ Kt ̸= I in our dynamical system2 .
+
+6
+
+Constructing effective key-value pairs for next-token recall
+
+Having shown that models derived via regression are able to perform associative recall, we now discuss the
+importance of constructing test-time key-value pairs that are pertinent to the task at hand. This echoes
+an unchanging principle in machine learning: a well-designed model is only as effective as the data it
+processes.
+Historically, query-key-value sequences were constructed via a linear projection on the corresponding
+input xt at that timestep, e.g. kt = WK xt (Vaswani et al., 2017). Recent work on recurrent models,
+starting with Fu et al. (2022), identified the importance of performing a “short convolution” in addition to
+the per-timestep projection:
+kt =
+
+K−1
+X
+
+wi WK xt−i
+
+(56)
+
+i=0
+
+where K is the length of the short convolution filter. The short convolution imitates the induction heads
+behavior learned by self-attention layers near the start of the neural network, which allow Transformers
+2
+
+We used a standard output normalization for linear attention (Qin et al., 2022) to prevent the output from scaling linearly
+with the sequence length.
+
+18
+
+to “look back” at previous tokens. Setting w0 = i and wj = 0 for j ̸= 0 in Equation 56 enables other
+sequence layers to also “look back” at the token from timestep i.
+The short convolution is a crucial component of purely recurrent language models; removing the short
+convolution results in severe performance drops (Yang et al., 2024b,c,a; Sun et al., 2024). Including a short
+convolution before each self-attention layer can even improve the performance of Transformers, by freeing
+the earlier self-attention layers from having to learn the induction head behavior (Xu et al., 2024). In
+this section, we provide a partial explanation for why this short convolution is so crucial, through our
+perspective of associative memory. Specifically, we show that this short convolution allows the sequence
+layer to memorize and retrieve bigram-like key-value pairs, which has been shown to be important for
+language modeling (Arora et al., 2023a).
+One short conv is all you need for next-token recall. Consider a standard associative recall task
+introduced by Arora et al. (2023a), in which a model must be able to recall multiple key-value pairings,
+known as multi-query associative recall (MQAR). In this task, there are P pairs of unique and consistent
+cue-response3 tokens {(uj , vj )}j∈[P ] with each cue uj mapping one-to-one to its response vj . The model
+is given a contextual sequence of randomly drawn, possibly repeated, cue-response pairs followed by a
+previously seen cue: (x1 , x2 , . . . , xT −1 , xT , xT +1 ) = (ui1 , vi1 , . . . , uiT /2 , viT /2 , uij ). uij is a cue that
+appeared earlier (the jth pair) and the model is expected to output the paired response vij at timestep
+T + 1. This benchmark abstracts the “Hakuna Matata“ example “Hakuna Matata, it means no worries for
+the rest of your days. Hakuna
+” from Arora et al. (2023a), which we also discussed in Section 1.
+We now show that a single test-time regression layer (e.g. as simple as linear attention) with one short
+convolution is sufficient to solve MQAR, without any parameters other than the embeddings, as long as it
+is provided with the appropriate key-value pairs to regress.
+To solve this task, it suffices to test-time memorize all the bigram pairing {(uj , vj )}. Given x1 , . . . , xT ,
+we causally construct our test-time regression dataset as follows. Let the keys be constructed via a short
+convolution kt = w0 xt + w1 xt−1 = xt−1 where w0 = 0, w1 = 1. Let the queries and values be the same
++1
+=
+as the inputs: qt = vt = xt . In other words, our AR sequence layer will first memorize {(kt , vt )}Tt=1
+T +1
+{(xt−1 , xt )}t=1 into its associative memory map mT +1 . Then we retrieve from mT +1 using qT +1 =
+xT +1 = uij , which has previously appeared in the sequence of cues as the ij th bigram. The output is then
+yT +1 = mT +1 (qT +1 ) = mT +1 (uij ).
+For simplicity, suppose mT +1 is implemented via linear attention, following Equation 2. Then
+!
+T
++1
+T
++1
+X
+X
+v t k t ⊤ uij =
+yT +1 = mT +1 (uij ) =
+xt xt−1 ⊤ uij .
+t=1
+
+(57)
+
+(58)
+
+t=1
+
+When the embedding space is large enough, we can set the embeddings such that all tokens are orthonormal. Then xt−1 ⊤ uij is nonzero only when xt−1 = uij , simplifying the output to a sum of only tokens that
+are followed by uij . Since the cue-response map is one-to-one, the remaining tokens are all vij , producing
+the output yT +1 ∝ vij , solving the MQAR task.
+Memory capacity, not sequence length, limits model performance. Typical evaluations of models
+on the MQAR task look at model performance with respect to the length of the sequence, possibly varying
+the model capacity. A few examples include Figure 2 of Arora et al. (2023a), Figure 8 of Dao and Gu
+(2024), Figure 2 of Yang et al. (2024c), and likely others. However, our above construction shows that the
+3
+
+We use the “cue” and “response” terminology to avoid confusion with “keys” and “values” in the context of test-time regression.
+
+19
+
+Figure 3: A single test-time regression layer with one short convolution suffices to solve MQAR with
+P = 64 cue-response pairs. When a model has sufficient capacity to memorize all P pairs, it can solve
+MQAR regardless of the sequence length. The regression problem is stationary (the cue-response map
+doesn’t change over time), hence no forgetting mechanism is needed to solve the task.
+sequence length doesn’t matter for memorizers with a large enough memory capacity; once the memory
+is large enough, the difficulty of MQAR is independent of the sequence length T , which may be counter to
+the intuitive notion of longer sequences being more difficult. Instead, models are limited by their ability to
+fully memorize all P key-value pairs.
+Although our construction in Equation 58 relied on the embedding space being large enough to allow
+orthonormality, trained models can still succeed without perfectly orthonormal embeddings, which we
+empirically show in Figure 3. We train on the MQAR task following the procedure of (Arora et al., 2023a).
+However, we use only one test-time regression layer and one length-2 convolution (for constructing the keys),
+following our construction. We also remove the typical MLP block following the sequence layer, since
+our construction shows that additional nonlinearities are unnecessary for this synthetic associative recall
+task. We fix our key dimensions Dk to be the same as the embedding size, dmodel = 64. We compare
+two test-time regression architectures, linear attention and unweighted recursive least squares (RLS) of
+Equation 11. We do not use gated variants of linear attention since this task does not require any forgetting;
+the cue-response mapping is unchanged throughout the sequence. As shown by our previous construction,
+even linear attention is able to solve the task perfectly when the appropriate keys are constructed. In the
+case where dmodel = P = 64, linear attention solves MQAR perfectly, independent of sequence length
+as predicted. Once the number of keys increases to P = 128, linear attention can no longer perfectly
+solve MQAR, since it is impossible for 128 keys to be orthogonal in a dmodel = 64 dimensional space. In
+contrast, an unweighted RLS layer (Equation 11) improves upon linear attention by accounting for the key
+covariance matrices {Kt ⊤ Kt }, allowing it to better test-time memorize the cue-response map, even when
+P > dmodel . As a result, RLS is able to solve MQAR regardless of the sequence length.
+
+20
+
+7
+
+Related works
+
+Our test-time regression framework was derived by formalizing the notion of associative recall, resulting
+in sequence layers that first memorize then retrieve. Designing neural networks motivated with associative
+memory has a long history, dating back as early as the works of Hopfield (1982), Willshaw et al. (1969),Willshaw (1989),Kohonen (1972), and Hinton and Anderson (1989). Many more contemporary works have also
+sought to understand and derive neural network layers from the perspective of memory, drawing inspiration from both neuroscience and dynamical systems (Bietti et al., 2023; Krotov and Hopfield, 2016, 2021;
+Ramsauer et al., 2021; Millidge et al., 2022; Behrouz et al., 2024). Indeed, even the feedforward layers of
+an MLP can be seen as a persistent associative memory (Sukhbaatar et al., 2019; Zhang et al., 2025; Bietti
+et al., 2023; Nichani et al., 2024; Cabannes et al., 2023).
+The ability to reference and retrieve past tokens for further computation is believed to be key to incontext learning and zero-shot/few-shot learning in large language models (Olsson et al., 2022; Dong et al.,
+2024). There have been many attempts at understanding how sequence models are able to learn in-context
+(Garg et al., 2022; Zhang et al., 2023b). Some works have shown that Transformers, due to their selfattention layers, learn linear functions in-context by learning to perform gradient descent, where the iterates are updated per layer (Oswald et al., 2023; Ahn et al., 2023). This phenomenon is sometimes known
+as mesa-optimization (von Oswald et al., 2023) where the model learns to solve an auxiliary optimization
+problem in order to minimize its training objective. However, sometimes these intermediate optimization
+processes are actually implicitly in the architecture itself, as we showed in Equation 24 where each linear
+attention layer (and its gated variant) explicitly performs one step of gradient descent. Note that this behavior is different from the class of recurrent models that perform stochastic gradient descent within the
+layer, as defined by Equation 26.
+
+8
+
+Conclusion and discussion
+
+We have presented a unifying framework that derives sequence models that can explicitly perform associative recall via test-time regression. Each architecture emerges naturally by specifying three aspects: the
+relative importance of each association, the function class, and the optimization algorithm. Through this
+lens, we derived linear attention and its variants as approximations to the linear least squares solution,
+online learning layers and fast-weight layers as first-order least-squares solvers, and softmax attention
+as a local constant regressor. This perspective provided principled explanations for architectural choices
+like QKNorm and derived higher-order generalizations of attention that go beyond pairwise interactions.
+We also demonstrated that for multi-query associative recall (MQAR), a single short convolution and a
+sequence layer suffices, in contrast to typical approaches that use multiple layers and unnecessary feedforward blocks (Arora et al., 2023a).
+Our paper focuses specifically on sequence architectures that use query-key-value patterns for associative recall. Several important architectural families lie outside this scope, including structured statespace models with more general structured masks (Dao and Gu, 2024), convolutional architectures (Shi
+et al., 2023; Poli et al., 2023; Gehring et al., 2017; Gu et al., 2021; Bradbury et al., 2017; Smith et al., 2023;
+Hochreiter and Schmidhuber, 1997), and more novel computational patterns (Qin et al., 2023; Ren et al.,
+2023). Moreover, complementary research on model backbones and initialization continues to yield important advances and performance improvements (Gu and Dao, 2024; Dao and Gu, 2024; Orvieto et al.,
+2023; Mehta et al., 2023; Hua et al., 2022).
+Our framework opens rich directions for future research by connecting to the extensive literature on
+regression and optimization. While initial successes like TTT-MLP (Sun et al., 2024) hint at the potential of
+neural test-time regressors, the space of nonlinear neural regression models remains largely unexplored.
+
+21
+
+Recent work integrating weight decay and momentum (Behrouz et al., 2024; Yang et al., 2024a) suggests
+opportunities for developing more effective, stable, and parallelizable test-time optimizers. Concurrent
+work by Behrouz et al. (2024) also suggests opportunities to more creatively utilize associative memory.
+The practical success of these approaches will depend heavily on efficient hardware implementations (Hua
+et al., 2022; Yang et al., 2024c; Sun et al., 2024; Dao and Gu, 2024; Dao et al., 2022), aligning with established
+compute-scaling principles (Sutton, 2019; Hoffmann et al., 2022; Kaplan et al., 2020).
+In the words of Kohonen (1989), “associative memory is a very delicate and complex concept which
+often has been attributed to the higher cognitive processes, especially those taking place in the human
+brain”. We speculate that test-time associative memory, along with test-time compute more broadly (Sun
+et al., 2024, 2020; Akyürek et al., 2024), will be fundamental to developing truly adaptive models that can
+update and learn in changing environments (OpenAI, 2024).
+Acknowledgements. This work was supported in part by AFOSR Grant FA9550-21-1-0397, ONR Grant
+N00014-22-1-2110, NSF Grant 2205084, the Stanford Institute for Human-Centered Artificial Intelligence
+(HAI). EBF is a Chan Zuckerberg Biohub – San Francisco Investigator.
+
+References
+K. Ahn, X. Cheng, H. Daneshmand, and S. Sra.
+Transformers learn to implement preconditioned
+gradient descent for in-context learning.
+Advances in Neural Information Processing Systems, 36:
+45614–45650, Dec. 2023.
+URL https://proceedings.neurips.cc/paper_files/paper/2023/hash/
+8ed3d610ea4b68e7afb30ea7d01422c6-Abstract-Conference.html.
+J. Ainslie, J. Lee-Thorp, M. d. Jong, Y. Zemlyanskiy, F. Lebron, and S. Sanghai. GQA: Training Generalized MultiQuery Transformer Models from Multi-Head Checkpoints. In The 2023 Conference on Empirical Methods in Natural
+Language Processing, Dec. 2023. URL https://openreview.net/forum?id=hmOwOZWzYE.
+Y. Aksenov, N. Balagansky, S. M. L. C. Vaina, B. Shaposhnikov, A. Gorbatovski, and D. Gavrilov. Linear Transformers
+with Learnable Kernel Functions are Better In-Context Models, Feb. 2024. URL http://arxiv.org/abs/2402.
+10644. arXiv:2402.10644 [cs] version: 1.
+E. Akyürek, M. Damani, L. Qiu, H. Guo, Y. Kim, and J. Andreas. The Surprising Effectiveness of Test-Time Training
+for Abstract Reasoning, Nov. 2024. URL http://arxiv.org/abs/2411.07279. arXiv:2411.07279 [cs] version: 1.
+A. F. Ansari, L. Stella, A. C. Turkmen, X. Zhang, P. Mercado, H. Shen, O. Shchur, S. S. Rangapuram, S. P. Arango,
+S. Kapoor, J. Zschiegner, D. C. Maddix, H. Wang, M. W. Mahoney, K. Torkkola, A. G. Wilson, M. Bohlke-Schneider,
+and B. Wang. Chronos: Learning the language of time series. Transactions on Machine Learning Research, 2024.
+ISSN 2835-8856. URL https://openreview.net/forum?id=gerNCVqqtR.
+S. Arora, S. Eyuboglu, A. Timalsina, I. Johnson, M. Poli, J. Zou, A. Rudra, and C. Re. Zoology: Measuring and Improving Recall in Efficient Language Models. In The Twelfth International Conference on Learning Representations,
+Oct. 2023a. URL https://openreview.net/forum?id=LY3ukUANko.
+S. Arora, B. Yang, S. Eyuboglu, A. Narayan, A. Hojel, I. Trummer, and C. Ré. Language Models Enable Simple Systems
+for Generating Structured Views of Heterogeneous Data Lakes, Apr. 2023b. URL http://arxiv.org/abs/2304.
+09433. arXiv:2304.09433 [cs].
+S. Arora, S. Eyuboglu, M. Zhang, A. Timalsina, S. Alberti, J. Zou, A. Rudra, and C. Re. Simple linear attention language
+models balance the recall-throughput tradeoff. In Proceedings of the 41st International Conference on Machine
+Learning, pages 1763–1840. PMLR, July 2024. URL https://proceedings.mlr.press/v235/arora24a.html.
+ISSN: 2640-3498.
+M. Beck, K. Pöppel, M. Spanring, A. Auer, O. Prudnikova, M. Kopp, G. Klambauer, J. Brandstetter, and S. Hochreiter. xLSTM: Extended Long Short-Term Memory, May 2024. URL http://arxiv.org/abs/2405.04517.
+arXiv:2405.04517 [cs, stat].
+
+22
+
+A. Behrouz, P. Zhong, and V. Mirrokni. Titans: Learning to Memorize at Test Time, Dec. 2024. URL http://arxiv.
+org/abs/2501.00663. arXiv:2501.00663 [cs].
+G. Bertasius, H. Wang, and L. Torresani. Is Space-Time Attention All You Need for Video Understanding? In
+Proceedings of the 38th International Conference on Machine Learning, pages 813–824. PMLR, July 2021. URL https:
+//proceedings.mlr.press/v139/bertasius21a.html. ISSN: 2640-3498.
+A. Bietti, V. Cabannes, D. Bouchacourt, H. Jegou, and L. Bottou. Birth of a Transformer: A Memory Viewpoint. In
+Thirty-seventh Conference on Neural Information Processing Systems, Nov. 2023. URL https://openreview.net/
+forum?id=3X2EbBLNsk.
+S. Boyd and L. Vandenberghe. Convex optimization. Cambridge University Press, Cambridge, 2004.
+J. Bradbury, S. Merity, C. Xiong, and R. Socher. Quasi-recurrent neural networks. In International conference on
+learning representations, 2017. URL https://openreview.net/forum?id=H1zJ-v5xl.
+T. B. Brown, B. Mann, N. Ryder, M. Subbiah, J. Kaplan, P. Dhariwal, A. Neelakantan, P. Shyam, G. Sastry, A. Askell,
+S. Agarwal, A. Herbert-Voss, G. Krueger, T. Henighan, R. Child, A. Ramesh, D. M. Ziegler, J. Wu, C. Winter,
+C. Hesse, M. Chen, E. Sigler, M. Litwin, S. Gray, B. Chess, J. Clark, C. Berner, S. McCandlish, A. Radford, I. Sutskever,
+and D. Amodei. Language Models are Few-Shot Learners, July 2020. URL http://arxiv.org/abs/2005.14165.
+arXiv:2005.14165 [cs].
+V. Cabannes, E. Dohmatob, and A. Bietti. Scaling Laws for Associative Memories. In The Twelfth International
+Conference on Learning Representations, Oct. 2023. URL https://openreview.net/forum?id=Tzh6xAJSll.
+F. T. Castoldi and M. L. R. de Campos. Minimum-disturbance description for the development of adaptation algorithms and a new leakage least squares algorithm. In 2009 IEEE International Conference on Acoustics, Speech and
+Signal Processing, pages 3129–3132, Apr. 2009. doi: 10.1109/ICASSP.2009.4960287. URL https://ieeexplore.
+ieee.org/document/4960287. ISSN: 2379-190X.
+N. Cesa-Bianchi, A. Conconi, and C. Gentile. On the generalization ability of on-line learning algorithms. IEEE Transactions on Information Theory, 50(9):2050–2057, Sept. 2004. ISSN 1557-9654. doi: 10.1109/TIT.2004.833339. URL
+https://ieeexplore.ieee.org/document/1327806/?arnumber=1327806. Conference Name: IEEE Transactions on Information Theory.
+H. Chen, Liuzhicheng, X. Wang, Y. Tian, and Y. Wang. DiJiang: Efficient Large Language Models through
+Compact Kernelization.
+In Forty-first International Conference on Machine Learning, June 2024.
+URL
+https://openreview.net/forum?id=0uUHfhXdnH&referrer=%5Bthe%20profile%20of%20Yuchuan%20Tian%
+5D(%2Fprofile%3Fid%3D~Yuchuan_Tian1).
+Y. Chen, Q. Zeng, H. Ji, and Y. Yang. Skyformer: remodel self-attention with Gaussian kernel and nyström method.
+In Proceedings of the 35th International Conference on Neural Information Processing Systems, NIPS ’21, pages 2122–
+2135, Red Hook, NY, USA, 2021. Curran Associates Inc. ISBN 978-1-7138-4539-3.
+K. M. Choromanski, V. Likhosherstov, D. Dohan, X. Song, A. Gane, T. Sarlos, P. Hawkins, J. Q. Davis, A. Mohiuddin,
+L. Kaiser, D. B. Belanger, L. J. Colwell, and A. Weller. Rethinking Attention with Performers. In International
+Conference on Learning Representations, Oct. 2020. URL https://openreview.net/forum?id=Ua6zuk0WRH.
+K. Clark, K. Guu, M.-W. Chang, P. Pasupat, G. Hinton, and M. Norouzi. Meta-Learning Fast Weight Language Models.
+In Y. Goldberg, Z. Kozareva, and Y. Zhang, editors, Proceedings of the 2022 Conference on Empirical Methods in
+Natural Language Processing, pages 9751–9757, Abu Dhabi, United Arab Emirates, Dec. 2022. Association for
+Computational Linguistics. doi: 10.18653/v1/2022.emnlp-main.661. URL https://aclanthology.org/2022.
+emnlp-main.661.
+T. Dao and A. Gu. Transformers are SSMs: Generalized Models and Efficient Algorithms Through Structured State
+Space Duality. In Forty-first International Conference on Machine Learning, June 2024.
+
+23
+
+T. Dao, D. Y. Fu, S. Ermon, A. Rudra, and C. Re. FlashAttention: Fast and Memory-Efficient Exact Attention with
+IO-Awareness. In Advances in Neural Information Processing Systems, Oct. 2022. URL https://openreview.net/
+forum?id=H4DqfPSibmx.
+S. De, S. L. Smith, A. Fernando, A. Botev, G. Cristian-Muraru, A. Gu, R. Haroun, L. Berrada, Y. Chen, S. Srinivasan,
+G. Desjardins, A. Doucet, D. Budden, Y. W. Teh, R. Pascanu, N. D. Freitas, and C. Gulcehre. Griffin: Mixing Gated
+Linear Recurrences with Local Attention for Efficient Language Models, Feb. 2024. URL http://arxiv.org/abs/
+2402.19427. arXiv:2402.19427 [cs].
+M. Dehghani, J. Djolonga, B. Mustafa, P. Padlewski, J. Heek, J. Gilmer, A. P. Steiner, M. Caron, R. Geirhos, I. Alabdulmohsin, R. Jenatton, L. Beyer, M. Tschannen, A. Arnab, X. Wang, C. R. Ruiz, M. Minderer, J. Puigcerver, U. Evci,
+M. Kumar, S. V. Steenkiste, G. F. Elsayed, A. Mahendran, F. Yu, A. Oliver, F. Huot, J. Bastings, M. Collier, A. A.
+Gritsenko, V. Birodkar, C. N. Vasconcelos, Y. Tay, T. Mensink, A. Kolesnikov, F. Pavetic, D. Tran, T. Kipf, M. Lucic,
+X. Zhai, D. Keysers, J. J. Harmsen, and N. Houlsby. Scaling Vision Transformers to 22 Billion Parameters. In
+Proceedings of the 40th International Conference on Machine Learning, pages 7480–7512. PMLR, July 2023. URL
+https://proceedings.mlr.press/v202/dehghani23a.html. ISSN: 2640-3498.
+J. Devlin, M.-W. Chang, K. Lee, and K. Toutanova. BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding. In J. Burstein, C. Doran, and T. Solorio, editors, Proceedings of the 2019 Conference of the
+North American Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume
+1 (Long and Short Papers), pages 4171–4186, Minneapolis, Minnesota, June 2019. Association for Computational
+Linguistics. doi: 10.18653/v1/N19-1423. URL https://aclanthology.org/N19-1423/.
+Q. Dong, L. Li, D. Dai, C. Zheng, J. Ma, R. Li, H. Xia, J. Xu, Z. Wu, T. Liu, B. Chang, X. Sun, L. Li, and Z. Sui. A Survey
+on In-context Learning, Oct. 2024. URL http://arxiv.org/abs/2301.00234. arXiv:2301.00234 [cs].
+A. Dosovitskiy, L. Beyer, A. Kolesnikov, D. Weissenborn, X. Zhai, T. Unterthiner, M. Dehghani, M. Minderer,
+G. Heigold, S. Gelly, J. Uszkoreit, and N. Houlsby. An image is worth 16x16 words: Transformers for image
+recognition at scale. In International conference on learning representations, 2021. URL https://openreview.
+net/forum?id=YicbFdNTTy.
+J. Duchi, E. Hazan, and Y. Singer. Adaptive subgradient methods for online learning and stochastic optimization.
+Journal of Machine Learning Research, 12(61):2121–2159, 2011. URL http://jmlr.org/papers/v12/duchi11a.
+html.
+J. Fan. Local Polynomial Modelling and Its Applications: Monographs on Statistics and Applied Probability 66. Routledge,
+New York, May 2018. ISBN 978-0-203-74872-5. doi: 10.1201/9780203748725.
+D. Y. Fu, T. Dao, K. K. Saab, A. W. Thomas, A. Rudra, and C. Re. Hungry Hungry Hippos: Towards Language Modeling
+with State Space Models. In The Eleventh International Conference on Learning Representations, Sept. 2022. URL
+https://openreview.net/forum?id=COZDy0WYGg.
+S. Garg, D. Tsipras, P. Liang, and G. Valiant. What can transformers learn in-context? A case study of simple function
+classes. In A. H. Oh, A. Agarwal, D. Belgrave, and K. Cho, editors, Advances in neural information processing
+systems, 2022. URL https://openreview.net/forum?id=flNZJ2eOet.
+M. Garnelo and W. M. Czarnecki. Exploring the Space of Key-Value-Query Models with Intention, May 2023. URL
+http://arxiv.org/abs/2305.10203. arXiv:2305.10203.
+J. Gehring, M. Auli, D. Grangier, D. Yarats, and Y. N. Dauphin. Convolutional Sequence to Sequence Learning. In
+Proceedings of the 34th International Conference on Machine Learning, pages 1243–1252. PMLR, July 2017. URL
+https://proceedings.mlr.press/v70/gehring17a.html. ISSN: 2640-3498.
+G. Goel and P. Bartlett. Can a transformer represent a Kalman filter? In A. Abate, M. Cannon, K. Margellos,
+and A. Papachristodoulou, editors, Proceedings of the 6th annual learning for dynamics &amp; control conference, volume 242 of Proceedings of machine learning research, pages 1502–1512. PMLR, July 2024. URL https:
+//proceedings.mlr.press/v242/goel24a.html.
+
+24
+
+K. Greff, R. K. Srivastava, J. Koutník, B. R. Steunebrink, and J. Schmidhuber. LSTM: A Search Space Odyssey. IEEE
+Transactions on Neural Networks and Learning Systems, 28(10):2222–2232, Oct. 2017. ISSN 2162-237X, 2162-2388.
+doi: 10.1109/TNNLS.2016.2582924. URL http://arxiv.org/abs/1503.04069. arXiv:1503.04069 [cs].
+N. Gruver, M. Finzi, S. Qiu, and A. G. Wilson.
+Large Language Models Are Zero-Shot
+Time Series Forecasters.
+Advances in Neural Information Processing Systems, 36:19622–
+19635,
+Dec. 2023.
+URL https://proceedings.neurips.cc/paper_files/paper/2023/hash/
+3eb7ca52e8207697361b2c0fb3926511-Abstract-Conference.html.
+A. Gu and T. Dao. Mamba: Linear-Time Sequence Modeling with Selective State Spaces. In First Conference on
+Language Modeling, Aug. 2024. URL https://openreview.net/forum?id=tEYskw1VY2#discussion.
+A. Gu, T. Dao, S. Ermon, A. Rudra, and C. Ré. HiPPO: Recurrent Memory with Optimal Polynomial Projections. In Advances in Neural Information Processing Systems, volume 33, pages 1474–1487. Curran Associates, Inc., 2020. URL
+https://proceedings.neurips.cc/paper/2020/hash/102f0bb6efb3a6128a3c750dd16729be-Abstract.
+html.
+A. Gu, K. Goel, and C. Re. Efficiently Modeling Long Sequences with Structured State Spaces. In International
+Conference on Learning Representations, Oct. 2021. URL https://openreview.net/forum?id=uYLFoz1vlAC.
+A. Gu, A. Gupta, K. Goel, and C. Ré. On the parameterization and initialization of diagonal state space models. In
+Proceedings of the 36th International Conference on Neural Information Processing Systems, NIPS ’22, pages 35971–
+35983, Red Hook, NY, USA, 2022. Curran Associates Inc. ISBN 978-1-7138-7108-8.
+D. Han, Z. Wang, Z. Xia, Y. Han, Y. Pu, C. Ge, J. Song, S. Song, B. Zheng, and G. Huang. Demystify Mamba in Vision:
+A Linear Attention Perspective, May 2024. URL https://arxiv.org/abs/2405.16605v1.
+S. S. Haykin. Adaptive Filter Theory. Pearson, 2014. ISBN 978-0-13-267145-3. Google-Books-ID: J4GRKQEACAAJ.
+G. E. Hinton and J. A. Anderson. Parallel Models of Associative Memory. Psychology Press, 1989.
+S. Hochreiter and J. Schmidhuber. Long Short-Term Memory. Neural Computation, 9(8):1735–1780, Nov. 1997.
+ISSN 0899-7667. doi: 10.1162/neco.1997.9.8.1735. URL https://ieeexplore.ieee.org/abstract/document/
+6795963. Conference Name: Neural Computation.
+J. Hoffmann, S. Borgeaud, A. Mensch, E. Buchatskaya, T. Cai, E. Rutherford, D. d. L. Casas, L. A. Hendricks, J. Welbl,
+A. Clark, T. Hennigan, E. Noland, K. Millican, G. v. d. Driessche, B. Damoc, A. Guy, S. Osindero, K. Simonyan,
+E. Elsen, J. W. Rae, O. Vinyals, and L. Sifre. Training Compute-Optimal Large Language Models, Mar. 2022. URL
+http://arxiv.org/abs/2203.15556. arXiv:2203.15556 [cs].
+J. J. Hopfield. Neural networks and physical systems with emergent collective computational abilities. Proceedings
+of the National Academy of Sciences, 79(8):2554–2558, Apr. 1982. doi: 10.1073/pnas.79.8.2554. URL https://www.
+pnas.org/doi/abs/10.1073/pnas.79.8.2554. Publisher: Proceedings of the National Academy of Sciences.
+W. Hua, Z. Dai, H. Liu, and Q. Le. Transformer Quality in Linear Time. In Proceedings of the 39th International
+Conference on Machine Learning, pages 9099–9117. PMLR, June 2022. URL https://proceedings.mlr.press/
+v162/hua22a.html. ISSN: 2640-3498.
+R. M. Johnstone, C. R. Johnson, R. R. Bitmead, and B. D. O. Anderson. Exponential convergence of recursive least
+squares with exponential forgetting factor. In 1982 21st IEEE Conference on Decision and Control, pages 994–997,
+Dec. 1982. doi: 10.1109/CDC.1982.268295. URL https://ieeexplore.ieee.org/document/4047398.
+J. Jumper, R. Evans, A. Pritzel, T. Green, M. Figurnov, O. Ronneberger, K. Tunyasuvunakool, R. Bates, A. Žídek,
+A. Potapenko, A. Bridgland, C. Meyer, S. A. A. Kohl, A. J. Ballard, A. Cowie, B. Romera-Paredes, S. Nikolov, R. Jain,
+J. Adler, T. Back, S. Petersen, D. Reiman, E. Clancy, M. Zielinski, M. Steinegger, M. Pacholska, T. Berghammer,
+S. Bodenstein, D. Silver, O. Vinyals, A. W. Senior, K. Kavukcuoglu, P. Kohli, and D. Hassabis. Highly accurate
+protein structure prediction with AlphaFold. Nature, 596(7873):583–589, Aug. 2021. ISSN 1476-4687. doi: 10.
+1038/s41586-021-03819-2. URL https://www.nature.com/articles/s41586-021-03819-2. Publisher: Nature
+Publishing Group.
+
+25
+
+S. Kaczmarz. Angenaherte auflosung von systemen linearer glei-chungen. Bull. Int. Acad. Pol. Sic. Let., Cl. Sci. Math.
+Nat., pages 355–357, 1937. URL https://cir.nii.ac.jp/crid/1570009749812709888.
+J. Kaplan, S. McCandlish, T. Henighan, T. B. Brown, B. Chess, R. Child, S. Gray, A. Radford, J. Wu, and D. Amodei. Scaling Laws for Neural Language Models, Jan. 2020. URL http://arxiv.org/abs/2001.08361. arXiv:2001.08361
+[cs].
+J. Kasai, H. Peng, Y. Zhang, D. Yogatama, G. Ilharco, N. Pappas, Y. Mao, W. Chen, and N. A. Smith. Finetuning
+Pretrained Transformers into RNNs. In M.-F. Moens, X. Huang, L. Specia, and S. W.-t. Yih, editors, Proceedings of the
+2021 Conference on Empirical Methods in Natural Language Processing, pages 10630–10643, Online and Punta Cana,
+Dominican Republic, Nov. 2021. Association for Computational Linguistics. doi: 10.18653/v1/2021.emnlp-main.
+830. URL https://aclanthology.org/2021.emnlp-main.830.
+A. Katharopoulos, A. Vyas, N. Pappas, and F. Fleuret. Transformers are RNNs: Fast Autoregressive Transformers
+with Linear Attention. In Proceedings of the 37th International Conference on Machine Learning, pages 5156–5165.
+PMLR, Nov. 2020. URL https://proceedings.mlr.press/v119/katharopoulos20a.html. ISSN: 2640-3498.
+T. Katsch. GateLoop: Fully Data-Controlled Linear Recurrence for Sequence Modeling, Jan. 2024. URL http://
+arxiv.org/abs/2311.01927. arXiv:2311.01927 [cs].
+D. P. Kingma and J. Ba. Adam: A Method for Stochastic Optimization. 2015. URL https://arxiv.org/abs/1412.
+6980.
+T. Kohonen. Correlation Matrix Memories. IEEE Transactions on Computers, C-21(4):353–359, Apr. 1972. ISSN
+1557-9956. doi: 10.1109/TC.1972.5008975. URL https://ieeexplore.ieee.org/abstract/document/5008975.
+Conference Name: IEEE Transactions on Computers.
+T. Kohonen. Self-Organization and Associative Memory, volume 8 of Springer Series in Information Sciences. Springer,
+Berlin, Heidelberg, 1989. ISBN 978-3-540-51387-2 978-3-642-88163-3. doi: 10.1007/978-3-642-88163-3. URL http:
+//link.springer.com/10.1007/978-3-642-88163-3.
+D. Krotov and J. Hopfield. Large Associative Memory Problem in Neurobiology and Machine Learning, Apr. 2021.
+URL http://arxiv.org/abs/2008.06996. arXiv:2008.06996.
+D. Krotov and J. J. Hopfield. Dense Associative Memory for Pattern Recognition. In Advances in Neural Information
+Processing Systems, volume 29. Curran Associates, Inc., 2016. URL https://proceedings.neurips.cc/paper_
+files/paper/2016/hash/eaae339c4d89fc102edd9dbdb6a28915-Abstract.html.
+B. Liu, R. Wang, L. Wu, Y. Feng, P. Stone, and Q. Liu. Longhorn: State Space Models are Amortized Online Learners,
+Oct. 2024. URL http://arxiv.org/abs/2407.14207. arXiv:2407.14207.
+I. Loshchilov and F. Hutter. Decoupled weight decay regularization. In International conference on learning representations, 2019. URL https://openreview.net/forum?id=Bkg6RiCqY7.
+J. Lu, J. Yao, J. Zhang, X. Zhu, H. Xu, W. Gao, C. XU, T. Xiang, and L. Zhang. SOFT: Softmax-free Transformer with Linear Complexity. In Advances in Neural Information Processing Systems, volume 34, pages
+21297–21309. Curran Associates, Inc., 2021. URL https://proceedings.neurips.cc/paper/2021/hash/
+b1d10e7bafa4421218a51b1e1f1b0ba2-Abstract.html.
+H. Mehta, A. Gupta, A. Cutkosky, and B. Neyshabur. Long range language modeling via gated state spaces. In The
+eleventh international conference on learning representations, 2023. URL https://openreview.net/forum?id=
+5MkYIYCbva.
+B. Millidge, T. Salvatori, Y. Song, T. Lukasiewicz, and R. Bogacz. Universal Hopfield Networks: A General Framework
+for Single-Shot Associative Memory Models. In Proceedings of the 39th International Conference on Machine Learning, pages 15561–15583. PMLR, June 2022. URL https://proceedings.mlr.press/v162/millidge22a.html.
+ISSN: 2640-3498.
+
+26
+
+E. Nguyen, M. Poli, M. G. Durrant, B. Kang, D. Katrekar, D. B. Li, L. J. Bartie, A. W. Thomas, S. H. King, G. Brixi,
+J. Sullivan, M. Y. Ng, A. Lewis, A. Lou, S. Ermon, S. A. Baccus, T. Hernandez-Boussard, C. Ré, P. D. Hsu, and
+B. L. Hie. Sequence modeling and design from molecular to genome scale with Evo. Science, 386(6723):eado9336,
+Nov. 2024. doi: 10.1126/science.ado9336. URL https://www.science.org/doi/10.1126/science.ado9336.
+Publisher: American Association for the Advancement of Science.
+E. Nichani, J. D. Lee, and A. Bietti. Understanding Factual Recall in Transformers via Associative Memories, Dec.
+2024. URL http://arxiv.org/abs/2412.06538. arXiv:2412.06538 [cs].
+C. Olsson, N. Elhage, N. Nanda, N. Joseph, N. DasSarma, T. Henighan, B. Mann, A. Askell, Y. Bai, A. Chen, T. Conerly,
+D. Drain, D. Ganguli, Z. Hatfield-Dodds, D. Hernandez, S. Johnston, A. Jones, J. Kernion, L. Lovitt, K. Ndousse,
+D. Amodei, T. Brown, J. Clark, J. Kaplan, S. McCandlish, and C. Olah. In-context Learning and Induction Heads,
+Sept. 2022. URL http://arxiv.org/abs/2209.11895. arXiv:2209.11895 [cs].
+OpenAI. OpenAI o1 System Card, 2024. URL https://openai.com/index/openai-o1-system-card/.
+A. Orvieto, S. L. Smith, A. Gu, A. Fernando, C. Gulcehre, R. Pascanu, and S. De. Resurrecting Recurrent Neural
+Networks for Long Sequences. In Proceedings of the 40th International Conference on Machine Learning, pages
+26670–26698. PMLR, July 2023. URL https://proceedings.mlr.press/v202/orvieto23a.html. ISSN: 26403498.
+J. V. Oswald, E. Niklasson, E. Randazzo, J. Sacramento, A. Mordvintsev, A. Zhmoginov, and M. Vladymyrov. Transformers Learn In-Context by Gradient Descent. In Proceedings of the 40th International Conference on Machine
+Learning, pages 35151–35174. PMLR, July 2023. URL https://proceedings.mlr.press/v202/von-oswald23a.
+html. ISSN: 2640-3498.
+B. Peng, D. Goldstein, Q. Anthony, A. Albalak, E. Alcaide, S. Biderman, E. Cheah, X. Du, T. Ferdinan, H. Hou,
+P. Kazienko, K. K. GV, J. Kocoń, B. Koptyra, S. Krishna, R. M. Jr, J. Lin, N. Muennighoff, F. Obeid, A. Saito, G. Song,
+H. Tu, C. Wirawan, S. Woźniak, R. Zhang, B. Zhao, Q. Zhao, P. Zhou, J. Zhu, and R.-J. Zhu. Eagle and Finch: RWKV
+with Matrix-Valued States and Dynamic Recurrence, Sept. 2024. URL http://arxiv.org/abs/2404.05892.
+arXiv:2404.05892.
+H. Peng, N. Pappas, D. Yogatama, R. Schwartz, N. Smith, and L. Kong. Random Feature Attention. In International
+Conference on Learning Representations, Oct. 2020. URL https://openreview.net/forum?id=QtTKTdVrFBB.
+T. Poggio. On optimal nonlinear associative recall. Biological Cybernetics, 19(4):201–209, Sept. 1975. ISSN 1432-0770.
+doi: 10.1007/BF02281970. URL https://doi.org/10.1007/BF02281970.
+M. Poli, S. Massaroli, E. Nguyen, D. Y. Fu, T. Dao, S. Baccus, Y. Bengio, S. Ermon, and C. Ré. Hyena hierarchy: towards
+larger convolutional language models. In Proceedings of the 40th International Conference on Machine Learning,
+volume 202 of ICML’23, pages 28043–28078, Honolulu, Hawaii, USA, July 2023. JMLR.org.
+Z. Qin, W. Sun, H. Deng, D. Li, Y. Wei, B. Lv, J. Yan, L. Kong, and Y. Zhong. cosFormer: Rethinking Softmax In
+Attention. In International Conference on Learning Representations, Oct. 2021. URL https://openreview.net/
+forum?id=Bl8CQrx2Up4.
+Z. Qin, X. Han, W. Sun, D. Li, L. Kong, N. Barnes, and Y. Zhong. The Devil in Linear Transformer. In Y. Goldberg,
+Z. Kozareva, and Y. Zhang, editors, Proceedings of the 2022 Conference on Empirical Methods in Natural Language
+Processing, pages 7025–7041, Abu Dhabi, United Arab Emirates, Dec. 2022. Association for Computational Linguistics. doi: 10.18653/v1/2022.emnlp-main.473. URL https://aclanthology.org/2022.emnlp-main.473.
+Z. Qin, X. Han, W. Sun, B. He, D. Li, D. Li, Y. Dai, L. Kong, and Y. Zhong. Toeplitz neural network for sequence
+modeling. In The eleventh international conference on learning representations, 2023. URL https://openreview.
+net/forum?id=IxmWsm4xrua.
+Z. Qin, S. Yang, W. Sun, X. Shen, D. Li, W. Sun, and Y. Zhong. HGRN2: Gated Linear RNNs with State Expansion.
+In First Conference on Language Modeling, Aug. 2024. URL https://openreview.net/forum?id=y6SqbJfCSk#
+discussion.
+
+27
+
+H. Ramsauer, B. Schäfl, J. Lehner, P. Seidl, M. Widrich, L. Gruber, M. Holzleitner, T. Adler, D. Kreil, M. K. Kopp,
+G. Klambauer, J. Brandstetter, and S. Hochreiter. Hopfield Networks is All You Need. In International Conference
+on Learning Representations, 2021. URL https://openreview.net/forum?id=tL89RnzIiCd.
+L. Ren, Y. Liu, S. Wang, Y. Xu, C. Zhu, and C. Zhai. Sparse modular activation for efficient sequence modeling. In
+Thirty-seventh conference on neural information processing systems, 2023. URL https://openreview.net/forum?
+id=TfbzX6I14i.
+R. Ren, Z. Li, and Y. Liu. Can Mamba Always Enjoy the "Free Lunch"?, Oct. 2024. URL http://arxiv.org/abs/
+2410.03810. arXiv:2410.03810 [cs].
+S. Rush. There are like 4 more linear RNN papers out today, Apr. 2024. URL https://x.com/srush_nlp/status/
+1780231813820002771.
+D. Salinas, V. Flunkert, J. Gasthaus, and T. Januschowski. DeepAR: Probabilistic forecasting with autoregressive
+recurrent networks. International Journal of Forecasting, 36(3):1181–1191, July 2020. ISSN 0169-2070. doi: 10.1016/
+j.ijforecast.2019.07.001. URL https://www.sciencedirect.com/science/article/pii/S0169207019301888.
+I. Schlag, K. Irie, and J. Schmidhuber. Linear Transformers Are Secretly Fast Weight Programmers. In Proceedings
+of the 38th International Conference on Machine Learning, pages 9355–9366. PMLR, July 2021. URL https://
+proceedings.mlr.press/v139/schlag21a.html. ISSN: 2640-3498.
+J. Schmidhuber. Learning to Control Fast-Weight Memories: An Alternative to Dynamic Recurrent Networks. Neural
+Computation, 4(1):131–139, Jan. 1992. ISSN 0899-7667. doi: 10.1162/neco.1992.4.1.131. URL https://doi.org/
+10.1162/neco.1992.4.1.131.
+B. Schölkopf and A. J. Smola. Learning with Kernels: Support Vector Machines, Regularization, Optimization, and
+Beyond. The MIT Press, Dec. 2001. ISBN 978-0-262-25693-3. doi: 10.7551/mitpress/4175.001.0001. URL https:
+//direct.mit.edu/books/monograph/1821/Learning-with-KernelsSupport-Vector-Machines.
+N. Shazeer. Fast Transformer Decoding: One Write-Head is All You Need, Nov. 2019. URL http://arxiv.org/abs/
+1911.02150. arXiv:1911.02150 [cs].
+J. Shi, K. A. Wang, and E. B. Fox. Sequence modeling with multiresolution convolutional memory. In Proceedings
+of the 40th International Conference on Machine Learning, volume 202 of ICML’23, pages 31312–31327, Honolulu,
+Hawaii, USA, July 2023. JMLR.org.
+J. Siems, T. Carstensen, A. Zela, F. Hutter, M. Pontil, and R. Grazzi. DeltaProduct: Increasing the Expressivity of DeltaNet Through Products of Householders, Feb. 2025. URL http://arxiv.org/abs/2502.10297.
+arXiv:2502.10297 [cs].
+J. T. Smith, A. Warrington, and S. Linderman. Simplified state space layers for sequence modeling. In The eleventh international conference on learning representations, 2023. URL https://openreview.net/forum?id=Ai8Hw3AXqks.
+S. Sukhbaatar, E. Grave, G. Lample, H. Jegou, and A. Joulin. Augmenting Self-attention with Persistent Memory, July
+2019. URL http://arxiv.org/abs/1907.01470. arXiv:1907.01470.
+Y. Sun, X. Wang, Z. Liu, J. Miller, A. Efros, and M. Hardt. Test-Time Training with Self-Supervision for Generalization
+under Distribution Shifts. In Proceedings of the 37th International Conference on Machine Learning, pages 9229–
+9248. PMLR, Nov. 2020. URL https://proceedings.mlr.press/v119/sun20b.html. ISSN: 2640-3498.
+Y. Sun, L. Dong, S. Huang, S. Ma, Y. Xia, J. Xue, J. Wang, and F. Wei. Retentive Network: A Successor to Transformer
+for Large Language Models, Aug. 2023. URL http://arxiv.org/abs/2307.08621. arXiv:2307.08621 [cs].
+Y. Sun, X. Li, K. Dalal, J. Xu, A. Vikram, G. Zhang, Y. Dubois, X. Chen, X. Wang, S. Koyejo, T. Hashimoto, and
+C. Guestrin. Learning to (Learn at Test Time): RNNs with Expressive Hidden States, Aug. 2024. URL http:
+//arxiv.org/abs/2407.04620. arXiv:2407.04620.
+
+28
+
+I. Sutskever, O. Vinyals, and Q. V. Le. Sequence to Sequence Learning with Neural Networks. In Advances in Neural
+Information Processing Systems, volume 27. Curran Associates, Inc., 2014. URL https://proceedings.neurips.
+cc/paper/2014/hash/a14ac55a4f27472c5d894ec1c3c743d2-Abstract.html.
+R. Sutton. The Bitter Lesson, 2019. URL http://www.incompleteideas.net/IncIdeas/BitterLesson.html.
+K. Tanabe. Projection method for solving a singular system of linear equations and its applications. Numerische
+Mathematik, 17(3):203–214, June 1971. ISSN 0945-3245. doi: 10.1007/BF01436376. URL https://doi.org/10.
+1007/BF01436376.
+Y. Tay, M. Dehghani, D. Bahri, and D. Metzler. Efficient Transformers: A Survey. ACM Comput. Surv., 55(6):109:1–
+109:28, Dec. 2022. ISSN 0360-0300. doi: 10.1145/3530811. URL https://dl.acm.org/doi/10.1145/3530811.
+A. Trockman, H. Harutyunyan, J. Z. Kolter, S. Kumar, and S. Bhojanapalli. Mimetic Initialization Helps State Space
+Models Learn to Recall, Oct. 2024. URL http://arxiv.org/abs/2410.11135. arXiv:2410.11135 [cs].
+J. van der Westhuizen and J. Lasenby. The unreasonable effectiveness of the forget gate, Sept. 2018. URL http:
+//arxiv.org/abs/1804.04849. arXiv:1804.04849 [cs, stat].
+A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, L. Kaiser, and I. Polosukhin.
+Attention is All you Need.
+In Advances in Neural Information Processing Systems, volume 30. Curran Associates, Inc., 2017. URL https://papers.nips.cc/paper_files/paper/2017/hash/
+3f5ee243547dee91fbd053c1c4a845aa-Abstract.html.
+J. von Oswald, E. Niklasson, M. Schlegel, S. Kobayashi, N. Zucchet, N. Scherrer, N. Miller, M. Sandler, B. A. y Arcas, M. Vladymyrov, R. Pascanu, and J. Sacramento. Uncovering mesa-optimization algorithms in Transformers.
+CoRR, abs/2309.05858, 2023. URL https://doi.org/10.48550/arXiv.2309.05858. tex.cdate: 1672531200000
+tex.publtype: informal.
+K. A. Wang, G. Pleiss, J. Gardner, S. Tyree, K. Q. Weinberger, and A. G. Wilson. Exact Gaussian Processes on a
+Million Data Points. Advances in Neural Information Processing Systems, 32, 2019. URL https://papers.nips.
+cc/paper/2019/hash/01ce84968c6969bdd5d51c5eeaa3946a-Abstract.html.
+L. Wasserman. All of Nonparametric Statistics. Springer Texts in Statistics. Springer, New York, NY, 2006. ISBN
+978-0-387-25145-5. doi: 10.1007/0-387-30623-4. URL http://link.springer.com/10.1007/0-387-30623-4.
+B. Widrow and M. E. Hoff. Adaptive switching circuits. In Neurocomputing: foundations of research, pages 123–134.
+MIT Press, Cambridge, MA, USA, Jan. 1988. ISBN 978-0-262-01097-9.
+D. Willshaw. Holography, Associative Memory, and Inductive Generalization. In Parallel Models of Associative
+Memory. Psychology Press, 1989. ISBN 978-1-315-80799-7. Num Pages: 22.
+D. J. Willshaw, O. P. Buneman, and H. C. Longuet-Higgins. Non-Holographic Associative Memory. Nature, 222
+(5197):960–962, June 1969. ISSN 1476-4687. doi: 10.1038/222960a0. URL https://www.nature.com/articles/
+222960a0. Publisher: Nature Publishing Group.
+M. Wortsman, P. J. Liu, L. Xiao, K. E. Everett, A. A. Alemi, B. Adlam, J. D. Co-Reyes, I. Gur, A. Kumar, R. Novak,
+J. Pennington, J. Sohl-Dickstein, K. Xu, J. Lee, J. Gilmer, and S. Kornblith. Small-scale proxies for large-scale
+Transformer training instabilities. In The Twelfth International Conference on Learning Representations, Oct. 2023.
+URL https://openreview.net/forum?id=d8w0pmvXbZ.
+M. Xu, W. Cheng, B. Wang, and W. Chen. KV Shifting Attention Enhances Language Modeling, Dec. 2024. URL
+http://arxiv.org/abs/2411.19574. arXiv:2411.19574 [cs].
+S. Yang, J. Kautz, and A. Hatamizadeh. Gated Delta Networks: Improving Mamba2 with Delta Rule, Dec. 2024a. URL
+http://arxiv.org/abs/2412.06464. arXiv:2412.06464 [cs] version: 1.
+
+29
+
+S. Yang, B. Wang, Y. Shen, R. Panda, and Y. Kim. Gated Linear Attention Transformers with Hardware-Efficient
+Training. In Proceedings of the 41st International Conference on Machine Learning, pages 56501–56523. PMLR, July
+2024b. URL https://proceedings.mlr.press/v235/yang24ab.html. ISSN: 2640-3498.
+S. Yang, B. Wang, Y. Zhang, Y. Shen, and Y. Kim. Parallelizing Linear Transformers with the Delta Rule over Sequence
+Length, Aug. 2024c. URL http://arxiv.org/abs/2406.06484. arXiv:2406.06484.
+J. Zhang, N. Nolte, R. Sadhukhan, B. Chen, and L. Bottou. Memory mosaics. In The thirteenth international conference
+on learning representations, 2025. URL https://openreview.net/forum?id=IiagjrJNwF.
+M. Zhang, K. Bhatia, H. Kumbong, and C. Re. The Hedgehog & the Porcupine: Expressive Linear Attentions with
+Softmax Mimicry. In The Twelfth International Conference on Learning Representations, Oct. 2023a. URL https:
+//openreview.net/forum?id=4g02l2N2Nx.
+Y. Zhang, F. Zhang, Z. Yang, and Z. Wang. What and How does In-Context Learning Learn? Bayesian
+Model Averaging, Parameterization, and Generalization, Oct. 2023b. URL http://arxiv.org/abs/2305.19420.
+arXiv:2305.19420 [stat].
+Y. Zhang, B. Liu, Q. Cai, L. Wang, and Z. Wang. An Analysis of Attention via the Lens of Exchangeability and Latent
+Variable Models, Apr. 2024. URL http://arxiv.org/abs/2212.14852. arXiv:2212.14852 [cs].
+J. Zhou and O. G. Troyanskaya. Predicting effects of noncoding variants with deep learning–based sequence model.
+Nature Methods, 12(10):931–934, Oct. 2015. ISSN 1548-7105. doi: 10.1038/nmeth.3547. URL https://www.nature.
+com/articles/nmeth.3547. Publisher: Nature Publishing Group.
+M. Zinkevich. Online convex programming and generalized infinitesimal gradient ascent. In Proceedings of the Twentieth International Conference on International Conference on Machine Learning, ICML’03, pages 928–935, Washington, DC, USA, Aug. 2003. AAAI Press. ISBN 978-1-57735-189-4.
+
+30
+
+Appendices
+A
+
+Bounding the norm of a linear regression layer
+
+Let yt = Vt ⊤ Kt (Kt ⊤ Kt )−1 qt and let ∥A∥2 indicate the spectral norm of a matrix A, a matrix norm
+induced by the L2 norm on vectors. Then
+∥yt ∥2 = ∥Vt ⊤ Kt (Kt ⊤ Kt )−1 qt ∥2
+⊤
+
+(59)
+⊤
+
+−1
+
+≤ ∥qt ∥2 sup ∥Vt Kt (Kt Kt )
+
+q∥2
+
+(60)
+
+∥q∥2 =1
+
+= ∥qt ∥2 ∥Vt ⊤ Kt (Kt ⊤ Kt )−1 ∥2
+⊤
+
+⊤
+
+≤ ∥qt ∥2 ∥Vt Kt ∥2 ∥(Kt Kt )
+= ∥qt ∥2 ∥
+≤ ∥qt ∥2
+= ∥qt ∥2
+
+t
+X
+
+(61)
+∥2
+
+vi ki ⊤ ∥2 ∥(Kt ⊤ Kt )−1 ∥2
+
+i=1
+t
+X
+
+(62)
+(63)
+
+!
+∥vi ∥2 ∥ki ∥2
+
+i=1
+t
+X
+
+∥(Kt ⊤ Kt )−1 ∥2
+
+(64)
+
+max λi ((Kt ⊤ Kt )−1 )
+
+(65)
+
+1
+λi (Kt ⊤ Kt )
+
+(66)
+
+!
+
+∥vi ∥2 ∥ki ∥2
+
+i
+
+i=1
+
+= ∥qt ∥2
+
+−1
+
+t
+X
+∥vi ∥2 ∥ki ∥2
+
+!
+
+i=1
+Pt
+∥qt ∥2 i=1 ∥vi ∥2 ∥ki ∥2
+=
+.
+λmin (Kt ⊤ Kt )
+
+max
+i
+
+(67)
+
+P
+Hence ∥yt ∥2 ≤ ∥qt ∥2 ti=1 ∥vi ∥2 ∥ki ∥2 /λmin (Kt ⊤ Kt ). When we approximate Kt ⊤ Kt ≈ I, as in linear attention, we lose the self-normalizing property of dividing by λmin (Kt ⊤ Kt ) since the denominator
+becomes 1. This explains how output normalization by Qin et al. (2022) is an attempt at restoring this
+intrinsic self-normalizing property of linear regression.
+
+31
+
+
