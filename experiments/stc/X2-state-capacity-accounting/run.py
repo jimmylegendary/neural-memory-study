@@ -6,7 +6,7 @@
 "Memory device 회사에 어떤 기회가 있는가"는 세 경로가 만드는 상태의 **양·위치·수명·
 트래픽**이 다르다는 사실 위에서만 답할 수 있다. 그런데 corpus의 어느 논문도 상태 용량을
 바이트로 보고하지 않는다(cost_table의 C_cap이 거의 전부 absent). 이 실험은 논문들이
-보고한 **구성 파라미터**로부터 바이트를 복원하고, 별도 논문이 측정한 **기억 용량 상한**과
+보고한 **구성 파라미터**로부터 바이트를 복원하고, 별도 논문이 측정한 **기억 용량 하한**과
 결합해 세 경로를 같은 자로 잰다.
 
 세 경로의 상태
@@ -18,17 +18,18 @@ W : fast weights.                    활성 세션 단위. HBM 상주. 토큰마
 핵심 질문
 --------
 Q1  같은 앵커에서 세 경로가 만드는 바이트는 각각 얼마인가.
-Q2  그 바이트에 담기는 정보량(bits)은 얼마인가 — 바이트당 정보 밀도가 경로마다 다른가.
+Q2  저장 dtype이 바이트당 정보 밀도의 하한을 어떻게 정하는가.
 Q3  Θ-경로가 주류가 되면 사용자 수에 따라 웜 스토리지가 어떻게 늘어나는가.
 Q4  직접 편집(MEMIT류)과 delta(LoRA류)는 서빙 구조상 무엇이 다른가.
 
 등급
 ----
 EXPLORATION-GRADE / ACCOUNTING. 측정이 아니라 회계다.
-- 신뢰할 것: 경로 간 **자릿수 차이**, 밀도의 **순서**, 사용자 수 스케일링의 **기울기**.
-- 신뢰하지 말 것: 특정 배포의 절대 바이트, 3.64 bpp를 LoRA에 적용한 값의 정확도.
-- 3.64 bits/parameter는 무작위 문자열로 from-scratch 학습한 소형 GPT에서 측정된 값이며,
-  이를 LoRA delta에 적용하는 것은 **이 노트의 외삽**이다. 상한으로만 쓴다.
+- 신뢰할 것: 경로 간 **자릿수 차이**, dtype 축의 **기울기**, 사용자 수 스케일링의 **기울기**.
+- 신뢰하지 말 것: 특정 배포의 절대 바이트. 경로 간 정보 밀도 비교는 **철회했다**(findings F3_withdrawn).
+- 3.64 bits/parameter는 원 논문이 명시한 **하한**이다([lm-memorization-capacity §3.2, txt L664]).
+  상한이 아니다. 무작위 문자열로 from-scratch 학습한 소형 GPT에서 측정된 값이므로
+  LoRA delta 적용은 별도로 **이 실험의 외삽**이다.
 """
 
 from __future__ import annotations
@@ -50,8 +51,16 @@ SOURCED = {
         "range": [2.86, 4.23],
         "source": "[lm-memorization-capacity Fig.6 caption; Table 1] GPT half precision 3.64 bpp; "
                   "Table 1 평균 bf16 3.51 / fp32 3.83, 설정별 범위 2.86–4.23",
-        "caveat": "무작위 uniform 문자열을 from-scratch 학습한 소형 GPT에서 측정. "
-                  "LoRA delta 적용은 이 실험의 외삽이며 상한으로만 사용",
+        "bound_direction": "LOWER BOUND",
+        "bound_source": "[lm-memorization-capacity §3.2, txt L664] "
+                        "'we are only ever measuring a lower bound on model capacity'",
+        "caveat": "무작위 uniform 문자열을 from-scratch 학습한 소형 GPT에서 측정한 **하한**이다. "
+                  "따라서 파라미터 P개의 delta가 담는 정보량은 3.64·P bits **이상**이며, "
+                  "이 값을 상한으로 쓰면 Θ층의 용량을 과소평가한다. "
+                  "LoRA delta 적용은 이 실험의 외삽이라는 점은 별개로 유지된다.",
+        "correction_note": "이 실험의 초판(2026-08-06)은 이 값을 상한으로 놓고 'Θ가 정보 희소하다'는 "
+                           "비교를 했다. 방향이 틀렸으므로 철회했다. 자세한 것은 findings의 "
+                           "F3_withdrawn 항목.",
     },
     "W_state_MB_per_layer_1p3B": {
         "value": 134.2,
@@ -123,7 +132,7 @@ def main() -> None:
             "anchors": ANCHORS,
             "caveat_tags": {
                 "ACCOUNTING-NOT-MEASURED": "구성 파라미터에서 복원한 바이트다. 실측 아님",
-                "BPP-EXTRAPOLATED": "3.64 bits/param을 LoRA delta에 적용한 것은 외삽. 상한으로만",
+                "BPP-IS-A-LOWER-BOUND": "3.64 bits/param은 원 논문이 하한이라고 밝힌 값이다. 상한으로 쓰면 용량을 과소평가한다. LoRA delta 적용은 별개로 외삽",
                 "CORPUS-SILENT-ON-BYTES": "상태 용량을 바이트로 보고한 논문이 corpus에 없음",
                 "E-PATH-TOKENS-ONLY": "E-경로 용량은 토큰 수만 보고됨. 바이트 환산은 이 실험의 가정",
             },
@@ -170,8 +179,8 @@ def main() -> None:
                     "params": p,
                     "bytes_bf16": p * BYTES_BF16,
                     "MB": round(p * BYTES_BF16 / 1e6, 2),
-                    "info_capacity_bits_upper": round(p * SOURCED["bits_per_parameter"]["value"]),
-                    "info_capacity_MB_upper": round(p * SOURCED["bits_per_parameter"]["value"] / 8 / 1e6, 2),
+                    "info_capacity_bits_at_least": round(p * SOURCED["bits_per_parameter"]["value"]),
+                    "info_capacity_MB_at_least": round(p * SOURCED["bits_per_parameter"]["value"] / 8 / 1e6, 2),
                 }
         row["Theta_path_lora"] = {
             "variants": theta,
@@ -233,13 +242,15 @@ def main() -> None:
     e_density_compressed = 8.0 / 3.0  # 자연어 텍스트의 보수적 압축비 3:1 가정
 
     R["Q2_information_density"] = {
-        "description": ("저장 바이트 1개에 담기는 정보 bits. 분자는 [lm-memorization-capacity]의 "
-                        "3.64 bits/param 상한, 분모는 저장 dtype. E는 텍스트 액면가와 3:1 압축 가정"),
+        "description": ("저장 바이트 1개에 담기는 정보 bits의 **하한**. 분자는 "
+                        "[lm-memorization-capacity]의 3.64 bits/param이며 그 논문이 "
+                        "명시적으로 하한이라고 밝힌 값이다(§3.2, txt L664). 분모는 저장 dtype."),
         "Theta_lora_r16_qv_8B": {
             "params": p16,
-            "info_bits_upper": round(theta_info_bits),
-            "info_MB_upper": round(theta_info_bits / 8 / 1e6, 2),
+            "info_bits_at_least": round(theta_info_bits),
+            "info_MB_at_least": round(theta_info_bits / 8 / 1e6, 2),
             "by_dtype": theta_by_dtype,
+            "reading": "각 dtype 행의 bits_per_stored_byte는 '적어도 이만큼'이다. 위가 아니라 아래가 막혀 있다.",
         },
         "E_text_14k_tokens": {
             "store_bytes": e_store_bytes,
@@ -247,13 +258,19 @@ def main() -> None:
             "bits_per_stored_byte_face": e_density_face,
             "bits_per_stored_byte_compressed_3to1": round(e_density_compressed, 3),
         },
-        "ratio_E_over_Theta_compressed_by_dtype": {
-            dt: round(e_density_compressed / v["bits_per_stored_byte"], 2)
-            for dt, v in theta_by_dtype.items()
+        "cross_path_density_comparison": {
+            "verdict": "WITHDRAWN — 이 회계로는 판정할 수 없다",
+            "why": ("Θ 쪽 값은 하한이고 E 쪽 값은 액면가(또는 압축 가정)다. "
+                    "하한과 액면가를 나눈 비는 어느 방향으로도 결론을 주지 않는다. "
+                    "Θ의 실제 밀도가 하한보다 얼마나 높은지를 재려면 delta에 직접 정보를 "
+                    "주입해 회수율을 재는 실험이 필요하고, 그것은 X2의 범위 밖이다."),
+            "what_survives": ("dtype 축의 결론은 하한/상한과 무관하게 성립한다. 분자가 무엇이든 "
+                              "분모(저장 bytes/param)는 dtype이 정하므로, bf16→int8→int4로 내리면 "
+                              "저장 바이트당 정보 밀도가 그대로 2배씩 오른다."),
         },
-        "note": ("bf16에서 Θ가 E보다 바이트 비효율인 것은 표현이 정보를 못 담아서가 아니라 "
-                 "파라미터 하나에 담기는 3.64 bits를 16 bits에 저장하기 때문이다. "
-                 "int4로 내리면 순서가 뒤집힌다 — 즉 이것은 알고리즘 한계가 아니라 dtype 선택이다."),
+        "note": ("bf16은 파라미터 하나에 최소 3.64 bits가 담기는데 16 bits를 쓴다. "
+                 "즉 최소 4.4배의 저장 여유가 표현 자체에서 나온다. "
+                 "이것은 알고리즘 한계가 아니라 dtype 선택이다."),
     }
 
     # -- Q3: 사용자 수 스케일링 --------------------------------------------------
@@ -308,18 +325,25 @@ def main() -> None:
             f"같은 폭의 TTT류 모델이라면 W-경로 상태는 활성 세션당 "
             f"{q1['dense-8B (d=4096, L=32)']['W_path']['MB']} MB다(반사실 수치 — dense 8B에는 W층이 없다). "
             "수명과 상주 위치가 전부 다르므로 '용량'을 한 숫자로 말할 수 없다."),
-        "F3_theta_density_is_a_dtype_choice_not_a_limit": (
-            f"저장 바이트당 정보량은 Θ가 bf16에서 "
+        "F3_quantisation_is_a_precondition_not_an_optimisation": (
+            f"저장 바이트당 정보량의 **하한**은 Θ가 bf16에서 "
             f"{R['Q2_information_density']['Theta_lora_r16_qv_8B']['by_dtype']['bf16']['bits_per_stored_byte']} "
             f"bits/byte, int8에서 "
             f"{R['Q2_information_density']['Theta_lora_r16_qv_8B']['by_dtype']['int8']['bits_per_stored_byte']}, "
             f"int4에서 "
             f"{R['Q2_information_density']['Theta_lora_r16_qv_8B']['by_dtype']['int4']['bits_per_stored_byte']}다. "
-            f"3:1 압축을 가정한 텍스트(2.67 bits/byte) 대비 비율은 dtype에 따라 "
-            f"{R['Q2_information_density']['ratio_E_over_Theta_compressed_by_dtype']}로 뒤집힌다. "
-            "즉 Θ-경로가 바이트 비효율로 보이는 것은 파라미터당 3.64 bits를 16 bits에 담기 때문이지 "
-            "표현의 한계가 아니다. **delta 양자화는 Θ-경로 배포의 선택 사항이 아니라 전제다** — "
-            "그리고 corpus의 어느 논문도 delta 양자화를 논의하지 않는다."),
+            "파라미터 하나에 **최소** 3.64 bits가 담기는데 bf16은 16 bits를 쓴다 — 표현 자체에서 "
+            "최소 4.4배의 저장 여유가 나온다. 이 여유는 알고리즘 한계가 아니라 dtype 선택이므로, "
+            "**delta 양자화는 Θ-경로 배포의 최적화가 아니라 전제다.** "
+            "그리고 corpus의 어느 논문도 delta 양자화를 논의하지 않는다. "
+            "이 결론은 3.64가 하한이든 상한이든 성립한다 — 분모만으로 정해지기 때문이다."),
+        "F3_withdrawn_cross_path_density_claim": (
+            "**철회.** 이 실험의 초판은 3.64 bits/param을 상한으로 놓고 'E가 Θ보다 바이트 효율이 "
+            "높다'고 비교했다. 원 논문은 이 값을 명시적으로 **하한**이라고 밝힌다"
+            "([lm-memorization-capacity §3.2, txt L664] 'we are only ever measuring a lower bound "
+            "on model capacity'). 하한을 상한으로 쓰면 Θ층 용량을 과소평가하므로 그 비교는 "
+            "방향이 보장되지 않는다. 경로 간 밀도 비교는 이 회계로 판정 불가로 남긴다 — "
+            "판정하려면 delta에 직접 정보를 주입해 회수율을 재는 실험이 필요하다."),
         "F4_memory_device_opportunity_is_warm_not_hot": (
             f"Θ-경로가 주류가 되면 사용자 10^6명 기준 웜 스토리지가 LoRA r=16 bf16에서 "
             f"{q3['1e+06_users']['lora_r=16_bf16']['TB']} TB, int4로 내리면 "
@@ -334,9 +358,10 @@ def main() -> None:
             "Θ-경로가 서빙에 도달하려면 delta 형태(LoRA류)여야 한다는 제약이 여기서 나온다. "
             "논문들은 이 갈림길을 논의하지 않는다."),
         "honest_limits": (
-            "3.64 bits/param은 무작위 문자열 암기 실험에서 나온 값이고 LoRA delta 적용은 외삽이다. "
-            "E-경로 바이트는 토큰 수에서 환산한 가정치다. 본문 단정문으로 쓸 것은 자릿수 차이와 "
-            "밀도의 순서이며, 절대 바이트가 아니다."),
+            "3.64 bits/param은 원 논문이 밝힌 하한이고, 무작위 문자열 암기 실험에서 나온 값이므로 "
+            "LoRA delta 적용은 별도의 외삽이다. E-경로 바이트는 토큰 수에서 환산한 가정치다. "
+            "본문 단정문으로 쓸 것은 경로 간 자릿수 차이, dtype 축의 기울기, 사용자 수 스케일링의 "
+            "기울기이며, 절대 바이트도 경로 간 밀도 비교도 아니다."),
     }
 
     out = HERE / "result.json"
