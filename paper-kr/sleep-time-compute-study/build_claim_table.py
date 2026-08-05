@@ -38,7 +38,7 @@ def build_claim_table(claim_map_path: Path, output_path: Path) -> None:
         r"\chapter*{Canonical claim–evidence ledger}",
         r"\addcontentsline{toc}{chapter}{Canonical claim–evidence ledger}",
         r"\markboth{Canonical claim–evidence ledger}{Canonical claim–evidence ledger}",
-        "본문의 파란 claim ID는 이 표의 canonical English statement와 source locator로 연결된다. ",
+        "본문의 파란 claim ID는 이 표의 canonical English statement와 source locator로 연결된다.",
         "이 표는 번역문이 아니라 Veridraft gate를 통과한 frozen assertion surface다.",
         "",
         r"\scriptsize",

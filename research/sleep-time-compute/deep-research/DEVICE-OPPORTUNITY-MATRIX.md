@@ -323,4 +323,3 @@ For a memory-device company, the safest thesis is not that sleep FLOPs will simp
 > Persistent AI converts model serving from read-mostly checkpoint execution into a versioned state lifecycle with append, scan, random retrieval, background rewrite, candidate duplication, atomic publish, rollback, and secure reclamation.
 
 The resulting opportunity is strongest where device capabilities expose lifecycle guarantees—not just peak bandwidth. Capacity, bandwidth, endurance, latency, atomicity, and security must be measured together. The opportunity survives if STC does not become mainstream because external agent memory, RAG maintenance, recurrent state caching, checkpointing, and model CI already require most of the same primitives.
-

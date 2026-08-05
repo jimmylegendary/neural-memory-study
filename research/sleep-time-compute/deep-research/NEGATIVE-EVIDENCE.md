@@ -303,4 +303,3 @@ Negative evidence does not say “sleep-time compute cannot work.” It changes 
 to the conditional form
 
 > background transformation is valuable when evidence is high quality and reusable, the destination is appropriate, capacity is actively managed, and candidate state can be validated, published, deleted, and rolled back without violating wake SLA.
-

@@ -185,4 +185,3 @@ The most promising new academic question is not “which sleep stage should an L
 - Sleep-time compute as **continuous per-user foundation-weight learning** is not yet the best default; external memory and periodic refresh are stronger on governance and evidence.
 
 **Long-term:** the likely scaling object is not a single model checkpoint but a memory system with multiple clocks and media. Success will be measured as later-wake utility per lifecycle resource under retention, plasticity, freshness, deletion, and latency constraints—not simply accuracy vs sleep FLOPs.
-

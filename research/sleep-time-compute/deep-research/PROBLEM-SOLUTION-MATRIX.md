@@ -180,4 +180,3 @@ STC가 가장 잘 푸는 단일 문제는 “모델이 잠을 자야 한다”�
 > 반복될 가능성이 높은 경험을 foreground latency 밖에서 더 작은 reusable state로 바꾸고, 다음 wake에서 그 state를 싸게 이용한다.
 
 이 정의에서는 external synthesis가 이미 strongest deployed form이다. Parametric sleep은 skill/procedure compaction과 repeated-query domains에서 추가 upside가 있지만, fact freshness·capacity·deletion/rollback에서는 stronger default를 아직 이기지 못했다.
-

@@ -281,4 +281,3 @@ The comparison must match not only model parameter count but total answer-bearin
 STC가 이들을 “대체”할 가능성보다 더 현실적인 미래는 다음이다.
 
 > long context와 TTT가 wake acquisition을 담당하고, external memory가 canonical long-term state를 담당하며, sleep scheduler가 compaction·validation·selective parametric promotion을 담당한다.
-

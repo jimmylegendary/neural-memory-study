@@ -186,4 +186,3 @@ immutable episode log
 ```
 
 이 chronology는 “STC가 갑자기 2025년에 발명됐다”는 서사를 부정한다. 문제와 operator는 수십 년간 존재했으며, 2025–2026의 변화는 이를 **deployment afterlife의 별도 compute budget과 lifecycle product**로 명시하고 실제 제품에 넣기 시작했다는 데 있다.
-

@@ -426,4 +426,3 @@ A publishable law must:
 7. report falsification when the candidate form fails.
 
 Until then, the honest output is a family of identities, restricted break-even equations, workload-conditioned empirical surfaces, and untested hypotheses—not a universal “more sleep FLOPs always wins” curve.
-

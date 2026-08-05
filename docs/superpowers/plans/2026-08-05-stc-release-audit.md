@@ -28,7 +28,7 @@
 - Consumes: artifact files and QA reports
 - Produces: `build_manifest(root: Path) -> dict`
 
-- [ ] **Step 1: Write failing release tests**
+- [x] **Step 1: Write failing release tests**
 
 ```python
 def test_release_fails_when_required_artifact_is_missing(tmp_path):
@@ -41,17 +41,17 @@ def test_public_manifest_excludes_internal_translation(tmp_path):
     assert report["public_artifacts"]["translations"] == []
 ```
 
-- [ ] **Step 2: Run tests and confirm failure**
+- [x] **Step 2: Run tests and confirm failure**
 
 ```bash
 uv run --project research/sleep-time-compute pytest -q research/sleep-time-compute/tests/test_release_manifest.py
 ```
 
-- [ ] **Step 3: Implement deterministic manifest generation**
+- [x] **Step 3: Implement deterministic manifest generation**
 
 Record relative path, SHA-256, bytes, pages/slides, source commit, audience, license state, builder, QA report, and pass status. Sort paths and serialize with stable indentation.
 
-- [ ] **Step 4: Run tests and commit**
+- [x] **Step 4: Run tests and commit**
 
 ```bash
 uv run --project research/sleep-time-compute pytest -q research/sleep-time-compute/tests/test_release_manifest.py
@@ -73,23 +73,23 @@ git commit -m "feat: add STC study release manifest"
 - Consumes: final artifact paths and audience boundaries
 - Produces: one-click paths for Study, Background, Translations, Easy, Deck, Evidence, and QA
 
-- [ ] **Step 1: Write audience-specific entry points**
+- [x] **Step 1: Write audience-specific entry points**
 
 Provide paths for academic reviewer, training beginner, seminar participant, translation reader, system/device researcher, and reproduction/QA reviewer.
 
-- [ ] **Step 2: State the evidence and rights boundaries**
+- [x] **Step 2: State the evidence and rights boundaries**
 
 Explicitly distinguish public paper/deck from internal-only translations or figures and describe the 2026-08-05 source freeze.
 
-- [ ] **Step 3: Add exact reproduction commands**
+- [x] **Step 3: Add exact reproduction commands**
 
 Include paper, background, translation, easy, deck, Veridraft, and release-manifest commands with expected outputs.
 
-- [ ] **Step 4: Validate links**
+- [x] **Step 4: Validate links**
 
 Run a Markdown link checker over modified README/DELIVERABLES and ensure every local target exists.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add README.md research/sleep-time-compute/README.md research/sleep-time-compute/DELIVERABLES.md translations-kr/README.md easy/README.md presentation/sleep-time-compute-deep-study/README.md
@@ -108,14 +108,14 @@ git commit -m "docs: index sleep-time compute study release"
 - Consumes: final Study PDF and claim bundle
 - Produces: deterministic claim/readiness/egress audit
 
-- [ ] **Step 1: Re-import and gate final bundle**
+- [x] **Step 1: Re-import and gate final bundle**
 
 ```bash
 python3 -m veridraft --data-dir .veridraft-stc-study import-bundle claims/stc-study/bundle.json
 python3 -m veridraft --data-dir .veridraft-stc-study gate sleep-time-compute-strategic-study-2026 | tee claims/stc-study/reports/final-gate.txt
 ```
 
-- [ ] **Step 2: Run readiness and public egress**
+- [x] **Step 2: Run readiness and public egress**
 
 ```bash
 python3 -m veridraft --data-dir .veridraft-stc-study readiness sleep-time-compute-strategic-study-2026 --venue mlsys | tee claims/stc-study/reports/readiness-mlsys-final.txt
@@ -125,7 +125,7 @@ python3 -m veridraft --data-dir .veridraft-stc-study events | tee claims/stc-stu
 
 Expected: no blocked public claims, no confidentiality leak, event chain valid. Venue AI-policy text may require human sign-off and is recorded rather than falsely marked approved.
 
-- [ ] **Step 3: Commit reports**
+- [x] **Step 3: Commit reports**
 
 ```bash
 git add claims/stc-study/reports
@@ -142,7 +142,7 @@ git commit -m "audit: gate sleep-time study publication"
 - Consumes: every artifact and test suite
 - Produces: exact commands, exit codes, pass/fail counts, duration, report hashes
 
-- [ ] **Step 1: Run Python and analytical tests**
+- [x] **Step 1: Run Python and analytical tests**
 
 ```bash
 uv run --project research/sleep-time-compute pytest -q research/sleep-time-compute/tests
@@ -151,7 +151,7 @@ python3 -m unittest -q experiments/E5-attn-vs-hope/sheet/test_workbook_source.py
 python3 -m pytest -q paper-kr/common/tests translations-kr/stc-core/tests easy/sleep-time-compute/tests
 ```
 
-- [ ] **Step 2: Run publication QA**
+- [x] **Step 2: Run publication QA**
 
 ```bash
 python3 paper-kr/common/build_publications.py --root . --target all --clean
@@ -163,7 +163,7 @@ python3 translations-kr/stc-core/qa_translations.py --all --strict --render-all-
 python3 easy/sleep-time-compute/qa.py --all --combined --strict --render-all-pages
 ```
 
-- [ ] **Step 3: Run presentation QA**
+- [x] **Step 3: Run presentation QA**
 
 ```bash
 node --test presentation/sleep-time-compute-deep/tests/content.test.mjs
@@ -171,18 +171,18 @@ python3 presentation/sleep-time-compute-deep/tests/verify_deck_release.py
 PYTHONPATH=build/deck-work/python-deps python3 "$SKILL_DIR/container_tools/slides_test.py" build/publications/SLEEP-TIME-COMPUTE-DEEP-SEMINAR-112SLIDES-KR.pptx --width 1280 --height 720
 ```
 
-- [ ] **Step 4: Run program and link QA**
+- [x] **Step 4: Run program and link QA**
 
 ```bash
 python3 research/sleep-time-compute/program/validate_program.py --all
 python3 research/sleep-time-compute/program/build_release_manifest.py
 ```
 
-- [ ] **Step 5: Generate hashes**
+- [x] **Step 5: Generate hashes**
 
 Generate `build/publications/SHA256SUMS` for every final PDF/PPTX/manifest and verify with `sha256sum -c`.
 
-- [ ] **Step 6: Verify no placeholders or broken references**
+- [x] **Step 6: Verify no placeholders or broken references**
 
 ```bash
 python3 research/sleep-time-compute/program/validate_program.py --all --reject-authoring-markers --reject-latex-reference-errors
@@ -200,13 +200,13 @@ Expected: no authoring placeholders or LaTeX reference failures.
 - Consumes: Task 4 results
 - Produces: `release_status: ready`
 
-- [ ] **Step 1: Build final manifest**
+- [x] **Step 1: Build final manifest**
 
 ```bash
 python3 research/sleep-time-compute/program/build_release_manifest.py --require-ready
 ```
 
-- [ ] **Step 2: Verify scope and whitespace**
+- [x] **Step 2: Verify scope and whitespace**
 
 ```bash
 git diff --check main...HEAD
@@ -215,11 +215,11 @@ git diff --name-only main...HEAD
 
 Expected changed paths are limited to approved specs/plans, STC research/program, claims, paper-kr, selected translation/easy paths, presentation deep-study, build/publications, and indexes.
 
-- [ ] **Step 3: Verify user files remain untouched**
+- [x] **Step 3: Verify user files remain untouched**
 
 Compare the main worktree's 52 pre-existing untracked paths and hashes against the pre-merge snapshot. Overlap with branch changes must be zero.
 
-- [ ] **Step 4: Commit final manifest**
+- [x] **Step 4: Commit final manifest**
 
 ```bash
 git add build/publications/STC-STUDY-RELEASE-MANIFEST.json build/publications/FINAL-QA.json build/publications/SHA256SUMS

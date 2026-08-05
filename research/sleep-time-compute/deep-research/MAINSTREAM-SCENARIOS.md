@@ -302,4 +302,3 @@ coexistence: periodic-refresh dominant for global common knowledge
 - STC broad adoption in the sense of continuous per-user parametric learning lacks E3–E5 evidence.
 
 The likely mainstream outcome is therefore not a binary win for weights or retrieval. It is a multi-clock system in which external consolidation becomes standard and parametric promotion earns admission case by case.
-

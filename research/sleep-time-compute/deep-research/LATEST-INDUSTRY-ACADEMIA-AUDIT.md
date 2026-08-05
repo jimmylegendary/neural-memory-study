@@ -162,4 +162,3 @@ wake interaction
 | sequential fact reachability failure | `SRC-STC-0036` | paper results after 20 writes and recovery interventions |
 | recursive model collapse | `SRC-STC-0041` | Nature abstract, Methods, Figures 1–4 |
 | memory poisoning | `SRC-STC-0042` | NeurIPS abstract and Sections 3–5 |
-
