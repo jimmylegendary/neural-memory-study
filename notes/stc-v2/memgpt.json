@@ -118,7 +118,7 @@
       {
         "paper_term": "$K$ = number of documents returned by the retriever [§3.2.1, line 759: 'as the number of retrieved documents K increases']",
         "collision": "Reserved $k$ = key vector; $K$ = row-stacked key matrix (STYLE-NOTATION §1.2).",
-        "mapping": "Rename to $K_{\\mathrm{doc}}$."
+        "mapping": "Rename to $K_{\\mathrm{ret}}$. (Revised during ch13 authoring: this note originally proposed $K_{\\mathrm{doc}}$, but Part I ch10 §10.4 already introduced $K_{\\mathrm{ret}}$ as the book-wide symbol for retrieval fan-out and uses it for RAG. The owning chapter's symbol wins; $K_{\\mathrm{doc}}$ is retired so that ch10 and ch13 do not name the same object differently.)"
       },
       {
         "paper_term": "\"function\" (the MemGPT callable)",
@@ -139,6 +139,16 @@
         "paper_term": "The percentages 70% / 100% / 50% in §2.2",
         "collision": "None, but they are written with 'e.g.' and are therefore illustrative, not necessarily the configured values used in the experiments.",
         "mapping": "Cite them as 'e.g. 70%' verbatim; do not present them as measured configuration."
+      },
+      {
+        "paper_term": "the warning / flush token-count thresholds of §2.2 (written $\\tau_{\\mathrm{warn}}$, $\\tau_{\\mathrm{flush}}$ in this note's equations mg-5 and mg-6)",
+        "collision": "Added during ch13 authoring. STC-STYLE-NOTATION §1.2 reserves $\\tau$ for the SESSION index. A threshold named $\\tau$ collides with it.",
+        "mapping": "Write $N_{\\mathrm{warn}}$ and $N_{\\mathrm{flush}}$ in the chapter body, matching $N_{\\mathrm{ctx}}$: all three are token counts. $\\tau$ never appears in this chapter."
+      },
+      {
+        "paper_term": "the FIFO queue (written $Q$ in this note's equations mg-1, mg-5, mg-6)",
+        "collision": "Added during ch13 authoring. Upper-case $Q$ reads as the query matrix in the attention notation the reader carries over from Neural Memory.",
+        "mapping": "Write the queue as $\\mathcal{Q}_t$ (calligraphic) in the chapter body. The recursive summary stays $\\sigma_t$."
       }
     ]
   },

@@ -1,7 +1,7 @@
 # PRE-RESEARCH — Sleep-Time Compute v2 (S0 종합)
 
 **버전**: v1.0 (2026-08-06, S0 종료판)
-**기반**: `notes/stc-v2/*.json` 28편, `papers/`·`papers/stc/` vendored 원문,
+**기반**: `notes/stc-v2/*.json` 29편, `papers/`·`papers/stc/` vendored 원문,
 `dossier/stc-v2/S0-DESIGN.md`(프레임), `experiments/stc/X1·X2`(실험 warrant)
 **지위**: Part I–III의 장 배정·bridge 사슬·척추 논지는 이 문서가 정한다.
 
@@ -272,7 +272,7 @@ X3·X4는 Part III 집필 직전에 실행한다. 등급 규칙은 NM `experimen
 ## 8. S0 종료 점검
 
 - [x] 원문 vendored — `papers/` + `papers/stc/` 35편 신규 포함
-- [x] deep-read 28편, 전부 유효 JSON, `unfavorable_facts` 비지 않음
+- [x] deep-read 29편, 전부 유효 JSON, `unfavorable_facts` 비지 않음
 - [x] 통일 프레임 확정 (S0-DESIGN)
 - [x] 집필 기준 확정 (STC-STYLE-NOTATION v0.1) — §1.7·§4.4·§6.4는 이 문서로 갱신
 - [x] 판별식 + 전수 분류

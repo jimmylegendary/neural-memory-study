@@ -59,7 +59,7 @@
   "notation_conflicts": [
     {"paper": "$M$, $M_t$, $M^{(s)}_t$ (memory module / state)", "ours": "$W$ (fast weights). 캐시된 체크포인트는 $W^{(i)}$", "note": "논문의 $\\mathcal{M}(\\cdot)$은 '모듈'과 '상태'를 겸한다. 우리는 읽기 함수 $\\mathcal{M}(q;W)$와 상태 $W$를 분리한다"},
     {"paper": "$\\theta_{M^{(i)}} = \\{W^{(i)}_1,\\dots,W^{(i)}_c\\}$ (§3.2)", "ours": "$W^{(i)}$ 하나로 접는다", "note": "논문의 $W_1,\\dots,W_c$는 MLP 층 가중치. 우리 $W$(층 기호)와 글자가 충돌하므로 본문에서 논문 표기를 쓰지 않는다"},
-    {"paper": "$L$ = 시퀀스 길이, $L_M$ = 메모리 MLP 층 수", "ours": "$L$ = **층 수** (STC-STYLE §1.3)", "note": "정면 충돌. 본문에서 시퀀스 길이는 문맥 길이로 풀어 쓰거나 장-국소 기호를 선언해야 한다. 이 논문 장의 최우선 대응표 행"},
+    {"paper": "$L$ = 시퀀스 길이, $L_M$ = 메모리 MLP 층 수", "ours": "$L$ = 시퀀스 길이 (STC-STYLE v0.2 §1.3), 메모리 MLP 깊이는 $L_{\\mathcal{M}}$, 블록 수는 $L_{\\mathrm{layer}}$", "note": "충돌 없음 — 집필 중 정정(2026-08-06, ch18). 이 행은 STC-STYLE v0.1의 '$L$ = 층 수' 오기를 근거로 '정면 충돌'이라고 적었으나, v0.2가 NM 승계 규칙(P1)에 따라 $L$ = sequence 길이로 되돌렸다. 논문의 $L$과 이 책의 $L$은 일치한다"},
     {"paper": "$\\mathcal{L}(M(k_t); v_t)$ = attentional bias (inner objective)", "ours": "$\\ell$ (inner loss, 소문자)", "note": "우리 $\\mathcal{L}$은 outer/task loss다. 논문의 대문자 $\\mathcal{L}$을 그대로 옮기면 층이 뒤집힌다"},
     {"paper": "$S^{(i)}$ = 세그먼트 $i$", "ours": "세그먼트는 $S^{(i)}$ 유지하되 첨자 규약으로 구분", "note": "STC-STYLE §1.5: 첨자 $t$를 단 $S_t$는 momentum(surprise). 논문 자신도 Eq.(35)에서 $S_t$를 momentum으로 쓰므로 **같은 논문 안에서 위첨자 $S^{(i)}$=세그먼트 / 아래첨자 $S_t$=momentum**이 공존한다"},
     {"paper": "$N$ = 세그먼트 수", "ours": "$N$ 유지", "note": "우리 예약 $N_q$(문맥 공유 질의 수)와 혼동 금지. $N$은 캐시 개수"},
