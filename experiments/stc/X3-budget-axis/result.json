@@ -1,0 +1,2927 @@
+{
+  "meta": {
+    "id": "X3-budget-axis",
+    "title": "B_s 축 — 보고 실태 전수 감사와 scaling-law 가능성 판정",
+    "supports_chapter": "ch28 (scaling law — B_s를 축으로)",
+    "grade": "AUDIT-GRADE / CORPUS-CENSUS (측정 아님, 시뮬레이션 아님)",
+    "deterministic": true,
+    "randomness": "none",
+    "determinism_protocol": "PYTHONHASHSEED=0으로 두 번 실행해 result.json의 sha256이 같음을 확인한다. 실행시간은 매번 달라지므로 result.json에 넣지 않고 stdout에만 찍는다",
+    "python": "3.14.3",
+    "corpus": "29 deep-read notes in notes/stc-v2/",
+    "input_sha256_prefix": {
+      "notes/stc-v2/continual-facts-in-weights.json": "8903b042f8207287",
+      "notes/stc-v2/deep-generative-replay.json": "373f736a1f539c0c",
+      "notes/stc-v2/ewc.json": "4e50003d057d69b2",
+      "notes/stc-v2/gem.json": "1c765fa1c055a8e2",
+      "notes/stc-v2/generative-adapter.json": "e4f381ff483bf506",
+      "notes/stc-v2/letta-stc.json": "49fa871ebebe0a79",
+      "notes/stc-v2/lm-memorization-capacity.json": "a78ff64404922ec6",
+      "notes/stc-v2/lm-need-sleep.json": "2124b9541e751f78",
+      "notes/stc-v2/lora-as-knowledge-memory.json": "d870566fc6ac85be",
+      "notes/stc-v2/lora.json": "361b22bacca5d98d",
+      "notes/stc-v2/mem0.json": "19b1210eac896529",
+      "notes/stc-v2/memgpt.json": "63ce25136831c808",
+      "notes/stc-v2/memit.json": "fdac2146ffde405c",
+      "notes/stc-v2/memorizing-transformers.json": "b034d76f902df937",
+      "notes/stc-v2/memory-caching.json": "748eeb6b4bfc4553",
+      "notes/stc-v2/memory-layers.json": "13be3e7f39e3e115",
+      "notes/stc-v2/model-collapse.json": "f727306afd4dc848",
+      "notes/stc-v2/multi-timescale-updating.json": "c2c83aa3932dfb33",
+      "notes/stc-v2/need-sleep-recurrence.json": "c43d2473a25ca23f",
+      "notes/stc-v2/nested-learning.json": "b5e9a384117fda63",
+      "notes/stc-v2/pad-dreaming-elife.json": "5c8210d3283c932e",
+      "notes/stc-v2/rag.json": "d1f1ce13af6cb8a9",
+      "notes/stc-v2/rate-distortion-compaction.json": "025c38c247743ff8",
+      "notes/stc-v2/reasoningbank.json": "42bd9468c1240d86",
+      "notes/stc-v2/rome.json": "07bcb4404bb0f261",
+      "notes/stc-v2/scm-sleep-consolidated.json": "2d73823452bd42c2",
+      "notes/stc-v2/seal.json": "f3f04173de029625",
+      "notes/stc-v2/sleep-snn-plos.json": "100534a274c67b89",
+      "notes/stc-v2/zep.json": "17a85231ab8e3aee"
+    },
+    "parse_rules": [
+      "R-A cost_table.B_s 서브트리만 대상. 리프를 (경로, 문자열)로 평탄화",
+      "R-B 필드명 → 역할(VERDICT/PRESENT/ABSENT/DERIVED/OTHER)",
+      "R-C 노트작성자 산술 표지가 있으면 DERIVED로 강등하고 단위 탐지에서 제외 (논문 보고가 아니므로) — 이 감사의 핵심 규칙",
+      "R-D 인용표지([...], §, p., Fig., Table, line, App.) 제거 후 탐지",
+      "R-E 하드 단위는 같은 문장에 숫자가 있어야 양성 (서수 knob은 면제)",
+      "R-F 부정은 앞 30자/뒤 15자 근접창 (뒤쪽 창은 한국어 후치부정용)",
+      "R-G VERDICT 증거는 B_s에 귀속. PRESENT 증거는 sleep-side 어휘가 같은 문장에 있을 때만 귀속, 아니면 other_cost로 분리",
+      "R-H 범주 우선순위 a>b>c>d>e>f로 단일화, 다중 라벨도 병기",
+      "R-I 판정이 ABSENT인데 하드 단위만 있으면 (f). 서수/비율만 있으면 (d)/(e)",
+      "R-J 편집자 override는 사유와 함께 코드에 명시하고 개수를 보고"
+    ],
+    "approximations": {
+      "chars_per_token": 4.0,
+      "why": "토크나이저(torch/transformers)를 이 host에 쓰지 않는다. 영문 산문 BPE의 경험칙 4자/토큰을 쓰되, 수식·코드는 3자/토큰에 가깝고 자연어 산문은 5자/토큰에 가까우므로 3~5 밴드를 함께 보고한다",
+      "what_this_forbids": "이 근사로 얻은 토큰 수를 본문 단정 수치로 쓰지 말 것. 자릿수와 비율만 쓴다"
+    },
+    "caveat_tags": {
+      "AUDIT-NOT-MEASUREMENT": "이 실험은 문헌 상태를 세는 것이다. 성능도 비용도 재지 않았다",
+      "KEYWORD-RULE": "분류는 산문에 대한 키워드+부정 규칙이다. 개별 라벨은 오류 가능. 모든 라벨에 증거 스니펫과 ambiguity_flags를 붙여 검증 가능하게 했다",
+      "NOTE-MEDIATED": "1차 감사 대상은 원문이 아니라 deep-read 노트다. 노트가 놓친 값은 이 감사도 놓친다. 완화책으로 원문 텍스트 probe를 병기하되, probe는 '어딘가에 그 문자열이 있다'만 말하고 그 값이 sleep 예산이라는 것은 말하지 않는다",
+      "CHAR-APPROX": "Q5의 토큰 수는 문자/4 근사다. 소수점을 인용하지 말 것",
+      "PRINTED-EXAMPLE-N1": "Q5의 문자 수는 논문이 인쇄한 예시 1~2건에서 나온다. 데이터셋 평균이 아니다",
+      "COMPETITOR-MEASURED": "Zep 저장소 600k 토큰은 경쟁사(Mem0)가 측정해 보고한 값이다. Zep 자신은 ingestion 비용을 전혀 보고하지 않는다",
+      "STORE-VS-INJECTED": "저장소 크기(C_cap)와 질의당 주입량(|c-hat|)은 다른 양이다. 논문들이 이 둘을 섞어 보고한다"
+    }
+  },
+  "answers": {
+    "Q1": "29편 중 (a)절대 FLOPs/토큰 1 · (b)step 5 · (c)벽시계 2 · (d)서수 knob 2 · (e)상대 비율 0 · (f)absent 19. (f) 중 9편은 오프라인 패스 자체가 없어 B_s가 정의되지 않는다.",
+    "Q2": "(a)~(c) 후보 8편 중 노트만으로 FLOPs 환산이 닫히는 것은 1편(['lora-as-knowledge-memory']). 가장 자주 막는 입력은 시퀀스 길이·모델 크기·batch이며, 벽시계 환산에 필요한 MFU/달성 throughput은 29편 중 1편만 보고한다 (그 1편은 B_s가 정의되지도 않는 LoRA다).",
+    "Q3": "B_s 축에 2점 이상을 가진 4편의 벤치마크 교집합은 공집합이고, 두 편 이상이 공유하는 벤치마크가 하나도 없다(pairwise 공유 0건). 품질 축도 깨져 있다.",
+    "Q4": "그릴 수 없다. 최소 요구 R1–R9를 제시한다 — 절대 FLOPs(또는 닫힌 환산 입력), step/wall-clock 환산 입력, 최소 3점 sweep, 공개 벤치 동일 지표·동일 baseline, B_s의 분모(문맥/세션/과제)와 N_q, wake 쪽 |c-hat| delta, C_cap과 주입량 분리, 라운드 수, 그림이 아니라 표.",
+    "Q5": "X1의 |c| 가정은 짧은 레짐에서 과대(인쇄된 예시 대비 약 3–12배), 긴 레짐에서 과소(corpus 실제 26k–115k 토큰 대비 3–14배 작음)다. |c-hat|/|c|의 관측 범위는 0.014~23으로 X1의 {0.25,1,4}보다 훨씬 넓다. 두 오차 모두 X1의 결론과 같은 방향이라 X1의 순서 결론은 유지·강화된다."
+  },
+  "Q1_reporting_census": {
+    "question": "29편의 cost_table.B_s를 (a)~(f)로 분류하면 어떤 분포가 나오는가",
+    "n_papers": 29,
+    "by_category": {
+      "a": {
+        "label": "절대 FLOPs/토큰",
+        "n": 1,
+        "papers": [
+          "reasoningbank"
+        ]
+      },
+      "b": {
+        "label": "optimizer step 수",
+        "n": 5,
+        "papers": [
+          "continual-facts-in-weights",
+          "ewc",
+          "lm-need-sleep",
+          "lora-as-knowledge-memory",
+          "rome"
+        ]
+      },
+      "c": {
+        "label": "벽시계",
+        "n": 2,
+        "papers": [
+          "memit",
+          "seal"
+        ]
+      },
+      "d": {
+        "label": "서수 knob만",
+        "n": 2,
+        "papers": [
+          "letta-stc",
+          "need-sleep-recurrence"
+        ]
+      },
+      "e": {
+        "label": "상대 비율만",
+        "n": 0,
+        "papers": []
+      },
+      "f": {
+        "label": "absent",
+        "n": 19,
+        "papers": [
+          "deep-generative-replay",
+          "gem",
+          "generative-adapter",
+          "lm-memorization-capacity",
+          "lora",
+          "mem0",
+          "memgpt",
+          "memorizing-transformers",
+          "memory-caching",
+          "memory-layers",
+          "model-collapse",
+          "multi-timescale-updating",
+          "nested-learning",
+          "pad-dreaming-elife",
+          "rag",
+          "rate-distortion-compaction",
+          "scm-sleep-consolidated",
+          "sleep-snn-plos",
+          "zep"
+        ]
+      }
+    },
+    "by_category_multilabel_no_priority_collapse": {
+      "a": {
+        "label": "절대 FLOPs/토큰",
+        "n": 1,
+        "papers": [
+          "reasoningbank"
+        ]
+      },
+      "b": {
+        "label": "optimizer step 수",
+        "n": 5,
+        "papers": [
+          "continual-facts-in-weights",
+          "ewc",
+          "lm-need-sleep",
+          "lora-as-knowledge-memory",
+          "rome"
+        ]
+      },
+      "c": {
+        "label": "벽시계",
+        "n": 3,
+        "papers": [
+          "memit",
+          "rome",
+          "seal"
+        ]
+      },
+      "d": {
+        "label": "서수 knob만",
+        "n": 4,
+        "papers": [
+          "letta-stc",
+          "lora-as-knowledge-memory",
+          "need-sleep-recurrence",
+          "rome"
+        ]
+      },
+      "e": {
+        "label": "상대 비율만",
+        "n": 2,
+        "papers": [
+          "continual-facts-in-weights",
+          "lm-need-sleep"
+        ]
+      },
+      "f": {
+        "label": "absent",
+        "n": 19,
+        "papers": [
+          "deep-generative-replay",
+          "gem",
+          "generative-adapter",
+          "lm-memorization-capacity",
+          "lora",
+          "mem0",
+          "memgpt",
+          "memorizing-transformers",
+          "memory-caching",
+          "memory-layers",
+          "model-collapse",
+          "multi-timescale-updating",
+          "nested-learning",
+          "pad-dreaming-elife",
+          "rag",
+          "rate-distortion-compaction",
+          "scm-sleep-consolidated",
+          "sleep-snn-plos",
+          "zep"
+        ]
+      }
+    },
+    "by_axis_x_category": {
+      "E": {
+        "a": 1,
+        "d": 1,
+        "f": 7
+      },
+      "Theta": {
+        "b": 3,
+        "c": 2,
+        "f": 3
+      },
+      "W": {
+        "d": 1
+      },
+      "bio": {
+        "f": 3
+      },
+      "other/mixed": {
+        "f": 3
+      },
+      "theory": {
+        "b": 2,
+        "f": 3
+      }
+    },
+    "reporting_rate_by_axis_sorted": {
+      "W": {
+        "n_papers": 1,
+        "n_reporting_something": 1,
+        "rate": 1.0
+      },
+      "Theta": {
+        "n_papers": 8,
+        "n_reporting_something": 5,
+        "rate": 0.625
+      },
+      "theory": {
+        "n_papers": 5,
+        "n_reporting_something": 2,
+        "rate": 0.4
+      },
+      "E": {
+        "n_papers": 9,
+        "n_reporting_something": 2,
+        "rate": 0.222
+      },
+      "bio": {
+        "n_papers": 3,
+        "n_reporting_something": 0,
+        "rate": 0.0
+      },
+      "other/mixed": {
+        "n_papers": 3,
+        "n_reporting_something": 0,
+        "rate": 0.0
+      }
+    },
+    "structural": {
+      "B_s_undefined_no_offline_pass": 9,
+      "B_s_defined": 20,
+      "plotted_but_not_tabulated": 1,
+      "papers_with_>=2_points_on_the_B_s_axis": 4,
+      "papers_with_>=3_points_on_the_B_s_axis": 4,
+      "of_which_points_are_in_absolute_budget_units": 2,
+      "raw_bracketed_sets_incl_category_f": 5,
+      "papers_reporting_MFU_or_achieved_throughput": {
+        "lora": [
+          "32.5 tokens/s",
+          "43.1 tokens/s"
+        ]
+      },
+      "absent_but_paper_prints_some_other_compute_number": {
+        "generative-adapter": [
+          "steps",
+          "wall_clock"
+        ],
+        "model-collapse": [
+          "ordinal",
+          "steps",
+          "tokens"
+        ]
+      }
+    },
+    "founding_paper_direct_probe": {
+      "file": "papers/2504.13171.txt (Letta, Sleep-time Compute)",
+      "regex": "\\d[\\d,\\.]*\\s*(k|K|M|B)?\\s*tokens?\\b",
+      "n_matches": 2,
+      "matches": [
+        "1 token",
+        "4 tokens"
+      ],
+      "n_FLOP_mentions": 0,
+      "reading": "이 라인의 이름을 만든 논문의 전문에서 '<숫자> tokens' 꼴이 나오는 곳은 두 군데뿐이고, 둘 다 AIME 문제 속의 게임 말('removes either 1 token or 4 tokens')이다. 비용 숫자가 아니다. FLOP은 0회 언급된다"
+    },
+    "cross_check_vs_dossier_discriminant": {
+      "what": "이 감사는 B_s만 보고 '오프라인 패스 자체가 없다'를 프로그램으로 판정한다. 그 집합이 PRE-RESEARCH §2.2의 '판별식 불충족' 목록과 얼마나 겹치는지는 독립적 정합성 점검이 된다",
+      "papers_with_no_offline_pass_found_here": [
+        "gem",
+        "lm-memorization-capacity",
+        "lora",
+        "memgpt",
+        "memorizing-transformers",
+        "memory-caching",
+        "memory-layers",
+        "nested-learning",
+        "rag"
+      ],
+      "reading": "이 목록은 PRE-RESEARCH §2.2 표 B(Nested Learning, Memory Caching, Memory Layers, LoRA, RAG, Memorizing Transformers, MemGPT 경계사례, 지속학습 일반)와 사실상 일치한다. 서로 다른 필드(판별식 서술 vs cost_table.B_s)에서 같은 결론이 나온다"
+    },
+    "taxonomy_gaps": {
+      "note": "과제가 준 (a)~(f) 여섯 칸에 들어가지 않는 보고 형태가 실제로 존재한다. 억지로 밀어 넣지 않고 여기에 남긴다",
+      "simulated_time": [
+        "sleep-snn-plos"
+      ],
+      "sample_or_item_counts_not_optimizer_steps": [
+        "ewc"
+      ],
+      "plotted_only_no_numeral": [
+        "generative-adapter"
+      ],
+      "note_field_missing": [
+        "pad-dreaming-elife"
+      ]
+    },
+    "n_editor_overrides": 0,
+    "editor_overrides": {},
+    "override_policy": "규칙 출력을 29편 전수 검토한 뒤 override가 필요 없도록 규칙을 고쳤다. 현재 override 0건 — 집계는 100% 코드 산물이다",
+    "per_paper": {
+      "continual-facts-in-weights": {
+        "axis": "theory",
+        "arxiv": "2607.11020 (v2, 14 Jul 2026)",
+        "category_rule": "b",
+        "categories_multi": [
+          "b",
+          "e"
+        ],
+        "verdict_polarity": "PARTIAL",
+        "bs_defined": true,
+        "units_pos": [
+          "ratio",
+          "steps"
+        ],
+        "units_neg": [
+          "flops",
+          "steps",
+          "tokens",
+          "wall_clock"
+        ],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": true,
+          "values": [
+            [
+              24,
+              96,
+              192
+            ]
+          ],
+          "max_points": 3,
+          "axis_kind": "absolute_budget_units"
+        },
+        "ambiguity_flags": [
+          "VERDICT_PARTIAL: 노트가 스스로 '부분적으로만 보고'라고 쓴다",
+          "MULTI_UNIT: ['b', 'e'] — 단일 범주로 강제 축약함(우선순위 a>b>c>d>e)",
+          "UNIT_MIXED_POLARITY: ['steps'] 단위에 긍정·부정 증거가 함께 있다"
+        ],
+        "evidence": [
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "flops",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "Reported ONLY as optimiser-step counts and item counts, never as FLOPs, tokens, wall-clock or energy."
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "tokens",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "Reported ONLY as optimiser-step counts and item counts, never as FLOPs, tokens, wall-clock or energy."
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "wall_clock",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "Reported ONLY as optimiser-step counts and item counts, never as FLOPs, tokens, wall-clock or energy."
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "steps",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "Per fact: 24, 96 or 192 optimiser steps at batch size one, AdamW lr $2\\times10^{-4}$, loss on answer tokens only  ."
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "steps",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "2,400 steps at $N=100$ and 4,800 at $N=200$."
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "steps",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "Creation factorisation and the large crossed experiment: 192 steps per fact  ."
+          },
+          {
+            "path": "B_s.caveat",
+            "role": "OTHER",
+            "unit": "tokens",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "The paper explicitly declines to equalise anything but steps: 'The steps are matched, but generation and token throughput differ, so this remains an operating-point comparison'   and 'The two data conditions are match..."
+          },
+          {
+            "path": "B_s.caveat",
+            "role": "OTHER",
+            "unit": "steps",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "The paper explicitly declines to equalise anything but steps: 'The steps are matched, but generation and token throughput differ, so this remains an operating-point comparison'   and 'The two data conditions are match..."
+          },
+          {
+            "path": "B_s.caveat",
+            "role": "OTHER",
+            "unit": "steps",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "So even the step counts are not a compute budget - a study write processes 12x more items per step-equivalent than a bare-statement write."
+          },
+          {
+            "path": "B_s.caveat",
+            "role": "OTHER",
+            "unit": "ratio",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "So even the step counts are not a compute budget - a study write processes 12x more items per step-equivalent than a bare-statement write."
+          }
+        ],
+        "category": "b"
+      },
+      "deep-generative-replay": {
+        "axis": "bio",
+        "arxiv": "1705.08690",
+        "category_rule": "f",
+        "categories_multi": [
+          "f"
+        ],
+        "verdict_polarity": "ABSENT",
+        "bs_defined": true,
+        "units_pos": [],
+        "units_neg": [
+          "flops",
+          "steps",
+          "wall_clock"
+        ],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "none"
+        },
+        "ambiguity_flags": [],
+        "evidence": [
+          {
+            "path": "B_s.detail",
+            "role": "PRESENT",
+            "unit": "flops",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "No FLOPs, no sample count, no wall-clock, no epoch count for the sleep-time replay+retraining is stated anywhere in the main text."
+          },
+          {
+            "path": "B_s.detail",
+            "role": "PRESENT",
+            "unit": "steps",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "No FLOPs, no sample count, no wall-clock, no epoch count for the sleep-time replay+retraining is stated anywhere in the main text."
+          },
+          {
+            "path": "B_s.detail",
+            "role": "PRESENT",
+            "unit": "wall_clock",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "No FLOPs, no sample count, no wall-clock, no epoch count for the sleep-time replay+retraining is stated anywhere in the main text."
+          }
+        ],
+        "category": "f"
+      },
+      "ewc": {
+        "axis": "Theta",
+        "arxiv": "1612.00796",
+        "category_rule": "b",
+        "categories_multi": [
+          "b"
+        ],
+        "verdict_polarity": "PARTIAL",
+        "bs_defined": true,
+        "units_pos": [
+          "steps"
+        ],
+        "units_neg": [],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "absolute_budget_units"
+        },
+        "ambiguity_flags": [
+          "VERDICT_PARTIAL: 노트가 스스로 '부분적으로만 보고'라고 쓴다",
+          "STEPS_VS_SAMPLES: 보고된 것은 optimizer step이 아니라 Fisher 추정 표본 수(100 minibatch × 32)다. (b)로 세되 단위가 다르다"
+        ],
+        "evidence": [
+          {
+            "path": "B_s.what_is_stated",
+            "role": "PRESENT",
+            "unit": "steps",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "Whenever the diagonal of the Fisher is recomputed for a task, one hundred mini-batches are drawn from the replay buffer'  , with 'minibatch size = 32'  ."
+          }
+        ],
+        "category": "b"
+      },
+      "gem": {
+        "axis": "Theta",
+        "arxiv": "1706.08840",
+        "category_rule": "f",
+        "categories_multi": [
+          "f"
+        ],
+        "verdict_polarity": "ABSENT",
+        "bs_defined": false,
+        "units_pos": [],
+        "units_neg": [],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "none"
+        },
+        "ambiguity_flags": [
+          "B_S_UNDEFINED: 질의 전 오프라인 패스가 아예 없어 B_s가 정의되지 않는다 — '보고 안 함'이 아니라 '있을 수 없음'. (f)로 세되 구별할 것"
+        ],
+        "evidence": [],
+        "category": "f"
+      },
+      "generative-adapter": {
+        "axis": "W (per the S0 discriminant), catalogued ",
+        "arxiv": "2411.05877",
+        "category_rule": "f",
+        "categories_multi": [
+          "f"
+        ],
+        "verdict_polarity": "PARTIAL",
+        "bs_defined": true,
+        "units_pos": [],
+        "units_neg": [
+          "wall_clock"
+        ],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [
+          "steps",
+          "wall_clock"
+        ],
+        "figure_only": true,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "none"
+        },
+        "ambiguity_flags": [
+          "VERDICT_PARTIAL: 노트가 스스로 '부분적으로만 보고'라고 쓴다",
+          "PLOTTED_BUT_NOT_TABULATED: 그림 축에는 있으나 인쇄된 숫자가 없어 점을 찍을 수 없다"
+        ],
+        "evidence": [
+          {
+            "path": "B_s.one_time_amortized_component",
+            "role": "PRESENT",
+            "unit": "wall_clock",
+            "polarity": "pos",
+            "attributed_to_B_s": false,
+            "snippet": "The generator's outer-loop training: 1 billion SlimPajama tokens, ' oximately 20 hours using 8 NVIDIA H100 GPUs'  , plus instruction tuning for 2 epochs at batch size 32   whose wall-clock is not reported."
+          },
+          {
+            "path": "B_s.one_time_amortized_component",
+            "role": "PRESENT",
+            "unit": "wall_clock",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "The generator's outer-loop training: 1 billion SlimPajama tokens, ' oximately 20 hours using 8 NVIDIA H100 GPUs'  , plus instruction tuning for 2 epochs at batch size 32   whose wall-clock is not reported."
+          },
+          {
+            "path": "B_s.one_time_amortized_component",
+            "role": "PRESENT",
+            "unit": "steps",
+            "polarity": "pos",
+            "attributed_to_B_s": false,
+            "snippet": "The generator's outer-loop training: 1 billion SlimPajama tokens, ' oximately 20 hours using 8 NVIDIA H100 GPUs'  , plus instruction tuning for 2 epochs at batch size 32   whose wall-clock is not reported."
+          }
+        ],
+        "category": "f"
+      },
+      "letta-stc": {
+        "axis": "E",
+        "arxiv": "2504.13171",
+        "category_rule": "d",
+        "categories_multi": [
+          "d"
+        ],
+        "verdict_polarity": "ABSENT",
+        "bs_defined": true,
+        "units_pos": [
+          "ordinal"
+        ],
+        "units_neg": [
+          "flops",
+          "tokens"
+        ],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": true,
+          "values": [
+            [
+              1,
+              2,
+              5,
+              10
+            ]
+          ],
+          "max_points": 4,
+          "axis_kind": "proportional_knob_unknown_scale"
+        },
+        "ambiguity_flags": [],
+        "evidence": [
+          {
+            "path": "B_s.detail",
+            "role": "PRESENT",
+            "unit": "flops",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "The paper reports NO sleep-time token count, FLOP count, or dollar figure anywhere — not in text, not on any axis, not in any table."
+          },
+          {
+            "path": "B_s.detail",
+            "role": "PRESENT",
+            "unit": "tokens",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "The paper reports NO sleep-time token count, FLOP count, or dollar figure anywhere — not in text, not on any axis, not in any table."
+          },
+          {
+            "path": "B_s.detail",
+            "role": "PRESENT",
+            "unit": "ordinal",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "What IS reported is ordinal knobs only: $J \\le 10$ `rethink_memory` calls  ;"
+          },
+          {
+            "path": "B_s.detail",
+            "role": "PRESENT",
+            "unit": "ordinal",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "$\\kappa_{\\parallel} \\in \\{1,2,5,10\\}$ parallel generations  ;"
+          },
+          {
+            "path": "B_s.detail",
+            "role": "PRESENT",
+            "unit": "ordinal",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "sleep-time reasoning effort $\\in$ {low, medium, high}  ."
+          }
+        ],
+        "category": "d"
+      },
+      "lm-memorization-capacity": {
+        "axis": "theory",
+        "arxiv": "2505.24832",
+        "category_rule": "f",
+        "categories_multi": [
+          "f"
+        ],
+        "verdict_polarity": "ABSENT",
+        "bs_defined": false,
+        "units_pos": [],
+        "units_neg": [
+          "flops",
+          "steps",
+          "wall_clock"
+        ],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "none"
+        },
+        "ambiguity_flags": [
+          "B_S_UNDEFINED: 질의 전 오프라인 패스가 아예 없어 B_s가 정의되지 않는다 — '보고 안 함'이 아니라 '있을 수 없음'. (f)로 세되 구별할 것"
+        ],
+        "evidence": [
+          {
+            "path": "B_s.explanation",
+            "role": "OTHER",
+            "unit": "steps",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "For completeness, the OUTER-loop training budget it does state — which is not B_s — is: 10^6 steps, batch size 2048, Adam, single A100 GPU, bfloat16, gradient accumulation when a batch does not fit  ."
+          },
+          {
+            "path": "B_s.explanation",
+            "role": "OTHER",
+            "unit": "flops",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "No FLOP count, no GPU-hour count, and no wall-clock time is given anywhere in the paper (keyword search for 'FLOP', 'GPU-hour', 'wall-clock', 'latenc', 'throughput' returns zero hits)."
+          },
+          {
+            "path": "B_s.explanation",
+            "role": "OTHER",
+            "unit": "wall_clock",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "No FLOP count, no GPU-hour count, and no wall-clock time is given anywhere in the paper (keyword search for 'FLOP', 'GPU-hour', 'wall-clock', 'latenc', 'throughput' returns zero hits)."
+          }
+        ],
+        "category": "f"
+      },
+      "lm-need-sleep": {
+        "axis": "Theta",
+        "arxiv": "2606.03979 (v2)",
+        "category_rule": "b",
+        "categories_multi": [
+          "b",
+          "e"
+        ],
+        "verdict_polarity": "ABSENT",
+        "bs_defined": true,
+        "units_pos": [
+          "ratio",
+          "steps"
+        ],
+        "units_neg": [
+          "flops",
+          "tokens",
+          "wall_clock"
+        ],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "absolute_budget_units"
+        },
+        "ambiguity_flags": [
+          "MULTI_UNIT: ['b', 'e'] — 단일 범주로 강제 축약함(우선순위 a>b>c>d>e)"
+        ],
+        "evidence": [
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "flops",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "absent (no FLOPs, no token count, no absolute wall-clock anywhere in the paper)"
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "tokens",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "absent (no FLOPs, no token count, no absolute wall-clock anywhere in the paper)"
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "wall_clock",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "absent (no FLOPs, no token count, no absolute wall-clock anywhere in the paper)"
+          },
+          {
+            "path": "B_s.what_the_paper_does_state[0]",
+            "role": "PRESENT",
+            "unit": "ratio",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "'With the same number of steps, SFT is 4x more efficient than our method'   -- i.e."
+          },
+          {
+            "path": "B_s.what_the_paper_does_state[0]",
+            "role": "PRESENT",
+            "unit": "ratio",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "one Sleep step costs 4x an SFT step."
+          },
+          {
+            "path": "B_s.what_the_paper_does_state[1]",
+            "role": "PRESENT",
+            "unit": "ratio",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "In this case, SFT requires 4.3x, 3.6x, and 4.8x wall-clock time to match the performance of our design.'   -- iso-accuracy ratios, still relative, and only against SFT."
+          },
+          {
+            "path": "B_s.what_the_paper_does_state[2]",
+            "role": "PRESENT",
+            "unit": "steps",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "Sleep: 100 training steps, effective batch size 32, LR 5e-6  ."
+          },
+          {
+            "path": "B_s.what_the_paper_does_state[2]",
+            "role": "PRESENT",
+            "unit": "steps",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "GRPO baseline: 500 steps."
+          },
+          {
+            "path": "B_s.what_the_paper_does_state[2]",
+            "role": "PRESENT",
+            "unit": "steps",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "SFT baseline: 100 steps."
+          }
+        ],
+        "category": "b"
+      },
+      "lora-as-knowledge-memory": {
+        "axis": "theory",
+        "arxiv": "2603.01097 (v5, cs.LG)",
+        "category_rule": "b",
+        "categories_multi": [
+          "b",
+          "d"
+        ],
+        "verdict_polarity": "PARTIAL",
+        "bs_defined": true,
+        "units_pos": [
+          "ordinal",
+          "steps"
+        ],
+        "units_neg": [
+          "flops",
+          "steps",
+          "wall_clock"
+        ],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": true,
+          "values": [
+            [
+              250,
+              500,
+              1000,
+              2000
+            ]
+          ],
+          "max_points": 4,
+          "axis_kind": "absolute_budget_units"
+        },
+        "ambiguity_flags": [
+          "VERDICT_PARTIAL: 노트가 스스로 '부분적으로만 보고'라고 쓴다",
+          "MULTI_UNIT: ['b', 'd'] — 단일 범주로 강제 축약함(우선순위 a>b>c>d>e)",
+          "UNIT_MIXED_POLARITY: ['steps'] 단위에 긍정·부정 증거가 함께 있다"
+        ],
+        "evidence": [
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "flops",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "Partially reported, in optimizer steps only — never in FLOPs, GPU-hours or wall-clock."
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "steps",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "Verbatim  : PhoneBook/CounterFact (Q1–Q3, Q8) — 'Training is conducted for 1,500 steps with a batch size of 8."
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "steps",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "We set the scaling factor α equal to the rank (α = r).' PaperQA (Q4–Q7, Q9–Q11) — 'Training is conducted for 1,000 steps with a learning rate of 5 × 10^-5 and a batch size of 8."
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "steps",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "For multi-LoRA, we use r = 4, α = 8 trained for 150 steps;"
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "steps",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "for single LoRA, we use r = 16, α = 32 trained for 250 steps.' Q6 grid: η ∈ {1e-5, 5e-5, 1e-4, 5e-4} × S ∈ {250, 500, 1000, 2000}, selected values in  ."
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "steps",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "Partially reported, in optimizer steps only — never in FLOPs, GPU-hours or wall-clock."
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "wall_clock",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "Partially reported, in optimizer steps only — never in FLOPs, GPU-hours or wall-clock."
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "ordinal",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "for single LoRA, we use r = 16, α = 32 trained for 250 steps.' Q6 grid: η ∈ {1e-5, 5e-5, 1e-4, 5e-4} × S ∈ {250, 500, 1000, 2000}, selected values in  ."
+          }
+        ],
+        "category": "b"
+      },
+      "lora": {
+        "axis": "Theta",
+        "arxiv": "2106.09685",
+        "category_rule": "f",
+        "categories_multi": [
+          "f"
+        ],
+        "verdict_polarity": "ABSENT",
+        "bs_defined": false,
+        "units_pos": [
+          "ratio",
+          "steps",
+          "tokens"
+        ],
+        "units_neg": [
+          "wall_clock"
+        ],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "none"
+        },
+        "ambiguity_flags": [
+          "B_S_UNDEFINED: 질의 전 오프라인 패스가 아예 없어 B_s가 정의되지 않는다 — '보고 안 함'이 아니라 '있을 수 없음'. (f)로 세되 구별할 것"
+        ],
+        "evidence": [
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "tokens",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "적응(=오프라인 쓰기)의 계산량에 대해 논문이 실제로 보고하는 값은 다음 셋뿐이다: (1) GPT-3 175B 학습 throughput — full fine-tuning 32.5 tokens/s per V100 GPU vs LoRA 43.1 tokens/s per V100 GPU (같은 model-parallel shard 수), 본문 표현으로 '25% speedup'  ;"
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "ratio",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "적응(=오프라인 쓰기)의 계산량에 대해 논문이 실제로 보고하는 값은 다음 셋뿐이다: (1) GPT-3 175B 학습 throughput — full fine-tuning 32.5 tokens/s per V100 GPU vs LoRA 43.1 tokens/s per V100 GPU (같은 model-parallel shard 수), 본문 표현으로 '25% speedup'  ;"
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "steps",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "(3) 학습 스케줄 — GPT-3: AdamW, 2 epochs, batch 128 samples, weight decay 0.1, seq len 384(WikiSQL)/768(MNLI)/2048(SAMSum), LoRA LR 2.00E-04  ;"
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "steps",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "GPT-2: 5 epochs, batch 8, LR 2E-04  ;"
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "steps",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "RoBERTa: 10–80 epochs, batch 4–32  ;"
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "steps",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "DeBERTa XXL: 5–30 epochs, batch 4–32  ."
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "wall_clock",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "**총 adaptation FLOPs·총 토큰 수·wall-clock은 전부 absent.** 데이터 규모만  에서 확인 가능: WikiSQL 56,355/8,421 train/val, SAMSum 14,732/819 train/test, E2E ≈42,000/4,600/4,600, DART 82K, WebNLG 22K, MNLI 392K  ."
+          }
+        ],
+        "category": "f"
+      },
+      "mem0": {
+        "axis": "E",
+        "arxiv": "2504.19413",
+        "category_rule": "f",
+        "categories_multi": [
+          "f"
+        ],
+        "verdict_polarity": "ABSENT",
+        "bs_defined": true,
+        "units_pos": [],
+        "units_neg": [
+          "flops",
+          "tokens"
+        ],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "none"
+        },
+        "ambiguity_flags": [],
+        "evidence": [
+          {
+            "path": "B_s.what_the_paper_does_say[0]",
+            "role": "PRESENT",
+            "unit": "flops",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "No token count, no FLOP count, no LLM-call count, and no dollar figure is given for the extraction phase, the update phase, or the asynchronous summary refresh."
+          },
+          {
+            "path": "B_s.what_the_paper_does_say[0]",
+            "role": "PRESENT",
+            "unit": "tokens",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "No token count, no FLOP count, no LLM-call count, and no dollar figure is given for the extraction phase, the update phase, or the asynchronous summary refresh."
+          }
+        ],
+        "category": "f"
+      },
+      "memgpt": {
+        "axis": "E",
+        "arxiv": "2310.08560",
+        "category_rule": "f",
+        "categories_multi": [
+          "f"
+        ],
+        "verdict_polarity": "ABSENT",
+        "bs_defined": false,
+        "units_pos": [],
+        "units_neg": [],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "none"
+        },
+        "ambiguity_flags": [
+          "B_S_UNDEFINED: 질의 전 오프라인 패스가 아예 없어 B_s가 정의되지 않는다 — '보고 안 함'이 아니라 '있을 수 없음'. (f)로 세되 구별할 것"
+        ],
+        "evidence": [],
+        "category": "f"
+      },
+      "memit": {
+        "axis": "Theta",
+        "arxiv": "2210.07229",
+        "category_rule": "c",
+        "categories_multi": [
+          "c"
+        ],
+        "verdict_polarity": "PRESENT",
+        "bs_defined": true,
+        "units_pos": [
+          "wall_clock"
+        ],
+        "units_neg": [],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "absolute_budget_units"
+        },
+        "ambiguity_flags": [],
+        "evidence": [
+          {
+            "path": "B_s.value_reported",
+            "role": "VERDICT",
+            "unit": "wall_clock",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "**총 7.44 hr**  ."
+          },
+          {
+            "path": "B_s.value_reported",
+            "role": "VERDICT",
+            "unit": "wall_clock",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "분해  : $z_i$ 벡터 10,000개 산출 = 23,546.65 sec ≈ 6.54 hr (현재 구현은 직렬);"
+          },
+          {
+            "path": "B_s.value_reported",
+            "role": "VERDICT",
+            "unit": "wall_clock",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "$z_i$가 이미 계산되어 있으면 나머지 갱신 = 3,226.35 sec ≈ 0.90 hr."
+          },
+          {
+            "path": "B_s.value_reported",
+            "role": "VERDICT",
+            "unit": "wall_clock",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "기준선 동일 조건: MEND 98.25 sec   (  본문은 '98 sec'), FT 1,716.21 sec ≈ 0.48 hr   (  본문은 'around 29 min'), ROME 44,248.26 sec ≈ 12.29 hr ≈ ' oximately 4 seconds per edit'  ."
+          }
+        ],
+        "category": "c"
+      },
+      "memorizing-transformers": {
+        "axis": "E",
+        "arxiv": "2203.08913",
+        "category_rule": "f",
+        "categories_multi": [
+          "f"
+        ],
+        "verdict_polarity": "ABSENT",
+        "bs_defined": false,
+        "units_pos": [
+          "ratio",
+          "wall_clock"
+        ],
+        "units_neg": [
+          "steps"
+        ],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "none"
+        },
+        "ambiguity_flags": [
+          "B_S_UNDEFINED: 질의 전 오프라인 패스가 아예 없어 B_s가 정의되지 않는다 — '보고 안 함'이 아니라 '있을 수 없음'. (f)로 세되 구별할 것"
+        ],
+        "evidence": [
+          {
+            "path": "B_s.detail",
+            "role": "PRESENT",
+            "unit": "wall_clock",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "The only wall-clock figure in the paper is a *combined* read+write training step time: 'For a model with around 200M trainable parameters the step time increased from 0.2s to 0.25s when we added a memory of size 8K, a..."
+          },
+          {
+            "path": "B_s.detail",
+            "role": "PRESENT",
+            "unit": "ratio",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "The only wall-clock figure in the paper is a *combined* read+write training step time: 'For a model with around 200M trainable parameters the step time increased from 0.2s to 0.25s when we added a memory of size 8K, a..."
+          },
+          {
+            "path": "B_s.detail",
+            "role": "PRESENT",
+            "unit": "steps",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "it is a training step, not an inference step;"
+          }
+        ],
+        "category": "f"
+      },
+      "memory-caching": {
+        "axis": "{\"paper_self_description\": \"논문은 스스로를 sle",
+        "arxiv": "2602.24281",
+        "category_rule": "f",
+        "categories_multi": [
+          "f"
+        ],
+        "verdict_polarity": "ABSENT",
+        "bs_defined": false,
+        "units_pos": [],
+        "units_neg": [],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "none"
+        },
+        "ambiguity_flags": [
+          "B_S_UNDEFINED: 질의 전 오프라인 패스가 아예 없어 B_s가 정의되지 않는다 — '보고 안 함'이 아니라 '있을 수 없음'. (f)로 세되 구별할 것"
+        ],
+        "evidence": [],
+        "category": "f"
+      },
+      "memory-layers": {
+        "axis": "Theta",
+        "arxiv": "2412.09764",
+        "category_rule": "f",
+        "categories_multi": [
+          "f"
+        ],
+        "verdict_polarity": "ABSENT",
+        "bs_defined": false,
+        "units_pos": [
+          "ratio",
+          "tokens"
+        ],
+        "units_neg": [],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "none"
+        },
+        "ambiguity_flags": [
+          "B_S_UNDEFINED: 질의 전 오프라인 패스가 아예 없어 B_s가 정의되지 않는다 — '보고 안 함'이 아니라 '있을 수 없음'. (f)로 세되 구별할 것"
+        ],
+        "evidence": [
+          {
+            "path": "B_s.what_the_paper_does_report[0]",
+            "role": "PRESENT",
+            "unit": "tokens",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "사전학습 토큰 수: 134m/373m/720m/1.3b 전부 **1 trillion tokens**  ."
+          },
+          {
+            "path": "B_s.what_the_paper_does_report[1]",
+            "role": "PRESENT",
+            "unit": "tokens",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "상대 FLOPs 진술만 존재하고 절대값은 없다: 'outperform dense models with more than twice the computation budget'   · 'match the performance of dense models that have been trained on 4x more compute'   · 'performance falling generally..."
+          },
+          {
+            "path": "B_s.what_the_paper_does_report[1]",
+            "role": "PRESENT",
+            "unit": "ratio",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "상대 FLOPs 진술만 존재하고 절대값은 없다: 'outperform dense models with more than twice the computation budget'   · 'match the performance of dense models that have been trained on 4x more compute'   · 'performance falling generally..."
+          }
+        ],
+        "category": "f"
+      },
+      "model-collapse": {
+        "axis": "theory",
+        "arxiv": "2404.01413",
+        "category_rule": "f",
+        "categories_multi": [
+          "f"
+        ],
+        "verdict_polarity": "ABSENT",
+        "bs_defined": true,
+        "units_pos": [],
+        "units_neg": [],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [
+          "ordinal",
+          "steps",
+          "tokens"
+        ],
+        "figure_only": false,
+        "sweep": {
+          "detected": true,
+          "values": [
+            [
+              100,
+              316,
+              1000
+            ]
+          ],
+          "max_points": 3,
+          "axis_kind": "none"
+        },
+        "ambiguity_flags": [
+          "VERDICT_ABSENT_BUT_OTHER_COST_PRINTED: 판정문은 absent인데 논문이 다른 비용 수치(['ordinal', 'steps', 'tokens'])는 인쇄한다 — 그것은 B_s가 아니다"
+        ],
+        "evidence": [
+          {
+            "path": "B_s.what_the_paper_gives_instead[0]",
+            "role": "PRESENT",
+            "unit": "tokens",
+            "polarity": "pos",
+            "attributed_to_B_s": false,
+            "snippet": "LM: the synthetic set generated per round is 'a new dataset of the same size as TinyStories' = 470M tokens per round  ;"
+          },
+          {
+            "path": "B_s.what_the_paper_gives_instead[1]",
+            "role": "PRESENT",
+            "unit": "steps",
+            "polarity": "pos",
+            "attributed_to_B_s": false,
+            "snippet": "100 training epochs per data iteration  ."
+          },
+          {
+            "path": "B_s.what_the_paper_gives_instead[2]",
+            "role": "PRESENT",
+            "unit": "steps",
+            "polarity": "pos",
+            "attributed_to_B_s": false,
+            "snippet": "50 diffusion steps per prediction  ."
+          },
+          {
+            "path": "B_s.what_the_paper_gives_instead[3]",
+            "role": "PRESENT",
+            "unit": "ordinal",
+            "polarity": "pos",
+            "attributed_to_B_s": false,
+            "snippet": "Linear: $T$ samples per round, $T \\in \\{100, 316, 1000\\}$  ."
+          }
+        ],
+        "category": "f"
+      },
+      "multi-timescale-updating": {
+        "axis": "E",
+        "arxiv": "2605.05097",
+        "category_rule": "f",
+        "categories_multi": [
+          "f"
+        ],
+        "verdict_polarity": "ABSENT",
+        "bs_defined": true,
+        "units_pos": [],
+        "units_neg": [],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "none"
+        },
+        "ambiguity_flags": [],
+        "evidence": [],
+        "category": "f"
+      },
+      "need-sleep-recurrence": {
+        "axis": "W",
+        "arxiv": "2605.26099",
+        "category_rule": "d",
+        "categories_multi": [
+          "d"
+        ],
+        "verdict_polarity": "PARTIAL",
+        "bs_defined": true,
+        "units_pos": [
+          "ordinal"
+        ],
+        "units_neg": [],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [
+          "wall_clock"
+        ],
+        "figure_only": false,
+        "sweep": {
+          "detected": true,
+          "values": [
+            [
+              1,
+              2,
+              3,
+              4
+            ],
+            [
+              1,
+              2,
+              4
+            ],
+            [
+              1,
+              2,
+              4,
+              6
+            ]
+          ],
+          "max_points": 4,
+          "axis_kind": "proportional_knob_unknown_scale"
+        },
+        "ambiguity_flags": [
+          "VERDICT_PARTIAL: 노트가 스스로 '부분적으로만 보고'라고 쓴다"
+        ],
+        "evidence": [
+          {
+            "path": "B_s.what_is_stated[1]",
+            "role": "PRESENT",
+            "unit": "ordinal",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "$N$ values actually run: $\\{1,2,3,4\\}$ (automaton,    '2 to 4 recurrent updates'), $\\{1,2,4\\}$ (Depo,    ), $\\{1,2,4,6\\}$ (Jet) and $\\{1,2,4\\}$ (Ouro) on GSM-Infinite  , $\\{1,2,4\\}$ (sliding window,    )."
+          },
+          {
+            "path": "B_s.what_is_stated[3]",
+            "role": "PRESENT",
+            "unit": "wall_clock",
+            "polarity": "pos",
+            "attributed_to_B_s": false,
+            "snippet": "Total experiment compute (training, not per-session sleep): 'The automaton experiments require less than one A6000 GPU-day."
+          },
+          {
+            "path": "B_s.what_is_stated[3]",
+            "role": "PRESENT",
+            "unit": "wall_clock",
+            "polarity": "pos",
+            "attributed_to_B_s": false,
+            "snippet": "The Depo and GSM-Infinite experiments require roughly 1–2 H100 GPU-days per run.'  ."
+          }
+        ],
+        "category": "d"
+      },
+      "nested-learning": {
+        "axis": "W-PATH. Every update the paper implement",
+        "arxiv": "2512.24695v1",
+        "category_rule": "f",
+        "categories_multi": [
+          "f"
+        ],
+        "verdict_polarity": "ABSENT",
+        "bs_defined": false,
+        "units_pos": [],
+        "units_neg": [
+          "flops",
+          "tokens"
+        ],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "none"
+        },
+        "ambiguity_flags": [
+          "B_S_UNDEFINED: 질의 전 오프라인 패스가 아예 없어 B_s가 정의되지 않는다 — '보고 안 함'이 아니라 '있을 수 없음'. (f)로 세되 구별할 것"
+        ],
+        "evidence": [
+          {
+            "path": "B_s.reason",
+            "role": "OTHER",
+            "unit": "flops",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "That is parameters touched per step during the forward pass, not a sleep budget, and it is given in parameters, not FLOPs or tokens."
+          },
+          {
+            "path": "B_s.reason",
+            "role": "OTHER",
+            "unit": "tokens",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "That is parameters touched per step during the forward pass, not a sleep budget, and it is given in parameters, not FLOPs or tokens."
+          }
+        ],
+        "category": "f"
+      },
+      "pad-dreaming-elife": {
+        "axis": "bio",
+        "arxiv": "none (journal article; no arXiv ID printed in the vendored text). Preprinted 09 September 2021 [line 39], preprint server not named in the text.",
+        "category_rule": "f",
+        "categories_multi": [
+          "f"
+        ],
+        "verdict_polarity": "NOTE_FIELD_MISSING",
+        "bs_defined": null,
+        "units_pos": [],
+        "units_neg": [],
+        "other_cost_units": [],
+        "evidence": [],
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "none"
+        },
+        "units_suppressed_by_negation": [],
+        "ambiguity_flags": [
+          "NOTE_FIELD_MISSING: cost_table.B_s 키 자체가 노트에 없다 (논문 미보고가 아니라 노트 미기재 — 구분해서 셀 것)"
+        ],
+        "figure_only": false,
+        "category": "f"
+      },
+      "rag": {
+        "axis": "E",
+        "arxiv": "2005.11401",
+        "category_rule": "f",
+        "categories_multi": [
+          "f"
+        ],
+        "verdict_polarity": "ABSENT",
+        "bs_defined": false,
+        "units_pos": [],
+        "units_neg": [
+          "flops",
+          "steps",
+          "wall_clock"
+        ],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "none"
+        },
+        "ambiguity_flags": [
+          "B_S_UNDEFINED: 질의 전 오프라인 패스가 아예 없어 B_s가 정의되지 않는다 — '보고 안 함'이 아니라 '있을 수 없음'. (f)로 세되 구별할 것"
+        ],
+        "evidence": [
+          {
+            "path": "B_s.what_is_stated_instead[0]",
+            "role": "PRESENT",
+            "unit": "steps",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "No GPU-hours, no step count, no epoch count."
+          },
+          {
+            "path": "B_s.what_is_stated_instead[0]",
+            "role": "PRESENT",
+            "unit": "wall_clock",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "No GPU-hours, no step count, no epoch count."
+          },
+          {
+            "path": "B_s.what_is_stated_instead[1]",
+            "role": "PRESENT",
+            "unit": "flops",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "No time, no cost, no FLOPs given for this pass."
+          }
+        ],
+        "category": "f"
+      },
+      "rate-distortion-compaction": {
+        "axis": "theory",
+        "arxiv": "2607.08032v1",
+        "category_rule": "f",
+        "categories_multi": [
+          "f"
+        ],
+        "verdict_polarity": "ABSENT",
+        "bs_defined": true,
+        "units_pos": [],
+        "units_neg": [],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "none"
+        },
+        "ambiguity_flags": [],
+        "evidence": [],
+        "category": "f"
+      },
+      "reasoningbank": {
+        "axis": "E",
+        "arxiv": "2509.25140",
+        "category_rule": "a",
+        "categories_multi": [
+          "a"
+        ],
+        "verdict_polarity": "PARTIAL",
+        "bs_defined": true,
+        "units_pos": [
+          "tokens"
+        ],
+        "units_neg": [],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "absolute_budget_units"
+        },
+        "ambiguity_flags": [
+          "VERDICT_PARTIAL: 노트가 스스로 '부분적으로만 보고'라고 쓴다"
+        ],
+        "evidence": [
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "tokens",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "Per task, averaged: LLM-as-a-Judge = 2186.3 tokens, Memory Extraction = 1562.1 tokens."
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "tokens",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "Sum = 3748.4 tokens of offline compute per task."
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "tokens",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "Action Generation (wake) = 49306.1 tokens;"
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "tokens",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "Total = 53054.5 tokens."
+          }
+        ],
+        "category": "a"
+      },
+      "rome": {
+        "axis": "Theta",
+        "arxiv": "2202.05262",
+        "category_rule": "b",
+        "categories_multi": [
+          "b",
+          "c",
+          "d"
+        ],
+        "verdict_polarity": "PARTIAL",
+        "bs_defined": true,
+        "units_pos": [
+          "ordinal",
+          "steps",
+          "wall_clock"
+        ],
+        "units_neg": [
+          "tokens"
+        ],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "absolute_budget_units"
+        },
+        "ambiguity_flags": [
+          "VERDICT_PARTIAL: 노트가 스스로 '부분적으로만 보고'라고 쓴다",
+          "MULTI_UNIT: ['b', 'c', 'd'] — 단일 범주로 강제 축약함(우선순위 a>b>c>d>e)"
+        ],
+        "evidence": [
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "tokens",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "벽시계 시간만 있고 FLOPs도 token 수도 없다."
+          },
+          {
+            "path": "B_s.reported[0]",
+            "role": "PRESENT",
+            "unit": "wall_clock",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "'The entire ROME edit takes  oximately 2s on an NVIDIA A6000 GPU for GPT-2 XL.'"
+          },
+          {
+            "path": "B_s.reported[1]",
+            "role": "PRESENT",
+            "unit": "steps",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "v_* 최적화: Adam, 최대 20 step, L(z) ≤ 5 × 10^{-2}에서 early stop"
+          },
+          {
+            "path": "B_s.reported[1]",
+            "role": "PRESENT",
+            "unit": "ordinal",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "v_* 최적화: Adam, 최대 20 step, L(z) ≤ 5 × 10^{-2}에서 early stop"
+          },
+          {
+            "path": "B_s.reported[4]",
+            "role": "PRESENT",
+            "unit": "wall_clock",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "비교값: 'Hypernetworks such as KE and MEND are much faster during inference (on the order of 100ms), but they require hours-to-days of additional training overhead.'"
+          },
+          {
+            "path": "B_s.reported[5]",
+            "role": "PRESENT",
+            "unit": "steps",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "baseline FT/FT+L: 'Optimization is carried out for a maximum of 25 steps' (하이퍼파라미터 스윕 기준)"
+          }
+        ],
+        "category": "b"
+      },
+      "scm-sleep-consolidated": {
+        "axis": "E",
+        "arxiv": "2604.20943v1",
+        "category_rule": "f",
+        "categories_multi": [
+          "f"
+        ],
+        "verdict_polarity": "ABSENT",
+        "bs_defined": true,
+        "units_pos": [],
+        "units_neg": [
+          "flops"
+        ],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "none"
+        },
+        "ambiguity_flags": [],
+        "evidence": [
+          {
+            "path": "B_s.detail",
+            "role": "PRESENT",
+            "unit": "flops",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "The paper reports no per-sleep-cycle cost in FLOPs, tokens, seconds, or energy."
+          }
+        ],
+        "category": "f"
+      },
+      "seal": {
+        "axis": "Theta",
+        "arxiv": "2506.10943",
+        "category_rule": "c",
+        "categories_multi": [
+          "c"
+        ],
+        "verdict_polarity": "PARTIAL",
+        "bs_defined": true,
+        "units_pos": [
+          "wall_clock"
+        ],
+        "units_neg": [
+          "flops",
+          "steps",
+          "tokens"
+        ],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "absolute_budget_units"
+        },
+        "ambiguity_flags": [
+          "VERDICT_PARTIAL: 노트가 스스로 '부분적으로만 보고'라고 쓴다"
+        ],
+        "evidence": [
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "flops",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "PARTIALLY REPORTED — in wall-clock only, and only for the RL TRAINING loop, never for a deployment-time sleep step, and never in tokens or FLOPs."
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "tokens",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "PARTIALLY REPORTED — in wall-clock only, and only for the RL TRAINING loop, never for a deployment-time sleep step, and never in tokens or FLOPs."
+          },
+          {
+            "path": "B_s.value",
+            "role": "VERDICT",
+            "unit": "steps",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "PARTIALLY REPORTED — in wall-clock only, and only for the RL TRAINING loop, never for a deployment-time sleep step, and never in tokens or FLOPs."
+          },
+          {
+            "path": "B_s.reported_numbers[0]",
+            "role": "PRESENT",
+            "unit": "wall_clock",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "'each self-edit evaluation takes  oximately 30-45 seconds'"
+          },
+          {
+            "path": "B_s.reported_numbers[1]",
+            "role": "PRESENT",
+            "unit": "wall_clock",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "one ReST^EM round in knowledge incorporation = 50 passages x 5 completions x 3 seeds = 750 inner-loop iterations, 'about 6 hours on 2xH100s'"
+          },
+          {
+            "path": "B_s.reported_numbers[3]",
+            "role": "PRESENT",
+            "unit": "wall_clock",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "'Overall ReSTEM took around 2-3 hours' on a single A100/H100/H200"
+          },
+          {
+            "path": "B_s.reported_numbers[4]",
+            "role": "PRESENT",
+            "unit": "wall_clock",
+            "polarity": "pos",
+            "attributed_to_B_s": true,
+            "snippet": "proxy-reward variant: whole RL training takes ~5 min vs ~6 hr for the full loop"
+          }
+        ],
+        "category": "c"
+      },
+      "sleep-snn-plos": {
+        "axis": "bio",
+        "arxiv": "none -- journal article only, no arXiv preprint referenced in the vendored text",
+        "category_rule": "f",
+        "categories_multi": [
+          "f"
+        ],
+        "verdict_polarity": "PARTIAL",
+        "bs_defined": true,
+        "units_pos": [],
+        "units_neg": [],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "none"
+        },
+        "ambiguity_flags": [
+          "VERDICT_PARTIAL: 노트가 스스로 '부분적으로만 보고'라고 쓴다",
+          "SIMULATED_TIME_NOT_COMPUTE: 보고된 예산이 시뮬레이션 시간이다. (a)~(e) 어느 칸에도 속하지 않는다 — 분류 체계의 빈칸"
+        ],
+        "evidence": [],
+        "category": "f"
+      },
+      "zep": {
+        "axis": "E",
+        "arxiv": "2501.13956",
+        "category_rule": "f",
+        "categories_multi": [
+          "f"
+        ],
+        "verdict_polarity": "ABSENT",
+        "bs_defined": true,
+        "units_pos": [],
+        "units_neg": [
+          "flops",
+          "tokens",
+          "wall_clock"
+        ],
+        "units_suppressed_by_negation": [],
+        "other_cost_units": [],
+        "figure_only": false,
+        "sweep": {
+          "detected": false,
+          "values": [],
+          "max_points": 0,
+          "axis_kind": "none"
+        },
+        "ambiguity_flags": [],
+        "evidence": [
+          {
+            "path": "B_s.detail",
+            "role": "PRESENT",
+            "unit": "flops",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "The paper reports NO ingestion cost of any kind: no token count, no FLOPs, no dollar figure, no wall-clock, no LLM-call count, no throughput."
+          },
+          {
+            "path": "B_s.detail",
+            "role": "PRESENT",
+            "unit": "tokens",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "The paper reports NO ingestion cost of any kind: no token count, no FLOPs, no dollar figure, no wall-clock, no LLM-call count, no throughput."
+          },
+          {
+            "path": "B_s.detail",
+            "role": "PRESENT",
+            "unit": "wall_clock",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "The paper reports NO ingestion cost of any kind: no token count, no FLOPs, no dollar figure, no wall-clock, no LLM-call count, no throughput."
+          },
+          {
+            "path": "B_s.unquantified_cost_claims_the_paper_does_make[2]",
+            "role": "PRESENT",
+            "unit": "tokens",
+            "polarity": "neg",
+            "attributed_to_B_s": null,
+            "snippet": "No write-side token figure exists."
+          }
+        ],
+        "category": "f"
+      }
+    }
+  },
+  "Q2_unified_axis": {
+    "question": "(a)~(c)를 공통 단위(FLOPs)로 환산할 수 있는가. 무엇이 없어서 못 하는가",
+    "recipes": {
+      "a_tokens_to_flops": {
+        "applies_to_category": "a",
+        "formula": "B_s[FLOPs] ~= n_tokens * c_pass * N_params  (c_pass = 2 for a forward/prefill token, ~6 for a token that also carries a backward pass)",
+        "required_inputs": [
+          "n_tokens",
+          "N_params",
+          "prefill_vs_decode_split"
+        ]
+      },
+      "b_steps_to_flops": {
+        "applies_to_category": "b",
+        "formula": "B_s[FLOPs] ~= n_steps * batch_size * seq_len_tokens * c_pass * N_params (c_pass ~ 6 for full fine-tune; PEFT changes the backward term only)",
+        "required_inputs": [
+          "n_steps",
+          "batch_size",
+          "seq_len_tokens",
+          "N_params",
+          "trainable_fraction"
+        ]
+      },
+      "c_wallclock_to_flops": {
+        "applies_to_category": "c",
+        "formula": "B_s[FLOPs] ~= t_wall * n_devices * peak_flops(device) * MFU",
+        "required_inputs": [
+          "t_wall",
+          "device_model",
+          "n_devices",
+          "mfu_or_throughput"
+        ]
+      }
+    },
+    "candidates_n": 8,
+    "per_paper": {
+      "continual-facts-in-weights": {
+        "category": "b",
+        "recipe": "b_steps_to_flops",
+        "formula": "B_s[FLOPs] ~= n_steps * batch_size * seq_len_tokens * c_pass * N_params (c_pass ~ 6 for full fine-tune; PEFT changes the backward term only)",
+        "input_status": {
+          "n_steps": "in_note",
+          "batch_size": "not_found",
+          "seq_len_tokens": "not_found",
+          "N_params": "in_note",
+          "trainable_fraction": "in_note"
+        },
+        "probe_matches": {
+          "n_steps": [
+            "192 optimiser steps",
+            "2,400 steps",
+            "192 steps"
+          ],
+          "batch_size": [],
+          "seq_len_tokens": [],
+          "N_params": [
+            "Qwen3-4B",
+            "4B parameters",
+            "Qwen3-8B"
+          ],
+          "trainable_fraction": [
+            "LoRA",
+            "adapter",
+            "rank 16"
+          ]
+        },
+        "blocking_inputs": [
+          "batch_size",
+          "seq_len_tokens"
+        ],
+        "convertible_from_note_alone": false,
+        "paper_txt_resolved": "papers/stc/2607.11020.txt",
+        "n_points_on_axis": 3
+      },
+      "ewc": {
+        "category": "b",
+        "recipe": "b_steps_to_flops",
+        "formula": "B_s[FLOPs] ~= n_steps * batch_size * seq_len_tokens * c_pass * N_params (c_pass ~ 6 for full fine-tune; PEFT changes the backward term only)",
+        "input_status": {
+          "n_steps": "in_note",
+          "batch_size": "in_note",
+          "seq_len_tokens": "not_found",
+          "N_params": "not_found",
+          "trainable_fraction": "not_found"
+        },
+        "probe_matches": {
+          "n_steps": [
+            "4 steps"
+          ],
+          "batch_size": [
+            "batch size 32"
+          ],
+          "seq_len_tokens": [],
+          "N_params": [],
+          "trainable_fraction": []
+        },
+        "blocking_inputs": [
+          "seq_len_tokens",
+          "N_params",
+          "trainable_fraction"
+        ],
+        "convertible_from_note_alone": false,
+        "paper_txt_resolved": "papers/stc/1612.00796.txt",
+        "n_points_on_axis": 0
+      },
+      "lm-need-sleep": {
+        "category": "b",
+        "recipe": "b_steps_to_flops",
+        "formula": "B_s[FLOPs] ~= n_steps * batch_size * seq_len_tokens * c_pass * N_params (c_pass ~ 6 for full fine-tune; PEFT changes the backward term only)",
+        "input_status": {
+          "n_steps": "in_note",
+          "batch_size": "in_note",
+          "seq_len_tokens": "not_found",
+          "N_params": "in_note",
+          "trainable_fraction": "in_note"
+        },
+        "probe_matches": {
+          "n_steps": [
+            "500 steps",
+            "100 steps"
+          ],
+          "batch_size": [
+            "effective batch size 32,",
+            "effective batch size 32"
+          ],
+          "seq_len_tokens": [],
+          "N_params": [
+            "Qwen3-8B",
+            "Llama-3B",
+            "Llama-3.2-1B"
+          ],
+          "trainable_fraction": [
+            "LoRA",
+            "rank 64",
+            "Adapter"
+          ]
+        },
+        "blocking_inputs": [
+          "seq_len_tokens"
+        ],
+        "convertible_from_note_alone": false,
+        "paper_txt_resolved": "papers/2606.03979v2.txt",
+        "n_points_on_axis": 0
+      },
+      "lora-as-knowledge-memory": {
+        "category": "b",
+        "recipe": "b_steps_to_flops",
+        "formula": "B_s[FLOPs] ~= n_steps * batch_size * seq_len_tokens * c_pass * N_params (c_pass ~ 6 for full fine-tune; PEFT changes the backward term only)",
+        "input_status": {
+          "n_steps": "in_note",
+          "batch_size": "in_note",
+          "seq_len_tokens": "in_note",
+          "N_params": "in_note",
+          "trainable_fraction": "in_note"
+        },
+        "probe_matches": {
+          "n_steps": [
+            "1,500 steps",
+            "1,000 steps",
+            "150 steps"
+          ],
+          "batch_size": [
+            "batch size of 8",
+            "batch size of 32",
+            "batch size 1,"
+          ],
+          "seq_len_tokens": [
+            "2,048-token chunk"
+          ],
+          "N_params": [
+            "Llama-3.1-8B",
+            "Llama-3.2-1B",
+            "Qwen3-8B"
+          ],
+          "trainable_fraction": [
+            "lora",
+            "LoRA",
+            "adapter"
+          ]
+        },
+        "blocking_inputs": [],
+        "convertible_from_note_alone": true,
+        "paper_txt_resolved": "papers/stc/2603.01097.txt",
+        "n_points_on_axis": 4
+      },
+      "memit": {
+        "category": "c",
+        "recipe": "c_wallclock_to_flops",
+        "formula": "B_s[FLOPs] ~= t_wall * n_devices * peak_flops(device) * MFU",
+        "input_status": {
+          "t_wall": "in_note",
+          "device_model": "in_note",
+          "n_devices": "not_found",
+          "mfu_or_throughput": "not_found"
+        },
+        "probe_matches": {
+          "t_wall": [
+            "546.65 sec",
+            "6.54 hr",
+            "226.35 sec"
+          ],
+          "device_model": [
+            "A6000"
+          ],
+          "n_devices": [],
+          "mfu_or_throughput": []
+        },
+        "blocking_inputs": [
+          "n_devices",
+          "mfu_or_throughput"
+        ],
+        "convertible_from_note_alone": false,
+        "paper_txt_resolved": "papers/stc/2210.07229.txt",
+        "n_points_on_axis": 0
+      },
+      "reasoningbank": {
+        "category": "a",
+        "recipe": "a_tokens_to_flops",
+        "formula": "B_s[FLOPs] ~= n_tokens * c_pass * N_params  (c_pass = 2 for a forward/prefill token, ~6 for a token that also carries a backward pass)",
+        "input_status": {
+          "n_tokens": "in_note",
+          "N_params": "not_found",
+          "prefill_vs_decode_split": "in_note"
+        },
+        "probe_matches": {
+          "n_tokens": [
+            "2186.3 tokens",
+            "1562.1 tokens",
+            "3748.4 tokens"
+          ],
+          "N_params": [],
+          "prefill_vs_decode_split": [
+            "prompt and completion",
+            "prefill",
+            "completion tokens"
+          ]
+        },
+        "blocking_inputs": [
+          "N_params"
+        ],
+        "convertible_from_note_alone": false,
+        "paper_txt_resolved": "papers/stc/2509.25140.txt",
+        "n_points_on_axis": 0
+      },
+      "rome": {
+        "category": "b",
+        "recipe": "b_steps_to_flops",
+        "formula": "B_s[FLOPs] ~= n_steps * batch_size * seq_len_tokens * c_pass * N_params (c_pass ~ 6 for full fine-tune; PEFT changes the backward term only)",
+        "input_status": {
+          "n_steps": "in_note",
+          "batch_size": "not_found",
+          "seq_len_tokens": "not_found",
+          "N_params": "in_note",
+          "trainable_fraction": "in_note"
+        },
+        "probe_matches": {
+          "n_steps": [
+            "20 step",
+            "25 steps",
+            "25 step"
+          ],
+          "batch_size": [],
+          "seq_len_tokens": [],
+          "N_params": [
+            "GPT-2 XL",
+            "GPT-J",
+            "1.5B parameters"
+          ],
+          "trainable_fraction": [
+            "rank 1",
+            "LoRA",
+            "adapter"
+          ]
+        },
+        "blocking_inputs": [
+          "batch_size",
+          "seq_len_tokens"
+        ],
+        "convertible_from_note_alone": false,
+        "paper_txt_resolved": "papers/stc/2202.05262.txt",
+        "n_points_on_axis": 0
+      },
+      "seal": {
+        "category": "c",
+        "recipe": "c_wallclock_to_flops",
+        "formula": "B_s[FLOPs] ~= t_wall * n_devices * peak_flops(device) * MFU",
+        "input_status": {
+          "t_wall": "in_note",
+          "device_model": "in_note",
+          "n_devices": "in_note",
+          "mfu_or_throughput": "not_found"
+        },
+        "probe_matches": {
+          "t_wall": [
+            "45 seconds",
+            "6 hours",
+            "3 hours"
+          ],
+          "device_model": [
+            "A100",
+            "H100",
+            "H200"
+          ],
+          "n_devices": [
+            "2xH100",
+            "single A100",
+            "2xH200"
+          ],
+          "mfu_or_throughput": []
+        },
+        "blocking_inputs": [
+          "mfu_or_throughput"
+        ],
+        "convertible_from_note_alone": false,
+        "paper_txt_resolved": "papers/stc/2506.10943.txt",
+        "n_points_on_axis": 0
+      }
+    },
+    "convertible_n": 1,
+    "convertible_papers": [
+      "lora-as-knowledge-memory"
+    ],
+    "most_frequently_missing_inputs": {
+      "seq_len_tokens": 4,
+      "N_params": 2,
+      "batch_size": 2,
+      "mfu_or_throughput": 2,
+      "n_devices": 1,
+      "trainable_fraction": 1
+    },
+    "honest_limit": "convertible 판정은 노트 안에 그 입력이 '문자열로 존재하는가'를 본 것이다. 존재해도 그 값이 sleep 구간에 속한다는 보장은 없으므로, 이 판정은 환산 가능성의 **상한**이다. 즉 실제로 환산 가능한 점 수는 여기 숫자보다 많을 수 없다. 구체적 경고: 유일하게 닫힌 lora-as-knowledge-memory의 seq_len_tokens 히트는 '2,048-token chunk'인데 이것은 RAG **baseline**의 청크 크기이지 LoRA 학습 시퀀스 길이가 아니다. probe_matches를 직접 보고 판단하라"
+  },
+  "Q3_quality_axis": {
+    "question": "B_s 축 위에 2점 이상을 가진 논문들의 품질 축이 서로 비교 가능한가",
+    "pool": [
+      "continual-facts-in-weights",
+      "letta-stc",
+      "lora-as-knowledge-memory",
+      "need-sleep-recurrence"
+    ],
+    "per_paper": {
+      "continual-facts-in-weights": {
+        "category": "b",
+        "axis_kind": "absolute_budget_units",
+        "n_points_on_axis": 3,
+        "sweep_values": [
+          [
+            24,
+            96,
+            192
+          ]
+        ],
+        "benchmarks": [],
+        "metrics": [
+          "accuracy",
+          "recall@k"
+        ],
+        "baselines": [
+          "SFT"
+        ]
+      },
+      "letta-stc": {
+        "category": "d",
+        "axis_kind": "proportional_knob_unknown_scale",
+        "n_points_on_axis": 4,
+        "sweep_values": [
+          [
+            1,
+            2,
+            5,
+            10
+          ]
+        ],
+        "benchmarks": [
+          "Stateful GSM-Symbolic",
+          "Stateful AIME",
+          "Multi-Query GSM-Symbolic",
+          "SWE-Features"
+        ],
+        "metrics": [
+          "accuracy",
+          "F1",
+          "recall@k",
+          "pass@k"
+        ],
+        "baselines": [
+          "test_time_only"
+        ]
+      },
+      "lora-as-knowledge-memory": {
+        "category": "b",
+        "axis_kind": "absolute_budget_units",
+        "n_points_on_axis": 4,
+        "sweep_values": [
+          [
+            250,
+            500,
+            1000,
+            2000
+          ]
+        ],
+        "benchmarks": [
+          "CounterFact",
+          "PhoneBook",
+          "PaperQA",
+          "NarrativeQA",
+          "QuALITY"
+        ],
+        "metrics": [
+          "accuracy"
+        ],
+        "baselines": [
+          "full_context",
+          "ICL",
+          "vanilla/single",
+          "RAG/BM25"
+        ]
+      },
+      "need-sleep-recurrence": {
+        "category": "d",
+        "axis_kind": "proportional_knob_unknown_scale",
+        "n_points_on_axis": 4,
+        "sweep_values": [
+          [
+            1,
+            2,
+            3,
+            4
+          ],
+          [
+            1,
+            2,
+            4
+          ],
+          [
+            1,
+            2,
+            4,
+            6
+          ]
+        ],
+        "benchmarks": [
+          "GSM-Infinite",
+          "Depo",
+          "automaton"
+        ],
+        "metrics": [
+          "accuracy"
+        ],
+        "baselines": [
+          "vanilla/single"
+        ]
+      }
+    },
+    "benchmark_intersection_over_all_pool": [],
+    "pairwise_shared_benchmarks": [],
+    "largest_group_sharing_one_benchmark": {
+      "size": 1,
+      "benchmarks": [
+        "CounterFact",
+        "Depo",
+        "GSM-Infinite",
+        "Multi-Query GSM-Symbolic",
+        "NarrativeQA",
+        "PaperQA",
+        "PhoneBook",
+        "QuALITY",
+        "SWE-Features",
+        "Stateful AIME",
+        "Stateful GSM-Symbolic",
+        "automaton"
+      ]
+    },
+    "papers_with_no_named_public_benchmark": [
+      "continual-facts-in-weights"
+    ],
+    "author_constructed_benchmarks_in_pool_editorial_list": [
+      "Multi-Query GSM-Symbolic",
+      "SWE-Features",
+      "Stateful AIME",
+      "Stateful GSM-Symbolic"
+    ],
+    "author_constructed_note": "이 목록은 원문에서 '우리가 만들었다'는 진술이 확인된 것만 담는다. 목록에 없다고 해서 공개 벤치라는 뜻은 아니다(예: need-sleep-recurrence의 automaton/Depo는 미확인).",
+    "note": "벤치마크 어휘 사전 매칭이다. 같은 이름의 벤치마크라도 split·프롬프트·채점기가 다르면 실제로는 비교 불가일 수 있다 — 즉 여기 나온 공유량은 **상한**이다"
+  },
+  "Q4_verdict": {
+    "question": "지금 문헌으로 B_s-품질 곡선을 그릴 수 있는가",
+    "can_draw_a_B_s_quality_curve": false,
+    "test_used": "환산 가능한 논문 >= 3편 AND 그 논문들이 공유하는 벤치마크 >= 1개",
+    "counts": {
+      "papers_in_corpus": 29,
+      "B_s_absent_or_undefined": 19,
+      "B_s_in_absolute_flops_or_tokens": 1,
+      "convertible_to_FLOPs_from_note": 1,
+      "papers_with_>=3_points_on_axis": 4,
+      "shared_benchmark_across_sweep_pool": []
+    },
+    "minimum_reporting_requirements": [
+      {
+        "id": "R1",
+        "req": "B_s를 절대 FLOPs로 보고하라. 못 하면 (토큰 수 + 모델 파라미터 수 N + prefill/decode 분해)를 함께 보고해 FLOPs가 닫히게 하라",
+        "why": "현재 (a)범주는 1편(['reasoningbank'])뿐인데 그 편도 backbone 모델 크기가 미보고라 FLOPs로 닫히지 않는다. corpus 전체에서 환산이 닫히는 것은 1편(['lora-as-knowledge-memory'])이며 그것은 (a)가 아니라 (b)범주다",
+        "evidence": "Q2.most_frequently_missing_inputs"
+      },
+      {
+        "id": "R2",
+        "req": "step·wall-clock으로 보고할 거면 환산에 필요한 나머지를 같이 보고하라 — step이면 (batch, 시퀀스 길이, N, 학습 가능 파라미터 비율), wall-clock이면 (장치 종류, 장치 수, 달성 throughput 또는 MFU)",
+        "why": "step/wall-clock은 하드웨어와 구현에 종속된 양이라 그 자체로는 축이 되지 않는다. MFU 또는 달성 throughput을 보고한 노트는 29편 중 1편(['lora'])이고, 그 편은 $B_s$가 정의되지도 않는 논문이다",
+        "evidence": "Q2.per_paper[*].blocking_inputs"
+      },
+      {
+        "id": "R3",
+        "req": "B_s를 **한 점이 아니라 최소 3점**으로 sweep하고 각 점의 품질을 보고하라. 1점은 운영점(operating point)이지 축이 아니다",
+        "why": "B_s 축에 2점 이상이 놓인 논문 4편 / 3점 이상 4편이고, 그 점이 **절대 예산 단위**인 논문은 2편뿐이다. 곡선의 지수·포화점은 3점 미만에서 정의되지 않고, 눈금 없는 비례 knob 위에서는 기울기를 다른 논문과 비교할 수 없다",
+        "evidence": "Q1.structural"
+      },
+      {
+        "id": "R4",
+        "req": "품질은 **기존 공개 벤치마크**에서, 같은 지표·같은 baseline arm으로 각 B_s 점마다 보고하라. 저자 제작 변형 벤치는 부가로만",
+        "why": "지금은 sweep을 가진 논문들끼리 공유하는 벤치마크의 교집합이 공집합이다. B_s 축을 복원해도 y축이 붙지 않는다",
+        "evidence": "Q3.benchmark_intersection_over_all_pool"
+      },
+      {
+        "id": "R5",
+        "req": "B_s가 **무엇당** 예산인지 명시하라 — 문맥당/세션당/과제당/라운드당 — 그리고 그것을 나눠 갚을 N_q(한 문맥을 공유하는 질의 수)의 분포를 보고하라",
+        "why": "상각식 (A)의 분모다. 현재 corpus에서 실서빙 N_q 분포를 보고한 논문은 0편이고, 벤치마크 수준의 N_q조차 부수적으로만 계산 가능하다",
+        "evidence": "S0 §4 의무 caveat; X1 ABSENT_FROM_PAPER.N_q_distribution"
+      },
+      {
+        "id": "R6",
+        "req": "각 B_s 점에서 wake 쪽 delta도 함께 보고하라 — 특히 학습된 문맥이 매 질의 프롬프트에 더하는 토큰 수 |c-hat|과 원 문맥 |c|",
+        "why": "X1이 보인 대로 |c-hat|의 prefill은 N_q로 상각되지 않는다. B_s만 보고하면 총비용의 부호가 결정되지 않는다",
+        "evidence": "X1 F1; Q5.observed_ratios_chat_over_c"
+      },
+      {
+        "id": "R7",
+        "req": "저장소 크기 C_cap(바이트 또는 토큰)과 질의당 주입량 |c-hat|을 **분리해서** 보고하라. 둘을 한 숫자로 섞지 말 것",
+        "why": "Mem0는 저장소를 토큰으로, Zep은 주입량을 토큰으로 보고한다. 같은 단위로 인쇄돼 있어 섞이기 쉽고, 섞으면 비가 1.5자릿수 넘게 틀어진다",
+        "evidence": "Q5.observed_ratios_chat_over_c (kind 필드)"
+      },
+      {
+        "id": "R8",
+        "req": "B_s를 반복해서 내는지(라운드마다) 한 번만 내는지, 그리고 라운드 수를 보고하라",
+        "why": "Θ-경로와 E-경로는 재소비 구조가 다르다. 라운드 수가 없으면 총 B_s가 정의되지 않고 열화율 rho와도 짝지을 수 없다",
+        "evidence": "Q1.per_paper (model-collapse·SEAL·SCM의 라운드 서술)"
+      },
+      {
+        "id": "R9",
+        "req": "그림 축에만 FLOPs를 그리지 말고 **표에 숫자로** 인쇄하라",
+        "why": "현재 1편이 'B_s를 그림으로는 그렸으나 인용 가능한 숫자가 없는' 상태다. 그림만으로는 점을 찍을 수 없다",
+        "evidence": "Q1.structural.plotted_but_not_tabulated"
+      }
+    ],
+    "what_ch28_can_still_do": "곡선을 못 그린다는 것이 곡선이 없다는 뜻은 아니다. ch28이 할 수 있는 것은 (i) 축이 왜 복원 불가인지를 계수로 보이고, (ii) 최소 요구 목록 R1-R9를 제시하며, (iii) X1·X2가 세운 회계 위에서 **곡선의 부호와 경계 조건**만 진술하는 것이다. 지수·포화점은 진술하지 않는다"
+  },
+  "Q5_context_length_grounding": {
+    "question": "X1이 sweep한 |c|·|c-hat| 범위가 현실적인가 — vendored 원문의 인쇄된 예시를 문자 수로 재고, 논문이 보고한 토큰 수와 맞춰본다",
+    "method": "① 원문에서 앵커 문자열 사이를 잘라 문자 수를 센다(줄번호 아닌 내용 고정). ② 문자/4로 토큰을 근사하고 3~5 밴드를 병기한다. ③ 논문이 스스로 토큰으로 보고한 값은 근사 없이 그대로 쓰고, 앵커로 원문 존재를 확인한다",
+    "measured_from_printed_examples": [
+      {
+        "label": "letta_fig1_raw_context",
+        "what": "|c| — Multi-Query GSM-Symbolic 원 문맥 (논문이 직접 인쇄한 유일한 예시)",
+        "source": "[Letta STC Fig. 1, p.2] 'Raw Context' 상자",
+        "chars": 131,
+        "tokens_approx_chars_over_4": 32.8,
+        "tokens_band_chars_over_5_to_3": [
+          26.2,
+          43.7
+        ],
+        "sha256_of_extracted_text": "e0ca55cf73a89fc5",
+        "text": "A juggler can juggle 800 balls. 1/4 of the balls are tennis balls, and 1/2 of the tennis balls are indigo of which 1/10 are marked."
+      },
+      {
+        "label": "letta_appB_aime_context_1",
+        "what": "|c| — Stateful AIME 문맥 예시 1",
+        "source": "[Letta STC App. B, p.17]",
+        "chars": 245,
+        "tokens_approx_chars_over_4": 61.2,
+        "tokens_band_chars_over_5_to_3": [
+          49.0,
+          81.7
+        ],
+        "sha256_of_extracted_text": "a98ae382f4e6304b",
+        "text": "Context: Alice and Bob play the following game. A stack of n tokens lies before them. The players take turns with Alice going first. On each turn, the player removes either 1 token or 4 tokens from the stack. Whoever removes the last token wins."
+      },
+      {
+        "label": "letta_appB_aime_context_2",
+        "what": "|c| — Stateful AIME 문맥 예시 2 (LaTeX 그림 조각이 섞여 추출됨)",
+        "source": "[Letta STC App. B, p.17]",
+        "chars": 138,
+        "tokens_approx_chars_over_4": 34.5,
+        "tokens_band_chars_over_5_to_3": [
+          27.6,
+          46.0
+        ],
+        "sha256_of_extracted_text": "5d3fcc7f8264e83f",
+        "text": "Context: Let A , B , C , and D be points on the hyperbola 20 − 24 = 1 such that ABCD is a rhombus whose diagonals intersect at the origin."
+      },
+      {
+        "label": "letta_fig20_gsm_context",
+        "what": "|c| — Multi-Query GSM-Symbolic 문맥 (10개 생성질문이 공유하는 문맥)",
+        "source": "[Letta STC Fig. 20, App. C, p.19]",
+        "chars": 567,
+        "tokens_approx_chars_over_4": 141.8,
+        "tokens_band_chars_over_5_to_3": [
+          113.4,
+          189.0
+        ],
+        "sha256_of_extracted_text": "40974c7b2d7d1e39",
+        "text": "When Sofia watches her brother, she gets out a variety of toys for him. The bag of building blocks has 33 blocks in it. The bin of stuffed animals has 5 stuffed animals inside. The number of action figures in the action figure pack is twice the number of blocks and stuffed animals combined. The crayon box has 12 different colors of crayon, and the sticker book has 9 pages, each with 13 stickers. The tower of stacking rings has 28 multicolored rings on it. Sofia recently bought a tube of bouncy balls, bringing her total number of items for her brother up to 320."
+      },
+      {
+        "label": "letta_appG_swe_pr_body_1",
+        "what": "|c| 구성단위 — SWE-Features PR 1편의 body (patch 제외; changed_files는 'omitted here')",
+        "source": "[Letta STC App. G Listing 3, p.23]",
+        "chars": 335,
+        "tokens_approx_chars_over_4": 83.8,
+        "tokens_band_chars_over_5_to_3": [
+          67.0,
+          111.7
+        ],
+        "sha256_of_extracted_text": "58aa98ce22062be3",
+        "text": "body : Loading custom node can greatly slow startup time . During development / testing of ComfyUI , it is often better to use an environment that no custom node is loaded .\\ n \\ nThis PR adds a `--no - custom - node ` flag to allow users / developers skip loading of custom node without removing / renaming the custom_node directory ."
+      },
+      {
+        "label": "letta_appG_swe_pr_body_2",
+        "what": "|c| 구성단위 — SWE-Features PR 1편의 body (aider #55)",
+        "source": "[Letta STC App. G Listing 3, p.24]",
+        "chars": 776,
+        "tokens_approx_chars_over_4": 194.0,
+        "tokens_band_chars_over_5_to_3": [
+          155.2,
+          258.7
+        ],
+        "sha256_of_extracted_text": "47937db3b3221dd6",
+        "text": "body : Added support for using a locally running instance of a LLAMA model instead of OpenAI apis . \\n\\ nAdded 2 new params to aider to enable local llama support .\\ n\\ n1 . AIDER_MODEL_TOKENS - used to specify the context length the model will use . \\ n2 . AIDER_TOKENIZER - used to specify which tokenizer should be used . Currently only ' openai ' and ' llama ' are supported . Defaults to openai .\\ n\\n\\ nTested with TheBloke_wizard - vicuna -13 B - SuperHOT -8K - GGML running locally and the following ENV values set .\\ n\\ nAIDER_OPENAI_API_BASE =\\ protect \\ vrule width0pt \\ protect \\ href { http ://127.0.0.1:5001/ v1 }{ http ://127.0.0.1:5001/ v1 } \\ nAIDER_MODEL = TheBloke_wizard vicuna -13 B - SuperHOT -8K - GGML \\ nAIDER_MODEL_TOKENS =2\\ nAIDER_TOKENIZER = llama"
+      },
+      {
+        "label": "letta_fig1_learned_context",
+        "what": "|c-hat| — Figure 1이 인쇄한 학습된 문맥 전체 (그림 상자들 사이에 끼어 추출되므로 6조각을 순서대로 이어 붙였다. 각 조각은 원문에 그대로 존재함을 확인)",
+        "source": "[Letta STC Fig. 1, p.2] 'Learned Context' 상자",
+        "chars": 399,
+        "tokens_approx_chars_over_4": 99.8,
+        "tokens_band_chars_over_5_to_3": [
+          79.8,
+          133.0
+        ],
+        "sha256_of_extracted_text": "84db1b5f40e88888",
+        "text": "A juggler can juggle 800 balls. A quarter of the balls are tennis balls, which means there are 200 tennis balls (800 * 1/4). Half of the tennis balls are indigo, resulting in 100 indigo tennis balls (200 * 1/2). Out of these indigo tennis balls, 1/10 are marked, which gives us 10 marked indigo tennis balls (100 * 1/10). Therefore, the total number of marked balls is 10 marked indigo tennis balls."
+      }
+    ],
+    "anchors_not_found": [],
+    "reported_by_papers_in_tokens": [
+      {
+        "label": "zep_longmemeval_context",
+        "what": "|c| — LongMemEval 대화 1건",
+        "tokens_reported_by_paper": 115000,
+        "source": "[Zep §4.3, txt L238]",
+        "anchor_verified_in_vendored_text": true
+      },
+      {
+        "label": "zep_injected_context",
+        "what": "|c-hat| — Zep이 질의당 실제로 프롬프트에 넣는 토큰 수",
+        "tokens_reported_by_paper": 1600,
+        "source": "[Zep Table 2, txt L361-372]",
+        "anchor_verified_in_vendored_text": true
+      },
+      {
+        "label": "mem0_locomo_context",
+        "what": "|c| — LOCOMO 대화 1건",
+        "tokens_reported_by_paper": 26000,
+        "source": "[Mem0 §3.1, txt L252]",
+        "anchor_verified_in_vendored_text": true
+      },
+      {
+        "label": "mem0_store_tokens",
+        "what": "저장소 크기 — Mem0 (질의당 주입량이 아니다)",
+        "tokens_reported_by_paper": 7000,
+        "source": "[Mem0 §4.5, txt L954]",
+        "anchor_verified_in_vendored_text": true
+      },
+      {
+        "label": "mem0_graph_store_tokens",
+        "what": "저장소 크기 — Mem0^g",
+        "tokens_reported_by_paper": 14000,
+        "source": "[Mem0 §4.5, txt L954-955]",
+        "anchor_verified_in_vendored_text": true
+      },
+      {
+        "label": "zep_store_tokens_by_competitor",
+        "what": "저장소 크기 — Zep (경쟁사 Mem0가 측정한 값)",
+        "tokens_reported_by_paper": 600000,
+        "source": "[Mem0 §4.5, txt L956]",
+        "anchor_verified_in_vendored_text": true
+      }
+    ],
+    "all_reported_anchors_verified": true,
+    "corpus_wide_token_length_mining": {
+      "n_files_scanned": 49,
+      "n_files_with_hits": 15,
+      "n_hits_total": 93,
+      "global_min": 64,
+      "global_p50": 8192,
+      "global_p90": 262000,
+      "global_max": 11000000,
+      "per_file": {
+        "papers/2511.07343.txt": {
+          "n_hits": 4,
+          "min": 64,
+          "max": 1000000,
+          "median": 500000
+        },
+        "papers/2602.24281.txt": {
+          "n_hits": 2,
+          "min": 8000,
+          "max": 500000,
+          "median": 500000
+        },
+        "papers/2605.26099.txt": {
+          "n_hits": 2,
+          "min": 96,
+          "max": 3300,
+          "median": 3300
+        },
+        "papers/2606.03979.txt": {
+          "n_hits": 1,
+          "min": 256000,
+          "max": 256000,
+          "median": 256000
+        },
+        "papers/2606.03979v2.txt": {
+          "n_hits": 1,
+          "min": 256000,
+          "max": 256000,
+          "median": 256000
+        },
+        "papers/stc/2203.08913.txt": {
+          "n_hits": 12,
+          "min": 217,
+          "max": 262000,
+          "median": 8000
+        },
+        "papers/stc/2306.07174.txt": {
+          "n_hits": 14,
+          "min": 65,
+          "max": 70000,
+          "median": 16000
+        },
+        "papers/stc/2310.08560.txt": {
+          "n_hits": 4,
+          "min": 1000,
+          "max": 128000,
+          "median": 8000
+        },
+        "papers/stc/2411.05877.txt": {
+          "n_hits": 9,
+          "min": 1000,
+          "max": 32000,
+          "median": 4000
+        },
+        "papers/stc/2501.13956.txt": {
+          "n_hits": 2,
+          "min": 115000,
+          "max": 115000,
+          "median": 115000
+        },
+        "papers/stc/2504.19413.txt": {
+          "n_hits": 13,
+          "min": 8192,
+          "max": 10000000,
+          "median": 26000
+        },
+        "papers/stc/2505.24832.txt": {
+          "n_hits": 2,
+          "min": 64,
+          "max": 64,
+          "median": 64
+        },
+        "papers/stc/2603.01097.txt": {
+          "n_hits": 19,
+          "min": 103,
+          "max": 364000,
+          "median": 2048
+        },
+        "papers/stc/2607.05969.txt": {
+          "n_hits": 5,
+          "min": 256,
+          "max": 512,
+          "median": 512
+        },
+        "papers/stc/2607.08032.txt": {
+          "n_hits": 3,
+          "min": 8000,
+          "max": 11000000,
+          "median": 115000
+        }
+      }
+    },
+    "observed_ratios_chat_over_c": [
+      {
+        "pair": "Letta 학습된 문맥 / 원 문맥 (Fig. 1 예시 1건)",
+        "value": 3.05,
+        "basis": "같은 그림의 두 상자를 문자 수로 비교. 토큰 근사가 양쪽에 같게 걸리므로 비는 근사에 둔감하다",
+        "kind": "injected/raw — X1의 len_chat/len_c와 같은 종류, 단 예시 1건"
+      },
+      {
+        "pair": "Zep 주입 문맥 / LongMemEval 대화",
+        "value": 0.0139,
+        "basis": "둘 다 Zep Table 2의 같은 행. 질의당 주입량 대 원 문맥",
+        "kind": "injected/raw — X1의 len_chat/len_c와 같은 종류"
+      },
+      {
+        "pair": "Mem0 저장소 / LOCOMO 대화",
+        "value": 0.269,
+        "basis": "Mem0 §4.5. 저장소 크기이지 주입량이 아니다",
+        "kind": "store/raw — X1의 축과 다른 종류(주의)"
+      },
+      {
+        "pair": "Mem0^g 저장소 / LOCOMO 대화",
+        "value": 0.538,
+        "basis": "Mem0 §4.5",
+        "kind": "store/raw"
+      },
+      {
+        "pair": "Zep 저장소 / LOCOMO 대화 (경쟁사 측정)",
+        "value": 23.1,
+        "basis": "Mem0 §4.5가 측정한 Zep 값. Zep 자신은 보고하지 않음",
+        "kind": "store/raw, COMPETITOR-MEASURED"
+      }
+    ],
+    "X1_assumptions": {
+      "stateful_gsm_symbolic.len_c_tokens": 400.0,
+      "stateful_aime.len_c_tokens": 300.0,
+      "swe_features.len_c_tokens": 8000.0,
+      "len_chat_over_len_c_grid": [
+        0.25,
+        1.0,
+        4.0
+      ],
+      "kappa_par_grid": [
+        1,
+        2,
+        5,
+        10
+      ]
+    },
+    "verdict": {
+      "short_contexts": "X1이 GSM/AIME에 가정한 |c| = 400/300 토큰은 논문이 인쇄한 예시 문맥의 문자 기반 추정보다 크다 → X1은 그 두 레짐의 여유(L*/|c|)를 과소 보고했다(= STC에 불리하게 잡았다)",
+      "long_contexts": "corpus가 실제로 다루는 대화형 문맥(26k~115k 토큰)은 X1의 최대 레짐(8k)보다 훨씬 크다 → X1의 sweep은 상단이 잘려 있었다",
+      "ratio_grid": "X1이 sweep한 |c-hat|/|c| = {0.25, 1, 4}는 관측 범위(0.014 ~ 23)의 가운데 한 자릿수만 덮는다. 양 끝이 모두 밖에 있다",
+      "net_effect_on_X1_conclusions": "두 오차의 방향이 X1의 결론과 같은 쪽이다 — 레짐 간 여유의 순서(GSM >> AIME > SWE)와 '긴 문맥에서 상각이 물린다'는 방향은 유지되고 강해진다. L*의 절대치는 여전히 인용 불가"
+    },
+    "comparison": {
+      "letta_printed_contexts_tokens_approx": {
+        "min": 32.8,
+        "max": 194.0
+      },
+      "X1_assumed_len_c_for_those_regimes": [
+        300.0,
+        400.0
+      ],
+      "corpus_reported_len_c_range_tokens": [
+        26000,
+        115000
+      ],
+      "X1_swept_ratio_grid": [
+        0.25,
+        1.0,
+        4.0
+      ],
+      "observed_injected_over_raw_ratios": [
+        3.05,
+        0.0139
+      ],
+      "observed_store_over_raw_ratios": [
+        0.269,
+        0.538,
+        23.1
+      ]
+    }
+  },
+  "findings": {
+    "load_bearing_may_be_stated_as_fact": [
+      "F1 전수 감사 결과, 29편 중 19편의 $B_s$가 absent이고 절대 FLOPs/토큰으로 보고한 논문은 1편이다. 나머지는 optimizer step(5편)·벽시계(2편)·서수 knob(2편)·상대 비율(0편)로만 보고한다. 즉 $B_s$는 이 문헌에서 **축이 아니라 각주**다.",
+      "F1b 그 (f) 19편 중 9편은 '보고 안 함'이 아니라 **질의 전 오프라인 패스 자체가 없어 $B_s$가 정의되지 않는** 경우다. 이 집합은 PRE-RESEARCH §2.2의 판별식 불충족 목록과 사실상 일치한다 — 서로 다른 필드에서 같은 결론이 나온다. 따라서 '보고가 부실하다'와 '범주에 속하지 않는다'를 섞어 세면 안 된다.",
+      "F2 이 라인의 이름을 만든 논문(Letta STC)이 $B_s$를 서수 knob으로만 보고한다. 원문 전문 probe: '<숫자> tokens' 꼴이 2회 나오는데 둘 다 AIME 문제 속 게임 말('1 token', '4 tokens')이고, 'FLOP'은 0회 나온다. 상각 논증의 분자에 숫자가 없다.",
+      "F3 환산 가능성: (a)~(c) 후보 8편 중 노트만으로 FLOPs 환산이 닫히는 논문은 1편이다. 가장 자주 막는 입력은 ['seq_len_tokens', 'N_params', 'batch_size']이며, 특히 **MFU 또는 달성 throughput을 보고한 노트가 29편 중 1편**이라 벽시계를 FLOPs로 옮기는 다리가 없다.",
+      "F4 $B_s$에 대해 무언가라도 보고한 10편 중 축 위에 2점 이상을 놓은 논문은 4편, 3점 이상은 4편이고, 그 점들이 **절대 예산 단위**인 논문은 2편뿐이다(나머지는 눈금 없는 비례 knob). 그 부분집합이 공유하는 벤치마크의 교집합은 공집합이다. **$B_s$ 축을 복원해도 y축이 붙지 않는다** — 축이 하나가 아니라 둘 다 깨져 있다.",
+      "F4b 보고율은 경로마다 다르다 — W 1/1, Theta 5/8, theory 2/5, E 2/9, bio 0/3 (W는 1편, bio는 3편으로 표본이 작아 순서 진술에서 뺀다). 표본이 의미 있는 두 경로만 보면 $\\Theta$ 5/8 > $E$ 2/9로 순서가 뚜렷하다. 이유는 기제가 아니라 **관행**이다 — $\\Theta$-경로는 ML 학습 논문의 보고 관습(step·batch·GPU-hour)을 물려받았고, $E$-경로는 시스템/제품 논문의 관습(지연·정확도)을 물려받아 쓰기 비용을 세는 칸이 아예 없다. **순서는 인용 가능, 절대 비율은 표본이 작다.**",
+      "F5 판정: 현재 문헌으로 $B_s$–품질 곡선은 그릴 수 없다. 이것이 결과다. ch28의 기여는 곡선이 아니라 **곡선을 그리기 위한 최소 보고 요구 R1–R9**와 그 요구가 왜 필요한지의 계수적 근거다.",
+      "F6 (Q5) X1이 GSM/AIME 레짐에 가정한 $|c|$(300–400 토큰)는 논문이 **직접 인쇄한** 예시 문맥의 문자 수 기반 추정보다 약 2.8–12.2배 크다. $L^*$는 $|c|$에 의존하지 않고 $L^*/|c|$만 $1/|c|$로 변하므로, X1은 그 두 레짐의 여유를 **과소** 보고했다 — X1의 F2(짧은 문맥 레짐은 안전)는 약화되지 않고 강화된다.",
+      "F7 (Q5) 반대로 corpus가 실제로 보고하는 대화형 문맥은 26k(LOCOMO)–115k(LongMemEval) 토큰으로, X1이 가장 큰 레짐으로 잡은 8k보다 3–14배 크다. X1의 sweep은 **상단이 잘려 있었다**. 그 영역에서 $L^*/|c|$는 X1이 보고한 SWE 값보다 더 작아지므로 X1의 F3(SWE에서 여유가 급감)도 방향이 유지되고 더 강해진다. corpus 전문을 긁은 문맥 길이 분포(중앙값 8192, p90 262000 토큰, 93건/15편)도 같은 방향이다.",
+      "F8 (Q5) $|\\hat c|/|c|$의 관측 범위는 종류를 구분해 읽어야 한다. **주입량/원문맥**은 Zep이 0.014, Letta Fig.1 예시가 약 3이고, **저장소/원문맥**은 Mem0 0.27, Mem0^g 0.54, Zep 23(경쟁사 측정)이다. X1이 sweep한 {0.25, 1, 4}는 이 범위의 가운데 한 자릿수만 덮는다."
+    ],
+    "directional_or_lower_bound_only": [
+      "D1 개별 논문의 라벨은 키워드+부정 규칙의 산물이다. 범주별 **편수와 순서**는 인용해도 되지만, 특정 논문이 (b)냐 (c)냐 하는 개별 판정은 `evidence`와 `ambiguity_flags`를 직접 보고 재확인한 뒤에만 인용하라.",
+      "D2 Q5의 토큰 수는 전부 문자/4 근사다. 자릿수와 비율만 쓸 것. 소수점·유효숫자 2자리 이상은 본문에 쓰지 마라. 특히 수식·코드가 섞인 문맥에서는 4자/토큰이 과대추정이다.",
+      "D3 Q5의 문자 수는 논문이 인쇄한 예시 **1~2건**에서 나온다. 데이터셋 평균이 아니며, 'AIME 문맥의 평균 길이'로 인용하면 오용이다.",
+      "D4 Zep 저장소 600k 토큰은 **경쟁사(Mem0)가 측정해 보고한 값**이다. 방향(자릿수 크게 큼)만 쓰고 절대치는 쓰지 마라. Zep 자신은 ingestion 비용을 한 줄도 보고하지 않는다.",
+      "D5 SWE-Features의 $|c|$는 여전히 미보고다. 논문은 '여러 관련 PR'이라고만 쓰고 그 수를 밝히지 않으며, PR 예시의 changed_files는 'omitted here for brevity'로 잘려 있다. X1의 8000 토큰 가정은 근거화되지 않았고, 이 실험은 그것을 **하한**으로만 지지한다.",
+      "D6 Q2의 'convertible' 수는 노트 안 문자열 존재 여부로 판정한 **상한**이다. 실제로 환산 가능한 점 수는 이보다 많을 수 없다(적을 수는 있다).",
+      "D7 Q3의 벤치마크 공유량도 이름 매칭이므로 **상한**이다. 같은 이름이어도 split·채점기·프롬프트가 다르면 실제 비교 가능성은 더 낮다.",
+      "D8 F4b의 경로별 보고율은 표본이 작다(W 1편, bio 3편, other/mixed 3편). 인용해도 되는 것은 $\\Theta$ > $E$라는 **순서**뿐이고, 0.625 대 0.222 같은 비율 자체는 본문 수치로 쓰지 마라.",
+      "D9 이 감사는 corpus를 '이 책이 deep-read한 29편'으로 고정한다. 문헌 전체에 대한 표본이 아니다. '문헌의 X%가 …'로 일반화하지 말고 '이 corpus의 29편 중 …'으로 써라."
+    ]
+  }
+}
