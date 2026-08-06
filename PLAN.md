@@ -33,6 +33,20 @@ seminar 100+ slides) / 로컬 실험 트랙 포함.
 | S5 게이트·빌드 | veridraft claim bundle PASS + pandoc/lualatex + `build/overflow_gate.py` PASS + source figure 임베드 | ⬜ |
 | S6 파생물 | easy booklet 10+ / 의역 보강 + 신규 / seminar deck (렌더 하네스 재사용, 내용 신규) | ⬜ |
 
+### 도구 방침 (2026-08-06 Jimmy 지시 — 이 저장소의 모든 후속 작업에 적용)
+
+**이 저장소의 산출물을 만드는 agent는 전부 Claude Opus 5 · effort max를 쓴다. codex에 위임하지 않는다.**
+
+- Workflow `agent()` 호출에서 `model`은 **지정하지 않는다**(세션 모델 상속). `effort: 'max'`를 집필뿐
+  아니라 **감사·정리·빌드 등 모든 단계에** 준다.
+- **agent 프롬프트마다 codex 위임 금지를 명시한다.** subagent도 `~/.claude/CLAUDE.md`의
+  "무거운 실행은 codex에 위임" 방침을 로드하므로, 프롬프트에서 명시적으로 덮어쓰지 않으면
+  agent가 자발적으로 `codex exec`를 띄운다. 실제로 2026-08-06 S5의 정리 agent 두 개가 그렇게 했다.
+- 이미 codex가 만진 산출물(2026-08-06 S5에서 ch11·ch17–ch23의 귀속 마커)은 폐기하지 않고
+  **Claude가 전수 검토해 확정**했다. 검토 이력은 해당 커밋 메시지에 남긴다.
+
+이 방침은 `~/.claude/CLAUDE.md`의 codex 위임 기본값과 충돌하며, **이 저장소에서는 이 방침이 우선한다.**
+
 ## 디렉토리
 ```
 papers/     원문 PDF+txt (vendored, veridraft warrant 대상)
