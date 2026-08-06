@@ -1,0 +1,1564 @@
+{
+  "claims": [
+    {
+      "claim_id": "p2_letta_e_only",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "discriminant-verdict",
+      "chapter": "ch14",
+      "statement": "Letta's Sleep-time Compute changes only the external store E, leaving both the weights and any fast-weight state bit-identical across the entire sleep phase.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_letta_e_only_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2504.13171.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§4.2, p.5; §7, p.13; Figure 1, p.2",
+          "trust": 0.95
+        },
+        {
+          "id": "p2_letta_e_only_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/letta-stc.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "update_layer.instantiates = \"(U-E) — and only (U-E).\"",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_letta_wr_destructive",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "discriminant-verdict",
+      "chapter": "ch14",
+      "statement": "Letta's Sleep-time Compute writes by destructively overwriting a single memory block, so the store keeps no history and admits no rollback.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_letta_wr_destructive_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2504.13171.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "App. F Listing 1, p.22 — `agent_state.memory.update_block_value(label=target_block_label, value=new_memory)` (vendored papers/2504.13171.txt:1529); App. K, p.27 — the function 'replaces the current context c ... with the new string'",
+          "trust": 0.96
+        },
+        {
+          "id": "p2_letta_wr_destructive_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/letta-stc.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "update_layer.how_this_paper_differs_from_the_canonical_form[0]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_letta_bs_absent",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "cost-absence",
+      "chapter": "ch14",
+      "statement": "Letta's Sleep-time Compute reports no sleep-time token count, FLOP count or dollar figure anywhere in the paper, and gives the sleep budget no axis of its own in any figure.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_letta_bs_absent_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2504.13171.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Figs. 3-11 axes (all read 'Avg. Test Time Tokens / Question'); Fig. 9's x-axis 'Total Inference Cost / Query' is the derived composite kappa_cost*B_t + B_s/N_q; only ordinal knobs are given (J <= 10 rethink calls, App. K p.27; kappa_par in {1,2,5,10}, §5.2 p.8; effort in {low,medium,high}, §5.2 p.8)",
+          "trust": 0.93
+        },
+        {
+          "id": "p2_letta_bs_absent_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/letta-stc.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "cost_table.B_s.value = \"absent\"",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_letta_capacity_absent",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "cost-absence",
+      "chapter": "ch14",
+      "statement": "Letta's Sleep-time Compute reports no byte, character or token size for the memory block it writes, so the E-path's founding paper states no state capacity.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_letta_capacity_absent_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2504.13171.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "App. K, p.27 (only structural bound stated is J <= 10 rewrites); Fig. 17, p.18 (block layout in prose); Table 1, p.19 carries corpus statistics, not state size",
+          "trust": 0.93
+        },
+        {
+          "id": "p2_letta_capacity_absent_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/letta-stc.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "cost_table.C.value = \"absent\"",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_letta_gain_reverses",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "baseline-beats",
+      "chapter": "ch14",
+      "statement": "Letta's Sleep-time Compute loses its advantage at high test-time budget on both the synthetic and the realistic task, and the paper offers no mechanism for the reversal.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_letta_gain_reverses_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2504.13171.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§5.1, p.6 and Fig. 3; §6, p.12 and Fig. 11",
+          "trust": 0.93
+        },
+        {
+          "id": "p2_letta_gain_reverses_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/letta-stc.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[5]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_memgpt_write_on_critical_path",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "discriminant-verdict",
+      "chapter": "ch13",
+      "statement": "MemGPT performs every memory write inside the user turn, on the answer's critical path, so it never spends a budget before a query arrives.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_memgpt_write_on_critical_path_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2310.08560.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§2.3, lines 361-363 (function-call writes are decoded in-turn and runtime errors are fed back to the processor); §3 Implementation details, lines 495-500",
+          "trust": 0.94
+        },
+        {
+          "id": "p2_memgpt_write_on_critical_path_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/memgpt.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "update_layer.how_it_differs[0] — 'The write is not offline.'",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_memgpt_gpt4_below_gpt35",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "baseline-beats",
+      "chapter": "ch13",
+      "statement": "In MemGPT's own DMR table the GPT-4 baseline scores below the GPT-3.5 Turbo baseline, 32.1% against 38.7% accuracy, and the paper does not explain the inversion.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_memgpt_gpt4_below_gpt35_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2310.08560.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Table 2, vendored papers/stc/2310.08560.txt:540-575 (38.7% at :563, 32.1% at :565)",
+          "trust": 0.95
+        },
+        {
+          "id": "p2_memgpt_gpt4_below_gpt35_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/memgpt.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[5]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_rag_retriever_loses_to_bm25",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "baseline-beats",
+      "chapter": "ch13",
+      "statement": "RAG's learned differentiable retriever is beaten by BM25 on FEVER, which the paper concedes in the sentence 'For FEVER, BM25 performs best'.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_rag_retriever_loses_to_bm25_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2005.11401.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Table 6, vendored papers/stc/2005.11401.txt:699-790 (RAG-Token-BM25 FVR-3 75.1 / FVR-2 91.6 vs RAG-Token 74.5 / 90.6); §4.5, txt:622-626 (quoted sentence at txt:624)",
+          "trust": 0.96
+        },
+        {
+          "id": "p2_rag_retriever_loses_to_bm25_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/rag.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[0]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_rag_no_cost_reported",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "cost-absence",
+      "chapter": "ch10",
+      "statement": "RAG reports no latency, throughput, FLOP count or index-build time anywhere, plotting the retrieval depth K against quality only.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_rag_no_cost_reported_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2005.11401.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§4.5, vendored papers/stc/2005.11401.txt:797-803 (acknowledges K 'can affect performance and runtime'); Figure 3, txt:805-879 (all three panels plot quality only); App. C reports memory footprint only",
+          "trust": 0.93
+        },
+        {
+          "id": "p2_rag_no_cost_reported_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/rag.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[10]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_mem0_wr_can_delete",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "discriminant-verdict",
+      "chapter": "ch15",
+      "statement": "Mem0's write operator selects among ADD, UPDATE, DELETE and NOOP, so a previously stored fact can be destroyed by a frozen LLM's unaudited judgement with no reversal path.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_mem0_wr_can_delete_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2504.19413.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§2.1, vendored papers/stc/2504.19413.txt:152-164; Algorithm 1, txt:1220-1303 (DELETE branch at txt:1256-1261)",
+          "trust": 0.95
+        },
+        {
+          "id": "p2_mem0_wr_can_delete_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/mem0.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "update_layer.differences_from_canonical_U_E[0]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_mem0_fullcontext_wins",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "baseline-beats",
+      "chapter": "ch15",
+      "statement": "In Mem0's own Table 2 the memory-free full-context baseline scores J = 72.90% against Mem0's 66.88% and Mem0-graph's 68.44%, a gap far outside the reported standard deviations.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_mem0_fullcontext_wins_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2504.19413.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Table 2, vendored papers/stc/2504.19413.txt:781 (72.90 +/- 0.19%) vs txt:836-837 (66.88 +/- 0.15%, 68.44 +/- 0.17%); conceded in §4.3, txt:903-904",
+          "trust": 0.96
+        },
+        {
+          "id": "p2_mem0_fullcontext_wins_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/mem0.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[2]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_mem0_abstract_vs_table1",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "self-table-contradiction",
+      "chapter": "ch15",
+      "statement": "Mem0's abstract claims its methods 'consistently outperform all existing memory systems across four question categories' while its own Table 1 shows Zep ahead of both Mem0 variants on open-domain F1.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_mem0_abstract_vs_table1_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2504.19413.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Abstract, vendored papers/stc/2504.19413.txt:19-20 vs Table 1, txt:460-548 and §4.1, txt:605-614; §5, txt:981-983 lists only three categories",
+          "trust": 0.93
+        },
+        {
+          "id": "p2_mem0_abstract_vs_table1_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/mem0.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[0]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_mem0_bs_absent",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "cost-absence",
+      "chapter": "ch15",
+      "statement": "Mem0 quantifies the size of the store it produces but gives no token count, FLOP count, LLM-call count or dollar figure for building it.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_mem0_bs_absent_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2504.19413.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§4.5 'Memory System Overhead: Token Analysis and Construction Time', vendored papers/stc/2504.19413.txt:950-966 — the single build-cost datum is the wall-clock sentence 'Mem0 graph construction completes in under a minute even in worst-case scenarios' at txt:965-966, with no hardware or concurrency stated",
+          "trust": 0.94
+        },
+        {
+          "id": "p2_mem0_bs_absent_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/mem0.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "cost_table.B_s.value = \"absent\"; unfavorable_facts[4]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_mem0_silent_on_theta_path",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "cross-path-silence",
+      "chapter": "ch15",
+      "statement": "Mem0's reference list contains no LoRA, adapter, model-editing, continual-learning, distillation or capacity work, so it cites nothing from the Theta path.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_mem0_silent_on_theta_path_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2504.19413.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Reference list, vendored papers/stc/2504.19413.txt:1010-1091 (full scan); body grep for 'LoRA', 'fine-tun', 'gradient', 'distill' returns no method citation, 'distill' occurring only twice in App. C describing baselines' summarisation",
+          "trust": 0.92
+        },
+        {
+          "id": "p2_mem0_silent_on_theta_path_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/mem0.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "cross_path_citations.theta_path.engagement = 'ZERO'",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_mem0_silent_on_letta",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "cross-path-silence",
+      "chapter": "ch15",
+      "statement": "Mem0 never cites Letta's Sleep-time Compute, the paper that named this line and appeared in the same month, and the string 'sleep' does not occur in its text.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_mem0_silent_on_letta_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2504.19413.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Reference list, vendored papers/stc/2504.19413.txt:1010-1091; case-insensitive whole-file grep for 'sleep' and for the arXiv id '13171' returns zero hits over papers/stc/2504.19413.txt",
+          "trust": 0.94
+        },
+        {
+          "id": "p2_mem0_silent_on_letta_e2",
+          "kind": "note",
+          "ref": "dossier/stc-v2/PRE-RESEARCH.md@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§3 bridge chain, bullet on ch15; §3.1 silence map row 'Mem0'",
+          "trust": 0.88
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_zep_no_ablation",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "discriminant-verdict",
+      "chapter": "ch15",
+      "statement": "Zep contains no ablation of any kind, so its self-declared novelty, the bi-temporal representation, is never isolated from the rest of the pipeline.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_zep_no_ablation_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2501.13956.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§2.1 novelty claim, vendored papers/stc/2501.13956.txt:100-102; §4 experiments, txt:232-485 contain no ablation table",
+          "trust": 0.93
+        },
+        {
+          "id": "p2_zep_no_ablation_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/zep.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[0] (zep-u1)",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_zep_knowledge_update_regression",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "baseline-beats",
+      "chapter": "ch15",
+      "statement": "Zep regresses on knowledge-update with gpt-4o-mini, falling from 76.9% to 74.4%, in precisely the category its bi-temporal invalidation machinery exists to serve.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_zep_knowledge_update_regression_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2501.13956.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Table 3, vendored papers/stc/2501.13956.txt:397-477 (76.9% at :426, 74.4% at :433, printed as 3.36% down); §4.3.2, txt:484-485",
+          "trust": 0.95
+        },
+        {
+          "id": "p2_zep_knowledge_update_regression_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/zep.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[3] (zep-u4)",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_zep_trivial_baseline_beats_sota",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "baseline-beats",
+      "chapter": "ch15",
+      "statement": "On Zep's DMR benchmark a trivial full-conversation baseline already beats the state-of-the-art system Zep is measured against, leaving Zep a 0.4-percentage-point margin reported without error bars.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_zep_trivial_baseline_beats_sota_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2501.13956.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Table 1, vendored papers/stc/2501.13956.txt:257-296 (gpt-4-turbo: MemGPT 93.4%, full-conversation 94.4%, Zep 94.8%; gpt-4o-mini: full-conversation 98.0%, Zep 98.2%); §4.2, txt:303-310",
+          "trust": 0.94
+        },
+        {
+          "id": "p2_zep_trivial_baseline_beats_sota_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/zep.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[1] (zep-u2)",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_zep_bs_absent",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "cost-absence",
+      "chapter": "ch15",
+      "statement": "Zep reports no tokens, FLOPs, dollars, wall-clock or call counts for its ingestion path while asserting three separate times that its design significantly reduces cost.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_zep_bs_absent_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2501.13956.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§2.2.2, vendored papers/stc/2501.13956.txt:133-136; §2.3, txt:164-165; §5, txt:488-489 and txt:502-504; no ingestion-cost figure anywhere in txt:1-693",
+          "trust": 0.93
+        },
+        {
+          "id": "p2_zep_bs_absent_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/zep.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[5] (zep-u6)",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_zep_silent_on_w_and_theta",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "cross-path-silence",
+      "chapter": "ch15",
+      "statement": "Zep's 28-item bibliography contains zero W-path work and zero Theta-path work, its only architecture citation being Vaswani et al. used to say that transformers exist.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_zep_silent_on_w_and_theta_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2501.13956.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Bibliography, vendored papers/stc/2501.13956.txt:626-693 (28 entries); case-insensitive whole-file search returns zero hits for 'test-time', 'fast weight', 'meta-learn', 'recurren', 'state space', 'hebbian', 'gradient', 'backprop', 'KV', 'cache'",
+          "trust": 0.93
+        },
+        {
+          "id": "p2_zep_silent_on_w_and_theta_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/zep.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "cross_path_citations.verdict; cross_path_citations.W_path_engagement",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_rb_wr_pure_union",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "discriminant-verdict",
+      "chapter": "ch15",
+      "statement": "ReasoningBank's write operator is a pure set union, with no merging, pruning, deduplication, eviction, decay or overwrite anywhere in the system.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_rb_wr_pure_union_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2509.25140.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "App. A.2, vendored papers/stc/2509.25140.txt:1932-1936; App. E 'Simplicity in memory retrieval and consolidation', txt:2461-2465",
+          "trust": 0.94
+        },
+        {
+          "id": "p2_rb_wr_pure_union_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/reasoningbank.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "update_layer.differences_from_canonical_U_E[2]; unfavorable_facts[0]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_rb_bs_reported",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "cost-absence",
+      "chapter": "ch15",
+      "statement": "ReasoningBank is the only E-path paper in the corpus that puts a number on its sleep-side budget, reporting 2186.3 judge tokens plus 1562.1 extraction tokens per task.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_rb_bs_reported_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2509.25140.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Table 5 'Breakdown results of total token consumption required for each task', §C.2 Inference Cost Study, vendored papers/stc/2509.25140.txt:2140-2192 (2186.3 at :2187, 1562.1 at :2188, total 53054.5 at :2189)",
+          "trust": 0.95
+        },
+        {
+          "id": "p2_rb_bs_reported_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/reasoningbank.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "cost_table.B_s.value and .source",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_rb_more_memory_hurts",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "baseline-beats",
+      "chapter": "ch15",
+      "statement": "ReasoningBank's success rate falls monotonically as more retrieved experiences are injected, from 49.7 at one item to 46.0, 45.5 and 44.4 at two, three and four.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_rb_more_memory_hurts_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2509.25140.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Retrieved-memory-count study, §4.4 / App., vendored papers/stc/2509.25140.txt:1007-1009 (49.7 baseline recurring at txt:545, :957)",
+          "trust": 0.9
+        },
+        {
+          "id": "p2_rb_more_memory_hurts_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/reasoningbank.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[1]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_rb_prose_contradicts_numbers",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "self-table-contradiction",
+      "chapter": "ch15",
+      "statement": "ReasoningBank's §4.4 describes as performance reductions two of its own numbers that are increases, Synapse 40.6 to 41.2 and AWM 44.4 to 45.5.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_rb_prose_contradicts_numbers_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2509.25140.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§4.4 scaling discussion, vendored papers/stc/2509.25140.txt (sentence 'scaling actually reduces performance for weaker memories, where Synapse slightly increases from 40.6 to 41.2, and AWM from 44.4 to 45.5')",
+          "trust": 0.9
+        },
+        {
+          "id": "p2_rb_prose_contradicts_numbers_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/reasoningbank.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[2]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_rb_silent_on_letta",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "cross-path-silence",
+      "chapter": "ch15",
+      "statement": "ReasoningBank never cites Letta's Sleep-time Compute and the string 'sleep' does not occur anywhere in its 2481-line text.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_rb_silent_on_letta_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2509.25140.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Bibliography and full text, vendored papers/stc/2509.25140.txt:1-2481; case-insensitive grep for 'sleep' returns 0 hits; §2 related work at txt:188-190 cites MemGPT and Mem0 but not 2504.13171",
+          "trust": 0.95
+        },
+        {
+          "id": "p2_rb_silent_on_letta_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/reasoningbank.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "cross_path_citations.E_path.NOT_cited[0]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_scm_no_weight_update",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "discriminant-verdict",
+      "chapter": "ch15",
+      "statement": "SCM performs no weight update of any kind, so the 'Sleep-Consolidated Memory' of its title consolidates nothing into a model.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_scm_no_weight_update_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2604.20943.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§3.8 — 'It requires no training or fine-tuning; all components use existing pretrained models or algorithmic logic.'; Algorithm 1 acts only on the graph G and the text buffer",
+          "trust": 0.95
+        },
+        {
+          "id": "p2_scm_no_weight_update_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/scm-sleep-consolidated.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "update_layer.verdict and .evidence; unfavorable_facts[0]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_memini_no_llm_in_experiment",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "discriminant-verdict",
+      "chapter": "ch15",
+      "statement": "Memini's only experiment runs no language model, substituting case-insensitive word-boundary string matching against 20 predefined terms for the LLM extractor its design specifies.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_memini_no_llm_in_experiment_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2605.05097.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Figure 1(a), vendored papers/stc/2605.05097.txt:213-219 (design: 'LLM extracts entities and co-occurrences'); App. A (experimental substitution of string matching); App. A.5, txt:1015 ('we report no retrieval metrics or comparison against published systems')",
+          "trust": 0.92
+        },
+        {
+          "id": "p2_memini_no_llm_in_experiment_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/multi-timescale-updating.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[0]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_genadapter_uw_not_theta",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "discriminant-verdict",
+      "chapter": "ch16",
+      "statement": "Generative Adapter's update is a gradient-free W-layer accumulation, S_t = S_{t-1} + A2 H_t^T H_t B1, computed during the wake-time forward pass rather than in any pre-query phase.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_genadapter_uw_not_theta_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2411.05877.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Eq. 1, Eq. 3 and Eq. 6 (state accumulation and W_t = A1 norm(S_t) B2)",
+          "trust": 0.94
+        },
+        {
+          "id": "p2_genadapter_uw_not_theta_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/generative-adapter.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "update_layer.instantiates; update_layer.canonical_vs_paper.term_by_term",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_genadapter_headline_not_in_tables",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "self-table-contradiction",
+      "chapter": "ch16",
+      "statement": "Generative Adapter's abstract headline value of 31.5 F1 appears in no table in the body of the paper.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_genadapter_headline_not_in_tables_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2411.05877.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Abstract ('a 63.5% improvement in F1 score over the model with supervised fine-tuning (from 19.5 to 31.5)') vs all result tables in §4; whole-file search of papers/stc/2411.05877.txt finds no table cell 31.5",
+          "trust": 0.92
+        },
+        {
+          "id": "p2_genadapter_headline_not_in_tables_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/generative-adapter.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[0]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_genadapter_fullconv_wins_msc",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "baseline-beats",
+      "chapter": "ch16",
+      "statement": "On Generative Adapter's own personalization scenario full-conversation prompting scores MSC F1 66.0 against the method's 40.2.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_genadapter_fullconv_wins_msc_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2411.05877.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Table 1, vendored papers/stc/2411.05877.txt:834 (66.0) and txt:872 (40.2)",
+          "trust": 0.93
+        },
+        {
+          "id": "p2_genadapter_fullconv_wins_msc_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/generative-adapter.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[8]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_needsleep_uw_only",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "discriminant-verdict",
+      "chapter": "ch17",
+      "statement": "`Do Language Models Need Sleep?` updates only the W layer, spending its budget on N extra recurrent forward passes over the looped block range immediately before each KV-cache eviction boundary.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_needsleep_uw_only_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2605.26099.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§6.3, vendored papers/2605.26099.txt:679 (loop range: all blocks, or 'the middle 14 blocks out of the total 28 blocks' for Jet-Nemotron); §2, txt:126-128 (write rule defended against the gradient framing); §6.5, txt:1093-1094",
+          "trust": 0.94
+        },
+        {
+          "id": "p2_needsleep_uw_only_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/need-sleep-recurrence.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "update_layer.instantiates; cost_table.B_s.what_is_stated",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_needsleep_cites_letta_not_titans",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "cross-path-silence",
+      "chapter": "ch17",
+      "statement": "`Do Language Models Need Sleep?` cites Letta's Sleep-time Compute twice yet cites nothing from the Titans, Miras, Atlas or Nested Learning line that is its own path's dominant research program.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_needsleep_cites_letta_not_titans_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2605.26099.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§2 'Offline planning', vendored papers/2605.26099.txt:147-149 and §2 'Sleep', txt:156 (both citing [35] = arXiv:2504.13171); bibliography scan finds no Titans/Miras/Atlas/Nested-Learning entry",
+          "trust": 0.92
+        },
+        {
+          "id": "p2_needsleep_cites_letta_not_titans_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/need-sleep-recurrence.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "cross_path_citations.summary; cross_path_citations.E_path.citations",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_needsleep_no_compute_matched_baseline",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "baseline-beats",
+      "chapter": "ch17",
+      "statement": "`Do Language Models Need Sleep?` compares its looped models against the no-loop baseline at equal training tokens rather than equal compute, although it states that training cost grows roughly linearly in the loop count N.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_needsleep_no_compute_matched_baseline_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2605.26099.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§6.5, vendored papers/2605.26099.txt:1093-1094 ('training cost grows roughly linearly with the number of recurrent steps N'); Figs. 2b, 3, 4, 5 comparisons at equal tokens",
+          "trust": 0.92
+        },
+        {
+          "id": "p2_needsleep_no_compute_matched_baseline_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/need-sleep-recurrence.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[2]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_nl_all_updates_are_uw",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "discriminant-verdict",
+      "chapter": "ch18",
+      "statement": "Every state update in Nested Learning is a (U-W) fast-weight update executed inside the forward pass, so Theta does not move at test time.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_nl_all_updates_are_uw_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2512.24695.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§7.1 CMS with Eq. 71 (update every C^(l) tokens per level); §8.2 Eq. 89-90 (self-modifying Titans, per token against the previous chunk's snapshot); §9.1 sweeps the slowest tier at 512 and 2K tokens",
+          "trust": 0.94
+        },
+        {
+          "id": "p2_nl_all_updates_are_uw_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/nested-learning.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "update_layer.instantiates = '(U-W) at two nested cadences. (U-E) never. (U-Theta) exactly once, outside the mechanism.'",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_nl_bs_undefined",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "cost-absence",
+      "chapter": "ch18",
+      "statement": "Nested Learning defines no pre-query offline phase, so its sleep budget is undefined rather than merely unreported, the nearest figure being a wake-time count of parameters touched per step.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_nl_bs_undefined_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2512.24695.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§7.1 'Is CMS Efficient Enough?' — 'on average, the update cost is for O((1/f_hat) x (L_layer/5) x d_in^2) of parameters', stated in parameters and during the forward pass",
+          "trust": 0.93
+        },
+        {
+          "id": "p2_nl_bs_undefined_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/nested-learning.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "cost_table.B_s.value = 'absent' with .reason",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_nl_table6_self_refutation",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "self-table-contradiction",
+      "chapter": "ch18",
+      "statement": "Nested Learning's Table 6 caption states that all components of Hope contribute positively while the same table shows perplexity improving from 12.24 to 12.19 when the inner projection q is removed.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_nl_table6_self_refutation_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2512.24695.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Table 6, §9.6 — caption at vendored papers/2512.24695.txt:3439 ('All components of Hope are positively contributing to its performance'), Hope 12.24 at txt:3451, w/o inner-projection q 12.19 at txt:3469",
+          "trust": 0.96
+        },
+        {
+          "id": "p2_nl_table6_self_refutation_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/nested-learning.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[0]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_nl_transformer_wins_fda",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "baseline-beats",
+      "chapter": "ch18",
+      "statement": "In Nested Learning's own Table 3 the Transformer baseline beats Hope decisively on short in-context recall, scoring FDA 67.3 against 41.9.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_nl_transformer_wins_fda_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2512.24695.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Table 3, §9.4 — vendored papers/2512.24695.txt:3345 (Transformer++ FDA 67.3) and txt:3368 (Hope FDA 41.9)",
+          "trust": 0.94
+        },
+        {
+          "id": "p2_nl_transformer_wins_fda_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/nested-learning.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[4]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_nl_silent_on_e_path",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "cross-path-silence",
+      "chapter": "ch18",
+      "statement": "Nested Learning cites no E-path system at all, neither MemGPT nor Letta's Sleep-time Compute nor Mem0 nor Zep nor ReasoningBank, although Letta's paper preceded it by eight months.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_nl_silent_on_e_path_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2512.24695.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Full-text and bibliography scan of vendored papers/2512.24695.txt for MemGPT/Packer, Letta, sleep-time compute, Mem0, Zep, ReasoningBank, RAG/Lewis; 'RAG' appears only as an uncited Llama-8B baseline curve in §9.2",
+          "trust": 0.92
+        },
+        {
+          "id": "p2_nl_silent_on_e_path_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/nested-learning.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "cross_path_citations.E_path = 'ESSENTIALLY ABSENT'",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_mc_bs_zero",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "discriminant-verdict",
+      "chapter": "ch18",
+      "statement": "Memory Caching spends no pre-query budget, because what happens at a segment boundary is the preservation of a past iterate rather than a state update.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_mc_bs_zero_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2602.24281.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§3.4 (checkpoint chaining vs independent compressors); Eq. 4, 6, 8, 14 (the update rule f(.) is unchanged from canonical (U-W))",
+          "trust": 0.94
+        },
+        {
+          "id": "p2_mc_bs_zero_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/memory-caching.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "cost_table.B_s = 'absent'; update_layer.cadence",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_mc_changes_read_rule",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "discriminant-verdict",
+      "chapter": "ch18",
+      "statement": "Memory Caching leaves the canonical (U-W) update rule unchanged and modifies only the read rule, replacing a single W_t by a gated mixture over a cache of retained iterates.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_mc_changes_read_rule_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2602.24281.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Eq. 4, 6, 8, 14 (identical f(.)) vs Eq. 7, 9, 15, 17 (gated mixture read); §3.4",
+          "trust": 0.94
+        },
+        {
+          "id": "p2_mc_changes_read_rule_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/memory-caching.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "update_layer.difference_from_canonical",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_mc_table5_empty_row",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "self-table-contradiction",
+      "chapter": "ch18",
+      "statement": "Memory Caching's Table 5 caption asserts that all design choices of MC contribute positively to its effectiveness while one of that table's ablation rows prints 00.0 / 00.0 / 00.0.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_mc_table5_empty_row_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2602.24281.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Table 5, p.13 — caption at vendored papers/2602.24281.txt:826-827 ('All design choices of MC are positively contributing to its effectiveness'); the '- Shared u and q' row prints 00.0 00.0 00.0 at txt:836 and txt:841; §5.6 prose discusses only three design choices and never mentions the empty row",
+          "trust": 0.96
+        },
+        {
+          "id": "p2_mc_table5_empty_row_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/memory-caching.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[0]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_mc_silent_on_e_and_theta",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "cross-path-silence",
+      "chapter": "ch18",
+      "statement": "Memory Caching cites zero E-path work and zero Theta-path work, and the word 'sleep' occurs zero times in its full text.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_mc_silent_on_e_and_theta_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2602.24281.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Bibliography of vendored papers/2602.24281.txt (all entries are W-path/efficiency architectures: Titans, Atlas, Nested Learning, Miras, log-linear attention, MoBA, model soups, MoE, fast weight programmers, Hopfield, linear attention, Zoology/Based); case-insensitive grep for 'sleep' returns 0 hits",
+          "trust": 0.94
+        },
+        {
+          "id": "p2_mc_silent_on_e_and_theta_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/memory-caching.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "cross_path_citations.verdict",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_rome_not_a_practical_method",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "discriminant-verdict",
+      "chapter": "ch19",
+      "statement": "ROME states of itself that its purpose is to serve as a tool for understanding mechanisms of knowledge storage and that it is not intended as a practical method for large-scale model training.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_rome_not_a_practical_method_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2202.05262.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§3.7 Limitations, vendored papers/stc/2202.05262.txt:972-975 (verbatim sentence at :973-975)",
+          "trust": 0.97
+        },
+        {
+          "id": "p2_rome_not_a_practical_method_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/rome.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[0]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_memit_specificity_below_unedited",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "baseline-beats",
+      "chapter": "ch19",
+      "statement": "MEMIT's zsRE Specificity of 26.6 is below the 27.0 of the unedited GPT-J, and the harmonic-mean Score of 50.7 is dominated by that term.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_memit_specificity_below_unedited_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2210.07229.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Table 1, §5.2.1 — vendored papers/stc/2210.07229.txt:827 ('89.7 (+/-0.5) 26.6 (+/-0.5)'), unedited GPT-J row in the same table",
+          "trust": 0.94
+        },
+        {
+          "id": "p2_memit_specificity_below_unedited_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/memit.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[0]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_memit_specificity_collapses_at_scale",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "baseline-beats",
+      "chapter": "ch19",
+      "statement": "MEMIT's neighbourhood specificity falls by nearly ten points at 10,000 CounterFact edits, from 83.5 to 73.7 on GPT-J and from 81.6 to 70.8 on GPT-NeoX.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_memit_specificity_collapses_at_scale_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2210.07229.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Table 2 (CounterFact, n = 10,000 edits)",
+          "trust": 0.93
+        },
+        {
+          "id": "p2_memit_specificity_collapses_at_scale_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/memit.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[1]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_lora_silent_on_all_paths",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "cross-path-silence",
+      "chapter": "ch19",
+      "statement": "LoRA's 51 references contain no retrieval or external-memory work, no fast-weight or test-time-training work and no continual-learning work.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_lora_silent_on_all_paths_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2106.09685.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Full bibliography of vendored papers/stc/2106.09685.txt, all 51 entries checked; Ba et al. 2016 in the list is 'Layer normalization', not 'Using Fast Weights to Attend to the Recent Past'",
+          "trust": 0.92
+        },
+        {
+          "id": "p2_lora_silent_on_all_paths_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/lora.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "cross_path_citations.verdict and .checked_for",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_memlayers_no_post_deployment_update",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "discriminant-verdict",
+      "chapter": "ch09",
+      "statement": "Memory Layers updates Theta only during pre-training and no layer changes after deployment, so the paper supplies a capacity measurement rather than a sleep-time mechanism.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_memlayers_no_post_deployment_update_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2412.09764.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§5 (training setup); §6 mentions continual learning only as a 'we hope' sentence with no experiment",
+          "trust": 0.93
+        },
+        {
+          "id": "p2_memlayers_no_post_deployment_update_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/memory-layers.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[0]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_memlayers_peer_beats_vanilla_memory",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "baseline-beats",
+      "chapter": "ch19",
+      "statement": "At 1.3b in Memory Layers' own Table 1 the PEER baseline beats vanilla Memory on factual QA, 12.33 against 9.83 on NQ.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_memlayers_peer_beats_vanilla_memory_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2412.09764.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Table 1, vendored papers/stc/2412.09764.txt:694 (PEER 12.33) and txt:695 (Memory 9.83); §5.1 describes this as 'performs similarly'",
+          "trust": 0.94
+        },
+        {
+          "id": "p2_memlayers_peer_beats_vanilla_memory_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/memory-layers.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[10]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_memlayers_silent_on_all_paths",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "cross-path-silence",
+      "chapter": "ch19",
+      "statement": "Memory Layers' 44 references contain no MemGPT, no LoRA, no ROME or MEMIT and no EWC, although all four precede it.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_memlayers_silent_on_all_paths_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2412.09764.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Full bibliography of vendored papers/stc/2412.09764.txt, all 44 entries checked; §6 discusses 'less forgetting' and continual learning without citing that literature",
+          "trust": 0.92
+        },
+        {
+          "id": "p2_memlayers_silent_on_all_paths_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/memory-layers.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "cross_path_citations.verdict and .checked_for",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_seal_two_timescale_theta",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "discriminant-verdict",
+      "chapter": "ch20",
+      "statement": "SEAL runs (U-Theta) at two timescales, discarding the inner-loop updated parameters after scoring them and keeping only the outer reward-filtered update during training.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_seal_two_timescale_theta_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2506.10943.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§3.1, p.4 with Eq. 2-4; §B.5, p.21 (one ReST^EM round = 750 inner-loop iterations)",
+          "trust": 0.94
+        },
+        {
+          "id": "p2_seal_two_timescale_theta_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/seal.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "update_layer.instantiates; update_layer.order_of_operations",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_seal_bs_wallclock_only",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "cost-absence",
+      "chapter": "ch20",
+      "statement": "SEAL reports its sleep-side cost only as wall-clock for the RL training loop and never in tokens or FLOPs, and never for a deployment-time sleep step.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_seal_bs_wallclock_only_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2506.10943.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§5 Limitations 'Computational overhead', p.9 ('each self-edit evaluation takes approximately 30-45 seconds'); §B.5, p.21 ('about 6 hours on 2xH100s'); §A.4, p.19; Table 9, §B.10, p.23",
+          "trust": 0.93
+        },
+        {
+          "id": "p2_seal_bs_wallclock_only_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/seal.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "cost_table.B_s.value = 'PARTIALLY REPORTED — in wall-clock only'",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_seal_gpt41_beats_seal",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "baseline-beats",
+      "chapter": "ch20",
+      "statement": "GPT-4.1 synthetic data beats SEAL in both continued-pretraining columns of SEAL's own Table 2, 59.4 against 58.2 at n=200 and 49.2 against 46.4 at n=2067.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_seal_gpt41_beats_seal_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2506.10943.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Table 2, p.8 — vendored papers/stc/2506.10943.txt:570-585 (GPT-4.1 Synthetic row 46.3 / 59.4 / 49.2; SEAL row 47.0 / 58.2 / 46.4); conceded in §4.2, p.7",
+          "trust": 0.96
+        },
+        {
+          "id": "p2_seal_gpt41_beats_seal_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/seal.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[0]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_seal_genadapter_beats_seal",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "baseline-beats",
+      "chapter": "ch20",
+      "statement": "A prior hypernetwork method, Generative Adapter, scores 66.8 against SEAL's 47.0 on SEAL's own single-passage benchmark, the exact setting of SEAL's headline number.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_seal_genadapter_beats_seal_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2506.10943.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Table 7, §B.8, p.22 — vendored papers/stc/2506.10943.txt:1592 (66.8) against the SEAL single-passage value 47.0 in Table 2, p.8",
+          "trust": 0.94
+        },
+        {
+          "id": "p2_seal_genadapter_beats_seal_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/seal.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[1]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_seal_ttt_reward_removable",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "self-table-contradiction",
+      "chapter": "ch20",
+      "statement": "Replacing SEAL's defining TTT-based reward with a cheap proxy costs almost nothing while cutting RL training from about six hours to about five minutes.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_seal_ttt_reward_removable_e1",
+          "kind": "source_artifact",
+          "ref": "papers/stc/2506.10943.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Table 9, §B.10, p.23 (proxy-reward variant vs full loop; ~5 min vs ~6 hr)",
+          "trust": 0.92
+        },
+        {
+          "id": "p2_seal_ttt_reward_removable_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/seal.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[4]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_lmns_wake_w_then_sleep_theta",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "discriminant-verdict",
+      "chapter": "ch21",
+      "statement": "In `Language Models Need Sleep` the wake phase moves the W layer and the following sleep phase moves Theta, in that order within every cycle.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_lmns_wake_w_then_sleep_theta_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2606.03979.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Sec. 3.2 and Sec. 3.3 of the v2 text (vendored papers/2606.03979v2.txt); Eq. 2 for the wake-side W absorption; App. A.3, p.23 states the E layer is left untouched deliberately",
+          "trust": 0.94
+        },
+        {
+          "id": "p2_lmns_wake_w_then_sleep_theta_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/lm-need-sleep.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "update_layer.order",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_lmns_theta_grows",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "discriminant-verdict",
+      "chapter": "ch21",
+      "statement": "`Language Models Need Sleep` grows Theta in dimension at each sleep round, appending one low-rank expert per consolidated pair instead of subtracting a gradient from a fixed-size Theta.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_lmns_theta_grows_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2606.03979.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Sec. 3.2 (one expert A in R^{d x d_low}, B in R^{d_low x d} appended per consolidated pair per sleep); Sec. 3.3(c) (the W-side low-rank experts are wiped after transfer)",
+          "trust": 0.94
+        },
+        {
+          "id": "p2_lmns_theta_grows_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/lm-need-sleep.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "update_layer.how_it_differs_from_canonical_U_Theta[0]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_lmns_ablation_reversal",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "self-table-contradiction",
+      "chapter": "ch21",
+      "statement": "`Language Models Need Sleep` writes that all the components contribute positively to its method while its Table 1 shows AIME-25 rising from 69.0 to 69.2 when the Semantic Reward is removed.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_lmns_ablation_reversal_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2606.03979.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Table 1, p.11 — vendored papers/2606.03979v2.txt:629 (full Sleep 69.0) and txt:631 (w/o Semantic Reward 69.2); Sec. 4.2 claim sentence at txt:826 ('All the components contribute positively to the performance of our method')",
+          "trust": 0.96
+        },
+        {
+          "id": "p2_lmns_ablation_reversal_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/lm-need-sleep.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[0]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_lmns_bs_ratio_only",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "cost-absence",
+      "chapter": "ch21",
+      "statement": "`Language Models Need Sleep` gives no FLOP count, no token count and no absolute wall-clock for a sleep round, reporting only that SFT is 4x more efficient per step than its method.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_lmns_bs_ratio_only_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2606.03979.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "App. B.5, p.26 ('With the same number of steps, SFT is 4x more efficient than our method'; iso-accuracy ratios 4.3x / 3.6x / 4.8x); Table 5, p.26 gives step counts and learning rates only",
+          "trust": 0.94
+        },
+        {
+          "id": "p2_lmns_bs_ratio_only_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/lm-need-sleep.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "cost_table.B_s.value = 'absent (no FLOPs, no token count, no absolute wall-clock anywhere in the paper)'",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_lmns_expansion_worth_one_point",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "baseline-beats",
+      "chapter": "ch21",
+      "statement": "The structural contribution of `Language Models Need Sleep` is worth about one point in its own Table 1, with Sleep without Expansion scoring 78.2 / 67.9 / 44.9 against full Sleep's 79.2 / 69.0 / 46.1.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_lmns_expansion_worth_one_point_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2606.03979.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Table 1, p.11 (vendored papers/2606.03979v2.txt, ablation block around txt:620-640)",
+          "trust": 0.92
+        },
+        {
+          "id": "p2_lmns_expansion_worth_one_point_e2",
+          "kind": "note",
+          "ref": "notes/stc-v2/lm-need-sleep.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "unfavorable_facts[1]",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p2_lmns_inherits_nl_gap",
+      "type": "P2",
+      "boundary": "public",
+      "visibility": "team",
+      "claim_class": "cross-path-silence",
+      "chapter": "ch21",
+      "statement": "`Language Models Need Sleep` explicitly inherits Nested Learning's unbuilt-offline-consolidation gap, making it the corpus's clearest case of a textbook bridge-in.",
+      "result_refs": [],
+      "evidence": [
+        {
+          "id": "p2_lmns_inherits_nl_gap_e1",
+          "kind": "source_artifact",
+          "ref": "papers/2606.03979.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "Sec. 1 and Sec. 4.1 (Hope / CMS lineage stated); App. A.2, p.23 (positioning against the same line)",
+          "trust": 0.88
+        },
+        {
+          "id": "p2_lmns_inherits_nl_gap_e2",
+          "kind": "note",
+          "ref": "dossier/stc-v2/PRE-RESEARCH.md@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "locator": "§3, bullet 'ch21(`LM Need Sleep`)은 Nested Learning의 \"오프라인 통합 미구축\" 공백을 명시적으로 상속한다'",
+          "trust": 0.88
+        }
+      ]
+    }
+  ]
+}
