@@ -46,11 +46,15 @@ retrieval 결과의 최종 token budget은 여전히 제한된다. graph는 모�
 
 ## 4.1 Deep Memory Retrieval
 
-DMR은 긴 대화 중 특정 fact를 나중에 회상하는 과제다. 논문은 Zep 94.8%, MemGPT 93.4%를 보고한다. 두 수치 차이는 benchmark와 judge 설정 안에서 해석해야 하며, 서로 다른 전체 agent quality를 직접 의미하지 않는다.
+DMR은 긴 대화 중 특정 fact를 나중에 회상하는 과제다. 논문은 Zep 94.8%, MemGPT 93.4%를 보고한다. 다만 같은 표에서 대화 전체를 그대로 prompt에 넣는 full-conversation baseline이 gpt-4-turbo 94.4%, gpt-4o-mini 98.0%를 기록하므로, Zep의 우위는 이 사소한 baseline 대비 각각 0.4·0.2 point에 불과하다. MemGPT의 93.4%는 재측정값이 아니라 원 논문에서 인용한 값이며, 저자들은 방법론 세부가 부족해 gpt-4o-mini로 MemGPT를 재현하지 못했다고 밝힌다. 신뢰구간·seed·반복 실행·유의성 검정은 어디에도 없다.
+
+저자들 스스로 이 benchmark를 평가 도구로서 부적절하다고 정리한다. 대화당 메시지가 60개뿐이라 현대 LLM의 context window에 쉽게 들어가고, 문항이 단일 턴 사실 검색에 국한되며, “긴장을 푸는 favorite drink” 같은 모호한 표현이 많고, 실제 enterprise use case를 잘 대표하지 못한다는 것이다. 따라서 이 두 수치의 차이는 서로 다른 전체 agent quality를 직접 의미하지 않는다.
 
 ## 4.2 LongMemEval
 
-LongMemEval은 single-session fact lookup뿐 아니라 temporal reasoning, multi-session synthesis, knowledge update, abstention을 포함한다. Zep은 비교 baseline에 따라 accuracy를 최대 18.5% 높였고 latency를 90% 줄였다고 보고한다. graph에 미리 추출한 entity/relation을 재사용하여 query-time LLM processing을 줄이는 것이 latency 이득의 한 원인이다.
+LongMemEval은 single-session fact lookup뿐 아니라 temporal reasoning, multi-session synthesis, knowledge update, abstention을 포함하며, 대화 문맥은 평균 약 115K token이다. Zep은 비교 baseline에 따라 accuracy를 최대 18.5% 높였고 latency를 90% 줄였다고 보고한다. 여기서 “18.5%”는 percentage point가 아니라 **상대 개선**이다 — gpt-4o에서 full-context 60.2% 대 Zep 71.2%(절대 +11.0 point), gpt-4o-mini에서 55.4% 대 63.8%(절대 +8.4 point, 상대 15.2%)다. 평균 context는 115K에서 1.6K token으로 줄고 latency는 28.9초에서 2.58초로 떨어진다. graph에 미리 추출한 entity/relation을 재사용하여 query-time LLM processing을 줄이는 것이 latency 이득의 한 원인이다.
+
+이 benchmark에서는 MemGPT 수치가 아예 없다. MemGPT가 기존 message history의 직접 ingestion을 지원하지 않아 archival history에 밀어 넣는 우회를 시도했으나 정상적인 답변을 얻지 못했다고 저자들이 밝힌다. 즉 더 어려운 benchmark에서 비교 대상은 full-context prompt 하나뿐이다. 질문 유형별로도 개선이 균일하지 않아 single-session-assistant 항목은 두 model 모두에서 오히려 낮아졌고, knowledge-update는 gpt-4o에서만 개선되었다.
 
 ## 4.3 Enterprise 관점
 

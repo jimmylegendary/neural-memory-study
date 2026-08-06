@@ -24,7 +24,7 @@
 
 ## 3.1 순차 학습은 파국적 망각을 만든다
 
-Task 1을 학습한 뒤 Task 2만 계속 학습하면 Task 2 성능은 올라가지만 Task 1 성능은 급격히 낮아진다. 가중치 상태는 Task 1 solution manifold에서 Task 2 방향으로 이동한다. 이는 출력 성능의 손실과 가중치 기하의 이동이 함께 일어남을 보여준다.
+Task 1을 학습한 뒤 Task 2만 계속 학습하면 Task 2 성능은 올라가지만(0.69 ± 0.03) Task 1 성능은 우연 수준까지 떨어진다(0.52 ± 0.02, 우연 = 0.5). 단일 과제만 학습했을 때의 기준값은 Task 1 0.70 ± 0.02, Task 2 0.69 ± 0.03이다. 가중치 상태는 Task 1 solution manifold에서 Task 2 방향으로 이동한다. 이는 출력 성능의 손실과 가중치 기하의 이동이 함께 일어남을 보여준다. 모든 수치는 서로 다른 무작위 초기화로 최소 10회 시행한 평균 ± 표준편차이며, 논문은 유의성 검정이나 신뢰구간을 보고하지 않는다.
 
 ## 3.2 Sleep-like activity는 이전 기억을 재활성화한다
 
@@ -34,7 +34,9 @@ sleep 구간에는 과거 task sample을 다시 주입하지 않는다. 외부 �
 
 ## 3.3 새 과제 학습 사이의 수면이 망각을 줄인다
 
-Task 2 wake training을 계속 이어가는 대신 wake 구간과 sleep 구간을 교대로 배치하면 Task 1 성능이 보존되고 Task 2도 학습된다. sleep이 단지 훈련 횟수를 줄여 간섭을 늦춘 것이 아님을 확인하기 위해 wake update 수와 여러 control을 맞춘다. 무작위 activity 또는 plasticity를 끈 sleep은 같은 효과를 내지 못한다.
+Task 2 wake training을 계속 이어가는 대신 100 movement cycle의 wake 구간과 같은 길이의 sleep 구간을 1:1로 교대 배치하면(Interleaved_{S,T2}) Task 1 성능이 보존되고(0.70 ± 0.03) Task 2도 학습된다(0.68 ± 0.05). 이 구간 동안 Task 1 훈련은 한 번도 수행되지 않는다. 과거 Task 1 데이터를 실제로 다시 제시하는 고전적 interleaved training(Interleaved_{T1,T2})은 Task 1 0.68 ± 0.03, Task 2 0.65 ± 0.04로, sleep 조건과 근접한 강한 기준선이지만 원 데이터를 저장해야 한다는 제약을 갖는다.
+
+sleep 중의 noise가 사실은 Task 정보를 실어 나른 것이 아닌지 확인하기 위해 저자들은 세 가지 추가 실험을 한다. (i) 학습되지 않은 network에 Task 2의 발화율 통계로 만든 noise를 주며 Interleaved_{S,T1}을 적용해도 Task 2 성능은 기준선에 머물렀다(Task 1 0.60 ± 0.03, Task 2 0.49 ± 0.05). (ii) Task 1 학습 뒤 Interleaved_{S,T1}을 적용하면 Task 1은 유지되지만(0.71 ± 0.02) Task 2 이득은 없다(0.51 ± 0.02). 즉 sleep은 훈련된 적 없는 지식을 만들어내지 않는다. (iii) 모든 hidden neuron에 개별 발화 이력 대신 population 평균 발화율로 만든 균일 noise를 주는 Uniform-Noise Sleep에서도 결과는 원래 sleep 구현과 유사했다(Task 1 0.67 ± 0.05, Task 2 0.69 ± 0.03). 저자들은 이로부터 sleep 중 발화를 구동하는 입력의 세부 성질은 replay에 필수적이지 않으며, 각성기의 무작위 활동과 비슷한 활동이면 망각 방지에 충분하다고 결론짓는다.
 
 ## 3.4 공동 가중치 표현의 형성
 
@@ -48,7 +50,9 @@ weight trajectory는 sleep이 가중치를 과거 Task 1 manifold 쪽으로만 �
 
 각 과제의 loss 또는 performance surface를 가중치 공간에 투영하면 순차 wake training은 최신 과제의 좋은 영역으로 빠르게 이동하지만 이전 과제의 좋은 영역을 떠난다. sleep reactivation은 과거 pattern에 대한 gradient와 유사한 제약을 생성해 trajectory가 old-task manifold를 따라 움직이게 한다. 새 task wake update와 이 제약이 교대되면서 intersection으로 접근한다.
 
-이 해석은 단순히 synapse 크기를 전역적으로 낮추는 homeostatic scaling만으로는 설명되지 않는다. 어떤 memory ensemble이 재활성화되는지와 그 activity에 의존한 plasticity가 중요하다. 논문은 여러 sleep duration, interleaving schedule, noise 조건을 비교해 이 주장을 뒷받침한다.
+저자들은 이 재조직이 “과거 과제에 중요한 synapse를 그냥 얼려 두는 것”과 다르다는 점을 대조 실험으로 보인다. Task 1 학습 뒤 상위 x%의 Task-1 관련 synapse를 동결한 채 Task 2를 학습하면, 1% 동결은 Task 1 0.54 ± 0.02 / Task 2 0.68 ± 0.03, 5% 동결은 0.65 ± 0.02 / 0.61 ± 0.01, 10% 동결은 0.70 ± 0.03 / 0.53 ± 0.03으로, 어느 조건에서도 역행 간섭이나 순행 간섭 중 하나가 남는다. 저자들은 sleep 구간이 단순 동결(또는 증폭)보다 훨씬 정교한 가중치 행렬 수정을 수행한다고 결론짓는다.
+
+다만 이 논문에는 sleep 길이, wake:sleep 비율, interleaving 횟수에 대한 sweep이 없다. 프로토콜은 100 movement cycle 대 100 movement cycle이라는 단일 조건이며, “새 과제를 한 번에 너무 오래 학습하면 이후의 sleep으로 회복할 수 없을 만큼 old-task manifold에서 멀어진다”는 경계는 정성적으로만 서술되고 측정되지 않는다.
 
 # 5. 논의 (Discussion)
 

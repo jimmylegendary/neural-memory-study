@@ -54,13 +54,17 @@ sleep-time budget과 test-time budget을 각각 변화시키고 accuracy와 toke
 
 learned context를 제공하면 같은 정확도에 도달하는 데 필요한 test-time compute가 Stateful GSM-Symbolic과 Stateful AIME에서 약 5분의 1로 줄었다. 중요한 비교는 sleep 계산을 더한 시스템이 단순 기준선보다 총 token을 많이 썼는지가 아니라, 사용자가 기다리는 구간의 계산량과 정확도 사이 frontier가 이동했는가이다. 결과는 여러 모델에서 그 이동을 보인다.
 
+다만 저자들은 이 5배가 **낮은 test-time budget 구간의 이야기**임을 본문에서 명시한다. Stateful GSM-Symbolic의 높은 test-time budget에서는 오히려 test-time-only 기준선이 근소하게 앞선다. 저자들은 표준 조건의 prompt에는 해당 질문에 관련된 내용만 들어 있어 방해 정보가 적기 때문일 수 있다는 가설을 제시하지만 이를 시험하지는 않는다. 모델별로도 균일하지 않아 o1은 이득이 제한적이었고 그에 대한 설명은 제시되지 않는다.
+
+같은 test-time token 예산에서 pass@k 병렬 스케일링과도 비교한다. 저자들은 모든 과제·모델에서 sleep-time compute가 pass@k를 일관되게 능가한다고 보고하며, pass@k가 test time에 정답 verifier에 oracle로 접근한다는 비현실적 이점을 갖는 baseline이므로 이를 넘어서는 것이 의미 있는 개선이라고 스스로 근거를 붙인다. 이 비교는 각 과제의 가장 낮은 sequential compute 조건에만 적용되었다.
+
 ## 5.2 Sleep-time compute의 스케일링
 
 sleep 단계에 더 큰 budget을 주면 learned context가 더 많은 파생 관계와 중간 해답을 포함한다. Stateful GSM-Symbolic에서는 최대 13%, Stateful AIME에서는 최대 18%의 정확도 상승이 보고된다. 다만 모든 문맥에서 단조롭게 같은 이득이 나오는 것은 아니다. 미래 질문과 무관한 계산을 많이 만들면 비용만 늘 수 있다.
 
 ## 5.3 여러 질의에 걸친 상각
 
-Multi-Query GSM-Symbolic에서 동일 learned context를 관련 질문들이 공유하면 sleep 비용이 분산된다. 보고된 설정에서 평균 질의 비용은 2.5배 감소한다. 한 문맥당 질의가 하나뿐이면 오프라인 비용을 회수하기 어렵고, 반복적으로 조회되는 사용자·문서·repository 상태일수록 경제성이 커진다는 뜻이다.
+Multi-Query GSM-Symbolic에서 동일 learned context를 관련 질문들이 공유하면 sleep 비용이 분산된다. 본문이 보고하는 2.5배는 **문맥당 질의가 10개일 때 단일 질의 기준선 대비 최대치**이며, 생성 token만을 센 비용 모형에서 얻은 값이다. 저자들은 문맥당 질문 수가 적으면 총비용 관점에서 sleep-time compute가 불리해진다고 그림 설명에 명시한다. 한 문맥당 질의가 하나뿐이면 오프라인 비용을 회수하기 어렵고, 반복적으로 조회되는 사용자·문서·repository 상태일수록 경제성이 커진다는 뜻이다.
 
 ## 5.4 질의 예측 가능성
 
@@ -69,6 +73,8 @@ Multi-Query GSM-Symbolic에서 동일 learned context를 관련 질문들이 공
 # 6. Agentic SWE 사례 (SWE-Features)
 
 software-engineering 에이전트는 문제를 받은 뒤 repository를 탐색하고, 관련 파일을 읽고, 변경 계획을 세우며, 테스트 실패에 따라 다시 탐색한다. 논문은 repository 상태를 미리 분석하여 구현에 유용할 수 있는 feature와 메모를 만들고, 실제 문제 해결 시 이를 사용하는 절차를 시험한다. 오프라인 산출물은 “rethink memory”에 저장되고 이후 단계에서 검색된다.
+
+보고된 이득은 낮은 test-time budget에서 test-time token 약 1.5배 감소 수준이며, budget이 높아지면 test-time compute만 쓰는 쪽이 더 나을 수 있다고 저자들이 명시한다. 높은 budget 조건에서는 표준 조건의 precision이 더 높고 recall은 비슷했는데, sleep-time compute를 쓴 agent가 더 많은 파일을 탐색한 뒤 더 많은 파일을 수정하는 경향 때문일 수 있다고 해석한다. 평가 지표는 수정한 파일 집합과 정답 파일 집합 사이의 F1이며, GitHub에서 수집한 PR이라 사용할 수 있는 테스트가 마땅치 않아 테스트는 채점에 쓰이지 않는다.
 
 이 사례는 완전한 자동 사전 해결이 아니라, 반복되는 codebase 이해 비용을 질의 이전으로 옮기는 시도다. 수학 과제보다 문맥과 질문의 불확실성이 크기 때문에 결과는 proof-of-concept로 제시되며, 일반적인 SWE 성능 향상을 확정하는 실험으로 해석되지 않는다.
 

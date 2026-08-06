@@ -1,18 +1,18 @@
-# Sleep (offline consolidation for LLMs) — 한국어 전문 번역본 (무축약)
+# Language Models Need Sleep: Learning to Self-Modify and Consolidate Memories — 한국어 전문 번역본 (무축약)
 
-> arXiv:2606.03979 「Sleep (offline consolidation for LLMs)」((Google Research))의 **전문 무축약 한국어 번역**입니다. 스터디용이며 공식 번역이 아닙니다. 원문의 모든 문장·수식·표·각주를 빠짐없이 옮기는 것을 목표로 했고, 수식은 PDF 추출 텍스트 기반이라 일부 기호가 손상될 수 있습니다. 그림은 원저자의 것입니다.
+> arXiv:2606.03979v2 「Language Models Need Sleep: Learning to Self-Modify and Consolidate Memories」(Google Research)의 **전문 무축약 한국어 번역**입니다. 스터디용이며 공식 번역이 아닙니다. 원문의 모든 문장·수식·표·각주를 빠짐없이 옮기는 것을 목표로 했고, 수식은 PDF 추출 텍스트 기반이라 일부 기호가 손상될 수 있습니다. 그림은 원저자의 것입니다.
 
 ---
 
 # 언어 모델에는 잠이 필요하다: 자기 수정과 기억 통합의 학습
 
-Ali Behrouz †,‡, Farnoosh Hashemi ‡, Vahab Mirrokni †
+Ali Behrouz †, Farnoosh Hashemi ‡, Adel Javanmard †, Vahab Mirrokni †
 
 †
 
 ‡
 
-arXiv:2606.03979v1 [cs.LG] 2026년 6월 2일
+arXiv:2606.03979v2 [cs.LG] 2026년 7월 10일
 
 ## 초록 (Abstract)
 
@@ -244,105 +244,44 @@ r(DREAM^(i), τ(·), LM_{θ^(i)}) = 1  (개선되면),  0  (그렇지 않으면)
 
 **추론을 위한 기억 공고화(Memory Consolidation for Reasoning).** 기억 공고화 단계의 또 다른 중요한 함의는 모델의 추론 능력을 개선하는 것이다. 이 절에서, 우리는 수학적 추론에 대한 그 효과를 평가하고 이를 기본 모델(base model), SFT, GRPO(Shao et al. 2024)의 일반적인 베이스라인과 비교한다. 결과는 표 2(Table 2)에 보고되어 있다. 기억 공고화를 위한 우리의 알고리즘은 기본 모델의 추론 능력을 개선하는 데 있어 SFT와 GRPO보다 더 나은 성능을 보인다.
 
-**표 3(Table 3):** 구절 설정(Passage Settings) 전반에 걸친 지식 통합(Knowledge Incorporation) 성능.
-
 **표 2(Table 2):** 수학적 추론 벤치마크에 대한 서로 다른 방법들의 성능. 우리는 Qwen 모델의 다양한 변형을 사용하고 average@16을 보고한다.
 
-| Method | AIME-24 | AIME-25 | HMMT-25 |
+| 방법(Method) | AIME-24 | AIME-25 | HMMT-25 |
 |---|---|---|---|
-| Qwen3-1.7B | | | |
-| Base (Instruct) | 49.8 | 34.5 | |
-| SFT | 47.3 | 36.1 | |
-| GRPO | 51.0 | 38.6 | |
-| OPSD | 51.6 | 40.0 | |
-| Sleep | 53.2 | | |
+| **Qwen3-1.7B** | | | |
+| Base (Instruct) | 49.8 | 34.5 | 25.7 |
+| SFT | 47.3 | 36.1 | 22.9 |
+| GRPO | 51.0 | 38.6 | 26.1 |
+| OPSD | 51.6 | 40.0 | 28.1 |
+| Sleep | 53.2 | 40.2 | 29.3 |
+| **Qwen3-8B** | | | |
+| Base (Instruct) | 73.8 | 68.1 | 42.4 |
+| SFT | 75.5 | 66.4 | 43.7 |
+| GRPO | 76.4 | 68.1 | 44.9 |
+| OPSD | 76.6 | 67.4 | 45.1 |
+| Sleep | 79.2 | 69.0 | 46.1 |
 
-40.2
+**표 3(Table 3):** 구절 설정(Passage Settings) 전반에 걸친 지식 통합(Knowledge Incorporation) 성능.
 
-25.7
-22.9
-26.1
-28.1
-29.3
+| 방법(Method) | 단일 지문(Single Passage, n = 1) | 계속된 사전학습(Continued Pretraining, n = 200) |
+|---|---|---|
+| 기반 모델(Base model) | 31.9 | 31.9 |
+| Dreaming 없이 미세조정된 모델(Fine-tuned Model with No Dreaming) | 33.4 | 32.0 |
+| SEAL | 46.7 | 43.2 |
+| Sleep (Transformer) | 48.1 | 44.3 |
+| Sleep (Transformer + 4단계) | 48.9 | 46.2 |
+| 기울기 기반 선택 제거(removing gradient-based selection) | 47.1 | 45.2 |
+| 무작위 전문가 제거(removing random expert) | 48.0 | 44.7 |
+| Dreaming 제거(removing Dreaming) | 35.7 | 36.2 |
 
-68.1
-66.4
-68.1
-67.4
-69.0
+**표 4(Table 4):** 소수샷 추상 추론(Few-shot Abstract Reasoning)
 
-42.4
-43.7
-44.9
-45.1
-46.1
-
-단일 지문(Single Passage)
-(n = 1)
-
-계속된 사전학습(Continued Pretraining)
-(n = 200)
-
-기반 모델(Base model)
-Dreaming 없이 미세조정된 모델(Fine-tuned Model with No Dreaming)
-SEAL
-Sleep (Transformer)
-Sleep (Transformer + 4단계)
-
-31.9
-33.4
-46.7
-48.1
-48.9
-
-31.9
-32.0
-43.2
-44.3
-46.2
-
-기울기 기반 선택 제거(removing gradient-based selection)
-무작위 전문가 제거(removing random expert)
-Dreaming 제거(removing Dreaming)
-
-47.1
-48.0
-35.7
-
-45.2
-44.7
-36.2
-
-방법(Method)
-
-표 4: 소수샷 추상 추론(Few-shot Abstract Reasoning)
-
-Qwen3-8B
-Base (Instruct)
-SFT
-GRPO
-OPSD
-Sleep
-
-73.8
-75.5
-76.4
-76.6
-79.2
-
-방법(Method)
-
-성공률(Success Rate, %)
-
-ICL
-TTT
-SEAL
-Sleep
-
-0
-10
-72.5
-80
+| 방법(Method) | 성공률(Success Rate, %) |
+|---|---|
+| ICL | 0 |
+| TTT | 10 |
+| SEAL | 72.5 |
+| Sleep | 80 |
 
 **지식 통합(Knowledge Incorporation).** 다음으로, 우리는 자기개선(self-improvement)까지 가능하게 하는 Sleep의 전체 설계에 초점을 맞춘다. 이 과제에서 우리는 모델이 통합된 사실들에 대한 질문에 답할 수 있기를 기대한다. 공정한 비교를 위해, 우리는 모델과 파라미터의 선택을 포함하여 Zweiger et al.(2025)의 실험 설정을 따른다. 우리는 SQuAD 데이터셋(Rajpurkar et al. 2016)의 새로운 사실 정보를 통합하는 것에 대해 우리 모델을 평가한다. 기준선(baseline)으로는 (i) 어떠한 개선도 없거나 지문에 접근할 수 없는 변형인 기반 모델(base model); (ii) dreaming이 없는 미세조정 모델(fine-tuned model with no dreaming); (iii) RL과 자기적응(self-adaption)을 갖춘 SEAL 모델; (iv) 2단계 메모리 시스템을 갖춘 우리의 Transformer 기반 아키텍처; 그리고 (v) 4단계 메모리 시스템을 갖춘 것을 사용한다.
 

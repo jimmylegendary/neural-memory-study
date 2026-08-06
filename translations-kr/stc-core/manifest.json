@@ -274,6 +274,24 @@
       "license_note": "Proceedings/arXiv rights; translated derivative and source plate are internal-only",
       "body_kind": "new-structured",
       "expected": {"figures": 22, "tables": 7, "equations": null}
+    },
+    {
+      "paper_id": "STC-T16",
+      "original_title": "Do Language Models Need Sleep? Offline Recurrence for Improved Online Inference",
+      "korean_title": "언어 모델에도 잠이 필요한가? 온라인 추론 개선을 위한 오프라인 재귀",
+      "authors": "Sangyun Lee, Sean McLeish, Tom Goldstein, Giulia Fanti",
+      "year": 2026,
+      "venue": "arXiv preprint",
+      "version": "arXiv:2605.26099v3",
+      "source_path": "papers/2605.26099.pdf",
+      "source_type": "pdf",
+      "source_sha256": "178af64d444c61f229d70f8bdb204b70e7ce96e7a69b991c6d87a940b24fbe92",
+      "body_path": "translations-kr/stc-core/STC-T16/body.md",
+      "output": "STC-T16-NEED-SLEEP-OFFLINE-RECURRENCE-KR.pdf",
+      "rights": "public",
+      "license_note": "CC BY 4.0; attribution retained (PDF /License and XMP dc:rights both declare http://creativecommons.org/licenses/by/4.0/)",
+      "body_kind": "new-structured",
+      "expected": {"figures": 6, "tables": 0, "equations": null}
     }
   ]
 }

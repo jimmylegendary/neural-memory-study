@@ -26,7 +26,7 @@ SEAL과 deep-context distillation은 synthetic data나 outer-loop를 이용해 k
 
 # 3. 평가 설정
 
-**PhoneBook**은 key–value fact 수를 임의로 늘려 exact retrieval capacity를 측정한다. **PaperQA**는 scientific document knowledge를 factual/relational 질문으로 평가한다. **NarrativeQA**와 **QuALITY**는 긴 document의 multi-hop와 global coherence를 요구한다. ∞Bench와 LongBench v2의 100K+ token subset도 추가한다.
+**PhoneBook**은 key–value fact 수를 임의로 늘려 exact retrieval capacity를 측정한다. **CounterFact**는 사실 편집형 지식을 efficacy 점수로 재고, Q1–Q3의 rank·용량·효율 sweep은 PhoneBook과 CounterFact 두 축에서 함께 수행된다. **PaperQA**는 scientific document knowledge를 factual/relational 질문으로 평가하며, pretraining contamination을 줄이려고 최근 학회(NeurIPS 2024·ICLR 2025·ICML 2025) 논문 15편에서 총 450개 QA pair를 계층적으로 구성했다. **NarrativeQA**와 **QuALITY**는 긴 document의 multi-hop와 global coherence를 요구한다. ∞Bench와 LongBench v2의 100K+ token subset도 추가한다.
 
 efficacy score, exact/QA accuracy, long-document metric과 parameter 수, training token, rank, module 수, routing/merge cost를 함께 기록한다. single LoRA와 multi-LoRA, closed-book, ICL, RAG, hybrid를 비교한다.
 
@@ -48,7 +48,9 @@ rank를 늘리면 trainable parameter와 capacity ceiling이 올라간다. 그�
 
 ## Q4–Q5. Synthetic data와 format mixture
 
-raw document text만 continued fine-tuning하는 것은 factual retrieval에 information density가 낮다. QA pair, summary, rewrite처럼 task-aligned synthetic format은 같은 training budget에서 지식을 더 효과적으로 internalize한다. 한 format만 쓰는 것보다 QA·summary·rewrite를 섞은 diverse curriculum이 일관되게 더 좋았다.
+raw document text만 continued fine-tuning하는 것은 factual retrieval에 information density가 낮다. QA pair, summary, rewrite처럼 task-aligned synthetic format은 같은 training budget에서 지식을 더 효과적으로 internalize하며, 효과 순서는 QA > Summary > Rewrite > Original이었다. 다만 저자들은 QA의 우위가 평가 과제 자체가 QA 형식이라는 구조적 정렬에 일부 기인할 수 있다고 스스로 단서를 단다.
+
+format을 섞는 효과는 **model에 따라 갈렸다**. Llama-3.1-8B에서는 Original+Summary+Rewrite+QA의 가장 포괄적인 혼합이 최고점을 냈지만, Qwen3-8B에서는 Summary+QA가 최고였고 전체 혼합은 그에 근접한 수준에 머물렀다. Qwen에서는 Original+QA가 QA 단독보다 오히려 약간 낮았다. 즉 “같은 내용을 다양한 관점으로 보여주면 도움이 된다”는 방향성은 두 model에서 공통이지만, 최적 혼합이 하나로 고정되지는 않는다.
 
 이는 synthetic data가 새로운 사실을 창작해야 한다는 뜻이 아니다. source content를 다양한 supervision view로 바꿔 model이 질문–답, 관계, global summary에 접근하게 한다. generator가 source를 잘못 해석하면 그 error도 adapter에 들어간다.
 
@@ -66,11 +68,13 @@ base model의 capability와 scale은 같은 LoRA rank가 지식을 internalize�
 
 ## Q9. Routing error
 
-실제 query가 어느 module의 knowledge를 필요로 하는지 router가 골라야 한다. top-k routing이 틀리면 필요한 fact가 parameter에 있어도 접근하지 못한다. ideal routing의 이득이 practical router에서 크게 줄 수 있으므로 retrieval metric과 answer metric을 분리한다.
+실제 query가 어느 module의 knowledge를 필요로 하는지 router가 골라야 한다. top-k routing이 틀리면 필요한 fact가 parameter에 있어도 접근하지 못한다. 결과는 ideal routing의 이득이 “줄어드는” 정도가 아니었다 — embedding 기반 실제 router는 두 base model 모두에서 oracle routing보다 낮은 것은 물론, **지식 전체를 담은 단일 LoRA baseline보다도 낮았다**. 저자들은 잘못 선택된 고도로 특화된 module이, 전체 지식을 담은 비특화 단일 module보다 오히려 더 해로울 수 있다고 정리한다. token 단위 router(Arrow·SpectR·LAG)도 dataset과 retrieval depth 전반에서 embedding baseline을 일관되게 앞서지 못했다. 따라서 retrieval metric과 answer metric을 분리해 보아야 한다.
 
 ## Q10–Q11. Merging과 interference
 
-여러 LoRA를 동시에 merge하면 더 많은 knowledge를 사용할 수 있지만 parameter delta 사이 interference와 signal dilution이 생긴다. merge 수를 늘릴수록 recall coverage와 interference가 trade-off를 이룬다. TIES-merging 같은 conflict-aware 방법을 시험하며, small high-confidence set을 merge하는 design을 권한다.
+여러 LoRA를 동시에 merge하면 더 많은 knowledge를 사용할 수 있지만 parameter delta 사이 interference와 signal dilution이 생긴다. merge 연산자로는 Linear, CAT, CAT-1/√N, TIES, DARE-Linear, DARE-TIES를 비교한다. TIES가 가장 높아 단일 LoRA에 필적하고 Linear가 의외로 강한 baseline이며, DARE는 확률적 drop이 memorization 설정에서 중요한 정보를 버려 뒤처지고, 소박한 CAT은 크게 무너진다(CAT-1/√N이 그 격차를 대부분 회복하므로 CAT의 주 실패 원인은 rank 확장이 아니라 scale 불일치다).
+
+merge 개수 자체의 효과는 trade-off라기보다 **단조 감소**다. query가 실제로 유래한 ground-truth module만 골라 $N_m = 1 \to 5$로 늘려도 성능은 $N_m = 1$에서 최고이고 이후 계속 떨어진다. 필요한 지식이 모두 포함되어 있어도 module을 더 붙이는 행위 자체가 저장된 정보를 희석·간섭시킨다는 뜻이다. 따라서 논문은 conflict-aware merge를 small high-confidence set에만 적용하라고 권한다.
 
 # 7. Long-document와 Hybrid Memory
 

@@ -1,0 +1,1509 @@
+{
+  "schema": "stc-deep-seminar/v1",
+  "title": "Sleep-Time Compute v2 — 이름이 기제보다 넓다",
+  "freezeDate": "2026-08-06",
+  "sourceTemplate": "presentation/sleep-time-compute/build/sleep-time-compute-research.pptx",
+  "starter": "/home/jimmy/repos/neural-memory-study/build/deck-work/template-starter.pptx",
+  "output": "/home/jimmy/repos/neural-memory-study/build/publications/SLEEP-TIME-COMPUTE-V2-SEMINAR-KR.pptx",
+  "outputBytes": 719459,
+  "slideCount": 125,
+  "editedTextShapeCount": 2501,
+  "speakerNotesCount": 125,
+  "authoringTool": "@oai/artifact-tool",
+  "authoringContract": "inherited text rewrite and speaker-notes edit only; no new slide primitives",
+  "slides": [
+    {
+      "slide": 1,
+      "id": "STC2-001",
+      "sourcePattern": 1,
+      "title": "Sleep-Time Compute — 이름이 기제보다 넓다",
+      "refs": [
+        "study-kr-stc/front/00-preface.md",
+        "dossier/stc-v2/PRE-RESEARCH.md §5 (척추 논지 A1)"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-01.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-01.layout.json"
+    },
+    {
+      "slide": 2,
+      "id": "STC2-002",
+      "sourcePattern": 27,
+      "title": "이 발표가 답할 질문 — 일곱 개 더하기 하나",
+      "refs": [
+        "study-kr-stc/part1/ch01 §01.7",
+        "study-kr-stc/front/00-toc.md"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-02.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-02.layout.json"
+    },
+    {
+      "slide": 3,
+      "id": "STC2-003",
+      "sourcePattern": 2,
+      "title": "같은 이름 아래 세 개의 다른 대상이 있다",
+      "refs": [
+        "[Letta STC arXiv:2504.13171] App. K",
+        "[LM Need Sleep arXiv:2606.03979] §3.2",
+        "[Do LMs Need Sleep? arXiv:2605.26099] Eq. 3"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-03.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-03.layout.json"
+    },
+    {
+      "slide": 4,
+      "id": "STC2-004",
+      "sourcePattern": 4,
+      "title": "이 발표를 지탱하는 장치 넷",
+      "refs": [
+        "study-kr-stc/front/00-preface.md §이 책의 방법"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-04.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-04.layout.json"
+    },
+    {
+      "slide": 5,
+      "id": "STC2-005",
+      "sourcePattern": 26,
+      "title": "척추 논지 — 이름이 기제보다 넓다",
+      "refs": [
+        "dossier/stc-v2/PRE-RESEARCH.md §5",
+        "study-kr-stc ch11 §11.3 [평가]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-05.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-05.layout.json"
+    },
+    {
+      "slide": 6,
+      "id": "STC2-006",
+      "sourcePattern": 12,
+      "title": "두 시간의 지도 — 여섯 걸음",
+      "refs": [
+        "study-kr-stc Part I (ch01–ch10), Part II (ch11–ch23), Part III (ch24–ch30)"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-06.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-06.layout.json"
+    },
+    {
+      "slide": 7,
+      "id": "STC2-007",
+      "sourcePattern": 21,
+      "title": "청중과의 계약 — 무엇을 단정하고 무엇을 안 하는가",
+      "refs": [
+        "study-kr-stc ch24 §24.2",
+        "study-kr-stc ch30 표 30-1"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-07.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-07.layout.json"
+    },
+    {
+      "slide": 8,
+      "id": "STC2-008",
+      "sourcePattern": 2,
+      "title": "앞 모노그래프에서 무엇을 그대로 가져오는가",
+      "refs": [
+        "study-kr-stc/front/00-preface.md",
+        "NM ch01 §1.1, ch12"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-08.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-08.layout.json"
+    },
+    {
+      "slide": 9,
+      "id": "STC2-009",
+      "sourcePattern": 2,
+      "title": "오늘 쓸 기호 세 개 — Θ, W, E",
+      "refs": [
+        "study-kr-stc ch01 §01.2",
+        "NM ch01 §1.1 (Θ·W 승계)"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-09.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-09.layout.json"
+    },
+    {
+      "slide": 10,
+      "id": "STC2-010",
+      "sourcePattern": 20,
+      "title": "왜 세 층으로 나누는가 — 서빙 질문 넷",
+      "refs": [
+        "study-kr-stc ch01 §01.1"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-10.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-10.layout.json"
+    },
+    {
+      "slide": 11,
+      "id": "STC2-011",
+      "sourcePattern": 13,
+      "title": "소유와 수명이 나머지를 전부 정한다",
+      "refs": [
+        "study-kr-stc ch01 §01.2"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-11.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-11.layout.json"
+    },
+    {
+      "slide": 12,
+      "id": "STC2-012",
+      "sourcePattern": 16,
+      "title": "읽기는 하나 — 세 층을 모두 통과한다",
+      "refs": [
+        "study-kr-stc ch01 §01.3"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-12.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-12.layout.json"
+    },
+    {
+      "slide": 13,
+      "id": "STC2-013",
+      "sourcePattern": 16,
+      "title": "쓰기 ① — fast weights에 쓴다",
+      "refs": [
+        "study-kr-stc ch01 §01.3",
+        "NM ch01 §1.4, NM ch12"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-13.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-13.layout.json"
+    },
+    {
+      "slide": 14,
+      "id": "STC2-014",
+      "sourcePattern": 16,
+      "title": "쓰기 ② — slow weights에 쓴다",
+      "refs": [
+        "study-kr-stc ch01 §01.3",
+        "study-kr-stc ch02–ch07"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-14.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-14.layout.json"
+    },
+    {
+      "slide": 15,
+      "id": "STC2-015",
+      "sourcePattern": 16,
+      "title": "쓰기 ③ — 모델 밖에 쓴다",
+      "refs": [
+        "study-kr-stc ch01 §01.3",
+        "study-kr-stc ch14, ch15"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-15.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-15.layout.json"
+    },
+    {
+      "slide": 16,
+      "id": "STC2-016",
+      "sourcePattern": 2,
+      "title": "읽는 규칙 하나 — 좌변을 적어라",
+      "refs": [
+        "study-kr-stc ch01 §01.3",
+        "study-kr-stc ch11 §11.2.2"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-16.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-16.layout.json"
+    },
+    {
+      "slide": 17,
+      "id": "STC2-017",
+      "sourcePattern": 4,
+      "title": "세 경로 — 실행하는 식과 배포의 변화",
+      "refs": [
+        "study-kr-stc ch01 §01.4 표 1-2"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-17.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-17.layout.json"
+    },
+    {
+      "slide": 18,
+      "id": "STC2-018",
+      "sourcePattern": 4,
+      "title": "training 어휘 ① — 무엇이 언제 움직이는가",
+      "refs": [
+        "study-kr-stc ch02"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-18.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-18.layout.json"
+    },
+    {
+      "slide": 19,
+      "id": "STC2-019",
+      "sourcePattern": 12,
+      "title": "training 어휘 ② — fine-tuning과 PEFT, 그리고 rank",
+      "refs": [
+        "study-kr-stc ch03 §03.5–03.6",
+        "[LoRA arXiv:2106.09685] §4"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-19.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-19.layout.json"
+    },
+    {
+      "slide": 20,
+      "id": "STC2-020",
+      "sourcePattern": 7,
+      "title": "training 어휘 ③ — distillation, 그리고 교사가 누구인가",
+      "refs": [
+        "study-kr-stc ch04",
+        "[Continual Facts §6.2]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-20.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-20.layout.json"
+    },
+    {
+      "slide": 21,
+      "id": "STC2-021",
+      "sourcePattern": 4,
+      "title": "training 어휘 ④ — RL과 보상, 그리고 reward hacking",
+      "refs": [
+        "study-kr-stc ch05",
+        "study-kr-stc ch20 §20.7"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-21.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-21.layout.json"
+    },
+    {
+      "slide": 22,
+      "id": "STC2-022",
+      "sourcePattern": 17,
+      "title": "training 어휘 ⑤ — 데이터를 만드는 법과 model collapse",
+      "refs": [
+        "study-kr-stc ch06 §06.6",
+        "[model collapse Eq. 3, 4, 11; §2.3]",
+        "experiments/stc/X4 PART A"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-22.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-22.layout.json"
+    },
+    {
+      "slide": 23,
+      "id": "STC2-023",
+      "sourcePattern": 12,
+      "title": "training 어휘 ⑥ — 망각과 replay, 그리고 ρ의 정체",
+      "refs": [
+        "study-kr-stc ch07",
+        "study-kr-stc ch22 §22.5"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-23.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-23.layout.json"
+    },
+    {
+      "slide": 24,
+      "id": "STC2-024",
+      "sourcePattern": 7,
+      "title": "training 어휘 ⑦ — CLS와 생물학적 sleep, 그리고 은유의 담보",
+      "refs": [
+        "study-kr-stc ch08",
+        "study-kr-stc ch23 §23.8"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-24.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-24.layout.json"
+    },
+    {
+      "slide": 25,
+      "id": "STC2-025",
+      "sourcePattern": 18,
+      "title": "training 어휘 ⑧ — 기억 용량, 그리고 그 값이 하한이라는 사실",
+      "refs": [
+        "study-kr-stc ch09 §09.2.2",
+        "[lm-memorization-capacity §3.2 'only ever measuring a lower bound']"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-25.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-25.layout.json"
+    },
+    {
+      "slide": 26,
+      "id": "STC2-026",
+      "sourcePattern": 13,
+      "title": "training 어휘 ⑨ — 외부 기억과 검색 비용",
+      "refs": [
+        "study-kr-stc ch10 §10.4",
+        "[RAG arXiv:2005.11401]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-26.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-26.layout.json"
+    },
+    {
+      "slide": 27,
+      "id": "STC2-027",
+      "sourcePattern": 4,
+      "title": "비용 4종 — 오늘 모든 절차를 이 네 값으로 환산한다",
+      "refs": [
+        "study-kr-stc ch01 §01.5 표 1-3"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-27.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-27.layout.json"
+    },
+    {
+      "slide": 28,
+      "id": "STC2-028",
+      "sourcePattern": 16,
+      "title": "상각식 (A) — 오늘 가장 자주 나올 도구",
+      "refs": [
+        "study-kr-stc ch01 §01.5",
+        "study-kr-stc ch25 §25.3.3"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-28.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-28.layout.json"
+    },
+    {
+      "slide": 29,
+      "id": "STC2-029",
+      "sourcePattern": 18,
+      "title": "손으로 한 번 굴려 본다 — 손익분기 3.64",
+      "refs": [
+        "study-kr-stc ch01 Worked micro-example"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-29.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-29.layout.json"
+    },
+    {
+      "slide": 30,
+      "id": "STC2-030",
+      "sourcePattern": 27,
+      "title": "Rosetta 사전 — 서빙 어휘로 옮기면 이렇게 된다",
+      "refs": [
+        "study-kr-stc ch01 §01.6 표 1-4"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-30.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-30.layout.json"
+    },
+    {
+      "slide": 31,
+      "id": "STC2-031",
+      "sourcePattern": 4,
+      "title": "판별식 — 네 조건을 모두 만족해야 한다",
+      "refs": [
+        "study-kr-stc ch11 §11.2.1"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-31.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-31.layout.json"
+    },
+    {
+      "slide": 32,
+      "id": "STC2-032",
+      "sourcePattern": 2,
+      "title": "판별식이 묻지 않는 것 둘",
+      "refs": [
+        "study-kr-stc ch11 §11.2.1",
+        "study-kr-stc ch24 §24.5 '반증되지 않는 것'"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-32.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-32.layout.json"
+    },
+    {
+      "slide": 33,
+      "id": "STC2-033",
+      "sourcePattern": 12,
+      "title": "적용 절차 — 다섯 단계를 같은 순서로 돈다",
+      "refs": [
+        "study-kr-stc ch11 §11.2.2"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-33.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-33.layout.json"
+    },
+    {
+      "slide": 34,
+      "id": "STC2-034",
+      "sourcePattern": 20,
+      "title": "조건 (1)을 빼면 — 모든 쓰기가 sleep이 된다",
+      "refs": [
+        "study-kr-stc ch11 §11.2.3",
+        "[MemGPT §2.3]",
+        "[SCM §3.2]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-34.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-34.layout.json"
+    },
+    {
+      "slide": 35,
+      "id": "STC2-035",
+      "sourcePattern": 20,
+      "title": "조건 (2)를 빼면 — 저장이 추론으로 승격된다",
+      "refs": [
+        "study-kr-stc ch11 §11.2.3",
+        "[RAG arXiv:2005.11401]",
+        "[Memorizing Transformers §1]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-35.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-35.layout.json"
+    },
+    {
+      "slide": 36,
+      "id": "STC2-036",
+      "sourcePattern": 20,
+      "title": "조건 (3)을 빼면 — 읽기를 바꾼 논문이 쓰기 논문으로 둔갑한다",
+      "refs": [
+        "study-kr-stc ch11 §11.2.3",
+        "[Memory Caching Eq. 4, 7]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-36.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-36.layout.json"
+    },
+    {
+      "slide": 37,
+      "id": "STC2-037",
+      "sourcePattern": 20,
+      "title": "조건 (4)를 빼면 — test-time compute 전체가 들어온다",
+      "refs": [
+        "study-kr-stc ch11 §11.2.3",
+        "[NL §6, §7.1]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-37.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-37.layout.json"
+    },
+    {
+      "slide": 38,
+      "id": "STC2-038",
+      "sourcePattern": 18,
+      "title": "전수 분류 결과 — 29편이 9 + 1 + 19로 갈린다",
+      "refs": [
+        "study-kr-stc ch11 §11.3"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-38.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-38.layout.json"
+    },
+    {
+      "slide": 39,
+      "id": "STC2-039",
+      "sourcePattern": 27,
+      "title": "A군 — 판별식을 통과한 아홉 편과 경계 사례 하나",
+      "refs": [
+        "study-kr-stc ch11 표 11-1"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-39.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-39.layout.json"
+    },
+    {
+      "slide": 40,
+      "id": "STC2-040",
+      "sourcePattern": 28,
+      "title": "B군 — 불충족 아홉 편과 걸린 조건",
+      "refs": [
+        "study-kr-stc ch11 표 11-2"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-40.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-40.layout.json"
+    },
+    {
+      "slide": 41,
+      "id": "STC2-041",
+      "sourcePattern": 28,
+      "title": "C군 — 판정 대상이 아니지만 증거가 되는 열 편",
+      "refs": [
+        "study-kr-stc ch11 표 11-3"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-41.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-41.layout.json"
+    },
+    {
+      "slide": 42,
+      "id": "STC2-042",
+      "sourcePattern": 24,
+      "title": "이름과 실제가 갈리는 다섯 사례",
+      "refs": [
+        "study-kr-stc ch11 §11.4.1–11.4.5"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-42.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-42.layout.json"
+    },
+    {
+      "slide": 43,
+      "id": "STC2-043",
+      "sourcePattern": 17,
+      "title": "SCM 한 편을 다섯 단계로 실제로 밟아 본다",
+      "refs": [
+        "study-kr-stc ch11 §11.4.1",
+        "[SCM Algorithm 1; §3.6; §3.8]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-43.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-43.layout.json"
+    },
+    {
+      "slide": 44,
+      "id": "STC2-044",
+      "sourcePattern": 2,
+      "title": "경계 사례 규칙 — MemGPT는 되고 RAG는 안 되는 이유",
+      "refs": [
+        "study-kr-stc ch11 §11.5",
+        "[Letta STC §2]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-44.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-44.layout.json"
+    },
+    {
+      "slide": 45,
+      "id": "STC2-045",
+      "sourcePattern": 13,
+      "title": "침묵 지도 — 연대가 강제한 침묵과 선택된 침묵",
+      "refs": [
+        "study-kr-stc ch11 §11.6, §11.6.1"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-45.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-45.layout.json"
+    },
+    {
+      "slide": 46,
+      "id": "STC2-046",
+      "sourcePattern": 26,
+      "title": "같은 경로 안에서도 창시 논문이 인용되지 않는다",
+      "refs": [
+        "study-kr-stc ch11 §11.7"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-46.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-46.layout.json"
+    },
+    {
+      "slide": 47,
+      "id": "STC2-047",
+      "sourcePattern": 4,
+      "title": "E-경로 — 모델 밖에 쓰고 프롬프트로 읽는다",
+      "refs": [
+        "study-kr-stc ch11 §11.8",
+        "study-kr-stc ch14 §14.7, ch15 §15.7"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-47.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-47.layout.json"
+    },
+    {
+      "slide": 48,
+      "id": "STC2-048",
+      "sourcePattern": 13,
+      "title": "가장 이른 조상 — Memorizing Transformers는 왜 이 범주가 아닌가",
+      "refs": [
+        "study-kr-stc ch12 §12.5, §12.7",
+        "[Memorizing Transformers §1]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-48.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-48.layout.json"
+    },
+    {
+      "slide": 49,
+      "id": "STC2-049",
+      "sourcePattern": 12,
+      "title": "RAG에서 MemGPT로 — 단위가 corpus당에서 사용자당으로 바뀐다",
+      "refs": [
+        "study-kr-stc ch13",
+        "[MemGPT §2.3, §3]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-49.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-49.layout.json"
+    },
+    {
+      "slide": 50,
+      "id": "STC2-050",
+      "sourcePattern": 17,
+      "title": "Letta `Sleep-time Compute` — 이름을 만든 논문",
+      "refs": [
+        "study-kr-stc ch14 §14.1–14.3",
+        "[Letta STC §1, §2, §7]",
+        "study-kr-stc ch23 §23.8"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-50.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-50.layout.json"
+    },
+    {
+      "slide": 51,
+      "id": "STC2-051",
+      "sourcePattern": 12,
+      "title": "Letta STC의 기제 — (U-E) 하나가 네 겹으로 특수화된다",
+      "refs": [
+        "study-kr-stc ch14 §14.3",
+        "[Letta STC App. K]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-51.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-51.layout.json"
+    },
+    {
+      "slide": 52,
+      "id": "STC2-052",
+      "sourcePattern": 26,
+      "title": "'learned'는 gradient를 뜻하지 않는다 — 논문 자신이 그렇게 쓴다",
+      "refs": [
+        "study-kr-stc ch14 §14.3",
+        "[Letta STC §7, p.13]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-52.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-52.layout.json"
+    },
+    {
+      "slide": 53,
+      "id": "STC2-053",
+      "sourcePattern": 16,
+      "title": "비용모델 — 생성 토큰만 세고 prefill 항이 없다",
+      "refs": [
+        "study-kr-stc ch14 §14.5",
+        "[Letta STC §5.3, p.8]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-53.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-53.layout.json"
+    },
+    {
+      "slide": 54,
+      "id": "STC2-054",
+      "sourcePattern": 24,
+      "title": "5× · 13% · 2.5× 는 어디서 나온 수인가",
+      "refs": [
+        "study-kr-stc ch14 §14.6",
+        "[Letta STC App. J, pp.27–28; Table 1, p.19]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-54.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-54.layout.json"
+    },
+    {
+      "slide": 55,
+      "id": "STC2-055",
+      "sourcePattern": 18,
+      "title": "이득은 높은 예산에서 역전하고, sleep 스케일링은 비단조다",
+      "refs": [
+        "study-kr-stc ch14 §14.6",
+        "[Letta STC §5.1, §5.2, §6]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-55.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-55.layout.json"
+    },
+    {
+      "slide": 56,
+      "id": "STC2-056",
+      "sourcePattern": 12,
+      "title": "프로덕션 넷 — Mem0 · Zep · ReasoningBank · SCM",
+      "refs": [
+        "study-kr-stc ch15 §15.3–15.4"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-56.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-56.layout.json"
+    },
+    {
+      "slide": 57,
+      "id": "STC2-057",
+      "sourcePattern": 4,
+      "title": "쓰기 연산자의 네 형태 — 그리고 수축 가능한 것은 둘뿐",
+      "refs": [
+        "study-kr-stc ch15 §15.3",
+        "[Mem0 Alg. 1]",
+        "[SCM Algorithm 1]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-57.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-57.layout.json"
+    },
+    {
+      "slide": 58,
+      "id": "STC2-058",
+      "sourcePattern": 13,
+      "title": "E-경로의 대가 — 품질 1위가 반복적으로 '기억 없음'이다",
+      "refs": [
+        "study-kr-stc ch15 §15.6",
+        "[Mem0 Table 2]",
+        "[Zep Table 1, §4.2]",
+        "[ReasoningBank §C.1 Fig. 13]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-58.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-58.layout.json"
+    },
+    {
+      "slide": 59,
+      "id": "STC2-059",
+      "sourcePattern": 4,
+      "title": "W-경로 — 문맥을 접고 원 문맥을 버린다",
+      "refs": [
+        "study-kr-stc ch11 §11.8",
+        "study-kr-stc ch27 §27.3.3"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-59.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-59.layout.json"
+    },
+    {
+      "slide": 60,
+      "id": "STC2-060",
+      "sourcePattern": 17,
+      "title": "경첩 — Generative Adapter는 왜 Θ-경로가 아닌가",
+      "refs": [
+        "study-kr-stc ch16 §16.4",
+        "[Generative Adapter Eq. 3, 6, 8–9]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-60.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-60.layout.json"
+    },
+    {
+      "slide": 61,
+      "id": "STC2-061",
+      "sourcePattern": 2,
+      "title": "모양으로 분류하면 세 판정이 동시에 틀린다",
+      "refs": [
+        "study-kr-stc ch11 §11.4.5",
+        "study-kr-stc ch16 §16.4"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-61.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-61.layout.json"
+    },
+    {
+      "slide": 62,
+      "id": "STC2-062",
+      "sourcePattern": 12,
+      "title": "`Do LMs Need Sleep?` — W-경로의 유일한 정면 사례",
+      "refs": [
+        "study-kr-stc ch17 §17.2–17.3",
+        "[Do LMs Need Sleep? Eq. 3; §3.1]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-62.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-62.layout.json"
+    },
+    {
+      "slide": 63,
+      "id": "STC2-063",
+      "sourcePattern": 20,
+      "title": "판별식 통과가 설정에 달려 있다",
+      "refs": [
+        "study-kr-stc ch17 §17.4",
+        "study-kr-stc ch25 표 25-2 유형 VI"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-63.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-63.layout.json"
+    },
+    {
+      "slide": 64,
+      "id": "STC2-064",
+      "sourcePattern": 13,
+      "title": "비용 4종 전부 부재, 그리고 계산량을 맞춘 baseline이 없다",
+      "refs": [
+        "study-kr-stc ch17 §17.5, §17.6"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-64.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-64.layout.json"
+    },
+    {
+      "slide": 65,
+      "id": "STC2-065",
+      "sourcePattern": 21,
+      "title": "이 경로에서 함께 거론되지만 이 범주가 아닌 둘",
+      "refs": [
+        "study-kr-stc ch18 §18.4, §18.5, §18.7",
+        "[NL §1, §9.1]",
+        "[MC §4.2]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-65.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-65.layout.json"
+    },
+    {
+      "slide": 66,
+      "id": "STC2-066",
+      "sourcePattern": 4,
+      "title": "Θ-경로 — 배포 아티팩트 자체를 바꾼다",
+      "refs": [
+        "study-kr-stc ch11 §11.8",
+        "study-kr-stc ch27 §27.3.4"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-66.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-66.layout.json"
+    },
+    {
+      "slide": 67,
+      "id": "STC2-067",
+      "sourcePattern": 12,
+      "title": "쓰기 primitive ① — LoRA, 그리고 그것이 풀지 않은 문제",
+      "refs": [
+        "study-kr-stc ch03 §03.5–03.6, ch19",
+        "[LoRA §4.1, §4.2]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-67.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-67.layout.json"
+    },
+    {
+      "slide": 68,
+      "id": "STC2-068",
+      "sourcePattern": 13,
+      "title": "쓰기 primitive ② — ROME과 MEMIT, 그리고 저자 자신의 유보",
+      "refs": [
+        "study-kr-stc ch19 §19.7",
+        "[ROME §3.7]",
+        "[MEMIT Algorithm 1]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-68.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-68.layout.json"
+    },
+    {
+      "slide": 69,
+      "id": "STC2-069",
+      "sourcePattern": 18,
+      "title": "편집 용량 10,000과 그 대가",
+      "refs": [
+        "study-kr-stc ch19 §19.6.2",
+        "[MEMIT Table 1, Table 2; §5.2.2; App. B.4]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-69.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-69.layout.json"
+    },
+    {
+      "slide": 70,
+      "id": "STC2-070",
+      "sourcePattern": 2,
+      "title": "갈림길 — delta인가 직접 편집인가",
+      "refs": [
+        "study-kr-stc ch19 §19.7",
+        "study-kr-stc ch26 §26.4 판정 5"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-70.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-70.layout.json"
+    },
+    {
+      "slide": 71,
+      "id": "STC2-071",
+      "sourcePattern": 12,
+      "title": "SEAL — 모델이 자기 학습 데이터를 쓴다",
+      "refs": [
+        "study-kr-stc ch20 §20.2–20.4"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-71.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-71.layout.json"
+    },
+    {
+      "slide": 72,
+      "id": "STC2-072",
+      "sourcePattern": 24,
+      "title": "SEAL — 자기 표가 논지를 세 번 깎는다",
+      "refs": [
+        "study-kr-stc ch20 §20.6",
+        "[SEAL §4.2]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-72.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-72.layout.json"
+    },
+    {
+      "slide": 73,
+      "id": "STC2-073",
+      "sourcePattern": 4,
+      "title": "`LM Need Sleep` — wake의 W에서 sleep의 Θ로 이송한다",
+      "refs": [
+        "study-kr-stc ch21 §21.1–21.3",
+        "[LM Need Sleep §1, §3.3]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-73.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-73.layout.json"
+    },
+    {
+      "slide": 74,
+      "id": "STC2-074",
+      "sourcePattern": 17,
+      "title": "Knowledge Seeding과 Dreaming — 그리고 그 마진의 출처",
+      "refs": [
+        "study-kr-stc ch21 §21.4–21.6",
+        "[LM Need Sleep App. B.5, p.26]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-74.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-74.layout.json"
+    },
+    {
+      "slide": 75,
+      "id": "STC2-075",
+      "sourcePattern": 13,
+      "title": "ablation 역전과 상각식의 퇴화",
+      "refs": [
+        "study-kr-stc ch21 §21.5, §21.6",
+        "[LM Need Sleep Table 1, p.11; §4.2, p.13]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-75.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-75.layout.json"
+    },
+    {
+      "slide": 76,
+      "id": "STC2-076",
+      "sourcePattern": 12,
+      "title": "반증 축 — 가중치에 사실을 계속 넣을 수 있는가",
+      "refs": [
+        "study-kr-stc ch22 §22.6",
+        "[Continual Facts §4.3, §5.1, §6.2, §7.2]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-76.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-76.layout.json"
+    },
+    {
+      "slide": 77,
+      "id": "STC2-077",
+      "sourcePattern": 7,
+      "title": "생물학이 실제로 보인 것 — 은유의 담보를 확인한다",
+      "refs": [
+        "study-kr-stc ch23 §23.5, §23.6, §23.8",
+        "[PLOS Sleep]",
+        "[PAD eLife]"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-77.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-77.layout.json"
+    },
+    {
+      "slide": 78,
+      "id": "STC2-078",
+      "sourcePattern": 4,
+      "title": "이 발표가 딛는 실험 넷 — 어느 것도 GPU 실측이 아니다",
+      "refs": [
+        "experiments/stc/X1-unified-cost-accounting/result.json",
+        "experiments/stc/X2/X3/X4 result.json",
+        "study-kr-stc ch30 §30.2"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-78.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-78.layout.json"
+    },
+    {
+      "slide": 79,
+      "id": "STC2-079",
+      "sourcePattern": 21,
+      "title": "계산해 놓고 본문에 올리지 않은 값 넷",
+      "refs": [
+        "study-kr-stc ch24 §24.2",
+        "study-kr-stc ch30 §30.3.5"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-79.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-79.layout.json"
+    },
+    {
+      "slide": 80,
+      "id": "STC2-080",
+      "sourcePattern": 12,
+      "title": "X1 설계 — 논문의 비용모델을 열어 빠진 항을 되살린다",
+      "refs": [
+        "experiments/stc/X1-unified-cost-accounting/result.json meta",
+        "study-kr-stc ch25 §25.2.3"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-80.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-80.layout.json"
+    },
+    {
+      "slide": 81,
+      "id": "STC2-081",
+      "sourcePattern": 16,
+      "title": "X1 파생량 ① — 임계 길이 L*",
+      "refs": [
+        "study-kr-stc ch25 §25.2.4",
+        "experiments/stc/X1 Q1_Q2_critical_length_by_regime"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-81.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-81.layout.json"
+    },
+    {
+      "slide": 82,
+      "id": "STC2-082",
+      "sourcePattern": 16,
+      "title": "X1 파생량 ② — 손익분기는 절벽이 아니라 점근이다",
+      "refs": [
+        "study-kr-stc ch25 §25.2.4",
+        "experiments/stc/X1 Q3_breakeven_Nq"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-82.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-82.layout.json"
+    },
+    {
+      "slide": 83,
+      "id": "STC2-083",
+      "sourcePattern": 17,
+      "title": "X1 결과 — 단정하는 것은 레짐 간 순서다",
+      "refs": [
+        "study-kr-stc ch25 §25.3.2 판정 4",
+        "experiments/stc/X1 findings F2, F3, F4"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-83.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-83.layout.json"
+    },
+    {
+      "slide": 84,
+      "id": "STC2-084",
+      "sourcePattern": 18,
+      "title": "X1 민감도 — 회계를 지탱하는 가장 무거운 상수가 가장 근거가 얇다",
+      "refs": [
+        "study-kr-stc ch25 §25.3.4",
+        "experiments/stc/X1 findings F5"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-84.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-84.layout.json"
+    },
+    {
+      "slide": 85,
+      "id": "STC2-085",
+      "sourcePattern": 12,
+      "title": "X2 설계 — 아무도 바이트로 보고하지 않은 값을 복원한다",
+      "refs": [
+        "experiments/stc/X2-state-capacity-accounting/result.json meta",
+        "study-kr-stc ch26 §26.2"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-85.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-85.layout.json"
+    },
+    {
+      "slide": 86,
+      "id": "STC2-086",
+      "sourcePattern": 13,
+      "title": "X2 결과 ① — 세 경로의 상태가 약 5.5 자릿수 벌어진다",
+      "refs": [
+        "study-kr-stc ch26 §26.3.1–26.3.2",
+        "experiments/stc/X2 F2"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-86.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-86.layout.json"
+    },
+    {
+      "slide": 87,
+      "id": "STC2-087",
+      "sourcePattern": 7,
+      "title": "X2 결과 ② — 정보 밀도를 정하는 것은 dtype이다",
+      "refs": [
+        "study-kr-stc ch26 §26.3.3",
+        "experiments/stc/X2 Q2 what_survives"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-87.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-87.layout.json"
+    },
+    {
+      "slide": 88,
+      "id": "STC2-088",
+      "sourcePattern": 18,
+      "title": "X2 결과 ③ — 사용자 수를 곱하면 어느 계층이 문제가 되는가",
+      "refs": [
+        "study-kr-stc ch26 §26.3.5",
+        "experiments/stc/X2 Q3, F4"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-88.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-88.layout.json"
+    },
+    {
+      "slide": 89,
+      "id": "STC2-089",
+      "sourcePattern": 12,
+      "title": "X3 설계 — B_s가 어떻게 보고되는지를 규칙으로 전수 감사한다",
+      "refs": [
+        "experiments/stc/X3-budget-axis/result.json meta",
+        "study-kr-stc ch28 §28.2"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-89.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-89.layout.json"
+    },
+    {
+      "slide": 90,
+      "id": "STC2-090",
+      "sourcePattern": 24,
+      "title": "X3 결과 — B_s는 이 corpus에서 축이 아니라 각주다",
+      "refs": [
+        "study-kr-stc ch28 §28.2.1",
+        "experiments/stc/X3 findings F1, F1b, F2"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-90.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-90.layout.json"
+    },
+    {
+      "slide": 91,
+      "id": "STC2-091",
+      "sourcePattern": 12,
+      "title": "X4 설계 — 반복 (U-Θ)를 최소 모형에서 K라운드 돌린다",
+      "refs": [
+        "experiments/stc/X4-consolidation-decay/result.json meta",
+        "study-kr-stc ch29 §29.2"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-91.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-91.layout.json"
+    },
+    {
+      "slide": 92,
+      "id": "STC2-092",
+      "sourcePattern": 17,
+      "title": "X4 결과 — 이송해야 할 양은 ρ가 아니라 crossover다",
+      "refs": [
+        "experiments/stc/X4 findings F3, F4, F5, F6, F7",
+        "[Continual Facts §6.2]",
+        "study-kr-stc ch29 §29.3.5"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-92.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-92.layout.json"
+    },
+    {
+      "slide": 93,
+      "id": "STC2-093",
+      "sourcePattern": 4,
+      "title": "판정 ① — 이 범주는 A군 아홉 편이다",
+      "refs": [
+        "study-kr-stc ch24 §24.4 판정 1",
+        "study-kr-stc ch11 표 11-1·11-2"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-93.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-93.layout.json"
+    },
+    {
+      "slide": 94,
+      "id": "STC2-094",
+      "sourcePattern": 13,
+      "title": "판정 ② — 간격은 구조적이다, 세 공동체가 각자의 서식을 쓴다",
+      "refs": [
+        "study-kr-stc ch24 §24.3.1",
+        "study-kr-stc ch24 §24.4 판정 2"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-94.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-94.layout.json"
+    },
+    {
+      "slide": 95,
+      "id": "STC2-095",
+      "sourcePattern": 20,
+      "title": "간격을 방치하면 세 가지 판단이 틀린다",
+      "refs": [
+        "study-kr-stc ch24 §24.3.2"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-95.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-95.layout.json"
+    },
+    {
+      "slide": 96,
+      "id": "STC2-096",
+      "sourcePattern": 2,
+      "title": "판정 ③ — 세 경로는 지금 같은 자로 잴 수 없다, 두 층위로",
+      "refs": [
+        "study-kr-stc ch25 §25.2.1 표 25-1",
+        "study-kr-stc ch25 §25.4 판정 1"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-96.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-96.layout.json"
+    },
+    {
+      "slide": 97,
+      "id": "STC2-097",
+      "sourcePattern": 16,
+      "title": "판정 ④ — 상각 논증에는 구조적 결함이 있다",
+      "refs": [
+        "study-kr-stc ch25 §25.3.1",
+        "study-kr-stc ch25 §25.4 판정 2"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-97.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-97.layout.json"
+    },
+    {
+      "slide": 98,
+      "id": "STC2-098",
+      "sourcePattern": 26,
+      "title": "판정 ⑤ — 그러나 5×는 반박되지 않는다",
+      "refs": [
+        "study-kr-stc ch25 §25.3.5",
+        "study-kr-stc ch25 §25.4 판정 3"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-98.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-98.layout.json"
+    },
+    {
+      "slide": 99,
+      "id": "STC2-099",
+      "sourcePattern": 12,
+      "title": "판정 ⑥ — '상태 용량'은 하나의 수가 아니다",
+      "refs": [
+        "study-kr-stc ch26 §26.3.2, §26.4 판정 1"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-99.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-99.layout.json"
+    },
+    {
+      "slide": 100,
+      "id": "STC2-100",
+      "sourcePattern": 17,
+      "title": "판정 ⑦ — 경로 선택은 곧 메모리 계층 선택이다",
+      "refs": [
+        "study-kr-stc ch26 §26.4 판정 2",
+        "study-kr-stc ch18 §18.7"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-100.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-100.layout.json"
+    },
+    {
+      "slide": 101,
+      "id": "STC2-101",
+      "sourcePattern": 24,
+      "title": "판정 ⑧ — E-경로는 유망하다, 단 비용 방법으로서",
+      "refs": [
+        "study-kr-stc ch27 §27.4 판정 2",
+        "study-kr-stc ch27 §27.3.2"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-101.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-101.layout.json"
+    },
+    {
+      "slide": 102,
+      "id": "STC2-102",
+      "sourcePattern": 13,
+      "title": "판정 ⑨ — W-경로는 판정 불가이고, 그 판정 불가가 결과다",
+      "refs": [
+        "study-kr-stc ch27 §27.4 판정 3",
+        "study-kr-stc ch25 §25.5 항목 7"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-102.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-102.layout.json"
+    },
+    {
+      "slide": 103,
+      "id": "STC2-103",
+      "sourcePattern": 12,
+      "title": "판정 ⑩ — Θ-경로는 조건부로 유망하다, 조건 셋과 함께",
+      "refs": [
+        "study-kr-stc ch27 §27.4 판정 4",
+        "study-kr-stc ch27 §27.3.4"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-103.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-103.layout.json"
+    },
+    {
+      "slide": 104,
+      "id": "STC2-104",
+      "sourcePattern": 27,
+      "title": "판정 ⑪ — '최선인가'와 '우월한가'는 어디서도 판정되지 않는다",
+      "refs": [
+        "study-kr-stc ch27 표 27-4",
+        "study-kr-stc ch27 §27.4 판정 5"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-104.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-104.layout.json"
+    },
+    {
+      "slide": 105,
+      "id": "STC2-105",
+      "sourcePattern": 18,
+      "title": "판정 ⑫ — 현재 문헌으로 B_s–품질 곡선은 그릴 수 없다",
+      "refs": [
+        "study-kr-stc ch28 §28.4 판정 1",
+        "experiments/stc/X3 Q3, Q4"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-105.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-105.layout.json"
+    },
+    {
+      "slide": 106,
+      "id": "STC2-106",
+      "sourcePattern": 28,
+      "title": "그래서 무엇을 인쇄해야 하는가 — 최소 보고 요구 R1–R9",
+      "refs": [
+        "study-kr-stc ch28 §28.3.7 표 28-5",
+        "study-kr-stc ch28 §28.4 판정 5"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-106.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-106.layout.json"
+    },
+    {
+      "slide": 107,
+      "id": "STC2-107",
+      "sourcePattern": 13,
+      "title": "판정 ⑬ — device 기회는 웜 계층이지 HBM 대역폭이 아니다",
+      "refs": [
+        "study-kr-stc ch29 §29.3.1",
+        "study-kr-stc ch29 §29.4 판정 1",
+        "experiments/stc/X2 F4"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-107.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-107.layout.json"
+    },
+    {
+      "slide": 108,
+      "id": "STC2-108",
+      "sourcePattern": 16,
+      "title": "라운드 주기 하나가 소자의 수명 사양을 정한다",
+      "refs": [
+        "study-kr-stc ch29 §29.3.1",
+        "study-kr-stc ch29 §29.4 판정 1"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-108.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-108.layout.json"
+    },
+    {
+      "slide": 109,
+      "id": "STC2-109",
+      "sourcePattern": 13,
+      "title": "이 자리는 앞 모노그래프가 짚은 자리와 다르다",
+      "refs": [
+        "study-kr-stc ch29 §29.3.2",
+        "study-kr-stc ch29 §29.4 판정 2",
+        "NM ch20"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-109.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-109.layout.json"
+    },
+    {
+      "slide": 110,
+      "id": "STC2-110",
+      "sourcePattern": 13,
+      "title": "shared-weight batching은 이분법이 아니라 네 단계다",
+      "refs": [
+        "study-kr-stc ch29 §29.3.3",
+        "study-kr-stc ch29 §29.4 판정 3"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-110.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-110.layout.json"
+    },
+    {
+      "slide": 111,
+      "id": "STC2-111",
+      "sourcePattern": 20,
+      "title": "이 기회를 사기 전에 필요한 것은 소자가 아니라 인쇄값 셋",
+      "refs": [
+        "study-kr-stc ch29 §29.4 판정 6",
+        "study-kr-stc ch29 표 29-4"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-111.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-111.layout.json"
+    },
+    {
+      "slide": 112,
+      "id": "STC2-112",
+      "sourcePattern": 24,
+      "title": "이 발표가 틀릴 수 있는 지점 다섯",
+      "refs": [
+        "study-kr-stc ch24 §24.5",
+        "study-kr-stc ch27 §27.5",
+        "study-kr-stc ch29 §29.5"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-112.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-112.layout.json"
+    },
+    {
+      "slide": 113,
+      "id": "STC2-113",
+      "sourcePattern": 2,
+      "title": "이 발표의 실험 하나가 초판에서 틀렸다 — 하한을 상한으로",
+      "refs": [
+        "study-kr-stc ch26 §26.3.4",
+        "[lm-memorization-capacity §3.2]",
+        "experiments/stc/X2 F3_withdrawn"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-113.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-113.layout.json"
+    },
+    {
+      "slide": 114,
+      "id": "STC2-114",
+      "sourcePattern": 12,
+      "title": "판별식을 다르게 그으면 무엇이 달라지는가",
+      "refs": [
+        "study-kr-stc ch30 §30.3.3",
+        "study-kr-stc ch30 §30.4 판정 4"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-114.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-114.layout.json"
+    },
+    {
+      "slide": 115,
+      "id": "STC2-115",
+      "sourcePattern": 13,
+      "title": "GPU 실측이 없다는 것이 막는 것과 막지 않는 것",
+      "refs": [
+        "study-kr-stc ch30 §30.3.1",
+        "study-kr-stc ch30 §30.4 판정 2"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-115.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-115.layout.json"
+    },
+    {
+      "slide": 116,
+      "id": "STC2-116",
+      "sourcePattern": 26,
+      "title": "이 발표가 가장 빨리 낡는 방식은 반박이 아니라 인쇄다",
+      "refs": [
+        "study-kr-stc ch30 §30.3.4",
+        "study-kr-stc ch30 §30.4 판정 5"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-116.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-116.layout.json"
+    },
+    {
+      "slide": 117,
+      "id": "STC2-117",
+      "sourcePattern": 4,
+      "title": "Q&A 지도 — 네 종류의 질문에 답하는 방식이 다르다",
+      "refs": [
+        "study-kr-stc ch30 표 30-3"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-117.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-117.layout.json"
+    },
+    {
+      "slide": 118,
+      "id": "STC2-118",
+      "sourcePattern": 28,
+      "title": "예상 질문 ① — 판별식과 분류에 대하여",
+      "refs": [
+        "study-kr-stc ch11 §11.2.3, §11.4, §11.5",
+        "study-kr-stc ch24 §24.2, §24.5"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-118.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-118.layout.json"
+    },
+    {
+      "slide": 119,
+      "id": "STC2-119",
+      "sourcePattern": 28,
+      "title": "예상 질문 ② — 회계와 숫자에 대하여",
+      "refs": [
+        "study-kr-stc ch25 §25.3.5, §25.5",
+        "study-kr-stc ch26 §26.5",
+        "experiments/stc/X1 honest_limit"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-119.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-119.layout.json"
+    },
+    {
+      "slide": 120,
+      "id": "STC2-120",
+      "sourcePattern": 27,
+      "title": "예상 질문 ③ — 판정과 전망에 대하여",
+      "refs": [
+        "study-kr-stc ch27 표 27-5, §27.4 판정 6",
+        "study-kr-stc ch30 표 30-2"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-120.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-120.layout.json"
+    },
+    {
+      "slide": 121,
+      "id": "STC2-121",
+      "sourcePattern": 12,
+      "title": "그래서 우리가 무엇을 하면 되는가 — 실험 여섯",
+      "refs": [
+        "study-kr-stc ch26 §26.5 R-2",
+        "study-kr-stc ch27 §27.5 FT1",
+        "study-kr-stc ch29 §29.5 R-5, R-6"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-121.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-121.layout.json"
+    },
+    {
+      "slide": 122,
+      "id": "STC2-122",
+      "sourcePattern": 21,
+      "title": "반대로 지금 사지 말아야 할 것",
+      "refs": [
+        "study-kr-stc ch24 §24.3.2",
+        "study-kr-stc ch29 §29.4 판정 5, 6"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-122.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-122.layout.json"
+    },
+    {
+      "slide": 123,
+      "id": "STC2-123",
+      "sourcePattern": 27,
+      "title": "근거 지도 — 오늘 나온 주장은 어디를 보면 되는가",
+      "refs": [
+        "study-kr-stc/part2, part3",
+        "experiments/stc/X1–X4/result.json",
+        "study-kr-stc/back/90-bibliography.md"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-123.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-123.layout.json"
+    },
+    {
+      "slide": 124,
+      "id": "STC2-124",
+      "sourcePattern": 12,
+      "title": "한 장 요약 — 오늘 가져가실 여섯 문장",
+      "refs": [
+        "study-kr-stc ch24–ch30"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-124.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-124.layout.json"
+    },
+    {
+      "slide": 125,
+      "id": "STC2-125",
+      "sourcePattern": 26,
+      "title": "이 발표를 쓰는 가장 좋은 방법은 인용이 아니라 반증이다",
+      "refs": [
+        "study-kr-stc ch30 §30.4 판정 5"
+      ],
+      "previewPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/slides/slide-125.png",
+      "layoutPath": "/home/jimmy/repos/neural-memory-study/presentation/sleep-time-compute-deep/build/layouts/slide-125.layout.json"
+    }
+  ]
+}

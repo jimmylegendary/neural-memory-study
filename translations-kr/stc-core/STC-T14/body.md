@@ -59,7 +59,9 @@ membership inference는 한 example이 training set에 있었는지 model output
 
 model size와 dataset size를 바꾸어 membership signal이 어떻게 scale하는지 functional form을 fit한다. capacity 대비 dataset information load가 주요 variable이 된다. 작은 model에 너무 큰 dataset을 주면 개별 sample을 저장할 여유가 줄고, 큰 model이나 작은 dataset에서는 membership signal이 커진다.
 
-저자들은 작은 model에서 얻은 law를 더 큰 model에 검증한다. 예측은 특정 architecture·optimizer·data distribution의 범위에서 평가되며, arbitrary production model의 privacy risk를 단일 수치로 보장하지 않는다.
+저자들은 작은 model에서 얻은 law를 더 큰 model(GPT2-XL, 약 1.56B parameter)에 검증하며, 예측이 대체로 실제 F1의 1.5 point 이내에 든다고 보고한다. 여기서 나오는 배포 관련 결론은, parameter당 token 비율이 10² 이상인 현대 언어 모델이라면 이 법칙상 membership inference 점수가 0.5로 예측된다는 것이다 — 즉 이 정식화 안에서는 loss 기반 membership inference가 통계적으로 유의하게 성립하지 않는다.
+
+extraction 쪽에서도 유사한 전환이 나타난다. training set이 아주 작을 때는 32-token prefix의 100%가 추출 가능하지만, 중복 제거된 dataset이 충분히 커지면 extraction rate가 0으로 가지는 않되 test extraction rate와 거의 같아진다. 즉 그 지점에서 성공한 추출은 모두 generalization으로 설명된다. 예측은 특정 architecture·optimizer·data distribution의 범위에서 평가되며, arbitrary production model의 privacy risk를 단일 수치로 보장하지 않는다.
 
 # 6. 관련 연구 (Related Work)
 

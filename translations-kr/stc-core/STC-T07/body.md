@@ -46,23 +46,25 @@ preliminary experiment는 이전 domain sample이 없는 LwF가 왜 실패할 �
 
 ## 4.1 독립 과제의 순차 학습
 
-서로 다른 image-classification task를 순서대로 학습한다. naive sequential training은 이전 task accuracy가 급락한다. real-data replay는 upper reference로 높은 성능을 보이지만 raw storage가 필요하다. DGR은 generated sample만으로 이 reference에 가까운 retention을 보이며 LwF보다 안정적이다.
+여기서 “독립 과제”는 permuted MNIST를 뜻한다. task마다 서로 다른 무작위 pixel permutation을 적용하므로 과제 사이 입력이 거의 공유되지 않고, 그래서 기억 유지 강도를 재는 척도가 된다. 비교 arm은 GR(generative replay), ER(과거 실제 입력에 옛 solver의 예측을 target으로 붙인 exact replay), Noise(무작위 gaussian 입력에 옛 응답을 기록), None(단순 순차 학습) 네 가지다. None은 파국적 망각을 겪고 Noise는 손실을 완화하지 못한다. GR은 순차 학습 내내 이전 task 성능을 유지하며 ER과 대등한 수준에 도달한다. 논문에는 이 절의 수치표가 없고 결과는 모두 곡선으로만 제시된다.
 
 ## 4.2 새 domain 학습
 
-동일하거나 관련된 label space를 갖지만 input domain이 달라지는 조건을 시험한다. generator가 이전 domain style을 재현하고 solver가 old target을 부여한다. generated image quality가 불완전해도 decision에 필요한 분포를 충분히 보존하면 forgetting을 줄일 수 있다.
+동일하거나 관련된 label space를 갖지만 input domain이 달라지는 조건(MNIST↔SVHN)을 시험한다. generator가 이전 domain style을 재현하고 solver가 old target을 부여한다. generated image quality가 불완전해도 decision에 필요한 분포를 충분히 보존하면 forgetting을 줄일 수 있다. 저자들은 GR의 결과가 과거 실제 입력을 다시 쓰는 ER보다 나쁘지 않다고만 말하며, ER을 능가한다고 주장하지 않는다. 또 두 방향 모두에서 replay를 전혀 쓰지 않은 model이 새 task에서는 오히려 약간 더 나은데, 이는 network가 두 번째 task만 최적화했기 때문이라고 명시한다.
+
+이 절에서 LwF와의 비교도 이루어진다. LwF는 shared network를 fine-tuning하기 시작할 때 첫 task 성능을 잃지만, generative replay를 얹은 LwF-GR은 과거 지식의 대부분을 유지한다. LwF는 task별 head를 쓰므로 어느 task인지 알려주는 조건에서 따로 평가해야 하는 반면, generative replay를 쓰는 scholar model은 그 task context를 필요로 하지 않는다.
 
 ## 4.3 새 class 학습
 
-class-incremental setting에서는 label set이 단계마다 늘어난다. 새 class data만 학습하면 classifier가 최신 class 쪽으로 bias된다. DGR은 old class pseudo-example을 섞어 output balance를 유지한다. 평가에서는 task identity를 알려주는 조건과 알려주지 않는 조건의 차이를 구분한다.
+class-incremental setting에서는 label set이 단계마다 늘어난다. MNIST를 두 class씩 다섯 개의 서로 겹치지 않는 부분집합으로 나누어 순서대로 학습한다. 새 class data만 학습하면 classifier가 최신 class 쪽으로 bias된다. DGR은 old class pseudo-example을 섞어 output balance를 유지한다. 논문은 각 arm이 어떤 분포를 복원하는지로 결과를 설명한다 — ER과 GR은 누적 입력 분포와 target 분포를 모두 복원하고, Noise는 target 분포만 복원하며 입력은 현재 것뿐이고, None은 어느 쪽도 복원하지 않는다. 의미 있는 입력 분포 없이 출력 분포만 되살린 Noise 조건은 지식 유지에 도움이 되지 않았다.
 
 # 5. 논의 (Discussion)
 
-DGR은 raw past data를 저장하지 않고 pseudo-data를 생성한다는 장점이 있다. 그러나 generator parameter 자체가 과거 sample에 관한 정보를 담으므로 privacy가 자동으로 보장되는 것은 아니다. generator가 training example을 그대로 memorize하거나 추출 가능하게 만들 수 있고, generation error가 세대마다 누적될 수 있다.
+DGR은 raw past data를 저장하지 않고 pseudo-data를 생성한다. 저자들은 과거 데이터를 실제로 보관하지 않는다는 점 때문에 privacy 제약이 있는 상황에 적용할 수 있다고 본다. 성능은 generator가 old input distribution을 얼마나 충실히 재현하는지에 의존하며, 저자들은 §4.3과 같은 설정을 SVHN에 적용했을 때 성능 손실을 관찰했다고 스스로 보고한다(그 크기는 본문에 없고 supplement로 넘긴다). 논문은 EWC·LwF와 자기 방법이 서로 배타적이지 않으며 기억 보존에 각기 기여한다고 정리한다.
 
-성능은 generator가 old input distribution을 얼마나 충실히 재현하는지에 의존한다. 복잡한 high-resolution 또는 language distribution에서는 2017년 실험보다 어려운 문제가 된다. task 수가 늘면 generated mixture의 tail mode가 사라지는 **generative forgetting**과 compute 증가가 생길 수 있다.
-
-논문은 sleep-time이라는 용어를 사용하지 않지만, 새 경험을 받는 단계와 internally generated replay로 과거 지식을 rehearsal하는 단계를 분리한 선행 구조다. 다만 replay는 training loop 안에서 이루어지며, 실제 service의 idle window·rollback·deletion·capacity policy는 다루지 않는다.
+> **[본서 주석]** 아래 두 문단은 원문에 없는 이 스터디의 해설이다. generator parameter 자체가 과거 sample에 관한 정보를 담으므로 privacy가 자동으로 보장되지는 않는다 — generator가 training example을 그대로 memorize하거나 추출 가능하게 만들 수 있고, generation error가 세대마다 누적될 수 있다. 복잡한 high-resolution 또는 language distribution에서는 2017년 실험보다 어려운 문제가 되며, task 수가 늘면 generated mixture의 tail mode가 사라지는 현상과 compute 증가가 생길 수 있다.
+>
+> 또한 이 논문은 sleep-time이라는 용어를 사용하지 않지만, 새 경험을 받는 단계와 internally generated replay로 과거 지식을 rehearsal하는 단계를 분리한 선행 구조다. 다만 replay는 training loop 안에서 이루어지며, 실제 service의 idle window·rollback·deletion·capacity policy는 다루지 않는다.
 
 # 원문 구조 안내
 

@@ -34,13 +34,13 @@ NREM sleep에서 해마와 신피질이 결합된 replay를 수행하면, 신피
 
 두 번째 simulation은 먼저 remote knowledge를 학습한 뒤 새로운 recent knowledge를 추가한다. 새 정보만 wake 학습하면 신피질 표현이 최근 pattern 쪽으로 이동하여 오래된 지식이 손상될 수 있다. NREM만 계속하면 해마에 강하게 표현된 최근 기억 replay가 지배한다.
 
-REM-like stage에서는 hippocampus–neocortex coupling을 약하게 하고 신피질이 기존 attractor를 자율적으로 탐색하게 한다. 이 dynamics는 remote representation을 더 자주 또는 더 자유롭게 방문한다. NREM과 REM을 번갈아 수행하면 NREM이 새 정보를 신피질에 전달하고, REM이 오래된 cortical attractor를 재활성화해 보호한다. 두 stage 중 하나만 사용한 조건보다 교대 조건이 recent와 remote 성능의 균형을 더 잘 유지했다.
+REM-like stage에서는 내후각피질→해마 연결을 끊어(lesion) C-HORSE와 신피질을 분리하고, 신피질이 기존 attractor를 자율적으로 탐색하게 한다. 두 stage 모두에서 C-HORSE 쪽 projection은 학습하지 않으며, sleep 중 갱신되는 것은 입출력 layer↔신피질 layer projection뿐이다. 이 dynamics는 remote representation을 더 자주 또는 더 자유롭게 방문한다. NREM과 REM을 번갈아 수행하면 NREM이 새 정보를 신피질에 전달하고, REM이 오래된 cortical attractor를 재활성화해 보호한다. 두 stage 중 하나만 사용한 조건보다 교대 조건이 recent와 remote 성능의 균형을 더 잘 유지했다.
 
 # 4. NREM과 REM의 역할
 
 NREM은 단순히 모든 과거 sample을 균등하게 replay하는 단계가 아니다. 현재 해마 trace의 영향을 강하게 받아 recently acquired attractor를 정확하게 reinstatement한다. 따라서 빠른 memory system에서 느린 memory system으로 새 구조를 전달하는 역할을 한다.
 
-REM은 무작위 생성 단계로만 정의되지 않는다. 해마의 강한 cue에서 벗어난 신피질 network가 이미 형성된 attractor landscape를 탐색한다. 이 stage가 remote knowledge의 rehearsal을 제공해 NREM의 recent-memory 편향과 균형을 이룬다. 논문은 stage별 lesion과 순서·비율 control을 통해 두 기능의 상보성을 측정한다.
+REM은 무작위 생성 단계로만 정의되지 않는다. 해마의 강한 cue에서 벗어난 신피질 network가 이미 형성된 attractor landscape를 탐색한다. 이 stage가 remote knowledge의 rehearsal을 제공해 NREM의 recent-memory 편향과 균형을 이룬다. 두 기능의 상보성은 NREM-only · NREM/REM 교대 · REM-only 세 조건을 비교해 측정하고, 15개 NREM 블록을 연속 수행한 조건과 NREM·REM 15개씩을 교대한 조건(총 30블록)도 대조한다. 두 조건 모두에서 Env 1 성능이 다소 하락하지만, 교대 조건이 Env 1을 뚜렷하게 더 잘 보존했다. 또 sleep 중 oscillation을 완전히 끄거나 NREM·REM 중 한쪽에서만 끄는 조건에서는 NREM의 신피질 학습 촉진과 REM의 기존 지식 보호가 모두 약해져, oscillation이 이 틀에서 실질적 역할을 한다는 점을 보인다.
 
 # 5. 논의 (Discussion)
 

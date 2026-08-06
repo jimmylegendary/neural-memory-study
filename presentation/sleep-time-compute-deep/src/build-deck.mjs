@@ -6,7 +6,7 @@ import {
   importArtifactTool,
   padSlideNumber,
   saveBlobToFile,
-} from "/home/jimmy/.codex/plugins/cache/openai-primary-runtime/presentations/26.802.11031/skills/presentations/container_tools/artifact_tool_utils.mjs";
+} from "/home/jimmy/.codex/plugins/cache/openai-primary-runtime/presentations/26.805.11740/skills/presentations/container_tools/artifact_tool_utils.mjs";
 import { deckMeta, slides as contentSlides } from "./content.mjs";
 
 const repo = process.cwd();
@@ -141,11 +141,45 @@ function textPlanner(slide) {
   };
 }
 
+const CJK = /[ᄀ-ᇿ⺀-꓏가-힣豈-﫿＀-｠]/;
+const visualWidth = (text) => [...text].reduce((sum, ch) => sum + (CJK.test(ch) ? 1 : 0.52), 0);
+
+// Split one replacement string over `count` paragraphs, balanced by visual width so the
+// inherited box keeps its line count instead of overflowing or collapsing.
+function splitAcrossLines(text, count) {
+  if (count <= 1) return [text];
+  const words = String(text).split(/\s+/).filter(Boolean);
+  if (words.length <= count) {
+    const padded = words.slice();
+    while (padded.length < count) padded.push("");
+    return padded;
+  }
+  const target = words.reduce((sum, word) => sum + visualWidth(word) + 0.52, 0) / count;
+  const lines = [];
+  let current = [];
+  let accumulated = 0;
+  for (const word of words) {
+    const width = visualWidth(word) + 0.52;
+    if (current.length && accumulated + width > target && lines.length < count - 1) {
+      lines.push(current.join(" "));
+      current = [word];
+      accumulated = width;
+    } else {
+      current.push(word);
+      accumulated += width;
+    }
+  }
+  lines.push(current.join(" "));
+  while (lines.length < count) lines.push("");
+  return lines;
+}
+
 function notesFor(slide) {
   return [
     `${slide.id} — ${slide.title}`,
     `핵심 결론: ${slide.takeaway}`,
     "",
+    ...(slide.script ? ["[발표 대본]", slide.script, ""] : []),
     ...slide.points.map((point) => `• ${point.label}: ${point.body}${point.metric ? ` (${point.metric})` : ""}`),
     "",
     "[Sources]",
@@ -170,7 +204,18 @@ for (const [index, slide] of presentation.slides.items.entries()) {
     const original = shape.text.toString();
     if (!original.trim()) continue;
     const replacement = planText(shape.name || "", original);
-    shape.text.replace(original, replacement);
+    // Inherited shapes may hold several paragraphs. `replace` only matches inside one
+    // paragraph, so a whole-string replace silently leaves multi-paragraph shapes at
+    // their source text. Rewrite paragraph by paragraph and keep the paragraph count.
+    const originalLines = original.split("\n");
+    if (originalLines.length > 1) {
+      const parts = splitAcrossLines(replacement, originalLines.length);
+      originalLines.forEach((line, lineIndex) => {
+        if (line.length) shape.text.replace(line, parts[lineIndex]);
+      });
+    } else {
+      shape.text.replace(original, replacement);
+    }
     textShapeCount += 1;
     editLog.push({
       slide: index + 1,

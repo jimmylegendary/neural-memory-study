@@ -1,0 +1,52 @@
+{
+  "authors": "Sangyun Lee, Sean McLeish, Tom Goldstein, Giulia Fanti",
+  "expected": {
+    "equations": null,
+    "figures": 6,
+    "tables": 0
+  },
+  "figure_pages": [
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+  ],
+  "license_note": "CC BY 4.0; attribution retained (PDF /License and XMP dc:rights both declare http://creativecommons.org/licenses/by/4.0/)",
+  "load_bearing_locators": {
+    "abstract": {
+      "locator": "source PDF p.1",
+      "page": 1
+    },
+    "conclusion": {
+      "locator": "source PDF p.11",
+      "page": 11
+    },
+    "limitations": {
+      "locator": "not separately titled; inspect complete source plate",
+      "page": null
+    },
+    "method": {
+      "locator": "source PDF p.1",
+      "page": 1
+    },
+    "primary-result": {
+      "locator": "source PDF p.7",
+      "page": 7
+    }
+  },
+  "pages": 15,
+  "paper_id": "STC-T16",
+  "rights": "public",
+  "selection_sha256": "178af64d444c61f229d70f8bdb204b70e7ce96e7a69b991c6d87a940b24fbe92",
+  "source_exception": null,
+  "source_path": "papers/2605.26099.pdf",
+  "source_plate_mode": "complete-pdf-pages",
+  "source_sha256": "178af64d444c61f229d70f8bdb204b70e7ce96e7a69b991c6d87a940b24fbe92",
+  "source_type": "pdf",
+  "table_pages": [],
+  "title": "Do Language Models Need Sleep? Offline Recurrence for Improved Online Inference",
+  "version": "arXiv:2605.26099v3"
+}

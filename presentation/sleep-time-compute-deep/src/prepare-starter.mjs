@@ -6,8 +6,8 @@ import {
   importArtifactTool,
   padSlideNumber,
   saveBlobToFile,
-} from "/home/jimmy/.codex/plugins/cache/openai-primary-runtime/presentations/26.802.11031/skills/presentations/container_tools/artifact_tool_utils.mjs";
-import { validateTemplatePlan } from "/home/jimmy/.codex/plugins/cache/openai-primary-runtime/presentations/26.802.11031/skills/presentations/template_following_scripts/validate_template_plan.mjs";
+} from "/home/jimmy/.codex/plugins/cache/openai-primary-runtime/presentations/26.805.11740/skills/presentations/container_tools/artifact_tool_utils.mjs";
+import { validateTemplatePlan } from "/home/jimmy/.codex/plugins/cache/openai-primary-runtime/presentations/26.805.11740/skills/presentations/template_following_scripts/validate_template_plan.mjs";
 import { normalizeImportedNegativeExtents } from "./normalize-imported-geometry.mjs";
 
 const repo = process.cwd();
