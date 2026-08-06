@@ -19,7 +19,7 @@ evaluation metric, Zep demonstrates superior performance (94.8% vs 93.4%)" [Zep 
 Mem0은 MemGPT의 계층화 질문에 답하되 그 사실을 밝히지 않고, 학습된 정책을 쓰자는 선택지는
 명시적으로 거절한다 — "Rather than using a separate classifier, we leverage the LLM's
 reasoning capabilities to directly select the appropriate operation" [Mem0 §2.1].
-ReasoningBank은 AWM과 Synapse를 자기 목소리로 진단하고, SCM과 Memini는 각각 §2에서
+ReasoningBank은 AWM과 Synapse를 자기 목소리로 진단하고, SCM과 Memini는 각각 [SCM §2]와 [Memini §2]에서
 선행 연구 세 갈래를 저자 자신의 판정으로 반박한다.
 
 > **[평가]** 이것은 인용 누락이 아니라 사슬의 종류가 다른 것이다. ch14까지의 $E$-경로는
@@ -97,7 +97,7 @@ $\mathcal{L}$도 등장하지 않는다.
 쓰기도 모두 (U-E)이고, 차이는 전부 $S(\cdot;B_s)$와 $\mathrm{wr}(\cdot,\cdot)$의 모양에
 있다. 다섯의 이탈을 표준형과의 차이로 적으면 이렇다.
 
-**Mem0 — 재귀적 인자.** 요약이 저장소에서 검색되어 추출 프롬프트로 들어가므로 $S$의
+**Mem0 — 재귀적 인자.** 요약이 저장소에서 검색되어 추출 프롬프트로 들어가므로 $S(c_k,E_k;B_s)$의
 인자에 $E$ 자신이 들어간다 [Mem0 §2.1].
 
 $$
@@ -120,10 +120,10 @@ $$
 
 이 델타를 만드는 $S(\cdot;B_s)$는 아홉 단계다 — 개체 추출, reflexion 재확인, 1024차원
 임베딩, 개체 해소, 사실 추출, 간선 중복 제거, 시간 추출, 모순 검사·무효화, community
-라벨 전파 [Zep §2.2.1–§2.3]. 이 중 여섯에서 일곱 단계가 frozen LLM 호출이다. $S$가 보는
+라벨 전파 [Zep §2.2.1–§2.3]. 이 중 여섯에서 일곱 단계가 frozen LLM 호출이다. $S(c_k;B_s)$가 보는
 문맥은 현재 메시지와 직전 네 개, 즉 $n_{\mathrm{ctx}}=4$로 고정된다 [Zep §2.2.1].
 
-**ReasoningBank — 라벨로 분기하는 요약.** $S$의 인자가 문맥이 아니라 에이전트 자신의
+**ReasoningBank — 라벨로 분기하는 요약.** $S(\mathcal{H}^{\Delta}_k;B_s,j_k)$의 인자가 문맥이 아니라 에이전트 자신의
 궤적이고, 자기 판정 라벨 $j_k$가 프롬프트를 고른다 [ReasoningBank §3.2].
 
 $$
@@ -140,7 +140,7 @@ mention specific websites, queries, or string contents"라는 제약을 건다
 [ReasoningBank App A.1 Fig. 9].
 
 > **[평가]** 이 논문이 기여로 내세우는 추상화는 아키텍처가 아니라 프롬프트 한 줄에서
-> 나온다. (15-4)에서 $S$의 모양을 정하는 것은 라벨 $j_k$가 고르는 프롬프트뿐이고,
+> 나온다. (15-4)에서 $S(\mathcal{H}^{\Delta}_k;B_s,j_k)$의 모양을 정하는 것은 라벨 $j_k$가 고르는 프롬프트뿐이고,
 > 학습되는 성분도 강제되는 스키마도 없다.
 
 **SCM — 요약이 wake로 옮겨간 경우.** 추출은 매 턴 wake에서 일어나고 [SCM §3.2], sleep
@@ -503,7 +503,7 @@ indicating potential inefficiencies or redundancies in structured graph represen
 [Mem0 §4.2]. 그리고 그 확장은 검색 지연 p50 0.148 s → 0.476 s, 검색 토큰 1764 → 3616을
 치른다 — 이 책의 산술로 각각 3.22배와 2.05배다. 초록이 "consistently outperform all
 existing memory systems across four question categories"라고 쓰는 동안, open-domain에서는
-Zep이 F1 49.56과 J 76.60으로 Mem0$^g$의 49.27·75.71을 이기고 있고, 결론 §5는 네 범주 중
+Zep이 F1 49.56과 J 76.60으로 Mem0$^g$의 49.27·75.71을 이기고 있고, 결론 [Mem0 §5]는 네 범주 중
 open-domain만 조용히 빼고 세 범주의 상대 개선만 나열한다.
 
 **두 번째 증거 — Zep.** 이 논문에는 **ablation이 하나도 없다.** 스스로 novelty로 내세운
@@ -517,7 +517,7 @@ Zep 98.2%로 0.2%p다. 대화 500건에서 0.2%p는 대화 한 건이다. 신뢰
 Table 1이 "† Results reported in [3]"로 표시하고, 본문은 "We were unable to reproduce
 MemGPT's results using gpt-4o-mini" [Zep §4.2]라고 적으며, LongMemEval$_s$에서는 MemGPT를
 아예 돌리지 못했다 [Zep §4.3.1]. 직접 비교는 존재하지 않는다. 분모도 일관되지 않다 —
-Table 3의 상승 델타는 baseline을, 하락 델타는 Zep 자신을 분모로 쓰고, §4.3.2가 gpt-4o에
+Table 3의 상승 델타는 baseline을, 하락 델타는 Zep 자신을 분모로 쓰고, [Zep §4.3.2]가 gpt-4o에
 대해 내세우는 18.5%는 Table 2의 값으로 $(71.2-60.2)/60.2=18.27\%$다(이 책의 산술).
 초록은 18.5%를 그대로 옮긴다. 저자들은 "showing marginal improvements over both
 MemGPT and the respective full-conversation baselines" [Zep §4.2]라고 적고, 같은 절에서
@@ -538,18 +538,18 @@ understanding of Zep's temporal data" [Zep §4.3.2]이다.
 Gemini-2.5-flash에서 40.5 → 48.8, Gemini-2.5-pro에서 46.7 → 53.9, Claude-3.7-Sonnet에서
 41.7 → 46.3이고 [ReasoningBank Table 1], 평균 스텝은 9.7 → 8.3, 8.8 → 7.4, 8.0 → 7.3으로
 줄며, SWE-Bench-Verified에서도 34.2 → 38.8(flash), 54.0 → 57.4(pro)다 [Table 2]. 문제는
-그 다음이다. §C.1은 검색해 넣는 경험의 개수를 0에서 4까지 늘리며 SR을 잰다: 39.0, 49.7,
+그 다음이다. [ReasoningBank §C.1]은 검색해 넣는 경험의 개수를 0에서 4까지 늘리며 SR을 잰다: 39.0, 49.7,
 46.0, 45.5, 44.4 [Figure 13]. 하나를 넘어가면 **단조 악화**다. 그리고 출하 기본값은
 $n_{\mathrm{ret}}=1$, 즉 0이 아닌 최소값이다 [App A.2]. 이 곡선은 "경험이라는 새로운
 스케일 축"이라는 논문의 틀과 정면으로 부딪히는데, 논문의 해석은 "excessive experiences
-may introduce conflicts or noise"에서 멈춘다. 일반화 주장의 근거도 좁다. §4.2가 내세우는
+may introduce conflicts or noise"에서 멈춘다. 일반화 주장의 근거도 좁다. [ReasoningBank §4.2]가 내세우는
 "최강 baseline 대비 평균 +4.6"은 Multi 부분집합에서 나오고, 그 부분집합은 **29
 인스턴스**다 — 한 과제가 3.4점이다. Claude-3.7-Sonnet의 Multi 열은 0.0 / 0.0 / 0.0 /
 3.4 / 10.3, 즉 0건·0건·0건·1건·3건이다. Mind2Web의 과제 수준 SR은 바닥에 붙어 있다
 (cross-domain flash 1.0 → 1.6, pro 1.4 → 1.7). 이 모든 수치에 시드도, 반복 실행도,
 신뢰구간도 없다. 에이전트는 temperature 0.7, 추출자는 1.0으로 디코딩하므로 [ReasoningBank
 App A.2, App B.1] 인쇄된 값은 각각 한 번의 확률적 추출이고, 29건·106건짜리 부분집합의
-델타는 과제 한두 건 안에 들어간다. 산문이 자기 표와 어긋나는 자리도 있다 — §4.4는
+델타는 과제 한두 건 안에 들어간다. 산문이 자기 표와 어긋나는 자리도 있다 — [ReasoningBank §4.4]는
 "scaling actually reduces performance for weaker memories, where Synapse slightly increases
 from 40.6 to 41.2, and AWM from 44.4 to 45.5"라고 쓰는데 인용된 두 수치는 모두 상승이다.
 마지막으로, 모든 쓰기를 여닫는 자기 판정기의
@@ -570,14 +570,14 @@ truth is available during test-time" [§3.1]이라는 이 방법의 전제를 �
 포화된 벤치마크는 대안을 순위 매길 수도, 퇴행을 잡아낼 수도 없다. 논문도 난이도를 인정한다
 ("This represents a lower bound on memory system capability" [§4.3]). 헤드라인 숫자
 90.9%는 두 개의 서로 다른 개수에 동시에 붙어 있다 — Table 3은 "50/55 noise concepts
-removed (90.9%)"이고 §4.3과 Figure 5는 "removing forty-five of the fifty noise
+removed (90.9%)"이고 [SCM §4.3]과 Figure 5는 "removing forty-five of the fifty noise
 concepts"인데 45/50은 90.0%다. 이 숫자를 만든 계수는 벤치마크 위에서 격자 탐색으로
 정해졌고, 그 이전 값 $w_{\mathrm{rec}}=0.4$에서는 노이즈 제거율이 0%였다 [§3.6, §4.3].
 용량을 묶는다는 핵심 기제 Eq. 10은 인쇄된 형태 그대로는 본문의 주장과 반대 방향으로
 움직인다 — $\vartheta_{\mathrm{f}} = \overline{I} - \mathrm{sd}(I)\cdot|G|/\text{target\_size}$에서
 $\mathrm{sd}(I)\ge 0$이면 $|G|$가 커질수록 임계가 **낮아진다**. Eq. 9도 같은 상태다.
 $\delta(c)=\exp(-\lambda_{\mathrm{rec}}\Delta t)$이면 방금 접근한 개념은 $1-\delta=0$인데,
-§3.6은 고쳐낸 버그를 "$1-\delta(c)\approx 1$인 새 개념을 부양했다"로 설명한다. 같은 절의
+[SCM §3.6]은 고쳐낸 버그를 "$1-\delta(c)\approx 1$인 새 개념을 부양했다"로 설명한다. 같은 절의
 $\lambda_{\mathrm{rec}}=0.01$ 교정("한 시간 전 개념이 최근성 점수의 약 96%를 유지")도
 $\Delta t$의 단위가 없어 재현되지 않는다 — 시간 단위면 99.0%, 분 단위면 54.9%다(이 책의
 산술). 코드는 공개되지 않았다.
@@ -635,7 +635,7 @@ decode에서 바뀌는 것은 없다. 다섯 시스템 전부 $\Theta$가 동결
 쓰기 쪽은 **메시지 속도로 도는 두 번째 추론 워크로드**다. Zep은 메시지 하나마다 여섯에서
 일곱 번의 frozen LLM 호출과 임베딩·색인 검색을 돌리고 [Zep §2.2], Mem0은 메시지쌍마다
 추출 프롬프트 한 번과 갱신 tool call 한 번을 돌린다 [Mem0 §2.1]. ReasoningBank은 과제당
-두 번, 합계 3748.4토큰이다. 호의적인 성질 하나는 어느 논문도 말하지 않는다 — Zep의 $S$는
+두 번, 합계 3748.4토큰이다. 호의적인 성질 하나는 어느 논문도 말하지 않는다 — Zep의 $S(c_k;B_s)$는
 메시지 다섯 개만 보므로 쓰기 경로는 **짧고 균일하며 배치하기 좋은 프롬프트의 흐름**이고,
 이는 그것이 대체하는 115k 단일 프롬프트보다 좋은 prefill 워크로드다. 불리한 성질도 아무도
 말하지 않는다 — 쓰기 비용은 대화 트래픽에 비례하고 읽기 절감은 질의 트래픽에 비례하므로,
@@ -694,10 +694,10 @@ memory-device 논증을 세울 수는 없다. 격차를 기록하고 여기서 �
 | SCM | ○ | ○ | — (Table 4 존재; 단 두 성분이 무효과) | ○ (No-Forget이 품질 동률) | ○ (벤치·baseline·튜닝 모두 저자) |
 | Memini | ○ | ○ | 부분 (단일 시상수 대조군 1종) | ○ (Uniform 열이 모든 행에서 최대) | ○ (개체·문서·순서 모두 저자 선정) |
 
-논문들이 스스로 남긴 open question은 서로 겹친다. Mem0 §5는 그래프 지연 최적화, 계층적
+논문들이 스스로 남긴 open question은 서로 겹친다. [Mem0 §5]는 그래프 지연 최적화, 계층적
 기억, 그리고 "developing more sophisticated memory consolidation mechanisms inspired by
 human cognitive processes"를 든다 — CLS도, 재생도, 수면 신경과학도 인용하지 않고, "sleep"이라는
-단어를 한 번도 쓰지 않은 채 이 책의 주제 쪽으로 손을 뻗는 한 문장이다. Zep §5는 추출기를
+단어를 한 번도 쓰지 않은 채 이 책의 주제 쪽으로 손을 뻗는 한 문장이다. [Zep §5]는 추출기를
 fine-tune하면 $E$-경로 파이프라인이 싸지겠는가를 묻고("Similar models fine-tuned for
 Graphiti prompts may enhance knowledge extraction"), 이어서 이 책의 비용표와 같은 질문을
 제기한 다음 그 절반만 답한다 — "Current literature on LLM memory and RAG systems

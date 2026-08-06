@@ -10,7 +10,7 @@ Nested Learning(*Nested Learning: The Illusion of Deep Learning Architecture*, a
 
 **이 장은 그 주장을 검증한다.** 검증의 결론을 먼저 적는다. **연속체는 표기의 다리이지 기제의 다리가 아니다.** [NL]이 구현한 모든 갱신은 (U-W) 모양이고, $\Theta$는 그 축 위에서 test-time에 아무것도 움직이지 않는 $f=0$ 끝점으로만 등장한다. 축이 두 끝점을 이름으로 잇는 것과 상태가 두 끝점 사이를 실제로 이동하는 것은 다른 사건이며, [NL]에는 후자가 없다. 이 결론은 논문의 진술이 아니라 이 책의 판단이다 — 근거는 §18.4의 표 18-3이고, 판정문은 §18.4와 §18.8.2의 [평가] 블록에 놓인다.
 
-같은 장에 Memory Caching(*Memory Caching: RNNs with Growing Memory*, arXiv:2602.24281, 이하 [MC])을 함께 놓는다. 두 논문은 같은 저자 그룹에서 나왔고, [MC]는 [NL]과 Miras의 "memory 상태를 forward pass 중 최적화되는 동적 객체로 보는" 관점을 명시적으로 승계한다고 §2에서 밝힌다 [MC §2]. 즉 [MC] 쪽에는 상속 진술이 있고, 받는 상대가 [NL]/Miras 라인이다 — **sleep-time compute 세 경로 어느 논문의 open question도 받지 않는다.** 그러나 [MC]가 실제로 한 일은 갱신식이 아니라 **읽기식**을 바꾼 것이고, $B_s=0$이다. 세그먼트 경계에서 일어나는 사건은 갱신이 아니라 체크포인트 저장이다. 그래서 이 장은 [MC]를 sleep-time compute 사례로 읽지 않고 **$W$층 용량 천장 논증**으로 읽는다 — 고정 크기 $W$ 하나로 recall이 무너진다면 $W$를 몇 개나 들고 있어야 하는가에 대한 정량적 답이다.
+같은 장에 Memory Caching(*Memory Caching: RNNs with Growing Memory*, arXiv:2602.24281, 이하 [MC])을 함께 놓는다. 두 논문은 같은 저자 그룹에서 나왔고, [MC]는 [NL]과 Miras의 "memory 상태를 forward pass 중 최적화되는 동적 객체로 보는" 관점을 명시적으로 승계한다고 [MC §2]에서 밝힌다. 즉 [MC] 쪽에는 상속 진술이 있고, 받는 상대가 [NL]/Miras 라인이다 — **sleep-time compute 세 경로 어느 논문의 open question도 받지 않는다.** 그러나 [MC]가 실제로 한 일은 갱신식이 아니라 **읽기식**을 바꾼 것이고, $B_s=0$이다. 세그먼트 경계에서 일어나는 사건은 갱신이 아니라 체크포인트 저장이다. 그래서 이 장은 [MC]를 sleep-time compute 사례로 읽지 않고 **$W$층 용량 천장 논증**으로 읽는다 — 고정 크기 $W$ 하나로 recall이 무너진다면 $W$를 몇 개나 들고 있어야 하는가에 대한 정량적 답이다.
 
 ch11이 이 장에 넘긴 것은 두 편의 탈락 사유였다: [NL]은 조건 (1)과 (4)에서, [MC]는 조건 (2)와 (3)에서 걸린다(→ ch11 §11.4.2, §11.4.3). 이 장은 그 판정을 반복하지 않고 **증거로 보인다** — 어느 객체가 어느 시계로 움직이는지의 표로.
 
@@ -24,7 +24,7 @@ ch11이 이 장에 넘긴 것은 두 편의 탈락 사유였다: [NL]은 조건 
 
 이 문장을 이 책의 기호로 옮기면 $f=\infty$는 attention의 KV 읽기이고 $f=0$은 $\Theta$다. [NL]의 모든 기여는 그 사이에 놓인다. 두 번째 출발점은 Transformer에서 사영 $W_k, W_v, W_q$가 최저 주파수 level에서 최적화되므로 문맥 안에서 얼어 있고, 그래서 토큰이 문맥화되는 방식에 상한이 걸린다는 관찰이다 [NL §8, §8.1]. 해법은 그 사영들 자체를 갱신되는 memory로 승격시키는 것이다.
 
-여기에 신경과학 유비가 붙는다. §1은 gamma(30–150 Hz), beta(13–30 Hz), delta/theta(0.5–8 Hz) 대역을 나열하고, 빠른 온라인 consolidation과 느린 오프라인 consolidation의 2단계 그림을 세운 뒤 곧바로 범위를 좁힌다.
+여기에 신경과학 유비가 붙는다. [NL §1]은 gamma(30–150 Hz), beta(13–30 Hz), delta/theta(0.5–8 Hz) 대역을 나열하고, 빠른 온라인 consolidation과 느린 오프라인 consolidation의 2단계 그림을 세운 뒤 곧바로 범위를 좁힌다.
 
 > "in this work, we focus on the first stage: memory consolidation as an online process" [NL §1]
 
@@ -81,7 +81,7 @@ W^{(s)}_t \;=\; \mathrm{upd}\big(W^{(s)}_{t-1};\ k_t, v_t\big), \qquad 1 \le t \
 \tag{18-3}
 $$
 
-위첨자 $(s)$는 현재 세그먼트 인덱스이며, §1.3이 SGD step에 예약한 아래첨자 $s$와 다른 대상이다. $\mathrm{upd}$는 baseline 아키텍처의 갱신 규칙 그대로다([MC Eq. 4]는 이 자리에 $f$를 쓰지만, 이 책에서 $f$는 식 (R)의 읽기 함수이고 이 장에서는 [NL]의 갱신 주파수이기도 하므로 기호를 옮긴다) — linear attention이면 $W_{t-1} + v_t k_t^{\top}$, Titans이면 (U-W)의 $\alpha_t, \beta_t, \eta_t$ 세 항이 그대로 [MC Eq. 4, 34–35]. 세그먼트 끝에서 일어나는 일은 갱신이 아니라 보존이다: $W^{(i)} := W^{(i)}_{L^{(i)}}$.
+위첨자 $(s)$는 현재 세그먼트 인덱스이며, 본서 표기 규약이 SGD step에 예약한 아래첨자 $s$와 다른 대상이다. $\mathrm{upd}$는 baseline 아키텍처의 갱신 규칙 그대로다([MC Eq. 4]는 이 자리에 $f$를 쓰지만, 이 책에서 $f$는 식 (R)의 읽기 함수이고 이 장에서는 [NL]의 갱신 주파수이기도 하므로 기호를 옮긴다) — linear attention이면 $W_{t-1} + v_t k_t^{\top}$, Titans이면 (U-W)의 $\alpha_t, \beta_t, \eta_t$ 세 항이 그대로 [MC Eq. 4, 34–35]. 세그먼트 끝에서 일어나는 일은 갱신이 아니라 보존이다: $W^{(i)} := W^{(i)}_{L^{(i)}}$.
 
 바뀌는 것은 식 (R)이다. 일반형은 캐시 집합 위의 집계다 [MC Eq. 5]. 논문이 제시하는 네 구체형 중 둘을 적는다.
 
@@ -93,11 +93,13 @@ $$
 $$
 
 $$
+\adjustbox{max width=\linewidth}{$\displaystyle
 \tilde\gamma^{(i)}_t = \big\langle u_t,\ \mathrm{MeanPool}(S^{(i)}) \big\rangle,
 \quad
 \mathcal{I}_t = \arg\mathrm{Top}\text{-}k\big(\{\tilde\gamma^{(i)}_t\}_{i=1}^{s-1}\big),
 \quad
 \hat y_t = \gamma^{(s)}_t \mathcal{M}\big(q_t; W^{(s)}_t\big) + \sum_{i \in \mathcal{I}_t} \gamma^{(i)}_t \mathcal{M}\big(q_t; W^{(i)}\big)
+$}
 \tag{18-5}
 $$
 
@@ -119,7 +121,7 @@ $$
 
 | 원 표기 | 이 책의 표기 | 주의 |
 |---|---|---|
-| $\Theta_i^{(k)}$ / $\theta^{(f_\ell)}$ — 임의 level의 파라미터 | pre-training level 위의 모든 level은 $W$. $\Theta$는 level 1에만 | 하드 충돌. 논문의 $\theta$를 그대로 $\Theta$로 옮기면 논문이 조용히 $\Theta$-경로로 재분류된다. §1 예약 규칙상 금지 |
+| $\Theta_i^{(k)}$ / $\theta^{(f_\ell)}$ — 임의 level의 파라미터 | pre-training level 위의 모든 level은 $W$. $\Theta$는 level 1에만 | 하드 충돌. 논문의 $\theta$를 그대로 $\Theta$로 옮기면 논문이 조용히 $\Theta$-경로로 재분류된다. 본서 예약 기호 규칙상 금지 |
 | $\mathcal{L}(\cdot)$ — Eq. 71에서 CMS 시계로 평가되는 task objective | $\mathcal{L}$ (outer/task loss) | 기호도 뜻도 같다. 단 **outer loss를 inner 시계로 평가한다**는 사실을 본문에 적어야 한다 |
 | $\tilde L$ — inner memory objective | $\ell$ | 소문자 $\ell$이 inner loss 예약 기호다 |
 | $\mathcal{M}$, $\mathcal{M}_\square$ — 가변 객체 | 상태는 $W$, 읽기는 $\mathcal{M}(\cdot; W)$ | 논문은 $\mathcal{M}$으로 객체 자체를 가리킨다. Eq. 88 인용 시 분리 |
@@ -144,9 +146,9 @@ $$
 | $\gamma^{(i)}_t$ — 캐시 $i$의 기여 게이트 | $\gamma^{(i)}_t$ 유지. **$\alpha_t$로 매핑 금지** | $\alpha_t$는 시간축 retention이고 $\gamma$는 읽기측 mixture weight다. 시간축 감쇠가 아니다 |
 | $\alpha_t, \beta_t, \eta_t$ (Titans 대입) | 동일 | (U-W)와 글자 그대로 대응 |
 | $u_t = x_t W_u$ — connector | $u_t$ | $q_t$와 별개 사영. $u_t = q_t$ 대안은 §3.1에 언급되나 그 행의 수치는 비어 있다(→ §18.6) |
-| $r^{(i)}_t$ — 세그먼트 관련도 점수, $R_t$ — 선택된 캐시 인덱스 집합 [MC Eq. 16–17] | $\tilde\gamma^{(i)}_t$ / $\mathcal{I}_t$ | 예약 충돌: $r$은 rank, $R$은 보상이다(§1.3). 논문 기호를 옮긴다. $\tilde\gamma$는 softmax 전 점수이고 $\gamma^{(i)}_t$가 정규화된 mixture weight라는 관계가 기호에 그대로 남는다. top-$k$의 $k$는 이 장에서 선택 개수를 뜻하는 장-국소 기호이며, §1.2의 sleep 라운드 첨자 $k$·키 벡터 $k_t$와 다르다 |
+| $r^{(i)}_t$ — 세그먼트 관련도 점수, $R_t$ — 선택된 캐시 인덱스 집합 [MC Eq. 16–17] | $\tilde\gamma^{(i)}_t$ / $\mathcal{I}_t$ | 예약 충돌: 본서 표기 규약상 $r$은 rank, $R$은 보상이다. 논문 기호를 옮긴다. $\tilde\gamma$는 softmax 전 점수이고 $\gamma^{(i)}_t$가 정규화된 mixture weight라는 관계가 기호에 그대로 남는다. top-$k$의 $k$는 이 장에서 선택 개수를 뜻하는 장-국소 기호이며, 예약된 sleep 라운드 첨자 $k$·키 벡터 $k_t$와 다르다 |
 | $f$ — baseline 갱신 규칙 [MC Eq. 4, 17] | $\mathrm{upd}(\cdot)$ | 이 책의 $f$는 식 (R)의 읽기 함수이고 이 장에서는 [NL]의 갱신 주파수다. 한 글자를 세 뜻으로 쓰지 않는다 |
-| 위첨자 $(s)$ — 현재 세그먼트 | 위첨자 $(s)$ 유지(장-국소) | §1.3의 아래첨자 $s$(SGD step)와 다른 대상임을 §18.3.2에서 선언한다 |
+| 위첨자 $(s)$ — 현재 세그먼트 | 위첨자 $(s)$ 유지(장-국소) | 예약된 아래첨자 $s$(SGD step)와 다른 대상임을 §18.3.2에서 선언한다 |
 
 ## 18.4 어느 층을 언제 쓰는가
 
@@ -174,9 +176,9 @@ $$
 
 > **정의.** 연속체 주장이 **기제의 다리**이려면 두 조건이 필요하다. (i) 축 위의 어떤 갱신이 문맥 경계를 넘어 존속하고, (ii) 그 산출물이 배포 아티팩트에 되돌아 쓰인다. 둘 중 하나라도 없으면 그 연속체는 **표기의 다리**다 — 축 하나가 두 끝점을 이름으로 이을 뿐, 어떤 상태도 끝점 사이를 실제로 이동하지 않는다.
 
-> **[평가]** 표 18-3에 (i)을 만족하는 행이 없고 (ii)를 만족하는 행은 통제군 하나뿐이다. 따라서 [NL]의 연속체는 표기의 다리다. 이 판정은 논문의 기여를 깎지 않는다 — [NL]은 $W$층을 주파수로 구조화하는 어휘(level, update frequency, persistent 대 adaptive 지식 저장)를 만들었고, $\Theta$-경로는 뒤에 그 어휘를 빌려 쓴다(→ ch21). 판정이 말하는 것은 어휘가 건너간 자리에 기제는 건너가지 않았다는 것이다. 물리적으로 그 자리를 건너려면 **문맥이 끝난 뒤에도 살아남는 쓰기**가 있어야 하고, 그것을 하려면 오프라인 pass가 있어야 하며, 그 pass를 [NL]은 §1에서 명시적으로 범위 밖에 두었다.
+> **[평가]** 표 18-3에 (i)을 만족하는 행이 없고 (ii)를 만족하는 행은 통제군 하나뿐이다. 따라서 [NL]의 연속체는 표기의 다리다. 이 판정은 논문의 기여를 깎지 않는다 — [NL]은 $W$층을 주파수로 구조화하는 어휘(level, update frequency, persistent 대 adaptive 지식 저장)를 만들었고, $\Theta$-경로는 뒤에 그 어휘를 빌려 쓴다(→ ch21). 판정이 말하는 것은 어휘가 건너간 자리에 기제는 건너가지 않았다는 것이다. 물리적으로 그 자리를 건너려면 **문맥이 끝난 뒤에도 살아남는 쓰기**가 있어야 하고, 그것을 하려면 오프라인 pass가 있어야 하며, 그 pass를 [NL §1]에서 명시적으로 범위 밖에 두었다.
 
-한 가지 유혹을 미리 차단한다. §7.3의 ad-hoc level stacking은 $\eta^{(\ell)} \to 0$으로 두면 "갱신된 memory 블록이 초기 상태에 가깝게 유지되어, 적응 없이 pre-trained 블록을 그대로 쓰는 결과"가 된다고 쓴다 [NL §7.3]. 스칼라 하나가 동결된 $\Theta$와 적응하는 $W$ 사이를 연속적으로 보간하는 것이며, 진짜 다리라면 이렇게 생겼을 것이다. 그러나 보간의 한쪽 끝은 "$\Theta$처럼 **행동하는** $W$"이지 $\Theta$가 아니다. 체크포인트에 되돌아 쓰이는 경로가 식 어디에도 없다.
+한 가지 유혹을 미리 차단한다. [NL §7.3]의 ad-hoc level stacking은 $\eta^{(\ell)} \to 0$으로 두면 "갱신된 memory 블록이 초기 상태에 가깝게 유지되어, 적응 없이 pre-trained 블록을 그대로 쓰는 결과"가 된다고 쓴다. 스칼라 하나가 동결된 $\Theta$와 적응하는 $W$ 사이를 연속적으로 보간하는 것이며, 진짜 다리라면 이렇게 생겼을 것이다. 그러나 보간의 한쪽 끝은 "$\Theta$처럼 **행동하는** $W$"이지 $\Theta$가 아니다. 체크포인트에 되돌아 쓰이는 경로가 식 어디에도 없다.
 
 표 18-4 — [MC]: 이 값은 누가, 어느 시계로 움직이는가
 
@@ -208,7 +210,7 @@ $$
 
 > **[평가]** 여기서 §18.2가 도입한 구분이 회계로 값을 한다. [MC]가 바꾼 것은 읽기식이므로, 그 비용은 상각 대상이 아니라 **토큰마다 반복되는 고정 부담**이다. 식 (A)의 분자에 들어갈 수 있는 항은 세그먼트 요약 $\mathrm{MeanPool}(S^{(i)})$ 하나인데 그것은 평균 한 번이라 사실상 0이고, 실제로 무거운 항 — 캐시 $N$개에 대한 per-token forward — 은 분모 $N_q$가 커져도 줄지 않는다. 상각 논증이 이 논문에 닿지 않는 이유는 비용이 커서가 아니라 **비용이 놓인 자리가 다르기 때문**이다. 읽기식을 바꾼 논문을 sleep-time compute으로 분류하면 이 구조적 사실이 통째로 감춰진다.
 
-STC 기준 §6.4의 규칙을 그대로 적용한다. 네 칸이 전부 비어 있으므로 이 장은 두 논문에 대해 "효율적이다"라는 서술을 쓰지 않는다. [NL]의 §9.1이 최저 주파수 2K를 "significantly more efficient forward pass"라는 이유로 권장하고, [MC]의 §5.7이 SSC의 오버헤드가 최소라고 서술하지만, 두 진술 모두 단위가 붙은 값을 동반하지 않는다.
+본서의 정직성 규칙을 그대로 적용한다. 네 칸이 전부 비어 있으므로 이 장은 두 논문에 대해 "효율적이다"라는 서술을 쓰지 않는다. [NL §9.1]이 최저 주파수 2K를 "significantly more efficient forward pass"라는 이유로 권장하고, [MC §5.7]이 SSC의 오버헤드가 최소라고 서술하지만, 두 진술 모두 단위가 붙은 값을 동반하지 않는다.
 
 ## 18.6 실험과 스케일
 
@@ -265,7 +267,7 @@ Table 6의 캡션은 "Hope의 모든 구성요소가 성능에 긍정적으로 �
 | − linear memory | 13.7 / 56.3 / 34.5 | 13.8 / 56.8 / 33.4 |
 | **− shared $u$ and $q$** | **00.0 / 00.0 / 00.0** | **00.0 / 00.0 / 00.0** |
 
-마지막 행이 양쪽 모두 000/000/000으로 비어 있다. §5.6 본문은 앞의 세 설계 선택만 논하고 이 행을 언급하지 않는다. 그런데 Table 5의 캡션은 "MC의 모든 설계 선택이 그 효과에 긍정적으로 기여한다"고 단정한다 [MC Table 5, §5.6]. **빈 행 위에 세운 단정이다.** 같은 표에서 SSC의 context-dependent $\gamma$ 제거는 perplexity를 전혀 움직이지 않는다(13.4 → 13.4) — 그 설계 요소의 이득은 retrieval(36.3 → 32.6)에 국한되며 언어모델링 축에서는 "평균적으로 유의한 개선"이라는 서술이 지지되지 않는다. 그리고 Table 5의 Titans(GRM) ppl 13.3은 Table 1의 어떤 Titans+GRM perplexity와도 맞지 않는다(760M Wiki 19.14 / LMB 20.21, 1.3B 15.37 / 11.29). ablation의 모델 크기·문맥·세그먼트가 명시되지 않아 Table 1과 대조할 수 없다.
+마지막 행이 양쪽 모두 000/000/000으로 비어 있다. [MC §5.6] 본문은 앞의 세 설계 선택만 논하고 이 행을 언급하지 않는다. 그런데 Table 5의 캡션은 "MC의 모든 설계 선택이 그 효과에 긍정적으로 기여한다"고 단정한다 [MC Table 5, §5.6]. **빈 행 위에 세운 단정이다.** 같은 표에서 SSC의 context-dependent $\gamma$ 제거는 perplexity를 전혀 움직이지 않는다(13.4 → 13.4) — 그 설계 요소의 이득은 retrieval(36.3 → 32.6)에 국한되며 언어모델링 축에서는 "평균적으로 유의한 개선"이라는 서술이 지지되지 않는다. 그리고 Table 5의 Titans(GRM) ppl 13.3은 Table 1의 어떤 Titans+GRM perplexity와도 맞지 않는다(760M Wiki 19.14 / LMB 20.21, 1.3B 15.37 / 11.29). ablation의 모델 크기·문맥·세그먼트가 명시되지 않아 Table 1과 대조할 수 없다.
 
 표 18-8 — [MC] 본문 진술과 자기 표의 대조
 
@@ -274,11 +276,11 @@ Table 6의 캡션은 "Hope의 모든 구성요소가 성능에 긍정적으로 �
 | "Titans + MC and DLA + MC achieves +0.8% performance gain over the Titans" [§5.1] | 대응하는 쌍이 없다. 760M Titans 51.56 → +GRM 52.55(+0.99), 1.3B 56.82 → 58.33(+1.51), 1.3B DLA+GRM 55.96은 Titans 56.82보다 0.86 **낮다** [Table 1] |
 | "GRM and then SSC achieves better results among our provided methods" [§5.1(3)] | Avg에서 Memory Soup이 모든 비퇴화 블록에서 SSC보다 위다 — 760M DLA 51.33 vs 50.85, 1.3B DLA 55.08 vs 54.64, 760M Titans 52.33 vs 52.29, 1.3B Titans 57.91 vs 57.58 [Table 1] |
 | SSC가 "performs on par or better compared to other variants" [§5.7] | Table 3 Avg에서 SSC는 GRM보다 DLA 33.09 vs 38.03, Titans 36.27 vs 40.50으로 뒤지고 S-NIAH-3@16K도 27.0 vs 32.2다. SSC는 일관되게 열등하며 그 대가로 효율을 산다 |
-| "All MC-enhanced variants provide performance gains compared to their base RNNs" [§5.4] | Table 4에 Avg 열이 없다. 14개 과제 단순평균은 Titans 19.53 → +GRM 19.81로 **+0.28**이다[본서 계산]. TRC 37.1 → 14.8, MNs 11.8 → 3.1, GvR 10.5 → 8.4로 세 과제가 역전되고, 이득 전부가 TQA 26.2 → 49.7 하나에서 나온다 |
+| "All MC-enhanced variants provide performance gains compared to their base RNNs" [§5.4] | Table 4에 Avg 열이 없다. 14개 과제 단순평균은 Titans 19.53 → +GRM 19.81로 **+0.28**이다[본서 산술]. TRC 37.1 → 14.8, MNs 11.8 → 3.1, GvR 10.5 → 8.4로 세 과제가 역전되고, 이득 전부가 TQA 26.2 → 49.7 하나에서 나온다 |
 
-세 가지를 더 적는다. 첫째, 효율 근거가 training throughput 곡선 하나뿐이다 [MC Figure 4, §5.7] — decode 지연, TTFT/ITL, 상태 바이트 중 아무것도 측정되지 않았고 비용 주장은 $O(pNL)$이라는 차수 서술에 머문다. 상수 $p$의 실측이 없는데 $p$가 이 설계의 전부다. 둘째, §3.4가 두 갈래(체크포인트 연쇄 대 독립 압축기)를 제시하고 §5.6을 보라고 넘기지만 §5.6과 Table 5 어디에도 그 축의 ablation이 없다. **논문이 스스로 지정한 검증이 누락되었다.** 셋째, §4.3의 post-training MC는 길이 외삽을 "크게" 개선한다고 주장하지만 이를 뒷받침하는 표도 그림도 없다 [MC §4.3] — v2 기준으로 이 논문에서 유일하게 오프라인에 해당하는 변형이 정확히 미측정 상태다.
+세 가지를 더 적는다. 첫째, 효율 근거가 training throughput 곡선 하나뿐이다 [MC Figure 4, §5.7] — decode 지연, TTFT/ITL, 상태 바이트 중 아무것도 측정되지 않았고 비용 주장은 $O(pNL)$이라는 차수 서술에 머문다. 상수 $p$의 실측이 없는데 $p$가 이 설계의 전부다. 둘째, [MC §3.4]가 두 갈래(체크포인트 연쇄 대 독립 압축기)를 제시하고 [MC §5.6]을 보라고 넘기지만 [MC §5.6]과 Table 5 어디에도 그 축의 ablation이 없다. **논문이 스스로 지정한 검증이 누락되었다.** 셋째, [MC §4.3]의 post-training MC는 길이 외삽을 "크게" 개선한다고 주장하지만 이를 뒷받침하는 표도 그림도 없다 [MC §4.3] — v2 기준으로 이 논문에서 유일하게 오프라인에 해당하는 변형이 정확히 미측정 상태다.
 
-스케일과 통계의 한계도 정직하게 적는다. 1.3B/100B tokens, 학습 문맥 최대 32K(평가는 16K)이고 instruction tuning이나 RLHF 단계가 없다. MQAR(5 seed 평균)을 제외한 Table 1–5 전부가 단일 시드이며 오차막대가 없어, Avg 차이의 상당수 — 예컨대 760M Titans+Soup 52.33 대 +SSC 52.29의 0.04 — 는 시드 잡음과 구분되지 않는다. 760M Transformer++ 평균 49.64는 RetNet(48.19)을 제외한 모든 recurrent baseline보다 낮고 S-NIAH-1@4K에서도 88.6으로 DLA 96.4에 지므로, 이 규모에서 Transformer 대비 비교의 기준선이 약하다 [MC Table 1, Table 2]. 마지막으로 §4.1은 attention–RNN 하이브리드가 세그먼트 크기 1의 MC와 동치라고 논증하지만 MC를 실제로 하이브리드에 얹은 실험이 없다 — Samba*와 Titans(MAL)은 baseline으로만 등장한다.
+스케일과 통계의 한계도 정직하게 적는다. 1.3B/100B tokens, 학습 문맥 최대 32K(평가는 16K)이고 instruction tuning이나 RLHF 단계가 없다. MQAR(5 seed 평균)을 제외한 Table 1–5 전부가 단일 시드이며 오차막대가 없어, Avg 차이의 상당수 — 예컨대 760M Titans+Soup 52.33 대 +SSC 52.29의 0.04 — 는 시드 잡음과 구분되지 않는다. 760M Transformer++ 평균 49.64는 RetNet(48.19)을 제외한 모든 recurrent baseline보다 낮고 S-NIAH-1@4K에서도 88.6으로 DLA 96.4에 지므로, 이 규모에서 Transformer 대비 비교의 기준선이 약하다 [MC Table 1, Table 2]. 마지막으로 [MC §4.1]은 attention–RNN 하이브리드가 세그먼트 크기 1의 MC와 동치라고 논증하지만 MC를 실제로 하이브리드에 얹은 실험이 없다 — Samba*와 Titans(MAL)은 baseline으로만 등장한다.
 
 ## 18.7 Systems/serving 함의
 
@@ -292,7 +294,7 @@ Table 6의 캡션은 "Hope의 모든 구성요소가 성능에 긍정적으로 �
 
 > **[해설]** 상수를 잡아 본다. **아래 산술은 이 책의 계산이며 논문의 보고값이 아니다.** 논문이 바이트를 적지 않으므로 bf16(2 bytes/elem)을 가정하고 나머지는 논문 자신의 제원을 쓴다(1.3B: 18 block, dim 2048, 8 head; memory는 2층 MLP·expansion 4). memory 모듈이 head별로 놓인다고 가정하면 $d_{\text{head}} = 2048/8 = 256$이고 head당 $2 \times 256 \times 1024 = 524{,}288$ 파라미터, block당 8 head = 4.19M, 18 block = 75.5M 파라미터/체크포인트, bf16으로 **약 151 MB/체크포인트**다. 문맥 16K·세그먼트 256이면 $N=64$이므로 시퀀스당 약 9.7 GB다. 같은 제원의 KV cache는 토큰·layer당 $2 \times 2048 \times 2 = 8$ KB, 18 layer면 147.5 KB/token이고 16K 문맥에서 약 2.4 GB다. 즉 이 가정 아래 MC는 KV cache의 **약 4배** 바이트를 쓰고, 손익분기 세그먼트 길이는 $C \approx 1024$이다. memory가 head별이 아니라 model-dim 전체에 놓이면 체크포인트가 604M 파라미터로 8배가 되어 배수는 더 커진다. **단정하는 것은 방향과 자릿수다 — 두 배치 가정 어느 쪽에서도 MC의 시퀀스당 상태는 같은 모델의 KV cache보다 무겁다.** 논문은 이 비교를 하지 않는다.
 
-읽기 쪽 결과가 더 날카롭다. 회수는 토큰마다 모든 캐시에 대한 forward이므로 $O(p \times N)$이다 [MC §3.1]. 위 가정에서 GRM과 Soup은 decode 토큰마다 9.7 GB를 읽고, FLOPs로는 $2 \times 75.5\text{M} \times 64 \approx 9.7$ GFLOP/token으로 1.3B dense forward(2.6 GFLOP/token)의 약 3.7배다[본서 계산]. **decode가 완전히 대역폭 지배가 된다.**
+읽기 쪽 결과가 더 날카롭다. 회수는 토큰마다 모든 캐시에 대한 forward이므로 $O(p \times N)$이다 [MC §3.1]. 위 가정에서 GRM과 Soup은 decode 토큰마다 9.7 GB를 읽고, FLOPs로는 $2 \times 75.5\text{M} \times 64 \approx 9.7$ GFLOP/token으로 1.3B dense forward(2.6 GFLOP/token)의 약 3.7배다[본서 산술]. **decode가 완전히 대역폭 지배가 된다.**
 
 SSC가 서빙 가능한 유일한 변형인 이유가 여기서 나온다. top-$k$만 로드하므로 읽기가 $O(p \times k)$로 고정되고, 논문이 명시적으로 시스템 논거를 단 유일한 지점이다 — 이런 계산은 "캐시된 memory의 상태를 accelerator에 상주시킬 필요가 없으며 토큰마다 '선택된' memory만 로드하면 된다" [MC §3.3]. $\mathrm{MeanPool}$이 사전 계산 가능하므로 router는 캐시 상태를 읽지 않고 돌고, HBM 밖(호스트 DRAM·NVMe)에 캐시를 두고 선택된 것만 끌어오는 계층 구조가 성립한다. **다만 $k$의 값이 논문에 없다.** 그리고 §18.6이 보인 대로 SSC는 품질에서 일관되게 열등하다 — 서빙 가능한 변형과 성능이 좋은 변형이 갈린다.
 
@@ -302,9 +304,9 @@ SSC가 서빙 가능한 유일한 변형인 이유가 여기서 나온다. top-$
 
 ### 18.8.1 논문 자신이 남긴 문제
 
-[NL]이 남긴 것 중 이 책에 가장 중요한 항목은 §1의 범위 진술이다. 오프라인 consolidation을 이름 붙여 소개하고 "본 연구에서는 첫 단계, 즉 온라인 과정으로서의 memory consolidation에 집중한다"고 선언한다 [NL §1]. **corpus 전체에서 가장 쓸모 있는 bridge-out이며, 이것이 뒤 장에서 상속으로 실현된다**(→ ch21). 그 밖에 catastrophic forgetting이 일반적으로 해결되지 않았고 "압축의 자연스러운 귀결"이며 level 사이 용량 배분이 열려 있다는 진술 [NL §10], level 설계가 경험적이라는 사실(512 대 2K는 원리가 아니라 효율 판단이고, Table 6은 level 하나를 더한 것이 perplexity를 악화시킴을 보인다), Cartridges 비교의 유보, M3의 대형 확장 시 계산 오버헤드 우려 [NL §7.2], chunkwise stale snapshot이 진짜 self-reference를 얼마나 근사하는지에 대한 충실도 분석의 부재 [NL §8.2]가 남는다. 자기 MLP 블록을 gradient로 갱신하는 모델의 서빙 경제 — 테넌트별 분기, 표류한 상태의 체크포인트, 롤백 — 는 제기조차 되지 않는다.
+[NL]이 남긴 것 중 이 책에 가장 중요한 항목은 [NL §1]의 범위 진술이다. 오프라인 consolidation을 이름 붙여 소개하고 "본 연구에서는 첫 단계, 즉 온라인 과정으로서의 memory consolidation에 집중한다"고 선언한다. **corpus 전체에서 가장 쓸모 있는 bridge-out이며, 이것이 뒤 장에서 상속으로 실현된다**(→ ch21). 그 밖에 catastrophic forgetting이 일반적으로 해결되지 않았고 "압축의 자연스러운 귀결"이며 level 사이 용량 배분이 열려 있다는 진술 [NL §10], level 설계가 경험적이라는 사실(512 대 2K는 원리가 아니라 효율 판단이고, Table 6은 level 하나를 더한 것이 perplexity를 악화시킴을 보인다), Cartridges 비교의 유보, M3의 대형 확장 시 계산 오버헤드 우려 [NL §7.2], chunkwise stale snapshot이 진짜 self-reference를 얼마나 근사하는지에 대한 충실도 분석의 부재 [NL §8.2]가 남는다. 자기 MLP 블록을 gradient로 갱신하는 모델의 서빙 경제 — 테넌트별 분기, 표류한 상태의 체크포인트, 롤백 — 는 제기조차 되지 않는다.
 
-[MC]가 명시적으로 남긴 future work는 하나다: 더 표현력 있는 pooling·routing 기제 [MC §6]. 현재 설계는 MeanPooling + 내적 + top-$k$라는 최소형이다. 나머지 미결은 §18.6이 적은 세 공백 — 체크포인트 연쇄 대 독립 압축기의 비교 부재, 세그먼트 분할 스케줄의 최적 형태(균일이 로그보다 나았다는 관찰만 있고 이유가 없다), post-training MC의 미측정 — 과, $q_t$를 이용해 모델이 자기 입력 시퀀스를 짓는다는 §4.1의 관찰을 아키텍처로 만들지 않은 것이다.
+[MC]가 명시적으로 남긴 future work는 하나다: 더 표현력 있는 pooling·routing 기제 [MC §6]. 현재 설계는 MeanPooling + 내적 + top-$k$라는 최소형이다. 나머지 미결은 §18.6이 적은 세 공백 — 체크포인트 연쇄 대 독립 압축기의 비교 부재, 세그먼트 분할 스케줄의 최적 형태(균일이 로그보다 나았다는 관찰만 있고 이유가 없다), post-training MC의 미측정 — 과, $q_t$를 이용해 모델이 자기 입력 시퀀스를 짓는다는 [MC §4.1]의 관찰을 아키텍처로 만들지 않은 것이다.
 
 ### 18.8.2 이 책의 판정
 

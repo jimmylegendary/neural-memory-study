@@ -18,6 +18,18 @@
 \usepackage{bookmark}
 \usepackage{caption}
 \captionsetup{labelformat=empty}
+% glyph gate: Noto Serif CJK KR has no glyph for a few codepoints the text legitimately uses
+% (superscript digits, Turkish ğ in an author name, the ballot ✗ used opposite ○ in the census
+% tables). Left unmapped these emit "Missing character" and print NOTHING, so the gate in
+% build/METHOD.md requires zero of them. Map each to a font that does have it; \ltjalchar forces
+% ALchar handling so luatexja takes the Latin font rather than falling back to the CJK font.
+\usepackage{newunicodechar}
+\newfontfamily\ltnfallback{Noto Serif}[Scale=MatchLowercase]
+\newfontfamily\symfallback{DejaVu Sans}[Scale=MatchLowercase]
+\newunicodechar{⁶}{{\ltnfallback\ltjalchar"2076}}
+\newunicodechar{⁷}{{\ltnfallback\ltjalchar"2077}}
+\newunicodechar{ğ}{{\ltnfallback\ltjalchar"011F}}
+\newunicodechar{✗}{{\symfallback\ltjalchar"2717}}
 \setcounter{tocdepth}{2}
 \setcounter{secnumdepth}{-2}
 % overflow safety net: let the breaker stretch a little and treat leftover badness as underfull,

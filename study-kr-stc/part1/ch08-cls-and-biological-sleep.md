@@ -2,7 +2,7 @@
 
 > **이 장의 목표** — 이 장을 마치면 (1) Complementary Learning Systems가 무엇을 주장하고 무엇을 주장하지 않는지 한 문단으로 말할 수 있고, (2) SWS와 REM을 서로 다른 outer loss를 가진 두 개의 오프라인 라운드로 번역할 수 있으며, (3) 생물학적 replay와 deep learning의 replay를 갈라 놓을 수 있고, (4) 이 책의 corpus가 생물학에서 실제로 이송한 것과 이름만 빌린 것을 구분해 말할 수 있다.
 >
-> **왜 필요한가** — Part II의 두 장이 이 장을 직접 요구한다. ch21 `Language Models Need Sleep`(2606.03979)은 §2 전체를 SWS/REM 분업과 hippocampus–neocortex 대화의 서술에 쓰고 그 위에 자기 기제를 세운다 [LM Need Sleep §2]. ch14 `Sleep-time Compute`(2504.13171)은 제목과 본문에서 sleep이라는 단어를 170회 쓰면서(vendored 원문 전문 계수, 08.5) 생물학 문헌을 한 편도 인용하지 않는다. 같은 이름 아래 두 논문이 서로 다른 것을 하고 있다는 판정은 생물학 쪽 원본을 알아야만 내릴 수 있다. ch07의 replay·interleaving도 계보상 여기서 출발한다.
+> **왜 필요한가** — Part II의 두 장이 이 장을 직접 요구한다. ch21 `Language Models Need Sleep`(2606.03979)은 한 절 전체를 SWS/REM 분업과 hippocampus–neocortex 대화의 서술에 쓰고 그 위에 자기 기제를 세운다 [LM Need Sleep §2]. ch14 `Sleep-time Compute`(2504.13171)은 제목과 본문에서 sleep이라는 단어를 170회 쓰면서(vendored 원문 전문 계수, §08.5) 생물학 문헌을 한 편도 인용하지 않는다. 같은 이름 아래 두 논문이 서로 다른 것을 하고 있다는 판정은 생물학 쪽 원본을 알아야만 내릴 수 있다. ch07의 replay·interleaving도 계보상 여기서 출발한다.
 >
 > **NM과의 관계** — Neural Memory ch17이 Google Sleep 논문의 lifecycle을 다루면서 sleep이라는 단어를 이미 썼지만 생물학 배경은 한 문단으로 넘겼다. 그 배경을 이 장이 소유한다. inner/outer loop, backward pass, optimizer state는 전제한다(→ NM ch02). 이 장이 더하는 것은 **오프라인 위상이 무엇을 근거로 필요하다고 주장되었는가**의 원출처, 그리고 그 근거가 LLM으로 이송될 때 어디서 끊기는가의 경계선이다.
 
@@ -32,9 +32,9 @@ CLS가 남긴 실용적 처방은 **interleaving**이다. 여러 과제를 하�
 
 기능 분업에 대한 주장은 다음과 같이 귀속시킨다. [LM Need Sleep §2]는 SWS에 두 기능을 배정한다 — synaptic homeostasis("globally downscales synaptic strengths to counteract the net increase in connectivity from waking experiences")와 memory consolidation("the transformation of fragile, recent experiences into stable, long-term knowledge"). 그리고 consolidation이 raw data의 replay가 아니라고 명시한다: "this transfer does not simply replay raw data; instead, it re-architects the knowledge acquired during waking hours, extracting abstractions and integrating them into a cohesive semantic network" [LM Need Sleep §2]. REM에는 다른 기능을 배정한다 — "the selective strengthening of newly formed synapses and the integration of new information with pre-existing emotional and semantic networks" [LM Need Sleep §2].
 
-> **[해설]** 이 문단이 이 장에서 systems 독자에게 가장 값싼 이득이다. **SWS와 REM은 "sleep 라운드 하나"가 아니라 목적함수가 다른 두 라운드다.** 프레임 어휘로 옮기면, 하나의 $k$ 안에서 $\mathcal{L}$이 두 번 바뀐다 — 식 (U-$\Theta$)의 $\mathcal{L}(\mathcal{R}_k; \Theta_k)$에서 $\mathcal{L}$이 위상의 함수가 된다. 그래서 생물학을 실제로 인용하는 논문들은 예외 없이 **두 개 이상의 sleep 목적함수**를 갖는다: ch21은 Knowledge Seeding과 Dreaming 두 단계를(두 단계의 정의는 → ch21), 08.4의 PAD는 NREM과 REM에 서로 다른 outer loss를 둔다. 반대로 sleep을 이름으로만 쓰는 논문은 오프라인 위상이 하나다. 오프라인 위상의 **개수**가 은유를 실제로 이송했는지 아닌지의 값싼 판별기다.
+> **[해설]** 이 문단이 이 장에서 systems 독자에게 가장 값싼 이득이다. **SWS와 REM은 "sleep 라운드 하나"가 아니라 목적함수가 다른 두 라운드다.** 프레임 어휘로 옮기면, 하나의 $k$ 안에서 $\mathcal{L}$이 두 번 바뀐다 — 식 (U-$\Theta$)의 $\mathcal{L}(\mathcal{R}_k; \Theta_k)$에서 $\mathcal{L}$이 위상의 함수가 된다. 그래서 생물학을 실제로 인용하는 논문들은 예외 없이 **두 개 이상의 sleep 목적함수**를 갖는다: ch21은 Knowledge Seeding과 Dreaming 두 단계를(두 단계의 정의는 → ch21), §08.4의 PAD는 NREM과 REM에 서로 다른 outer loss를 둔다. 반대로 sleep을 이름으로만 쓰는 논문은 오프라인 위상이 하나다. 오프라인 위상의 **개수**가 은유를 실제로 이송했는지 아닌지의 값싼 판별기다.
 
-한 가지를 이 장에서 못 박는다. SWS/REM 분업 서술의 근거는 신경과학 문헌이고, 이 책의 corpus는 그 문헌을 직접 갖고 있지 않다. corpus가 가진 것은 두 편의 **계산 모델**이다 — PLOS 논문(08.3)과 PAD(08.4). 둘 다 동물 실험이 아니라 시뮬레이션이며, 생물학적 권위는 인용으로만 확보된다. PLOS 논문은 자기가 모델링한 것이 REM뿐임을 밝힌다: "In vivo, activity of the neocortical neurons during REM sleep is low-synchronized and similar to baseline awake activity. Therefore, to simulate REM sleep-like activity in the model, the rewarded STDP rule was replaced by unsupervised STDP" [PLOS Sleep Results, L292-296]. **NREM은 이 논문에서 모델링되지 않는다.** 그런데 이 논문이 인용하는 declarative memory consolidation 문헌은 NREM에 그 기능을 배정한다. 즉 corpus 안에서 SWS 쪽 증거는 계산 모델로 뒷받침되지 않은 채 인용으로만 흘러간다.
+한 가지를 이 장에서 못 박는다. SWS/REM 분업 서술의 근거는 신경과학 문헌이고, 이 책의 corpus는 그 문헌을 직접 갖고 있지 않다. corpus가 가진 것은 두 편의 **계산 모델**이다 — PLOS 논문(§08.3)과 PAD(§08.4). 둘 다 동물 실험이 아니라 시뮬레이션이며, 생물학적 권위는 인용으로만 확보된다. PLOS 논문은 자기가 모델링한 것이 REM뿐임을 밝힌다: "In vivo, activity of the neocortical neurons during REM sleep is low-synchronized and similar to baseline awake activity. Therefore, to simulate REM sleep-like activity in the model, the rewarded STDP rule was replaced by unsupervised STDP" [PLOS Sleep Results, L292-296]. **NREM은 이 논문에서 모델링되지 않는다.** 그런데 이 논문이 인용하는 declarative memory consolidation 문헌은 NREM에 그 기능을 배정한다. 즉 corpus 안에서 SWS 쪽 증거는 계산 모델로 뒷받침되지 않은 채 인용으로만 흘러간다.
 
 ---
 
@@ -52,14 +52,14 @@ corpus에서 오프라인 위상이 각성 위상이 만들 수 없는 가중치
 
 네 조건의 결과가 이 장의 뼈대다.
 
+표 8-1. PLOS Sleep의 핵심 네 조건 [Results, L228-229, L275-276, L282, L304-305].
+
 | 조건 | Task 1 | Task 2 | 과거 데이터 저장 |
 |---|---|---|---|
 | Task 1 단독 학습 후 | 0.70 ± 0.02 | 0.53 ± 0.02 | — |
 | Sequential (T1→T2) | 0.52 ± 0.02 | 0.69 ± 0.03 | 불필요 |
 | Interleaved$_{T1,T2}$ (고전 interleaving) | 0.68 ± 0.03 | 0.65 ± 0.04 | **필요** |
 | Interleaved$_{S,T2}$ (sleep 교대) | **0.70 ± 0.03** | **0.68 ± 0.05** | 불필요 |
-
-표 8-1. PLOS Sleep의 핵심 네 조건 [Results, L228-229, L275-276, L282, L304-305].
 
 Sequential 학습은 옛 과제를 chance로 떨어뜨린다(0.70 → 0.52). sleep을 새 과제 학습과 100 movement cycle 단위로 교대시키면 옛 과제가 전혀 떨어지지 않는다(0.70 → 0.70). 그리고 결정적으로, "Importantly, no training on Task 1 was performed at any time during Interleaved$_{S,T2}$" [PLOS Sleep Results, L303-304]. 옛 과제 데이터는 한 번도 다시 제시되지 않았다.
 
@@ -87,7 +87,7 @@ sleep을 정적 보호와 구분하는 통제도 있다. Task 1 학습 후 상�
 
 ## 08.4 dreaming과 표현학습 — 재생이 아니라 생성
 
-**dreaming과 표현학습**은 오프라인 위상이 과거 경험을 재생하는 대신 **경험한 적 없는 입력을 생성**하고 그 생성물로 학습함으로써 표현의 질을 높인다는 가설이다. 08.3의 replay가 "있었던 것을 다시 돌린다"였다면 이쪽은 "없었던 것을 만들어 돌린다"다. Deperrois·Petrovici·Senn·Jordan의 *eLife* 논문 `Learning cortical representations through perturbed and adversarial dreaming`(2022, doi 10.7554/eLife.76384, 이하 PAD)이 이 가설의 계산 모델이다.
+**dreaming과 표현학습**은 오프라인 위상이 과거 경험을 재생하는 대신 **경험한 적 없는 입력을 생성**하고 그 생성물로 학습함으로써 표현의 질을 높인다는 가설이다. §08.3의 replay가 "있었던 것을 다시 돌린다"였다면 이쪽은 "없었던 것을 만들어 돌린다"다. Deperrois·Petrovici·Senn·Jordan의 *eLife* 논문 `Learning cortical representations through perturbed and adversarial dreaming`(2022, doi 10.7554/eLife.76384, 이하 PAD)이 이 가설의 계산 모델이다.
 
 출발점은 관찰 하나다. Wake–Sleep·Helmholtz machine 계열은 오프라인 위상을 생성 모델 개선에 쓰지 않고 각성 중 입력 재구성에만 학습시키는데, "most dreams during REM sleep exhibit realistic imagery beyond past sensory experience" [PAD Introduction, L84-86]. 꿈은 겪은 것의 재생이 아니다. PAD는 그 사실을 잡음이 아니라 **계산의 원재료**로 삼는다.
 
@@ -99,19 +99,19 @@ PAD의 한 wake–sleep 사이클 $k$는 세 위상으로 구성되고 위상마
 - **NREM**: buffer의 latent을 generator로 되그려 **가림(occlusion)을 씌운 뒤**, 그 훼손된 이미지를 다시 encode한 결과가 원래 latent과 같아지도록 encoder만 갱신한다 [PAD Eq. 6]. 저장된 latent이 정답이고 generator가 입력을 만든다.
 - **REM**: 현재와 직전 사이클의 latent 두 개와 가우시안 noise를 볼록 결합해 $z' = \tfrac14 z + \tfrac14 z_{\text{old}} + \tfrac12 \epsilon$을 만들고, 그것을 generator로 그린 뒤 discriminator에게 "internal"로 판정하도록 학습시키면서 **generator에는 부호를 뒤집어 상승 방향으로** 갱신한다 [PAD Eq. 7-8, Figure 2c]. 논문의 핵심 생물학적 예측이 이 부호 전환이다: "identical local errors lead to opposing weight changes between Wake and REM sleep" [PAD Figure 7 caption].
 
-> **[해설]** 프레임으로 옮기면 PAD는 (U-E)를 한 번, (U-$\Theta$)를 세 번 도는 시스템이다. 그런데 (U-E)의 $S(c_k; B_s)$는 encoder forward 한 번이고 $\mathrm{wr}$은 2슬롯 shift register이며, **$\mathrm{ret}(E,q)$가 존재하지 않는다** — 읽기는 질의가 아니라 라운드 첨자로만 이루어진다. 즉 PAD의 $E$는 검색 절반이 잘려 나간 store로, 오직 $\mathcal{R}_k$를 만들기 위해서만 존재한다. 그리고 평가 시점에는 $\hat y = W_{\text{ro}}\,\mathrm{enc}(x)$ 한 번의 forward가 전부다 — $W$층이 없고 $E$도 읽지 않는다. **오프라인 위상이 벌어들인 것이 전부 $\Theta$에 흡수되어 있으므로 wake 비용이 정확히 0만큼 늘어난다.** 이것이 상각 논증이 가장 좋아하는 모양이지만, 논문은 어느 쪽 비용도 재지 않는다.
+> **[해설]** 프레임으로 옮기면 PAD는 (U-E)를 한 번, (U-$\Theta$)를 세 번 도는 시스템이다. 그런데 (U-E)의 $S(c_k; B_s)$는 encoder forward 한 번이고 $\mathrm{wr}$은 2슬롯 shift register이며, **$\mathrm{ret}(E,q)$가 존재하지 않는다** — 읽기는 질의가 아니라 라운드 첨자로만 이루어진다. 즉 PAD의 $E$는 검색 절반이 잘려 나간 store로, 오직 $\mathcal{R}_k$를 만들기 위해서만 존재한다. 그리고 평가 시점에는 $\hat y = \Theta^{(\mathrm{ro})}\,\mathrm{enc}(x)$ 한 번의 forward가 전부다 — $W$층이 없고 $E$도 읽지 않는다. **오프라인 위상이 벌어들인 것이 전부 $\Theta$에 흡수되어 있으므로 wake 비용이 정확히 0만큼 늘어난다.** 이것이 상각 논증이 가장 좋아하는 모양이지만, 논문은 어느 쪽 비용도 재지 않는다.
 
 > **[평가]** PAD가 자기 기여로 내세우는 것은 부호 전환이라는 생물학적 예측이다 — 각성과 REM에서 동일한 국소 오차가 반대 방향의 가중치 변화를 낳는다는 것. 계산 쪽에서 보면 이것은 한 파라미터 블록에 대한 gradient의 부호를 뒤집는 것, 즉 표준 GAN 학습 절차 그 자체다. 새 연산도, 새 커널도, 추가 상태도 없다. 이 사실을 이 책은 약점이 아니라 **이송 가능성의 지표**로 읽는다: 생물학 쪽에서 "각성과 sleep은 다른 종류의 가소성을 쓴다"로 서술되는 것이 계산 쪽에서는 "오프라인 라운드는 목적함수와 부호만 다르다"로 환원된다. 반대로 말하면, 이 라인이 생물학에서 가져올 수 있는 것은 대개 **스케줄과 목적함수의 배치**이지 새로운 갱신 primitive가 아니다. ch21의 두 단계 sleep이 기존 distillation과 RL 조각의 재배치로 구성되는 것도 같은 이유다(→ ch04, ch21).
 
 이 논문의 기호는 이 책의 예약 기호와 정면 충돌한다. 원문을 대조해 읽을 독자를 위해 세 행만 못 박는다.
 
+표 8-2. PAD 표기 대응 — 예약 기호를 덮어쓰는 두 충돌과 시간 단위 충돌.
+
 | 원 논문 기호 | 원문에서의 뜻 | 이 책 표기 |
 |---|---|---|
 | $E$, $E_z$, $E_d$ | encoder 신경망과 그 두 출력 [PAD Methods: Network architecture] | $\Theta^{\mathrm{enc}}$, $\Theta^{\mathrm{disc}}$ — 예약된 $E$(external store)는 **논문이 이름을 주지 않은 hippocampal buffer**에 배정 |
-| $W$ | 선형 readout 가중치 $W \in \mathbb{R}^{10\times 256}$ [PAD Eq. 10] | $W_{\text{ro}}$ — 모델이 얼려진 뒤 학습되는 **평가용 probe**이며 fast weights가 아니다 |
+| $W$ | 선형 readout 가중치 $W \in \mathbb{R}^{10\times 256}$ [PAD Eq. 10] | $\Theta^{(\mathrm{ro})}$ — 모델이 얼려진 뒤 학습되는 **평가용 probe**이며, 예약 기호 $W$(fast weights)와 무관하다 |
 | epoch | 데이터셋 1회 통과 [PAD Methods] | 한 wake–sleep 사이클 $k$는 **미니배치 하나**다 — 이 모델에서는 sleep 라운드 $k$와 optimizer step $s$가 1:1로 겹친다. 논문 그림의 x축은 epoch이므로 $k$의 수는 그보다 훨씬 많다 |
-
-표 8-2. PAD 표기 대응 — 예약 기호를 덮어쓰는 두 충돌과 시간 단위 충돌.
 
 <!-- TODO-VERIFY: 한 epoch에 포함된 wake–sleep 사이클 수(= 미니배치 수). b=64 [PAD Methods, L1283]와 "One training epoch is defined by the number of mini-batches necessary to cover the whole dataset" [PAD Methods, L1620-1621]는 확인했으나, 학습 집합 크기는 vendored 원문에 인쇄되어 있지 않다 — 2026-08-06 감사에서 papers/stc/STC-T13.txt 를 "training set" / "50,000" / "images from" 으로 검색한 결과 L1278의 "usual split into a training set and a smaller test set"뿐이다. 남은 확인 방법: 게재본(doi 10.7554/eLife.76384) Methods 'Datasets' 절 또는 코드 저장소 github.com/NicoZenith/PAD 의 dataloader. 확인 전까지 B_s의 절대 수치를 본문에 쓰지 않는다. -->
 
@@ -119,12 +119,12 @@ PAD의 한 wake–sleep 사이클 $k$는 세 위상으로 구성되고 위상마
 
 평가는 표현의 **선형 분리도**다 — 모델을 얼린 뒤 latent 위에 선형 분류기를 학습시켜 얻은 테스트 정확도로 정의한다 [PAD Methods: Linear separability]. epoch 50 시점, 초기값 4종에 대한 평균 ± SEM은 다음과 같다 [PAD Appendix 1—table 1].
 
+표 8-3. PAD와 병리 조건의 최종 선형 분리도 [PAD Appendix 1—table 1].
+
 | 데이터셋 | PAD | w/o memory mix | w/o REM | w/o NREM | Wake only |
 |---|---|---|---|---|---|
 | CIFAR-10 | 58.25 ± 0.70 | 53.87 ± 0.85 | 46.00 ± 0.43 | 58.00 ± 0.34 | 42.25 ± 0.54 |
 | SVHN | 78.92 ± 0.40 | 60.87 ± 5.07 | 42.30 ± 1.51 | 73.25 ± 0.22 | 41.93 ± 0.65 |
-
-표 8-3. PAD와 병리 조건의 최종 선형 분리도 [PAD Appendix 1—table 1].
 
 REM을 제거하면 두 데이터셋 모두 크게 무너진다(58.25 → 46.00, 78.92 → 42.30). REM을 두되 여러 기억의 혼합도 noise도 없이 단일 기억만 재생하면 역시 떨어진다(53.87, 60.87) [PAD Results, L547-549]. 논문의 결론은 여기서 나온다 — 표현을 만드는 것은 오프라인이라는 사실 자체가 아니라 **오프라인에서 무엇을 생성하는가**다.
 
@@ -140,7 +140,7 @@ REM을 제거하면 두 데이터셋 모두 크게 무너진다(58.25 → 46.00,
 
 **표현 품질의 지표는 하나뿐이다.** 측정된 것은 linear readout 정확도 하나이고, 저자는 이것을 "an obvious simplification with regard to cortical processing"이라고 인정한다 [PAD Discussion, L1039-1041]. downstream 과제 성능은 측정되지 않았다. 그 하나뿐인 지표의 절대값도 낮다 — CIFAR-10에서 약 59%다 [PAD Results, L534; Figure 4c].
 
-> **[평가]** 세 사실을 합치면 이 논문을 인용할 수 있는 범위가 좁아진다. PAD는 **기제의 존재 증명**이지 성능 주장이 아니다. 절대 성능을 근거로 이 라인의 유망함을 말하는 데 이 논문을 쓰는 것은 오용이다. 그리고 sleep 단계를 개수와 순서까지 모사하려는 LLM 설계에 대해 이 논문은 순서의 필요성을 지지하지 않는다. 08.2에서 오프라인 위상의 **개수**를 판별기로 쓴 것은 은유가 실제로 이송되었는지를 재는 지표이지, 개수와 순서가 성능을 낳는다는 주장이 아니다.
+> **[평가]** 세 사실을 합치면 이 논문을 인용할 수 있는 범위가 좁아진다. PAD는 **기제의 존재 증명**이지 성능 주장이 아니다. 절대 성능을 근거로 이 라인의 유망함을 말하는 데 이 논문을 쓰는 것은 오용이다. 그리고 sleep 단계를 개수와 순서까지 모사하려는 LLM 설계에 대해 이 논문은 순서의 필요성을 지지하지 않는다. §08.2에서 오프라인 위상의 **개수**를 판별기로 쓴 것은 은유가 실제로 이송되었는지를 재는 지표이지, 개수와 순서가 성능을 낳는다는 주장이 아니다.
 
 비용은 다시 비어 있다. PAD는 FLOPs·GPU 시간·wall-clock·메모리 사용량을 어느 것도 보고하지 않는다. $C_{\text{cap}}$은 구조적으로 **2슬롯**으로 고정되고 보존 기간은 정확히 한 사이클이다 — `Z_old ← Z`가 매 사이클 덮어쓴다 [PAD Algorithm 1]. 누적되는 것은 아무것도 없다. $\rho$에 가장 가까운 관측은 방향성뿐이다: NREM이 없는 조건에서 "linear separability tends to decrease after many training epochs" [PAD Appendix 1, 'Linear classification performance'] — 즉 오프라인 위상 하나를 빼면 반복 라운드가 성능을 **깎기 시작한다**.
 
@@ -150,7 +150,9 @@ REM을 제거하면 두 데이터셋 모두 크게 무너진다(58.25 → 46.00,
 
 **은유의 이송 한계**란, 생물학적 sleep 서술에서 계산 시스템으로 실제로 옮겨지는 구조적 주장과, 이름만 옮겨지고 근거는 남겨진 부분 사이의 경계를 말한다. 이 절이 이 장의 결론이다.
 
-먼저 무엇이 이송되는지 정리한다. 08.3과 08.4가 지지하는 것은 다음 네 문장이며, 각각 **적어도 하나의 계산 모델에서 실증되었다**.
+먼저 무엇이 이송되는지 정리한다. §08.3과 §08.4가 지지하는 것은 다음 네 문장이며, 각각 **적어도 하나의 계산 모델에서 실증되었다**.
+
+표 8-4. 생물학 두 편에서 이송 가능한 구조적 주장.
 
 | 이송되는 구조적 주장 | 근거 |
 |---|---|
@@ -159,21 +161,13 @@ REM을 제거하면 두 데이터셋 모두 크게 무너진다(58.25 → 46.00,
 | 오프라인 위상의 가치는 "오프라인"이라는 스케줄이 아니라 **거기서 무엇을 생성하는가**에서 나온다. 단 PAD에서 결정적인 성분은 기억의 혼합이 아니라 자발 활동의 주입이다 | PAD Appendix 1—table 1 (w/o memory mix 53.87 vs PAD 58.25) + Appendix 1—figure 4(혼합 유무는 차이 없음) |
 | 오프라인 위상이 하나가 아니라 목적함수가 다른 둘일 때 서로 다른 성질(정확도 / 섭동 견고성)이 갈라져 나온다 | PAD Results, L534-577; Appendix 1—table 1 |
 
-표 8-4. 생물학 두 편에서 이송 가능한 구조적 주장.
-
 셋째 행은 이 표에서 유일하게 자기 근거와 긴장 관계에 있으므로 그 자리에서 긴장을 밝힌다. 이 행이 이송하는 주장은 PAD의 절제 결과(w/o memory mix 53.87 vs PAD 58.25)에서 나오는데, 같은 저자가 통제에서 "we do not observe significant differences between using a combination of episodic memories with spontaneous activity or only using spontaneous activity"라고 보고한다 [PAD Discussion, L1034-1036; Appendix 1—figure 4].
 
 > **[평가]** 두 결과를 함께 놓으면 이송되는 것은 **"오프라인에서 무엇을 생성하는가가 중요하다"의 약한 형태**뿐이다 — 생성물이 자발 활동으로 넓게 퍼져야 한다는 것까지다. 논문 제목이 가리키는 강한 형태(**혼합된 에피소드로부터의** dreaming)는 저자 자신의 통제에서 효과를 보이지 않았으므로 이송되지 않는다. 표 8-4의 나머지 세 행과 달리 이 행은 그 절단선을 달고서만 인용할 수 있다.
 
 이송되지 않는 것은 더 길다. PLOS 모델에는 **loss도 gradient도 optimizer도 backward pass도 없다** — 갱신은 국소 eligibility trace를 낀 Hebbian 곱과 열 합을 고정하는 정규화 사영이고, 학습률 $\eta_\Theta$는 독립된 존재조차 아니다 [PLOS Sleep Methods: Synaptic plasticity, L861-963]. 그 기제는 transformer가 갖지 않은 장치에 의존한다: spike timing이라는 상관 신호, 뉴런별 목표 발화율 항상성, 열 합을 보존하는 heterosynaptic 정규화, 균형 잡힌 전방 억제. 논문이 sleep의 우위를 설명할 때 기대는 것이 바로 이 정규화 제약이다 [L509-517]. 제약을 빼면 그 설명에는 대체물이 없다. 규모도 이송되지 않는다 — 연속적으로 가소적인 시냅스 6272개, 과제 2개, 밴드 0.20이다. PAD는 gradient를 쓰지만 언어도 토큰도 attention도 없고, 저장은 2슬롯이며, 두 논문 모두 **replay·dream의 내용이 의미상 옳은지를 한 번도 검사하지 않는다**. LLM에서 이 검사 누락에 대응하는 실패 — 유창하지만 거짓인 생성물로 $\Theta$를 갱신하는 것 — 이 Θ-경로의 중심 위험이며(→ ch06), 생물학 쪽 두 편은 그것에 대해 아무 말도 하지 않는다.
 
-여기서 이 책이 서술 대상으로 삼는 사실을 못 박는다. **E-경로의 창시 논문은 제목에 sleep을 빌려 쓰면서 생물학·CLS 문헌을 한 편도 인용하지 않는다.** `Sleep-time Compute`(2504.13171)의 참고문헌은 22편이고 [Letta STC References, pp.13-15] 그 안에 McClelland도, hippocampal replay도, sleep consolidation 신경과학도, dreaming 문헌도, EWC/replay 계열도 없다. 본문은 sleep이라는 단어를 170회 쓰지만(vendored 원문 전문, 대소문자 무시 계수) 그 단어를 도입하는 문장은 순전히 운영적이다: "inference is done between interactions with the model while it would otherwise be idle in sleep-time" [Letta STC §1]. **여기서 sleep은 consolidation이 아니라 유휴를 뜻한다.**
-
-대조가 선명하다. Θ-경로의 `Language Models Need Sleep`(2606.03979)은 §2 한 절 전체를 SWS/REM 분업과 hippocampus–neocortex 대화에 쓰고, synaptic homeostasis와 systems consolidation을 각각 인용과 함께 세운 뒤 자기 기제를 그 위에 얹는다 [LM Need Sleep §2]. 같은 단어를 쓰는 두 논문 중 하나는 생물학을 논증에 넣었고 다른 하나는 이름만 가져왔다.
-
-> **[평가]** 이 차이를 완곡하게 처리하지 않는다. 이름이 같다는 것은 **공유된 이론적 약속이 아니다.** `Sleep-time Compute`에 생물학 인용이 없는 것은 연대가 강제한 침묵이 아니다 — CLS는 1995년, PLOS는 2022년, PAD는 2022년이고 이 논문은 2025년이다. 선택된 침묵이다. 그리고 그 선택은 정당하다: 이 논문이 하는 일은 질의 전에 문맥에 대해 추론을 미리 돌려 텍스트를 만들어 두는 것이고, 여기에 CLS의 두 시스템 논증은 필요하지 않다. **결함은 인용의 부재가 아니라 이름의 재사용이다.** 서로 다른 세 경로가 같은 단어를 쓰기 때문에 독자는 그것들이 같은 가설의 변형이라고 읽게 되고, 이 책이 판별식을 따로 세워야 하는 이유가 정확히 그것이다(→ ch11).
-
-반대 방향의 침묵도 기록하되 등급을 구분한다. PLOS Sleep과 PAD는 E-경로도 W-경로도 인용하지 않는다. 그러나 두 편 모두 2022년 논문이고 이 책 corpus의 E-경로 논문은 전부 2023년 이후다. **이쪽 침묵은 연대가 강제한 것이지 선택된 것이 아니다.** 두 종류를 섞어 세면 침묵 지도가 무의미해진다 — 이 책은 연대가 가능하게 한 인용이 실제로 이루어졌는지만 발견으로 취급한다(→ ch11, ch27). 그 기준을 적용하면 이 장의 두 생물학 논문은 무죄이고, `Sleep-time Compute`은 그렇지 않다.
+이송의 반대편, 즉 이름만 옮겨 간 쪽의 표본은 E-경로의 창시 논문이다. `Sleep-time Compute`(2504.13171)은 sleep이라는 단어를 170회 쓰지만(vendored 원문 전문, 대소문자 무시 계수) 그 단어를 도입하는 문장은 순전히 운영적이다: "inference is done between interactions with the model while it would otherwise be idle in sleep-time" [Letta STC §1]. **여기서 sleep은 consolidation이 아니라 유휴를 뜻한다.** 반대쪽 끝에는 Θ-경로의 `Language Models Need Sleep`(2606.03979)이 있다 — 한 절 전체를 SWS/REM 분업과 hippocampus–neocortex 대화에 쓰고 자기 기제를 그 위에 얹는다 [LM Need Sleep §2]. 두 논문의 참고문헌을 전수 대조해 어느 침묵이 연대가 강제한 것이고 어느 것이 선택된 것인지 등급을 매기는 일은 이 장의 몫이 아니다 — 그 판정은 생물학 두 편을 정면으로 재독하는 ch23이 소유한다(→ ch23 §23.8).
 
 > **[해설]** Rosetta로 옮기면 차이가 즉시 드러난다. `Sleep-time Compute`의 오프라인 위상은 **warm-up 또는 사전 컴파일**과 같은 자리에 있다 — 유휴 시간에 미리 해 두고, 배포 아티팩트는 그대로다. 반면 CLS·PLOS·PAD가 말하는 consolidation은 **모델 재배포 1회**와 같은 자리에 있다 — 끝나고 나면 서빙되는 가중치가 다른 것이 된다. 이 둘은 상각 구조도, 배칭 가능성도, 롤백 절차도 같지 않다. 앞의 것은 캐시 무효화 문제이고 뒤의 것은 배포 문제다. 같은 단어 하나가 이 구분을 덮고 있다.
 
@@ -182,6 +176,8 @@ REM을 제거하면 두 데이터셋 모두 크게 무너진다(58.25 → 46.00,
 ## (state, update, cost) 정리
 
 이 장의 개념을 세 층 프레임에 배치한다. 비용 칸은 **논문이 실제로 보고한 것만** 적는다.
+
+표 8-5. 이 장의 개념과 세 층 프레임의 대응.
 
 | 개념 | 이 책의 층 | 갱신식 | 시간척도 | 비용에 대해 알려진 것 |
 |---|---|---|---|---|
@@ -196,8 +192,6 @@ REM을 제거하면 두 데이터셋 모두 크게 무너진다(58.25 → 46.00,
 | PAD NREM | $\Theta^{\mathrm{enc}}$ | (U-$\Theta$), $\mathcal{R}_k$ = 저장 latent + 가림 | 사이클 $k$ | 논문에 없음 |
 | PAD REM | $\Theta^{\mathrm{disc}}$ 하강 / $\Theta^{\mathrm{gen}}$ **상승** | (U-$\Theta$), 부호 반전 | 사이클 $k$ | 논문에 없음 |
 
-표 8-5. 이 장의 개념과 세 층 프레임의 대응.
-
 두 가지가 이 표에서 바로 읽힌다. 첫째, 이 장의 개념 중 $W$층에 놓이는 것이 **하나도 없다.** 생물학 쪽 두 모델 모두 fast weights를 갖지 않는다 — 질의 시점에 움직이는 상태가 없고, 오프라인에서 번 것은 전부 $\Theta$에 흡수된다. W-경로는 생물학에서 오지 않았다(→ ch17). 둘째, 비용 칸의 대부분이 "논문에 없음"이다. **이 라인의 생물학적 뿌리는 비용 회계를 하나도 물려주지 않았다.** 식 (A)의 어느 항도 이 장의 논문들에서 조달할 수 없다.
 
 ---
@@ -208,14 +202,14 @@ PLOS Sleep의 네 조건을 손으로 다시 계산해, "sleep이 interleaving�
 
 **1단계 — 밴드 정규화.** 이 과제의 chance는 0.50이고 단일 과제 천장은 Task 1이 0.70, Task 2가 0.69다 [PLOS Sleep Results, L166-167, L228-229, L276]. 따라서 보호 대상 밴드는 각각 0.20과 0.19다. 정규화 점수를 $g(x) = (x - 0.50)/(\text{천장} - 0.50)$으로 두면 $g=1$이 "단일 과제 학습과 같음", $g=0$이 "chance"다.
 
+표 8-6. 밴드 정규화 점수 — 표 8-1과 S6의 논문 수치를 입력으로 이 책이 계산한 값이며, 논문이 보고한 값이 아니다.
+
 | 조건 | Task 1 $g$ | Task 2 $g$ | 합 |
 |---|---|---|---|
 | Sequential | $0.02/0.20 = 0.10$ | $0.19/0.19 = 1.00$ | 1.10 |
 | Interleaved$_{T1,T2}$ | $0.18/0.20 = 0.90$ | $0.15/0.19 = 0.79$ | 1.69 |
 | Interleaved$_{S,T2}$ | $0.20/0.20 = 1.00$ | $0.18/0.19 = 0.95$ | 1.95 |
 | Freeze 5% | $0.15/0.20 = 0.75$ | $0.11/0.19 = 0.58$ | 1.33 |
-
-표 8-6. 밴드 정규화 점수 — 표 8-1과 S6의 논문 수치를 입력으로 이 책이 계산한 값이며, 논문이 보고한 값이 아니다.
 
 Sequential은 옛 과제 밴드의 90%를 잃는다. sleep은 0%를 잃는다. freezing은 두 축을 맞바꿔 1.33에 머문다.
 
@@ -238,7 +232,7 @@ Sequential은 옛 과제 밴드의 90%를 잃는다. sleep은 0%를 잃는다. f
 - 같은 논문에서 데이터를 저장하는 고전 interleaving은 0.68/0.65로 sleep의 0.70/0.68과 표준편차 안에서 같고, 논문은 우위를 **실증이 아니라 이론적 근거**로 돌린다. 이 논문이 실증한 것은 정확도 우위가 아니라 저장의 제거다.
 - PAD는 오프라인의 가치가 스케줄이 아니라 **생성물**에 있음을 보인다. REM을 빼면 CIFAR-10 선형 분리도가 58.25에서 46.00으로 무너진다. 다만 저자 자신의 통제에서 기억의 **혼합 자체는 필요하지 않고**(자발 활동만으로도 차이 없음), sleep 단계의 **순서도 무관하다**.
 - 두 생물학 논문 모두 검정 이름도 p-값도 없이 "유의하게"를 쓰고, 계산 비용을 어느 형태로도 보고하지 않는다. PAD의 절제 대조군은 저자가 손본 상태로 비교되고, 표현 품질 지표는 linear readout 하나뿐이며 CIFAR-10 절대 성능은 약 59%다 — 성능 근거로 인용하면 오용이다.
-- E-경로의 창시 논문은 sleep을 170회 쓰면서 생물학·CLS 문헌을 한 편도 인용하지 않고, 그 단어를 consolidation이 아니라 **유휴**의 뜻으로 도입한다. 이름의 공유는 이론의 공유가 아니다.
+- E-경로의 창시 논문은 sleep을 170회 쓰면서 그 단어를 consolidation이 아니라 **유휴**의 뜻으로 도입한다. 이름의 공유는 이론의 공유가 아니며, 두 방향 침묵의 등급 판정은 ch23이 소유한다.
 
 ## 자가 점검 체크리스트
 

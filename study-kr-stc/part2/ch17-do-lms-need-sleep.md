@@ -60,9 +60,11 @@ ch16은 문맥을 파라미터 모양으로 접는 데 성공했다. Generative 
 | $D$ — 블록 수 [Eq. 4–5] | $L_{\mathrm{layer}}$ | 충돌 | $D$는 Atlas의 lifted 차원에 예약되어 있다(→ NM ch14) |
 | $t$ — Rule-110 rollout 단계 수 ($4,8,\dots,32$) [§4, §6.1] | $n_{\mathrm{roll}}$ (장-국소) | 정면 충돌 | 원문이 **같은 문서 안에서** $t$를 토큰 첨자와 rollout 깊이 양쪽으로 쓴다. 예약된 $t$는 토큰 첨자다 |
 | $k$ — Depo hop 수 ($1,2,4,8,16$) [§3.2, §6.2] | $n_{\mathrm{hop}}$ (장-국소) | 정면 충돌 | 예약된 $k$는 sleep 라운드 첨자, $k_t$는 key 벡터다 |
-| $h$ — Algorithm 1의 은닉 활성값 | $H^{(n,j)}\in\mathbb{R}^{C\times d}$ (장-국소) | 충돌 | 예약된 $h_t$는 outer 2차 moment다. 겸사겸사 pass 첨자 $j$를 명시하게 된다 |
-| $m,\ m_c$ — loss mask [Alg. 1] | $\mu,\ \mu_n$ (장-국소) | 충돌 | 예약된 $m_t$는 outer 1차 moment다 |
-| $c$ — 토큰 chunk [Alg. 1] | $c_n$ (첨자 필수, 장-국소) | 약한 충돌 | 예약된 맨 $c$는 Atlas Omega-rule의 window 길이다 |
+| $n$ — chunk·segment 첨자 | $j$ | 정면 충돌 | $n$은 저장 항목 수 전역 예약이다 |
+| (원문에 없음) — sleep pass 첨자 | $p$ (장-국소 신설) | 신설 | chunk 첨자가 $j$로 확정되면서 pass 첨자가 따로 필요해졌다. $k$(sleep 라운드)·$k_t$(key 벡터)·$s$(SGD step)와 겹치지 않는 글자를 골랐다 |
+| $h$ — Algorithm 1의 은닉 활성값 | $H^{(j,p)}\in\mathbb{R}^{C\times d}$ (장-국소) | 충돌 | 예약된 $h_t$는 outer 2차 moment다. 겸사겸사 pass 첨자 $p$를 명시하게 된다 |
+| $m,\ m_c$ — loss mask [Alg. 1] | $\mu,\ \mu_j$ (장-국소) | 충돌 | 예약된 $m_t$는 outer 1차 moment다 |
+| $c$ — 토큰 chunk [Alg. 1] | $c_j$ (첨자 필수, 장-국소) | 약한 충돌 | 예약된 맨 $c$는 Atlas Omega-rule의 window 길이다 |
 | $o_t$ — layer 출력 [Eq. 2–3] | $y_t$ | 없음 | 통상의 통일 개명 |
 | $\mathcal{L}$ — MaskedCE [Alg. 1] | $\mathcal{L}$ (그대로) | 없음 | 원문이 outer loss에 $\mathcal{L}$을 써서 통일 규약과 우연히 일치한다. TNT와는 반대다(→ NM ch15) |
 | $N$ — sleep pass 수 | $N$ — **이 장이 신설하는 예약 기호** | 신설 | Titans의 $N_p$(persistent memory 토큰)와도, $N_q$(문맥을 공유하는 질의 수)와도 다르다 |
@@ -88,29 +90,29 @@ $$
 
 > "our method uses a learned recurrent forward pass as the memory-update rule, allowing more flexible forms of consolidation that need not correspond to a one-step gradient descent on a fixed scalar objective." [Do LMs Need Sleep? §2]
 
-**그런데 논문이 보여 주는 식은 논문이 돌린 식이 아니다.** 바로 다음 문장이 그렇게 말한다 — "In our experiments we use Gated Delta Networks (GDNs), which add a delta-rule correction to this update; however, the specific update rule does not matter for our discussion." [Do LMs Need Sleep? §3.1] 실제로 돌아간 규칙은 delta 보정이 붙은 형태이고 논문은 그것을 한 번도 전개하지 않는다. §6.3에서는 세 번째 규칙이 등장한다 — Jet layer는 "dynamic convolution instead of the fixed convolution in GDN"으로만 서술된다 [Do LMs Need Sleep? §6.2]. 세 규칙 중 어느 것이 일을 하는지 가르는 ablation은 없다.
+**그런데 논문이 보여 주는 식은 논문이 돌린 식이 아니다.** 바로 다음 문장이 그렇게 말한다 — "In our experiments we use Gated Delta Networks (GDNs), which add a delta-rule correction to this update; however, the specific update rule does not matter for our discussion." [Do LMs Need Sleep? §3.1] 실제로 돌아간 규칙은 delta 보정이 붙은 형태이고 논문은 그것을 한 번도 전개하지 않는다. [Do LMs Need Sleep? §6.3]에서는 세 번째 규칙이 등장한다 — Jet layer는 "dynamic convolution instead of the fixed convolution in GDN"으로만 서술된다 [Do LMs Need Sleep? §6.2]. 세 규칙 중 어느 것이 일을 하는지 가르는 ablation은 없다.
 
 ### 17.3.3 이 장이 소유하는 두 정의
 
 > **정의.** **KV cache를 비우기 전 offline recurrence로 fast weight에 접는 기제**란, eviction 경계에서 KV cache를 버리기 **직전**, 같은 chunk의 토큰에 대해 블록 스택을 $N$번 더 통과시켜 각 SSM 블록의 fast weight $W^{(\ell)}$만 갱신하고, 그 과정에서 정제된 은닉 특징 $H$와 재구축된 KV cache는 경계에서 폐기하여 **오직 $W$만 경계를 넘게 하는** 절차를 말한다. 세 요소가 모두 필요하다 — 경계 직전이라는 시각, 같은 토큰의 반복 흡수, 그리고 $W$ 이외 전부의 폐기. 하나라도 빠지면 다른 기제다. 특징을 함께 넘기면 depth-recurrent 예측 모델이고, 경계 이후에 돌리면 문맥 재적재이며, 한 번만 돌리면 통상의 SSM이다.
 
-index를 명시해 쓰면 이렇다. chunk 첨자를 $n$, pass 첨자를 $j$로 둔다.
+index를 명시해 쓰면 이렇다. chunk 첨자를 $j$, pass 첨자를 $p$로 둔다.
 
 $$
 \begin{aligned}
 W^{(0,N)} &= 0,\\
-H^{(n,0)} &= \mathrm{Embed}(c_n),
-\qquad W^{(n,0)} = W^{(n-1,N)},\\
-\big(H^{(n,j)},\,W^{(n,j)}\big) &= \mathrm{Blocks}\big(H^{(n,j-1)},\,W^{(n,j-1)};\,\Theta\big),
-\qquad j=1,\dots,N,\\
-&\text{그 뒤 } H^{(n,N)}\text{과 KV cache를 폐기. } W^{(n,N)}\text{만 경계를 넘는다.}
+H^{(j,0)} &= \mathrm{Embed}(c_j),
+\qquad W^{(j,0)} = W^{(j-1,N)},\\
+\big(H^{(j,p)},\,W^{(j,p)}\big) &= \mathrm{Blocks}\big(H^{(j,p-1)},\,W^{(j,p-1)};\,\Theta\big),
+\qquad p=1,\dots,N,\\
+&\text{그 뒤 } H^{(j,N)}\text{과 KV cache를 폐기. } W^{(j,N)}\text{만 경계를 넘는다.}
 \end{aligned}
 \tag{17-2}
 $$
 
 식 (17-2)는 [Do LMs Need Sleep? Alg. 1, §5]의 의사코드를 첨자를 드러내 옮긴 것이다. 원문은 `for n = 1,…,N` 안에서 `h, S ← Blocks(h, S)`로만 쓰고 첨자를 적지 않는다. 그 의사코드가 지고 있고 산문이 말하지 않는 사실이 셋이다.
 
-1. **$W$는 pass 사이에 초기화되지 않는다.** pass $j$는 pass $j-1$이 끝낸 상태에서 시작하므로 같은 $C$개 토큰이 **누적으로** $N$번 접힌다.
+1. **$W$는 pass 사이에 초기화되지 않는다.** pass $p$는 pass $p-1$이 끝낸 상태에서 시작하므로 같은 $C$개 토큰이 **누적으로** $N$번 접힌다.
 2. **$H$는 chunk 안에서 pass를 건너 운반된다.** 그래서 pass마다 $(k_t,v_t)$가 달라진다. 그리고 경계에서 파괴된다.
 3. 따라서 chunk를 넘는 유일한 채널이 $W$다 — "Unlike prior depth-recurrent models where gradient flows through recursively refined feature vectors, the gradient flows through the refined fast weights because we discard the refined features after sleep." [Do LMs Need Sleep? §5]
 
@@ -118,21 +120,21 @@ $$
 
 $$
 \begin{aligned}
-k_t^{(j)} &= W_K\,\big[H^{(n,j-1)}\big]_{t,:},
+k_t^{(p)} &= W_K\,\big[H^{(j,p-1)}\big]_{t,:},
 \qquad
-v_t^{(j)} = W_V\,\big[H^{(n,j-1)}\big]_{t,:},\\
-W_t^{(n,j)} &= \alpha_t^{(j)}\,W_{t-1}^{(n,j)} \;+\; \eta_t^{(j)}\,v_t^{(j)}\big(k_t^{(j)}\big)^{\top},
+v_t^{(p)} = W_V\,\big[H^{(j,p-1)}\big]_{t,:},\\
+W_t^{(j,p)} &= \alpha_t^{(p)}\,W_{t-1}^{(j,p)} \;+\; \eta_t^{(p)}\,v_t^{(p)}\big(k_t^{(p)}\big)^{\top},
 \qquad
-W_{\xi(t,C)}^{(n,j)} = W^{(n,j-1)}.
+W_{\xi(t,C)}^{(j,p)} = W^{(j,p-1)}.
 \end{aligned}
 \tag{17-3}
 $$
 
-식 (17-3)이 이 장의 중심 문장을 담는다. pass $j$의 게이트 $\alpha_t^{(j)},\eta_t^{(j)}$는 $W^{(n,j-1)}$이 만들어 낸 특징의 함수다. 즉 상태 → 특징 → 게이트 → 상태의 닫힌 고리를 **입력 토큰을 얼려 둔 채** $N$번 도는 것이다.
+식 (17-3)이 이 장의 중심 문장을 담는다. pass $p$의 게이트 $\alpha_t^{(p)},\eta_t^{(p)}$는 $W^{(j,p-1)}$이 만들어 낸 특징의 함수다. 즉 상태 → 특징 → 게이트 → 상태의 닫힌 고리를 **입력 토큰을 얼려 둔 채** $N$번 도는 것이다.
 
 > **정의.** **sleep 깊이 $N$을 늘린다**는 것은, 같은 chunk를 $W$에 $N$번 누적해 쓰되 매 pass의 $(k_t,v_t)$를 직전 pass의 $W$가 만든 특징에서 다시 뽑는다는 뜻이다. 그러므로 이것은 "(U-W) step을 더 밟는 것"이 아니라 **(U-W)와 특징 정제 고정점 반복의 합성**이다. 늘어나는 것은 저장량이 아니라 evicted 문맥 위에서 수행 가능한 **계산의 깊이**이며, 고정된 스칼라 목적함수에 대한 $N$번의 하강이 아니다.
 
-이 정의가 왜 필요한지는 대조로 분명해진다. chunkwise-parallel 학습에서 한 chunk 안의 gradient는 전부 stale snapshot $W_{\xi(t,C)}$에서 평가된다(→ NM ch09). 여기서는 pass 내부의 재귀가 통상의 online SSM 재귀 그대로이고, snapshot 의미론이 **pass 수준으로 올라간다** — pass $j$는 chunk 내용이 이미 $j-1$번 쓰인 상태에서 출발한다.
+이 정의가 왜 필요한지는 대조로 분명해진다. chunkwise-parallel 학습에서 한 chunk 안의 gradient는 전부 stale snapshot $W_{\xi(t,C)}$에서 평가된다(→ NM ch09). 여기서는 pass 내부의 재귀가 통상의 online SSM 재귀 그대로이고, snapshot 의미론이 **pass 수준으로 올라간다** — pass $p$는 chunk 내용이 이미 $p-1$번 쓰인 상태에서 출발한다.
 
 마지막으로 두 가지를 못 박는다. $W_{\mathrm{init}}$은 meta-learn되지 않는다. 매 sequence에서 0으로 초기화된다 [Do LMs Need Sleep? Alg. 1]. Titans·TNT 계열이 지고 있던 학습된 초기 상태가 여기에는 없다(→ NM ch12, NM ch15). 그리고 sleep 중에 $\Theta$는 움직이지 않는다 — sleep은 forward pass다. "learned local rule"의 learned는 게이트 생산자와 투영 행렬이 **outer loop에서** 학습되었다는 뜻이지, test-time에 규칙이 학습된다는 뜻이 아니다.
 
@@ -145,9 +147,9 @@ $$
 | 객체 | 사는 곳 | outer loop 학습 | sleep에서 이동 | wake에서 이동 | 출처 |
 |---|---|---|---|---|---|
 | $\Theta$ — $W_Q,W_K,W_V$, MLP, normalization, 출력 투영, embedding | slow weights | 예. MaskedCE에 대해 Muon(+AdamW lr 5e-5)으로 전체 그래프 관통 | 아니오 — sleep은 forward pass다 | 아니오 | Alg. 1; §6 |
-| $\alpha_t,\eta_t$의 게이트 생산자 ("learned local rule") | slow weights ($\subset\Theta$) | 예. 규칙이 "학습된다"는 말의 유일한 의미 | 아니오. 생산자는 고정이고 **출력** $\alpha_t^{(j)},\eta_t^{(j)}$만 입력 특징을 따라 pass마다 달라진다 | 아니오 | §3.1 |
+| $\alpha_t,\eta_t$의 게이트 생산자 ("learned local rule") | slow weights ($\subset\Theta$) | 예. 규칙이 "학습된다"는 말의 유일한 의미 | 아니오. 생산자는 고정이고 **출력** $\alpha_t^{(p)},\eta_t^{(p)}$만 입력 특징을 따라 pass마다 달라진다 | 아니오 | §3.1 |
 | $W^{(\ell)}$ — SSM/GDN/Jet 블록당 fast weight 행렬 | fast weights | 저장량으로는 아니오. 학습 중 gradient가 **통과**할 뿐이며 초기값은 meta-learn이 아니라 0이다 | 예 — **sleep이 움직이는 유일한 객체.** chunk에 대한 $N$회 누적 sweep | 예 — 답 토큰을 처리하는 통상의 단일 pass 재귀도 $W$에 쓴다 | Alg. 1; §5 |
-| $H^{(n,j)}$ — sleep 내부의 정제된 은닉 특징 | 활성값(일시적) | 아니오(파라미터가 아니다) | 예 — $N$개 pass를 건너 운반 | 경계에서 **파괴** | Alg. 1; §5 |
+| $H^{(j,p)}$ — sleep 내부의 정제된 은닉 특징 | 활성값(일시적) | 아니오(파라미터가 아니다) | 예 — $N$개 pass를 건너 운반 | 경계에서 **파괴** | Alg. 1; §5 |
 | KV cache $K_t,V_t$ | 비모수 상태 | 아니오 | $N$개 pass마다 재구축된 뒤 비워짐 | hard eviction에서는 예측 chunk 시작 시 비어 있음. sliding window에서는 최근 $C-1$ 토큰 유지 | §5; §6.4 |
 | $N$ — sleep 깊이 | 하이퍼파라미터 | 아니오 — run마다 고정. $N$ 값마다 **별개로 학습된 모델**이다 | 아니오 — 적응적이지 않고 halting 기제가 없다 | 아니오 | §6.1; §6.3 |
 | $C$ — eviction 창 | 하이퍼파라미터 | 아니오 — 과제마다 고정($24$ / $75$ / $2000$ / $512$) | 아니오 | 아니오 | §4; §6.2; §6.3; §6.4 |
@@ -156,7 +158,7 @@ $$
 
 표에서 읽어야 할 행은 $W^{(\ell)}$ 행이다. **같은 상태가 두 시계에서 갱신된다.** sleep에서는 eviction 경계마다 $N$번 누적으로, wake에서는 답 토큰을 처리하며 토큰마다 한 번씩이다. 두 시계가 같은 갱신 규칙 (17-1)을 쓰고 같은 $\Theta$가 만든 게이트를 쓴다. 이 논문의 sleep이 별도의 학습 절차가 아니라 **같은 연산자의 반복 적용**인 이유가 여기 있다.
 
-언제 자는지는 누가 정하는가. 학습 시점에는 **loss mask가 정한다.** Algorithm 1은 chunk의 mask $\mu_n$이 전부 0이면 $N$번 loop를 돌고, 그렇지 않으면 한 pass만 돌고 손실을 잰다 [Do LMs Need Sleep? Alg. 1]. 즉 sleep/wake 분할이 런타임 정책이 아니라 **라벨 배치**에서 나온다. 서빙에서 그 분할을 무엇이 정할지는 논문이 다루지 않는다.
+언제 자는지는 누가 정하는가. 학습 시점에는 **loss mask가 정한다.** Algorithm 1은 chunk의 mask $\mu_j$가 전부 0이면 $N$번 loop를 돌고, 그렇지 않으면 한 pass만 돌고 손실을 잰다 [Do LMs Need Sleep? Alg. 1]. 즉 sleep/wake 분할이 런타임 정책이 아니라 **라벨 배치**에서 나온다. 서빙에서 그 분할을 무엇이 정할지는 논문이 다루지 않는다.
 
 ### 17.4.1 판별식을 정면으로 통과한다는 것
 
@@ -207,7 +209,7 @@ $L_w$가 가장 중요한 칸이다.
 
 첫째, **세 설정이 모두 합성이고 전부 저자가 만들었거나 재구성했다.** Rule-110 무대는 온전히 저자들의 구성이고, Depo는 Allen-Zhu의 과제이되 저자들이 다시 파라미터를 잡았으며, GSM-Infinite는 절차적 생성기라 저자들이 학습·평가 집합을 스스로 뽑았다 [Do LMs Need Sleep? §4, §6.2, §6.3]. 확립된 긴 문맥 벤치마크는 기각의 대상으로만 등장한다 — "Unlike retrieval-focused long-context tasks such as RULER [31]..." [Do LMs Need Sleep? §6.3]. 자연 텍스트 위의 결과가 없다.
 
-둘째, **learning rate 프로토콜이 양방향으로 비대칭인데 한 방향만 진술된다.** "We tune the Muon learning rate on the $N=1$ model, giving the no-loop baseline an advantage, and use the selected value, 2e-3, for all looped models." [Do LMs Need Sleep? §6] baseline에 이점을 준다는 서술은 정당하지만, 같은 문장이 **처리군은 한 번도 튜닝되지 않았다**는 뜻이기도 하다. AdamW lr은 탐색 없이 5e-5로 고정했고, §6.3의 Muon lr 1e-3은 선행 연구를 따랐을 뿐 튜닝하지 않았다 [Do LMs Need Sleep? §6]. loop 모델은 유효 깊이가 다르므로 $N=1$에서 고른 lr을 이식하는 것은 방향을 알 수 없는 교란이다.
+둘째, **learning rate 프로토콜이 양방향으로 비대칭인데 한 방향만 진술된다.** "We tune the Muon learning rate on the $N=1$ model, giving the no-loop baseline an advantage, and use the selected value, 2e-3, for all looped models." [Do LMs Need Sleep? §6] baseline에 이점을 준다는 서술은 정당하지만, 같은 문장이 **처리군은 한 번도 튜닝되지 않았다**는 뜻이기도 하다. AdamW lr은 탐색 없이 5e-5로 고정했고, [Do LMs Need Sleep? §6.3]의 Muon lr 1e-3은 선행 연구를 따랐을 뿐 튜닝하지 않았다 [Do LMs Need Sleep? §6]. loop 모델은 유효 깊이가 다르므로 $N=1$에서 고른 lr을 이식하는 것은 방향을 알 수 없는 교란이다.
 
 셋째, **시드가 하나다.** "For fair comparison, we fix random seeds ensuring that all runs use exactly the same data ordering." [Do LMs Need Sleep? §6] Fig. 2–6 어디에도 신뢰구간도 음영대도 반복 실행도 없다. batch 크기는 512(automaton)·128(Depo)·256(GSM-Infinite)이다.
 
@@ -229,7 +231,7 @@ Depo는 Allen-Zhu의 $n_{\mathrm{hop}}$-hop 지식 회수 과제다. cycle 하�
 
 **이 절은 정량치를 하나도 보고하지 않는다.** 정확도도, 최종 손실값도, 표도 없이 0–100k step의 시험 손실 곡선만 있다. 확보되는 결과는 계단 모양의 정성 진술이다 — "increasing the number of offline loops improves learning speed for queries that require 4 or more hops. The 1-loop model makes little progress on 4-hop and harder queries, and the 2-loop model similarly stalls on 8-hop and harder queries. Within our training budget, only the 4-loop model begins to improve on the hardest 16-hop task." [Do LMs Need Sleep? §6.2] 마지막 문장이 말하는 것은 16-hop이 풀렸다가 아니라 **움직이기 시작했다**이다.
 
-그리고 이 절에는 논문 내부 모순이 있다. §6의 실험 세부는 §6.2용으로 "10-layer 모델을 $d=512$로 처음부터 학습했다"고 적는데, Fig. 3의 캡션은 같은 결과를 "4-layer GDN-attention hybrid"의 것이라고 적는다 [Do LMs Need Sleep? §6, Fig. 3 캡션]. 어느 모델이 Fig. 3을 냈는지 독자가 판정할 수 없고, 확인할 부록이 논문에 없다.
+그리고 이 절에는 논문 내부 모순이 있다. [Do LMs Need Sleep? §6]의 실험 세부는 [Do LMs Need Sleep? §6.2]용으로 "10-layer 모델을 $d=512$로 처음부터 학습했다"고 적는데, Fig. 3의 캡션은 같은 결과를 "4-layer GDN-attention hybrid"의 것이라고 적는다 [Do LMs Need Sleep? §6, Fig. 3 캡션]. 어느 모델이 Fig. 3을 냈는지 독자가 판정할 수 없고, 확인할 부록이 논문에 없다.
 
 ### 17.6.4 GSM-Infinite — 실모델·실수치
 
@@ -248,7 +250,7 @@ Depo는 Allen-Zhu의 $n_{\mathrm{hop}}$-hop 지식 회수 과제다. cycle 하�
 | 〃 | 〃 | 6 | 0.251 | 0.320 ($N{=}4$) | 27% |
 | 〃 | 〃 | 8 | 0.116 | 0.137 ($N{=}4$) | 18% |
 
-*라벨은 전부 **상대** 개선이다. 절대 점수 차는 각각 7.0·3.7·19.6·6.2·30.9·8.7·6.9·2.1 백분점이다. 출처: [Do LMs Need Sleep? §6.3, §6.4, Fig. 4, Fig. 5].*
+*라벨은 전부 **상대** 개선이다. 절대 점수 차는 각각 7.0·3.7·19.6·6.2·30.9·8.7·6.9·2.1 백분점이다[본서 산술]. 출처: [Do LMs Need Sleep? §6.3, §6.4, Fig. 4, Fig. 5].*
 
 모델 두 개의 성격이 다르다. Jet-Nemotron 2B는 Qwen 2.5 1.5B에서 일부 attention layer를 Jet layer로 바꿔 만든 하이브리드이고, Ouro 1.4B는 원래 attention 전용 looped 모델이라 fast weight 기억을 주기 위해 MLP 없는 Jet layer 6개를 삽입했다(파라미터 10% 미만 증가) [Do LMs Need Sleep? §6.3]. Ouro의 이득이 큰 것에 대해 저자들은 "The gap is wider for Ouro, which may reflect its depth-recurrent pretraining"이라고만 적는다.
 
@@ -272,13 +274,13 @@ Depo는 Allen-Zhu의 $n_{\mathrm{hop}}$-hop 지식 회수 과제다. cycle 하�
 
 독자의 1번 질문에 대한 이 논문의 답은 **decode에서는 아무것도 바뀌지 않는다**이다. 그리고 그 답이 참인 방식이 곧 이 논문의 systems 공백이기도 하다.
 
-**wake 경로가 baseline과 커널 단위로 같다.** 답 토큰마다 표준 forward pass 한 번, 추가 loop 없음, chain-of-thought 토큰 없음이다 [Do LMs Need Sleep? §1, §4]. 따라서 토큰당 decode FLOPs도, decode가 끌어오는 가중치 트래픽도, 산술 강도도 $N=1$ 실행과 같다. 달라지는 것은 $W$의 **내용**뿐이다. $E$-경로가 회수 레코드로 prefill을 늘리고(→ ch14 §14.7) $\Theta$-경로가 배포 아티팩트를 바꾸는 것과 대비된다(→ ch19).
+**wake 경로가 baseline과 커널 단위로 같다.** 답 토큰마다 표준 forward pass 한 번, 추가 loop 없음, chain-of-thought 토큰 없음이다 [Do LMs Need Sleep? §1, §4]. 따라서 토큰당 decode FLOPs도, decode가 끌어오는 가중치 트래픽도, 산술 강도도 $N=1$ 실행과 같다[본서 추론]. 달라지는 것은 $W$의 **내용**뿐이다. $E$-경로가 회수 레코드로 prefill을 늘리고(→ ch14 §14.7) $\Theta$-경로가 배포 아티팩트를 바꾸는 것과 대비된다(→ ch19).
 
 **대신 eviction 경계마다 chunked prefill의 버스트가 붙는다.** 그 버스트는 안에서 성질이 아주 다른 두 부분으로 갈라진다.
 
 첫째, SSM 블록의 fast weight다. 고정 크기이고 $t$에 따라 자라지 않으므로 [Do LMs Need Sleep? §3.1], sleep 동안 이 상태는 $C$번이 아니라 $N\times C$번 read-modify-write된다. 작고 상주하는 상태에 대한 **대역폭 가벼운·계산 무거운** 버스트이며, 독자가 아는 KV cache 바운드 decode 레짐의 정반대 모양이다.
 
-둘째, 같은 loop 안의 attention 블록이다. pass마다 특징이 달라지므로 KV cache를 매 pass 다시 쌓아야 하고, 그러면 chunk에 대한 $O(C^2)$ attention 일이 $N$번 반복된다. $C=2000$에서 이것은 작은 재계산이 아니다.
+둘째, 같은 loop 안의 attention 블록이다. pass마다 특징이 달라지므로 KV cache를 매 pass 다시 쌓아야 하고, 그러면 chunk에 대한 $O(C^2)$ attention 일이 $N$번 반복된다[본서 추론]. $C=2000$에서 이것은 작은 재계산이 아니다.
 
 > **[해설]** 논문이 준 값으로 이 책이 산술만 해 두면 이렇다. Jet-Nemotron 설정은 28개 블록 중 가운데 14개만 loop하고 $N=6$까지 돈다 [Do LMs Need Sleep? §6.3]. 그러면 한 chunk의 consolidation 비용은 그 chunk를 평범하게 prefill하는 비용의 $1+(N-1)\cdot\frac{14}{28}=3.5$배다. 요청당 경계 수는 hard eviction GSM-Infinite에서 1–2개, sliding window에서 4–6개다(§17.5). 이 곱셈을 논문은 하지 않는다. 그리고 이 값은 이 책의 산술이므로 표 17-3의 $B_s$ 칸은 여전히 "논문에 없음"으로 남는다.
 
@@ -340,7 +342,7 @@ Depo는 Allen-Zhu의 $n_{\mathrm{hop}}$-hop 지식 회수 과제다. cycle 하�
 
 - `Do LMs Need Sleep?`(2605.26099)은 상속받은 open question 없이 시작한다. 이 장의 bridge-in은 상속 진술이 아니라 **상속된 오진의 교정**이다 — attention-SSM 하이브리드의 실패 원인을 용량에서 계산으로 옮기고, 선행 연구를 명시적 반박의 형태로 인용한다 [§1, §2].
 - 기제는 (U-W) 하나이며 두 군데가 표준형과 다르다. gradient 자리에 게이트된 outer product가 들어가고 momentum이 없으며, (U-W)에 없는 pass 첨자 $N$이 추가된다. 같은 chunk를 $W$에 $N$번 누적해 쓰되 매 pass의 $(k_t,v_t)$를 직전 pass의 $W$가 만든 특징에서 다시 뽑는다 — (U-W)와 특징 정제 고정점 반복의 합성이다. 표기 충돌은 corpus에서 가장 심하다: 원문의 $S_t$가 이 책의 $W_t$, $\beta_t$가 $\eta_t$이고, 원문의 $L$과 $T$가 **이름을 맞바꾼다**(표 17-1).
-- **논문이 보여 주는 식은 논문이 돌린 식이 아니다.** Eq. 3은 Mamba-2 형태이고 실험은 GDN이며 §6.3에는 Jet layer가 또 다르게 등장한다. 국소 규칙 ablation은 없고, 논문 자신이 "the specific update rule does not matter"라고 범위 밖으로 선언한다 [§3.1].
+- **논문이 보여 주는 식은 논문이 돌린 식이 아니다.** Eq. 3은 Mamba-2 형태이고 실험은 GDN이며 [Do LMs Need Sleep? §6.3]에는 Jet layer가 또 다르게 등장한다. 국소 규칙 ablation은 없고, 논문 자신이 "the specific update rule does not matter"라고 범위 밖으로 선언한다 [Do LMs Need Sleep? §3.1].
 - 층은 $W$ 하나다. $\Theta$는 outer loop에서만 움직이고 $E$는 존재하지 않으며, 학습 시점의 sleep/wake 분할은 런타임 정책이 아니라 **loss mask**가 정한다 [Alg. 1]. 판별식 통과는 **Depo 설정이 진다** — 거기서만 consolidation이 질의보다 앞서고 $N_q=10$이 구조로 정해진다. 헤드라인인 GSM-Infinite는 질문을 문맥 앞에 놓아 consolidation이 질의 조건부가 되고, 그 대가로 $N_q=1$에서 식 (A)가 $C_{\text{avg}}=C_{\text{wake}}+C_{\text{sleep}}$으로 붕괴한다.
 - 비용 4종이 **전부 논문에 없다.** $B_s$는 구조로만, $L_w$는 아키텍처 보장으로만 있고, $C_{\text{cap}}$은 상태 차원·head 수·dtype이 없어 유도조차 불가능하며, $\rho$는 관측될 레짐(경계 1–6개, sequence마다 0 초기화)에 논문이 들어가지 않는다. 헤드라인 지연 주장은 프로토콜 구성상 참이지 측정된 값이 아니다.
 - 실험은 세 설정 모두 합성이고 저자 제작·재구성이며, 시드 하나에 오차막대가 없고, learning rate는 $N=1$에서만 튜닝되었고, **계산량을 맞춘 baseline이 없다.** 캐시를 유지하도록 허용한 full-attention baseline은 어느 과제·어느 스케일에서도 실행되지 않았다.
@@ -350,7 +352,7 @@ Depo는 Allen-Zhu의 $n_{\mathrm{hop}}$-hop 지식 회수 과제다. cycle 하�
 ## 자가 점검 체크리스트
 
 - [ ] 이 장의 bridge-in이 왜 상속 진술이 아니라 오진의 교정인지 말하고, 노트가 "none-stated"인 논문에 계보를 지어내지 않는 것이 왜 이 책의 규율인지 설명할 수 있는가.
-- [ ] 식 (17-3)을 표준형 (U-W)와 항별로 대조해 다른 곳 둘(momentum 부재, gradient 자리의 outer product)과 **추가된 것 하나**(pass 첨자 $j$)를 지목하고, 그것이 왜 "(U-W) step을 더 밟는 것"과 다른지 말할 수 있는가.
+- [ ] 식 (17-3)을 표준형 (U-W)와 항별로 대조해 다른 곳 둘(momentum 부재, gradient 자리의 outer product)과 **추가된 것 하나**(pass 첨자 $p$)를 지목하고, 그것이 왜 "(U-W) step을 더 밟는 것"과 다른지 말할 수 있는가.
 - [ ] 표 17-1에서 $L$과 $T$가 맞바뀌는 행을 짚고, 본문의 "$C=2000$, $L\in[2000,3300]$"이 원문에서는 무엇으로 쓰여 있는지 말할 수 있는가.
 - [ ] 판별식 네 조건을 Depo 설정과 GSM-Infinite 설정에 각각 대고, 어느 조건이 어느 설정에서 왜 약해지는지, 그 약화가 식 (A)에서 무엇을 없애는지 말할 수 있는가.
 - [ ] 표 17-3의 네 칸이 각각 **어떤 종류로** 비어 있는지 구분할 수 있는가(수치 부재 / 측정 부재 / 유도 불가 / 레짐 미진입). 그리고 이 논문에 대해 "효율적"이라고 쓸 수 없는 이유를 한 문장으로 말할 수 있는가.

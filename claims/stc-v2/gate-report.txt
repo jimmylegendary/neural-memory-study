@@ -1,0 +1,322 @@
+################################################################################
+# SUPERSEDED 2026-08-06 by claims/stc-v2/verification.md.
+# This report describes the 89-claim MERGE round. The bundle now holds 88 claims:
+# p1_stc_x1_regime_ordering_is_the_load_bearing_result was DELETED (its asserted
+# regime ordering GSM >> AIME is contradicted by X1's own swept values in all 8
+# non-null cells), and two claims were corrected. The "89/89 PASS" below is still
+# a true record of that round — and is exactly why it is not sufficient evidence:
+# the veridraft gate is structural (it counts admissible evidence, it never reads
+# a statement against its result.json), so a falsified claim passed it.
+# Current status: 88/88 PASS, verification.md §6.
+################################################################################
+================================================================================
+ veridraft gate report — bundle_id: sleep-time-compute-v2
+ bundle : /home/jimmy/repos/neural-memory-study/claims/stc-v2/bundle.json
+ merged : claims/stc-v2/p1-claims.json (29 P1) + claims/stc-v2/p2-claims.json (60 P2)
+ schema : copied from claims/bundle.json (bundle_id/boundary/provenance_manifest/claims/results)
+ tool   : veridraft @ /home/jimmy/repos/veridraft, gate_profile=systems-paper
+          (no CLI on PATH — invoked as a module with PYTHONPATH)
+ host   : jimmy-SER   generated: 2026-08-06T08:15:07Z
+================================================================================
+
+RESULT: GATE RAN. exit 0. 89/89 claims PASS, blocked: (none).
+        Self-verification also ran: exit 0, 1096 assertions, 0 failures.
+
+--------------------------------------------------------------------------------
+0. TOOL DISCOVERY
+--------------------------------------------------------------------------------
+$ cd ~/repos/veridraft && python3 -m veridraft.cli --help
+usage: veridraft [-h] [--config CONFIG] [--data-dir DATA_DIR]
+                 {import-bundle,gate,assemble,draft,patentability,patent-prior-art,patent-preflight,patent-idea,draft-patent,patent-review,review,publish,readiness,sign-off-readiness,status,events,reviews,venues,interlocks,release-interlock,adapters,run} ...
+
+Veridraft Paper & Patent Harness (v1 slice)
+
+positional arguments:
+  {import-bundle,gate,assemble,draft,patentability,patent-prior-art,patent-preflight,patent-idea,draft-patent,patent-review,review,publish,readiness,sign-off-readiness,status,events,reviews,venues,interlocks,release-interlock,adapters,run}
+    import-bundle       import a CAW-02 bundle
+  ... (subcommands: import-bundle, gate, assemble, draft, ..., readiness, status)
+
+Invocation used (mirrors how the Neural-Memory bundle was gated per claims/readiness.md
+and PLAN.md P4, but with this repo's STC config veridraft.stc-study.config.json:
+gate_profile=systems-paper, data_dir=.veridraft-stc-study):
+
+    cd /home/jimmy/repos/neural-memory-study
+    export PYTHONPATH=/home/jimmy/repos/veridraft
+    python3 -m veridraft.cli --config veridraft.stc-study.config.json \
+            import-bundle claims/stc-v2/bundle.json
+    python3 -m veridraft.cli --config veridraft.stc-study.config.json \
+            gate sleep-time-compute-v2
+
+--------------------------------------------------------------------------------
+1. IMPORT
+--------------------------------------------------------------------------------
+$ python3 -m veridraft.cli --config veridraft.stc-study.config.json import-bundle claims/stc-v2/bundle.json
+imported bundle sleep-time-compute-v2: 89 claims, 29 results, digest_ok=False
+EXIT=0
+(digest_ok=False is expected and is NOT a gate condition: the bundle carries no signed
+ digest field — same as the Neural-Memory bundle, see claims/readiness.md.)
+
+--------------------------------------------------------------------------------
+2. GATE  —  python3 -m veridraft.cli ... gate sleep-time-compute-v2
+--------------------------------------------------------------------------------
+$ python3 -m veridraft.cli --config veridraft.stc-study.config.json gate sleep-time-compute-v2
+gate profile: systems-paper  bundle: sleep-time-compute-v2
+  [PASS] p1_stc_x1_amortisation_has_an_unamortised_term (P1)  admissible_evidence=1
+  [PASS] p1_stc_x1_breakeven_Nq_spread_across_regimes (P1)  admissible_evidence=1
+  [PASS] p1_stc_x1_does_not_refute_the_5x (P1)  admissible_evidence=1
+  [PASS] p1_stc_x1_kappa_cost_is_load_bearing_and_unmeasured (P1)  admissible_evidence=1
+  [PASS] p1_stc_x1_regime_ordering_is_the_load_bearing_result (P1)  admissible_evidence=1
+  [PASS] p1_stc_x1_swe_regime_crosses_below_one (P1)  admissible_evidence=1
+  [PASS] p1_stc_x2_corpus_reports_no_state_bytes (P1)  admissible_evidence=1
+  [PASS] p1_stc_x2_cross_path_density_comparison_withdrawn (P1)  admissible_evidence=1
+  [PASS] p1_stc_x2_dtype_sets_density_and_survives_the_withdrawal (P1)  admissible_evidence=1
+  [PASS] p1_stc_x2_edit_vs_delta_is_a_serving_fork (P1)  admissible_evidence=1
+  [PASS] p1_stc_x2_three_paths_differ_by_orders_of_magnitude (P1)  admissible_evidence=1
+  [PASS] p1_stc_x2_warm_tier_is_the_device_opportunity (P1)  admissible_evidence=1
+  [PASS] p1_stc_x3_absent_vs_undefined_must_not_be_conflated (P1)  admissible_evidence=1
+  [PASS] p1_stc_x3_both_axes_are_broken_no_curve (P1)  admissible_evidence=1
+  [PASS] p1_stc_x3_budget_axis_census (P1)  admissible_evidence=1
+  [PASS] p1_stc_x3_founding_paper_has_no_number_in_the_numerator (P1)  admissible_evidence=1
+  [PASS] p1_stc_x3_grounds_and_strengthens_x1 (P1)  admissible_evidence=1
+  [PASS] p1_stc_x3_reporting_rate_order_theta_over_e (P1)  admissible_evidence=1
+  [PASS] p1_stc_x4_acquisition_cost_exists_but_is_sub_threshold (P1)  admissible_evidence=1
+  [PASS] p1_stc_x4_damage_tracks_distance_from_the_original (P1)  admissible_evidence=1
+  [PASS] p1_stc_x4_falsifier_no_paper_runs_past_100_rounds (P1)  admissible_evidence=1
+  [PASS] p1_stc_x4_flat_loss_is_not_evidence_of_stability (P1)  admissible_evidence=1
+  [PASS] p1_stc_x4_gold_and_self_replay_buy_different_things (P1)  admissible_evidence=1
+  [PASS] p1_stc_x4_mechanism_exclusion_not_refutation (P1)  admissible_evidence=1
+  [PASS] p1_stc_x4_one_over_i_weighting_is_a_property_of_the_schedule (P1)  admissible_evidence=1
+  [PASS] p1_stc_x4_replay_must_be_anchored_to_retained_originals (P1)  admissible_evidence=1
+  [PASS] p1_stc_x4_report_the_crossover_not_the_rate (P1)  admissible_evidence=1
+  [PASS] p1_stc_x4_second_moment_is_the_coordinate_that_dies (P1)  admissible_evidence=1
+  [PASS] p1_stc_x4_task_metric_lags_the_dying_store (P1)  admissible_evidence=1
+  [PASS] p2_genadapter_fullconv_wins_msc (P2)  admissible_evidence=1
+  [PASS] p2_genadapter_headline_not_in_tables (P2)  admissible_evidence=1
+  [PASS] p2_genadapter_uw_not_theta (P2)  admissible_evidence=1
+  [PASS] p2_letta_bs_absent (P2)  admissible_evidence=1
+  [PASS] p2_letta_capacity_absent (P2)  admissible_evidence=1
+  [PASS] p2_letta_e_only (P2)  admissible_evidence=1
+  [PASS] p2_letta_gain_reverses (P2)  admissible_evidence=1
+  [PASS] p2_letta_wr_destructive (P2)  admissible_evidence=1
+  [PASS] p2_lmns_ablation_reversal (P2)  admissible_evidence=1
+  [PASS] p2_lmns_bs_ratio_only (P2)  admissible_evidence=1
+  [PASS] p2_lmns_expansion_worth_one_point (P2)  admissible_evidence=1
+  [PASS] p2_lmns_inherits_nl_gap (P2)  admissible_evidence=1
+  [PASS] p2_lmns_theta_grows (P2)  admissible_evidence=1
+  [PASS] p2_lmns_wake_w_then_sleep_theta (P2)  admissible_evidence=1
+  [PASS] p2_lora_silent_on_all_paths (P2)  admissible_evidence=1
+  [PASS] p2_mc_bs_zero (P2)  admissible_evidence=1
+  [PASS] p2_mc_changes_read_rule (P2)  admissible_evidence=1
+  [PASS] p2_mc_silent_on_e_and_theta (P2)  admissible_evidence=1
+  [PASS] p2_mc_table5_empty_row (P2)  admissible_evidence=1
+  [PASS] p2_mem0_abstract_vs_table1 (P2)  admissible_evidence=1
+  [PASS] p2_mem0_bs_absent (P2)  admissible_evidence=1
+  [PASS] p2_mem0_fullcontext_wins (P2)  admissible_evidence=1
+  [PASS] p2_mem0_silent_on_letta (P2)  admissible_evidence=1
+  [PASS] p2_mem0_silent_on_theta_path (P2)  admissible_evidence=1
+  [PASS] p2_mem0_wr_can_delete (P2)  admissible_evidence=1
+  [PASS] p2_memgpt_gpt4_below_gpt35 (P2)  admissible_evidence=1
+  [PASS] p2_memgpt_write_on_critical_path (P2)  admissible_evidence=1
+  [PASS] p2_memini_no_llm_in_experiment (P2)  admissible_evidence=1
+  [PASS] p2_memit_specificity_below_unedited (P2)  admissible_evidence=1
+  [PASS] p2_memit_specificity_collapses_at_scale (P2)  admissible_evidence=1
+  [PASS] p2_memlayers_no_post_deployment_update (P2)  admissible_evidence=1
+  [PASS] p2_memlayers_peer_beats_vanilla_memory (P2)  admissible_evidence=1
+  [PASS] p2_memlayers_silent_on_all_paths (P2)  admissible_evidence=1
+  [PASS] p2_needsleep_cites_letta_not_titans (P2)  admissible_evidence=1
+  [PASS] p2_needsleep_no_compute_matched_baseline (P2)  admissible_evidence=1
+  [PASS] p2_needsleep_uw_only (P2)  admissible_evidence=1
+  [PASS] p2_nl_all_updates_are_uw (P2)  admissible_evidence=1
+  [PASS] p2_nl_bs_undefined (P2)  admissible_evidence=1
+  [PASS] p2_nl_silent_on_e_path (P2)  admissible_evidence=1
+  [PASS] p2_nl_table6_self_refutation (P2)  admissible_evidence=1
+  [PASS] p2_nl_transformer_wins_fda (P2)  admissible_evidence=1
+  [PASS] p2_rag_no_cost_reported (P2)  admissible_evidence=1
+  [PASS] p2_rag_retriever_loses_to_bm25 (P2)  admissible_evidence=1
+  [PASS] p2_rb_bs_reported (P2)  admissible_evidence=1
+  [PASS] p2_rb_more_memory_hurts (P2)  admissible_evidence=1
+  [PASS] p2_rb_prose_contradicts_numbers (P2)  admissible_evidence=1
+  [PASS] p2_rb_silent_on_letta (P2)  admissible_evidence=1
+  [PASS] p2_rb_wr_pure_union (P2)  admissible_evidence=1
+  [PASS] p2_rome_not_a_practical_method (P2)  admissible_evidence=1
+  [PASS] p2_scm_no_weight_update (P2)  admissible_evidence=1
+  [PASS] p2_seal_bs_wallclock_only (P2)  admissible_evidence=1
+  [PASS] p2_seal_genadapter_beats_seal (P2)  admissible_evidence=1
+  [PASS] p2_seal_gpt41_beats_seal (P2)  admissible_evidence=1
+  [PASS] p2_seal_ttt_reward_removable (P2)  admissible_evidence=1
+  [PASS] p2_seal_two_timescale_theta (P2)  admissible_evidence=1
+  [PASS] p2_zep_bs_absent (P2)  admissible_evidence=1
+  [PASS] p2_zep_knowledge_update_regression (P2)  admissible_evidence=1
+  [PASS] p2_zep_no_ablation (P2)  admissible_evidence=1
+  [PASS] p2_zep_silent_on_w_and_theta (P2)  admissible_evidence=1
+  [PASS] p2_zep_trivial_baseline_beats_sota (P2)  admissible_evidence=1
+passed: ['p1_stc_x1_amortisation_has_an_unamortised_term', 'p1_stc_x1_breakeven_Nq_spread_across_regimes', 'p1_stc_x1_does_not_refute_the_5x', 'p1_stc_x1_kappa_cost_is_load_bearing_and_unmeasured', 'p1_stc_x1_regime_ordering_is_the_load_bearing_result', 'p1_stc_x1_swe_regime_crosses_below_one', 'p1_stc_x2_corpus_reports_no_state_bytes', 'p1_stc_x2_cross_path_density_comparison_withdrawn', 'p1_stc_x2_dtype_sets_density_and_survives_the_withdrawal', 'p1_stc_x2_edit_vs_delta_is_a_serving_fork', 'p1_stc_x2_three_paths_differ_by_orders_of_magnitude', 'p1_stc_x2_warm_tier_is_the_device_opportunity', 'p1_stc_x3_absent_vs_undefined_must_not_be_conflated', 'p1_stc_x3_both_axes_are_broken_no_curve', 'p1_stc_x3_budget_axis_census', 'p1_stc_x3_founding_paper_has_no_number_in_the_numerator', 'p1_stc_x3_grounds_and_strengthens_x1', 'p1_stc_x3_reporting_rate_order_theta_over_e', 'p1_stc_x4_acquisition_cost_exists_but_is_sub_threshold', 'p1_stc_x4_damage_tracks_distance_from_the_original', 'p1_stc_x4_falsifier_no_paper_runs_past_100_rounds', 'p1_stc_x4_flat_loss_is_not_evidence_of_stability', 'p1_stc_x4_gold_and_self_replay_buy_different_things', 'p1_stc_x4_mechanism_exclusion_not_refutation', 'p1_stc_x4_one_over_i_weighting_is_a_property_of_the_schedule', 'p1_stc_x4_replay_must_be_anchored_to_retained_originals', 'p1_stc_x4_report_the_crossover_not_the_rate', 'p1_stc_x4_second_moment_is_the_coordinate_that_dies', 'p1_stc_x4_task_metric_lags_the_dying_store', 'p2_genadapter_fullconv_wins_msc', 'p2_genadapter_headline_not_in_tables', 'p2_genadapter_uw_not_theta', 'p2_letta_bs_absent', 'p2_letta_capacity_absent', 'p2_letta_e_only', 'p2_letta_gain_reverses', 'p2_letta_wr_destructive', 'p2_lmns_ablation_reversal', 'p2_lmns_bs_ratio_only', 'p2_lmns_expansion_worth_one_point', 'p2_lmns_inherits_nl_gap', 'p2_lmns_theta_grows', 'p2_lmns_wake_w_then_sleep_theta', 'p2_lora_silent_on_all_paths', 'p2_mc_bs_zero', 'p2_mc_changes_read_rule', 'p2_mc_silent_on_e_and_theta', 'p2_mc_table5_empty_row', 'p2_mem0_abstract_vs_table1', 'p2_mem0_bs_absent', 'p2_mem0_fullcontext_wins', 'p2_mem0_silent_on_letta', 'p2_mem0_silent_on_theta_path', 'p2_mem0_wr_can_delete', 'p2_memgpt_gpt4_below_gpt35', 'p2_memgpt_write_on_critical_path', 'p2_memini_no_llm_in_experiment', 'p2_memit_specificity_below_unedited', 'p2_memit_specificity_collapses_at_scale', 'p2_memlayers_no_post_deployment_update', 'p2_memlayers_peer_beats_vanilla_memory', 'p2_memlayers_silent_on_all_paths', 'p2_needsleep_cites_letta_not_titans', 'p2_needsleep_no_compute_matched_baseline', 'p2_needsleep_uw_only', 'p2_nl_all_updates_are_uw', 'p2_nl_bs_undefined', 'p2_nl_silent_on_e_path', 'p2_nl_table6_self_refutation', 'p2_nl_transformer_wins_fda', 'p2_rag_no_cost_reported', 'p2_rag_retriever_loses_to_bm25', 'p2_rb_bs_reported', 'p2_rb_more_memory_hurts', 'p2_rb_prose_contradicts_numbers', 'p2_rb_silent_on_letta', 'p2_rb_wr_pure_union', 'p2_rome_not_a_practical_method', 'p2_scm_no_weight_update', 'p2_seal_bs_wallclock_only', 'p2_seal_genadapter_beats_seal', 'p2_seal_gpt41_beats_seal', 'p2_seal_ttt_reward_removable', 'p2_seal_two_timescale_theta', 'p2_zep_bs_absent', 'p2_zep_knowledge_update_regression', 'p2_zep_no_ablation', 'p2_zep_silent_on_w_and_theta', 'p2_zep_trivial_baseline_beats_sota']
+blocked: (none)
+EXIT=0
+
+--------------------------------------------------------------------------------
+3. STATUS / READINESS (same follow-ups the NM bundle recorded)
+--------------------------------------------------------------------------------
+$ python3 -m veridraft.cli --config veridraft.stc-study.config.json status
+  art-sleep-time-compute-v2  state=gated            track=public-source-assisted (b=public,v=team)  output=None
+EXIT=0
+
+$ python3 -m veridraft.cli --config veridraft.stc-study.config.json readiness --venue mlsys sleep-time-compute-v2
+venue=mlsys  policy=DISCLOSURE  disclosure_required=True
+  disclosure (methods):
+    During the preparation of this work the authors used an AI writing assistant (PaperOrchestra, wrapped by Veridraft) to draft and refine the manuscript from evidence-gated claims. All content was reviewed and edited by the authors, who take full responsibility for the accuracy and integrity of the work.
+  - Disclose LLM use in the methods; add the generated disclosure text.
+  - No local detector configured. A low detector score is a RISK proxy, not proof of human authorship; detectors false-flag human (esp. non-native) writing. Run a self-hosted OSS detector (e.g. Binoculars) locally for a RISK band; never send a confidential manuscript to a cloud detector.
+EXIT=0
+
+--------------------------------------------------------------------------------
+4. BUNDLE SELF-VERIFICATION (independent of veridraft)
+--------------------------------------------------------------------------------
+The gate does NOT resolve ref content (documented seam in veridraft/core/gate.py).
+claims/stc-v2/verify_bundle.py closes that hole: JSON validity + NM top-level schema,
+claim_id uniqueness, statement/metadata byte-fidelity to the two halves, evidence
+admissibility, ref existence AND git-tracking at the anchor commit AND working-tree
+identity with the pinned blob, P1 result_refs -> declared content-carrying results,
+P2 evidence non-empty + locator present, and re-resolution of all 159 JSON pointers
+against the COMMITTED blobs with a byte-compare of every transcribed metric and string.
+
+$ python3 claims/stc-v2/verify_bundle.py
+bundle          : /home/jimmy/repos/neural-memory-study/claims/stc-v2/bundle.json
+bundle_id       : sleep-time-compute-v2   boundary=public
+claims          : 89  (P1=29, P2=60)
+results         : 29  (all content-carrying: True)
+evidence refs   : 22 distinct, all present, tracked at 927a8b50 and unmodified in the working tree
+P1 result_refs  : all non-empty, all resolve to a content-carrying declared result
+P2 evidence     : all non-empty, all source_artifact, all carry a §/page locator
+result pointers : 159 resolved against the COMMITTED blobs; every transcribed metric/text byte-compared
+assertions      : 2133
+
+SELF-VERIFICATION: PASS (0 failures)
+EXIT=0
+
+NEGATIVE CONTROL — the assertions are not vacuous. Four corruptions were injected into
+a copy of the bundle (one metric value changed 0.42 -> 0.99; one P2 statement softened
+to "mostly changes"; a note-kind evidence entry re-added; one claim's evidence emptied):
+    FAILED (7):
+      - p2_letta_e_only: statement was ALTERED relative to the input half
+      - p2_zep_no_ablation: admissible evidence dropped in the merge: ['p2_zep_no_ablation_e1']
+      - p2_zep_no_ablation: evidence vanished without re-registration: ['notes/stc-v2/zep.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df', 'papers/stc/2501.13956.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df']
+      - p1_stc_x3_budget_axis_census: inadmissible evidence kind present: ['note']
+      - p2_zep_no_ablation: evidence is empty
+      - p2_zep_no_ablation: 0 admissible evidence entries
+      - r_stc_x1_swe_regime_crosses_below_one: metric '/Q1_Q2_critical_length_by_regime/values/swe_features/critical_len_chat/flops(w_in=1.0),kappa_par=10/L_star_over_len_c' = 0.99 but the committed result.json holds 0.42
+    EXIT=1  → all four caught.
+    (bundle restored; re-verified EXIT=0)
+
+--------------------------------------------------------------------------------
+5. MERGE-TIME EDITS — what changed between the two halves and the bundle
+--------------------------------------------------------------------------------
+Two edits. Both structural. NO claim statement was reworded, softened, hedged or
+qualified, and no claim was deleted: 29 P1 + 60 P2 = 89 in, 89 out, statements
+byte-identical (verified below).
+
+EDIT 1 — the 60 second-position evidence entries of kind "note" were REMOVED from
+         `evidence` and re-registered on the same claim as `reading_provenance`.
+
+  What they were: this study's own LLM-written deep-read notes, notes/stc-v2/<paper>.json
+  (58) and dossier/stc-v2/PRE-RESEARCH.md (2). They contain interpretive
+  "[note-writer] ..." remarks, i.e. derived prose about the very PDF the claim cites.
+
+  Why they could not stay. Two controls were RUN, not assumed:
+
+  CONTROL A — the halves exactly as authored (kind:"note"):
+      error: evidence 'p2_letta_e_only_e2' on claim 'p2_letta_e_only' has invalid/missing kind (expected one of ['caw02_evidence', 'caw01_result', 'source_artifact', 'generated_text', 'prose_note'])
+      EXIT=1   → the importer HARD-FAILS. "note" is not a veridraft EvidenceKind.
+
+  CONTROL B — the truthful relabel note → prose_note (the kind these files actually are):
+      imported bundle ctl-b-prose-note: 89 claims, 29 results, digest_ok=False
+        [BLOCK] p2_genadapter_fullconv_wins_msc (P2)  admissible_evidence=1
+               - evidence 'p2_genadapter_fullconv_wins_msc_e2' (prose_note) rejected: generated/prose text is never evidence (ADR-0003)
+      ... 60 claims BLOCKED (every P2 claim).
+      → ADR-0003's one non-relaxable invariant: generated/prose text is NEVER evidence.
+        Note the gate BLOCKS the claim even though it still has 1 admissible source_artifact:
+        the mere PRESENCE of a prose_note appends a rejection reason.
+
+  The third option — relabel the notes as `source_artifact` — was REJECTED. That is
+  precisely the relabel attack veridraft/core/gate.py documents and guards against
+  ("free prose relabeled as evidence"). Passing the gate by mislabelling evidence is
+  not passing the gate.
+
+  Why removal costs nothing. Each of the 60 P2 claims kept its FIRST evidence entry:
+  the primary paper PDF at the anchor commit with a section/page/table locator. The
+  note was the study's own reading of that same PDF — circular as warrant for a claim
+  about that PDF. The 2 corpus-silence claims (p2_mem0_silent_on_letta,
+  p2_lmns_inherits_nl_gap) that cited PRE-RESEARCH.md keep PDF locators that already
+  carry the verification method (whole-file grep over the vendored .txt). The note
+  files remain registered in provenance_manifest.vendored_sources, explicitly marked
+  "READING PROVENANCE ONLY — never evidence", and per-claim under reading_provenance.
+
+EDIT 2 — P1 `result_refs` were normalised from raw JSON pointers to declared result_ids.
+
+  The P1 half addressed evidence by JSON pointer
+  (experiments/stc/X1-.../result.json#/findings/F1_the_missing_term_is_structural).
+  The NM top-level schema this bundle must follow declares a `results` block and has
+  claims point at result_ids (p1_rmw_per_token → result_refs ["r_rmw"]); the
+  systems-paper profile's require_results is checked against THOSE ids
+  (veridraft/core/harness.py:157). So the merge built 29 result blocks, one per P1
+  claim, id = claim_id with the p1_stc_ prefix swapped for r_stc_, each carrying:
+    source_ref  — experiments/stc/X#/result.json@<anchor commit>
+    pointers    — the claim's ORIGINAL JSON pointers, verbatim, unabridged
+    metrics     — every numeric/boolean pointer target, transcribed verbatim
+    verbatim_text_fields — every textual pointer target, transcribed verbatim
+    caveat_tags — the claim's grade tags (see provenance_manifest.grade_legend)
+  and the claim keeps the pointer list too, as `result_pointers`. Nothing was dropped:
+  verify_bundle.py re-resolves all 159 pointers and byte-compares every transcribed
+  metric and text field against the committed result.json.
+
+NOT DONE — no claim was weakened to pass. Nothing was deleted for lack of evidence,
+because nothing lacked evidence: all 89 claims cleared the gate on the warrant they
+were authored with. In particular the deliberately self-limiting P1 claims
+(p1_stc_x2_cross_path_density_comparison_withdrawn — a claim whose content is a
+RETRACTION; p1_stc_x4_mechanism_exclusion_not_refutation; the KSTAR-CENSORED lower
+bounds) were carried through unchanged, caveat tags and transport_rule intact.
+
+--------------------------------------------------------------------------------
+6. INTEGRITY OF THE MERGE (claim statements are byte-identical to the halves)
+--------------------------------------------------------------------------------
+  claims in halves : 89   claims in bundle : 89
+  statements altered: 0  (none — all byte-identical)
+  metadata altered  : 0  (none — type/boundary/visibility/supports/caveat_tags/transport_rule/chapter/claim_class all preserved)
+  evidence entries  : 149 in the halves → 89 in the bundle (60 note-kind moved to reading_provenance)
+
+--------------------------------------------------------------------------------
+7. WHAT THE GATE DOES AND DOES NOT PROVE
+--------------------------------------------------------------------------------
+DOES  — every claim carries >=1 admissible, typed, resolvable <path>@<commit> pointer;
+        no generated/prose text is used as evidence; at least one gate-PASSED claim
+        references a result block that carries content (require_results, harness.py:157);
+        no P3 patent-interlock is outstanding.
+DOES NOT — resolve ref CONTENT. gate.py is explicit that "does that commit contain that
+        file" is the Source adapter's seam, not the gate's. That is exactly the hole
+        claims/stc-v2/verify_bundle.py closes: it git-cat-file's all 22 distinct refs at
+        the anchor commit 927a8b50, re-resolves all 159 JSON pointers, and byte-compares
+        every transcribed number and string. Both had to run; only both together mean
+        anything.
+ALSO NOT — whether a statement is TRUE of its source. That is the discipline's job (the
+        §/p locators on every P2 evidence entry are what makes it checkable by a human),
+        and the honesty contract in provenance_manifest.note is what bounds how the P1
+        numbers may be used in prose.
+
+KNOWN DOWNSTREAM NIT (in veridraft, not in this bundle). Metric names here are exact JSON
+pointers, and 4 of the 50 contain a literal "|" because the experiment's own key is
+`flops(w_in=1.0),|c_hat|/|c|=4.0` / `omega=0.0|replay=none`. veridraft/core/assemble.py:114
+interpolates metric names straight into a markdown table row without escaping "|", so those
+4 rows would render with extra columns in the generated experimental_log.md. The fix belongs
+in assemble.py (escape cell content); mangling the pointer in the bundle to suit a renderer
+would break the byte-compare that makes the numbers checkable. Not a gate condition — the
+gate ran and passed; `assemble` was not run.
+
+--------------------------------------------------------------------------------
+8. FILES
+--------------------------------------------------------------------------------
+  claims/stc-v2/bundle.json        merged bundle (89 claims, 29 results)
+  claims/stc-v2/verify_bundle.py   self-verification, exit 0 = all checks pass
+  claims/stc-v2/gate-report.txt    this file
+  claims/stc-v2/p1-claims.json     input half A (unchanged)
+  claims/stc-v2/p2-claims.json     input half B (unchanged)
+  .veridraft-stc-study/ledger.db   veridraft ledger written by the gate run

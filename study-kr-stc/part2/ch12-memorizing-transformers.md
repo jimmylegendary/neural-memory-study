@@ -6,9 +6,9 @@ ch10은 $E$층을 세웠다. 구현 형태를 text·vector·graph 셋으로 갈�
 
 원점을 먼저 읽는 이유는 회계 때문이다. ch10의 RAG는 저장 전 추론 없이도 쓰기 비용을 corpus당 한 번 지불했다. 이 논문은 한 걸음 더 내려간다 — 쓰기의 산출물이 wake pass가 이미 만든 텐서 그 자체여서 한계 예산이 0이다. $E$-경로가 $B_s$를 한 푼도 쓰지 않고 얻을 수 있는 것의 상한이 여기서 정해지고, 이후 논문들이 지불하는 $B_s$는 이 상한 **위에서 얼마를 더 샀는가**로 평가되어야 한다.
 
-**이 논문은 어떤 선행 논문의 open question도 인용해 받지 않는다.** Related Work(§2)는 3인칭 현재시제의 위치 선정 서베이이고, 인용부호도 "X가 남긴 문제"도 없다. 모든 비교는 저자들이 스스로 세운 대조다 — "In contrast, we use a very large cache without compression" [Memorizing Transformers §2]. 이 책은 없는 계보를 지어내지 않는다(→ ch11 §11.7).
+**이 논문은 어떤 선행 논문의 open question도 인용해 받지 않는다.** Related Work([Memorizing Transformers §2])는 3인칭 현재시제의 위치 선정 서베이이고, 인용부호도 "X가 남긴 문제"도 없다. 모든 비교는 저자들이 스스로 세운 대조다 — "In contrast, we use a very large cache without compression" [Memorizing Transformers §2]. 이 책은 없는 계보를 지어내지 않는다(→ ch11 §11.7).
 
-그래서 이 장의 bridge-in은 상속 진술이 아니라 **암묵적으로 답해진 세 질문**의 복원이다. 첫째, Transformer-XL과 Compressive Transformer가 단계 사이로 나르는 비미분 캐시는 어디까지 키울 수 있고, 나르는 상태를 반드시 압축해야 하는가. 답은 262,144쌍까지이고 압축은 불필요하다 — dense attention을 근사 top-$k_{nn}$ 회수로 바꾸면 된다 [Memorizing Transformers §2, Table 5]. 둘째, 긴 문맥 모델이 주어진 문맥을 실제로 쓰는가(Sun et al. 2021의 부정적 결과). 논문은 그 질문을 인용하지 않고 §4.6을 그 답으로 지은 뒤 같은 결과를 방증으로 인용한다 [Memorizing Transformers §4.6]. 셋째, kNN-LM(Khandelwal et al. 2020)이 출력 softmax에 둔 비미분 저장소를 stack **안쪽**에 둘 수 있는가. 답은 그렇다이고, 자리는 중상위 attention layer 한 곳이며 학습된 per-head 게이트가 딸린다 [Memorizing Transformers §2, §3.1].
+그래서 이 장의 bridge-in은 상속 진술이 아니라 **암묵적으로 답해진 세 질문**의 복원이다. 첫째, Transformer-XL과 Compressive Transformer가 단계 사이로 나르는 비미분 캐시는 어디까지 키울 수 있고, 나르는 상태를 반드시 압축해야 하는가. 답은 262,144쌍까지이고 압축은 불필요하다 — dense attention을 근사 top-$k_{nn}$ 회수로 바꾸면 된다 [Memorizing Transformers §2, Table 5]. 둘째, 긴 문맥 모델이 주어진 문맥을 실제로 쓰는가(Sun et al. 2021의 부정적 결과). 논문은 그 질문을 인용하지 않고 [Memorizing Transformers §4.6]을 그 답으로 지은 뒤 같은 결과를 방증으로 인용한다 [Memorizing Transformers §4.6]. 셋째, kNN-LM(Khandelwal et al. 2020)이 출력 softmax에 둔 비미분 저장소를 stack **안쪽**에 둘 수 있는가. 답은 그렇다이고, 자리는 중상위 attention layer 한 곳이며 학습된 per-head 게이트가 딸린다 [Memorizing Transformers §2, §3.1].
 
 ch11이 이 장에 넘긴 질문은 하나였다 — 저장되는 것이 요약이 아니라 원본 텐서일 때 무엇이 얻어지고 무엇이 잃어지는가. 미리 적으면 이렇다. **얻는 것은 정확한 회수와 0에 가까운 쓰기 비용, 잃는 것은 어떤 체크포인트에나 붙일 수 있는 이식성이다.**
 
@@ -74,7 +74,7 @@ V_a \;=\; V_m \odot g \;+\; V_c \odot (1-g)
 \tag{12-4}
 $$
 
-식 (12-2)–(12-4)는 원문 §3.1의 산문 서술과 Eq. (1)–(2)에 대응한다. (12-2)의 요지는 검색의 키 공간이 모델 자신의 attention 키 공간이라는 것이다 — "The same queries are used for both the local context, and for the external memory. The keys and values also belong to the same distribution" [Memorizing Transformers §3.1]. 즉 $\mathrm{ret}$은 attention이 어차피 계산하는 내적의 argmax일 뿐이다. (12-3)의 $K_{nn}, V_{nn}$은 회수된 $k_{nn}$개 쌍을 쌓은 행렬이고 여기에는 position bias를 붙이지 않으며, (12-4)의 $V_c$는 local chunk와 Transformer-XL 캐시에 대한 통상의 dense attention 출력이며 $V_a$가 residual stream으로 올라간다.
+식 (12-2)–(12-4)는 원문 [Memorizing Transformers §3.1]의 산문 서술과 Eq. (1)–(2)에 대응한다. (12-2)의 요지는 검색의 키 공간이 모델 자신의 attention 키 공간이라는 것이다 — "The same queries are used for both the local context, and for the external memory. The keys and values also belong to the same distribution" [Memorizing Transformers §3.1]. 즉 $\mathrm{ret}$은 attention이 어차피 계산하는 내적의 argmax일 뿐이다. (12-3)의 $K_{nn}, V_{nn}$은 회수된 $k_{nn}$개 쌍을 쌓은 행렬이고 여기에는 position bias를 붙이지 않으며, (12-4)의 $V_c$는 local chunk와 Transformer-XL 캐시에 대한 통상의 dense attention 출력이며 $V_a$가 residual stream으로 올라간다.
 
 읽기 게이트 $g$는 **내용에 의존하지 않는다** — "the value of the gate $g$ does not depend on the content of the token at each position, although that would be a trivial extension to implement" [Memorizing Transformers §3.1]. test-time의 라우팅 결정이 아니라 outer loop에서 한 번 학습되는 head별 구조적 선호다. 그리고 학습이 끝나면 "most heads learned to attend almost exclusively to external memory" [Memorizing Transformers §3.1].
 
@@ -145,15 +145,15 @@ $\mathrm{wr}$은 append와 FIFO 축출뿐이다. merge도 rewrite도 중복 제�
 | $C_{\text{cap}}$ | **개수로만 보고. 바이트는 논문에 없음.** $n_E \in \{1536,\ 8192,\ 65\mathrm{K},\ 131\mathrm{K},\ 262\mathrm{K}\}$, 범위는 head당(8 heads)·한 layer·문서당·batch 원소당, $d_{\text{head}}{=}128$. 논문은 이 값들을 곱한 적이 없고 dtype도 적지 않는다 | §3.1, §4.2, Table 4·5 |
 | $\rho$ | **수치로는 논문에 없음.** 열화 기제는 staleness 하나이고 그것은 **훈련 시점** 아티팩트다. 정량화되지 않았다 | §3.2, §4.5 |
 
-논문에 있는 유일한 계산량 수치는 다음이다. "the step time increased from 0.2s to 0.25s when we added a memory of size 8K, and to 0.6s when we added a memory of size 65K (measured on TPUv3)" [Memorizing Transformers §4.2]. $n_E{=}8192$에서 +25%, $n_E{=}65536$에서 3배다. 이 값은 kNN 검색·추가 attention·쓰기를 **한 덩어리로** 묶고 있고, 추론 step이 아니라 훈련 step이며, 약 200M 파라미터에서만 보고되었다. 셋 중 하나만 어겨도 서빙 감각으로 옮길 수 없다.
+논문에 있는 유일한 계산량 수치는 다음이다. "the step time increased from 0.2s to 0.25s when we added a memory of size 8K, and to 0.6s when we added a memory of size 65K (measured on TPUv3)" [Memorizing Transformers §4.2]. $n_E{=}8192$에서 +25%, $n_E{=}65536$에서 3배다[본서 산술]. 이 값은 kNN 검색·추가 attention·쓰기를 **한 덩어리로** 묶고 있고, 추론 step이 아니라 훈련 step이며, 약 200M 파라미터에서만 보고되었다. 셋 중 하나만 어겨도 서빙 감각으로 옮길 수 없다[본서 판단].
 
 $\rho$ 칸은 hedge가 다섯 겹이다. "In some of our experiments", "sometimes resulted in worse performance", "could be due to staleness" [Memorizing Transformers §3.2], 다시 "In some cases, training was unstable ... possibly due to distributional shift early in the training" [Memorizing Transformers §4.5]. 불안정했다는 실행은 논문 어디에도 그려지거나 표로 실리지 않았다. $\Theta$가 배포 후 움직이지 않으므로 (U-$\Theta$) 의미의 라운드 간 망각은 애초에 적용되지 않고, FIFO 축출로 인한 손실은 한 번도 분리되지 않았다.
 
-**상각식은 여기서 붕괴한다.** 식 (A)의 $C_{\text{sleep}}$이 0이므로 $C_{\text{avg}} = C_{\text{wake}}$이고 손익분기 $N_q^\ast$를 계산할 대상이 없다 — $E$ 쓰기는 $N_q = 1$에서 이미 자기 값을 한다. corpus에서 상각식이 정당하게 붕괴하는 유일한 논문이다.
+> **[평가]** **상각식은 여기서 붕괴한다.** 식 (A)의 $C_{\text{sleep}}$이 0이므로 $C_{\text{avg}} = C_{\text{wake}}$이고 손익분기 $N_q^\ast$를 계산할 대상이 없다 — $E$ 쓰기는 $N_q = 1$에서 이미 자기 값을 한다. corpus에서 상각식이 정당하게 붕괴하는 유일한 논문이다.
 
 > **[평가]** 그 대신 이 논문은 corpus의 어떤 $E$-경로 논문도 갖지 못한 것을 갖고 있다 — $N_q$가 뽑혀 나올 **분포**다. 문서 길이 히스토그램이 다섯 corpus 전부에 실려 있고 arXiv 논문은 최대 거의 1.6M 토큰, Github 저장소는 최대 900만 토큰을 조금 넘는다 [Memorizing Transformers App. A]. 이 논문에는 상각할 것이 없는데 분포는 있고, 상각을 주장하는 뒤의 논문들에는 분포가 없다.
 
-읽기 쪽 비용은 측정이 아니라 **인용으로 주장된다**. 확장 가능한 구현으로 ScaNN과 Faiss가 지목되고 근사 kNN이 "can scale into the billions"라고 적히지만 [Memorizing Transformers §1, §3.3], FLOP 수도 색인 빌드 시간도 gather 대역폭도 없다. 중심 효율 논증이 측정되지 않은 항 위에 서 있다.
+읽기 쪽 비용은 측정이 아니라 **인용으로 주장된다**. 확장 가능한 구현으로 ScaNN과 Faiss가 지목되고 근사 kNN이 "can scale into the billions"라고 적히지만 [Memorizing Transformers §1, §3.3], FLOP 수도 색인 빌드 시간도 gather 대역폭도 없다. 중심 효율 논증이 측정되지 않은 항 위에 서 있다[본서 판단].
 
 ## 12.6 실험과 스케일
 
@@ -174,15 +174,15 @@ $\rho$ 칸은 hedge가 다섯 겹이다. "In some of our experiments", "sometime
 | 2048 | 8192 | 2048 | 2.33 | 11.84 | 13.80 | 1.98 | 2.06 |
 | 2048 | 65K | 2048 | 2.26 | 11.37 | 13.64 | 1.80 | 1.99 |
 
-논문이 표 12-4에서 뽑아 쓰는 주장은 셋이다. C4(4K+)에서 $n_E{=}8192$을 붙이면 vanilla가 17.20 → 14.42, Transformer-XL이 15.38 → 14.04가 된다. 다섯 열 전부에서 최소값이 마지막 행이다. 그리고 "using even a small external memory of size 1536 provides a gain in perplexity which is almost as good as using a local context of size 2048 but no memory" [Memorizing Transformers §4.3]. **셋째 주장은 다섯 열 중 둘에서 뒤집힌다** — $n_E{=}1536$ 행과 $C{=}2048$ 행을 대조하면 arXiv(2.61 대 2.69)·GitHub(2.20 대 2.22)·Isabelle(2.33 대 2.39)에서는 성립하지만 PG19(12.50 대 12.37)와 C4(4K+)(14.97 대 14.81)에서는 진다. 논문은 이 열별 분해 없이 주장만 적는다.
+논문이 표 12-4에서 뽑아 쓰는 주장은 셋이다. C4(4K+)에서 $n_E{=}8192$을 붙이면 vanilla가 17.20 → 14.42, Transformer-XL이 15.38 → 14.04가 된다. 다섯 열 전부에서 최소값이 마지막 행이다[본서 관찰]. 그리고 "using even a small external memory of size 1536 provides a gain in perplexity which is almost as good as using a local context of size 2048 but no memory" [Memorizing Transformers §4.3]. **셋째 주장은 다섯 열 중 둘에서 뒤집힌다** — $n_E{=}1536$ 행과 $C{=}2048$ 행을 대조하면 arXiv(2.61 대 2.69)·GitHub(2.20 대 2.22)·Isabelle(2.33 대 2.39)에서는 성립하지만 PG19(12.50 대 12.37)와 C4(4K+)(14.97 대 14.81)에서는 진다[본서 관찰]. 논문은 이 열별 분해 없이 주장만 적는다.
 
-용량 사다리는 Table 5가 잇는다. 500K step 사전학습 뒤 20K step만 더 돌려 $n_E$를 올리면 arXiv perplexity가 $C{=}2048$·사전학습 65K 기준 65K에서 2.26, 131K에서 2.23, 262K에서 2.21까지 내려가고, 논문은 상한을 문서 길이로 귀속시킨다 [Memorizing Transformers §4.5, Table 5]. 같은 표에 §3.2의 불안정성 서사와 반대 방향의 행이 있다: $C{=}512$에서 65K로 직접 훈련하면 2.31, 8192로 사전학습 뒤 65K로 finetune하면 2.32다. 두 프로토콜을 같은 용량에서 비교한 유일한 자리에서 직접 훈련이 낫다.
+용량 사다리는 Table 5가 잇는다. 500K step 사전학습 뒤 20K step만 더 돌려 $n_E$를 올리면 arXiv perplexity가 $C{=}2048$·사전학습 65K 기준 65K에서 2.26, 131K에서 2.23, 262K에서 2.21까지 내려가고, 논문은 상한을 문서 길이로 귀속시킨다 [Memorizing Transformers §4.5, Table 5]. 같은 표에 [Memorizing Transformers §3.2]의 불안정성 서사와 반대 방향의 행이 있다: $C{=}512$에서 65K로 직접 훈련하면 2.31, 8192로 사전학습 뒤 65K로 finetune하면 2.32다[본서 관찰]. 두 프로토콜을 같은 용량에서 비교한 유일한 자리에서 직접 훈련이 낫다[본서 관찰].
 
 스케일 주장 — $n_E{=}8192$을 붙인 작은 모델이 파라미터 5배인 vanilla와 맞먹는다 — 은 Figure 1 하나에만 근거한다 [Memorizing Transformers §4.4, §5]. 1B와 8B의 perplexity 값이 논문 어디에도 없고, 데이터셋 arXiv Math 하나, $n_E{=}8192$ 하나, $C{=}2048$, XL 캐시 없음, 오차 막대 없음이다. 소급 적용 주장도 Figure 6 하나에 근거한다: $E$ 없이 사전학습된 1B 모델을 20K step(사전학습의 4%) finetune하면 격차의 85%가, 100K step이면 전부 닫힌다 [Memorizing Transformers §4.5].
 
-부록의 ablation은 전부 한 점에서 돌았다 — $C{=}512$, XL 캐시 512, $n_E{=}8192$, 약 200M 파라미터, 데이터셋 1개. layer 위치는 3층 2.40, 6층 2.36, 9층 2.37, 12층 2.43이고 [Memorizing Transformers Table 14], 논문 전체가 쓰는 기본값 9층은 자기 스윕의 최고값이 아니다. 이웃 수는 32에서 2.38, 128·256에서 2.37이다 [Table 15]. 시드 표준편차는 Transformer-XL 2.67 ± 0.01, Memorizing Transformer 2.37 ± 0.005이며 [Table 16], 이것이 유일한 분산 추정이고 Figure 1·Figure 6에도 오차 막대가 없다. 즉 layer 스윕은 전체 폭 0.07을 점당 1회 실행으로 가르고, Table 15의 2.38은 Table 4가 2.37로 보고한 바로 그 구성이다 — 시드 폭 기준 약 2σ이며 논문은 언급하지 않는다. 두 정성 연구도 **다른 아키텍처**에서 돌았다: $\Delta_i$ 분석은 게이트 없는 구버전을, Isabelle 사례 연구는 부록이 이득 없다고 보고한 2-layer 32K 구성을 썼다 [Memorizing Transformers §4.6, App. A.1].
+부록의 ablation은 전부 한 점에서 돌았다 — $C{=}512$, XL 캐시 512, $n_E{=}8192$, 약 200M 파라미터, 데이터셋 1개[본서 관찰]. layer 위치는 3층 2.40, 6층 2.36, 9층 2.37, 12층 2.43이고 [Memorizing Transformers Table 14], 논문 전체가 쓰는 기본값 9층은 자기 스윕의 최고값이 아니다[본서 관찰]. 이웃 수는 32에서 2.38, 128·256에서 2.37이다 [Table 15]. 시드 표준편차는 Transformer-XL 2.67 ± 0.01, Memorizing Transformer 2.37 ± 0.005이며 [Table 16], 이것이 유일한 분산 추정이고 Figure 1·Figure 6에도 오차 막대가 없다[본서 관찰]. 즉 layer 스윕은 전체 폭 0.07을 점당 1회 실행으로 가르고, Table 15의 2.38은 Table 4가 2.37로 보고한 바로 그 구성이다 — 시드 폭 기준 약 2σ이며 논문은 언급하지 않는다[본서 산술]. 두 정성 연구도 **다른 아키텍처**에서 돌았다: $\Delta_i$ 분석은 게이트 없는 구버전을, Isabelle 사례 연구는 부록이 이득 없다고 보고한 2-layer 32K 구성을 썼다 [Memorizing Transformers §4.6, App. A.1].
 
-> **[평가]** 다섯 corpus 중 셋을 저자들이 만들었고, 그중 둘은 측정 대상인 장거리 의존성을 **제조하는** 방식으로 만들어졌다. Github은 저장소 하나를 무작위 디렉터리 순회로 이어 붙이고, Isabelle은 theory 파일을 "ordered according to their import dependencies, so that later files use sub-theorems that are proved in earlier files"로 이어 붙인다 — 정의가 참조보다 반드시 앞선다 [Memorizing Transformers §4.1]. 표 12-4에서 가장 큰 이득이 나오는 열이 정확히 그 둘이다(GitHub 3.05 → 1.80, Isabelle 3.09 → 1.99). Table 4의 캡션은 모든 모델이 500K step 훈련되었다고 적지만 Isabelle은 과적합 때문에 100K step에서 멈췄다 [Memorizing Transformers §4.2]. 회수 baseline은 한 번도 돌지 않았다 — kNN-LM, Compressive Transformer, Big Bird가 §2에서 논의되고 아무것도 재현되지 않으며, 유일한 대조군은 저자 자신의 vanilla와 Transformer-XL이다. 근사 회수는 recall 약 90%에서 돌았고, 더 나쁜 근사에도 견고하다는 주장에 수치도 구현체 이름도 없다 [Memorizing Transformers §3.3, §4.2]. 이 장은 위 어느 것도 개별 결함으로 세지 않는다. 세는 것은 **결론의 폭**이다 — 실증된 것은 "저자들이 만든 장거리 의존 corpus에서, 저자들의 baseline 대비, 200M 규모에서 perplexity가 내려간다"이며 초록이 주장하는 능력은 그보다 넓다.
+> **[평가]** 다섯 corpus 중 셋을 저자들이 만들었고, 그중 둘은 측정 대상인 장거리 의존성을 **제조하는** 방식으로 만들어졌다. Github은 저장소 하나를 무작위 디렉터리 순회로 이어 붙이고, Isabelle은 theory 파일을 "ordered according to their import dependencies, so that later files use sub-theorems that are proved in earlier files"로 이어 붙인다 — 정의가 참조보다 반드시 앞선다 [Memorizing Transformers §4.1]. 표 12-4에서 가장 큰 이득이 나오는 열이 정확히 그 둘이다(GitHub 3.05 → 1.80, Isabelle 3.09 → 1.99). Table 4의 캡션은 모든 모델이 500K step 훈련되었다고 적지만 Isabelle은 과적합 때문에 100K step에서 멈췄다 [Memorizing Transformers §4.2]. 회수 baseline은 한 번도 돌지 않았다 — kNN-LM, Compressive Transformer, Big Bird가 [Memorizing Transformers §2]에서 논의되고 아무것도 재현되지 않으며, 유일한 대조군은 저자 자신의 vanilla와 Transformer-XL이다. 근사 회수는 recall 약 90%에서 돌았고, 더 나쁜 근사에도 견고하다는 주장에 수치도 구현체 이름도 없다 [Memorizing Transformers §3.3, §4.2]. 이 장은 위 어느 것도 개별 결함으로 세지 않는다. 세는 것은 **결론의 폭**이다 — 실증된 것은 "저자들이 만든 장거리 의존 corpus에서, 저자들의 baseline 대비, 200M 규모에서 perplexity가 내려간다"이며 초록이 주장하는 능력은 그보다 넓다.
 
 $\Delta_i$ 분석이 이득의 실제 모양을 보여 준다. 22K 토큰짜리 arXiv 논문에서 $n_E{=}8192$과 $n_E{=}32\mathrm{K}$를 비교하면 앞의 8192 토큰 구간에서 차이가 정확히 0이고, 그 뒤로도 "the benefit of external memory is somewhat sparse ... mainly driven by a small percentage of tokens"이며 일부 토큰은 오히려 **나빠진다** [Memorizing Transformers §4.6]. 논문은 원인을 top-$k_{nn}$ 탈락으로 추정하지만 축출과 혼잡을 가르는 실험은 없다. 이득이 몰리는 자리는 희귀 토큰이다 — 고유명사, 참조, 인용, 함수 이름.
 
@@ -192,19 +192,19 @@ $\Delta_i$ 분석이 이득의 실제 모양을 보여 준다. 22K 토큰짜리 
 
 > **[해설]** 바이트로 환산해 본다. **아래 계산은 이 책의 산술이며 논문의 보고값이 아니다.** 논문이 dtype을 적지 않으므로 bf16(2 bytes/elem)을 가정하고 나머지는 논문 자신의 shape다(8 heads × $d_{\text{head}}{=}128$, key·value 양쪽 저장, kNN layer 1개). $n_E{=}65{,}536$이면 $65536 \times 8 \times 128 \times 2 \times 2 = 268{,}435{,}456$ bytes = 256 MiB, 같은 방식으로 1536 → 6 MiB, 8192 → 32 MiB, 262,144 → 1 GiB이고 전부 **문서 하나당**이다. 검산: 같은 토큰 수의 12층 KV cache 전체가 3 GiB이므로 한 층에만 사는 저장소가 그 12분의 1인 것이 맞다. 절대치는 dtype 가정에 걸려 있으니 하한·방향성으로 읽고, 단정하는 것은 자릿수와 비율이다.
 
-집계하면 문제가 보인다. $C{=}512$에서 batch가 문서 256개이고 [Memorizing Transformers §4.2] batch 원소마다 별도의 $E$가 필요하므로, 곱하면 $n_E{=}8192$에서 8 GiB, $n_E{=}65{,}536$에서 64 GiB다. 논문은 두 값을 나란히 적어 놓고 한 번도 곱하지 않는다.
+집계하면 문제가 보인다. $C{=}512$에서 batch가 문서 256개이고 [Memorizing Transformers §4.2] batch 원소마다 별도의 $E$가 필요하므로, 곱하면 $n_E{=}8192$에서 8 GiB, $n_E{=}65{,}536$에서 64 GiB다[본서 산술]. 논문은 두 값을 나란히 적어 놓고 한 번도 곱하지 않는다.
 
 > **[평가]** 용량이 batch와 곱해진다는 것이 이 설계의 서빙 질문 전부다. 논문은 그것을 아키텍처 사실로만 진술하고 회계하지 않는다 — batch 원소마다 별도의 $E$가 필요하다는 문장과 batch 크기를 적은 문장 사이에 곱셈이 없다 [Memorizing Transformers §3.1, §4.2].
 
-gather 트래픽에는 정확한 손익분기가 있다. 회수 후 gather는 kNN layer 하나에서 토큰당 $k_{nn} \times d_{\text{head}} \times 2 \times 2 \times 8 = 131{,}072$ bytes = 128 KiB를 옮기고 이 값은 $n_E$와 무관한 반면, 저장소 전체를 dense scan하면 $n_E \times 8 \times 128 \times 2 \times 2$ bytes를 옮긴다. 둘이 같아지는 지점은 $n_E = C \cdot k_{nn} = 512 \times 32 = 16{,}384$쌍이다. 그보다 작으면 **회수가 전부 훑기보다 더 많은 바이트를 읽고**, 크면 회수가 이기며 이득이 선형으로 커진다. 논문의 1536과 8192는 둘 다 손익분기 아래다. 이 항등식은 shape에서 정확히 따라 나오지만, §12.5의 step-time 삼중값은 검색·attention·쓰기를 묶은 훈련 측정이므로 그 증거가 되지 못한다.
+> **[평가]** gather 트래픽에는 정확한 손익분기가 있다. 회수 후 gather는 kNN layer 하나에서 토큰당 $k_{nn} \times d_{\text{head}} \times 2 \times 2 \times 8 = 131{,}072$ bytes = 128 KiB를 옮기고 이 값은 $n_E$와 무관한 반면, 저장소 전체를 dense scan하면 $n_E \times 8 \times 128 \times 2 \times 2$ bytes를 옮긴다. 둘이 같아지는 지점은 $n_E = C \cdot k_{nn} = 512 \times 32 = 16{,}384$쌍이다. 그보다 작으면 **회수가 전부 훑기보다 더 많은 바이트를 읽고**, 크면 회수가 이기며 이득이 선형으로 커진다. 논문의 1536과 8192는 둘 다 손익분기 아래다. 이 항등식은 shape에서 정확히 따라 나오지만, §12.5의 step-time 삼중값은 검색·attention·쓰기를 묶은 훈련 측정이므로 그 증거가 되지 못한다.
 
 > **[해설]** 독자의 세계로 옮기면 둘이 남는다. 첫째, **shared-weight batching이 온전하다.** 사용자별로 $\Theta$에 쓰이는 것이 없으므로 요청들은 가중치 사본 하나를 공유하고, 요청별 상태는 KV cache처럼 거동한다 — 문서 시작에 할당, 상한까지 성장, 문서 끝에 해제. Rosetta 표에서 이 논문에 대응하는 항목은 "모델 재배포"가 아니라 "KV cache"다. 논문 스스로 그 대비를 윤리 절에 적으며 사용자 지식의 $O(1)$ 삭제를 아키텍처 속성으로 내세운다 [Memorizing Transformers Ethics]. 둘째, 접근 패턴이 직관과 반대다. 문서당 256 MiB는 SRAM이 아니라 HBM에 내려앉고, 논문이 가리키는 10억 규모에서는 host DRAM이나 디스크의 ANN 색인 뒤로 간다 [Memorizing Transformers §3.3]. 대부분이 차가운 큰 영역에 대한 무작위 gather이고, decode에서 익숙한 streaming KV cache의 정반대다.
 
-decode 제약도 하나 명시해 둔다. 쓰기가 chunk 경계에서만 일어나므로 생성 중인 모델은 **현재 chunk 안에서 자기가 만든 토큰을 회수할 수 없다** — 최대 512(또는 2048) 토큰이 chunk가 닫힐 때까지 $E$에 보이지 않는다. 논문은 생성을 돌리지 않아 표면화되지 않지만, 이 기제를 decode 경로에 놓는 어떤 설계에도 걸린다.
+decode 제약도 하나 명시해 둔다. 쓰기가 chunk 경계에서만 일어나므로 생성 중인 모델은 **현재 chunk 안에서 자기가 만든 토큰을 회수할 수 없다** — 최대 512(또는 2048) 토큰이 chunk가 닫힐 때까지 $E$에 보이지 않는다[본서 추론]. 논문은 생성을 돌리지 않아 표면화되지 않지만, 이 기제를 decode 경로에 놓는 어떤 설계에도 걸린다[본서 추론].
 
 ## 12.8 한계와 bridge-out
 
-논문이 남긴 문제는 다섯이다. 거대한 $E$를 무엇으로 채울 것인가 — "How to make the best use of this capability is a topic for future work" [Memorizing Transformers §5]. 읽기 게이트를 내용 의존으로 만들 것인가(명명만 하고 실행하지 않음). staleness가 실제로 불안정성의 원인인가. $n_E$의 수익 체감점을 문서 길이가 정하는가 top-$k_{nn}$ 혼잡이 정하는가 — §4.5는 전자로 §4.6은 후자로 귀속시키고 화해시키지 않는다. 왜 하위 층은 장거리 문맥이 필요 없는가 — 관찰 하나에서 결론으로 곧장 간다.
+논문이 남긴 문제는 다섯이다. 거대한 $E$를 무엇으로 채울 것인가 — "How to make the best use of this capability is a topic for future work" [Memorizing Transformers §5]. 읽기 게이트를 내용 의존으로 만들 것인가(명명만 하고 실행하지 않음). staleness가 실제로 불안정성의 원인인가. $n_E$의 수익 체감점을 문서 길이가 정하는가 top-$k_{nn}$ 혼잡이 정하는가 — [Memorizing Transformers §4.5]는 전자로 [Memorizing Transformers §4.6]은 후자로 귀속시키고 화해시키지 않는다. 왜 하위 층은 장거리 문맥이 필요 없는가 — 관찰 하나에서 결론으로 곧장 간다.
 
 여섯 번째가 이 책에 가장 중요하다. 윤리 절이 삭제 가능성을 아키텍처 요구사항으로 제기한다 — "The same is not true of differentiable model parameters" [Memorizing Transformers Ethics]. 2022년에 미리 적힌 **$\Theta$-경로에 대한 반론**이며 ch19–ch21이 통과해야 할 관문이다. 반대로 한 번도 묻지 않은 것도 있다: $E$와 $\Theta$를 **함께** 쓸 수 있는가. 논문은 둘을 대안으로만 세운다.
 

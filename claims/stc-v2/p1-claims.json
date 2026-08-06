@@ -1,0 +1,827 @@
+{
+  "bundle_part": "stc-v2 P1 (실험 수치 주장) — 절반 A",
+  "boundary": "public",
+  "warrant_anchor": {
+    "repo": "neural-memory-study",
+    "commit": "927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+    "note": "이 파일의 모든 result_refs는 위 commit에서 git-tracked·clean인 experiments/stc/X{1..4}/result.json의 JSON-pointer 경로다. 각 경로는 실재 검증됨(resolve 100%).",
+    "honesty_contract": "experiments/REPRODUCE.md §0의 정직성 계약을 STC 실험에 그대로 적용한다 — 본문 단정문은 비율·자릿수·crossover 위치·순서·bound 분류에만 쓰고, 절대치는 하한 또는 방향성으로만 쓴다. 각 result.json의 findings가 'DIRECTIONAL'·'하한'·'철회'로 표시한 것은 주장문에서도 그대로 그렇게 표현한다."
+  },
+  "grade_legend": {
+    "ACCOUNTING-NOT-MEASURED": "닫힌 형태 회계다. wall-clock도 청구액도 아니다 (X1, X2)",
+    "AUDIT-NOT-MEASUREMENT": "문헌 상태를 세는 감사다. 성능도 비용도 재지 않았다 (X3)",
+    "NOT-AN-LLM-EXPERIMENT": "가우시안 추정 + 선형 연상기억이다. 절대치 이송 불가. 부호·함수형·순서·crossover만 이송한다 (X4)",
+    "PAPER-ABSENT-SWEPT": "원 논문에 없는 값을 가정/sweep했다",
+    "AXIS-READ": "수치표가 없어 그림 축 범위에서 읽은 값",
+    "PRO-STC-ASSUMPTIONS": "가정이 STC에 유리한 쪽으로 잡혀 있다",
+    "BPP-IS-A-LOWER-BOUND": "3.64 bits/param은 원 논문이 하한이라고 밝힌 값. 상한으로 쓰면 용량을 과소평가",
+    "COUNTERFACTUAL": "dense 앵커에 W층이 없으므로 '같은 폭의 TTT류라면'이라는 반사실 수치",
+    "KEYWORD-RULE": "분류는 키워드+부정 규칙의 산물. 개별 라벨은 오류 가능",
+    "CORPUS-SCOPED": "이 책이 deep-read한 29편에 한정. 문헌 전체의 표본이 아니다",
+    "CHAR-APPROX": "토큰 수는 문자/4 근사. 자릿수와 비율만",
+    "KSTAR-CENSORED": "일부 조건의 K*는 K=150 안에서 임계를 넘지 않아 하한(>=150)",
+    "WITHDRAWN": "초판에서 주장했다가 철회한 항목. 철회 사실 자체가 주장이다"
+  },
+  "claims": [
+    {
+      "claim_id": "p1_stc_x1_amortisation_has_an_unamortised_term",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch25 (통일 비용 회계)",
+      "caveat_tags": [
+        "ACCOUNTING-NOT-MEASURED",
+        "PAPER-ABSENT-SWEPT",
+        "PRO-STC-ASSUMPTIONS"
+      ],
+      "transport_rule": "구조(항의 존재)와 그로부터 따라오는 임계의 존재만 단정. L*의 절대치는 이송 불가.",
+      "statement": "[ACCOUNTING-NOT-MEASURED] sleep-time compute의 상각 논증에는 상각되지 않는 항이 구조적으로 하나 있다. 논문의 식은 한 번 내는 sleep 생성 비용 B_s만 질의 수 N_q로 나누는데, 학습된 문맥 ĉ의 prefill은 매 질의마다 다시 내는 비용이므로 N_q로 나뉘지 않는다. 이 항이 0이 아니면 'N_q를 키우면 언제나 이긴다'가 성립하지 않는 영역이 원리적으로 존재하고, 그 경계로 임계 길이 L*(ĉ가 이보다 길면 N_q를 아무리 키워도 baseline을 못 이긴다)가 닫힌 형태로 정의된다. 단정하는 것은 이 항의 존재와 그로부터 따라오는 임계의 존재이며, L*의 절대치가 아니다. 이 회계는 닫힌 형태 산술이지 측정이 아니고, 가정 A1·A2는 STC에 유리한 쪽으로 잡혀 있어 여기서 나오는 여유는 낙관 쪽이다.",
+      "result_refs": [
+        "experiments/stc/X1-unified-cost-accounting/result.json#/findings/F1_the_missing_term_is_structural",
+        "experiments/stc/X1-unified-cost-accounting/result.json#/Q1_Q2_critical_length_by_regime/description",
+        "experiments/stc/X1-unified-cost-accounting/result.json#/meta/assumptions_favouring_stc/A1",
+        "experiments/stc/X1-unified-cost-accounting/result.json#/meta/assumptions_favouring_stc/A2"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x1_amort_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X1-unified-cost-accounting/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x1_swe_regime_crosses_below_one",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch25",
+      "caveat_tags": [
+        "ACCOUNTING-NOT-MEASURED",
+        "PAPER-ABSENT-SWEPT"
+      ],
+      "transport_rule": "L*/|c|가 1 아래로 내려가는 영역이 sweep 안에 실재한다는 사실(부호)만 단정. 0.42라는 값은 조건부 산술.",
+      "statement": "[ACCOUNTING-NOT-MEASURED] 임계의 여유 L*/|c|는 sweep 안에서 1 아래로 내려가는 영역을 실제로 가진다 — SWE-Features 레짐, FLOPs 회계, κ_par=10에서 L*/|c| = 0.42다. 즉 '학습된 문맥이 원 문맥보다 짧아도 상각이 물리는' 조합이 회계상 존재한다. 단정하는 것은 그 영역의 존재이고, 0.42라는 값은 미보고 파라미터(|c|=8000 토큰 가정)에 의존하는 조건부 산술이다. 같은 레짐이 κ_par=1에서는 4.17로 여유가 살아나므로, 이 결론은 병렬 벌수를 함께 명시하지 않으면 성립하지 않는다.",
+      "result_refs": [
+        "experiments/stc/X1-unified-cost-accounting/result.json#/findings/F3_swe_regime_is_where_it_bites",
+        "experiments/stc/X1-unified-cost-accounting/result.json#/Q1_Q2_critical_length_by_regime/values/swe_features/critical_len_chat/flops(w_in=1.0),kappa_par=10/L_star_over_len_c",
+        "experiments/stc/X1-unified-cost-accounting/result.json#/Q1_Q2_critical_length_by_regime/values/swe_features/critical_len_chat/flops(w_in=1.0),kappa_par=1/L_star_over_len_c",
+        "experiments/stc/X1-unified-cost-accounting/result.json#/Q1_Q2_critical_length_by_regime/values/swe_features/len_c_assumed"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x1_swe_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X1-unified-cost-accounting/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x1_kappa_cost_is_load_bearing_and_unmeasured",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch25",
+      "caveat_tags": [
+        "ACCOUNTING-NOT-MEASURED",
+        "PAPER-ABSENT-SWEPT"
+      ],
+      "transport_rule": "선형 의존(함수형)과 '원 논문이 이 상수를 측정하지 않았다'는 사실만 단정. sweep 값은 조건부.",
+      "statement": "[ACCOUNTING-NOT-MEASURED] 임계 길이 L*는 wake/sleep 단가비 κ_cost에 **선형**으로 의존하는데, 원 논문은 이 상수를 측정하지 않고 벤더 문서 한 줄(Databricks provisioned-throughput)에서 인용했으며 민감도 분석을 하지 않았다. SWE-Features·FLOPs 회계에서 κ_cost를 1→20으로 쓸면 L*/|c|가 0.42→8.33로 20배 움직인다(κ_par=1). 단정할 것은 이 **선형 의존**과 **그 계수가 미측정이라는 사실**이며, 특정 κ_cost에서의 L* 값이 아니다. 상각 논증의 결론이 측정되지 않은 상수 하나에 선형으로 매달려 있다는 것이 이 항목의 내용이다.",
+      "result_refs": [
+        "experiments/stc/X1-unified-cost-accounting/result.json#/findings/F5_kappa_cost_is_load_bearing_and_unmeasured",
+        "experiments/stc/X1-unified-cost-accounting/result.json#/Q4_kappa_cost_sensitivity/values/kappa_cost=1.0,kappa_par=1/L_star_over_len_c",
+        "experiments/stc/X1-unified-cost-accounting/result.json#/Q4_kappa_cost_sensitivity/values/kappa_cost=20.0,kappa_par=1/L_star_over_len_c",
+        "experiments/stc/X1-unified-cost-accounting/result.json#/meta/from_paper/kappa_cost/source",
+        "experiments/stc/X1-unified-cost-accounting/result.json#/meta/from_paper/kappa_cost/note"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x1_kappa_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X1-unified-cost-accounting/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x1_breakeven_Nq_spread_across_regimes",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch25",
+      "caveat_tags": [
+        "ACCOUNTING-NOT-MEASURED",
+        "PAPER-ABSENT-SWEPT"
+      ],
+      "transport_rule": "레짐 간 자릿수 차이(1 미만 대 수십)와 부호만 단정. 손익분기 N_q의 값은 이송 불가.",
+      "statement": "[ACCOUNTING-NOT-MEASURED, PAPER-ABSENT-SWEPT] 손익분기 질의 수 N_q는 레짐 간에 자릿수가 다르다 — Stateful GSM-Symbolic은 sweep한 모든 회계·모든 |ĉ|/|c|에서 N_q < 1(첫 질의부터 이긴다)인 반면, SWE-Features는 FLOPs 회계·|ĉ|/|c|=4에서 N_q ≈ 37로 뛴다. 이송 가능한 것은 이 **자릿수 차이와 그 방향**(문맥이 길고 절감률이 작을수록 상각에 더 많은 질의가 필요하다)이고, 특정 N_q 값이 아니다. B_s_gen과 n_rewrites는 원 논문에 없어 이 실험이 가정한 값이며, 실서빙의 N_q 분포도 미보고라 {1,2,5,10}으로 sweep만 했다.",
+      "result_refs": [
+        "experiments/stc/X1-unified-cost-accounting/result.json#/Q3_breakeven_Nq/description",
+        "experiments/stc/X1-unified-cost-accounting/result.json#/Q3_breakeven_Nq/values/stateful_gsm_symbolic/values/flops(w_in=1.0),|c_hat|~1|c|=4.0",
+        "experiments/stc/X1-unified-cost-accounting/result.json#/Q3_breakeven_Nq/values/swe_features/values/flops(w_in=1.0),|c_hat|~1|c|=4.0",
+        "experiments/stc/X1-unified-cost-accounting/result.json#/meta/absent_from_paper/B_s_gen",
+        "experiments/stc/X1-unified-cost-accounting/result.json#/meta/absent_from_paper/N_q_distribution"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x1_breakeven_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X1-unified-cost-accounting/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x1_does_not_refute_the_5x",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch25, ch30",
+      "caveat_tags": [
+        "ACCOUNTING-NOT-MEASURED"
+      ],
+      "transport_rule": "주장의 범위 선언. 수치 이송 없음.",
+      "statement": "[ACCOUNTING-NOT-MEASURED] 이 실험은 Letta STC가 보고한 5배(및 SWE에서 1.5배) 절감을 반박하지 **않는다**. 그 수치는 생성 토큰 축에서 관측된 사실이다. 이 실험이 반박하는 것은 '생성 토큰 축이 곧 비용 축'이라는 암묵 등식이며, 그 등식이 깨지는 지점이 논문 자신이 이미 약하다고 보고한 레짐(SWE-Features)과 일치한다는 것이다. 이 구분을 지우고 '5배가 틀렸다'로 읽으면 오용이다.",
+      "result_refs": [
+        "experiments/stc/X1-unified-cost-accounting/result.json#/findings/honest_limit",
+        "experiments/stc/X1-unified-cost-accounting/result.json#/meta/regimes/swe_features/reduction",
+        "experiments/stc/X1-unified-cost-accounting/result.json#/meta/regimes/stateful_gsm_symbolic/reduction_source"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x1_limit_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X1-unified-cost-accounting/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x2_corpus_reports_no_state_bytes",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch26",
+      "caveat_tags": [
+        "CORPUS-SCOPED"
+      ],
+      "transport_rule": "전수 확인된 부재(0편) — 단정 가능.",
+      "statement": "[CORPUS-SCOPED] 이 책이 deep-read한 corpus 전체에서 상태 용량 C_cap을 **바이트로 보고한 논문은 0편**이다(letta-stc·zep·memory-layers·mem0 모두 부재). 따라서 세 경로(E/Θ/W)를 같은 자로 재려면 구성 파라미터에서 복원하는 수밖에 없고, X2의 모든 바이트 수치가 회계인 이유가 여기 있다. 이 부재 자체가 이 분야의 비교 불가능성을 보여주는 결과다.",
+      "result_refs": [
+        "experiments/stc/X2-state-capacity-accounting/result.json#/findings/F1_corpus_reports_no_bytes",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/meta/absent_from_corpus/C_cap_in_bytes",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/meta/caveat_tags/CORPUS-SILENT-ON-BYTES"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x2_nobytes_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X2-state-capacity-accounting/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x2_three_paths_differ_by_orders_of_magnitude",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch26",
+      "caveat_tags": [
+        "ACCOUNTING-NOT-MEASURED",
+        "COUNTERFACTUAL",
+        "E-PATH-TOKENS-ONLY"
+      ],
+      "transport_rule": "자릿수 차이와 수명·상주 위치의 구조적 차이만 단정. 절대 바이트는 이송 불가.",
+      "statement": "[ACCOUNTING-NOT-MEASURED, COUNTERFACTUAL] dense-8B 앵커에서 세 경로의 사용자당/세션당 상태는 자릿수가 서로 다르다 — E-경로 저장(14k 토큰 텍스트)이 수십 KB, Θ-경로 delta(LoRA r=16, q·v, bf16)가 수십 MB, W-경로 상태가 수십 GB 규모다. 단정할 것은 이 **자릿수 차이**와 각 경로의 수명·상주 위치가 전부 다르다는 구조적 사실이며(그래서 '용량'을 한 숫자로 말할 수 없다), 절대 바이트가 아니다. W-경로 값은 dense 8B에 W층이 없으므로 '같은 폭의 TTT류 모델이라면'이라는 **반사실** 수치이고 Llama-3-8B의 상태량이 아니다. E-경로 바이트는 논문이 토큰 수만 보고해 이 실험이 환산한 가정치다.",
+      "result_refs": [
+        "experiments/stc/X2-state-capacity-accounting/result.json#/findings/F2_three_paths_differ_by_orders_of_magnitude",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/Q1_state_bytes_by_path/dense-8B (d=4096, L=32)/W_path/MB",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/Q1_state_bytes_by_path/dense-8B (d=4096, L=32)/W_path/counterfactual_caveat",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/Q1_state_bytes_by_path/dense-8B (d=4096, L=32)/Theta_path_lora/variants/r=16,q,v/MB",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/Q1_state_bytes_by_path/dense-8B (d=4096, L=32)/E_path/variants/14000_tokens/as_utf8_text_KB",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/meta/caveat_tags/E-PATH-TOKENS-ONLY"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x2_orders_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X2-state-capacity-accounting/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x2_cross_path_density_comparison_withdrawn",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch26 판정 4, ch30 §30.3.2",
+      "caveat_tags": [
+        "WITHDRAWN",
+        "BPP-IS-A-LOWER-BOUND"
+      ],
+      "transport_rule": "철회 사실 자체가 주장이다. 철회된 비교는 어느 방향으로도 인용 금지.",
+      "statement": "[WITHDRAWN] **철회 주장.** 이 책의 X2 초판(2026-08-06)은 [lm-memorization-capacity]의 3.64 bits/param을 **상한**으로 놓고 'E-경로가 Θ-경로보다 저장 바이트당 정보 효율이 높다'는 경로 간 밀도 비교를 했다. 원 논문은 그 값을 명시적으로 **하한**이라고 밝힌다(§3.2: \"we are only ever measuring a lower bound on model capacity\"). 하한을 상한으로 쓰면 Θ층 용량을 체계적으로 과소평가하므로 그 비교는 방향조차 보장되지 않는다. 따라서 경로 간 정보 밀도 비교는 **이 회계로 판정 불가**로 남긴다 — 판정하려면 delta에 알려진 엔트로피를 주입해 회수 가능한 bits/param을 재는 별도 실험이 필요하고 그것은 X2의 범위 밖이다. 이 항목은 지워지지 않으며, 철회 이력이 남아 있다는 사실이 나머지 항목 등급의 근거다.",
+      "result_refs": [
+        "experiments/stc/X2-state-capacity-accounting/result.json#/findings/F3_withdrawn_cross_path_density_claim",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/Q2_information_density/cross_path_density_comparison/verdict",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/Q2_information_density/cross_path_density_comparison/why",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/meta/sourced_constants/bits_per_parameter/bound_direction",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/meta/sourced_constants/bits_per_parameter/bound_source",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/meta/sourced_constants/bits_per_parameter/correction_note"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x2_withdrawn_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X2-state-capacity-accounting/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.95
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x2_dtype_sets_density_and_survives_the_withdrawal",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch26 판정 3",
+      "caveat_tags": [
+        "ACCOUNTING-NOT-MEASURED",
+        "BPP-IS-A-LOWER-BOUND",
+        "WITHDRAWN"
+      ],
+      "transport_rule": "dtype 축의 배수·순서는 단정(분모만으로 결정). bits/stored-byte는 **하한**으로만 표기. 16/3.64 = 4.4는 여유의 **상한**이며 하한으로 인용 금지. '양자화는 전제' 결론은 철회.",
+      "statement": "[ACCOUNTING-NOT-MEASURED, BPP-IS-A-LOWER-BOUND, WITHDRAWN] 저장 바이트당 정보량은 저장 dtype이 정한다 — 같은 delta를 bf16→int8→int4로 내리면 밀도가 정확히 두 배씩 오른다. 이 배수는 분모(저장 bytes/param)만으로 정해지므로 분자가 하한이든 상한이든 성립하고, 따라서 앞 항목의 철회에 걸리지 않는다. 절대치는 **하한**으로만 읽는다: Θ-경로 delta의 bits/stored-byte는 bf16에서 **적어도** 1.82, int8에서 **적어도** 3.64, int4에서 **적어도** 7.28이다(분자가 원 논문이 하한이라고 밝힌 3.64 bits/param이므로 위가 아니라 아래가 막혀 있다). 그리고 corpus의 어느 논문도 delta 양자화를 논의하지 않는다. **여기까지가 이 회계가 지지하는 전부다.** 표현 폭(bf16 = 16 bits/param)을 측정된 용량 하한(3.64 bits/param)으로 나눈 4.4배는 양자화가 버는 여유의 **하한이 아니라 상한**이다 — 파라미터가 실제로 담는 bits가 하한 위로 올라갈수록 압축 여유는 오히려 줄기 때문이다. 그러므로 '표현 자체에서 최소 4.4배의 저장 여유가 나온다'와 '델타 양자화는 최적화가 아니라 전제다'는 이 번들에서 **철회한다** — 둘 다 X2 초판과 result.json F3이 4.4배를 하한 쪽으로 읽어 세운 문장이고, 보장된 여유가 없으므로 그 결론은 따라 나오지 않는다. 판정하려면 delta에 알려진 엔트로피를 주입해 회수 가능한 bits/param을 재는 실험이 필요하며, 그것은 X2의 범위 밖이다.",
+      "result_refs": [
+        "experiments/stc/X2-state-capacity-accounting/result.json#/findings/F3_quantisation_is_a_precondition_not_an_optimisation",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/Q2_information_density/Theta_lora_r16_qv_8B/by_dtype/bf16/bits_per_stored_byte",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/Q2_information_density/Theta_lora_r16_qv_8B/by_dtype/int8/bits_per_stored_byte",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/Q2_information_density/Theta_lora_r16_qv_8B/by_dtype/int4/bits_per_stored_byte",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/Q2_information_density/Theta_lora_r16_qv_8B/reading",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/Q2_information_density/cross_path_density_comparison/what_survives"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x2_dtype_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X2-state-capacity-accounting/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x2_warm_tier_is_the_device_opportunity",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch26, ch29",
+      "caveat_tags": [
+        "ACCOUNTING-NOT-MEASURED"
+      ],
+      "transport_rule": "사용자 수에 대한 선형 모양, 저장 방식 간 자릿수 순서, 기회 계층의 성격만 단정. TB 절대치는 이송 불가.",
+      "statement": "[ACCOUNTING-NOT-MEASURED] Θ-경로가 주류가 되면 필요한 저장은 **사용자 수에 선형**으로 늘고, 저장 방식 간 자릿수 순서는 int4 delta < bf16 delta << 모델 전체 사본이다(10^6 사용자·8B 앵커 기준으로 각각 한 자릿수 TB, 십 단위 TB, 만 단위 TB). 따라서 이 경로가 만드는 메모리 장치 기회는 HBM 대역폭이 아니라 **요청 지연 안에 delta를 끌어올 수 있는 웜 계층과 그 계층의 쓰기 내구성**이며, 이는 W-경로가 짚는 HBM RMW 기회와 다른 자리다. 단정할 것은 이 선형 모양·자릿수 순서·기회의 성격이고, TB 값은 선형 외삽 산술이지 측정이 아니다.",
+      "result_refs": [
+        "experiments/stc/X2-state-capacity-accounting/result.json#/findings/F4_memory_device_opportunity_is_warm_not_hot",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/Q3_scaling_with_users/values/1e+06_users/lora_r=16_bf16/TB",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/Q3_scaling_with_users/values/1e+06_users/lora_r=16_int4/TB",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/Q3_scaling_with_users/values/1e+06_users/direct_edit_full_copy_bf16/TB",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/Q4_serving_structure/traffic_character/Theta"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x2_warm_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X2-state-capacity-accounting/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x2_edit_vs_delta_is_a_serving_fork",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch26 (E12), ch29",
+      "caveat_tags": [
+        "ACCOUNTING-NOT-MEASURED"
+      ],
+      "transport_rule": "구조적 분류(batching이 어디서 깨지는가) — 단정 가능. 편집 시간 수치는 논문 인용 + 노트작성자 산술.",
+      "statement": "[ACCOUNTING-NOT-MEASURED] 공유 가중치 batching이 깨지는 지점은 경로마다 다르며 이것은 값이 아니라 **구조적 분류**다 — E-경로는 유지되고(가중치 전부 공유, 상태는 프롬프트로 들어옴), W-경로는 부분적으로 깨지며(세션마다 별도 fast-weight가 HBM 상주), Θ-경로 LoRA는 delta 단위로 깨지고(요청마다 사용자 delta 로드/머지), Θ-경로 직접 편집(MEMIT/ROME류)은 완전히 깨진다. 직접 편집은 delta 아티팩트를 만들지 않고 공유 가중치를 제자리에서 고치므로 사용자별 개인화가 구조적으로 불가능하고, 하려면 모델 전체 사본이 필요하다. **Θ-경로가 서빙에 도달하려면 delta 형태여야 한다**는 제약이 여기서 나오며, corpus의 논문들은 이 갈림길을 논의하지 않는다.",
+      "result_refs": [
+        "experiments/stc/X2-state-capacity-accounting/result.json#/findings/F5_edit_vs_delta_is_a_serving_fork",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/Q4_serving_structure/shared_weight_batching",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/Q1_state_bytes_by_path/dense-8B (d=4096, L=32)/Theta_path_direct_edit/why",
+        "experiments/stc/X2-state-capacity-accounting/result.json#/Q4_serving_structure/write_amplification/note"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x2_fork_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X2-state-capacity-accounting/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x3_budget_axis_census",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch28",
+      "caveat_tags": [
+        "AUDIT-NOT-MEASUREMENT",
+        "KEYWORD-RULE",
+        "CORPUS-SCOPED"
+      ],
+      "transport_rule": "범주별 편수와 순서는 단정. 개별 논문 라벨은 evidence 확인 후에만 인용. corpus 밖으로 일반화 금지.",
+      "statement": "[AUDIT-NOT-MEASUREMENT, CORPUS-SCOPED] 이 책이 deep-read한 29편을 규칙 기반으로 전수 감사하면 sleep 예산 B_s의 보고 분포는 (a) 절대 FLOPs/토큰 1편 · (b) optimizer step 수 5편 · (c) 벽시계 2편 · (d) 서수 knob만 2편 · (e) 상대 비율만 0편 · (f) absent 19편이다. 즉 이 corpus에서 B_s는 **축이 아니라 각주**다. 단정할 것은 이 편수와 범주 간 순서이며, 개별 논문의 라벨은 키워드+부정 규칙의 산물이라 (b)냐 (c)냐 하는 판정은 각 항목의 evidence·ambiguity_flags를 확인한 뒤에만 인용해야 한다. 또 이 표본은 '이 책이 읽은 29편'이므로 '문헌의 X%가…'로 일반화하면 오용이다. 감사는 문헌 상태를 세는 일이지 성능도 비용도 재지 않는다.",
+      "result_refs": [
+        "experiments/stc/X3-budget-axis/result.json#/Q1_reporting_census/by_category/a/n",
+        "experiments/stc/X3-budget-axis/result.json#/Q1_reporting_census/by_category/b/n",
+        "experiments/stc/X3-budget-axis/result.json#/Q1_reporting_census/by_category/c/n",
+        "experiments/stc/X3-budget-axis/result.json#/Q1_reporting_census/by_category/d/n",
+        "experiments/stc/X3-budget-axis/result.json#/Q1_reporting_census/by_category/e/n",
+        "experiments/stc/X3-budget-axis/result.json#/Q1_reporting_census/by_category/f/n",
+        "experiments/stc/X3-budget-axis/result.json#/findings/load_bearing_may_be_stated_as_fact/0",
+        "experiments/stc/X3-budget-axis/result.json#/findings/directional_or_lower_bound_only/0",
+        "experiments/stc/X3-budget-axis/result.json#/findings/directional_or_lower_bound_only/8"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x3_census_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X3-budget-axis/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x3_absent_vs_undefined_must_not_be_conflated",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch28",
+      "caveat_tags": [
+        "AUDIT-NOT-MEASUREMENT",
+        "CORPUS-SCOPED"
+      ],
+      "transport_rule": "두 부재의 구분과 독립 필드 간 일치 사실 — 단정 가능.",
+      "statement": "[AUDIT-NOT-MEASUREMENT] B_s가 absent인 19편 중 **9편은 '보고 안 함'이 아니라 질의 전 오프라인 패스 자체가 없어 B_s가 정의되지 않는** 경우다. 이 9편 집합은 PRE-RESEARCH §2.2의 판별식 불충족 목록과 사실상 일치한다 — 서로 다른 필드에서 독립적으로 같은 결론이 나온다. 따라서 '보고가 부실하다'와 '범주에 속하지 않는다'를 섞어 세면 안 되며, 부재 19편을 그대로 '보고 실패'로 인용하는 것은 오용이다.",
+      "result_refs": [
+        "experiments/stc/X3-budget-axis/result.json#/findings/load_bearing_may_be_stated_as_fact/1",
+        "experiments/stc/X3-budget-axis/result.json#/Q1_reporting_census/structural/B_s_undefined_no_offline_pass",
+        "experiments/stc/X3-budget-axis/result.json#/Q1_reporting_census/structural/B_s_defined",
+        "experiments/stc/X3-budget-axis/result.json#/Q1_reporting_census/cross_check_vs_dossier_discriminant/reading"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x3_undef_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X3-budget-axis/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x3_founding_paper_has_no_number_in_the_numerator",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch28, ch25",
+      "caveat_tags": [
+        "AUDIT-NOT-MEASUREMENT"
+      ],
+      "transport_rule": "원문 전문 정규식 probe의 직접 결과 — 단정 가능(재현 가능한 문자열 검색).",
+      "statement": "[AUDIT-NOT-MEASUREMENT] 이 라인의 이름을 만든 논문(Letta, Sleep-time Compute)은 B_s를 **서수 knob으로만** 보고한다. 원문 전문에 정규식 probe를 걸면 '<숫자> tokens' 꼴이 두 번 나오는데 둘 다 AIME 문제 속 게임 말('1 token', '4 tokens')이고 비용 숫자가 아니며, 'FLOP'은 0회 나온다. 즉 **상각 논증의 분자에 숫자가 없다.** 이것은 재현 가능한 문자열 검색의 결과이므로 단정 가능하지만, '어딘가에 그 문자열이 없다'만 말할 뿐 논문이 다른 형태로 예산을 암시했는지까지 말하지는 않는다.",
+      "result_refs": [
+        "experiments/stc/X3-budget-axis/result.json#/findings/load_bearing_may_be_stated_as_fact/2",
+        "experiments/stc/X3-budget-axis/result.json#/Q1_reporting_census/founding_paper_direct_probe/n_matches",
+        "experiments/stc/X3-budget-axis/result.json#/Q1_reporting_census/founding_paper_direct_probe/matches",
+        "experiments/stc/X3-budget-axis/result.json#/Q1_reporting_census/founding_paper_direct_probe/n_FLOP_mentions",
+        "experiments/stc/X3-budget-axis/result.json#/Q1_reporting_census/by_category/d/papers"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x3_probe_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X3-budget-axis/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.95
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x3_both_axes_are_broken_no_curve",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch28",
+      "caveat_tags": [
+        "AUDIT-NOT-MEASUREMENT",
+        "CORPUS-SCOPED"
+      ],
+      "transport_rule": "판정(곡선 불가)과 그 근거 편수는 단정. 환산 가능 편수와 벤치 공유량은 **상한**으로 표기.",
+      "statement": "[AUDIT-NOT-MEASUREMENT] 현재 문헌으로는 B_s–품질 곡선을 **그릴 수 없다**. 근거는 두 축이 동시에 깨져 있다는 것이다. x축: (a)~(c) 후보 8편 중 노트만으로 FLOPs 환산이 닫히는 논문은 1편이고, 벽시계를 FLOPs로 옮길 다리인 MFU/달성 throughput을 보고한 노트는 29편 중 1편뿐이다(그 1편은 B_s가 정의되지도 않는다). y축: B_s 축 위에 2점 이상을 놓은 4편의 벤치마크 교집합은 공집합이고 두 편 이상이 공유하는 벤치마크가 하나도 없다(pairwise 0건). 이 판정 자체가 ch28의 결과이며, 기여는 곡선이 아니라 최소 보고 요구 R1–R9다. 단 '환산 가능 1편'과 '벤치 공유 0건'은 문자열/이름 매칭으로 얻은 **상한**이다 — 실제 환산·비교 가능성은 이보다 많을 수 없고 적을 수는 있다.",
+      "result_refs": [
+        "experiments/stc/X3-budget-axis/result.json#/Q4_verdict/can_draw_a_B_s_quality_curve",
+        "experiments/stc/X3-budget-axis/result.json#/Q2_unified_axis/candidates_n",
+        "experiments/stc/X3-budget-axis/result.json#/Q2_unified_axis/convertible_n",
+        "experiments/stc/X3-budget-axis/result.json#/Q1_reporting_census/structural/papers_with_>=2_points_on_the_B_s_axis",
+        "experiments/stc/X3-budget-axis/result.json#/Q3_quality_axis/benchmark_intersection_over_all_pool",
+        "experiments/stc/X3-budget-axis/result.json#/Q3_quality_axis/pairwise_shared_benchmarks",
+        "experiments/stc/X3-budget-axis/result.json#/findings/directional_or_lower_bound_only/5",
+        "experiments/stc/X3-budget-axis/result.json#/findings/directional_or_lower_bound_only/6"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x3_nocurve_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X3-budget-axis/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x3_reporting_rate_order_theta_over_e",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch28",
+      "caveat_tags": [
+        "AUDIT-NOT-MEASUREMENT",
+        "CORPUS-SCOPED"
+      ],
+      "transport_rule": "Θ > E라는 **순서**만 인용. 0.625 대 0.222 같은 비율은 본문 수치로 금지(표본 작음).",
+      "statement": "[AUDIT-NOT-MEASUREMENT] B_s 보고율은 경로마다 다르며, 표본이 의미 있는 두 경로만 보면 **Θ-경로 > E-경로**로 순서가 뚜렷하다. 이유는 기제가 아니라 **관행**이다 — Θ-경로는 ML 학습 논문의 보고 관습(step·batch·GPU-hour)을 물려받았고, E-경로는 시스템/제품 논문의 관습(지연·정확도)을 물려받아 쓰기 비용을 세는 칸이 아예 없다. 인용 가능한 것은 이 **순서**뿐이고, 보고율 비율 자체는 표본이 작아(W 1편, bio 3편, other/mixed 3편) 본문 수치로 쓰면 안 된다.",
+      "result_refs": [
+        "experiments/stc/X3-budget-axis/result.json#/findings/load_bearing_may_be_stated_as_fact/5",
+        "experiments/stc/X3-budget-axis/result.json#/findings/directional_or_lower_bound_only/7",
+        "experiments/stc/X3-budget-axis/result.json#/Q1_reporting_census/reporting_rate_by_axis_sorted/Theta/rate",
+        "experiments/stc/X3-budget-axis/result.json#/Q1_reporting_census/reporting_rate_by_axis_sorted/E/rate"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x3_rate_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X3-budget-axis/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.85
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x3_grounds_and_strengthens_x1",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch28 §Q5, ch25",
+      "caveat_tags": [
+        "AUDIT-NOT-MEASUREMENT",
+        "CHAR-APPROX",
+        "PRINTED-EXAMPLE-N1",
+        "COMPETITOR-MEASURED"
+      ],
+      "transport_rule": "두 오차의 **방향**과 그것이 X1 결론에 미치는 효과만 단정. 토큰 수는 문자/4 근사라 자릿수·비율만.",
+      "statement": "[AUDIT-NOT-MEASUREMENT, CHAR-APPROX] X1이 가정한 원 문맥 길이는 양쪽으로 어긋나 있고, **두 어긋남의 방향이 모두 X1의 결론과 같은 쪽**이다. 짧은 레짐(GSM/AIME)에서 X1의 |c| 가정은 논문이 직접 인쇄한 예시 문맥의 문자 기반 추정보다 크므로 X1은 그 레짐의 여유를 **과소** 보고했고(=STC에 불리하게 잡았고), 긴 레짐에서는 corpus가 실제로 다루는 대화형 문맥이 X1의 최대 레짐보다 한 자릿수 가까이 커서 X1의 sweep은 **상단이 잘려 있었다**. 또 |ĉ|/|c|의 관측 범위는 X1이 sweep한 격자보다 훨씬 넓고 양 끝이 모두 밖에 있다. 결과적으로 X1의 레짐 순서 결론과 '긴 문맥에서 상각이 물린다'는 방향은 유지·강화된다. 단 여기 토큰 수는 전부 문자/4 근사이므로 자릿수와 비율만 쓸 것(소수점 인용 금지), 문자 수는 인쇄된 예시 1~2건에서 나온 것이라 '데이터셋 평균'으로 읽으면 오용이며, Zep 저장소 값은 경쟁사가 측정해 보고한 값이라 방향만 쓴다. SWE-Features의 |c|는 여전히 미보고이고 이 실험은 X1의 8000 토큰 가정을 **하한으로만** 지지한다.",
+      "result_refs": [
+        "experiments/stc/X3-budget-axis/result.json#/Q5_context_length_grounding/verdict/short_contexts",
+        "experiments/stc/X3-budget-axis/result.json#/Q5_context_length_grounding/verdict/long_contexts",
+        "experiments/stc/X3-budget-axis/result.json#/Q5_context_length_grounding/verdict/ratio_grid",
+        "experiments/stc/X3-budget-axis/result.json#/Q5_context_length_grounding/verdict/net_effect_on_X1_conclusions",
+        "experiments/stc/X3-budget-axis/result.json#/Q5_context_length_grounding/corpus_wide_token_length_mining/global_p50",
+        "experiments/stc/X3-budget-axis/result.json#/findings/directional_or_lower_bound_only/1",
+        "experiments/stc/X3-budget-axis/result.json#/findings/directional_or_lower_bound_only/2",
+        "experiments/stc/X3-budget-axis/result.json#/findings/directional_or_lower_bound_only/3",
+        "experiments/stc/X3-budget-axis/result.json#/findings/directional_or_lower_bound_only/4"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x3_ground_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X3-budget-axis/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.85
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x4_one_over_i_weighting_is_a_property_of_the_schedule",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch29",
+      "caveat_tags": [
+        "NOT-AN-LLM-EXPERIMENT",
+        "EXACT-WITHIN-THE-TOY"
+      ],
+      "transport_rule": "함수형과 부호만 단정. 배율·절대 위험값은 이송 금지. 라운드 200의 위험비는 비율이므로 이송 가능.",
+      "statement": "[NOT-AN-LLM-EXPERIMENT] [model-collapse]의 세 데이터 스케줄이 내는 **함수형**은 설계행렬이 아예 없는 가우시안 위치 모형에서 그대로 재유도된다 — replace는 라운드 수에 선형, replace-multiple은 조화급수(≈log k), accumulate는 Σ1/i²로 π²/6에 유계다. 부호 불일치는 없고 다른 것은 배율뿐이며, 그 배율 차이는 inverse-Wishart 인자가 위치 모형에 없기 때문이다. 따라서 **1/i 가중은 선형회귀의 성질이 아니라 데이터 스케줄의 성질**이고, 그 결론을 Θ-경로 일반으로 옮기는 것은 원 논문 자체가 허용하는 것보다 넓게 정당화된다. 이송 가능한 것은 이 함수형·부호와 스케줄 간 순서이며(라운드 200에서 replace/accumulate 위험비 약 122배는 비율이므로 이송 가능), 절대 위험값이나 배율은 아니다. 이 유도는 근사가 아니라 정확하지만 그 정확성은 이 모형 안에서만 참이다.",
+      "result_refs": [
+        "experiments/stc/X4-consolidation-decay/result.json#/findings/LOAD_BEARING_본문_단정문으로_쓸_것/F1_the_1_over_i_weighting_is_a_property_of_the_schedule",
+        "experiments/stc/X4-consolidation-decay/result.json#/A_analytic_gaussian/A1_form_match_vs_model_collapse/replace",
+        "experiments/stc/X4-consolidation-decay/result.json#/A_analytic_gaussian/A1_form_match_vs_model_collapse/replace_multiple",
+        "experiments/stc/X4-consolidation-decay/result.json#/A_analytic_gaussian/A1_form_match_vs_model_collapse/accumulate",
+        "experiments/stc/X4-consolidation-decay/result.json#/A_analytic_gaussian/A1_form_match_vs_model_collapse/sign_disagreement",
+        "experiments/stc/X4-consolidation-decay/result.json#/A_analytic_gaussian/A1_variance_pinned/ratio_replace_over_accumulate/5",
+        "experiments/stc/X4-consolidation-decay/result.json#/A_analytic_gaussian/A3_monte_carlo_check/all_consistent"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x4_form_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X4-consolidation-decay/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x4_second_moment_is_the_coordinate_that_dies",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch29",
+      "caveat_tags": [
+        "NOT-AN-LLM-EXPERIMENT",
+        "EXACT-WITHIN-THE-TOY"
+      ],
+      "transport_rule": "어느 좌표가 무너지는가(부호·함수형)와 정리가 그 좌표를 볼 수 없다는 사실만 단정. 반감기 라운드 수는 이송 금지.",
+      "statement": "[NOT-AN-LLM-EXPERIMENT] [model-collapse]의 정리는 라운드마다 분산을 상수로 재주입하므로 **2차 모멘트를 원리적으로 볼 수 없다**. 그 가정을 풀면 replace 스케줄에서 생성 분포의 분산이 **기하적으로 붕괴**하는 반면 accumulate는 2차 모멘트도 지켜 낸다. 그리고 바로 그 좌표가 그 논문 자신의 VAE 실험이 실패한 좌표다 — 손실은 (거의) 유계인데 생성 다양성이 사라진다. 즉 '유계'는 1차 모멘트의 성질이고 실제로 죽는 것은 2차 모멘트이며, 이 진술은 그 논문의 그림·문장과 부호가 같고 그 논문의 정리로는 표현할 수 없다. 따라서 accumulate의 우월성은 그 논문이 증명한 것보다 넓다. 이송 가능한 것은 이 **부호·함수형(기하 붕괴 대 보존)과 좌표의 지목**이며, 반감기 라운드 수나 분산 절대치는 이 장난감 모형의 산물이라 본문에 숫자로 옮기지 않는다.",
+      "result_refs": [
+        "experiments/stc/X4-consolidation-decay/result.json#/findings/LOAD_BEARING_본문_단정문으로_쓸_것/F2_the_theorem_cannot_see_the_coordinate_that_actually_fails",
+        "experiments/stc/X4-consolidation-decay/result.json#/A_analytic_gaussian/A2_variance_free/replace_var_geometric_collapse",
+        "experiments/stc/X4-consolidation-decay/result.json#/A_analytic_gaussian/A2_variance_free/accumulate_protects_the_second_moment",
+        "experiments/stc/X4-consolidation-decay/result.json#/A_analytic_gaussian/A2_variance_free/note",
+        "experiments/stc/X4-consolidation-decay/result.json#/meta/sourced_forms/model_collapse_vae_failure/value",
+        "experiments/stc/X4-consolidation-decay/result.json#/findings/DIRECTIONAL_하한_방향성으로만_쓸_것/D1_absolute_numbers"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x4_2ndmoment_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X4-consolidation-decay/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x4_flat_loss_is_not_evidence_of_stability",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch29 (운영·모니터링)",
+      "caveat_tags": [
+        "NOT-AN-LLM-EXPERIMENT"
+      ],
+      "transport_rule": "곡선의 **모양**(포화 대 선형 발산)과 그 원인의 부호만 단정. 포화값·라운드 수 이송 금지.",
+      "statement": "[NOT-AN-LLM-EXPERIMENT] 손실 곡선이 평평해지는 것은 안정의 증거가 아닐 수 있다. 같은 반복 루프에서 MLE 분산을 쓰면 위치 위험이 **포화**하는데, 그 포화의 원인은 안정이 아니라 생성 분포가 죽어 스텝이 작아지는 것이다. 같은 루프를 불편 추정량으로 돌리면 위험은 라운드 수에 **선형으로 발산**한다 — 즉 '발산이냐 포화냐'를 가르는 것은 추정량의 편향 보정이지 루프의 건전성이 아니다. 운영 함의: held-out perplexity 같은 1차 모멘트 지표만 보는 모니터는 이 붕괴에 발화하지 않으므로, 반복 sleep 루프의 모니터링 지표는 생성 분포의 퍼짐이어야 한다. corpus에서 그것을 라운드 함수로 보고한 논문은 0편이다. 이송하는 것은 두 곡선의 모양 대비와 그 원인의 부호이며 포화 수준값이 아니다.",
+      "result_refs": [
+        "experiments/stc/X4-consolidation-decay/result.json#/findings/LOAD_BEARING_본문_단정문으로_쓸_것/F3_a_flat_loss_curve_is_not_evidence_of_stability",
+        "experiments/stc/X4-consolidation-decay/result.json#/A_analytic_gaussian/A2_variance_free/replace_risk_saturates",
+        "experiments/stc/X4-consolidation-decay/result.json#/A_analytic_gaussian/A2_variance_free/unbiased_variance_restores_linear_divergence",
+        "experiments/stc/X4-consolidation-decay/result.json#/meta/absent_from_corpus/second_moment_of_generator"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x4_flatloss_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X4-consolidation-decay/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x4_task_metric_lags_the_dying_store",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch29, ch30",
+      "caveat_tags": [
+        "NOT-AN-LLM-EXPERIMENT",
+        "SHAPE-FIT-IS-MODEL-SELECTION"
+      ],
+      "transport_rule": "두 지표의 **모양 차이**(임계 대 매끄러움)와 그로부터 나오는 보고 관행 비판만 단정. ρ의 pp·라운드 수 이송 금지.",
+      "statement": "[NOT-AN-LLM-EXPERIMENT] 같은 반복 루프에서 임계형 과제 지표(access)와 연속 신호(쓰기가 만든 lift)는 **열화의 모양이 다르다**. 저장은 1라운드부터 꾸준히 깎이는데 과제 지표는 한동안 전혀 움직이지 않다가 좁은 구간에서 절벽으로 떨어진다. 따라서 '라운드당 몇 %'라는 단일 비율로 열화율 ρ를 보고하는 관행 자체가 오도다 — 무엇을 재느냐가 모양을 바꾼다. corpus의 두 논문이 ρ를 서로 다른 형태(닫힌 형태 대 유지 곡선)로 보고하는 것은 게으름이 아니라 이 구조적 사실의 반영이다. 이송하는 것은 이 **모양 차이와 그 순서**(연속 신호가 먼저, 과제 지표가 나중)뿐이며, ρ의 pp 값·유예 라운드 수·절벽 폭은 전부 이 장난감 모형의 산물이라 본문에 숫자로 옮기지 않는다. 네 후보 함수형의 SSE 차이가 작아 모형 선택은 결정적이지 않지만, 위 진술은 모형 선택에 의존하지 않는 모형 무관 통계에서 나온다.",
+      "result_refs": [
+        "experiments/stc/X4-consolidation-decay/result.json#/findings/LOAD_BEARING_본문_단정문으로_쓸_것/F4_the_task_metric_does_not_move_while_the_store_is_already_dying",
+        "experiments/stc/X4-consolidation-decay/result.json#/C_verdict/C0_model_free_shape_statistics/why",
+        "experiments/stc/X4-consolidation-decay/result.json#/C_verdict/C0_model_free_shape_statistics/access/omega=0.0|replay=none/grace_round_first_below_0.95",
+        "experiments/stc/X4-consolidation-decay/result.json#/C_verdict/C0_model_free_shape_statistics/lift/omega=0.0|replay=none/grace_round_first_below_0.95",
+        "experiments/stc/X4-consolidation-decay/result.json#/meta/caveat_tags/SHAPE-FIT-IS-MODEL-SELECTION",
+        "experiments/stc/X4-consolidation-decay/result.json#/findings/DIRECTIONAL_하한_방향성으로만_쓸_것/D2_no_plateau_level_correspondence"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x4_lag_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X4-consolidation-decay/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x4_report_the_crossover_not_the_rate",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch29 (SLA 설계)",
+      "caveat_tags": [
+        "NOT-AN-LLM-EXPERIMENT",
+        "KSTAR-CENSORED"
+      ],
+      "transport_rule": "crossover의 **존재**와 ω에 대한 **이동 방향(단조 증가)**만 단정. K*의 라운드 수·필요 ω는 이송 금지.",
+      "statement": "[NOT-AN-LLM-EXPERIMENT, KSTAR-CENSORED] 과제 지표가 임계로 무너지므로 이송해야 할 양은 열화율 ρ가 아니라 **crossover K*(ω)** — 성능이 기준선을 유지하는 마지막 라운드 — 다. 이 모형에서 K*는 replay 비율 ω에 대해 **단조 증가**한다(self replay에서 Spearman 1.00). 따라서 설계 규칙은 'ρ가 아니라 K*를 SLA로 쓸 것'이다. 이송 가능한 것은 crossover의 존재와 ω에 대한 이동 방향뿐이며, K*의 라운드 수나 필요 ω 값은 이 장난감의 산물이라 본문 수치로 쓰지 않는다. 또 gold replay의 상위 ω 조건은 K=150 안에서 임계를 넘지 않아 K*가 **censored(하한 ≥150)** 이며, 이는 '무한히 버틴다'가 아니다.",
+      "result_refs": [
+        "experiments/stc/X4-consolidation-decay/result.json#/findings/LOAD_BEARING_본문_단정문으로_쓸_것/F5_what_must_be_reported_is_the_crossover_not_the_rate",
+        "experiments/stc/X4-consolidation-decay/result.json#/B_simulation_fact_injection/B2_Kstar_by_omega/definition",
+        "experiments/stc/X4-consolidation-decay/result.json#/B_simulation_fact_injection/B2_Kstar_by_omega/monotonicity/self_Kstar/spearman_vs_omega",
+        "experiments/stc/X4-consolidation-decay/result.json#/B_simulation_fact_injection/B2_Kstar_by_omega/monotonicity/note",
+        "experiments/stc/X4-consolidation-decay/result.json#/findings/DIRECTIONAL_하한_방향성으로만_쓸_것/D3_censoring"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x4_kstar_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X4-consolidation-decay/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x4_replay_must_be_anchored_to_retained_originals",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch29 (설계 규칙)",
+      "caveat_tags": [
+        "NOT-AN-LLM-EXPERIMENT",
+        "KSTAR-CENSORED"
+      ],
+      "transport_rule": "조건 간 **순서**(gold > self, 모든 ω에서)와 부호만 단정. K* 비율·라운드 수는 모형 내부값이라 이송 금지.",
+      "statement": "[NOT-AN-LLM-EXPERIMENT] 예산과 ω를 맞춘 상태에서 replay 타깃을 **보존된 원본**(gold)으로 하면 **모델 자기 출력**(self)으로 할 때보다 **모든 ω에서** 오래 버틴다 — 순서가 뒤집히는 ω는 없다. 이는 PART A의 accumulate 대 replace 대비를 사실 주입 설정에서 재현한 것이고, [continual-facts-in-weights §6.2]의 frozen-teacher 대 own-merges 부호와도 일치한다. 설계 규칙: **replay는 보존된 원본에 앵커되어야 하며, 현재 모델로 replay 타깃을 다시 만들면 replace regime의 발산을 다시 불러온다.** 그리고 self 타깃에서 **스케일(2차 모멘트) 채널만** 제거하는 ablation이 손해의 일부를 되돌리므로, PART A의 2차 모멘트 발견이 이 시뮬 안에서도 작동한다. 이송 가능한 것은 이 순서와 부호, 그리고 ablation의 개선 방향이며, K* 비(gold/self)나 라운드 수는 모형 내부값이라 본문 수치로 쓰지 않는다.",
+      "result_refs": [
+        "experiments/stc/X4-consolidation-decay/result.json#/findings/LOAD_BEARING_본문_단정문으로_쓸_것/F6_replay_must_be_anchored_to_retained_originals",
+        "experiments/stc/X4-consolidation-decay/result.json#/B_simulation_fact_injection/B3_gold_vs_self_replay/0.25/gold_over_self_Kstar_ratio",
+        "experiments/stc/X4-consolidation-decay/result.json#/B_simulation_fact_injection/B3_gold_vs_self_replay/0.75/gold_over_self_Kstar_ratio",
+        "experiments/stc/X4-consolidation-decay/result.json#/B_simulation_fact_injection/B4_self_replay_scale_channel_ablation/what",
+        "experiments/stc/X4-consolidation-decay/result.json#/B_simulation_fact_injection/B4_self_replay_scale_channel_ablation/cells/0.5",
+        "experiments/stc/X4-consolidation-decay/result.json#/meta/sourced_forms/cfw_frozen_vs_own_merges/value"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x4_replay_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X4-consolidation-decay/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x4_gold_and_self_replay_buy_different_things",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch29",
+      "caveat_tags": [
+        "NOT-AN-LLM-EXPERIMENT",
+        "CAPABILITY-COUPLED-TO-RETENTION"
+      ],
+      "transport_rule": "이중 해리의 **부호와 방향**만 단정. capability·access 값은 이송 금지. 원 논문과의 일치는 부호 수준.",
+      "statement": "[NOT-AN-LLM-EXPERIMENT] 'replay를 넣는다'는 하나의 처방이 아니라 서로 다른 것을 사는 두 처방이다. gold replay는 사실 유지를 사고 capability는 사지 못하며, self replay는 그 반대다 — 현재 동작에 앵커하므로 capability를 지키지만 이미 잃은 내용을 되살리지 못한다. 이 **이중 해리의 부호**는 [continual-facts-in-weights]가 독립적으로 관측한 두 사실과 같다 — KL 페널티(현재 base 앵커)는 capability를 되살리지만, frozen-anchor consolidation은 capability만 회복시키고 유지율은 회복시키지 못한다. 이송 가능한 것은 이 방향의 대비뿐이며 값은 아니다. 또 이 모형 자체에서는 capability와 사실 유지가 같은 스케일로 함께 무너져 해리되지 않으므로, 위 진술은 replay **종류 간 대비**에 한정되고 원 논문이 측정한 해리 일반을 재현하지 않는다.",
+      "result_refs": [
+        "experiments/stc/X4-consolidation-decay/result.json#/findings/LOAD_BEARING_본문_단정문으로_쓸_것/F7_gold_and_self_replay_buy_different_things",
+        "experiments/stc/X4-consolidation-decay/result.json#/B_simulation_fact_injection/B3_gold_vs_self_replay/0.75/gold_capability_100",
+        "experiments/stc/X4-consolidation-decay/result.json#/B_simulation_fact_injection/B3_gold_vs_self_replay/0.75/self_capability_100",
+        "experiments/stc/X4-consolidation-decay/result.json#/meta/sourced_forms/cfw_kl_penalty/value",
+        "experiments/stc/X4-consolidation-decay/result.json#/meta/sourced_forms/cfw_consolidation_dissociation/value",
+        "experiments/stc/X4-consolidation-decay/result.json#/meta/caveat_tags/CAPABILITY-COUPLED-TO-RETENTION"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x4_dissoc_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X4-consolidation-decay/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.85
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x4_damage_tracks_distance_from_the_original",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch29",
+      "caveat_tags": [
+        "NOT-AN-LLM-EXPERIMENT"
+      ],
+      "transport_rule": "상관의 **부호**만 load-bearing. 크기·상관계수 값은 이송 금지(조건 11개, 체크포인트 의존 큼).",
+      "statement": "[NOT-AN-LLM-EXPERIMENT] 조건 간에서 capability 손실은 초기 파라미터 Θ_0로부터의 **거리와 같은 방향으로** 간다. 이 모형에는 언어도 KL도 없고 Frobenius 거리뿐인데도 부호가 [continual-facts-in-weights §6.1]의 관측과 같다. 따라서 '원본에서 멀어진 만큼 능력을 잃는다'는 규칙성은 LLM 고유 현상이 아니라 **순차 파라미터 덮어쓰기의 일반 성질**일 수 있다 — 이는 그 논문의 관측을 반박하지 않고, 그 관측이 특별한 설명을 요구하지 않음을 보인다. load-bearing한 것은 **부호**뿐이고 크기는 아니다: Frobenius 거리는 KL이 아니며, 조건이 11개뿐이라 상관의 신뢰구간이 넓고, 후기 체크포인트에서는 대부분 조건의 capability가 바닥에 붙어 순위 자체가 무의미해지므로 상관이 무너진다.",
+      "result_refs": [
+        "experiments/stc/X4-consolidation-decay/result.json#/findings/LOAD_BEARING_본문_단정문으로_쓸_것/F8_damage_tracks_distance_from_the_original",
+        "experiments/stc/X4-consolidation-decay/result.json#/B_simulation_fact_injection/B7_drift_capability/by_checkpoint/k=50/spearman_drift_vs_capability_loss",
+        "experiments/stc/X4-consolidation-decay/result.json#/B_simulation_fact_injection/B7_drift_capability/by_checkpoint/k=100/spearman_drift_vs_capability_loss",
+        "experiments/stc/X4-consolidation-decay/result.json#/B_simulation_fact_injection/B7_drift_capability/paper_reference",
+        "experiments/stc/X4-consolidation-decay/result.json#/findings/DIRECTIONAL_하한_방향성으로만_쓸_것/D4_drift_capability_magnitude"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x4_drift_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X4-consolidation-decay/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.85
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x4_mechanism_exclusion_not_refutation",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch29, ch30",
+      "caveat_tags": [
+        "NOT-AN-LLM-EXPERIMENT",
+        "MECHANISM-EXCLUSION-NOT-CONFIRMATION",
+        "SURVIVAL-HALF-ONLY"
+      ],
+      "transport_rule": "재현 실패는 **기제 배제**로만 읽는다. 원 논문 반박으로 읽으면 오용. 효과 크기 이송 금지.",
+      "statement": "[NOT-AN-LLM-EXPERIMENT, MECHANISM-EXCLUSION-NOT-CONFIRMATION] 이 최소 모형이 재현하지 **못한** 것은 원 논문의 반박이 아니라 **기제 배제**다. 첫째, 2×2 실험에서 '이후 쓰기가 지배하고 저장 방식은 거의 무관하다'는 비대칭의 방향은 [continual-facts-in-weights §7.2]와 같지만 later-write 효과의 **부호는 반대**다(이 모형에서는 broad한 이후 쓰기가 더 크게 파괴한다). 따라서 그 논문이 보고한 '좁은 이후 쓰기가 더 파괴적'이라는 결과는 일반적 선형 덮어쓰기로 설명되지 않으며 LLM 고유 기제를 요구한다. 반면 비대칭 자체는 선형 간섭만으로도 나오므로 특별한 설명이 필요 없다. 둘째, capability–유지 해리는 이 모형에서 재현되지 않으므로 그 해리는 순차 덮어쓰기의 일반 성질이 아니다. 셋째, 저장–접근 해리는 의미론이 전혀 없는 이 모형에서도 **방향으로는** 재현되지만 **크기는 훨씬 작다** — 그러므로 그 패턴의 존재는 특별한 접근 기제의 증거가 아니지만, 그 논문이 보고한 크기는 이 기제로 설명되지 않는다. 그리고 이 실험은 survival 절반만 다루고 creation(합성·함의) 절반은 다루지 않는다 — 선형 사상에 그 기제가 없기 때문이다.",
+      "result_refs": [
+        "experiments/stc/X4-consolidation-decay/result.json#/findings/MECHANISM_EXCLUSION_최소모형이_재현하지_못한_것/X1_later_write_breadth_effect_has_the_opposite_sign",
+        "experiments/stc/X4-consolidation-decay/result.json#/findings/MECHANISM_EXCLUSION_최소모형이_재현하지_못한_것/X2_capability_and_retention_are_coupled_here",
+        "experiments/stc/X4-consolidation-decay/result.json#/findings/MECHANISM_EXCLUSION_최소모형이_재현하지_못한_것/X3_storage_access_dissociation_reproduces_in_direction_but_not_in_size",
+        "experiments/stc/X4-consolidation-decay/result.json#/B_simulation_fact_injection/B5_breadth_2x2/later_write_effect_pp_at_k50",
+        "experiments/stc/X4-consolidation-decay/result.json#/B_simulation_fact_injection/B5_breadth_2x2/paper_reference",
+        "experiments/stc/X4-consolidation-decay/result.json#/B_simulation_fact_injection/B6_storage_vs_access_dissociation/summary",
+        "experiments/stc/X4-consolidation-decay/result.json#/meta/caveat_tags/SURVIVAL-HALF-ONLY"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x4_exclusion_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X4-consolidation-decay/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x4_acquisition_cost_exists_but_is_sub_threshold",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch29",
+      "caveat_tags": [
+        "NOT-AN-LLM-EXPERIMENT",
+        "OMEGA-IS-NOT-A-TOKEN-BUDGET"
+      ],
+      "transport_rule": "거래의 **존재와 방향**만 단정. 정량 주장 금지(임계 지표로는 보이지 않는다는 것이 요점).",
+      "statement": "[NOT-AN-LLM-EXPERIMENT] 예산 정합(라운드당 항목 수와 경사 스텝 고정) 하에서 replay 비율 ω를 올리면 새 사실 **습득**이 손해를 보는 거래가 존재하지만, 그 손해는 임계 지표로는 보이지 않는다 — 0/1 정확도는 전 조건에서 꿈쩍하지 않는 반면 같은 예측의 연속 여유는 ω에 대해 **단조로 줄어든다**. 이것은 앞의 '과제 지표는 저장이 이미 죽는 동안 움직이지 않는다'는 현상이 습득 축에서 되풀이된 것이다. 본문에서 이 거래를 **정량으로 주장하지 말 것** — 쓸 수 있는 것은 존재와 방향뿐이다. 또 ω는 항목 수 비율이지 실제 시스템의 토큰·FLOPs 예산이 아니다.",
+      "result_refs": [
+        "experiments/stc/X4-consolidation-decay/result.json#/findings/DIRECTIONAL_하한_방향성으로만_쓸_것/D5_acquisition_cost_is_real_but_sub_threshold",
+        "experiments/stc/X4-consolidation-decay/result.json#/B_simulation_fact_injection/B3b_new_fact_acquisition_cost/what",
+        "experiments/stc/X4-consolidation-decay/result.json#/B_simulation_fact_injection/B3b_new_fact_acquisition_cost/cells/spearman_omega_vs_acc",
+        "experiments/stc/X4-consolidation-decay/result.json#/B_simulation_fact_injection/B3b_new_fact_acquisition_cost/cells/spearman_omega_vs_margin",
+        "experiments/stc/X4-consolidation-decay/result.json#/meta/budget_matched",
+        "experiments/stc/X4-consolidation-decay/result.json#/meta/caveat_tags/OMEGA-IS-NOT-A-TOKEN-BUDGET"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x4_acq_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X4-consolidation-decay/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.85
+        }
+      ]
+    },
+    {
+      "claim_id": "p1_stc_x4_falsifier_no_paper_runs_past_100_rounds",
+      "type": "P1",
+      "boundary": "public",
+      "visibility": "team",
+      "supports": "ch30 (반증 조건)",
+      "caveat_tags": [
+        "NOT-AN-LLM-EXPERIMENT",
+        "CORPUS-SCOPED",
+        "KSTAR-CENSORED"
+      ],
+      "transport_rule": "다섯 설계 조건(부호 기반)과 corpus 부재(0편)는 단정. K*의 유한성은 이 모형 안에서의 사실이며 실제 시스템 수치가 아니다.",
+      "statement": "[NOT-AN-LLM-EXPERIMENT, CORPUS-SCOPED] Θ-경로가 K라운드를 버티려면 다섯이 필요하다 — (1) 원본을 버리지 말 것(유계성은 실데이터가 코퍼스에 남아 있는 데서 온다), (2) replay 타깃을 현재 모델로 다시 만들지 말 것, (3) 1차 모멘트만 모니터링하지 말 것, (4) 과제 지표만 모니터링하지 말 것, (5) ρ가 아니라 K*를 SLA로 쓸 것. 다섯을 다 지켜도 이 모형에서 K*는 **유한**하며, 서비스가 요구하는 K를 넘는지는 **corpus의 어느 논문도 답하지 않는다 — sleep 라운드를 100회 넘게 돌린 논문이 0편이기 때문이다.** 이것이 ch30의 반증 조건이다: Θ-경로를 지지하려면 K>100에서 원본 보존 replay와 함께 K*를 측정한 실험이 필요하고, 현재 corpus에는 없다. 다섯 조건은 부호·구조에서 나오므로 단정 가능하지만, K*의 라운드 수는 이 모형의 산물이라 실제 시스템의 한계로 인용할 수 없다.",
+      "result_refs": [
+        "experiments/stc/X4-consolidation-decay/result.json#/findings/F9_what_theta_path_needs_to_survive_K_rounds",
+        "experiments/stc/X4-consolidation-decay/result.json#/meta/absent_from_corpus/K_beyond_100",
+        "experiments/stc/X4-consolidation-decay/result.json#/meta/absent_from_corpus/rho_as_a_rate",
+        "experiments/stc/X4-consolidation-decay/result.json#/meta/absent_from_corpus/half_life",
+        "experiments/stc/X4-consolidation-decay/result.json#/meta/absent_from_corpus/replay_ratio_axis",
+        "experiments/stc/X4-consolidation-decay/result.json#/findings/honest_limits"
+      ],
+      "evidence": [
+        {
+          "id": "p1_stc_x4_falsifier_e1",
+          "kind": "source_artifact",
+          "ref": "experiments/stc/X4-consolidation-decay/result.json@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
+          "trust": 0.9
+        }
+      ]
+    }
+  ],
+  "verification_round": "verification-2026-08-06 — see claims/stc-v2/verification.md. This half was updated in lockstep with bundle.json so the merge-integrity check still compares like with like; every edit is enumerated there."
+}

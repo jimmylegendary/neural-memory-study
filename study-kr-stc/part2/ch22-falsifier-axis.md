@@ -71,7 +71,7 @@ $$
 \tag{22-3}
 $$
 
-즉 $S(\cdot;B_s)$가 항등사상이고 검색이 완벽하다. **이 대조군은 $E$-경로의 구현이 아니라 상한이다.** Letta식 요약도, 검색 오차도 모델링되지 않는다 [§2, p.3; Fig. 1, p.2].
+즉 $S(\cdot;B_s)$가 항등사상이고 검색이 완벽하다. **이 대조군은 $E$-경로의 구현이 아니라 상한이다[본서 추론].** Letta식 요약도, 검색 오차도 모델링되지 않는다 [§2, p.3; Fig. 1, p.2].
 
 계기는 두 개다. 첫째, 쓰기가 만든 객체의 **종류**를 재는 entailment gap.
 
@@ -161,7 +161,7 @@ $\rho$를 인용할 때는 어느 $\rho$인지 반드시 밝혀야 한다. 저�
 
 ### 22.6.1 한 번의 쓰기는 무엇을 만드는가
 
-96 step, 다섯 유형 평균, strict 정책에서 study 데이터가 10.1pp 이긴다(95% CI [+7.0, +13.3], 243개 사실 짝지음). 그런데 lenient 정책에서는 **bare-statement가 13.6pp 이긴다** [§3.1, p.4]. 이 부호 반전이 entailment gap의 정의를 정당화한다.
+96 step, 다섯 유형 평균, strict 정책에서 study 데이터가 10.1pp 이긴다(95% CI [+7.0, +13.3], 243개 사실 짝지음). 그런데 lenient 정책에서는 **bare-statement가 13.6pp 이긴다** [§3.1, p.4]. 이 부호 반전이 entailment gap의 정의를 정당화한다[본서 판단].
 
 유형별로 보면 갈라지는 자리가 분명하다. bare-statement는 24 step 안에 recall 97%, paraphrase 95%에 도달하고 96 step에서 포화한다. study는 96 step에서 88%와 83%로 각각 11pp, 13pp 뒤진다. counterfactual은 반대다 — bare는 24 step에서 192 step까지 21–23%에 머물고, study는 45–50%에 도달해 96 step에서 29pp 앞선다 [§3.1, p.4]. composition은 study 60%, bare 40%, 프롬프트 상한 83%, context distillation 70%다 [§3.1, p.5; App. B.1, p.27]. 96 step에서 넓은 데이터는 application을 +21pp, composition을 +18pp, counterfactual을 +29pp 올리는데 "extra bare-statement optimisation improves none of them" [§3.1, p.5].
 
@@ -211,25 +211,25 @@ $k=20$에서 strict 문항을 전부 틀린 사실은 bare 54개, study 3개이�
 
 **둘째 평가의 주 대비는 실패했다.** 목적 제작한 prior-conflict 계기(240개 사실, 4개 레시피, 시드 3개)에서 strict 정책의 모든 신뢰구간이 0을 가로지르고 사전 설정한 +10pp 지지 기준에 닿지 않는다. truncation되지 않은 행만으로 다시 계산하면 gap이 +0.1pp(invert)와 +0.2pp(neutral)로 붕괴한다 — 잔여 신호가 truncation 인공물이었다 [App. D.3, p.31]. 다양성 효과는 application 문항만으로 사후 제한한 뒤에야 되살아난다 [App. D.4, p.33].
 
-**헤드라인 대비는 문항 양식에 의존한다.** 기본값을 진술하고 대조를 묻는 cue를 붙이면 bare-statement의 strict 정확도가 23%에서 99%로 오르고 entailment gap이 31.8pp에서 0.9pp로 무너진다 [App. D.4, p.32]. §3을 지탱하는 22–42pp gap은 cue 없는 문항에서만 존재하며, 이 논문의 주 평가는 구성상 cue가 없다.
+**헤드라인 대비는 문항 양식에 의존한다.** 기본값을 진술하고 대조를 묻는 cue를 붙이면 bare-statement의 strict 정확도가 23%에서 99%로 오르고 entailment gap이 31.8pp에서 0.9pp로 무너진다 [App. D.4, p.32]. [Continual Facts §3]을 지탱하는 22–42pp gap은 cue 없는 문항에서만 존재하며, 이 논문의 주 평가는 구성상 cue가 없다.
 
-**문맥 채널은 가중치 채널이 도달한 규모에서 시험되지 않았다.** 문맥에 동시에 들어간 사실은 최대 2개인데(§5.2의 쌍 실험) 가중치 채널은 100개까지 밀린다 [§5.2, p.12]. 게다가 그 대조군 자체가 완벽하지 않다 — 프롬프트 상한은 composition에서 83%이고 tier별로 77–95%이며 [App. B.1, p.27; App. D.4, p.33], cue 유무로 76%와 95% 사이를 오가고 [App. D.4, p.32], bare-statement 쓰기 스트림 아래에서는 프롬프트 기준선 자체가 45.5pp 떨어진다 [§7.2, p.18].
+**문맥 채널은 가중치 채널이 도달한 규모에서 시험되지 않았다.** 문맥에 동시에 들어간 사실은 최대 2개인데([Continual Facts §5.2]의 쌍 실험) 가중치 채널은 100개까지 밀린다 [§5.2, p.12]. 게다가 그 대조군 자체가 완벽하지 않다 — 프롬프트 상한은 composition에서 83%이고 tier별로 77–95%이며 [App. B.1, p.27; App. D.4, p.33], cue 유무로 76%와 95% 사이를 오가고 [App. D.4, p.32], bare-statement 쓰기 스트림 아래에서는 프롬프트 기준선 자체가 45.5pp 떨어진다 [§7.2, p.18].
 
-나머지 바닥은 이렇다. **100회 확장 — 이 책이 가장 원하는 결과인 25–28% 고원 — 이 논문에서 가장 약한 증거다.** 범위가 12개 셀에서 8개로 축소되었고("after partial records existed"), 종점 대비가 사후에 선택되었으며, 조건별로 학습률이 조정되었고, 불확실성 구간이 없고, 문맥 상한이 77.3%로 인증 기준 80%에 미달한 채 수용되었다 [§4.3, p.9; App. B.3, p.27]. 목적함수 한 계열은 아예 평가되지 못했다 — GRPO 조건은 "received almost no signal because the base model never produced the target counterfactuals" [§3.3, p.6]. 요인분해 16셀 중 1셀(reverse-KL·bare·LoRA)은 생성 상한 반복으로 검열되어 생존 상관은 15개 조건의 complete-case 분석이다 [§3.3, §4.1]. 확증 결과는 전부 4B이고 8B는 gap 한 측정의 복제 1회뿐이며 [App. C.4, p.29], 같은 조건의 유지율이 §6.2에서 11%, §6.4에서 12%로 인쇄된다 [p.14, p.15].
+나머지 바닥은 이렇다. **100회 확장 — 이 책이 가장 원하는 결과인 25–28% 고원 — 이 논문에서 가장 약한 증거다.** 범위가 12개 셀에서 8개로 축소되었고("after partial records existed"), 종점 대비가 사후에 선택되었으며, 조건별로 학습률이 조정되었고, 불확실성 구간이 없고, 문맥 상한이 77.3%로 인증 기준 80%에 미달한 채 수용되었다 [§4.3, p.9; App. B.3, p.27]. 목적함수 한 계열은 아예 평가되지 못했다 — GRPO 조건은 "received almost no signal because the base model never produced the target counterfactuals" [§3.3, p.6]. 요인분해 16셀 중 1셀(reverse-KL·bare·LoRA)은 생성 상한 반복으로 검열되어 생존 상관은 15개 조건의 complete-case 분석이다 [§3.3, §4.1]. 확증 결과는 전부 4B이고 8B는 gap 한 측정의 복제 1회뿐이며 [App. C.4, p.29], 같은 조건의 유지율이 [Continual Facts §6.2]에서 11%, [Continual Facts §6.4]에서 12%로 인쇄된다 [p.14, p.15].
 
-넷이 더 붙는다. **수치의 비교 가능 범위가 절마다 다르다** — §6.4의 12개 조건은 "their own optimisation budget and question set, so retention levels here are not comparable to those of §4"이고 [§6.4, p.15], 요인분해는 네 쌍이 조건별로 조정된 학습률을 써서 "an association across operating points rather than a one-variable causal effect"다 [§3.3, p.6]. **하중을 지는 주장 여럿이 작은 $n$ 위에 있다** — 역savings는 잊힌 study 사실 3개, protected optimizer의 null은 고유 저장 사실 5개(60개 짝 단위로 재표집), 합성 붕괴는 14쌍 47문항, 사전 tier 역전은 19개 삼중쌍(부호검정 $p=0.064$)이고, 요인분해의 864 단위는 32개 사실의 반복측정이다 [§5.1, p.12; §7.3, p.18; App. A.6, p.26; §5.2, p.12; §4.2, p.9; App. C.1, p.28]. **인쇄 오류가 더 있다** — App. D.1이 프롬프트 상한이라고 적은 "(neutral 96%, invert 80%, confirm 77%)"은 실제로는 App. A.5의 문항 생존율(95.9 / 79.5 / 76.3)이고 같은 부록의 Fig. 20은 상한을 97 / 87 / 89로 인쇄하며 [p.30; p.26], "13,728 records (240 facts × 4 recipes × 3 seeds)"는 곱이 2,880이다 [App. D.3, p.31]. 재현 쪽에서는 의존성 lockfile을 고정해 두고도 "the exact base-model revision was not recorded in the run rows"이다 [App. A.3, p.26]. 마지막으로 §7.2의 간섭 대비에는 논문이 배제하지 못한 교란이 남는다 — bare-statement 스트림에서 반복 생성 실패가 4.2%·3.2%(study 스트림 0%)이고, 논문은 "broad generation pathology remains a possible explanation"이라고 적는다 [§7.2, p.18].
+넷이 더 붙는다. **수치의 비교 가능 범위가 절마다 다르다** — [Continual Facts §6.4]의 12개 조건은 "their own optimisation budget and question set, so retention levels here are not comparable to those of §4"이고 [§6.4, p.15], 요인분해는 네 쌍이 조건별로 조정된 학습률을 써서 "an association across operating points rather than a one-variable causal effect"다 [§3.3, p.6]. **하중을 지는 주장 여럿이 작은 $n$ 위에 있다** — 역savings는 잊힌 study 사실 3개, protected optimizer의 null은 고유 저장 사실 5개(60개 짝 단위로 재표집), 합성 붕괴는 14쌍 47문항, 사전 tier 역전은 19개 삼중쌍(부호검정 $p=0.064$)이고, 요인분해의 864 단위는 32개 사실의 반복측정이다 [§5.1, p.12; §7.3, p.18; App. A.6, p.26; §5.2, p.12; §4.2, p.9; App. C.1, p.28]. **인쇄 오류가 더 있다** — App. D.1이 프롬프트 상한이라고 적은 "(neutral 96%, invert 80%, confirm 77%)"은 실제로는 App. A.5의 문항 생존율(95.9 / 79.5 / 76.3)이고 같은 부록의 Fig. 20은 상한을 97 / 87 / 89로 인쇄하며 [p.30; p.26], "13,728 records (240 facts × 4 recipes × 3 seeds)"는 곱이 2,880이다 [App. D.3, p.31]. 재현 쪽에서는 의존성 lockfile을 고정해 두고도 "the exact base-model revision was not recorded in the run rows"이다 [App. A.3, p.26]. 마지막으로 [Continual Facts §7.2]의 간섭 대비에는 논문이 배제하지 못한 교란이 남는다 — bare-statement 스트림에서 반복 생성 실패가 4.2%·3.2%(study 스트림 0%)이고, 논문은 "broad generation pathology remains a possible explanation"이라고 적는다 [§7.2, p.18].
 
 ## 22.7 Systems/serving 함의
 
-**decode에서 바뀌는 것은 없다.** fast weight도, 토큰당 상태 갱신도, KV cache를 넘어 자라는 상태도 없다. $k$회 쓰기 후의 서빙은 Qwen3-4B 모양 $\Theta$ 하나 위의 평범한 frozen forward pass다 [App. A.3, p.25].
+**decode에서 바뀌는 것은 없다[본서 추론].** fast weight도, 토큰당 상태 갱신도, KV cache를 넘어 자라는 상태도 없다. $k$회 쓰기 후의 서빙은 Qwen3-4B 모양 $\Theta$ 하나 위의 평범한 frozen forward pass다 [App. A.3, p.25].
 
 > **[해설]** adapter가 보존되지 않고 merge되므로 **저장된 사실당 한계 decode 비용이 정확히 0이다.** 사실 100개를 넣은 모델의 토큰당 비용은 0개를 넣은 모델과 같다. 이것이 이 논문에서 $\Theta$-경로가 $E$-경로에 대해 갖는 유일한 명백한 우위이고, **논문은 이 사실을 한 번도 적지 않는다.** 반대편에서 문맥 채널은 질문마다 문장 토큰을 prefill하고 KV를 잡는다. 그 비용도 논문에 없다. 그래서 "context wins"라는 결론은 서빙 산술이 뒷받침하는 것보다 강하게 읽힌다.
 
-트래픽은 읽기가 아니라 **쓰기 쪽**에 있다. 사실 하나당 4B 모델 위의 forward+backward 192 step(batch size 1), adapter용 AdamW moment, 그리고 merge — merge는 전 층 일곱 투영 텐서에 걸친 full read-modify-write다. 즉 100회 쓰기는 전체 모델 RMW 100회를 뜻하고, 논문은 이 중 어느 것도 측정하지 않는다. frozen-anchor consolidation의 교환비는 그 위에서 더 나쁘다 — batch 조건이 $N$개 사실에 $24\times N$ step이므로 $k=100$의 통합 1회가 2,400 step, 단일 쓰기의 열 배가 넘고 [App. A.3, p.25], $m$회마다 통합하는 정책은 쓰기 $k$까지 누적 $O(k^2/m)$ step을 쓴다(본서 산술). **그 비용이 사는 것은 역량이지 도달성이 아니다** [§4.3, p.10].
+트래픽은 읽기가 아니라 **쓰기 쪽**에 있다. 사실 하나당 4B 모델 위의 forward+backward 192 step(batch size 1), adapter용 AdamW moment, 그리고 merge — merge는 전 층 일곱 투영 텐서에 걸친 full read-modify-write다. 즉 100회 쓰기는 전체 모델 RMW 100회를 뜻하고, 논문은 이 중 어느 것도 측정하지 않는다. frozen-anchor consolidation의 교환비는 그 위에서 더 나쁘다 — batch 조건이 $N$개 사실에 $24\times N$ step이므로 $k=100$의 통합 1회가 2,400 step, 단일 쓰기의 열 배가 넘고 [App. A.3, p.25], $m$회마다 통합하는 정책은 쓰기 $k$까지 누적 $O(k^2/m)$ step을 쓴다[본서 산술]. **그 비용이 사는 것은 역량이지 도달성이 아니다** [§4.3, p.10].
 
 batching은 온전하다. 모든 사실이 전역 $\Theta$ 하나에 merge되고 사용자별·세션별 가중치 상태가 없기 때문이다. Rosetta 사전의 "batch로 weight 공유 ↔ $\Theta$-경로에서 깨짐" 행은 **이 논문의 설정에서는 발동하지 않는다.** 사용자별 사실로 옮기는 순간 per-user $\Delta\Theta$가 생기고 grouped-GEMM 문제가 상속되는데, 이 논문은 사용자별 쓰기를 고려하지 않는다 — 이 책이 가장 궁금해하는 배포 형태에 대해서는 아무 말도 하지 않는다.
 
-운영 계기 하나는 즉시 쓸 수 있다. drift(식 6.1)는 고정 프롬프트 풀에 대해 고정된 참조 모델과 비교하는 forward pass이므로 서빙 fleet에서 싸게 돌릴 수 있고, 12개 조건에서 $\rho_S=0.83$, 16개 조건에서 $0.946$으로 역량 손상을 정렬한다. **단 계기판이지 조종간이 아니다** — §6.3이 KL을 움직이지 않고 역량을 60pp 넘게 회복시켰다. 카나리아로 쓰고 제어 신호로 쓰지 않는 것이 이 증거가 허락하는 사용법이다.
+운영 계기 하나는 즉시 쓸 수 있다. drift(식 6.1)는 고정 프롬프트 풀에 대해 고정된 참조 모델과 비교하는 forward pass이므로 서빙 fleet에서 싸게 돌릴 수 있고, 12개 조건에서 $\rho_S=0.83$, 16개 조건에서 $0.946$으로 역량 손상을 정렬한다. **단 계기판이지 조종간이 아니다** — [Continual Facts §6.3]이 KL을 움직이지 않고 역량을 60pp 넘게 회복시켰다. 카나리아로 쓰고 제어 신호로 쓰지 않는 것이 이 증거가 허락하는 사용법이다[본서 판단].
 
 ## 22.8 한계와 bridge-out
 
@@ -293,7 +293,7 @@ Part I의 ch06·ch07·ch09가 개념을 실었고 논문 평가에 속하는 불
 
 **$W$-경로는 완전한 침묵이다.** 참고문헌에 Titans·Miras·Atlas·TNT·Nested Learning·`Language Models Need Sleep`·TTT·fast-weight programming·Mamba·DeltaNet·RWKV가 한 편도 없고, "fast weights"·"test-time training"이라는 말이 본문에 나오지 않는다.
 
-**$\Theta$-경로는 옛 계보만 인용한다.** LoRA·ROME·MEMIT·EWC·Biderman 외 2024·`How much do LMs memorize`(2505.24832)는 있고, SEAL·Nested Learning·`LM Need Sleep`·SCM·Generative Adapter·rate–distortion은 전부 없다. **§4.3에서 주기적 오프라인 통합을 직접 구현하면서 CLS도, McClelland도, 생물 sleep 문헌도 인용하지 않는다.** 인용된 심리학은 Tulving & Pearlstone 1966과 McGeoch 1932이고, 논문은 "We use this vocabulary descriptively, without claiming a shared mechanism"이라고 못 박는다 [§8, p.19].
+**$\Theta$-경로는 옛 계보만 인용한다.** LoRA·ROME·MEMIT·EWC·Biderman 외 2024·`How much do LMs memorize`(2505.24832)는 있고, SEAL·Nested Learning·`LM Need Sleep`·SCM·Generative Adapter·rate–distortion은 전부 없다. **[Continual Facts §4.3]에서 주기적 오프라인 통합을 직접 구현하면서 CLS도, McClelland도, 생물 sleep 문헌도 인용하지 않는다.** 인용된 심리학은 Tulving & Pearlstone 1966과 McGeoch 1932이고, 논문은 "We use this vocabulary descriptively, without claiming a shared mechanism"이라고 못 박는다 [§8, p.19].
 
 > **[평가]** 이 침묵 지도가 ch11의 발견을 반복한다. 그런데 방향이 반대라 더 무겁다 — 앞의 장들에서는 기제 논문이 서로를 안 봤고, 여기서는 **반증 논문이 반증 대상을 안 봤다.** 그러므로 이 논문의 결론은 $\Theta$-경로 논문들이 제안한 절차에 대한 판정이 아니라, 그 절차들이 공유하는 **연산자**에 대한 판정이다. 그 구분을 ch27이 유지해야 한다.
 

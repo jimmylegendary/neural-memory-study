@@ -7,8 +7,8 @@
 > 4. **upward distillation**(작은 자기 → 큰 자기)이 통상의 방향과 반대라는 사실을 말하고, 그 절차에서 실제로 옮겨지는 것이 지식이 아니라 좌표라는 것을 [LM Need Sleep]의 식으로 논증할 수 있다.
 >
 > **왜 필요한가** — Part II의 세 지점이 이 장을 전제하고 쓰인다.
-> - **ch21 [LM Need Sleep]** (*Language Models Need Sleep*, arXiv:2606.03979) §3.3: Knowledge Seeding의 목적함수는 GKD 항과 imitation reward 항의 볼록결합이다. 그 GKD 항의 형태·표본 출처·frozen 범위를 이 장이 소유한다. 같은 절의 boxed 문단 제목이 그대로 "Upward Distillation (Knowledge Seeding)"이다.
-> - **ch20 [SEAL]** (*Self-Adapting LMs*, arXiv:2506.10943) §3.1 마지막 문단: teacher와 student를 서로 다른 모델로 분리하는 확장을 제안한다 — 제안만 하고 실행하지 않는다. 그 제안이 무엇을 바꾸는 제안인지 읽으려면 teacher/student가 역할이지 개체가 아니라는 이 장의 정의가 필요하다.
+> - **ch21 [LM Need Sleep]** (*Language Models Need Sleep*, arXiv:2606.03979) [LM Need Sleep §3.3]: Knowledge Seeding의 목적함수는 GKD 항과 imitation reward 항의 볼록결합이다. 그 GKD 항의 형태·표본 출처·frozen 범위를 이 장이 소유한다. 같은 절의 boxed 문단 제목이 그대로 "Upward Distillation (Knowledge Seeding)"이다.
+> - **ch20 [SEAL]** (*Self-Adapting LMs*, arXiv:2506.10943) [SEAL §3.1] 마지막 문단: teacher와 student를 서로 다른 모델로 분리하는 확장을 제안한다 — 제안만 하고 실행하지 않는다. 그 제안이 무엇을 바꾸는 제안인지 읽으려면 teacher/student가 역할이지 개체가 아니라는 이 장의 정의가 필요하다.
 > - ch21이 최강 baseline으로 세운 OPSD 계열, 그리고 [LM Need Sleep] App. A.4가 두 페이지에 걸쳐 열거하는 2026년 논문군 전체가 **on-policy self-distillation**이다. 그 이름이 무엇을 뜻하는지가 이 장 §04.4다.
 >
 > **NM과의 관계** — Neural Memory 모노그래프에 대응 장이 없다. 이 장은 NM이 세운 기계 위에서 시작한다: backward pass와 optimizer state는 → NM ch02, inner/outer loop의 이중 구조는 → NM ch04, chunk 단위 갱신은 → NM ch09로 넘긴다. 이 장이 더하는 것은 하나다 — **gradient의 출처를 label에서 다른 모델의 출력 분포로 바꾸면 무엇이 달라지는가.** NM은 $W$가 무엇을 배우는지를 다뤘고, 이 장은 $\Theta$에 무엇을 어떻게 써넣을 수 있는지의 두 번째 도구를 다룬다(첫 번째 도구는 ch03의 PEFT다).
@@ -102,8 +102,10 @@ systems 접점은 다시 저장이지만 성질이 다르다. logit은 마지막
 > **정의.** distillation의 표본 $y$를 고정된 데이터셋 $\mathcal{D}$에서 뽑으면 **off-policy**, student 자신의 분포 $\mathrm{LM}_{\Theta^{\mathrm{st}}}(\cdot|x)$에서 뽑으면 **on-policy**다. 혼합 비율을 $\lambda_{\mathrm{on}}\in[0,1]$로 둔 형태가 GKD(Agarwal et al. 2024)이며, [LM Need Sleep §3.3]이 그대로 채택한다.
 
 $$
+\adjustbox{max width=\linewidth}{$\displaystyle
 \mathcal{L}_{\mathrm{GKD}}\;=\;(1-\lambda_{\mathrm{on}})\;\mathbb{E}_{(x,y)\sim\mathcal{D}}\Big[\mathcal{F}\big(\mathrm{LM}_{\Theta^{\mathrm{te}}}\,\big\|\,\mathrm{LM}_{\Theta^{\mathrm{st}}}\big)(y|x)\Big]
 \;+\;\lambda_{\mathrm{on}}\;\mathbb{E}_{x\sim\mathcal{D}}\ \mathbb{E}_{y\sim\mathrm{LM}_{\Theta^{\mathrm{st}}}(\cdot|x)}\Big[\mathcal{F}\big(\mathrm{LM}_{\Theta^{\mathrm{te}}}\,\big\|\,\mathrm{LM}_{\Theta^{\mathrm{st}}}\big)(y|x)\Big]
+$}
 \tag{4-5}
 $$
 
@@ -143,7 +145,7 @@ systems 접점은 텐서 모양이다. 차원이 실제로 늘어나면 컴파�
 
 > **[평가]** upward distillation의 정당화는 논리적으로 깔끔하지만, **그 기여의 크기는 논문 자신의 표에서 작다.** [LM Need Sleep Table 1, p.11](Qwen3-8B, AIME-24 / AIME-25 / HMMT-25, avg@16)에서 전체 Sleep은 79.2 / 69.0 / 46.1이고, 확장을 뺀 "Sleep w/o Expansion"은 78.2 / 67.9 / 44.9다. 반대 방향으로, 확장만 baseline OPSD에 얹은 "OPSD + Expansion"은 77.9 / 68.2 / 45.9로 OPSD의 76.6 / 67.4 / 45.1보다 +1.3 / +0.8 / +0.8 오른다. Sleep이 OPSD를 이기는 총 마진이 +2.6 / +1.6 / +1.0이므로, **그 마진의 절반가량 — HMMT-25에서는 1.0 중 0.8 — 이 Knowledge Seeding 없이 구조적 확장만으로 얻어진다.** 이 표에는 시드도 신뢰구간도 없다. 판정은 ch21로 넘긴다.
 
-> **[평가]** 같은 표의 다른 행은 더 직접적이다. Semantic Reward를 제거하면 AIME-25가 **오른다**(69.2 대 전체 Sleep의 69.0) [LM Need Sleep Table 1, p.11]. 그런데 §4.2 p.13은 "All the components contribute positively to the performance of our method"라고 쓴다. 자기 표가 반증하는 문장이다. Imitation Learning 제거는 76.8 / 67.9 / 45.0으로 세 열 모두 내려가므로, 이 논문에서 실제로 하중을 받는 항은 semantic 쪽이 아니라 imitation 쪽이다.
+> **[평가]** 같은 표의 다른 행은 더 직접적이다. Semantic Reward를 제거하면 AIME-25가 **오른다**(69.2 대 전체 Sleep의 69.0) [LM Need Sleep Table 1, p.11]. 그런데 [LM Need Sleep §4.2, p.13]은 "All the components contribute positively to the performance of our method"라고 쓴다. 자기 표가 반증하는 문장이다. Imitation Learning 제거는 76.8 / 67.9 / 45.0으로 세 열 모두 내려가므로, 이 논문에서 실제로 하중을 받는 항은 semantic 쪽이 아니라 imitation 쪽이다.
 
 seeding의 목적함수 자체는 §04.6의 좌표로 그대로 읽힌다. [LM Need Sleep §3.3, Eq. 4 뒤의 무번호 식]은 divergence 항과 reward 항을 섞는다.
 

@@ -6,9 +6,9 @@ ch12–ch15는 $E$-경로를 끝까지 따라갔다. 그 경로의 구조적 약
 
 이 장은 반대편 선택지를 연다. 문맥을 밖에 두는 대신 **파라미터의 모양으로 접어 넣는다.** 접어 넣은 뒤에는 원 문맥 토큰을 입력에서 지우고 closed-book으로 답한다. 그러면 항 ②가 사라지고 공유 프리픽스 문제도 사라진다. 결정적인 것은 그 접기가 **학습이 아니라 forward**라는 점이다 — backward pass도, optimizer 상태도, 학습률 스케줄도 없다.
 
-**이 논문은 어떤 선행 논문의 open question도 인용해 받지 않는다.** 오히려 반대를 명시한다 — "As far as we know, we are the first to explore this direction" [Generative Adapter §1], 그리고 기여 목록의 첫 항에서 "To our knowledge, we are the first to explore retaining the relevant temporary knowledge through generated parameter-efficient model updates for state-of-the-art pretrained LMs" [Generative Adapter §1]. Related Work(§6)는 세 개의 대조 문단으로 짜여 있고("Different from previous work…", "Unlike those methods…", "Instead, GenerativeAdapter is…"), 각 문단은 받은 질문이 아니라 차이를 주장한다.
+**이 논문은 어떤 선행 논문의 open question도 인용해 받지 않는다.** 오히려 반대를 명시한다 — "As far as we know, we are the first to explore this direction" [Generative Adapter §1], 그리고 기여 목록의 첫 항에서 "To our knowledge, we are the first to explore retaining the relevant temporary knowledge through generated parameter-efficient model updates for state-of-the-art pretrained LMs" [Generative Adapter §1]. Related Work([Generative Adapter §6])는 세 개의 대조 문단으로 짜여 있고("Different from previous work…", "Unlike those methods…", "Instead, GenerativeAdapter is…"), 각 문단은 받은 질문이 아니라 차이를 주장한다.
 
-> **[평가]** 그 최초성 주장은 논문 자신의 §6과 나란히 놓으면 좁혀진다. 같은 절이 Tack et al. (2024)를 "meta-learned amortization network를 써서 개별 문맥 문서에 대한 base LM의 parameter-efficient fine-tuning modulation을 직접 예측한다"고 요약한다 [Generative Adapter §6, Adapting LMs via Meta-Learning]. 방향이 같다. 논문이 대는 차이 둘 — nested training loop 없이 end-to-end로 학습된다는 것, generator가 self-programming이라는 것 — 은 실재하지만 학습 절차의 차이이지 방향의 차이가 아니다. 그리고 그 가장 가까운 선행 연구는 baseline으로 돌려지지 않는다.
+> **[평가]** 그 최초성 주장은 논문 자신의 [Generative Adapter §6]과 나란히 놓으면 좁혀진다. 같은 절이 Tack et al. (2024)를 "meta-learned amortization network를 써서 개별 문맥 문서에 대한 base LM의 parameter-efficient fine-tuning modulation을 직접 예측한다"고 요약한다 [Generative Adapter §6, Adapting LMs via Meta-Learning]. 방향이 같다. 논문이 대는 차이 둘 — nested training loop 없이 end-to-end로 학습된다는 것, generator가 self-programming이라는 것 — 은 실재하지만 학습 절차의 차이이지 방향의 차이가 아니다. 그리고 그 가장 가까운 선행 연구는 baseline으로 돌려지지 않는다.
 
 ch14가 $E$-경로에서 상속 없는 시작이었다면 이쪽은 종류가 다르다. ch14는 같은 공동체 안에서 계보 진술을 생략했지만, 이 논문은 **다른 공동체에서 입장한다** — fast-weight와 PEFT 엔지니어링 쪽이며, 지속학습으로도 에이전트 기억으로도 실이 닿지 않는다.
 
@@ -26,9 +26,9 @@ ch11이 이 장에 넘긴 일은 하나다 — **산출물의 모양과 시계�
 
 > "However, there is an accuracy compute tradeoff—finetuning incurs significant training cost and prompting increases inference overhead." [Generative Adapter Abstract]
 
-§1이 그 두 항을 각각 풀어 쓴다. prompting 쪽은 저장·추론 부담이다 — "to maintain additional memory across sessions, some extra prompts must be added to the input, which incur an inference-time or storage overhead (Chevalier et al., 2023)". finetuning 쪽은 학습 부담이다 — "it requires a training phase that is more computationally expensive than a single forward pass" [Generative Adapter §1].
+[Generative Adapter §1]이 그 두 항을 각각 풀어 쓴다. prompting 쪽은 저장·추론 부담이다 — "to maintain additional memory across sessions, some extra prompts must be added to the input, which incur an inference-time or storage overhead (Chevalier et al., 2023)". finetuning 쪽은 학습 부담이다 — "it requires a training phase that is more computationally expensive than a single forward pass" [Generative Adapter §1].
 
-목표는 §2.1이 한 문장으로 못 박는다. "To contextualize a base model, Θbase, to a given context C, our goal is to obtain an updated model, ΘC, that can respond to user instructions using the information provided in the context C." 그리고 그 갱신이 **스트리밍**임을 곧바로 덧붙인다.
+목표는 [Generative Adapter §2.1]이 한 문장으로 못 박는다. "To contextualize a base model, Θbase, to a given context C, our goal is to obtain an updated model, ΘC, that can respond to user instructions using the information provided in the context C." 그리고 그 갱신이 **스트리밍**임을 곧바로 덧붙인다.
 
 > "We specifically focus on test-time contextualization, where context arrives incrementally as a stream of data… In this online adaptation scenario, the model must be efficiently adapted to each new context chunk as it becomes available." [Generative Adapter §2.1]
 
@@ -95,9 +95,11 @@ $$
 학습되는 것은 사영 행렬뿐이고, 그 학습은 배포 전 outer loop 한 번이다.
 
 $$
+\adjustbox{max width=\linewidth}{$\displaystyle
 \Theta_{G} \;\leftarrow\; \Theta_{G} \;-\; \eta_\Theta \nabla_{\Theta_G} \mathcal{L},
 \qquad
 \mathcal{L} \;=\; -\Big[\log P\big(x_{1:m} \mid \Theta_{\text{base}} + W(x_{1:m})\big) \;+\; \log P\big(x_{m+1:n} \mid \Theta_{\text{base}} + W(x_{1:m})\big)\Big]
+$}
 \tag{16-6}
 $$
 
@@ -156,7 +158,7 @@ $$
 
 이제 경로를 판정한다. 결론을 옮겨 적지 않고 ch01 §01.4의 세 판별 조건을 하나씩 댄다.
 
-**$\Theta$-경로 조건 — 배포 아티팩트가 바뀌는가.** 바뀌지 않는다. 논문이 정면으로 진술한다 — "the pretrained base LM remains frozen while we train the LM-specific adapter generator" [Generative Adapter §1], 그리고 §2 서두에서 "Unlike continual pretraining and supervised fine-tuning which update the pretrained LM via gradient descent, our method achieves adaptation using forward passes only". $\Theta_{\text{base}}$는 미분되지도 수정되지도 않으므로 문맥화 이후의 체크포인트는 이전과 바이트 단위로 같다. **탈락.**
+**$\Theta$-경로 조건 — 배포 아티팩트가 바뀌는가.** 바뀌지 않는다. 논문이 정면으로 진술한다 — "the pretrained base LM remains frozen while we train the LM-specific adapter generator" [Generative Adapter §1], 그리고 [Generative Adapter §2] 서두에서 "Unlike continual pretraining and supervised fine-tuning which update the pretrained LM via gradient descent, our method achieves adaptation using forward passes only". $\Theta_{\text{base}}$는 미분되지도 수정되지도 않으므로 문맥화 이후의 체크포인트는 이전과 바이트 단위로 같다. **탈락.**
 
 **$E$-경로 조건 — (U-E)만 실행하고 $\Theta, W$가 불변인가.** 텍스트도 벡터도 그래프도 기록되지 않고, 읽기 시점에 $\mathrm{ret}(E,q)$가 없다. 논문의 요점 자체가 문맥을 다시 제시하지 **않는** 것이다 — 문맥화된 모델은 "in a closed-book fashion"으로 답한다 [Generative Adapter §4.1]. $E$ 자리가 비어 있으므로 (U-E)의 인스턴스가 없다. **탈락.**
 
@@ -185,7 +187,7 @@ $L_w$ 칸에 가장 가까운 대용물은 MSC에서의 질의당 추론 **계�
 
 $\rho$ 자리에 있는 것은 다른 양이다. 하나는 **한 스트림 안에서 문맥 길이에 따른 품질 저하**다 — Mistral/StreamingQA에서 F1이 512부터 32K까지 51.5 → 49.3 → 44.7 → 40.9 → 36.7 → 32.7 → 32.0으로 떨어진다 [Generative Adapter Table 5]. 이것은 상태가 차면서 생기는 압축 손실이지 라운드당 망각률이 아니다. $\beta_t = 1$이 스트림 전체를 하나의 누적으로 만들기 때문에 라운드를 분리할 수조차 없다. 다른 하나는 쓰기 후에도 일반 언어모델링 능력이 남는지를 보는 completion perplexity 7.40이다 [Generative Adapter Table 2]. 그런데 **문맥화되지 않은 base 모델의 기준 perplexity가 논문에 없어** 이 값이 함의하는 열화량을 정량화할 수 없다.
 
-**상각식 (A)는 닫히지 않는다.** 분자 쪽은 알려져 있다 — MSC에서 질의당 $2.059 - 0.505 = 1.554$ TFLOPS가 절약된다 [Generative Adapter Table 1]. 분모 쪽 $C_{\text{sleep}}$은 Figure 3의 눈금 없는 로그축 곡선으로만 존재하고 본문에 수치로 인용된 적이 없다. 따라서 손익분기 $N_q^\ast$를 계산할 수 없다. 그럼에도 상각 논증은 두 번 등장한다 — "In practical scenarios with many queries from the same user on edge computing devices, the benefits of our method are even more evident" [Generative Adapter §1], "In real world scenarios with many queries from the same user, the benefits of our method are even more pronounced" [Generative Adapter §4.3]. $N_q$ 값도 없다.
+**상각식 (A)는 닫히지 않는다.** 분자 쪽은 알려져 있다 — MSC에서 질의당 $2.059 - 0.505 = 1.554$ TFLOPS가 절약된다 [Generative Adapter Table 1][본서 산술]. 분모 쪽 $C_{\text{sleep}}$은 Figure 3의 눈금 없는 로그축 곡선으로만 존재하고 본문에 수치로 인용된 적이 없다. 따라서 손익분기 $N_q^\ast$를 계산할 수 없다. 그럼에도 상각 논증은 두 번 등장한다 — "In practical scenarios with many queries from the same user on edge computing devices, the benefits of our method are even more evident" [Generative Adapter §1], "In real world scenarios with many queries from the same user, the benefits of our method are even more pronounced" [Generative Adapter §4.3]. $N_q$ 값도 없다.
 
 > **[평가]** 이 논문은 ch14의 상시 caveat — 상각식이 $N_q$를 안다고 가정하는데 실서빙 $N_q$ 분포를 보고한 논문이 없다 — 에 한 겹을 더한다. 여기서는 $N_q$ 분포가 없을 뿐 아니라 **sleep 쪽 비용 자체가 수치로 없다.** 비율의 두 항이 모두 비어 있는 상태에서 비율이 주장된다. ch01이 정한 규칙에 따라 이 장은 이 논문에 대해 "효율적"이라고 쓰지 않는다. 쓸 수 있는 문장은 하나뿐이다 — **질의당 추론 FLOPs가 base 모델과 같다고 보고되었다.**
 
@@ -208,15 +210,15 @@ $\rho$ 자리에 있는 것은 다른 양이다. 하나는 **한 스트림 안�
 | StreamingQA | in-context prompting | 47.2 | 48.7 | 48.1 | 48.7 | 48.0 | 46.0 | 39.3 |
 | StreamingQA | Generative Adapter | 51.5 | 49.3 | 44.7 | 40.9 | 36.7 | 32.7 | 32.0 |
 
-*closed-book 행(zero-shot·SFT·CPT)은 문맥 길이와 무관한 단일 값이라 첫 열에만 적었다. 원문 표의 (모델, 데이터셋) 블록 배정은 초록이 인용한 SFT 19.5(Mistral/StreamingQA)와 §4.1의 Llama2 4K 절단 규칙으로 고정했다.*
+*closed-book 행(zero-shot·SFT·CPT)은 문맥 길이와 무관한 단일 값이라 첫 열에만 적었다. 원문 표의 (모델, 데이터셋) 블록 배정은 초록이 인용한 SFT 19.5(Mistral/StreamingQA)와 [Generative Adapter §4.1]의 Llama2 4K 절단 규칙으로 고정했다.*
 
 **초록의 헤드라인 수치가 본문 표와 화해하지 않는다.** 초록은 "achieving a 63.5% improvement in F1 score over the model with supervised fine-tuning (from 19.5 to 31.5) for contexts as long as 32K tokens"라고 쓴다 [Generative Adapter Abstract]. 기준값 19.5는 표 16-4의 Mistral/StreamingQA SFT와 일치한다. 그런데 **31.5는 논문 어디에도 없다** — 표 16-4의 32K 값은 32.0이다. 게다가 19.5 → 31.5는 63.5%가 아니라 61.5% 증가이고, 19.5 → 32.0이라면 64.1%다. 목표값도 백분율도 맞지 않는다. 이 책은 두 값을 나란히 적고, 어느 쪽도 초록의 진술을 지지하지 않는다고 기록한다.
 
-가장 센 baseline과의 대조는 다르게 읽힌다. Mistral에서 Generative Adapter가 in-context prompting을 이기는 칸은 열넷 중 **셋**뿐이다 — SQuAD 512(48.8 대 45.4), StreamingQA 512(51.5 대 47.2), StreamingQA 1K(49.3 대 48.7). 32K에서는 SQuAD 28.0 대 35.1, StreamingQA 32.0 대 39.3으로 진다. 초록의 표현("effective in injecting knowledge into the LM's parameters")이 재는 상대는 prompting이 아니라 가장 약한 baseline인 SFT다. Llama2에서는 8K 이상에서 이기지만(SQuAD 28.2/24.9/23.6 대 25.2/9.6/6.4; StreamingQA 28.7/26.0/25.7 대 27.8/17.5/11.6), 그 구간의 baseline은 **설계상 잘려 있다** — "for Llama2-7B-Chat, if the context length exceeds the maximum limit of 4K tokens, we truncate the prompt to include only the last 4K tokens" [Generative Adapter §4.1]. 둘 다 문서 전체를 보는 512에서는 in-context prompting 64.8 대 Generative Adapter 36.2로 28.6점 차이다. 장문맥 우위 증거의 절반이 능력 비교가 아니라 절단 아티팩트다.
+> **[평가]** 가장 센 baseline과의 대조는 다르게 읽힌다. Mistral에서 Generative Adapter가 in-context prompting을 이기는 칸은 열넷 중 **셋**뿐이다 — SQuAD 512(48.8 대 45.4), StreamingQA 512(51.5 대 47.2), StreamingQA 1K(49.3 대 48.7). 32K에서는 SQuAD 28.0 대 35.1, StreamingQA 32.0 대 39.3으로 진다. 초록의 표현("effective in injecting knowledge into the LM's parameters")이 재는 상대는 prompting이 아니라 가장 약한 baseline인 SFT다. Llama2에서는 8K 이상에서 이기지만(SQuAD 28.2/24.9/23.6 대 25.2/9.6/6.4; StreamingQA 28.7/26.0/25.7 대 27.8/17.5/11.6), 그 구간의 baseline은 **설계상 잘려 있다** — "for Llama2-7B-Chat, if the context length exceeds the maximum limit of 4K tokens, we truncate the prompt to include only the last 4K tokens" [Generative Adapter §4.1]. 둘 다 문서 전체를 보는 512에서는 in-context prompting 64.8 대 Generative Adapter 36.2로 28.6점 차이다. 장문맥 우위 증거의 절반이 능력 비교가 아니라 절단 아티팩트다.
 
-CPT와의 대조에는 교차가 있다. SQuAD/Mistral에서 512–16K는 전부 CPT의 30.0을 넘지만 32K에서 28.0으로 진다. SQuAD/Llama2도 32K에서 23.6 대 23.9로 진다. StreamingQA 두 블록에서는 모든 길이에서 이긴다.
+CPT와의 대조에는 교차가 있다. SQuAD/Mistral에서 512–16K는 전부 CPT의 30.0을 넘지만 32K에서 28.0으로 진다. SQuAD/Llama2도 32K에서 23.6 대 23.9로 진다. StreamingQA 두 블록에서는 모든 길이에서 이긴다[본서 관찰].
 
-나머지 두 시나리오는 증거의 성격이 다르다. MetaICL은 26개 테스트 과제, $K \in \{1,2,4,8,16\}$ 시연, 설정마다 5회 반복 표집이다 [Generative Adapter §4.2]. 그런데 헤드라인 "our method achieves an average accuracy of 44.9 across 26 tasks" [Generative Adapter Abstract]는 **초록에만 있다** — §4.2에도, 어떤 표에도 없고, 어느 base 모델인지도 어느 $K$인지도 붙어 있지 않다. §4.2가 내놓는 것은 Figure 4의 범주별 곡선과 Figures 5–6의 과제별 곡선뿐이고 본문에 수치 집계가 없다. 세 헤드라인 중 하나를 논문 자신의 본문으로 검증할 수 없다.
+> **[평가]** 나머지 두 시나리오는 증거의 성격이 다르다. MetaICL은 26개 테스트 과제, $K \in \{1,2,4,8,16\}$ 시연, 설정마다 5회 반복 표집이다 [Generative Adapter §4.2]. 그런데 헤드라인 "our method achieves an average accuracy of 44.9 across 26 tasks" [Generative Adapter Abstract]는 **초록에만 있다** — [Generative Adapter §4.2]에도, 어떤 표에도 없고, 어느 base 모델인지도 어느 $K$인지도 붙어 있지 않다. [Generative Adapter §4.2]가 내놓는 것은 Figure 4의 범주별 곡선과 Figures 5–6의 과제별 곡선뿐이고 본문에 수치 집계가 없다. 세 헤드라인 중 하나를 논문 자신의 본문으로 검증할 수 없다.
 
 표 16-5 — 개인화, Multi-Session Conversation, Mistral-7B-Instruct v0.2 [Generative Adapter Table 1]
 
@@ -230,7 +232,7 @@ CPT와의 대조에는 교차가 있다. SQuAD/Mistral에서 512–16K는 전부
 
 *UltraGist의 나머지 네 설정(64/128/256/2K 토큰)은 F1 26.5/32.2/38.3/42.4, 추론 0.514/0.552/0.627/1.658, 저장 4/8/16/128이다.*
 
-"4× 절감" 주장은 산술이 맞는다 — $2.059 / 0.505 = 4.08$배 계산, $128 / 32 = 4$배 저장 [Generative Adapter Abstract, §4.3]. 그 대가도 같은 표에 있다: full-conversation prompting 66.0 대 Generative Adapter 40.2로, 전체 문맥 품질의 61%를 유지한다. 25.8점 F1 결손이 4× 절감의 가격이며, 초록의 형용사("highly competitive")는 비율에 대한 것이지 정확도에 대한 것이 아니다. 그리고 같은 절에 표와 어긋나는 문장이 하나 있다 — "Comparing to UltraGist at the same level of storage cost (compressed into 512 tokens), GenerativeAdapter further reduces inference cost without performance drop" [Generative Adapter §4.3]. 표 16-5는 UltraGist(512) 40.8, Generative Adapter 40.2다. 0.6점 하락이 하락 없음으로 서술되어 있다. 계산 절감(0.772 → 0.505)은 실재하지만 문장은 옆의 표가 지지하지 않는다.
+> **[평가]** "4× 절감" 주장은 산술이 맞는다 — $2.059 / 0.505 = 4.08$배 계산, $128 / 32 = 4$배 저장 [Generative Adapter Abstract, §4.3]. 그 대가도 같은 표에 있다: full-conversation prompting 66.0 대 Generative Adapter 40.2로, 전체 문맥 품질의 61%를 유지한다. 25.8점 F1 결손이 4× 절감의 가격이며, 초록의 형용사("highly competitive")는 비율에 대한 것이지 정확도에 대한 것이 아니다. 그리고 같은 절에 표와 어긋나는 문장이 하나 있다 — "Comparing to UltraGist at the same level of storage cost (compressed into 512 tokens), GenerativeAdapter further reduces inference cost without performance drop" [Generative Adapter §4.3]. 표 16-5는 UltraGist(512) 40.8, Generative Adapter 40.2다. 0.6점 하락이 하락 없음으로 서술되어 있다. 계산 절감(0.772 → 0.505)은 실재하지만 문장은 옆의 표가 지지하지 않는다.
 
 표 16-6 — ablation, Mistral-7B-Instruct v0.2, 검증 perplexity [Generative Adapter Table 2]
 
@@ -242,15 +244,15 @@ CPT와의 대조에는 교차가 있다. SQuAD/Mistral에서 512–16K는 전부
 | 정규화: Frobenius | 7.72 | 7.32 |
 | 모듈: feedforward (down projection; 기본값의 3배 갱신 파라미터) | **1.68** | **7.26** |
 
-표 16-6에 두 가지 역전이 있다. 첫째, "relying solely on one task does not yield good perplexity on the validation set for both metrics" [Generative Adapter §5.1]는 reconstruction-only 행(1.75 / 34.34)에만 참이다. completion-only 행은 completion perplexity에서 기본값보다 **낫다**(6.71 대 7.40). 두 과제 혼합은 Pareto 개선이 아니라 교환이고 논문이 그렇게 쓰지 않는다. 둘째, feedforward 배치가 두 지표 모두에서 기본값보다 좋은데(1.68 / 7.26 대 1.75 / 7.40) **본 실험 전체가 기본값 구성을 쓴다** — "For efficiency, our main experiments train adapter generators to only update the output projection layers" [Generative Adapter §3]. 모든 헤드라인 수치가 저자 자신의 ablation이 열등하다고 판정한 구성에서 나왔고, 더 나은 구성은 어떤 downstream 벤치마크에서도 돌려지지 않았다.
+> **[평가]** 표 16-6에 두 가지 역전이 있다. 첫째, "relying solely on one task does not yield good perplexity on the validation set for both metrics" [Generative Adapter §5.1]는 reconstruction-only 행(1.75 / 34.34)에만 참이다. completion-only 행은 completion perplexity에서 기본값보다 **낫다**(6.71 대 7.40). 두 과제 혼합은 Pareto 개선이 아니라 교환이고 논문이 그렇게 쓰지 않는다. 둘째, feedforward 배치가 두 지표 모두에서 기본값보다 좋은데(1.68 / 7.26 대 1.75 / 7.40) **본 실험 전체가 기본값 구성을 쓴다** — "For efficiency, our main experiments train adapter generators to only update the output projection layers" [Generative Adapter §3]. 모든 헤드라인 수치가 저자 자신의 ablation이 열등하다고 판정한 구성에서 나왔고, 더 나은 구성은 어떤 downstream 벤치마크에서도 돌려지지 않았다.
 
-그 ablation 전체가 두 개의 검증 perplexity 위에 서 있다는 점도 함께 적어야 한다. perplexity와 downstream 품질의 연결은 보고되지 않은 예비 실험에서 주장된다 — "As we observe in our preliminary study, the quality of the resulting adapter generator is highly correlated with these metrics" [Generative Adapter §5.1]. 어떤 ablation 행도 SQuAD·StreamingQA·MetaICL·MSC에서 평가되지 않았다. 설계 결정 셋(정규화·과제 혼합·모듈 배치)의 근거가 전부 대용 지표다.
+> **[평가]** 그 ablation 전체가 두 개의 검증 perplexity 위에 서 있다는 점도 함께 적어야 한다. perplexity와 downstream 품질의 연결은 보고되지 않은 예비 실험에서 주장된다 — "As we observe in our preliminary study, the quality of the resulting adapter generator is highly correlated with these metrics" [Generative Adapter §5.1]. 어떤 ablation 행도 SQuAD·StreamingQA·MetaICL·MSC에서 평가되지 않았다. 설계 결정 셋(정규화·과제 혼합·모듈 배치)의 근거가 전부 대용 지표다.
 
-실증 상한을 정직하게 정리하면 이렇다. 모델은 7B 둘, 문맥은 32K까지, 그러나 **우위**의 상한은 훨씬 낮다 — Mistral에서 in-context prompting 대비 우위는 1K 토큰까지다. MSC 대화는 평균 2.5K 토큰이고, 단일 연속 스트림을 넘는 실험이 없다 — 다중 세션도, 다일(多日)도, 반복 라운드도 없다. MSC(Table 1)와 ablation(Table 2)은 Mistral 하나로만 돌았다. 분산은 어디에도 없다: MetaICL은 5회 반복 표집을 하면서 표준편차를 본문에도 그림에도 적지 않고, QA 결과에는 오차 막대가 없다. 그리고 가장 아픈 공백 하나 — **문맥마다 gradient로 적합한 LoRA가 baseline으로 없다.** 그것이 비용을 맞춘 $\Theta$-경로 비교군이자 이 방법이 배출하는 바로 그 물건인데, 가중치 쪽 baseline은 full-parameter SFT와 CPT 둘뿐이다.
+> **[평가]** 실증 상한을 정직하게 정리하면 이렇다. 모델은 7B 둘, 문맥은 32K까지, 그러나 **우위**의 상한은 훨씬 낮다 — Mistral에서 in-context prompting 대비 우위는 1K 토큰까지다. MSC 대화는 평균 2.5K 토큰이고, 단일 연속 스트림을 넘는 실험이 없다 — 다중 세션도, 다일(多日)도, 반복 라운드도 없다. MSC(Table 1)와 ablation(Table 2)은 Mistral 하나로만 돌았다. 분산은 어디에도 없다: MetaICL은 5회 반복 표집을 하면서 표준편차를 본문에도 그림에도 적지 않고, QA 결과에는 오차 막대가 없다. 그리고 가장 아픈 공백 하나 — **문맥마다 gradient로 적합한 LoRA가 baseline으로 없다.** 그것이 비용을 맞춘 $\Theta$-경로 비교군이자 이 방법이 배출하는 바로 그 물건인데, 가중치 쪽 baseline은 full-parameter SFT와 CPT 둘뿐이다.
 
 ## 16.7 Systems/serving 함의
 
-독자의 1번 질문에 논문이 직접 답한다. **문맥화 이후 decode 비용은 base 모델의 decode 비용이다** — 0.505 대 0.505 TFLOPS, 소수 셋째 자리까지 같다 [Generative Adapter Table 1]. 문맥 길이에 대해서도 평탄하다 [Generative Adapter Figure 3 중앙 패널]. 이 등식이 성립하는 조건은 하나뿐인데 논문이 그 조건을 명시하지 않는다 — delta가 **merge된 형태**로 서빙되어야 한다(→ ch03 §03.5).
+독자의 1번 질문에 논문이 직접 답한다. **문맥화 이후 decode 비용은 base 모델의 decode 비용이다** — 0.505 대 0.505 TFLOPS, 소수 셋째 자리까지 같다 [Generative Adapter Table 1]. 문맥 길이에 대해서도 평탄하다 [Generative Adapter Figure 3 중앙 패널]. 이 등식이 성립하는 조건은 하나뿐인데 논문이 그 조건을 명시하지 않는다 — delta가 **merge된 형태**로 서빙되어야 한다(→ ch03 §03.5)[본서 추론].
 
 > **[해설]** **아래는 이 책의 산술이며 논문의 보고값이 아니다.** 논문이 블록 수를 적지 않으므로 7B 관행대로 $L_{\text{layer}} = 32$, $d = 4{,}096$을 가정한다. **분리된 delta 형태**로 서빙하면 adapter가 실린 행렬마다 토큰당 $2rd$ MAC이 더 붙는다 — $r = 128$에서 행렬당 약 1.05M MAC, 블록당 하나씩 32개면 토큰당 약 33.5M MAC(약 67 MFLOPs)이고, 7B forward의 토큰당 약 14 GFLOPs에 대해 약 0.5%다. 어느 형태든 덧셈 항은 작다. 문제는 크기가 아니라 형태 선택이 서빙 구조를 정한다는 것이다.
 >
@@ -260,7 +262,7 @@ CPT와의 대조에는 교차가 있다. SQuAD/Mistral에서 512–16K는 전부
 
 문맥화 자체는 학습 단계가 아니라 prefill이다. hidden state를 얻으려면 동결 base LM의 full forward가 문맥 전체에 대해 필요하므로, FLOPs는 그 문맥을 한 번 prefill하는 것과 같은 자릿수다 — prompting-with-KV-cache가 어차피 지불하는 그 값이다. **절감은 첫 pass에 있지 않고 그 뒤의 모든 pass에 있다.** prefill 위에 얹히는 추가 작업은 chunk마다·layer마다 $1024 \times 1024$ 행렬의 rank-128 randomized SVD인데, $O(d_r^2 r)$로 layer당 chunk당 약 $1.3 \times 10^8$ MAC, 32 layer면 chunk당 약 $4 \times 10^9$이다. 1,024 토큰 chunk를 7B로 prefill하는 약 $1.4 \times 10^{13}$ FLOPs에 비하면 작다(이 대조도 이 책의 산술이다). 작지만 **GEMM이 아니고 배치가 잘 되지 않는 커널**이 깨끗한 prefill 파이프라인 한가운데에 들어온다.
 
-**배칭이 이 설계의 다루어지지 않은 결과다.** merge된 형태면 동시 서빙되는 사용자마다 7B 가중치 사본이 따로 필요해지고 shared-weight batching이 죽는다 — ch01 Rosetta 표의 "batch로 weight 공유 → $\Theta$-경로에서 깨짐" 행이 그대로 발동한다. 분리된 delta 형태면 요청별 LoRA이므로 multi-LoRA 서빙 방식으로 배치되지만, 손으로 적합한 $r{=}16$ LoRA의 수 M floats이 아니라 요청당 32 M floats다. 논문은 동시 다중 사용자 서빙을 한 문장도 다루지 않는다 — "batch"는 학습 하이퍼파라미터에만 나온다.
+> **[평가]** **배칭이 이 설계의 다루어지지 않은 결과다.** merge된 형태면 동시 서빙되는 사용자마다 7B 가중치 사본이 따로 필요해지고 shared-weight batching이 죽는다 — ch01 Rosetta 표의 "batch로 weight 공유 → $\Theta$-경로에서 깨짐" 행이 그대로 발동한다. 분리된 delta 형태면 요청별 LoRA이므로 multi-LoRA 서빙 방식으로 배치되지만, 손으로 적합한 $r{=}16$ LoRA의 수 M floats이 아니라 요청당 32 M floats다. 논문은 동시 다중 사용자 서빙을 한 문장도 다루지 않는다 — "batch"는 학습 하이퍼파라미터에만 나온다.
 
 여기서 §16.4가 예고한 실익이 드러난다. **롤백 단위가 다르다.** $\Theta$-경로였다면 잘못 쓴 내용을 되돌리는 방법은 이전 체크포인트로의 롤백뿐이다. 이 기제에서는 $S_0 = 0$으로 초기화하는 것이 전부이고, 비용은 문맥을 다시 접는 forward 한 번이다. 배포 아티팩트가 불변이므로 사용자별 delta가 오염되어도 base 모델은 감사 대상이 아니다. 이것이 산출물 모양이 아니라 시계로 분류했을 때 실제로 달라지는 운영 결론이다.
 
@@ -268,15 +270,15 @@ CPT와의 대조에는 교차가 있다. SQuAD/Mistral에서 512–16K는 전부
 
 ## 16.8 한계와 bridge-out
 
-논문이 명시한 문제는 셋이고 하나로 모인다. "For future work, it would be interesting to further explore scaling up the adapter generator, such as by integrating adapters into additional layers, and to investigate more selective update rules (Schlag et al., 2021)" [Generative Adapter §7]. 뒤쪽 절반이 **논문이 자기 결손을 이름 부르는 자리**다 — Schlag et al. (2021)은 fast-weight programmer의 delta-rule 방식 쓰기·지우기로 인용되며, 그것이 정확히 식 (16-2)에 없는 $\beta_t$와 축출이다. 나머지 둘은 같은 공백의 재진술이다 — §3의 "For efficiency… defer the full exploration of other modules for future work"와 §5.1의 "Due to computational constraints, a more thorough exploration was not feasible".
+논문이 명시한 문제는 셋이고 하나로 모인다. "For future work, it would be interesting to further explore scaling up the adapter generator, such as by integrating adapters into additional layers, and to investigate more selective update rules (Schlag et al., 2021)" [Generative Adapter §7]. 뒤쪽 절반이 **논문이 자기 결손을 이름 부르는 자리**다 — Schlag et al. (2021)은 fast-weight programmer의 delta-rule 방식 쓰기·지우기로 인용되며, 그것이 정확히 식 (16-2)에 없는 $\beta_t$와 축출이다. 나머지 둘은 같은 공백의 재진술이다 — [Generative Adapter §3]의 "For efficiency… defer the full exploration of other modules for future work"와 [Generative Adapter §5.1]의 "Due to computational constraints, a more thorough exploration was not feasible".
 
-논문이 남기지 않았지만 남는 문제는 여섯이다. **용량 포화** — $\beta_t = 1$과 고정 $d_r \times d_r$ 상태에서 품질은 스트림 길이에 대해 단조 감소할 수밖에 없고 표 16-4가 그것을 보이는데(51.5 → 32.0), 어디서 포화하는지도 $d_r$이나 $r$을 키우면 어떻게 되는지도 특성화되지 않았다. 둘은 1,024와 128로 한 번 정해지고 끝까지 변하지 않는다. **덮어쓰기와 낡음** — 이미 누적된 정보를 제거하거나 정정할 방법이 기제 안에 없고, 모순되거나 갱신된 사실을 제시하는 실험이 없다. **합성** — 같은 $S_t$에 들어간 두 문맥은 식 (16-4)에 의해 무차별 합산되고, 따로 생성된 두 adapter를 결합하는 실험은 없다. **순서** — 식 (16-4)가 토큰들의 합이므로 쓰기는 순열 불변이고, 문맥을 섞어도 같은 adapter가 나온다. 평가된 세 시나리오 중 둘(MSC의 다중 세션 대화, MetaICL의 입출력 시연)이 순서를 지니는데 순서 민감도를 재는 실험이 없다. **이 순열 불변성은 식 (16-4)로부터의 이 책의 추론이며 논문이 진술하지 않는다.** **generator의 이식성** — generator는 base LM마다 하나씩 학습되는데("the LM-specific adapter generator" [Generative Adapter §1]) base 모델이 갱신되면 살아남는지에 대한 언급이 없다. 배포하는 쪽의 실제 질문이다. **대용 지표의 타당성** — 설계 결정 전부가 §5.1의 보고되지 않은 상관 주장 위에 서 있다.
+논문이 남기지 않았지만 남는 문제는 여섯이다. **용량 포화** — $\beta_t = 1$과 고정 $d_r \times d_r$ 상태에서 품질은 스트림 길이에 대해 단조 감소할 수밖에 없고 표 16-4가 그것을 보이는데(51.5 → 32.0), 어디서 포화하는지도 $d_r$이나 $r$을 키우면 어떻게 되는지도 특성화되지 않았다. 둘은 1,024와 128로 한 번 정해지고 끝까지 변하지 않는다. **덮어쓰기와 낡음** — 이미 누적된 정보를 제거하거나 정정할 방법이 기제 안에 없고, 모순되거나 갱신된 사실을 제시하는 실험이 없다. **합성** — 같은 $S_t$에 들어간 두 문맥은 식 (16-4)에 의해 무차별 합산되고, 따로 생성된 두 adapter를 결합하는 실험은 없다. **순서** — 식 (16-4)가 토큰들의 합이므로 쓰기는 순열 불변이고, 문맥을 섞어도 같은 adapter가 나온다. 평가된 세 시나리오 중 둘(MSC의 다중 세션 대화, MetaICL의 입출력 시연)이 순서를 지니는데 순서 민감도를 재는 실험이 없다. **이 순열 불변성은 식 (16-4)로부터의 이 책의 추론이며 논문이 진술하지 않는다.** **generator의 이식성** — generator는 base LM마다 하나씩 학습되는데("the LM-specific adapter generator" [Generative Adapter §1]) base 모델이 갱신되면 살아남는지에 대한 언급이 없다. 배포하는 쪽의 실제 질문이다. **대용 지표의 타당성** — 설계 결정 전부가 [Generative Adapter §5.1]의 보고되지 않은 상관 주장 위에 서 있다.
 
-**경로 간 인용.** $W$-경로는 이름으로 광범위하게 인용된다 — §6이 "Fast Weights" 문단으로 열리고 Hinton & Plaut (1987), Ba et al. (2016), Schmidhuber (1992·1993), Schlag et al. (2021)(§6과 §7에서 두 번), Clark et al. (2022), 그리고 선형 attention 계열이 들어온다. 다만 계보가 **2022년에서 끊긴다** — 2024–2025년의 test-time training 라인은 없고, 이쪽은 연대가 강제한 침묵이다(2024년 11월 8일). $\Theta$-경로는 PEFT와 continual pretraining으로 인용된다(LoRA, Houlsby et al. 2019, prefix tuning, AdaLoRA, DoRA, Yang et al. 2024, Allen-Zhu & Li 2024, Hu et al. 2023, Tack et al. 2024). 그러나 **consolidation으로는 한 번도 인용되지 않는다** — EWC도 replay도 generative replay도 CLS도 생물학적 sleep도 참고문헌에 없다. $\Theta$-경로의 망각·통합 절반이 통째로 빠져 있다. **이쪽은 연대가 강제한 침묵이 아니다** — EWC(2016-12)·Deep Generative Replay(2017-05)·CLS(1995)는 전부 이 논문보다 앞서고, 논문 자신이 §1에서 지속학습의 데이터 비효율을 동기로 든다. 선택된 침묵이다(→ ch11 §11.6.1). $E$-경로는 **정확히 한 번**, 데이터셋 프로토콜로만 등장한다 — MSC 설정을 Packer et al. (2024)를 따라 잡는 문장 하나이며 [Generative Adapter §4.3], MemGPT는 방법으로 서술되지도 baseline으로 돌려지지도 않는다. RAG는 §1에서 한 번 언급되고 버려진다. sleep-time compute 문헌은 전무하고, 이 논문은 Letta STC보다 다섯 달 앞서므로 그 침묵은 **한 방향으로만** 연대가 강제한 것이다. Part III가 물어야 할 것은 역방향이다 — $E$-경로가 이 논문을 되받아 인용했는가.
+**경로 간 인용.** $W$-경로는 이름으로 광범위하게 인용된다 — [Generative Adapter §6]이 "Fast Weights" 문단으로 열리고 Hinton & Plaut (1987), Ba et al. (2016), Schmidhuber (1992·1993), Schlag et al. (2021)([Generative Adapter §6·§7]에서 두 번), Clark et al. (2022), 그리고 선형 attention 계열이 들어온다. 다만 계보가 **2022년에서 끊긴다** — 2024–2025년의 test-time training 라인은 없고, 이쪽은 연대가 강제한 침묵이다(2024년 11월 8일). $\Theta$-경로는 PEFT와 continual pretraining으로 인용된다(LoRA, Houlsby et al. 2019, prefix tuning, AdaLoRA, DoRA, Yang et al. 2024, Allen-Zhu & Li 2024, Hu et al. 2023, Tack et al. 2024). 그러나 **consolidation으로는 한 번도 인용되지 않는다** — EWC도 replay도 generative replay도 CLS도 생물학적 sleep도 참고문헌에 없다. $\Theta$-경로의 망각·통합 절반이 통째로 빠져 있다. **이쪽은 연대가 강제한 침묵이 아니다** — EWC(2016-12)·Deep Generative Replay(2017-05)·CLS(1995)는 전부 이 논문보다 앞서고, 논문 자신이 [Generative Adapter §1]에서 지속학습의 데이터 비효율을 동기로 든다. 선택된 침묵이다(→ ch11 §11.6.1). $E$-경로는 **정확히 한 번**, 데이터셋 프로토콜로만 등장한다 — MSC 설정을 Packer et al. (2024)를 따라 잡는 문장 하나이며 [Generative Adapter §4.3], MemGPT는 방법으로 서술되지도 baseline으로 돌려지지도 않는다. RAG는 [Generative Adapter §1]에서 한 번 언급되고 버려진다. sleep-time compute 문헌은 전무하고, 이 논문은 Letta STC보다 다섯 달 앞서므로 그 침묵은 **한 방향으로만** 연대가 강제한 것이다. Part III가 물어야 할 것은 역방향이다 — $E$-경로가 이 논문을 되받아 인용했는가.
 
 > **[평가]** 인접하되 구별해야 할 계열이 하나 더 있다. Chevalier et al. (2023)·ICAE·UltraGist·Compressed Context Memory의 압축 라인은 이 논문에 조밀하게 인용되고 UltraGist가 유일한 강한 효율 baseline이다(표 16-5). 이 책의 프레임에서 이들은 $E$-경로가 **아니다** — 산출물이 읽기 시점에 소비되는 토큰 임베딩이므로 저장소에 쓰는 것이 아니라 프롬프트를 줄인다. 같은 표 안에서 경쟁하지만 층이 다르다. 그리고 가장 아쉬운 공백은 §16.6이 지목한 그것이다 — 같은 모양·같은 rank의 delta를 gradient로 적합한 baseline이 없으므로, **forward 쓰기가 gradient 쓰기 대비 품질을 얼마나 포기하는지 이 논문은 말할 수 없다.**
 
-ch17이 받아 가는 것은 둘이다. 첫째, **접기를 wake 경로 밖으로 옮기는 이동.** 같은 물건, 다른 시계다 — 그리고 그 이동이 정확히 $W$-경로 논문을 sleep-time compute으로 바꾸는 조작이다. 이 장이 판별식 조건 (1)에서 탈락한 자리가 그대로 ch17의 출발점이 된다. 둘째, **$\beta_t = 1$과 축출 부재라는 결손**, 그리고 논문이 §7에서 이름으로 가리킨 그 수선책. 용량 천장은 ch18이, forward 쓰기가 gradient 쓰기에 내주는 것은 ch19가 받는다.
+ch17이 받아 가는 것은 둘이다. 첫째, **접기를 wake 경로 밖으로 옮기는 이동.** 같은 물건, 다른 시계다 — 그리고 그 이동이 정확히 $W$-경로 논문을 sleep-time compute으로 바꾸는 조작이다. 이 장이 판별식 조건 (1)에서 탈락한 자리가 그대로 ch17의 출발점이 된다. 둘째, **$\beta_t = 1$과 축출 부재라는 결손**, 그리고 논문이 [Generative Adapter §7]에서 이름으로 가리킨 그 수선책. 용량 천장은 ch18이, forward 쓰기가 gradient 쓰기에 내주는 것은 ch19가 받는다.
 
 ## 요약
 

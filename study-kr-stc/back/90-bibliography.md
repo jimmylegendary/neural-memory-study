@@ -29,9 +29,10 @@
 
 ---
 
-## 90.1 corpus — A군: 판별식 통과 (10편)
+## 90.1 corpus — A군: 판별식 통과 (9편) + 경계 사례 (1편)
 
-판별식 네 조건을 모두 만족하는 문헌이다. 조건별 판정은 부록 A 표 A-1에 있다.
+판별식 네 조건을 모두 만족하는 문헌 9편과, 조건 (1)만 만족하지 않아 통과군에 세지 않는 경계 사례
+1편(MemGPT)이다. 조건별 판정은 부록 A 표 A-1에 있다.
 
 **Letta `Sleep-time Compute`** — Kevin Lin, Charlie Snell 외 (Letta; UC Berkeley).
 *Sleep-time Compute: Beyond Inference Scaling at Test-time.*
@@ -211,9 +212,9 @@ University).
 **eLife 2022;e76384**, DOI 10.7554/eLife.76384, 2022-04-06 게재. arXiv ID 없음(2021-09-09 preprint).
 → **ch08 · ch23** (ch06)
 
-<!-- TODO-VERIFY: PAD의 eLife 권(volume) 번호. 노트 `venue` 필드는 원문 인용 블록을 "eLife 2022;0:e76384"로
-     옮겨 적었고 권 자리가 0으로 인쇄되어 있다. 확인 방법: papers/stc/ 의 PAD 원문에서 "eLife 2022;" 문자열을
-     검색해 인쇄된 권 번호를 확인한다. 확인 전에는 권 번호를 인쇄하지 않는다. -->
+<!-- TODO-VERIFY: PAD의 eLife 권(volume) 번호. 이 책이 옮겨 적은 인용 블록은 "eLife 2022;0:e76384"이고
+     권 자리가 0으로 인쇄되어 있다. 확인 방법: PAD 원문 papers/stc/STC-T13.txt 에서 "eLife 2022;" 문자열을
+     검색해 각 면주에 인쇄된 권 번호를 확인한다. 확인 전에는 권 번호를 인쇄하지 않는다. -->
 
 ---
 
@@ -222,6 +223,8 @@ University).
 corpus의 어느 논문도 상태 용량을 바이트로 보고하지 않고, 비용 보고의 단위가 논문마다 다르다.
 그래서 이 책은 비교에 필요한 두 회계를 스스로 만들었다. 이들은 외부 문헌이 아니므로 서지 항목이
 아니라 **책 안의 위치**로 인용한다.
+
+표 90-1 — 이 책이 스스로 만든 회계·감사 산출물과 그것을 싣는 장
 
 | 산출물 | 무엇을 만드는가 | 위치 |
 |---|---|---|
@@ -250,6 +253,8 @@ $\alpha_t$·$\beta_t$·$\mathcal{M}(\cdot;W)$·$C$(chunk)의 의미는 전부 �
 **$W$-경로의 주류 계보** — ch11 §11.7이 `Do Language Models Need Sleep?`의 침묵을 지적하며
 나열하는 네 편이다. 네 편 모두 이 책의 corpus가 아니다.
 
+표 90-2 — 이름으로만 지목하는 $W$-경로 주류 계보 네 편
+
 | 문헌 | 식별자 | 연도 | 본문에서의 자리 |
 |---|---|---|---|
 | Titans: Learning to Memorize at Test Time | arXiv:2501.00663 | 2024-12-31 | ch11 §11.7, ch17, ch18 |
@@ -270,7 +275,9 @@ ch08이 CLS를 도입할 때, 그리고 ch11 §11.6이 "이름은 생물에서 �
 (AWM, Synapse). 이 책은 이들을 읽지 않았고, ReasoningBank의 진단을 그 논문에 귀속시켜 옮기기만 한다.
 
 <!-- TODO-VERIFY: AWM·Synapse의 arXiv ID와 연도. 확인 방법: papers/stc/2509.25140.txt 의 참고문헌
-     목록에서 "Agent Workflow Memory"와 "Synapse"를 검색해 원문이 인쇄한 식별자를 옮긴다.
+     목록(저자 성 알파벳순 구간)에서 "Agent workflow memory"와 "Synapse: Trajectory-as-exemplar"를
+     검색해 원문이 인쇄한 식별자를 옮긴다. 원문이 arXiv ID 대신 venue만 인쇄했으면 §수록 원칙의
+     "원문에 인쇄된 것만" 규약대로 venue를 적고 arXiv ID 자리는 비운다.
      확인 전에는 식별자를 인쇄하지 않는다. -->
 
 **서지 항목이 아닌 이름들** — 본문에는 문헌이 아니라 도구·모델·데이터셋의 이름도 등장한다
@@ -283,6 +290,8 @@ ch08이 CLS를 도입할 때, 그리고 ch11 §11.6이 "이름은 생물에서 �
 
 문헌에서 장을 찾는 것이 §90.1–§90.3이고, 장에서 문헌을 찾는 것이 이 표다. 굵은 글씨가 그 장이
 정면으로 다루는 문헌이고, 나머지는 근거로 쓰는 문헌이다.
+
+표 90-3 — 장 → 그 장이 쓰는 문헌 역색인
 
 | 장 | 문헌 |
 |---|---|
@@ -309,10 +318,10 @@ ch08이 CLS를 도입할 때, 그리고 ch11 §11.6이 "이름은 생물에서 �
 | ch21 | **`LM Need Sleep`**, Nested Learning |
 | ch22 | **Can a LM Learn Facts Continually**, **Rate–Distortion**, EWC, DGR, GEM, How much do LMs memorize, ROME, MEMIT |
 | ch23 | **PLOS Sleep**, **PAD** |
-| ch24 | ch11의 분류 결과 — A군 10편 |
+| ch24 | ch11의 분류 결과 — 통과 9편 + 경계 사례 1편 |
 | ch25 | Letta STC, GEM, RAG + 이 책의 통일 비용 회계 |
 | ch26 | Memory Layers, LoRA, How much do LMs memorize, Rate–Distortion + 이 책의 상태 용량 회계 |
-| ch27 | A군 10편 전부 + Can a LM Learn Facts Continually |
+| ch27 | 통과 9편 전부 + Can a LM Learn Facts Continually |
 | ch28 | Letta STC, Nested Learning, model collapse |
 | ch29 | `Do LMs Need Sleep?`, Memory Caching, Memory Layers |
 | ch30 | model collapse, GEM, Can a LM Learn Facts Continually |

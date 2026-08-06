@@ -6,7 +6,7 @@
 > (3) RLHF 파이프라인 · DPO · RLVR를 "무엇이 채점하는가"와 "어떤 하드웨어를 먹는가"의 두 축으로 구분하고, 각각이 sleep 라운드에 얹힐 때의 비용 모양을 말할 수 있다.
 > (4) reward hacking을 정의하고, RL 이득 보고에 어떤 통제군이 붙어 있어야 하는지 판정할 수 있다.
 >
-> **왜 필요한가** — Part II의 세 장이 이 어휘 없이는 읽히지 않는다. **ch20의 SEAL** (*Self-Adapting Language Models*, arXiv:2506.10943)은 §3.1 전체가 RL 표기로 쓰여 있다 — 목적함수 [SEAL Eq. 1], 이진 보상 [SEAL Eq. 2], gradient 추정량 [SEAL Eq. 3–4], 그리고 알고리즘 선택의 근거("GRPO와 PPO는 불안정했다") [SEAL §3.1, p.4]. 이 식들을 읽으려면 policy·rollout·advantage가 무엇인지 알아야 한다. **ch21의 `Language Models Need Sleep`** (arXiv:2606.03979)의 Dreaming 단계는 semantic reward와 distillation을 계수로 섞는다 — 그 기호들($\rho_r$, $\lambda_{\mathrm{KD}}$, $r_{\mathrm{sem}}$)은 NM에서 이미 만났지만(→ NM ch17), "reward를 섞는다"가 최적화 관점에서 무엇을 하는 일인지는 이 장이 공급한다. (reward 혼합 계수는 ch21에서 $\rho_r$로 쓴다. 맨 $\rho$는 이 책에서 비용 4종의 망각·열화율로 예약되어 있어 덮어쓸 수 없다.) **ch15의 ReasoningBank** (arXiv:2509.25140)은 agent를 $\pi_L(\cdot\mid M, A)$라는 policy 표기로 쓰고 자기 루프가 "RL의 학습 동역학을 닮았다"고 서술하는데 [ReasoningBank §3.1, §5], 정작 gradient는 한 번도 계산하지 않는다. 그 차이를 독자가 스스로 판정하려면 RL이 실제로 무엇을 하는지 먼저 알아야 한다.
+> **왜 필요한가** — Part II의 세 장이 이 어휘 없이는 읽히지 않는다. **ch20의 SEAL** (*Self-Adapting Language Models*, arXiv:2506.10943)은 [SEAL §3.1] 전체가 RL 표기로 쓰여 있다 — 목적함수 [SEAL Eq. 1], 이진 보상 [SEAL Eq. 2], gradient 추정량 [SEAL Eq. 3–4], 그리고 알고리즘 선택의 근거("GRPO와 PPO는 불안정했다") [SEAL §3.1, p.4]. 이 식들을 읽으려면 policy·rollout·advantage가 무엇인지 알아야 한다. **ch21의 `Language Models Need Sleep`** (arXiv:2606.03979)의 Dreaming 단계는 semantic reward와 distillation을 계수로 섞는다 — 그 기호들($\rho_r$, $\lambda_{\mathrm{KD}}$, $r_{\mathrm{sem}}$)은 NM에서 이미 만났지만(→ NM ch17), "reward를 섞는다"가 최적화 관점에서 무엇을 하는 일인지는 이 장이 공급한다. (reward 혼합 계수는 ch21에서 $\rho_r$로 쓴다. 맨 $\rho$는 이 책에서 비용 4종의 망각·열화율로 예약되어 있어 덮어쓸 수 없다.) **ch15의 ReasoningBank** (arXiv:2509.25140)은 agent를 $\pi_L(\cdot\mid M, A)$라는 policy 표기로 쓰고 자기 루프가 "RL의 학습 동역학을 닮았다"고 서술하는데 [ReasoningBank §3.1, §5], 정작 gradient는 한 번도 계산하지 않는다. 그 차이를 독자가 스스로 판정하려면 RL이 실제로 무엇을 하는지 먼저 알아야 한다.
 >
 > **NM과의 관계** — 넘길 것: backward pass와 optimizer state의 객체적 이해는 전제한다(→ NM ch02). stream 위의 단일 패스 최적화, regret, comparator는 → NM ch03. inner/outer loop의 형식화는 → NM ch04. `Sleep`의 GKD 계수 표기는 → NM ch17. 더할 것은 하나다: **NM의 어느 장에도 reward가 없다.** NM ch03의 online protocol에서 loss는 stream이 자기 label을 들고 도착하는 self-supervised 회귀였다($\ell(W;k_t,v_t)=\|\mathcal{M}(k_t;W)-v_t\|_2^2$). RL의 reward는 생성이 **끝난 뒤 밖에서** 도착하는 스칼라 하나다. 이 차이가 이 장의 전부다. 그리고 어휘 충돌 하나를 미리 못 박는다 — NM ch03의 "online" $t$는 token 인덱스이고, 이 장의 episode step도 token이지만, **NM ch03의 regret 보장을 이 장의 policy 성능 주장으로 옮겨 읽으면 안 된다.** 둘은 다른 comparator에 대한 다른 보장이다.
 
@@ -247,7 +247,7 @@ $$
 
 ### 05.7.2 ReasoningBank — policy라고 쓰고, gradient는 없다
 
-ReasoningBank은 agent를 policy 표기로 쓴다: "agent policy $\pi_L(\cdot\mid M, A)$는 backbone LLM $L$로 파라미터화되고, memory module $M$과 action space $A$에 조건화된다" [ReasoningBank §3.1]. (원문 기호를 그대로 옮긴 인용이다. 이 책의 표기로는 원문 $L$이 frozen $\Theta$이고 원문 $M$이 $E$다. 이 책에서 맨 $L$은 sequence 길이로, 맨 $M$은 한 prompt당 rollout 수로 이미 예약되어 있으므로 인용 밖에서는 원문 기호를 쓰지 않는다.) §5는 이 루프가 "RL의 학습 동역학을 닮았다"고 서술한다 [ReasoningBank §5].
+ReasoningBank은 agent를 policy 표기로 쓴다: "agent policy $\pi_L(\cdot\mid M, A)$는 backbone LLM $L$로 파라미터화되고, memory module $M$과 action space $A$에 조건화된다" [ReasoningBank §3.1]. (원문 기호를 그대로 옮긴 인용이다. 이 책의 표기로는 원문 $L$이 frozen $\Theta$이고 원문 $M$이 $E$다. 이 책에서 맨 $L$은 sequence 길이로, 맨 $M$은 한 prompt당 rollout 수로 이미 예약되어 있으므로 인용 밖에서는 원문 기호를 쓰지 않는다.) [ReasoningBank §5]는 이 루프가 "RL의 학습 동역학을 닮았다"고 서술한다.
 
 그런데 gradient가 한 번도 계산되지 않는다. backbone은 frozen 체크포인트이고(주력 세 모델은 Vertex AI API 뒤에 있다) [ReasoningBank §4.1, App B.1], 이 논문에서 갱신되는 것은 JSON 파일 하나뿐이다 [ReasoningBank App A.2]. 부품별 대응을 세면 이렇다.
 

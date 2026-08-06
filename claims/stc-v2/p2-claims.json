@@ -631,14 +631,14 @@
       "visibility": "team",
       "claim_class": "cross-path-silence",
       "chapter": "ch15",
-      "statement": "ReasoningBank never cites Letta's Sleep-time Compute and the string 'sleep' does not occur anywhere in its 2481-line text.",
+      "statement": "ReasoningBank never cites Letta's Sleep-time Compute and the string 'sleep' does not occur anywhere in its full vendored text.",
       "result_refs": [],
       "evidence": [
         {
           "id": "p2_rb_silent_on_letta_e1",
           "kind": "source_artifact",
           "ref": "papers/stc/2509.25140.pdf@927a8b507f41d6670ea9c7ab19fe252d3d80b1df",
-          "locator": "Bibliography and full text, vendored papers/stc/2509.25140.txt:1-2481; case-insensitive grep for 'sleep' returns 0 hits; §2 related work at txt:188-190 cites MemGPT and Mem0 but not 2504.13171",
+          "locator": "Bibliography and full text, vendored papers/stc/2509.25140.txt (whole file, 2511 lines); case-insensitive grep for 'sleep' returns 0 hits; §2 related work at txt:188-190 cites MemGPT and Mem0 but not 2504.13171",
           "trust": 0.95
         },
         {
@@ -1560,5 +1560,6 @@
         }
       ]
     }
-  ]
+  ],
+  "verification_round": "verification-2026-08-06 — see claims/stc-v2/verification.md. This half was updated in lockstep with bundle.json so the merge-integrity check still compares like with like; every edit is enumerated there."
 }

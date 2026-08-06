@@ -10,7 +10,7 @@
 >
 > **NM과의 관계** — Neural Memory에 대응 장이 없다. 새로 쓴다. 다만 backward pass, optimizer state, outer loop의 의미는 전제한다(→ NM ch02, → NM ch04). 이 장이 더하는 것은 하나다: (U-$\Theta$)를 **전부가 아니라 부분적으로** 도는 방법, 그리고 그 부분이 **파일로 떨어져 배포 아티팩트가 된다**는 사실. NM이 300쪽에 걸쳐 다룬 $W$(fast weights)는 이 장에 한 번도 등장하지 않는다 — 이 장의 모든 기제는 test-time에 아무것도 움직이지 않는다.
 
-> **[표기 경고 — 이 장 전용]** LoRA 원문은 사전학습 weight 행렬을 $W$로 쓰고, 학습되는 소수의 파라미터 집합을 $\Theta$로 쓴다 [lora §4.1, lora Eq. 2]. 이 책의 예약 기호와 **둘 다 정반대**다. 이 책에서 $W$는 fast weights(test-time에 움직이는 상태)이고 $\Theta$는 slow weights 전체다. 이 장의 모든 수식은 통일 표기로 옮긴다: 원문 $\Phi_0 \to \Theta_0$, 원문 $W_0 \to \Theta_0^{(m)}$, 원문 $\Theta \to (A, B)$, 원문 $\alpha \to \alpha_{\mathrm{LoRA}}$, 원문 $L$(층 수) $\to L_{\mathrm{layer}}$. attention의 네 투영 행렬도 같은 규칙을 따른다: 원문 $W_q, W_k, W_v, W_o \to \Theta^{(q)}, \Theta^{(k)}, \Theta^{(v)}, \Theta^{(o)}$ — 위첨자는 식 (3-2)의 행렬 인덱스 $m$이 취하는 값이며, 시간 첨자가 아니다. 원문 기호는 이 문단과 원문 직접 인용 밖에 등장하지 않는다. 또 이 장은 LoRA를 적용한 행렬들의 집합을 $\mathcal{S}$로 쓴다 — ch01 §1.3에서 예약된 기호이며 이 장이 정의를 소유한다. 예약 기호 $S_t$(momentum)·$S(c; B_s)$(오프라인 처리 절차) 어느 쪽과도 무관하다.
+> **[표기 경고 — 이 장 전용]** LoRA 원문은 사전학습 weight 행렬을 $W$로 쓰고, 학습되는 소수의 파라미터 집합을 $\Theta$로 쓴다 [lora §4.1, lora Eq. 2]. 이 책의 예약 기호와 **둘 다 정반대**다. 이 책에서 $W$는 fast weights(test-time에 움직이는 상태)이고 $\Theta$는 slow weights 전체다. 이 장의 모든 수식은 통일 표기로 옮긴다: 원문 $\Phi_0 \to \Theta_0$, 원문 $W_0 \to \Theta_0^{(m)}$, 원문 $\Theta \to (A, B)$, 원문 $\alpha \to \alpha_{\mathrm{LoRA}}$, 원문 $L$(층 수) $\to L_{\mathrm{layer}}$. attention의 네 투영 행렬도 같은 규칙을 따른다: 원문 $W_q, W_k, W_v, W_o \to \Theta^{(q)}, \Theta^{(k)}, \Theta^{(v)}, \Theta^{(o)}$ — 위첨자는 식 (3-2)의 행렬 인덱스 $m$이 취하는 값이며, 시간 첨자가 아니다. 원문 기호는 이 문단과 원문 직접 인용 밖에 등장하지 않는다. 또 이 장은 LoRA를 적용한 행렬들의 집합을 $\mathcal{S}$로 쓴다 — 이 장이 도입해 이 책 전체의 예약 기호가 된 것이고(ch09·ch19가 그대로 쓴다), 정의는 이 장이 소유한다. 예약 기호 $S_t$(momentum)·$S(c; B_s)$(오프라인 처리 절차) 어느 쪽과도 무관하다.
 
 ---
 
@@ -117,7 +117,7 @@ $$
 
 쓰기 시점 비용은 §03.1에서 예고한 대로 움직인다. GPT-3 175B에서 VRAM은 1.2TB → 350GB, throughput은 V100당 32.5 → 43.1 tokens/s(논문 표현으로 25% speedup)다 [lora §4.2, lora §4.2 각주 5]. 절감의 출처는 FLOPs가 아니라 optimizer state와 gradient를 대부분 들고 있지 않아도 된다는 것이다 [lora §1] — 즉 backward의 계산량은 거의 그대로이고 **메모리만** 줄어든다. 이 구분은 Θ-경로의 sleep 예산을 회계할 때 반복해서 필요하다.
 
-> **[평가]** 논문의 절차 서술 하나가 부록과 어긋난다. §4.1은 "we simply set $\alpha$ to the first $r$ we try and do not tune it"이라고 선언하지만, 보고된 값은 RoBERTa base $r=8,\ \alpha=8$(일치), RoBERTa large $r=8,\ \alpha=16$(불일치), DeBERTa $r=8,\ \alpha=8$(일치), GPT-2 $r=4,\ \alpha=32$(불일치)다 [lora Table 9, lora Table 10, lora Table 11]. 네 설정 중 둘이 선언한 절차를 따르지 않는다. $\alpha_{\mathrm{LoRA}}$를 "튜닝하지 않아도 되는 상수"로 소개하는 2차 문헌이 많으나, 원문의 근거는 그만큼 약하다.
+> **[평가]** 논문의 절차 서술 하나가 부록과 어긋난다. [lora §4.1]은 "we simply set $\alpha$ to the first $r$ we try and do not tune it"이라고 선언하지만, 보고된 값은 RoBERTa base $r=8,\ \alpha=8$(일치), RoBERTa large $r=8,\ \alpha=16$(불일치), DeBERTa $r=8,\ \alpha=8$(일치), GPT-2 $r=4,\ \alpha=32$(불일치)다 [lora Table 9, lora Table 10, lora Table 11]. 네 설정 중 둘이 선언한 절차를 따르지 않는다. $\alpha_{\mathrm{LoRA}}$를 "튜닝하지 않아도 되는 상수"로 소개하는 2차 문헌이 많으나, 원문의 근거는 그만큼 약하다.
 
 ---
 
@@ -162,9 +162,11 @@ $\mathcal{S}$의 범위에도 선언된 한계가 있다. 이 논문의 모든 "
 > **정의.** **merge**는 학습이 끝난 뒤 delta를 base에 흡수해 하나의 weight 행렬로 만드는, 배포 시점의 산술 연산이다. gradient step이 아니다.
 
 $$
+\adjustbox{max width=\linewidth}{$\displaystyle
 \Theta^{(m)} \leftarrow \Theta_0^{(m)} + \tfrac{\alpha_{\mathrm{LoRA}}}{r} B^{(m)} A^{(m)},
 \qquad
 \text{task switch: } \Theta_0^{(m)} = \Theta^{(m)} - \tfrac{\alpha_{\mathrm{LoRA}}}{r} B^{(m)} A^{(m)},\ \ \Theta'^{(m)} = \Theta_0^{(m)} + \tfrac{\alpha_{\mathrm{LoRA}}}{r} B'^{(m)} A'^{(m)}
+$}
 \tag{3-5}
 $$
 

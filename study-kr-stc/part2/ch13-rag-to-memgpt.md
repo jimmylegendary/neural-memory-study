@@ -2,7 +2,7 @@
 
 ## 13.1 Bridge-in: 전작이 남긴 문제
 
-MemGPT(arXiv:2310.08560)가 명시적으로 상속한 문제는 **긴 문맥을 넓혀도 모델이 가운데를 쓰지 못한다**는 것이다. 논문 §1이 그 상속을 인용으로 적는다.
+MemGPT(arXiv:2310.08560)가 명시적으로 상속한 문제는 **긴 문맥을 넓혀도 모델이 가운데를 쓰지 못한다**는 것이다. 논문 [MemGPT §1]이 그 상속을 인용으로 적는다.
 
 > "even if we could overcome the computational challenges of context scaling, recent research shows that long-context models struggle to utilize additional context effectively (Liu et al., 2023a). As consequence, given the considerable resources needed to train state-of-the-art LLMs and diminishing returns of context scaling, there is a critical need for alternative techniques to support long context." [MemGPT §1]
 
@@ -36,7 +36,7 @@ RAG의 $E$와 대비하면 세 축이 전부 뒤집힌다. RAG의 $E$는 corpus�
 
 ## 13.3 Core mechanism (통일 표기)
 
-먼저 못 박아야 할 사실이 있다. **이 논문에는 번호 붙은 수식이 하나도 없고, 수학 표기 자체가 없다.** 순수 systems 논문이며 갱신 규칙 전부가 영어 산문으로 §2.1–§2.4에 쓰여 있다. 따라서 아래 식은 전부 이 책이 그 산문을 통일 표기로 옮긴 것이고, 원문 수식 번호 대신 **절 위치**를 병기한다. 이 부재 자체가 보고 대상이다 — $E$-경로의 조상이 자기 갱신 규칙을 수식으로 진술하지 않는다.
+먼저 못 박아야 할 사실이 있다. **이 논문에는 번호 붙은 수식이 하나도 없고, 수학 표기 자체가 없다.** 순수 systems 논문이며 갱신 규칙 전부가 영어 산문으로 [MemGPT §2.1–§2.4]에 쓰여 있다. 따라서 아래 식은 전부 이 책이 그 산문을 통일 표기로 옮긴 것이고, 원문 수식 번호 대신 **절 위치**를 병기한다. 이 부재 자체가 보고 대상이다 — $E$-경로의 조상이 자기 갱신 규칙을 수식으로 진술하지 않는다.
 
 상태 분해부터 한다. $\Theta$는 동결된 상용 API 세 개다: gpt-4-1106-preview(문맥 128,000), gpt-4-0613(8,192), gpt-3.5-turbo-1106(16,385) [MemGPT §3]. $W$는 아예 존재하지 않는다 — Neural Memory가 통째로 다룬 층이 여기서는 빈칸이다(→ NM ch12). $E$와 그 프롬프트 내 투영은 다섯 블록으로 나뉘며, 결정적인 분할은 **프롬프트 안이냐 밖이냐**다 [MemGPT §2, §2.1].
 
@@ -100,7 +100,7 @@ N_{\text{flush}} = 1.00\,N_{\mathrm{ctx}}
 \tag{13-6}
 $$
 
-축출량은 문맥창의 약 50%다 [MemGPT §2.2]. 위 세 백분율(70%, 100%, 50%)은 원문이 전부 "e.g."를 달아 적은 예시값이지 실험에서 쓴 설정값이 아니다 — 그대로 인용하되 측정된 구성으로 읽으면 안 된다.
+축출량은 문맥창의 약 50%다 [MemGPT §2.2]. 위 세 백분율(70%, 100%, 50%)은 원문이 전부 "e.g."를 달아 적은 예시값이지 실험에서 쓴 설정값이 아니다 — 그대로 인용하되 측정된 구성으로 읽으면 안 된다[본서 판단].
 
 식 (13-6)의 $S(\cdot)$는 표준형 (U-E)의 $S(c;B_s)$와 **방향이 반대**다. (U-E)에서 $S(c;B_s)$는 문맥을 압축해 저장소 **안으로** 넣지만, MemGPT의 $S(\cdot)$는 축출된 프롬프트 내용을 압축해 프롬프트 **밖으로** 밀어내고 그동안 $E^{\mathrm{rec}}$는 식 (13-4)에 의해 아무것도 잃지 않는다. 손실은 저장소가 아니라 프롬프트에서만 일어난다. 그리고 이 압축의 예산은 계산 예산이 아니라 **토큰 개수 목표**다 — MemGPT에 압축 예산이 존재하는 유일한 자리이고, 그것이 $B_s$가 아니라는 사실이 §13.5의 결론을 미리 정한다.
 
@@ -158,7 +158,7 @@ $$
 
 이 장의 의무 caveat 하나를 여기서 명시한다. **MemGPT는 이 책의 판별식 조건 (1)을 만족하지 않는다.** 판별식은 질의 $q$가 도착하기 **전에** 예산을 써서 상태를 바꿀 것을 요구하는데(→ ch11), MemGPT의 쓰기는 전부 대화 **중**에, 사용자 턴의 임계 경로 위에서, 답을 만드는 것과 같은 디코딩 예산으로 일어난다(식 (13-3), (13-6)). 그럼에도 $E$-경로의 출발점으로 두는 근거는 둘이다 — 그 쓰기의 산출물이 **이후 질의**에 쓰이고(조건 (4)는 만족), ch14가 이 계보를 자기 조상으로 지목한다. MemGPT는 sleep-time compute의 **구조적** 조상이되 sleep-time compute이 아니다.
 
-> **[해설]** 유휴 예산의 자리는 논문 안에 이미 뚫려 있다. §2.4가 이벤트 종류를 열거하며 "timed events that are run on a regular schedule (allowing MemGPT to run 'unprompted' without user intervention)"을 적는다 [MemGPT §2.4]. 정기 스케줄로 도는 사용자 개입 없는 실행 — 이것이 $B_s$가 들어갈 구멍이다. 그런데 어떤 실험도 이 훅을 쓰지 않고 어떤 계산도 여기에 귀속되지 않는다. ch14가 하는 일을 한 문장으로 줄이면 **이 훅을 실제로 실행하고 그 비용에 이름을 붙인 것**이다.
+> **[해설]** 유휴 예산의 자리는 논문 안에 이미 뚫려 있다. [MemGPT §2.4]가 이벤트 종류를 열거하며 "timed events that are run on a regular schedule (allowing MemGPT to run 'unprompted' without user intervention)"을 적는다 [MemGPT §2.4]. 정기 스케줄로 도는 사용자 개입 없는 실행 — 이것이 $B_s$가 들어갈 구멍이다. 그런데 어떤 실험도 이 훅을 쓰지 않고 어떤 계산도 여기에 귀속되지 않는다. ch14가 하는 일을 한 문장으로 줄이면 **이 훅을 실제로 실행하고 그 비용에 이름을 붙인 것**이다.
 
 ## 13.5 비용 4종
 
@@ -172,9 +172,9 @@ $$
 | $\rho$ | **논문에 없음** | 반복 consolidation 실험도, 라운드별 열화 측정도, staleness 연구도 없다. Fig. 4가 `working_context.replace`로 "Boyfriend named James"를 "Ex-boyfriend named James"로 고치는 장면을 보여 주지만 [MemGPT Fig. 4] 지표가 붙지 않은 예시 대화다. DMR 과제는 이전 5개 세션 + 새 세션 1개를 쓰고 [MemGPT §3.1], 세션 수를 변화시켜 열화를 드러내지 않는다 |
 | $N_q$ | **논문에 없음** | 한 문맥을 몇 개 질의가 공유하는지에 대한 분포가 없다 |
 
-$N_q$가 없다는 사실의 귀결은 명확하다. **식 (A)를 이 논문으로 채울 수 없다** — 분자에 넣을 $C_{\text{sleep}}$이 없고($B_s$ 부재) 분모에 넣을 $N_q$도 없다. 실서빙 $N_q$ 분포를 보고한 논문이 corpus에 없다는 사실의 한 사례다(→ ch14, ch25).
+> **[평가]** $N_q$가 없다는 사실의 귀결은 명확하다. **식 (A)를 이 논문으로 채울 수 없다** — 분자에 넣을 $C_{\text{sleep}}$이 없고($B_s$ 부재) 분모에 넣을 $N_q$도 없다. 실서빙 $N_q$ 분포를 보고한 논문이 corpus에 없다는 사실의 한 사례다(→ ch14, ch25).
 
-$C_{\text{cap}}$ 칸에는 특히 주의가 필요하다. ch10이 RAG에서 채운 $C_{\text{cap}}$은 36 GB / 약 100 GB였고 단위가 **corpus당**이었다(→ ch10 §10.1). MemGPT의 상태는 **사용자당**인데 그 값이 바이트로 보고되지 않는다. $E$-경로는 단위가 corpus당에서 사용자당으로 바뀌는 바로 그 논문에서 숫자를 잃는다. 두 논문의 $C_{\text{cap}}$을 나란히 놓아 비교할 수 없다는 뜻이며, 이 결손은 corpus 전체로 확대된다(→ ch26).
+> **[평가]** $C_{\text{cap}}$ 칸에는 특히 주의가 필요하다. ch10이 RAG에서 채운 $C_{\text{cap}}$은 36 GB / 약 100 GB였고 단위가 **corpus당**이었다(→ ch10 §10.1). MemGPT의 상태는 **사용자당**인데 그 값이 바이트로 보고되지 않는다. $E$-경로는 단위가 corpus당에서 사용자당으로 바뀌는 바로 그 논문에서 숫자를 잃는다. 두 논문의 $C_{\text{cap}}$을 나란히 놓아 비교할 수 없다는 뜻이며, 이 결손은 corpus 전체로 확대된다(→ ch26).
 
 > **[평가]** 비용 4종이 전부 비어 있으므로 이 책은 MemGPT에 대해 "효율적"이라는 서술을 쓰지 않는다. 그런데 이 침묵은 중립적이지 않고 방향이 있다 — 식 (13-7)이 사용자 턴 하나를 여러 번의 추론 사이클로 만들고 각 사이클은 직전보다 긴 프롬프트 위에서 돈다. 따라서 MemGPT는 답 하나당 **반드시** baseline보다 비싸다. 얼마나 비싼지를 묻는 질문 자체가 논문에 등장하지 않는다.
 
@@ -192,13 +192,13 @@ ch10은 RAG를 $E$층의 **형태와 비용**으로만 읽었고 학습된 검�
 
 **(3) Jeopardy는 저자가 제안한 과제이고, 평가도 baseline도 저자가 만들었다.** "As this is a new task, we train a BART model for comparison" [RAG §3.3]. 인간 평가는 BART와 RAG-Token 생성물 **452쌍**의 쌍대 비교이며 선택지는 A 우세/B 우세/둘 다 좋음/둘 다 나쁨 네 개다 [RAG §3.3, §4.3]. 임베드된 gold 문장 검사를 통과하지 못한 평가자 두 명이 제거되었고 [RAG App. B], 평가자 수도 평가자 간 일치도도 신뢰구간도 보고되지 않는다.
 
-**(4) 그 인간 평가 표의 한 열이 100%가 되지 않는다.** Table 4의 Specificity 열은 BART better 16.8%, RAG better 37.4%, Both good 11.8%, Both poor 6.9%, No majority 20.1%로 합이 **93.0%**다 [RAG Table 4]. 같은 표의 Factuality 열은 7.1 + 42.7 + 11.7 + 17.7 + 20.8 = 100.0%로 맞는다. 논문은 이 차이를 언급하지 않는다.
+> **[평가]** **(4) 그 인간 평가 표의 한 열이 100%가 되지 않는다.** Table 4의 Specificity 열은 BART better 16.8%, RAG better 37.4%, Both good 11.8%, Both poor 6.9%, No majority 20.1%로 합이 **93.0%**다 [RAG Table 4]. 같은 표의 Factuality 열은 7.1 + 42.7 + 11.7 + 17.7 + 20.8 = 100.0%로 맞는다. 논문은 이 차이를 언급하지 않는다.
 
-**(5) 같은 표에 대해 산문과 표가 어긋난다.** §4.3은 "both RAG and BART were factual in a further 17% of cases"라고 쓰지만 [RAG §4.3], Table 4의 Factuality "Both good"은 11.7%이고 17.7%는 "Both poor"다 [RAG Table 4]. 어느 쪽을 옮긴 것인지 원문에서 결정되지 않는다. 이 책은 표 값을 인용하고 불일치를 그대로 기록한다.
+**(5) 같은 표에 대해 산문과 표가 어긋난다.** [RAG §4.3]은 "both RAG and BART were factual in a further 17% of cases"라고 쓰지만, Table 4의 Factuality "Both good"은 11.7%이고 17.7%는 "Both poor"다 [RAG Table 4]. 어느 쪽을 옮긴 것인지 원문에서 결정되지 않는다. 이 책은 표 값을 인용하고 불일치를 그대로 기록한다.
 
-**(6) null-document 기제는 세 변형을 만들고 전부 버렸는데, 숫자가 하나도 없다.** 학습되는 null embedding, 정적 학습 bias 항, logit을 예측하는 작은 신경망을 시도하고 "We did not find that these improved performance, so in the interests of simplicity, we omit them"으로 끝낸다 [RAG App. F]. 수치가 없으므로 답할 수 없는 질의에서 손해가 얼마인지 알 수 없다.
+**(6) null-document 기제는 세 변형을 만들고 전부 버렸는데, 숫자가 하나도 없다.** 학습되는 null embedding, 정적 학습 bias 항, logit을 예측하는 작은 신경망을 시도하고 "We did not find that these improved performance, so in the interests of simplicity, we omit them"으로 끝낸다 [RAG App. F]. 수치가 없으므로 답할 수 없는 질의에서 손해가 얼마인지 알 수 없다[본서 추론].
 
-**(7) RAG-Sequence와 RAG-Token의 순서가 과제마다 뒤집히고, 고르는 규칙이 없다.** RAG-Token이 이기는 곳은 Jeopardy B-1 17.3 대 14.7, QB-1 22.2 대 21.4, WebQuestions 45.5 대 45.2이고, RAG-Sequence가 이기는 곳은 MS-MARCO R-L 40.8 대 40.1과 B-1 44.2 대 41.5, Natural Questions 44.5 대 44.1, CuratedTrec 52.2 대 50.0이다 [RAG Table 1, Table 2]. 논문의 설명은 Jeopardy에 대한 사후 이야기 — RAG-Token이 여러 문서의 내용을 결합할 수 있어서일 수 있다는 것 — 뿐이다 [RAG §4.3].
+**(7) RAG-Sequence와 RAG-Token의 순서가 과제마다 뒤집히고, 고르는 규칙이 없다[본서 관찰].** RAG-Token이 이기는 곳은 Jeopardy B-1 17.3 대 14.7, QB-1 22.2 대 21.4, WebQuestions 45.5 대 45.2이고, RAG-Sequence가 이기는 곳은 MS-MARCO R-L 40.8 대 40.1과 B-1 44.2 대 41.5, Natural Questions 44.5 대 44.1, CuratedTrec 52.2 대 50.0이다 [RAG Table 1, Table 2]. 논문의 설명은 Jeopardy에 대한 사후 이야기 — RAG-Token이 여러 문서의 내용을 결합할 수 있어서일 수 있다는 것 — 뿐이다 [RAG §4.3].
 
 **(8) 모든 증거가 단일 corpus에서 나온다.** 2018년 12월 Wikipedia dump 하나이고 2016년 12월 dump는 index 교체 프로브에만 쓰인다 [RAG §3, §4.5]. 웹 corpus도 도메인 corpus도 다중 corpus 혼합도 사용자별 파티션도 시험되지 않는다 — Broader Impact 절이 "by endowing it with a medical index" 같은 용도를 직접 제안하는데도 그렇다 [RAG Broader Impact].
 
@@ -221,7 +221,7 @@ ch10은 RAG를 $E$층의 **형태와 비용**으로만 읽었고 학습된 검�
 | GPT-4 Turbo | 35.3% | 0.359 |
 | GPT-4 Turbo + MemGPT | 93.4% | 0.827 |
 
-이 표에는 세 가지가 함께 붙어야 한다. 첫째, **비교가 정보 동등하지 않다.** 논문 자신의 문장이 "The baselines are able to see a lossy summarization of the past five conversations ... while MemGPT instead has access to the full conversation history"다 [MemGPT §3.1.1]. 92.5% 대 32.1%의 격차는 방법의 효과와 입력 접근권의 효과를 **합쳐서** 잰 값이고, 접근권을 맞춘 baseline은 돌지 않았다. 둘째, **baseline이 뒤집혀 있다.** GPT-4 baseline(32.1%, 0.296)이 GPT-3.5 Turbo baseline(38.7%, 0.394)보다 낮다. 논문은 이 역전을 언급하지 않으며, 역전은 GPT-4의 상승폭(+60.4점)을 GPT-3.5의 상승폭(+28.2점)보다 커 보이게 만든다. 셋째, **판정기가 관대하게 지시받았다** — "you should be generous with your grading - as long as it touches on the same topic as the gold answer, it should be counted as CORRECT" [MemGPT App. §6.1.2]. 판정기는 피험 시스템과 같은 모델 계열이며, DMR 평가 집합의 크기는 논문 어디에도 없다.
+> **[평가]** 이 표에는 세 가지가 함께 붙어야 한다. 첫째, **비교가 정보 동등하지 않다.** 논문 자신의 문장이 "The baselines are able to see a lossy summarization of the past five conversations ... while MemGPT instead has access to the full conversation history"다 [MemGPT §3.1.1]. 92.5% 대 32.1%의 격차는 방법의 효과와 입력 접근권의 효과를 **합쳐서** 잰 값이고, 접근권을 맞춘 baseline은 돌지 않았다. 둘째, **baseline이 뒤집혀 있다.** GPT-4 baseline(32.1%, 0.296)이 GPT-3.5 Turbo baseline(38.7%, 0.394)보다 낮다. 논문은 이 역전을 언급하지 않으며, 역전은 GPT-4의 상승폭(+60.4점)을 GPT-3.5의 상승폭(+28.2점)보다 커 보이게 만든다. 셋째, **판정기가 관대하게 지시받았다** — "you should be generous with your grading - as long as it touches on the same topic as the gold answer, it should be counted as CORRECT" [MemGPT App. §6.1.2]. 판정기는 피험 시스템과 같은 모델 계열이며, DMR 평가 집합의 크기는 논문 어디에도 없다.
 
 **Conversation Opener.** 저자가 정의한 지표로 저자가 만든 과제다 [MemGPT §3.1.2].
 
@@ -234,17 +234,17 @@ ch10은 RAG를 $E$층의 **형태와 비용**으로만 읽었고 학습된 검�
 | MemGPT (GPT-4) | 0.868 | 0.843 | 0.773 |
 | MemGPT (GPT-4 Turbo) | 0.857 | 0.828 | 0.767 |
 
-**이 표에는 MemGPT를 쓰지 않은 LLM 행이 아예 없다.** 비교 대상이 사람이 쓴 opener 하나뿐이므로 이 실험은 MemGPT에 귀속되는 상승을 하나도 확립하지 못한다. "사람을 넘어선다"는 주장을 지탱하는 것도 persona 라벨 대비 유사도인 SIM-1·SIM-3뿐이다 — SIM-H에서는 사람이 정의상 1.000이라 모든 변형이 지고, **가장 강한 backend가 가장 낮다**(0.767 < 0.773 < 0.817). 저자들 자신이 MemGPT의 opener가 "more verbose and cover more aspects of the persona information"라고 적는데 [MemGPT §3.1.2], 그것은 persona 라벨 유사도를 부풀리는 바로 그 성질이지 opener가 더 낫다는 증거가 아니다.
+> **[평가]** **이 표에는 MemGPT를 쓰지 않은 LLM 행이 아예 없다.** 비교 대상이 사람이 쓴 opener 하나뿐이므로 이 실험은 MemGPT에 귀속되는 상승을 하나도 확립하지 못한다. "사람을 넘어선다"는 주장을 지탱하는 것도 persona 라벨 대비 유사도인 SIM-1·SIM-3뿐이다 — SIM-H에서는 사람이 정의상 1.000이라 모든 변형이 지고, **가장 강한 backend가 가장 낮다**(0.767 < 0.773 < 0.817). 저자들 자신이 MemGPT의 opener가 "more verbose and cover more aspects of the persona information"라고 적는데 [MemGPT §3.1.2], 그것은 persona 라벨 유사도를 부풀리는 바로 그 성질이지 opener가 더 낫다는 증거가 아니다.
 
 <!-- TODO-VERIFY: SIM-1과 SIM-3의 정확한 정의. 원문은 Table 3 캡션과 §3.1.2에서 "similarity scores to the gold persona labels (SIM-1/3)"라고만 쓰고 1과 3의 의미를 정의하지 않는다. 확인 방법: research.memgpt.ai에 공개된 벤치마크 코드에서 SIM-1/SIM-3/CSIM 계산부 확인. 확정 전까지 본문에 정의를 쓰지 않는다. -->
 
-**Document QA와 nested KV.** 둘 다 **표가 없고 결과가 그림으로만 존재한다** [MemGPT Fig. 5, Fig. 7]. Document QA는 Liu et al. 2023a의 과제를 그대로 쓰고 Natural Questions-Open에서 질문 **50개**를 표본으로 뽑았으며 [MemGPT §3.2.1], nested KV는 UUID 키-값 쌍 140개(약 8k 토큰)에 대해 중첩 수준마다 순서 배치 **30개**를 뽑았다 [MemGPT §3.2.2]. 이 표본 크기에서 분산도 오차 막대도 보고되지 않은 것은 중대한 결손이다.
+**Document QA와 nested KV.** 둘 다 **표가 없고 결과가 그림으로만 존재한다** [MemGPT Fig. 5, Fig. 7]. Document QA는 Liu et al. 2023a의 과제를 그대로 쓰고 Natural Questions-Open에서 질문 **50개**를 표본으로 뽑았으며 [MemGPT §3.2.1], nested KV는 UUID 키-값 쌍 140개(약 8k 토큰)에 대해 중첩 수준마다 순서 배치 **30개**를 뽑았다 [MemGPT §3.2.2]. 이 표본 크기에서 분산도 오차 막대도 보고되지 않은 것은 중대한 결손이다[본서 판단].
 
 Document QA에서 "MemGPT's performance is unaffected by increased context length"이고 [MemGPT Fig. 5 캡션] GPT-4는 회수 문서가 늘수록 계속 좋아진다 [MemGPT §3.2.1] — 고정 문맥 baseline은 우상향하고 MemGPT는 평평하다. **큰 $K_{\text{ret}}$에서 baseline이 MemGPT를 추월하는지, 교차점이 있다면 어디인지를 논문은 말하지 않는다.** nested KV에서는 GPT-3.5가 중첩 1에서 0%로 떨어지고 GPT-4와 GPT-4 Turbo는 중첩 3에서 0%에 도달하며 MemGPT+GPT-4는 중첩 수에 영향받지 않는다 [MemGPT §3.2.2].
 
 <!-- TODO-VERIFY: Fig. 5 곡선의 수치값과, 큰 K_ret에서 고정 문맥 baseline이 MemGPT를 추월하는지 여부. Fig. 7의 중첩 수준 4가 실제로 그려졌는지도 함께(본문은 0-4를 시험했다고 쓰는데 축 눈금은 0-3이다). 확인 방법: arXiv:2310.08560v2 PDF의 Figure 5·Figure 7 원본, 또는 research.memgpt.ai 공개 저장소의 플로팅 데이터. -->
 
-불리한 사실 셋이 이 두 그림에 붙는다. 첫째, **더 강한 기반 모델이 MemGPT를 더 나쁘게 만든다** — "While GPT-4 Turbo performs better as a baseline, MemGPT with GPT-4 Turbo performs worse than MemGPT with GPT-4" [MemGPT Fig. 7 캡션]. 논문은 설명하지 않는다. 둘째, **약한 모델에서는 기제가 작동하지 않는다** — "MemGPT has significantly degraded performance using GPT-3.5, due to its limited function calling capabilities" [MemGPT §3.2.1]. 셋째, **중심 이론적 장점이 실현되지 않는다.** 무한 페이징으로 검색기 한계를 넘는다는 것이 논지인데 관측은 그 반대다 — "we observe that MemGPT will often stop paging through retriever results before exhausting the retriever database" [MemGPT §3.2.1]. nested KV에서 MemGPT+GPT-4 Turbo와 MemGPT+GPT-3.5가 중첩 2에서 떨어지는 것도 "failing to perform enough lookups"로 귀속된다 [MemGPT §3.2.2]. 적용된 유일한 대책은 프롬프트에 대문자로 지른 고함이다 — "DO NOT STOP SEARCHING UNTIL YOU VERIFY THAT THE VALUE IS NOT A KEY" [MemGPT App. §6.1.6].
+> **[평가]** 불리한 사실 셋이 이 두 그림에 붙는다. 첫째, **더 강한 기반 모델이 MemGPT를 더 나쁘게 만든다** — "While GPT-4 Turbo performs better as a baseline, MemGPT with GPT-4 Turbo performs worse than MemGPT with GPT-4" [MemGPT Fig. 7 캡션]. 논문은 설명하지 않는다. 둘째, **약한 모델에서는 기제가 작동하지 않는다** — "MemGPT has significantly degraded performance using GPT-3.5, due to its limited function calling capabilities" [MemGPT §3.2.1]. 셋째, **중심 이론적 장점이 실현되지 않는다.** 무한 페이징으로 검색기 한계를 넘는다는 것이 논지인데 관측은 그 반대다 — "we observe that MemGPT will often stop paging through retriever results before exhausting the retriever database" [MemGPT §3.2.1]. nested KV에서 MemGPT+GPT-4 Turbo와 MemGPT+GPT-3.5가 중첩 2에서 떨어지는 것도 "failing to perform enough lookups"로 귀속된다 [MemGPT §3.2.2]. 적용된 유일한 대책은 프롬프트에 대문자로 지른 고함이다 — "DO NOT STOP SEARCHING UNTIL YOU VERIFY THAT THE VALUE IS NOT A KEY" [MemGPT App. §6.1.6].
 
 **ablation은 하나도 없다.** working context·recall·archival·압력 인터럽트·페이지네이션 중 어느 것도 제거하고 다시 재지 않았고, 구성요소에 대한 유일한 주장은 수치 없는 산문이다 — "we can see the storing information in working context is key to generating engaging openers" [MemGPT §3.1.2].
 
@@ -264,7 +264,7 @@ Document QA에서 "MemGPT's performance is unaffected by increased context lengt
 >
 > 셋째, **턴당 이동 바이트는 저장소가 아니라 re-prefill이 지배한다.** Fig. 6에서 회수된 한 페이지는 텍스트 결과 열 개, 즉 킬로바이트 규모다 [MemGPT Fig. 6]. 그것을 삽입한 결과 — 다음 사이클에서 최대 $N_{\mathrm{ctx}}$ 토큰짜리 프롬프트에 attention을 다시 도는 일 — 은 자릿수가 다른 가속기 트래픽이다. $E$-경로는 메모리 계층을 거의 건드리지 않으면서 HBM 쪽 작업을 배로 늘린다. 논문은 두 양 중 어느 것도 보고하지 않는다.
 
-운영 결손 둘을 마지막으로 적는다. **실패 양식이 서빙에서는 tail latency 문제로 번역된다.** 보고된 실패는 "페이징을 너무 일찍 멈춘다"이고 [MemGPT §3.2.1], 처방인 "더 오래 찾게 만든다"는 정확도 실패를 **무한 사이클 수** 실패로 바꾼다. 사이클 상한도 타임아웃도 기술되지 않는다. **그리고 용량 계획이 구조적으로 정의되지 않는다.** recall storage는 모든 것을 무기한 보관하므로 사용자당 저장 비용에 상한이 없고 [MemGPT §2.2], 정작 **쓸 수 있는** 사용자당 상태는 크기가 공개되지 않은 고정 $E^{\mathrm{wc}}$가 제한한다 [MemGPT §2.1].
+> **[평가]** 운영 결손 둘을 마지막으로 적는다. **실패 양식이 서빙에서는 tail latency 문제로 번역된다.** 보고된 실패는 "페이징을 너무 일찍 멈춘다"이고 [MemGPT §3.2.1], 처방인 "더 오래 찾게 만든다"는 정확도 실패를 **무한 사이클 수** 실패로 바꾼다. 사이클 상한도 타임아웃도 기술되지 않는다. **그리고 용량 계획이 구조적으로 정의되지 않는다.** recall storage는 모든 것을 무기한 보관하므로 사용자당 저장 비용에 상한이 없고 [MemGPT §2.2], 정작 **쓸 수 있는** 사용자당 상태는 크기가 공개되지 않은 고정 $E^{\mathrm{wc}}$가 제한한다 [MemGPT §2.1].
 
 ## 13.8 한계와 bridge-out
 
@@ -272,15 +272,15 @@ Document QA에서 "MemGPT's performance is unaffected by increased context lengt
 
 > **[평가]** **아무것도 학습되지 않는다는 사실을 이 장은 완곡화하지 않는다.** MemGPT의 기여 전부가 동결된 폐쇄 API 세 개 위의 prompt-engineered function calling이며 gradient도 loss도 이 방법에 속하는 파라미터도 없다 [MemGPT §3]. 따라서 이 논문의 모든 능력 주장은 MemGPT 아키텍처에 대한 주장인 만큼 gpt-4-0613의 지시 따르기 능력에 대한 주장이기도 하다.
 >
-> 그럼에도 이 장이 $E$-경로의 출발점인 이유는 넷이다. 첫째, **$\mathrm{wr}$에 처음으로 행위자가 생겼다** — ch10이 남긴 machine-writable 공백을 이 논문이 메운다. 둘째, **쓰기의 촉발 조건이 질의에서 용량으로 옮겨 갔다.** 식 (13-5)의 인터럽트는 이후 모든 $E$-경로 시스템이 어떤 형태로든 갖는 부품이다. 셋째, **$S(\cdot)$가 처음 등장한다.** 방향은 (U-E)와 반대지만(§13.3) 문맥을 압축해 다른 층으로 옮기는 연산이 파이프라인에 들어온 것은 여기가 처음이다. 넷째, **$B_s$가 들어갈 구멍이 뚫려 있다** — §2.4의 timed events 훅이다. 학습이 없다는 사실과 계보의 출발점이라는 사실은 모순되지 않는다. 이 논문이 공급한 것은 학습된 부품이 아니라 **인터페이스**이고, 이후 연구는 그 인터페이스 뒤에 무엇을 넣을 것인가를 다툰다.
+> 그럼에도 이 장이 $E$-경로의 출발점인 이유는 넷이다. 첫째, **$\mathrm{wr}$에 처음으로 행위자가 생겼다** — ch10이 남긴 machine-writable 공백을 이 논문이 메운다. 둘째, **쓰기의 촉발 조건이 질의에서 용량으로 옮겨 갔다.** 식 (13-5)의 인터럽트는 이후 모든 $E$-경로 시스템이 어떤 형태로든 갖는 부품이다. 셋째, **$S(\cdot)$가 처음 등장한다.** 방향은 (U-E)와 반대지만(§13.3) 문맥을 압축해 다른 층으로 옮기는 연산이 파이프라인에 들어온 것은 여기가 처음이다. 넷째, **$B_s$가 들어갈 구멍이 뚫려 있다** — [MemGPT §2.4]의 timed events 훅이다. 학습이 없다는 사실과 계보의 출발점이라는 사실은 모순되지 않는다. 이 논문이 공급한 것은 학습된 부품이 아니라 **인터페이스**이고, 이후 연구는 그 인터페이스 뒤에 무엇을 넣을 것인가를 다툰다.
 
-**경로 간 인용.** MemGPT는 $W$-경로와 $\Theta$-경로 어느 쪽과도 접촉하지 않는다. 참고문헌 약 40개가 전부 장문맥 transformer 아키텍처, retrieval-augmented generation, LLM 에이전트, 평가 인프라다. fast weights, test-time training, 모델 편집, PEFT, 지속학습, catastrophic forgetting, complementary learning systems, 생물학적 sleep·consolidation 인용이 **0건**이다. 유일한 근접 사례는 §4가 장문맥 문단 안에서 인용하는 "neural memory (Lee et al., 2019)"인데, 그 참조는 Set Transformer이고 fast-weight·TTT 의미의 neural memory가 아니라 효율 기제다.
+**경로 간 인용.** MemGPT는 $W$-경로와 $\Theta$-경로 어느 쪽과도 접촉하지 않는다. 참고문헌 약 40개가 전부 장문맥 transformer 아키텍처, retrieval-augmented generation, LLM 에이전트, 평가 인프라다. fast weights, test-time training, 모델 편집, PEFT, 지속학습, catastrophic forgetting, complementary learning systems, 생물학적 sleep·consolidation 인용이 **0건**이다. 유일한 근접 사례는 [MemGPT §4]가 장문맥 문단 안에서 인용하는 "neural memory (Lee et al., 2019)"인데, 그 참조는 Set Transformer이고 fast-weight·TTT 의미의 neural memory가 아니라 효율 기제다.
 
 연대가 강제한 침묵과 선택된 침묵은 갈라야 한다. MemGPT는 2023년 10월(vendored 판본은 2024년 2월 v2)이므로 이후의 sleep-time 계열 논문을 인용할 수 없었고 그 부재는 흠이 아니다. 그러나 **그 시점에 이미 존재했고 인용할 수 있었던** $W$·$\Theta$-경로 문헌 — fast weight programmer 계열, test-time training, LoRA, ROME/MEMIT, EWC, CLS — 은 하나도 등장하지 않는다. RAG 쪽도 같은 방향으로 어긋난다. RAG의 참고문헌에는 elastic weight consolidation을 제목에 단 논문이 들어 있지만 [RAG §3.4, Table 2], 그것은 FEVER-2-way SotA 92.2라는 **표의 한 칸**으로만 쓰이고 catastrophic forgetting 내용은 아무 데도 쓰이지 않는다.
 
 > **[평가]** 세 경로의 침묵은 이 책이 사후에 부과한 분류가 아니라 첫 경로의 첫 논문에서 이미 관측되는 사실이다. $E$-경로는 같은 정보를 $W$나 $\Theta$에 넣는 선택지를 **반박한 뒤** 출발한 것이 아니라 그 선택지를 **한 번도 제기하지 않은 채** 출발했다. 문제 정의가 "there is a critical need for alternative techniques to support long context"라는 형태이기 때문이다 [MemGPT §1] — *context*가 유일한 축으로 놓이면 파라미터 기억은 설계 공간에 들어오지 않는다. 이 관측이 Part III 판정의 재료가 된다(→ ch27).
 
-**ch14가 받아 가는 것.** 다음 장은 같은 저자들이 그다음에 무엇을 했는가를 다루고, 넘어가는 물건은 셋이다. 첫째, §2.4의 timed events 훅이 실제로 실행되고 그 계산에 $B_s$라는 이름이 붙는다. 둘째, 식 (13-3)의 쓰기가 사용자 턴 밖으로 나가면서 판별식 조건 (1)이 해소된다. 셋째, $\hat c$의 내용이 바뀐다 — MemGPT의 $\hat c$는 대화에서 골라낸 사실 문장이지만 다음 장의 $\hat c$는 질의를 보기 전에 수행한 **추론의 산출물**이다. 물려받지 **못하는** 것도 있다: 비용 4종이 전부 비어 있으므로 상각 논증을 세울 기준선이 이 장에는 없다.
+**ch14가 받아 가는 것.** 다음 장은 같은 저자들이 그다음에 무엇을 했는가를 다루고, 넘어가는 물건은 셋이다. 첫째, [MemGPT §2.4]의 timed events 훅이 실제로 실행되고 그 계산에 $B_s$라는 이름이 붙는다. 둘째, 식 (13-3)의 쓰기가 사용자 턴 밖으로 나가면서 판별식 조건 (1)이 해소된다. 셋째, $\hat c$의 내용이 바뀐다 — MemGPT의 $\hat c$는 대화에서 골라낸 사실 문장이지만 다음 장의 $\hat c$는 질의를 보기 전에 수행한 **추론의 산출물**이다. 물려받지 **못하는** 것도 있다: 비용 4종이 전부 비어 있으므로 상각 논증을 세울 기준선이 이 장에는 없다.
 
 ## 요약
 

@@ -54,7 +54,7 @@ sleep-time compute 자체의 일반 정의 — 어느 층을 갱신하는지 지
 
 ### 14.3.1 기제의 다섯 줄
 
-먼저 짚어야 할 형식적 사실이 있다. **논문에는 번호가 붙은 수식이 하나도 없다.** 기제 전체가 §3(pp.3–4)의 산문 속 화살표 세 개로 진술된다. 따라서 이 절의 모든 출처 표기는 절·부록 위치이지 원문 식 번호가 아니다.
+먼저 짚어야 할 형식적 사실이 있다. **논문에는 번호가 붙은 수식이 하나도 없다.** 기제 전체가 [Letta STC §3](pp.3–4)의 산문 속 화살표 세 개로 진술된다. 따라서 이 절의 모든 출처 표기는 절·부록 위치이지 원문 식 번호가 아니다.
 
 논문의 출발 선언은 프롬프트의 분해다. 이 책의 표기로 옮기면 원 문맥이 external store의 초기 상태가 된다.
 
@@ -115,11 +115,11 @@ $$
 
 ### 14.3.2 정규형과 어긋나는 지점 다섯
 
-식 (U-E)의 정규형은 $\mathrm{wr}$과 $S$의 내부를 지정하지 않는다. 이 논문은 그 빈칸을 다음과 같이 채우고, 채우는 방식마다 결과가 달라진다.
+식 (U-E)의 정규형은 $\mathrm{wr}$과 $S(c_k;B_s)$의 내부를 지정하지 않는다. 이 논문은 그 빈칸을 다음과 같이 채우고, 채우는 방식마다 결과가 달라진다.
 
 **첫째, $\mathrm{wr}$은 파괴적 덮어쓰기다.** 정규형의 $\mathrm{wr}$은 append든 merge든 index-insert든 허용한다. 여기서는 참조 구현이 블록 값을 그대로 세팅한다 — `agent_state.memory.update_block_value(label=target_block_label, value=new_memory)`[Letta STC App. F Listing 1, p.22]. 부록 K의 서술도 같다: 함수가 "현재 문맥을 새 문자열로 교체한다"[Letta STC App. K, p.27]. 결과로 저장소에 이력이 없고 rollback이 없다. sleep 국면 안에서 잘못된 재작성은 복구 불가능하다.
 
-**둘째, $S$는 단발이 아니라 반복이다.** 깊이 $J \le 10$이며, 각 단계는 현재 블록과 지정된 원본 블록 하나를 읽고, 모델이 `finish_rethinking`을 호출하면 끝난다[Letta STC App. K, p.27; Fig. 17, p.18]. 정규형은 $B_s$를 한 덩어리 예산으로 쓰지만 여기서는 **순차 사슬**로 소비된다. 이것이 §14.7의 sleep wall-clock 논의를 만든다.
+**둘째, $S(\cdot;B_s)$는 단발이 아니라 반복이다.** 깊이 $J \le 10$이며, 각 단계는 현재 블록과 지정된 원본 블록 하나를 읽고, 모델이 `finish_rethinking`을 호출하면 끝난다[Letta STC App. K, p.27; Fig. 17, p.18]. 정규형은 $B_s$를 한 덩어리 예산으로 쓰지만 여기서는 **순차 사슬**로 소비된다. 이것이 §14.7의 sleep wall-clock 논의를 만든다.
 
 **셋째, 서로 다른 두 개의 $\mathrm{wr}$이 이름 없이 공존한다.** 궤적 안에서는 덮어쓰기(식 14-3), 궤적 사이에서는 이어붙이기(식 14-5)다. 논문은 두 연산자를 쓰고 있다는 사실 자체를 언급하지 않는다. 이어붙이기 쪽에서는 상태 크기가 $\kappa_{\parallel}$에 선형으로 자라고, §14.6의 비단조성($\kappa_{\parallel}=5$가 $\kappa_{\parallel}=10$을 이긴다)이 그 성장의 첫 번째 가시적 대가다.
 
@@ -153,7 +153,7 @@ $$
 
 > **정의 (learned context $\hat c$).** learned context는 질의 $q$가 도착하기 전에 문맥 $E_0$만을 입력으로 예산 $B_s$를 써서 수행한 추론의 산출물이며, wake 국면에서 $E_0$을 **대체하여** 프롬프트에 놓이는 자연어 문자열이다. 이름의 'learned'는 gradient를 뜻하지 않는다 — 이 논문에는 backward pass가 없다(식 14-6). 학습되는 것은 파라미터가 아니라 **표현이 놓이는 공간**이고, 그 공간은 자연어다.
 
-이 정정은 이 책의 재구성이 아니라 논문 본문의 진술과 일치한다. 논문은 §7에서 스스로 이렇게 쓴다.
+이 정정은 이 책의 재구성이 아니라 논문 본문의 진술과 일치한다. 논문은 [Letta STC §7]에서 스스로 이렇게 쓴다.
 
 > 'Unlike traditional representation learning (Bengio et al., 2014), which typically operates in model parameter or activation space, we instead form representations in the space of natural language.' [Letta STC §7, p.13]
 
@@ -307,7 +307,7 @@ Multi-Query는 기반 데이터셋의 약 5분의 1만 쓴다 — P1의 5000 예
 
 **13% (Stateful GSM-Symbolic).** "pareto 곡선을 바깥으로 밀어 비슷한 test-time 예산에서 성능을 최대 13%까지 개선한다"[Letta STC §5.2, p.8; Fig. 7, p.10]. 이 값은 $\kappa_{\parallel}$ 스윕에서 나온다. 저자는 "더 어려운 과제와 더 강한 모델에서 이득이 가장 크다(예: P2 + gpt-4o)"고 덧붙인다.
 
-**18% (Stateful AIME).** "sleep-time에 계산을 키우면 대체로 pareto 곡선이 바깥으로 이동하며 성능이 최대 18%까지 개선된다"[Letta STC §5.2, p.8]. 다만 내부 참조가 어긋난다 — §5.2는 이 결과를 'Figure 26'으로 지목하는데, 그 그림의 캡션은 'Scaling sleep-time compute on Stateful AIME2025'(App. M, p.31)로 **연도별 부분집합**이다. 60문항 합본의 스케일링 그림은 Figure 8(p.10)이다.
+**18% (Stateful AIME).** "sleep-time에 계산을 키우면 대체로 pareto 곡선이 바깥으로 이동하며 성능이 최대 18%까지 개선된다"[Letta STC §5.2, p.8]. 다만 내부 참조가 어긋난다 — [Letta STC §5.2]는 이 결과를 'Figure 26'으로 지목하는데, 그 그림의 캡션은 'Scaling sleep-time compute on Stateful AIME2025'(App. M, p.31)로 **연도별 부분집합**이다. 60문항 합본의 스케일링 그림은 Figure 8(p.10)이다.
 
 **2.5× (질의당 평균 비용 감소).** "문맥당 질문이 10개일 때 단일 질의 baseline 대비 질의당 평균 비용을 최대 2.5× 줄일 수 있다"[Letta STC §5.3, pp.8–9; Fig. 9, p.11]. 조건은 Multi-Query GSM-Symbolic, $N_q=10$, $\kappa_{\mathrm{cost}}=10$, 그리고 생성 토큰만 세는 식 (14-7)이다.
 
@@ -359,7 +359,7 @@ LaTeX 그림도 수동으로 제거되었고, 제거 후에도 문제가 풀리�
 
 **지연이 한 번도 측정되지 않았다.** wall-clock, TTFT, ms/token 수치가 논문에 0개다. 동기 진술 — "답을 얻기 위해 잠재적으로 수 분을 기다리고 질의당 수십 달러까지 든다"[Letta STC §1, p.1] — 은 OpenAI 가격 페이지를 가리키는 각주로 지지되고, "지연 최적화 추론이 대략 10× 비싸다"는 진술은 Databricks 문서 페이지를 가리키는 각주로 지지된다. 초록의 문제 제기('high latency and inference cost')는 전적으로 생성 토큰 대리값 위에 서 있다.
 
-**내부 참조 오류가 여럿이다.** §5.2의 18% 지목이 부분집합 그림을 가리키는 것(위), §4.1과 App. C가 'Table C'를 지시하는데 캡션은 'Table 1'인 것, §6이 sleep arm 에이전트가 "test-time 국면에 더 많은 파일을 탐색했다"고 쓰는데 문맥상 sleep 국면인 것, 그리고 역전을 진술하는 §5.1 문장에 'test-tome' 오타가 있는 것.
+**내부 참조 오류가 여럿이다.** [Letta STC §5.2]의 18% 지목이 부분집합 그림을 가리키는 것(위), [Letta STC §4.1]과 App. C가 'Table C'를 지시하는데 캡션은 'Table 1'인 것, [Letta STC §6]이 sleep arm 에이전트가 "test-time 국면에 더 많은 파일을 탐색했다"고 쓰는데 문맥상 sleep 국면인 것, 그리고 역전을 진술하는 [Letta STC §5.1] 문장에 'test-tome' 오타가 있는 것.
 
 ### 14.6.6 스케일 상한
 
@@ -407,7 +407,7 @@ LaTeX 그림도 수동으로 제거되었고, 제거 후에도 문제가 풀리�
 
 ### 14.8.1 논문 자신이 남긴 문제
 
-논문의 §7(p.13)은 네 가지를 남긴다.
+논문의 [Letta STC §7](p.13)은 네 가지를 남긴다.
 
 1. **어느 문맥이 예측 가능한 질의를 갖는가, 그리고 계산을 어떻게 배분하는가.** "흥미로운 향후 방향은 어떤 문맥이 예측 가능한 질문을 가질지 식별하고, 서로 다른 문맥과 질의에 걸쳐 sleep-time과 test-time 사이에 추론 계산을 최적으로 배분하는 것이다." 이 논문에는 **언제 잠들지를 결정하는 컨트롤러가 없다.**
 2. **두 국면 가정을 넘어서기.** "실제 LLM 사용 사례는 더 복잡할 수 있고, 여러 라운드의 상호작용과 라운드 사이의 문맥 수정이 있다(예: 코드베이스에 대한 여러 번의 편집). 또한 sleep-time의 길이 자체도 상호작용마다 크게 다를 수 있다(사용자 타이핑 사이의 짧은 간격부터 며칠의 비활동까지)." 이것이 정확히 $\rho$의 질문이며, 저자들이 미해결이라고 명시한다.
@@ -421,9 +421,9 @@ LaTeX 그림도 수동으로 제거되었고, 제거 후에도 문제가 풀리�
 참고문헌은 22개다[References, pp.13–15]. 전수 확인 결과는 다음과 같다.
 
 - **$W$-경로 인용: 0건.** fast weight, test-time training, 선형 attention, state-space model, recurrent memory, weight-space test-time 상태 — 어느 것도 없다. 'state'라는 단어는 'stateful application'의 뜻으로만 나온다. KV cache는 한 번도 언급되지 않는다.
-- **$\Theta$-경로 직접 인용: 0건.** LoRA도, PEFT도, 모델 편집(ROME/MEMIT)도, 지속학습도, catastrophic forgetting도, knowledge distillation도 없다. 가장 가까운 이웃은 합성 데이터 두 편(Yang et al. 2024, Gunasekar et al. 2023)과 Bansal et al. 2024인데, 셋 다 §7의 future work 문단에서 sleep 산출물의 **소비자**로만 등장하지 경쟁 기제로 등장하지 않는다. 다른 두 공간을 이름으로 부르는 유일한 문장(§14.3.4 인용)이 그 공간의 어떤 연구도 인용하지 않고 2014년 리뷰 하나만 단다.
-- **생물학·CLS 인용: 0건.** McClelland도, hippocampal replay도, sleep consolidation 신경과학도, dreaming 문헌도 없다. 이 논문의 중심 은유인 'sleep'에 생물학 인용이 **하나도** 붙어 있지 않다. §1(p.2)은 이 용어를 순전히 조작적으로 도입한다 — "모델과의 상호작용 사이, 그렇지 않았으면 놀고 있었을 sleep-time에 추론을 수행한다." 단어는 **유휴**를 위해 선택된 것이지 consolidation을 위해 선택된 것이 아니다.
-- **E-경로 내부 인용: 정확히 1건.** Packer et al. 2023(MemGPT), 같은 저자·같은 회사, §2의 OS/pre-fetching 유비에서. RAG도, vector database도, graph memory도, 검색 문헌 어느 것도 참고문헌에 없다 — $\mathrm{ret}$을 항등으로 두는 설계 선택은 검색 문헌이 반대할 만한 선택인데도 그렇다.
+- **$\Theta$-경로 직접 인용: 0건.** LoRA도, PEFT도, 모델 편집(ROME/MEMIT)도, 지속학습도, catastrophic forgetting도, knowledge distillation도 없다. 가장 가까운 이웃은 합성 데이터 두 편(Yang et al. 2024, Gunasekar et al. 2023)과 Bansal et al. 2024인데, 셋 다 [Letta STC §7]의 future work 문단에서 sleep 산출물의 **소비자**로만 등장하지 경쟁 기제로 등장하지 않는다. 다른 두 공간을 이름으로 부르는 유일한 문장(§14.3.4 인용)이 그 공간의 어떤 연구도 인용하지 않고 2014년 리뷰 하나만 단다.
+- **생물학·CLS 인용: 0건.** McClelland도, hippocampal replay도, sleep consolidation 신경과학도, dreaming 문헌도 없다. 이 논문의 중심 은유인 'sleep'에 생물학 인용이 **하나도** 붙어 있지 않다. [Letta STC §1](p.2)은 이 용어를 순전히 조작적으로 도입한다 — "모델과의 상호작용 사이, 그렇지 않았으면 놀고 있었을 sleep-time에 추론을 수행한다." 단어는 **유휴**를 위해 선택된 것이지 consolidation을 위해 선택된 것이 아니다.
+- **E-경로 내부 인용: 정확히 1건.** Packer et al. 2023(MemGPT), 같은 저자·같은 회사, [Letta STC §2]의 OS/pre-fetching 유비에서. RAG도, vector database도, graph memory도, 검색 문헌 어느 것도 참고문헌에 없다 — $\mathrm{ret}$을 항등으로 두는 설계 선택은 검색 문헌이 반대할 만한 선택인데도 그렇다.
 - **논문이 실제로 교전하는 것:** test-time scaling(Snell 2024, OpenAI 2024, DeepSeek-AI 2024, Brown 2024, Muennighoff 2025), speculative decoding(Leviathan 2023, Stern 2018, Cai 2024, DeepSeek-V3), 고전적 systems 선계산(Smith 1982 캐시 메모리, Gray 1997 data cube).
 
 이 네 건의 침묵을 두 종류로 갈라야 한다. 어떤 침묵은 **연대가 강제한다** — 인용될 수 없는 것을 인용하지 않은 것은 계보 사실이지 선택이 아니다. 어떤 침묵은 **선택된다** — 인용할 수 있었는데 하지 않은 것이다. 이 논문의 발표 시점은 2025년 4월이고, 위 네 묶음은 **전부 후자다.** $W$-경로의 주류 계보(→ ch16, ch17), $\Theta$-경로의 쓰기 primitive인 LoRA(2106.09685)와 모델 편집(2202.05262, 2210.07229)(→ ch19), 망각 대응의 원형인 EWC(1612.00796)(→ ch07), CLS 이론과 생물학적 sleep 실험(→ ch08, ch23), 그리고 E-경로 내부의 RAG(2005.11401)(→ ch10)와 Memorizing Transformers(2203.08913)(→ ch12) — 어느 것도 이 논문보다 뒤에 나오지 않았다. 인용 가능한 상태로 전부 존재했다.
@@ -443,7 +443,7 @@ ch15는 이 장이 세운 (U-E)의 특수화를 프로덕션 시스템 쪽으로
 ## 요약
 
 - Letta의 `Sleep-time Compute`(2504.13171)는 상속받은 open question 없이 시작한다. 참고문헌 22개이며, 계보 진술은 같은 저자의 MemGPT에 대한 운영체제 pre-fetching 유비 하나뿐이다[§2, p.3]. 논문은 문제를 물려받는 대신 test-time scaling 문헌에 stateless 가정을 부여해 공백을 제조한다[§1, p.1].
-- 기제는 (U-E) 하나이며, 네 겹으로 특수화되어 있다: $\mathrm{wr}$은 파괴적 덮어쓰기, $S$는 깊이 $J\le10$의 반복 자기 재작성, $\mathrm{ret}$은 항등, $E$는 문맥 범위이고 휘발성이다. $\Theta$는 동결이고 $W$는 존재하지 않는다. 논문에는 번호 붙은 수식이 하나도 없다.
+- 기제는 (U-E) 하나이며, 네 겹으로 특수화되어 있다: $\mathrm{wr}$은 파괴적 덮어쓰기, $S(\cdot;B_s)$는 깊이 $J\le10$의 반복 자기 재작성, $\mathrm{ret}$은 항등, $E$는 문맥 범위이고 휘발성이다. $\Theta$는 동결이고 $W$는 존재하지 않는다. 논문에는 번호 붙은 수식이 하나도 없다.
 - learned context $\hat c$의 'learned'는 gradient를 뜻하지 않는다. 논문 본문이 스스로 정확하게 쓴다 — 표현이 형성되는 공간이 parameter도 activation도 아닌 자연어라는 것이고, 그 문장이 이 책 3경로 분할의 1차 근거다[§7, p.13].
 - 비용 4종이 **전부 논문에 없다.** $B_s$·$L_w$·$C_{\mathrm{cap}}$·$\rho$ 어느 것도 숫자로 보고되지 않는다. 상각 논증의 분자 $B_s$가 없으므로 손익분기 $N_q^{*}$를 식 (14-8)로 계산할 수 없고, 논문은 $N_q \in \{1,2,5,10\}$ 네 점의 곡선과 "질의 수가 적으면 불리하다"는 정성 진술만 준다[Fig. 9 캡션, p.11].
 - 비용모델 (14-7)은 생성 토큰만 센다. prefill 항이 없는데 이 방법의 기제 자체가 입력을 길게 만드는 것이며, $\kappa_{\parallel}=10$에서는 열 개의 재표현이 매 질의마다 prefill된다. $\kappa_{\mathrm{cost}}=10$은 벤더 문서 인용이고 민감도 분석이 없다.
@@ -453,7 +453,7 @@ ch15는 이 장이 세운 (U-E)의 특수화를 프로덕션 시스템 쪽으로
 
 ## 자가 점검 체크리스트
 
-- [ ] 이 논문이 갱신하는 층이 (U-E) 하나뿐이고, 그 (U-E)가 정규형과 어긋나는 지점 다섯 개를 말할 수 있는가($\mathrm{wr}$ 파괴적 덮어쓰기 / $S$ 반복 / 두 번째 $\mathrm{wr}$인 concat / $\mathrm{ret}$ 항등 / $E$ 휘발).
+- [ ] 이 논문이 갱신하는 층이 (U-E) 하나뿐이고, 그 (U-E)가 정규형과 어긋나는 지점 다섯 개를 말할 수 있는가($\mathrm{wr}$ 파괴적 덮어쓰기 / $S(\cdot;B_s)$ 반복 / 두 번째 $\mathrm{wr}$인 concat / $\mathrm{ret}$ 항등 / $E$ 휘발).
 - [ ] 식 (14-8)을 쓰고, 우변 세 값 중 어느 것이 논문에 있고 어느 것이 없는지 지목할 수 있는가. 없는 값 때문에 $N_q^{*}$가 계산되지 않는 이유를 한 문장으로 말할 수 있는가.
 - [ ] "생성 토큰이 5× 줄었다"와 "비용이 5× 줄었다" 사이에 놓인 네 가지 — prefill 항, 미보고 $B_s$, 단언된 $\kappa_{\mathrm{cost}}$, 미지의 $N_q$ 분포 — 를 열거할 수 있는가.
 - [ ] 5×·13%·18%·2.5×가 각각 어느 벤치마크, 어느 레짐의 값인지 말할 수 있는가. 그리고 이득이 역전하는 레짐을 두 과제 모두에서 지목할 수 있는가.

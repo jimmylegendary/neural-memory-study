@@ -18,3 +18,5 @@ build/deck-work/
 build/publications/*.inspect.ndjson
 build/publications/qa-logs/
 .veridraft-stc-study/
+build/stc/build_err.txt
+build/stc/build_out.txt
