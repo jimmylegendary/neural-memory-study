@@ -4,7 +4,9 @@
 
 ch16은 문맥을 파라미터 모양으로 접는 데 성공했다. Generative Adapter는 chunk 하나를 forward pass 한 번으로 흡수해 LoRA 모양의 산출물을 만들고, base 체크포인트는 바이트 단위로 그대로 둔다. 그런데 시계가 wake였다 — 문맥이 주어지면 그 자리에서 접고, 그 접은 결과로 같은 문맥에 답한다. 판별식 조건 (1)에서 탈락한 이유가 그것이다(→ ch11 §11.4.5). **접는 기제는 있었고 접는 시각이 없었다.**
 
-이 장의 논문은 접는 시각을 만든다. 접기를 답 생성 경로에서 떼어 내 **KV cache를 비우는 순간**에 붙이고, 그 자리에서 같은 chunk를 여러 번 다시 통과시킨다. 그러면 $W$-경로에서 (U-W)가 wake의 토큰 시계 위가 아니라 별도의 시계 위에서 추가로 실행되는 구성이 처음으로 성립한다. ch11이 이 논문을 $W$-경로의 유일한 정면 사례로 분류한 근거다(→ ch11 표 11-2).
+이 장의 논문(*Do Language Models Need Sleep? Offline Recurrence for Improved Online Inference*, arXiv:2605.26099, 이하 [Do LMs Need Sleep?])은 접는 시각을 만든다. 접기를 답 생성 경로에서 떼어 내 **KV cache를 비우는 순간**에 붙이고, 그 자리에서 같은 chunk를 여러 번 다시 통과시킨다. 그러면 $W$-경로에서 (U-W)가 wake의 토큰 시계 위가 아니라 별도의 시계 위에서 추가로 실행되는 구성이 처음으로 성립한다. ch11이 이 논문을 $W$-경로의 유일한 정면 사례로 분류한 근거다(→ ch11 표 11-2).
+
+제목부터 정리하고 시작한다. 이 논문의 제목은 ch21이 다루는 `Language Models Need Sleep`(2606.03979)과 한 글자 차이로 겹치고, 저자들이 그 충돌을 인지해 자기 제목을 고쳤다고 각주에 적는다 [Do LMs Need Sleep? 각주 2]. 이 책은 이 논문을 [Do LMs Need Sleep?], ch21의 논문을 [LM Need Sleep]으로 부른다. 두 논문은 경로도 기제도 다르다 — 이쪽은 $W$, 저쪽은 $\Theta$다.
 
 그런데 이 논문에는 **상속받은 open question이 없다.** "X가 남긴 문제를 우리가 받는다"에 해당하는 문장이 논문 어디에도 없고, 인용부호로 복원할 선행 질문도 없다. ch14가 그랬듯 이 장도 없는 계보를 지어내지 않는다(→ ch11 §11.7). 대신 이 논문이 실제로 물려받은 것은 질문이 아니라 **진단**이고, 논문의 첫 동작은 그 진단을 뒤집는 것이다.
 
@@ -32,7 +34,9 @@ ch16은 문맥을 파라미터 모양으로 접는 데 성공했다. Generative 
 
 > "We impose a prediction-phase latency constraint: during the prediction phase, each answer token is predicted with a single standard forward pass. Extra loops or chain-of-thought tokens are disallowed because they increase prediction latency." [Do LMs Need Sleep? §4]
 
-이 두 제약이 함께 만드는 것이 이 논문의 실질 기여다. 지금까지 이 책의 어떤 논문도 "wake 비용을 고정한다"를 조작적으로 정의하지 않았다. Letta STC는 wake 토큰 수를 줄였다고 보고했지만 prefill 항을 세지 않았고(→ ch14 §14.5.3), $E$-경로 전반은 회수된 레코드가 프롬프트를 늘리는 항을 회계에 넣지 않는다(→ ch10). 여기서는 wake가 **토큰당 표준 forward pass 정확히 한 번**으로 못 박혀 있고, chain-of-thought가 데이터에서 제거되어 있어 우회로가 없다. 비교군과 처리군의 wake 경로가 커널 수준에서 동일하다.
+이 두 제약 아래에서 wake는 **토큰당 표준 forward pass 정확히 한 번**으로 못 박히고, chain-of-thought가 데이터에서 제거되어 있어 우회로가 없다. 비교군과 처리군의 wake 경로가 커널 수준에서 동일하다.
+
+> **[평가]** 이 책이 보기에 이 두 제약이 논문의 기제보다 오래 남을 기여다. 지금까지 이 책이 다룬 논문 중 "wake 비용을 고정한다"를 조작적으로 정의한 것이 없다. Letta STC는 wake 토큰 수를 줄였다고 보고했지만 prefill 항을 세지 않았고(→ ch14 §14.5.3), $E$-경로 전반은 회수된 레코드가 프롬프트를 늘리는 항을 회계에 넣지 않는다(→ ch10). 논문 자신은 이 두 제약을 실험 통제로만 소개하고 기여로 내세우지 않는다.
 
 논문의 핵심 주장은 이 무대 위에서 한 문장으로 진술된다 — "Our key insight is that recurrence can be used not only for prediction but also for memory consolidation." [Do LMs Need Sleep? §1] 재귀를 예측에 쓰면 test-time compute이고, consolidation에 쓰면 sleep-time compute이다. 같은 연산자의 시계만 바꾼 것이다.
 
@@ -263,3 +267,93 @@ Depo는 Allen-Zhu의 $n_{\mathrm{hop}}$-hop 지식 회수 과제다. cycle 하�
 논문의 유일한 systems 측정은 Fig. 6이고 **훈련 측정이다.** Ouro 1.4B, H200 한 장, $L=12{,}000$, FlashAttention 2, 창 크기 1K·2K·4K. 결과는 두 문장이다 — 창이 충분히 크면 문맥 창을 가로지르는 직렬성이 완전 병렬 baseline 대비 throughput을 의미 있게 바꾸지 않는다, 그리고 "Throughput is roughly inversely proportional to $N$" [Do LMs Need Sleep? Fig. 6 캡션]. Fig. 6b는 OOM을 피하려고 문맥 chunk 축에 대한 activation checkpointing을 켜야 했다. 곡선 값은 인쇄되어 있지 않아 인용할 수 있는 숫자가 없다.
 
 실증 상한을 정직하게 적으면 이렇다. 가장 큰 모델이 2B와 1.4B, 가장 긴 과제 sequence가 3,300 토큰(12,000 토큰은 아무것도 학습하지 않고 어떤 과제도 평가하지 않는 throughput 프로브에서만 등장한다), 최대 sleep 깊이가 6이고 그것도 블록 절반만 도는 Jet에서다. run당 계산량은 1–2 H100 GPU-day다. 그리고 Ouro의 $N$은 성능이 아니라 **학습 메모리** 때문에 4에서 잘렸다 — "To keep memory cost during training manageable while using a reasonable batch size, we use $N=\{1,2,4\}$ for Ouro." [Do LMs Need Sleep? §6.3] 파라미터에서도 문맥에서도 배포 규모보다 서너 자릿수 아래이며, 이미 1.4B·3.3k 토큰에서 메모리 제약에 걸려 있다.
+
+## 17.7 Systems/serving 함의
+
+독자의 1번 질문에 대한 이 논문의 답은 **decode에서는 아무것도 바뀌지 않는다**이다. 그리고 그 답이 참인 방식이 곧 이 논문의 systems 공백이기도 하다.
+
+**wake 경로가 baseline과 커널 단위로 같다.** 답 토큰마다 표준 forward pass 한 번, 추가 loop 없음, chain-of-thought 토큰 없음이다 [Do LMs Need Sleep? §1, §4]. 따라서 토큰당 decode FLOPs도, decode가 끌어오는 가중치 트래픽도, 산술 강도도 $N=1$ 실행과 같다. 달라지는 것은 $W$의 **내용**뿐이다. $E$-경로가 회수 레코드로 prefill을 늘리고(→ ch14 §14.7) $\Theta$-경로가 배포 아티팩트를 바꾸는 것과 대비된다(→ ch19).
+
+**대신 eviction 경계마다 chunked prefill의 버스트가 붙는다.** 그 버스트는 안에서 성질이 아주 다른 두 부분으로 갈라진다.
+
+첫째, SSM 블록의 fast weight다. 고정 크기이고 $t$에 따라 자라지 않으므로 [Do LMs Need Sleep? §3.1], sleep 동안 이 상태는 $C$번이 아니라 $N\times C$번 read-modify-write된다. 작고 상주하는 상태에 대한 **대역폭 가벼운·계산 무거운** 버스트이며, 독자가 아는 KV cache 바운드 decode 레짐의 정반대 모양이다.
+
+둘째, 같은 loop 안의 attention 블록이다. pass마다 특징이 달라지므로 KV cache를 매 pass 다시 쌓아야 하고, 그러면 chunk에 대한 $O(C^2)$ attention 일이 $N$번 반복된다. $C=2000$에서 이것은 작은 재계산이 아니다.
+
+> **[해설]** 논문이 준 값으로 이 책이 산술만 해 두면 이렇다. Jet-Nemotron 설정은 28개 블록 중 가운데 14개만 loop하고 $N=6$까지 돈다 [Do LMs Need Sleep? §6.3]. 그러면 한 chunk의 consolidation 비용은 그 chunk를 평범하게 prefill하는 비용의 $1+(N-1)\cdot\frac{14}{28}=3.5$배다. 요청당 경계 수는 hard eviction GSM-Infinite에서 1–2개, sliding window에서 4–6개다(§17.5). 이 곱셈을 논문은 하지 않는다. 그리고 이 값은 이 책의 산술이므로 표 17-3의 $B_s$ 칸은 여전히 "논문에 없음"으로 남는다.
+
+**서빙에서 배치가 깨지는 자리가 두 겹이다.** 첫째는 낯익다 — 요청마다 다른 $W$를 들면 shared-weight batching이 성립하지 않는다(→ ch01의 Rosetta 표). 이 논문이 그 대가를 새로 만들지는 않는다. 둘째가 새롭다. **eviction 경계는 요청별 토큰 수에서 발생하므로 배치 안에서 정렬되지 않는다.** 한 요청이 자고 나머지가 decode하는 배치에는 커널 모양이 둘 살아 있다 — $N$-pass chunked prefill과 batch-1에 가까운 decode step이다. 스케줄러는 자는 요청의 이웃을 세우든지, consolidation을 선점 가능한 별도 잡으로 빼든지 해야 한다. 논문은 경계 skew를 다루지 않으며, batching에 관한 유일한 언급은 GPU 활용률을 위해 설정마다 batch 크기를 조정했다는 것이다 [Do LMs Need Sleep? Fig. 6 캡션].
+
+**상태가 요청보다 오래 살지 않는다.** $W$는 sequence마다 0으로 초기화되고 [Do LMs Need Sleep? Alg. 1] 요청이 끝나면 사라진다. 그래서 사용자당·세션당 지속 저장소가 **생기지 않는다.** checkpoint/restore도, 세션 캐시 축출 정책도, 요청 간 상각도 없다. 이것이 "요청 내부 consolidation"이라는 말의 서빙 쪽 의미다.
+
+> **[평가]** 이 한 줄이 $W$-경로와 $E$-경로의 구조적 차이를 가장 짧게 드러낸다. $E$-경로의 sleep 산출물은 요청보다 오래 살고, 그래서 식 (A)의 $N_q$가 1보다 커질 수 있다. 이 논문의 sleep 산출물은 요청과 함께 죽는다. 같은 이름 아래 있지만 회계의 종류가 다르다 — 하나는 상각이고 하나는 요청 내부의 재배치다(→ ch24, ch25).
+
+**독자가 원하는 비교 팔이 데이터에서 제거되어 있다.** 서빙 관점에서 이 방법의 자연스러운 경쟁자는 wake에서 추론 깊이를 사는 표준 수단, 즉 chain-of-thought 토큰이다. "경계에서 $N$번의 sleep pass"와 "decode에서 $\kappa$개의 CoT 토큰" 중 어느 쪽이 같은 품질을 싸게 사는가가 배치·SLA 결정을 가르는 질문인데, 논문은 CoT를 데이터에서 빼는 것으로 그 팔을 없앴다 [Do LMs Need Sleep? §6.3]. 두 번째 팔은 어느 과제에서도 실행되지 않는다.
+
+**memory-centric 논증은 여기서 멈춘다.** 작고 상주하는 상태에 대한 $N\times C$회 read-modify-write는 그 논증의 근거가 실제로 있는 드문 패턴이다. 그러나 논문에 바이트가 없으므로(§17.5) 이 장은 패턴만 기록하고 정량화는 이 책의 실험이 소유하는 자리로 넘긴다(→ ch26, ch29).
+
+## 17.8 한계와 bridge-out
+
+### 17.8.1 논문 자신이 남긴 문제
+
+논문의 §7이 세 가지를 스스로 적는다.
+
+1. **학습 비용과 불안정.** "this gain is not free: during training, we need to perform $N$ deeper forward and backward passes, which can make training slow and unstable." [Do LMs Need Sleep? §7] 처방으로 implicit gradient, truncated BPTT, 안정화 기법을 이름으로 열거하지만 **하나도 시도하지 않는다.** 불안정이 얼마나 자주 발생하는지에 대한 증거도 없고, 모든 곡선이 단일 시드라 불안정은 그림에 나타나지 않는다(§17.6.1).
+2. **sequence 축 병렬성의 상실.** 학습이 문맥 창을 가로질러 재귀적이므로 sequence 축을 완전히 병렬화할 수 없다. 논문은 창이 충분히 크면 wall-clock을 해치지 않는다고 하지만, 근거는 H200 한 장·$L=12{,}000$·$C\in\{1\text{K},2\text{K},4\text{K}\}$뿐이다 [Do LMs Need Sleep? §6.5]. 작은 $C$나 다중 GPU에서의 거동은 열려 있다.
+3. **이득이 순차적이지 않은 과제에서도 남는가.** "Sleep makes training sequential across context and depth dimension, but this sequentiality is also why our method shows gains on the tasks we consider, whose solutions are themselves sequential." [Do LMs Need Sleep? §7] 저자들이 스스로 적는 범위 제한이다 — **세 과제는 이 방법이 통하는 성질을 가졌기 때문에 골라졌다.**
+
+논문이 질문으로 세우지 않았으나 이 책이 미해결로 기록하는 것이 넷 더 있다.
+
+**$N$을 어떻게 고르는가.** $N$은 run마다 고정된 하이퍼파라미터이고 값마다 별개로 학습된 모델이다(표 17-2). 적응 깊이 연구를 관련연구에서 인용하면서도 halting 기준도, 예제별 배분도 없다 [Do LMs Need Sleep? §2]. §17.6.4가 보인 대로 이득은 어려운 꼬리에만 있는데 선택적으로 지출할 기제가 없으므로, 서빙에서는 모든 요청이 같은 $N$배의 consolidation을 낸다.
+
+**어디서 포화하는가.** 최대 시험값이 $N=6$이고 그것도 블록 절반만 도는 Jet에서다. Ouro의 $N$은 학습 메모리 때문에 4에서 잘렸다 [Do LMs Need Sleep? §6.3]. 포화점은 측정되지 않았다.
+
+**어느 국소 규칙이 일을 하는가.** 논문이 명시적으로 범위 밖으로 선언한다 — "the specific update rule does not matter for our discussion" [Do LMs Need Sleep? §3.1]. 초록이 "a learned local rule"을 기여 성분으로 내거는데, GDN·Mamba-2·Jet·delta 보정을 가르는 ablation은 없다(§17.3.2).
+
+**인용한 대안과의 경쟁·합성이 전부 미시험이다.** context distillation, Cartridges, in-context autoencoding, 실제 gradient step을 밟는 test-time training, chunk당 LoRA adapter, 그리고 $\Theta$-경로의 sleep — 여섯 묶음이 §2에서 서술되고 **어느 것도 baseline으로 돌지 않으며 어느 것과도 결합되지 않는다.** 논문의 전체 비교 집합은 같은 아키텍처의 $N=1$ 판본이다. 그래서 §2가 말로 반박한 "chunk당 gradient 한 번" 계열보다 이 방법이 낫다는 증거가 논문에 없다.
+
+### 17.8.2 경로 간 인용 여부
+
+참고문헌 65개를 전수 확인하면 이 논문의 인용 지도는 corpus의 다른 논문들과 모양이 다르다.
+
+**$E$-경로: 교전한다.** Lin et al. = Letta의 `Sleep-time Compute`(2504.13171, → ch14)를 **두 번** 인용한다 — 오프라인 계산으로 예상 질문을 미리 푸는 방법으로 한 번, "offline planning phase를 sleep이라 부른다"로 한 번 [Do LMs Need Sleep? §2]. Cartridges는 경로 구분을 가장 또렷하게 쓰는 자리에서 인용된다 — "These methods shorten what remains in the attention context, whereas our method transfers evicted context into weight-based memory." [Do LMs Need Sleep? §2] 그러나 MemGPT(2310.08560)·Mem0(2504.19413)·Zep(2501.13956)·ReasoningBank(2509.25140)은 **참고문헌에 없다**(→ ch13, ch15). 프로덕션 외부기억 문헌이 통째로 빠져 있다.
+
+**$\Theta$-경로: 교전한다.** Behrouz et al.의 `Language models need sleep`(→ ch21)이 인용되어 있는데, 그 항목에는 arXiv ID도 venue도 연도도 없이 제목만 있다 — OpenReview 투고본에서 인용했다는 뜻이다 [Do LMs Need Sleep? §2, References]. Generative Adapter(→ ch16)도 context distillation 목록 안에 들어 있다. 반면 SEAL(2506.10943)·Nested Learning(2512.24695)·SCM(2604.20943)·LoRA(2106.09685)·ROME(2202.05262)·MEMIT(2210.07229)·Memory Layers(2412.09764)는 전부 없다(→ ch18, ch19, ch20).
+
+**자기 경로: 침묵한다.** fast weight programming 계보(Schlag 등, Hebb)와 현대 gated/delta 선형 attention 계열(Dao·Gu, Samba, Griffin, Hymba)은 두텁게 인용한다. 그런데 Titans(2501.00663)·Miras(2504.13173)·Atlas(2505.23735)·TNT(2511.07343)·Nested Learning(2512.24695)은 65개 항목 중 **하나도 없다**(→ NM ch12, NM ch14, NM ch15).
+
+침묵은 두 종류로 갈라야 한다. 연대가 강제한 침묵은 계보 사실이고, 선택된 침묵이 발견이다. 이 논문의 v3 스탬프는 2026년 6월 5일이고 위에 열거한 부재 항목은 **전부 그보다 앞선다.** 인용 가능한 상태로 전부 존재했다. 연대가 실제로 개입한 자리는 반대 방향에 하나 있다 — 제목이 겹치는 Behrouz et al.은 당시 arXiv에 오르기 전 OpenReview 투고본이었고, 그럼에도 인용되어 있다.
+
+> **[평가]** 그러므로 이 논문에 대해 "경로가 서로를 인용하지 않는다"고 쓰면 틀린다. 이 논문은 $E$-경로에 이름을 준 논문도, $\Theta$-경로의 제목 쌍둥이도 인용하고 산문으로 자기와 구별한다. 정확한 발견은 더 좁고 날카롭다. 첫째, **교전의 깊이가 균일하게 한 문장이고 실험적 접촉이 0이다** — 모든 그림의 비교 집합이 자기 자신의 $N=1$ 판본이다. 둘째, 더 큰 단절이 경로 사이가 아니라 **경로 안**에 있다. 이 논문의 "learned local rule"은 gradient step이 **아님**을 입장으로 내세우는데, 그것은 Titans 계열이 정확히 반대편을 잡은 자리다. $W$-경로의 두 절반이 서로 말하지 않는다. ch11의 침묵 지도에서 이 항은 경로 사이가 아니라 경로 안에 기록된다.
+
+### 17.8.3 다음 장이 받아가는 것
+
+이 장은 $W$-경로에 "질의 전에 실행되는 pass"라는 자리를 만들었다. 그 자리가 생기자마자 두 질문이 따라온다.
+
+첫째, **$W$에 접는 것과 $\Theta$에 쓰는 것이 정말 다른 종류의 행위인가.** 이 장의 sleep은 갱신 규칙을 바꾸지 않고 같은 규칙의 적용 횟수만 늘렸다. 갱신 주파수를 축으로 놓으면 그 조작은 축 위의 이동으로 읽힌다. ch18이 그 축을 주장하는 논문과 그 축 위에서 상태를 키우는 논문을 함께 받아 검증한다 — 연속체가 표기의 다리인지 기제의 다리인지가 거기서 판정된다.
+
+둘째, **$C_{\text{cap}}$의 빈칸.** 이 장은 바이트를 쓸 수 없다고 기록했고, 그 칸을 채우는 것은 이 책의 실험이며 판정은 ch26이 소유한다. 계산량을 맞춘 비교가 없다는 §17.6.1의 공백은 $B_s$를 축으로 세우는 ch28로 가고, forward 쓰기가 gradient 쓰기에 무엇을 내주는가라는 §17.3.2의 미결은 ch16에서 이어져 ch19로 간다.
+
+그리고 이 장이 남기는 가장 무거운 한 줄을 ch24·ch25가 받는다. **이 논문은 $W$-경로가 sleep-time compute이 될 수 있음을 보인 유일한 정면 사례이면서, 그 sleep의 산출물이 요청보다 오래 살지 않는 사례이기도 하다.** 판별식을 통과하는 것과 상각되는 것은 같은 일이 아니다.
+
+## 요약
+
+- `Do LMs Need Sleep?`(2605.26099)은 상속받은 open question 없이 시작한다. 이 장의 bridge-in은 상속 진술이 아니라 **상속된 오진의 교정**이다 — attention-SSM 하이브리드의 실패 원인을 용량에서 계산으로 옮기고, 선행 연구를 명시적 반박의 형태로 인용한다 [§1, §2].
+- 기제는 (U-W) 하나이며 두 군데가 표준형과 다르다. gradient 자리에 게이트된 outer product가 들어가고 momentum이 없으며, (U-W)에 없는 pass 첨자 $N$이 추가된다. 같은 chunk를 $W$에 $N$번 누적해 쓰되 매 pass의 $(k_t,v_t)$를 직전 pass의 $W$가 만든 특징에서 다시 뽑는다 — (U-W)와 특징 정제 고정점 반복의 합성이다. 표기 충돌은 corpus에서 가장 심하다: 원문의 $S_t$가 이 책의 $W_t$, $\beta_t$가 $\eta_t$이고, 원문의 $L$과 $T$가 **이름을 맞바꾼다**(표 17-1).
+- **논문이 보여 주는 식은 논문이 돌린 식이 아니다.** Eq. 3은 Mamba-2 형태이고 실험은 GDN이며 §6.3에는 Jet layer가 또 다르게 등장한다. 국소 규칙 ablation은 없고, 논문 자신이 "the specific update rule does not matter"라고 범위 밖으로 선언한다 [§3.1].
+- 층은 $W$ 하나다. $\Theta$는 outer loop에서만 움직이고 $E$는 존재하지 않으며, 학습 시점의 sleep/wake 분할은 런타임 정책이 아니라 **loss mask**가 정한다 [Alg. 1]. 판별식 통과는 **Depo 설정이 진다** — 거기서만 consolidation이 질의보다 앞서고 $N_q=10$이 구조로 정해진다. 헤드라인인 GSM-Infinite는 질문을 문맥 앞에 놓아 consolidation이 질의 조건부가 되고, 그 대가로 $N_q=1$에서 식 (A)가 $C_{\text{avg}}=C_{\text{wake}}+C_{\text{sleep}}$으로 붕괴한다.
+- 비용 4종이 **전부 논문에 없다.** $B_s$는 구조로만, $L_w$는 아키텍처 보장으로만 있고, $C_{\text{cap}}$은 상태 차원·head 수·dtype이 없어 유도조차 불가능하며, $\rho$는 관측될 레짐(경계 1–6개, sequence마다 0 초기화)에 논문이 들어가지 않는다. 헤드라인 지연 주장은 프로토콜 구성상 참이지 측정된 값이 아니다.
+- 실험은 세 설정 모두 합성이고 저자 제작·재구성이며, 시드 하나에 오차막대가 없고, learning rate는 $N=1$에서만 튜닝되었고, **계산량을 맞춘 baseline이 없다.** 캐시를 유지하도록 허용한 full-attention baseline은 어느 과제·어느 스케일에서도 실행되지 않았다.
+- 수치가 나오는 곳은 GSM-Infinite 하나다. 이득은 6·8연산 꼬리에만 있고(Ouro 6연산 0.419 → 0.615), 쉬운 문제에서는 폭이 0.3–2.9 백분점이며, Ouro 8연산에는 $N=2$가 $N=1$보다 낮은 반전이 있다. 가장 큰 상대 이득 52%는 같은 모델이 다른 설정에서 loop 없이 이미 도달하는 수준의 회복이다.
+- 서빙에서 decode는 바뀌지 않고, 경계마다 chunked prefill 버스트가 붙으며, 그 산출물은 요청과 함께 죽는다. 사용자당 지속 저장소가 생기지 않으므로 요청 간 상각도 없다.
+
+## 자가 점검 체크리스트
+
+- [ ] 이 장의 bridge-in이 왜 상속 진술이 아니라 오진의 교정인지 말하고, 노트가 "none-stated"인 논문에 계보를 지어내지 않는 것이 왜 이 책의 규율인지 설명할 수 있는가.
+- [ ] 식 (17-3)을 표준형 (U-W)와 항별로 대조해 다른 곳 둘(momentum 부재, gradient 자리의 outer product)과 **추가된 것 하나**(pass 첨자 $j$)를 지목하고, 그것이 왜 "(U-W) step을 더 밟는 것"과 다른지 말할 수 있는가.
+- [ ] 표 17-1에서 $L$과 $T$가 맞바뀌는 행을 짚고, 본문의 "$C=2000$, $L\in[2000,3300]$"이 원문에서는 무엇으로 쓰여 있는지 말할 수 있는가.
+- [ ] 판별식 네 조건을 Depo 설정과 GSM-Infinite 설정에 각각 대고, 어느 조건이 어느 설정에서 왜 약해지는지, 그 약화가 식 (A)에서 무엇을 없애는지 말할 수 있는가.
+- [ ] 표 17-3의 네 칸이 각각 **어떤 종류로** 비어 있는지 구분할 수 있는가(수치 부재 / 측정 부재 / 유도 불가 / 레짐 미진입). 그리고 이 논문에 대해 "효율적"이라고 쓸 수 없는 이유를 한 문장으로 말할 수 있는가.
+- [ ] 계산량을 맞춘 baseline의 부재가 Fig. 2b·3·4·5의 모든 비교에서 무엇을 뜻하는지 말하고, 같은 x좌표에서 $N=4$ 실행이 이미 쓴 계산량을 어림할 수 있는가.
+- [ ] 이 논문이 $E$-경로와 $\Theta$-경로를 각각 몇 문장 인용하는지, 그리고 자기 경로의 어느 계보에 침묵하는지 말할 수 있는가. 그 침묵이 연대가 강제한 것이 아니라 선택된 것임을 어떻게 판정하는가.
+- [ ] (Rosetta) 이 논문의 sleep을 "warm-up / 사전 컴파일" 행으로 옮겨 설명하고, 그럼에도 "prefix cache" 행과 달리 산출물이 요청을 넘지 못하는 이유를 $W$의 초기화 규칙으로 말할 수 있는가.

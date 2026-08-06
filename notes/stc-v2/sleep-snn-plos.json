@@ -58,8 +58,14 @@
       {
         "paper_symbol": "S_rp -- scaling factor for reward/punishment",
         "reserved_meaning": "S_t = inner momentum/surprise buffer; S(c; B_s) = the offline processing procedure. STC-STYLE-NOTATION §1.5 forbids a bare S.",
-        "remap": "Write r for the paper's S_rp (r ∈ {1, -0.001, -0.0001} at wake, r ≡ 0.5 during sleep). Never write S_rp in monograph body text; quote it only in the correspondence table.",
+        "remap": "Write R for the paper's S_rp (R ∈ {1, -0.001, -0.0001} at wake, R ≡ 0.5 during sleep). CORRECTED 2026-08-06 by the ch23 writer: an earlier version of this row said 'write r', which collides with STC-STYLE-NOTATION §1.3 where r = LoRA rank and R = reward. §1.3 explicitly rules that a paper's reward symbol moves to R in body text. Never write S_rp in monograph body text; quote it only in the correspondence table.",
         "source": "Methods: Synaptic plasticity L927, L932-937"
+      },
+      {
+        "paper_symbol": "(none -- this row records a NOTE-INTERNAL symbol, not a paper symbol) Π was used in the (T04-4)/(T04-6) comments of this note to denote the heterosynaptic normalisation projection",
+        "reserved_meaning": "Π = 지속학습 성능 행렬 (STC-STYLE-NOTATION §1.3; ch07 introduces it, ch22/ch25/ch30 reuse it). Also Π_t = TNT's Q-K projection in NM §1.2.",
+        "remap": "Write the normalisation projection as nrm(·) in monograph body text. Π must never denote this projection. ADDED 2026-08-06 by the ch23 writer per §1.7 ('노트를 먼저 고치고 본문에 반영한다').",
+        "source": "Methods: Synaptic plasticity L946-963"
       },
       {
         "paper_symbol": "k -- index over stored STDP traces in the weight-update sum",

@@ -109,8 +109,8 @@
    },
    {
     "paper_symbol": "omega, Omega -- binary occlusion mask, applied as elementwise product [lines 1363, 1534-1536, 1546]",
-    "reserved_meaning": "none",
-    "remap": "kept as omega."
+    "reserved_meaning": "CORRECTED 2026-08-06 by the ch23 writer: omega IS reserved. STC-STYLE-NOTATION §1.3 assigns omega = replay 혼합비 (한 배치에서 과거 데이터가 차지하는 비율), introduced by ch07. The earlier 'none' verdict in this row was wrong.",
+    "remap": "Write the occlusion as an operator occ(·) in monograph body text: occ(x) = the image with the sampled mask applied. Never write omega for the mask."
    },
    {
     "paper_symbol": "n_z = 256 -- latent dimension [lines 1506, 1635]",

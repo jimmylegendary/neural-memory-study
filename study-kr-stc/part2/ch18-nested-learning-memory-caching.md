@@ -6,9 +6,11 @@ ch17은 오프라인 재귀를 $W$에 접었다. KV cache를 비우기 전에 �
 
 Nested Learning(*Nested Learning: The Illusion of Deep Learning Architecture*, arXiv:2512.24695, 이하 [NL])은 후자를 주장한다. 갱신 주파수라는 축 하나를 세우고 그 위에 attention부터 pre-training까지를 순서지은 뒤, 학습과 추론의 구분 자체가 "지식 전달 과정을 최고 주파수 level에서 최저 주파수 level(즉 pre-training)로부터 끊어낸 결과"라고 쓴다 [NL §6]. 같은 절에 "Neural Learning Module에는 training time도 test time도 없다"는 박스가 붙는다 [NL §6]. 이 주장이 성립하면 이 책의 3층 프레임은 축 하나로 접힌다.
 
-**이 장은 그 주장을 검증한다.** 검증의 결론을 먼저 적는다. **연속체는 표기의 다리이지 기제의 다리가 아니다.** [NL]이 구현한 모든 갱신은 (U-W) 모양이고, $\Theta$는 그 축 위에서 test-time에 아무것도 움직이지 않는 $f=0$ 끝점으로만 등장한다. 축이 두 끝점을 이름으로 잇는 것과 상태가 두 끝점 사이를 실제로 이동하는 것은 다른 사건이며, [NL]에는 후자가 없다.
+앞 문단의 질문은 이 책이 읽기 순서로 세운 것이지 [NL]이 물려받은 것이 아니다. 사실을 그대로 적는다 — **[NL]은 어느 선행 논문의 open question도 인용하지 않는다.** 논문이 밝히는 출발점은 자기 관찰 둘뿐이고(→ §18.2), Miras에서 associative memory 정의를 통째로 들여오고 [NL §2] Titans에서 deep memory 블록·meta-learn된 초기 상태·chunkwise 학습 절차를 받지만, 어느 쪽도 "이 논문이 답할 질문을 남긴 전작"으로 지목되지 않는다. 연대도 반대 방향이다 — ch17이 읽은 논문(arXiv:2605.26099)은 [NL](2512.24695)보다 다섯 달 뒤에 나왔다. 따라서 이 장의 bridge-in은 인용의 복원이 아니라 **구조적 복원**이다: [NL]은 $W$-경로가 이미 세워 둔 설계 공간(Miras·Titans·Atlas) 위에 주파수 축을 하나 더 얹는다.
 
-같은 장에 Memory Caching(*Memory Caching: RNNs with Growing Memory*, arXiv:2602.24281, 이하 [MC])을 함께 놓는다. 두 논문은 같은 저자 그룹에서 나왔고, [MC]는 [NL]과 Miras의 "memory 상태를 forward pass 중 최적화되는 동적 객체로 보는" 관점을 명시적으로 승계한다고 §2에서 밝힌다 [MC §2]. 그러나 [MC]가 실제로 한 일은 갱신식이 아니라 **읽기식**을 바꾼 것이고, $B_s=0$이다. 세그먼트 경계에서 일어나는 사건은 갱신이 아니라 체크포인트 저장이다. 그래서 이 장은 [MC]를 sleep-time compute 사례로 읽지 않고 **$W$층 용량 천장 논증**으로 읽는다 — 고정 크기 $W$ 하나로 recall이 무너진다면 $W$를 몇 개나 들고 있어야 하는가에 대한 정량적 답이다.
+**이 장은 그 주장을 검증한다.** 검증의 결론을 먼저 적는다. **연속체는 표기의 다리이지 기제의 다리가 아니다.** [NL]이 구현한 모든 갱신은 (U-W) 모양이고, $\Theta$는 그 축 위에서 test-time에 아무것도 움직이지 않는 $f=0$ 끝점으로만 등장한다. 축이 두 끝점을 이름으로 잇는 것과 상태가 두 끝점 사이를 실제로 이동하는 것은 다른 사건이며, [NL]에는 후자가 없다. 이 결론은 논문의 진술이 아니라 이 책의 판단이다 — 근거는 §18.4의 표 18-3이고, 판정문은 §18.4와 §18.8.2의 [평가] 블록에 놓인다.
+
+같은 장에 Memory Caching(*Memory Caching: RNNs with Growing Memory*, arXiv:2602.24281, 이하 [MC])을 함께 놓는다. 두 논문은 같은 저자 그룹에서 나왔고, [MC]는 [NL]과 Miras의 "memory 상태를 forward pass 중 최적화되는 동적 객체로 보는" 관점을 명시적으로 승계한다고 §2에서 밝힌다 [MC §2]. 즉 [MC] 쪽에는 상속 진술이 있고, 받는 상대가 [NL]/Miras 라인이다 — **sleep-time compute 세 경로 어느 논문의 open question도 받지 않는다.** 그러나 [MC]가 실제로 한 일은 갱신식이 아니라 **읽기식**을 바꾼 것이고, $B_s=0$이다. 세그먼트 경계에서 일어나는 사건은 갱신이 아니라 체크포인트 저장이다. 그래서 이 장은 [MC]를 sleep-time compute 사례로 읽지 않고 **$W$층 용량 천장 논증**으로 읽는다 — 고정 크기 $W$ 하나로 recall이 무너진다면 $W$를 몇 개나 들고 있어야 하는가에 대한 정량적 답이다.
 
 ch11이 이 장에 넘긴 것은 두 편의 탈락 사유였다: [NL]은 조건 (1)과 (4)에서, [MC]는 조건 (2)와 (3)에서 걸린다(→ ch11 §11.4.2, §11.4.3). 이 장은 그 판정을 반복하지 않고 **증거로 보인다** — 어느 객체가 어느 시계로 움직이는지의 표로.
 
@@ -28,7 +30,7 @@ ch11이 이 장에 넘긴 것은 두 편의 탈락 사유였다: [NL]은 조건 
 
 **논문이 오프라인 단계를 이름 붙여 부르고 명시적으로 사양한다.** 이 문장이 이 장의 판정에서 가장 무거운 증거이며, 동시에 corpus 전체에서 가장 쓸모 있는 bridge-out이다(→ §18.8).
 
-[MC]의 출발점은 recall이다. recurrent 모델이 recall 집약 과제에서 뒤처지는 원인을 "자라는 시퀀스를 압축해야 하는 고정 용량이 과거 정보를 잊게 만들며, 이것이 결정적 병목"이라고 진단하고 Zoology 계열의 recall–throughput tradeoff를 인용한다 [MC §1]. 해법은 놀랄 만큼 단순하다 — 과거 memory 상태를 버리지 않는다. 시퀀스를 $N$개 세그먼트로 자르고 각 세그먼트 끝의 iterate를 보존한 뒤, 읽기를 그 캐시 집합 위의 게이트된 혼합으로 바꾼다.
+[MC]의 출발점은 recall이다. recurrent 모델이 recall 집약 과제에서 뒤처지는 원인을 "자라는 시퀀스를 압축해야 하는 고정 용량이 과거 정보를 잊게 만들며, 이것이 결정적 병목"이라고 진단하고 Zoology 계열의 recall–throughput tradeoff를 인용한다 [MC §1]. 해법은 놀랄 만큼 단순하다 — 과거 memory 상태를 버리지 않는다. 시퀀스를 $N$개 세그먼트로 자르고 각 세그먼트 끝의 iterate를 보존한 뒤, 읽기를 그 캐시 집합 위의 게이트된 혼합으로 바꾼다. 명시적 상속이 하나 더 있다 — log-linear attention이 위치 편향과 검색 과정의 문맥 의존성 결여를 겪는다고 지목하고, 그 결함을 고친 판을 Log-Linear++라는 이름으로 자기 baseline에 세운다 [MC §4.3].
 
 > **[해설]** 두 문제의식은 같은 자리를 반대편에서 누른다. [NL]은 "$W$의 갱신 **주기**가 하나뿐이라서 문제다"라고 하고, [MC]는 "$W$의 **개수**가 하나뿐이라서 문제다"라고 한다. 전자는 시간축을 쪼개고 후자는 상태축을 쪼갠다. 그리고 어느 쪽도 문맥 경계를 넘지 않는다 — 쪼갠 것이 시간이든 개수든, 시퀀스가 끝나면 전부 사라진다. 이 공통점이 두 논문을 한 장에 묶는 이유이고, 동시에 둘 다 sleep-time compute이 아닌 이유다.
 
@@ -75,11 +77,11 @@ $\square \in \{k, v, q, \eta, \alpha, \mathrm{memory}\}$이고 각각이 2층 re
 [MC]는 시퀀스를 $N$개 세그먼트 $S^{(1)},\dots,S^{(N)}$으로 자른다. 각 세그먼트 안에서 갱신은 baseline에서 **한 글자도 바뀌지 않는다**.
 
 $$
-W^{(s)}_t \;=\; f\big(W^{(s)}_{t-1};\ k_t, v_t\big), \qquad 1 \le t \le L^{(s)}
+W^{(s)}_t \;=\; \mathrm{upd}\big(W^{(s)}_{t-1};\ k_t, v_t\big), \qquad 1 \le t \le L^{(s)}
 \tag{18-3}
 $$
 
-$f$는 baseline 아키텍처의 갱신 규칙 그대로다 — linear attention이면 $W_{t-1} + v_t k_t^{\top}$, Titans이면 (U-W)의 $\alpha_t, \beta_t, \eta_t$ 세 항이 그대로 [MC Eq. 4, 34–35]. 세그먼트 끝에서 일어나는 일은 갱신이 아니라 보존이다: $W^{(i)} := W^{(i)}_{L^{(i)}}$.
+위첨자 $(s)$는 현재 세그먼트 인덱스이며, §1.3이 SGD step에 예약한 아래첨자 $s$와 다른 대상이다. $\mathrm{upd}$는 baseline 아키텍처의 갱신 규칙 그대로다([MC Eq. 4]는 이 자리에 $f$를 쓰지만, 이 책에서 $f$는 식 (R)의 읽기 함수이고 이 장에서는 [NL]의 갱신 주파수이기도 하므로 기호를 옮긴다) — linear attention이면 $W_{t-1} + v_t k_t^{\top}$, Titans이면 (U-W)의 $\alpha_t, \beta_t, \eta_t$ 세 항이 그대로 [MC Eq. 4, 34–35]. 세그먼트 끝에서 일어나는 일은 갱신이 아니라 보존이다: $W^{(i)} := W^{(i)}_{L^{(i)}}$.
 
 바뀌는 것은 식 (R)이다. 일반형은 캐시 집합 위의 집계다 [MC Eq. 5]. 논문이 제시하는 네 구체형 중 둘을 적는다.
 
@@ -91,11 +93,11 @@ $$
 $$
 
 $$
-r^{(i)}_t = \big\langle u_t,\ \mathrm{MeanPool}(S^{(i)}) \big\rangle,
+\tilde\gamma^{(i)}_t = \big\langle u_t,\ \mathrm{MeanPool}(S^{(i)}) \big\rangle,
 \quad
-R_t = \arg\mathrm{Top}\text{-}k\big(\{r^{(i)}_t\}_{i=1}^{s-1}\big),
+\mathcal{I}_t = \arg\mathrm{Top}\text{-}k\big(\{\tilde\gamma^{(i)}_t\}_{i=1}^{s-1}\big),
 \quad
-\hat y_t = \gamma^{(s)}_t \mathcal{M}\big(q_t; W^{(s)}_t\big) + \sum_{i \in R_t} \gamma^{(i)}_t \mathcal{M}\big(q_t; W^{(i)}\big)
+\hat y_t = \gamma^{(s)}_t \mathcal{M}\big(q_t; W^{(s)}_t\big) + \sum_{i \in \mathcal{I}_t} \gamma^{(i)}_t \mathcal{M}\big(q_t; W^{(i)}\big)
 \tag{18-5}
 $$
 
@@ -137,11 +139,14 @@ $$
 | $L$ = 시퀀스 길이, $L_M$ = memory MLP 깊이 | $L$ = 시퀀스 길이, 깊이는 $L_{\mathcal{M}}$, 블록 수는 $L_{\text{layer}}$ | 충돌 없음. NM 승계 규칙상 $L$은 sequence 길이다 |
 | $\mathcal{L}(M(k_t); v_t)$ — attentional bias | $\ell$ | 논문의 대문자를 그대로 옮기면 층이 뒤집힌다 |
 | $S^{(i)}$ — 세그먼트 | $S^{(i)}$ 유지 | 같은 논문 안에서 위첨자 $S^{(i)}$=세그먼트, 아래첨자 $S_t$=momentum이 공존한다 [MC Eq. 35] |
-| $N$ — 세그먼트 수 | $N$ (장-국소: 캐시 개수) | 예약 기호 $N_q$(문맥 공유 질의 수)와 혼동 금지 |
+| $N$ — 세그먼트 수 | $N$ (장-국소: 캐시 개수) | 예약 기호 $N_q$(문맥 공유 질의 수)와 혼동 금지. §18.1이 ch17에서 인용한 오프라인 재귀 횟수 $N$과도 다른 대상이다 |
 | $C = L/N$ — 세그먼트 크기 | $C$ (chunk) | 우연히 일치. 용량은 반드시 $C_{\text{cap}}$ |
 | $\gamma^{(i)}_t$ — 캐시 $i$의 기여 게이트 | $\gamma^{(i)}_t$ 유지. **$\alpha_t$로 매핑 금지** | $\alpha_t$는 시간축 retention이고 $\gamma$는 읽기측 mixture weight다. 시간축 감쇠가 아니다 |
 | $\alpha_t, \beta_t, \eta_t$ (Titans 대입) | 동일 | (U-W)와 글자 그대로 대응 |
 | $u_t = x_t W_u$ — connector | $u_t$ | $q_t$와 별개 사영. $u_t = q_t$ 대안은 §3.1에 언급되나 그 행의 수치는 비어 있다(→ §18.6) |
+| $r^{(i)}_t$ — 세그먼트 관련도 점수, $R_t$ — 선택된 캐시 인덱스 집합 [MC Eq. 16–17] | $\tilde\gamma^{(i)}_t$ / $\mathcal{I}_t$ | 예약 충돌: $r$은 rank, $R$은 보상이다(§1.3). 논문 기호를 옮긴다. $\tilde\gamma$는 softmax 전 점수이고 $\gamma^{(i)}_t$가 정규화된 mixture weight라는 관계가 기호에 그대로 남는다. top-$k$의 $k$는 이 장에서 선택 개수를 뜻하는 장-국소 기호이며, §1.2의 sleep 라운드 첨자 $k$·키 벡터 $k_t$와 다르다 |
+| $f$ — baseline 갱신 규칙 [MC Eq. 4, 17] | $\mathrm{upd}(\cdot)$ | 이 책의 $f$는 식 (R)의 읽기 함수이고 이 장에서는 [NL]의 갱신 주파수다. 한 글자를 세 뜻으로 쓰지 않는다 |
+| 위첨자 $(s)$ — 현재 세그먼트 | 위첨자 $(s)$ 유지(장-국소) | §1.3의 아래첨자 $s$(SGD step)와 다른 대상임을 §18.3.2에서 선언한다 |
 
 ## 18.4 어느 층을 언제 쓰는가
 
@@ -180,7 +185,7 @@ $$
 | $\Theta$ — $W_k, W_v, W_q$, connector $W_u$, backbone | outer loop (AdamW, lr 4e-4, batch 0.5M tokens) | 학습 라운드 | 불변 | [MC App. B] |
 | $W^{(s)}_t$ — 온라인 fast weight (2층 MLP, expansion 4, GELU) | inner, 식 (18-3) = 표준 (U-W) | 토큰 | 소멸 | [MC Eq. 4] |
 | $\{W^{(i)}\}_{i<s}$ — 캐시된 체크포인트 | **학습되지 않는다.** 과거 inner iterate를 보존한 것 | 세그먼트 경계에서 동결, 이후 읽기 전용 | 소멸 | [MC §3] |
-| $\gamma^{(i)}_t$, $r^{(i)}_t$ — 게이트·router 점수 | $W_u$를 outer가 학습, 값은 입력 의존으로 매 토큰 재계산 | 토큰 | 소멸 | [MC §3.1, §3.3] |
+| $\gamma^{(i)}_t$, $\tilde\gamma^{(i)}_t$ — 게이트·router 점수 | $W_u$를 outer가 학습, 값은 입력 의존으로 매 토큰 재계산 | 토큰 | 소멸 | [MC §3.1, §3.3] |
 | $\mathrm{MeanPool}(S^{(i)})$ — 세그먼트 요약 | 학습 없음(평균 또는 합) | 세그먼트 확정 시 1회, 사전 계산 가능 | 소멸 | [MC §3.3] |
 | $N$, 세그먼트 분할 스케줄 | 학습되지 않는 하이퍼파라미터 | 설계 시 고정 | — | [MC §5 Setup] |
 
@@ -310,6 +315,8 @@ SSC가 서빙 가능한 유일한 변형인 이유가 여기서 나온다. top-$
 ### 18.8.3 경로 간 인용 여부
 
 두 논문 모두 다른 두 경로에 침묵한다. 종류가 다르다.
+
+먼저 연대를 갈라 둔다. 침묵에는 **연대가 강제한 것**과 **선택된 것**이 있고, 둘을 섞으면 계보 사실이 발견으로 둔갑한다. [NL]은 2025년 12월, [MC]는 2026년 2월에 나왔다. 이 장이 아래에서 비어 있다고 지목하는 문헌 — MemGPT(2023-10), RAG(2020-05), LoRA(2021-06), ROME(2022-02), MEMIT(2022-10), Zep(2025-01), Letta STC·Mem0(2025-04), SEAL(2025-06), ReasoningBank(2025-09) — 은 **전부 두 논문보다 앞선다.** 따라서 이들의 부재는 연대가 아니라 선택이다. 반대로 ch17이 읽은 `Do LMs Need Sleep?`(2026-05), ch21이 읽는 `LM Need Sleep`(2026-06), ch15의 SCM(2026-04)의 부재는 연대가 강제한 것이며 이 장은 그것을 두 논문의 흠으로 세지 않는다. 아래 서술은 전부 앞쪽 — 선택된 침묵 — 에 대한 것이다.
 
 [NL]의 $E$-경로 인용은 사실상 전무하다 — MemGPT도, 8개월 앞서 이 라인의 이름을 만든 Letta STC도, Mem0도 Zep도 ReasoningBank도 없고 RAG의 방법 인용도 없다. "RAG"는 BABILong에서 Llama-8B의 인용 없는 baseline 변형으로만 등장한다 [NL §9.2]. $\Theta$-경로는 얇고 오래되었다 — EWC 한 건이 지속학습 baseline으로 쓰일 뿐 LoRA도 ROME도 MEMIT도 SEAL도 모델 편집 문헌 전체가 없다. $W$-경로는 조밀하고(Titans, Miras, Atlas, TTT, DeltaNet, RWKV-7 등) 생물학은 대량으로 인용되되 온라인 단계에만 쓰인다. **모든 시간척도에서 갱신되는 모든 것을 통일하겠다는 논문이 외부 기억 시스템을 한 편도, 가중치 경로를 2017년 정규화 기법 하나로만 읽는다.** 통일된 것은 $W$-경로와 optimizer이며, 어휘만 셋을 덮을 만큼 넓다.
 

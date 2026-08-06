@@ -1,550 +1,717 @@
 {
-  "paper_id": "lora-as-knowledge-memory",
-  "arxiv": "2603.01097 (v5, cs.LG)",
-  "title": "Understanding LoRA as Knowledge Memory: An Empirical Analysis",
-  "authors": "Seungju Back* (KAIST), Dongwoo Lee* (KAIST), Naun Kang (Samsung SDS), Taehee Lee (Samsung SDS), S. K. Hong (Samsung SDS), Youngjune Gwon (Samsung SDS), Sungjin Ahn (KAIST / New York University). * equal contribution. Correspondence: sungjin.ahn@kaist.ac.kr. Funding: Samsung SDS; NRF Brain Pool Plus (2021H1D3A2A03103645); GRDC (RS-2024-00436165). [title block p.1; Acknowledgements p.9]",
-  "venue": "Proceedings of the 43rd International Conference on Machine Learning (ICML 2026), Seoul, South Korea. PMLR 306, 2026. [footer p.1]",
-  "date": "arXiv v5 stamp: 29 Jul 2026 [line 5 of source text: 'arXiv:2603.01097v5 [cs.LG] 29 Jul 2026']",
-  "path": "papers/stc/2603.01097.txt",
-
-  "axis": "theory",
-  "axis_note": "Classified 'theory' per the S0 corpus table (S0-DESIGN §3.1 lists 2603.01097 under '용량 / 이론' as 'LoRA as Knowledge Memory — 저랭크 쓰기의 용량'). Strictly the paper contains no theorem, no proof and no analytical model; it is a purely empirical audit. Its 'theory' role in the monograph is that it supplies a *quantitative constraint* on the Θ-path — how much knowledge a rank-r slow-weight delta actually holds, and what happens when several such deltas are composed. The paper itself calls its contribution 'the first systematic empirical study mapping the design space of LoRA-based memory' [Abstract] and 'a systematic audit of LoRA as a parametric memory' [§1].",
-
-  "problem_stated": {
-    "as_written": "'Continuous knowledge updating for pre-trained large language models (LLMs) is increasingly necessary yet remains challenging.' [Abstract, p.1]. '[A]n LLM's knowledge is largely fixed at pretraining time, making continuous knowledge updates a critical yet unsolved challenge—whether for incorporating new facts, domain-specific documents, or personalized information.' [§1 Introduction, p.1]",
-    "the_specific_gap_claimed": "'Although recent works have begun utilizing LoRA as knowledge storage (Su et al., 2025; Zweiger et al., 2025; Caccia et al., 2025), these works do not prove LoRA's ability as knowledge memory, because they focus on performance gain in specific problem settings. They happen to include LoRA as a component of a pipeline, rather than systematically examining LoRA's intrinsic memory properties.' [§1, p.1]",
-    "the_five_questions_the_paper_poses": "'Can LoRA reliably memorize and retrieve factual knowledge? Does it scale to large knowledge bases, and if so, how should capacity be managed? Can LoRA-based memory complement or even replace non-parametric methods like RAG and ICL? If it serves only partial roles, under what conditions should it be deployed?' [§1, p.1–2]",
-    "four_dimensions": "'characterizing storage capacity, optimizing knowledge internalization within a single module, scaling to multi-LoRA systems, and conducting case studies that probe long-context reasoning and the role of hybrid parametric/non-parametric memory in realistic settings.' [§1, p.2] — these map onto §4, §5, §6, §7 and RQs Q1–Q15.",
-    "explicitly_NOT_the_goal": "'Rather than proposing a single architecture, we provide practical guidance on the operational boundaries of LoRA memory.' [Abstract] / 'shifting the focus from system building to a systematic audit' [§1, p.2]. There is therefore no proposed method to evaluate — the deliverable is a measurement."
-  },
-
-  "core_mechanism": {
-    "one_line": "A per-partition low-rank slow-weight delta ΔΘ^{(j)} = B^{(j)}A^{(j)} is written offline by gradient descent on GPT-4.1-synthesised supervision derived from a document, and at wake time an embedding retriever selects the top-N_m deltas for the query and arithmetically merges them into the frozen backbone before decoding — i.e. (U-Θ) for the write, plus a non-gradient, wake-time Θ-composition step that has no counterpart in the canonical rule.",
-
-    "notation_conflicts": {
-      "preamble": "The paper writes almost no equations (exactly one numbered equation in the whole paper, Eq. 1; the merging formulas in App. O are unnumbered display math). The symbols below are the ones it does use, and several collide head-on with STYLE-NOTATION §1.2 reserved symbols. Mapping is mandatory before any of these appear in the monograph.",
-      "table": [
-        {"paper_symbol": "W (in the DARE formula, 'for a given LoRA weight matrix W', App. O)", "unified": "a component of ΔΘ", "note": "HARD CONFLICT. Reserved W = fast weights (inner-loop state). The paper's W is a *slow*-weight delta matrix. Never let the paper's W appear as W in the monograph."},
-        {"paper_symbol": "A_i, B_i (LoRA factors of module i)", "unified": "A^{(j)}, B^{(j)}", "note": "No conflict; this is already the reserved form for low-rank expert matrices ([Sleep] row of STYLE §1.2, 'A^{(ℓ),j}, B^{(ℓ),j}, d_low'). Use the module index j to avoid the reserved auxiliary accumulator A_t."},
-        {"paper_symbol": "ΔW_i = B_i A_i (materialised delta, App. O)", "unified": "ΔΘ^{(j)}", "note": "The delta lives in Θ, not W. Renaming is non-negotiable."},
-        {"paper_symbol": "r (LoRA rank), r ∈ {2,4,…,1024}", "unified": "r", "note": "No reserved conflict. Corresponds to d_low in [Sleep] notation; flag the correspondence once."},
-        {"paper_symbol": "α (LoRA scaling factor; α = r for PB/CF/PaperQA, α = 2r for NQA/QuALITY) [App. D 'Note on Hyperparameters']", "unified": "s_LoRA", "note": "HARD CONFLICT. Reserved α_t = retention gate ∈ [0,1], the fraction *kept*. LoRA's α is an output scaling constant with an entirely different meaning and no [0,1] range."},
-        {"paper_symbol": "η (learning rate, Table 5)", "unified": "η_Θ", "note": "Compatible with the reserved convention (subscript-free η = outer, constant learning rate). Written η_Θ here to make the layer explicit; values 1e-5 … 5e-4."},
-        {"paper_symbol": "S (training steps, Table 5: S ∈ {250,500,1000,2000})", "unified": "n_steps", "note": "HARD CONFLICT. Reserved S_t = inner momentum buffer ('past surprise')."},
-        {"paper_symbol": "N (number of merged LoRAs, Q10/Q11, 1→5)", "unified": "N_m", "note": "Collides in spirit with S0's N_q (number of queries sharing a context) in the amortisation formula (A). Keep N_m for merge count, N_q for query count."},
-        {"paper_symbol": "τ (performance threshold, Table 3: τ ∈ {0.8, 0.9, …}; figures show 75/80/85% for CF and 90/95/100% for PB)", "unified": "π_thr", "note": "HARD CONFLICT. Reserved τ = token index (STYLE §1.2, 't, τ — token 인덱스'). π is unreserved."},
-        {"paper_symbol": "p (DARE drop fraction, App. O)", "unified": "p_drop", "note": "CONFLICT. Reserved p = norm order / polynomial degree (ℓ_p bias in [Miras], φ_p in [Atlas])."},
-        {"paper_symbol": "M (binary Bernoulli mask in DARE, M ∈ {0,1}^d)", "unified": "Z ∈ {0,1}^{d×d_out}", "note": "CONFLICT with 𝓜(·;W), the memory module. Z is unreserved."},
-        {"paper_symbol": "k (output dimension in 'B_i ∈ R^{r×k}', App. O)", "unified": "d_out", "note": "CONFLICT. Reserved k = key vector / auxiliary index."},
-        {"paper_symbol": "T_max (largest tokenized knowledge load below threshold, Eq. 1)", "unified": "T_max", "note": "Keep. It is a *corpus token budget*, not a sequence length — must not be confused with the reserved L (sequence length)."},
-        {"paper_symbol": "N_params (number of trainable parameters, Eq. 1)", "unified": "N_params", "note": "Keep. Never given a numeric value anywhere in the paper (see cost_table.C)."},
-        {"paper_symbol": "d (input dimension in 'A_i ∈ R^{d×r}')", "unified": "d", "note": "Consistent with the reserved model dimension."}
-      ],
-      "source_dimension_slip": "App. O states A_i ∈ R^{d×r} and B_i ∈ R^{r×k}, then writes ΔW_i = B_i A_i and ΔW_CAT = B_merged A_merged. With those shapes B_i A_i is dimensionally impossible (r×d_out times d×r); the composition that type-checks is A_i B_i. The monograph must silently use the type-correct order and record this as a source slip — the same class of caveat already carried for [TNT Eq. 5–6] in STYLE §1.7.4."
+ "paper_id": "lora-as-knowledge-memory",
+ "arxiv": "2603.01097 (v5, cs.LG)",
+ "title": "Understanding LoRA as Knowledge Memory: An Empirical Analysis",
+ "authors": "Seungju Back* (KAIST), Dongwoo Lee* (KAIST), Naun Kang (Samsung SDS), Taehee Lee (Samsung SDS), S. K. Hong (Samsung SDS), Youngjune Gwon (Samsung SDS), Sungjin Ahn (KAIST / New York University). * equal contribution. Correspondence: sungjin.ahn@kaist.ac.kr. Funding: Samsung SDS; NRF Brain Pool Plus (2021H1D3A2A03103645); GRDC (RS-2024-00436165). [title block p.1; Acknowledgements p.9]",
+ "venue": "Proceedings of the 43rd International Conference on Machine Learning (ICML 2026), Seoul, South Korea. PMLR 306, 2026. [footer p.1]",
+ "date": "arXiv v5 stamp: 29 Jul 2026 [line 5 of source text: 'arXiv:2603.01097v5 [cs.LG] 29 Jul 2026']",
+ "path": "papers/stc/2603.01097.txt",
+ "axis": "theory",
+ "axis_note": "Classified 'theory' per the S0 corpus table (S0-DESIGN §3.1 lists 2603.01097 under '용량 / 이론' as 'LoRA as Knowledge Memory — 저랭크 쓰기의 용량'). Strictly the paper contains no theorem, no proof and no analytical model; it is a purely empirical audit. Its 'theory' role in the monograph is that it supplies a *quantitative constraint* on the Θ-path — how much knowledge a rank-r slow-weight delta actually holds, and what happens when several such deltas are composed. The paper itself calls its contribution 'the first systematic empirical study mapping the design space of LoRA-based memory' [Abstract] and 'a systematic audit of LoRA as a parametric memory' [§1].",
+ "problem_stated": {
+  "as_written": "'Continuous knowledge updating for pre-trained large language models (LLMs) is increasingly necessary yet remains challenging.' [Abstract, p.1]. '[A]n LLM's knowledge is largely fixed at pretraining time, making continuous knowledge updates a critical yet unsolved challenge—whether for incorporating new facts, domain-specific documents, or personalized information.' [§1 Introduction, p.1]",
+  "the_specific_gap_claimed": "'Although recent works have begun utilizing LoRA as knowledge storage (Su et al., 2025; Zweiger et al., 2025; Caccia et al., 2025), these works do not prove LoRA's ability as knowledge memory, because they focus on performance gain in specific problem settings. They happen to include LoRA as a component of a pipeline, rather than systematically examining LoRA's intrinsic memory properties.' [§1, p.1]",
+  "the_five_questions_the_paper_poses": "'Can LoRA reliably memorize and retrieve factual knowledge? Does it scale to large knowledge bases, and if so, how should capacity be managed? Can LoRA-based memory complement or even replace non-parametric methods like RAG and ICL? If it serves only partial roles, under what conditions should it be deployed?' [§1, p.1–2]",
+  "four_dimensions": "'characterizing storage capacity, optimizing knowledge internalization within a single module, scaling to multi-LoRA systems, and conducting case studies that probe long-context reasoning and the role of hybrid parametric/non-parametric memory in realistic settings.' [§1, p.2] — these map onto §4, §5, §6, §7 and RQs Q1–Q15.",
+  "explicitly_NOT_the_goal": "'Rather than proposing a single architecture, we provide practical guidance on the operational boundaries of LoRA memory.' [Abstract] / 'shifting the focus from system building to a systematic audit' [§1, p.2]. There is therefore no proposed method to evaluate — the deliverable is a measurement."
+ },
+ "core_mechanism": {
+  "one_line": "A per-partition low-rank slow-weight delta ΔΘ^{(j)} = B^{(j)}A^{(j)} is written offline by gradient descent on GPT-4.1-synthesised supervision derived from a document, and at wake time an embedding retriever selects the top-N_m deltas for the query and arithmetically merges them into the frozen backbone before decoding — i.e. (U-Θ) for the write, plus a non-gradient, wake-time Θ-composition step that has no counterpart in the canonical rule.",
+  "notation_conflicts": {
+   "preamble": "The paper writes almost no equations (exactly one numbered equation in the whole paper, Eq. 1; the merging formulas in App. O are unnumbered display math). The symbols below are the ones it does use, and several collide head-on with STYLE-NOTATION §1.2 reserved symbols. Mapping is mandatory before any of these appear in the monograph.",
+   "table": [
+    {
+     "paper_symbol": "W (in the DARE formula, 'for a given LoRA weight matrix W', App. O)",
+     "unified": "a component of ΔΘ",
+     "note": "HARD CONFLICT. Reserved W = fast weights (inner-loop state). The paper's W is a *slow*-weight delta matrix. Never let the paper's W appear as W in the monograph."
     },
-
-    "equations": [
-      {
-        "label": "(L-1) low-rank slow-weight write — the Θ-path restriction",
-        "latex": "\\Theta \\;=\\; \\Theta_0 \\;+\\; \\Delta\\Theta, \\qquad \\Delta\\Theta^{(j)} \\;=\\; A^{(j)} B^{(j)}, \\quad A^{(j)}\\in\\mathbb{R}^{d\\times r},\\; B^{(j)}\\in\\mathbb{R}^{r\\times d_{\\mathrm{out}}}, \\quad r \\ll \\min(d, d_{\\mathrm{out}})",
-        "source": "[lora-as-knowledge-memory App. O, unnumbered display eq., 'The merge operates directly on the low-rank factors A_i and B_i rather than on the materialized delta ΔW_i = B_i A_i'] — the only place in the paper where the LoRA parameterisation is written down at all. Θ_0 frozen: 'LoRA (Hu et al., 2022) is a widely used fine-tuning technique that freezes the pre-trained model and injects trainable low-rank matrices' [§1, p.1]. Factor order corrected per notation_conflicts.source_dimension_slip.",
-        "gloss": "This is the entire mechanism the paper studies. r is the single capacity knob; the paper's headline result is that this knob controls how much text can be stored, and that its parameter-efficiency optimum is at the small end."
-      },
-      {
-        "label": "(L-2) the sleep-time write — canonical (U-Θ) restricted to the low-rank subspace",
-        "latex": "\\big(A^{(j)},B^{(j)}\\big)_{k+1} \\;=\\; \\big(A^{(j)},B^{(j)}\\big)_{k} \\;-\\; \\eta_\\Theta\\, \\nabla_{(A,B)}\\, \\mathcal{L}\\big(\\mathcal{R}^{(j)};\\ \\Theta_0 + A^{(j)}B^{(j)}\\big), \\qquad \\mathcal{R}^{(j)} \\;=\\; \\mathrm{gen}\\big(\\mathcal{H}^{(j)};\\ B_s\\big)",
-        "source": "No equation in the paper. Reconstructed from [App. D 'Note on Hyperparameters'] (η_Θ ∈ {1e-5,5e-5,1e-4,5e-4}; n_steps ∈ {150,250,500,1000,1500,2000}; batch 8 or 32) and [§5 Q4 / App. I] (the construction of 𝓡). 𝓛 is standard next-token cross-entropy — the paper never states the objective explicitly, which is itself notable.",
-        "gloss": "Identical in form to S0 (U-Θ) except that ∇ is taken only in the r-dimensional subspace. 𝓗^{(j)} = the raw document (or PhoneBook/CounterFact slice) assigned to partition j; 𝓡^{(j)} = its synthetic re-expression."
-      },
-      {
-        "label": "(L-3) the gen(·; B_s) operator — this paper's main empirical contribution to the Θ-path",
-        "latex": "\\mathcal{R}^{(j)} \\;=\\; \\bigcup_{f \\in F} \\mathrm{gen}_f\\big(\\mathcal{H}^{(j)};\\ n_f\\big), \\qquad F \\subseteq \\{\\mathrm{orig},\\ \\mathrm{QA},\\ \\mathrm{Summary},\\ \\mathrm{Rewrite}\\}, \\quad n_{\\mathrm{QA}}\\in\\{10,20,40\\},\\ n_{\\mathrm{Sum}}\\in\\{2,4,8\\},\\ n_{\\mathrm{Rew}}\\in\\{1,2,4\\}",
-        "source": "[§5 Q4, p.4] and [App. I, Experimental Setup] ('we compare three synthetic data generation strategies against a raw text baseline… 10, 20, and 40 pairs for QA; 2, 4, and 8 variations for Summary; and 1, 2, and 4 variations for Rewrite. All synthetic data was generated using GPT-4.1'); mixtures in [§5 Q5, Table 1] and [App. J]. Generator prompts verbatim in [App. I.1–I.3].",
-        "gloss": "S0's (U-Θ) leaves gen(·; B_s) abstract. This paper *measures* it: the format of 𝓡, not just its size, determines how much of 𝓗 survives into ΔΘ. The union operator is literal — mixtures are produced by 'concatenating the text files of these individual components' [App. J]."
-      },
-      {
-        "label": "(L-4) parameter efficiency — the paper's one numbered equation",
-        "latex": "\\mathrm{Efficiency} \\;=\\; \\frac{T_{\\max}(\\pi_{\\mathrm{thr}},\\, r)}{N_{\\mathrm{params}}(r)}",
-        "source": "[lora-as-knowledge-memory Eq. 1, §4 Q3, p.3]. Definition of T_max in the same paragraph: 'we estimate the largest tokenized knowledge load T_max for which performance stays above a fixed threshold τ (i.e., before saturation; Q2), and normalize it by the number of trainable parameters.'",
-        "gloss": "This is the quantitative constraint the monograph wants: tokens of retrievable knowledge per trainable parameter. Reported non-monotonic in r, peaking at low rank ('The most efficient configuration was consistently found at a small rank, such as r = 4' [App. H])."
-      },
-      {
-        "label": "(L-5) wake-time routing — an E-shaped index over Θ-deltas",
-        "latex": "J(q) \\;=\\; \\operatorname*{top-}N_m{}_{\\,j}\\ \\mathrm{sim}\\big(\\mathrm{emb}(q),\\ \\mathrm{emb}(\\mathcal{H}^{(j)})\\big), \\qquad \\mathrm{emb} = \\texttt{BAAI/bge-large-en-v1.5}",
-        "source": "[§6 Q9, p.5] and [App. N, Experimental Setup] ('we employed the BGE-large-en-v1.5 (Chen et al., 2024) model to select LoRA modules based on embedding similarity between the query and source documents'). Token-based alternatives Arrow / SpectR / LAG in [App. N, Table 6].",
-        "gloss": "The retrieval index is textual and external — an E-object — but what it returns is a *weight delta*, not text. This is the hinge on which the paper sits astride the E- and Θ-paths, and neither the paper nor the E-path literature names the hybrid."
-      },
-      {
-        "label": "(L-6) wake-time Θ-composition — the step with no canonical counterpart",
-        "latex": "\\Delta\\Theta_{\\mathrm{merged}} \\;=\\; \\mathrm{merge}\\big(\\{\\Delta\\Theta^{(j)}\\}_{j\\in J(q)}\\big), \\qquad \\hat y \\;=\\; f\\big(q;\\ \\Theta_0 + \\Delta\\Theta_{\\mathrm{merged}},\\ \\cdot,\\ \\mathrm{ret}(E,q)\\big)",
-        "source": "[§6 Q10, p.6] and [App. O]. The read equation is S0 (R) with W absent (LoRA has no fast-weight state) and ret(E,q) present only in the hybrid configurations of [§7 Q13, Table 2].",
-        "gloss": "merge(·) is a *wake-time write into Θ that is not a gradient step*. S0's (U-Θ) has no slot for this. It is the operation that Q11 shows does not compose (see below)."
-      },
-      {
-        "label": "(L-7) the five merge operators",
-        "latex": "\\begin{aligned} \\text{Linear:}\\quad & A_{\\mathrm{m}} = \\tfrac{1}{N_m}\\textstyle\\sum_j A^{(j)},\\ \\ B_{\\mathrm{m}} = \\tfrac{1}{N_m}\\textstyle\\sum_j B^{(j)} \\\\ \\text{CAT:}\\quad & A_{\\mathrm{m}} = \\mathrm{concat}_{\\dim=1}\\big([A^{(1)}\\ldots A^{(N_m)}]\\big),\\ B_{\\mathrm{m}} = \\mathrm{concat}_{\\dim=0}\\big([B^{(1)}\\ldots B^{(N_m)}]\\big) \\ \\Rightarrow\\ \\Delta\\Theta_{\\mathrm{CAT}} = \\textstyle\\sum_j A^{(j)}B^{(j)} \\\\ \\text{CAT-}1/\\sqrt{N_m}:\\quad & \\tilde A^{(j)} = \\tfrac{1}{\\sqrt{N_m}}A^{(j)},\\ \\tilde B^{(j)} = \\tfrac{1}{\\sqrt{N_m}}B^{(j)} \\ \\Rightarrow\\ \\Delta\\Theta = \\tfrac{1}{N_m}\\textstyle\\sum_j A^{(j)}B^{(j)} \\\\ \\text{DARE:}\\quad & \\widehat{\\Delta\\Theta} = \\tfrac{1}{1-p_{\\mathrm{drop}}}\\big(\\Delta\\Theta \\odot Z\\big),\\quad Z \\sim \\mathrm{Bernoulli}(1-p_{\\mathrm{drop}}) \\\\ \\text{TIES:}\\quad & \\text{trim (top-}k\\text{ magnitude)} \\to \\text{elect sign (magnitude-weighted majority)} \\to \\text{average sign-aligned entries only} \\end{aligned}",
-        "source": "[lora-as-knowledge-memory App. O, all unnumbered display eqs., pp.32–33]. TIES is prose-only in App. O ('Trim / Elect Sign / Merge', three numbered steps); original TIES = Yadav et al. 2023; DARE = Yu et al. 2024. ⊙ used per STYLE §1.3 for elementwise product.",
-        "gloss": "The three arithmetic operators differ only in scale and support. The paper's cleanest analytic result is that vanilla CAT's collapse is a *scale* bug, not a rank bug: 'vanilla CAT applies an N× over-perturbation… This confirms that scale mismatch—not rank expansion—is CAT's dominant failure mode' [App. O]. The residual CAT-1/√N → TIES gap 'isolates the cost of unmanaged interference' [App. O]."
-      }
-    ],
-
-    "what_the_paper_does_NOT_write_down": "There is no forward equation for LoRA (h = W_0 x + s_LoRA·A B x never appears). There is no training objective. There is no capacity model, bound or scaling law — despite the paper describing its own contribution as covering 'scaling laws in complex, long-context scenarios' [App. A]. Everything in core_mechanism except Eq. 1 and the App. O merge formulas is reconstructed by this note from prose and hyperparameter tables."
-  },
-
-  "outer_vs_inner": {
-    "preamble": "The monograph reader has never trained a model. Read this table as: 'each row is a set of numbers; the column says at which of the three clocks — pre-training, offline write, per-query — those numbers change.' The single most important fact for this reader: in this paper *nothing at all moves during decoding*. There is no fast-weight state W. The only thing that changes per query is which frozen delta is bolted on.",
-    "rows": [
-      {
-        "learnable_object": "Θ_0 — the pre-trained backbone weights (Llama-3.1-8B, Llama-3.2-1B, Qwen3-{0.6,1.7,4,8,14}B)",
-        "who_learns_it": "Nobody, in this paper",
-        "when": "Frozen throughout. Learned by the original model vendors before the paper starts.",
-        "source": "[§1 p.1: 'freezes the pre-trained model and injects trainable low-rank matrices']"
-      },
-      {
-        "learnable_object": "A^{(j)}, B^{(j)} — the low-rank factors of knowledge partition j",
-        "who_learns_it": "Gradient descent on 𝓛 over 𝓡^{(j)}",
-        "when": "SLEEP-TIME UPDATE. One offline training run per partition, before any query exists. 1,500 steps @ batch 8 (PhoneBook / CounterFact); 1,000 steps @ batch 8, η_Θ = 5e-5 (PaperQA); 150 steps @ batch 32, η_Θ = 5e-4 for multi-LoRA r=4 and 250 steps for single LoRA r=16 (NarrativeQA / QuALITY).",
-        "source": "[App. D, 'Note on Hyperparameters']"
-      },
-      {
-        "learnable_object": "𝓡^{(j)} — the synthetic training corpus (QA pairs / summaries / rewrites)",
-        "who_learns_it": "Not learned — *generated* by a frozen external teacher (GPT-4.1; Llama-3.1-8B or Qwen3-8B in the ablation)",
-        "when": "SLEEP-TIME, strictly before the write. Prompt templates are fixed and hand-written [App. I.1–I.3]. There is no reward, no RL, no meta-learning of the generator — the explicit contrast with SEAL: 'we distinguish our approach by eliminating the computational overheads associated with SEAL's outer loop' [App. A].",
-        "source": "[§5 Q4/Q7; App. I; App. L]"
-      },
-      {
-        "learnable_object": "r (rank), s_LoRA (scaling α), η_Θ, n_steps, batch size, layer/module placement",
-        "who_learns_it": "Human grid search",
-        "when": "OUTER-LOOP-BY-HAND, before sleep. Q6 sweeps η_Θ ∈ {1e-5,5e-5,1e-4,5e-4} × n_steps ∈ {250,500,1000,2000} per model size and reports the winner (Table 5). Nothing is meta-learned.",
-        "source": "[App. K, Table 5]"
-      },
-      {
-        "learnable_object": "emb(·) — the BGE-large-en-v1.5 router embedding model",
-        "who_learns_it": "Nobody, in this paper",
-        "when": "Frozen, off-the-shelf. Document embeddings + FAISS index are built once per document as a one-time setup cost ('rag setup': embedding creation + index creation) [App. U].",
-        "source": "[App. N; App. U]"
-      },
-      {
-        "learnable_object": "J(q) — which partitions are selected for this query",
-        "who_learns_it": "Not learned; computed by nearest-neighbour search",
-        "when": "WAKE-TIME, per query. Cost = 'query embedding' + 'faiss search' per question [App. U]. The paper deliberately excludes learned MoE-style routers: 'retraining a routing network at test time is computationally impractical for the continuous, plug-and-play learning settings we target' [App. A].",
-        "source": "[§6 Q9; App. A; App. U]"
-      },
-      {
-        "learnable_object": "ΔΘ_merged — the composed delta actually installed for this query",
-        "who_learns_it": "Not learned; produced by a closed-form arithmetic operator (TIES / Linear / CAT / DARE)",
-        "when": "WAKE-TIME MOVEMENT IN Θ, per query. This is the one thing in the paper that changes model weights at serving time. Measured as the 'lora merge' + 'lora activation' components of latency [App. U]. It is a weight-space read-modify-write, not a gradient step.",
-        "source": "[§6 Q10; App. O; App. U]"
-      },
-      {
-        "learnable_object": "W — fast weights / any test-time inner-loop state",
-        "who_learns_it": "DOES NOT EXIST in this paper",
-        "when": "Never. There is no per-token or per-chunk state update anywhere. The KV cache of the frozen backbone is the only per-query state, and only in the ICL/RAG hybrid rows.",
-        "source": "Absence verified: the words 'test-time training', 'fast weight' and 'inner loop' do not occur in the source text."
-      },
-      {
-        "learnable_object": "ret(E, q) — external text context (ICL full document, or RAG top-3 chunks)",
-        "who_learns_it": "Not learned; retrieved or pasted",
-        "when": "WAKE-TIME, per query, only in the hybrid rows of Table 2 and Table 7. RAG retrieves top-3 chunks via the same FAISS index.",
-        "source": "[§7 Q13, Table 2; App. S; App. U]"
-      }
-    ]
-  },
-
-  "update_layer": {
-    "primary": "(U-Θ)",
-    "secondary": "(U-E), in a degenerate form",
-    "order": "Sleep: (U-Θ) per partition, independently and in parallel — there is no sequential/continual stream, every ΔΘ^{(j)} is trained from the same Θ_0 in isolation. Then (U-E): the router index is built once (document embeddings + FAISS) — this is an E-write whose payload is a *pointer to a weight delta* rather than text. Wake: (U-E) read (routing) → non-gradient Θ-composition (merge) → optional ordinary retrieval read ret(E,q) → decode. So the layer order at serving time is E first, Θ second, and there is no W layer at all.",
-    "how_it_differs_from_canonical_U_Theta": [
-      "Subspace restriction. Canonical (U-Θ) moves all of Θ. Here ∇_Θ is confined to an r-dimensional factorisation and Θ_0 is frozen. The whole paper is an experiment on what that restriction costs. [App. O; §1]",
-      "𝓡_k is instantiated and measured, not assumed. Canonical (U-Θ) hides gen(𝓗_k; B_s). Q4/Q5/Q7 turn it into the dominant experimental variable: raw text is a bad substrate, QA is the best single format, format mixtures beat any single format, and generator quality upper-bounds the result. [§5; Table 1; App. I/J/L]",
-      "No round index. Canonical (U-Θ) is indexed by k — successive consolidation rounds. This paper has k = 1 only. Every adapter is trained once, from Θ_0, on a static corpus. The authors state this: 'Our study isolates the memory properties of LoRA modules in controlled settings, but does not constitute a full continual-update deployment.' [§8 Limitation and Future Work]. Consequently ρ is undefined here (see cost_table).",
-      "Θ is plural and sharded. Instead of one Θ_{k+1}, the state is a *set* {ΔΘ^{(j)}} plus an index. This is the structural novelty relative to every other Θ-path paper in the S0 roster, and it is what imports E-path failure modes (retrieval error) into the Θ-path.",
-      "An extra, non-gradient wake-time Θ-move. merge(·) has no term in (U-Θ). It is the paper's second-order finding that this operator is the binding constraint: performance peaks at N_m = 1 and declines monotonically to N_m = 5 even when every merged module is ground-truth relevant. [§6 Q11; Fig. 7 right; Fig. 21; App. P]"
-    ],
-    "one_sentence_for_the_chapter": "This paper instantiates (U-Θ) with a rank-r subspace restriction and an explicitly measured gen(·; B_s), then adds a wake-time Θ-composition operator that the canonical rule does not contain — and shows that it is that added operator, not the write itself, that fails first."
-  },
-
-  "cost_table": {
-    "B_s": {
-      "value": "Partially reported, in optimizer steps only — never in FLOPs, GPU-hours or wall-clock. Verbatim [App. D, 'Note on Hyperparameters']: PhoneBook/CounterFact (Q1–Q3, Q8) — 'Training is conducted for 1,500 steps with a batch size of 8. We set the scaling factor α equal to the rank (α = r).' PaperQA (Q4–Q7, Q9–Q11) — 'Training is conducted for 1,000 steps with a learning rate of 5 × 10^-5 and a batch size of 8. We adopt a default rank of r = 16 with α = r.' NarrativeQA/QuALITY (Q12–Q14) — 'We use a batch size of 32 and a learning rate of 5 × 10^-4. For multi-LoRA, we use r = 4, α = 8 trained for 150 steps; for single LoRA, we use r = 16, α = 32 trained for 250 steps.' Q6 grid: η ∈ {1e-5, 5e-5, 1e-4, 5e-4} × S ∈ {250, 500, 1000, 2000}, selected values in Table 5. Hardware: 'All experiments were conducted on NVIDIA RTX PRO 6000 Blackwell GPUs.' [App. D]",
-      "what_is_absent": "absent — training wall-clock, training FLOPs, energy, number of GPUs, and the GPT-4.1 API cost of generating 𝓡. Also absent: the *total* B_s of a multi-LoRA system, i.e. steps × number of partitions (8 modules for 64K PhoneBook; 15 for PaperQA; one per 2,048-token chunk for NarrativeQA).",
-      "critical_note": "The Q15 latency study [§7, App. U, Fig. 8, Fig. 22] measures only wake-time. Its component list for every LoRA condition contains model loading, adapter loading/merging/activation, tokenization and inference — and no training term. B_s is therefore excluded from the paper's only cost comparison. Any amortisation claim built on Fig. 8 has C_sleep = 0 baked in."
+    {
+     "paper_symbol": "A_i, B_i (LoRA factors of module i)",
+     "unified": "A^{(j)}, B^{(j)}",
+     "note": "No conflict; this is already the reserved form for low-rank expert matrices ([Sleep] row of STYLE §1.2, 'A^{(ℓ),j}, B^{(ℓ),j}, d_low'). Use the module index j to avoid the reserved auxiliary accumulator A_t."
     },
-    "L_w": {
-      "value": "Reported as end-to-end wall-clock for 30 sequential questions from one NarrativeQA document on Llama-3.1-8B-Instruct, RTX PRO 6000 Blackwell [§7 Q15; App. U; Fig. 22]. Fig. 22 (Top) — Flash Attention DISABLED, totals: ICL 318.4 s (inference component 312.2 s); Multi-LoRA (Dynamic) 120.5 s; Multi-LoRA (Preloaded) 109.3 s; RAG 86.1 s; Single LoRA 56.7 s; Base Model (closed-book) 32.5 s. Fig. 22 (Bottom) — Flash Attention ENABLED, totals: Multi-LoRA (Dynamic) 77.6 s; ICL 75.0 s; Multi-LoRA (Preloaded) 65.9 s; RAG 43.5 s; Single LoRA 40.0 s; Base Model 35.6 s.",
-      "what_is_absent": "absent — per-token latency, TTFT, tokens/s, prompt lengths, generation lengths, batch size at inference (implicitly 1), and any per-query breakdown in milliseconds. Everything is a 30-question aggregate that includes one-time setup ('Ready time denotes one-time setup before processing any query, including base model loading and, for retrieval-based methods, RAG initialization such as embedding-model loading, chunk embedding, and FAISS index construction' [Fig. 8 caption]).",
-      "caveats": "(a) The bar-to-total assignment above for Fig. 22 is read from the figure's stated method ordering; the FA-enabled totals are also consistent with Fig. 8's descending bar order (Multi-LoRA Dynamic > ICL > Multi-LoRA Preloaded > RAG > Single LoRA). Fig. 8 itself never states which of the two runs it plots — its x-axis maximum of 80 s matches the FA-enabled run and rules out the 318.4 s non-FA run; that identification is this note-writer's inference. (b) The paper reports an unresolved measurement anomaly: with FA disabled, 'the inference time for the single LoRA configuration was approximately twice as long as that of the base model, despite both processing identical short-context prompts' and with FA enabled 'the inference speed of the base model paradoxically decreased… while the inference speed for the single LoRA model significantly improved, becoming faster than the base model' [App. U]. The authors attribute this to the PEFT adapter suppressing default optimisations and leave it unexplained."
+    {
+     "paper_symbol": "ΔW_i = B_i A_i (materialised delta, App. O)",
+     "unified": "ΔΘ^{(j)}",
+     "note": "The delta lives in Θ, not W. Renaming is non-negotiable."
     },
-    "C": {
-      "value": "absent, as bytes. The paper never states the byte size of an adapter, never states N_params for any rank, and never states how many adapters a system would hold. What it reports instead: (i) rank sweep r ∈ {2, 4, 8, …, 1024} as the capacity knob [§4 Q1; Table 3]; (ii) knowledge load in *tokens*, 1K → 20K in 1K steps [Table 3, Q2] and 64K for the multi-LoRA PoC [Q8]; (iii) the derived ratio Efficiency = T_max / N_params [Eq. 1], plotted with axis label 'Tokens/Param (10 4)' [Fig. 3, Fig. 15] with plotted values in the range 0–8 (PhoneBook panel) and 0–15 (CounterFact panel).",
-      "what_is_absent": "absent — N_params(r) numeric, adapter file size in MB, GPU-resident bytes for the preloaded multi-LoRA configuration, and the sign of the exponent on the 'Tokens/Param (10 4)' axis (the text extraction loses it; see todo_verify).",
-      "closest_thing_to_a_capacity_number": "The only extractable capacity statement is qualitative + threshold-indexed: at fixed r, accuracy holds up to a load and then 'degrades sharply' [App. G]; 'higher-rank LoRA modules are capable of internalizing a significantly larger volume of knowledge before their performance collapses' [App. G]; and 'The most efficient configuration was consistently found at a small rank, such as r = 4' [App. H]. Numeric T_max values are never tabulated — only plotted (Fig. 3, Fig. 14, Fig. 15, Fig. 16). For a monograph that needs bytes/session, this paper supplies a shape, not a number."
+    {
+     "paper_symbol": "r (LoRA rank), r ∈ {2,4,…,1024}",
+     "unified": "r",
+     "note": "No reserved conflict. Corresponds to d_low in [Sleep] notation; flag the correspondence once."
     },
-    "rho": {
-      "value": "absent. The paper measures no forgetting rate of any kind. Catastrophic forgetting motivates the first paragraph ('full retraining or supervised fine-tuning risks catastrophic forgetting (Kirkpatrick et al., 2017)' [§1]) and is never returned to. Base-model general capability after the LoRA write is never evaluated; Pletenev et al. 2025, 'How much knowledge can you pack into a lora adapter without harming llm?', is cited once in a related-work list [§2 LoRA para / App. A] and never run. There are no repeated consolidation rounds, so no per-round loss can exist.",
-      "two_near_misses_that_are_NOT_rho": "(1) Capacity-overflow degradation: at fixed r, performance collapses past the saturation point [Q2, Fig. 2, Fig. 14]. That is a static capacity limit, not a decay over rounds. (2) Merge-interference degradation: with only ground-truth-relevant modules merged, LLM-judge score peaks at N_m = 1 and 'degrades steadily as N grows' to N_m = 5 [Q11, Fig. 7 right, Fig. 21, App. P]. That is a composition loss, not a temporal one. Neither can be substituted for ρ in the S0 cost table; the chapter must write '논문에 없음'."
+    {
+     "paper_symbol": "α (LoRA scaling factor; α = r for PB/CF/PaperQA, α = 2r for NQA/QuALITY) [App. D 'Note on Hyperparameters']",
+     "unified": "s_LoRA",
+     "note": "HARD CONFLICT. Reserved α_t = retention gate ∈ [0,1], the fraction *kept*. LoRA's α is an output scaling constant with an entirely different meaning and no [0,1] range."
+    },
+    {
+     "paper_symbol": "η (learning rate, Table 5)",
+     "unified": "η_Θ",
+     "note": "Compatible with the reserved convention (subscript-free η = outer, constant learning rate). Written η_Θ here to make the layer explicit; values 1e-5 … 5e-4."
+    },
+    {
+     "paper_symbol": "S (training steps, Table 5: S ∈ {250,500,1000,2000})",
+     "unified": "n_steps",
+     "note": "HARD CONFLICT. Reserved S_t = inner momentum buffer ('past surprise')."
+    },
+    {
+     "paper_symbol": "N (number of merged LoRAs, Q10/Q11, 1→5)",
+     "unified": "N_m",
+     "note": "Collides in spirit with S0's N_q (number of queries sharing a context) in the amortisation formula (A). Keep N_m for merge count, N_q for query count."
+    },
+    {
+     "paper_symbol": "τ (performance threshold, Table 3: τ ∈ {0.8, 0.9, …}; figures show 75/80/85% for CF and 90/95/100% for PB)",
+     "unified": "π_thr",
+     "note": "HARD CONFLICT. Reserved τ = token index (STYLE §1.2, 't, τ — token 인덱스'). π is unreserved."
+    },
+    {
+     "paper_symbol": "p (DARE drop fraction, App. O)",
+     "unified": "p_drop",
+     "note": "CONFLICT. Reserved p = norm order / polynomial degree (ℓ_p bias in [Miras], φ_p in [Atlas])."
+    },
+    {
+     "paper_symbol": "M (binary Bernoulli mask in DARE, M ∈ {0,1}^d)",
+     "unified": "Z ∈ {0,1}^{d×d_out}",
+     "note": "CONFLICT with 𝓜(·;W), the memory module. Z is unreserved."
+    },
+    {
+     "paper_symbol": "k (output dimension in 'B_i ∈ R^{r×k}', App. O)",
+     "unified": "d_out",
+     "note": "CONFLICT. Reserved k = key vector / auxiliary index."
+    },
+    {
+     "paper_symbol": "T_max (largest tokenized knowledge load below threshold, Eq. 1)",
+     "unified": "T_max",
+     "note": "Keep. It is a *corpus token budget*, not a sequence length — must not be confused with the reserved L (sequence length)."
+    },
+    {
+     "paper_symbol": "N_params (number of trainable parameters, Eq. 1)",
+     "unified": "N_params",
+     "note": "Keep. Never given a numeric value anywhere in the paper (see cost_table.C)."
+    },
+    {
+     "paper_symbol": "d (input dimension in 'A_i ∈ R^{d×r}')",
+     "unified": "d",
+     "note": "Consistent with the reserved model dimension."
     }
+   ],
+   "source_dimension_slip": "App. O states A_i ∈ R^{d×r} and B_i ∈ R^{r×k}, then writes ΔW_i = B_i A_i and ΔW_CAT = B_merged A_merged. With those shapes B_i A_i is dimensionally impossible (r×d_out times d×r); the composition that type-checks is A_i B_i. The monograph must silently use the type-correct order and record this as a source slip — the same class of caveat already carried for [TNT Eq. 5–6] in STYLE §1.7.4."
   },
-
-  "experiments": {
-    "models_used": [
-      "Llama-3.1-8B — Q1–Q5, Q7–Q11 (main); Llama-3.1-8B-Instruct for the Q15 timing study [App. U]",
-      "Qwen3-8B — Q1–Q5, Q7–Q14",
-      "Qwen3-0.6B, Qwen3-1.7B, Qwen3-4B, Qwen3-14B — Q6 only (PaperQA scale sweep) [App. K]",
-      "Llama-3.2-1B, Qwen3-1.7B — added for Q12–Q14 (NQA/QuALITY) [Table 2]",
-      "Qwen3-1.7B, Qwen3-8B — ∞Bench / LongBench v2 [Table 7]",
-      "GPT-4.1 — synthetic-data generator (Q4, Q5, Q7) and LLM judge (PaperQA, 0–10 rubric) [App. C, App. I]",
-      "Gemini 2.5 Pro — PaperQA question generator (30 questions/paper) [App. C]",
-      "BAAI/bge-large-en-v1.5 — router / RAG embedder [App. N, App. U]"
-    ],
-    "hardware_and_stack": "NVIDIA RTX PRO 6000 Blackwell GPUs [App. D]. PyTorch + HuggingFace transformers + PEFT + sentence-transformers + faiss [App. U].",
-    "benchmarks": [
-      {"name": "PhoneBook (PB)", "provenance": "AUTHOR-BUILT [App. B]", "detail": "Fictional name → North-American-format phone-number pairs, programmatically generated, formatted as 'Question: What is the phone number of Jane Doe? Answer: 123-456-7890'. Tokenised with the Qwen3-8B tokenizer; slices built by accumulating entries until the target token count is first exceeded, so smaller slices are exact subsets of larger ones. Metric: strict character-for-character Exact Match — '(987) 654-3210' scores 0 against '987-654-3210'."},
-      {"name": "CounterFact (CF)", "provenance": "External — Meng et al. 2022 (ROME)", "detail": "Counterfactual edits that conflict with pre-trained beliefs, e.g. 'Paris is in Italy'. Metric: efficacy score. Sizes used in Q1: 8K/10K/12K/14K tokens; Q2 sweep 1K–20K."},
-      {"name": "PaperQA", "provenance": "AUTHOR-BUILT [App. C]", "detail": "15 recent papers (5 oral/spotlight each from NeurIPS 2024, ICLR 2025, ICML 2025; full list with arXiv IDs in App. C.1). Introduction sections only are used as the knowledge source. 30 questions per paper × 15 = 450 QA pairs, generated by Gemini 2.5 Pro across three levels (10 Key Information Recall / 10 Contextual Comprehension / 10 Logical Structure Inference). Scored by GPT-4.1 with a 0–10 rubric. BLEU/ROUGE-L reported as supplements and explicitly described as unsuitable ('absolute scores for these metrics are notably low (e.g., BLEU ≈ 0.1, ROUGE-L ≈ 0.3)')."},
-      {"name": "NarrativeQA (NQA)", "provenance": "External — Kočiský et al. 2018", "detail": "Restricted to documents of 10K–20K tokens; 40 documents randomly sampled from official train+dev splits. Metric: multi-reference ROUGE-L. Chunking for multi-LoRA: 2,048 tokens with 200 overlap [Table 3]."},
-      {"name": "QuALITY", "provenance": "External — Pang et al. 2022", "detail": "Validation split, 115 articles, no length filtering. Metric: multiple-choice accuracy. Chunking: 768 tokens with 77 overlap [Table 3]."},
-      {"name": "∞Bench", "provenance": "External — Zhang et al. 2024a", "detail": "20 documents exceeding 100K tokens; ROUGE-L [App. Q, Table 7]."},
-      {"name": "LongBench v2", "provenance": "External — Bai et al. 2025", "detail": "30 documents of 101K–364K tokens; accuracy [App. Q, Table 7]."}
-    ],
-
-    "headline_numbers": [
-      {
-        "rq": "Q1 — capacity scales with rank",
-        "result": "On CounterFact at 8K/10K/12K/14K token loads, efficacy rises monotonically as r goes 2 → 1024. The y-axis tick labels visible on Fig. 1 are 70, 80, 90 (%), i.e. the entire 512× rank sweep moves efficacy across roughly a 20-point band. Diminishing returns explicitly noted: 'The marginal performance gain for each incremental increase in rank tends to decrease, especially at higher rank values.'",
-        "source": "[§4 Q1, p.3; Fig. 1, p.2; App. F]"
-      },
-      {
-        "rq": "Q2 — finite, rank-dependent saturation",
-        "result": "Sweeping load 1K → 20K tokens at fixed rank: 'performance remains high or increases as the data volume grows, but only up to a certain threshold. Beyond this point, performance degrades sharply.' Higher rank shifts the collapse point later. Fig. 2 overlays ICL and RAG baselines over 4–16K tokens for r ∈ {4,16,64}; Fig. 14 gives the full sweep for r ∈ {2,…,1024} over 1–20K on both Llama and Qwen. No numeric saturation points are tabulated.",
-        "source": "[§4 Q2, p.3; Fig. 2, p.3; Fig. 14, p.23; App. G]"
-      },
-      {
-        "rq": "Q3 — parameter efficiency is non-monotonic in rank",
-        "result": "Efficiency = T_max/N_params peaks at a small rank and declines. 'The most efficient configuration was consistently found at a small rank, such as r = 4.' Thresholds plotted: 90/95/100% for PhoneBook, 75/80/85% for CounterFact. Axis label 'Tokens/Param (10 4)'; plotted range 0–8 on the PhoneBook panel and 0–15 on the CounterFact panel. Fig. 16 gives the full (rank, threshold, efficiency) surface for Llama.",
-        "source": "[§4 Q3 + Eq. 1, p.3; Fig. 3, p.3; Fig. 15 and Fig. 16, p.23; App. H]"
-      },
-      {
-        "rq": "Q4 — synthetic supervision format",
-        "result": "All three synthetic formats beat raw text; performance rises monotonically with the amount of synthetic supervision; ordering most→least effective: QA > Summary > Rewrite > Original. 'The performance gain per token was highest for the QA format, followed by Summary and then Rewrite.' The authors themselves qualify the winner: 'The QA format's top performance may be partially attributed to its structural alignment with the evaluation task, which is also QA-based.'",
-        "source": "[§5 Q4, p.4; Fig. 4, p.4; Fig. 17, p.25; App. I]"
-      },
-      {
-        "rq": "Q5 — format mixtures (Table 1, PaperQA LLM-judge, exact values)",
-        "result": "Method / Llama-3.1-8B / Qwen3-8B / avg tokens — Original: 3.187 / 4.587 / 947. QA40: 5.893 / 5.409 / 1,401. Original+QA40: 6.300 / 5.371 / 1,841. Summary8+QA40: 6.380 / 5.662 / 2,995. Rewrite4+QA40: 6.650 / 5.427 / 3,004. Original+Summary8+Rewrite4+QA40: 6.822 / 5.614 / 4,088. Note the split verdict the paper reports honestly: 'on Llama, the most comprehensive mixture achieves the best score, while on Qwen the best result is obtained by Summary+QA' — and on Qwen, Original+QA40 (5.371) is *below* QA40 alone (5.409).",
-        "source": "[§5 Q5, p.4; Table 1, p.4; App. J]"
-      },
-      {
-        "rq": "Q6 — base-model scale (Qwen3 0.6B→14B, PaperQA)",
-        "result": "'performance improved with model size but non-linearly: significant gains from 0.6B-1.7B and 8B-14B, minimal improvement from 1.7B-8B.' The five bar values printed on Fig. 5 (left) are 3.51, 4.58, 4.32, 4.65 and 5.12 on the LLM-judge scale; the bar-to-size assignment is not recoverable from the text extraction (see todo_verify), but the prose fixes the shape: rise, plateau, rise. Selected hyperparameters per size (Table 5): 0.6B η=5e-4/S=250; 1.7B η=5e-4/S=1000; 4B η=1e-4/S=500; 8B η=5e-4/S=1000; 14B η=5e-4/S=250.",
-        "source": "[§5 Q6, p.4–5; Fig. 5 left, p.4; Table 5, p.27; App. K]"
-      },
-      {
-        "rq": "Q7 — generator quality",
-        "result": "LLM-judge, PaperQA, 20 QA pairs per document (reduced from 40 — see unfavorable_facts). Llama-3.1-8B student: Original 3.19, Llama-3.1-8B-generated 4.46, GPT-4.1-generated 5.47. Qwen3-8B student: Original 4.59, Qwen3-8B-generated 4.84, GPT-4.1-generated 5.14. 'GPT-4.1-generated data consistently yielded higher performance than Llama-3.1-8B data.' The authors' framing: the generator's knowledge 'may act as a practical upper bound on the knowledge that the LoRA module can effectively learn' [App. L].",
-        "source": "[§5 Q7, p.5; Fig. 5 right, p.4; Fig. 18, p.28; App. L]"
-      },
-      {
-        "rq": "Q8 — multi-LoRA PoC, 64K-token PhoneBook, oracle routing",
-        "result": "Three configurations at matched parameter budget: full-context ICL over 64K; one r=32 LoRA on all 64K; eight r=4 LoRAs on eight disjoint 8K partitions with an oracle router. Multi-LoRA reaches ~99.8% exact-match accuracy; one of the two baselines is at 32.2% (Fig. 6 left; which of ICL / single-LoRA carries 32.2 is not recoverable from the text extraction — see todo_verify). Prose: 'ICL degrades under long context and a single LoRA saturates at this knowledge load. In contrast, multi-LoRA maintains high accuracy.' The authors concede the design: 'While this outcome might be anticipated given the experimental design, its value lies not in its novelty but in its function as a clear proof of concept.' [App. M]",
-        "source": "[§6 Q8, p.5; Fig. 6 left, p.5; App. M]"
-      },
-      {
-        "rq": "Q9 — routing degradation, PaperQA LLM-judge",
-        "result": "Llama-3.1-8B: Perfect (oracle) 5.92, Single LoRA baseline 5.24, Embedding routing 4.94. Qwen3-8B: Perfect 6.57, Single LoRA 5.65, Embedding 5.52. In both models embedding routing falls BELOW the monolithic single-LoRA baseline. 'selecting an incorrect, highly specialized LoRA module can be more detrimental to performance than using a single, non-specialized module that contains the entirety of the knowledge base.' [App. N]",
-        "source": "[§6 Q9, p.5–6; Fig. 6 right, p.5; Fig. 19, p.31; App. N]"
-      },
-      {
-        "rq": "Q9b — token-based routers (Table 6, exact values)",
-        "result": "NarrativeQA ROUGE-L on Qwen3-8B over 40 documents / QuALITY accuracy on Llama-3.1-8B over 115 articles; Top-3 uses TIES after routing. NQA Top-1: Arrow 21.93, SpectR 19.42, LAG 18.34, Embedding 19.13. NQA Top-3: Arrow 21.15, SpectR 21.33, LAG 21.25, Embedding 21.15. QuALITY Top-1: Arrow 33.68, SpectR 35.59, LAG 36.28, Embedding 37.84. QuALITY Top-3: Arrow 39.38, SpectR 42.13, LAG 41.71, Embedding 42.42. 'no token-based method consistently dominates the embedding-based baseline across datasets and retrieval depths.'",
-        "source": "[Table 6, p.32; App. N]"
-      },
-      {
-        "rq": "Q10 — merging strategy, PaperQA LLM-judge, top-3 embedding routing",
-        "result": "Six operators compared: Linear, CAT, CAT-1/√N, TIES, DARE-Linear, DARE-TIES. The Llama panel's six printed values are {5.41, 4.92, 4.77, 1.63, 1.32, 0.19} and the Qwen panel's are {5.87, 5.76, 5.41, 5.18, 5.06, 2.30}; the bar-to-operator assignment is not recoverable from the text extraction (todo_verify). What the prose fixes: TIES is highest and 'reaches performance comparable to the single LoRA model'; Linear is 'a surprisingly strong baseline… comparable to TIES, particularly in the Qwen model' with TIES holding 'a slight performance edge'; DARE underperforms both ('stochastic dropping may discard critical information in this memorization setting'); vanilla CAT 'collapses' and is 'the lowest performance by a wide margin'; CAT-1/√N 'recovers most of the gap to Linear'. Conclusion: 'scale mismatch—not rank expansion—is CAT's dominant failure mode.'",
-        "source": "[§6 Q10, p.6; Fig. 7 left, p.6; Fig. 20, p.30; App. O]"
-      },
-      {
-        "rq": "Q11 — number of merged modules, ground-truth set only",
-        "result": "Merging the N_m ground-truth modules the queries were drawn from, N_m = 1 → 5, with TIES. Performance peaks at N_m = 1 and 'decreases monotonically as N grows'. 'even when all necessary knowledge is included, merging additional modules can progressively dilute or interfere with the stored information, quickly degrading answer quality.' The visible LLM-judge axis range on Fig. 7 (right) is 4–6 for Llama and 5–7 for Qwen; individual point values are not extractable.",
-        "source": "[§6 Q11, p.6; Fig. 7 right, p.6; Fig. 21, p.30; App. P]"
-      },
-      {
-        "rq": "Q12–Q14 — long-document case study (Table 2, exact values)",
-        "result": "Columns: Llama-3.2-1B / Llama-3.1-8B / Qwen3-1.7B / Qwen3-8B, each as (NarrativeQA ROUGE-L, QuALITY accuracy). CLOSED BOOK — Base model: (9.08, 25.75) (13.08, 32.01) (13.27, 26.42) (16.35, 26.06). KMSDCD: (23.32, 30.21) (29.07, 30.21) (19.45, 28.73) (28.68, 33.67). Single LoRA: (23.81, 29.86) (27.05, 42.42) (24.78, 33.15) (25.78, 44.10). Multi-LoRA Top1: (16.87, 24.32) (19.95, 37.83) (15.90, 32.71) (19.13, 39.46). Multi-LoRA Top3: (16.85, 26.43) (22.42, 42.42) (16.27, 39.93) (21.15, 46.26). OPEN BOOK — ICL: (24.52, 26.01) (33.81, 70.20) (27.34, 46.80) (35.22, 72.89). RAG: (21.90, 26.12) (29.20, 63.79) (23.80, 43.43) (31.15, 64.53). Single LoRA+ICL: (24.73, 28.34) (35.39, 64.12) (28.37, 46.59) (32.34, 67.49). Single LoRA+RAG: (24.12, 29.86) (32.18, 42.42) (27.12, 33.15) (31.37, 44.10). Multi Top1+ICL: (20.57, 27.23) (33.62, 58.69) (19.09, 43.48) (24.48, 64.34). Multi Top1+RAG: (19.22, 28.90) (25.03, 47.26) (19.10, 38.40) (24.42, 48.14). Multi Top3+ICL: (26.41, 30.00) (38.78, 69.22) (29.17, 56.52) (37.23, 76.26). Multi Top3+RAG: (24.53, 31.20) (35.55, 60.34) (29.10, 54.99) (37.64, 64.31).",
-        "source": "[Table 2, p.7; §7 Q12/Q13/Q14; App. R/S/T]"
-      },
-      {
-        "rq": "Q12 headline",
-        "result": "'In the closed-book setting on NarrativeQA, multi-LoRA underperforms a single LoRA across all four base models' — confirmed by Table 2 (23.81>16.87/16.85; 27.05>19.95/22.42; 24.78>15.90/16.27; 25.78>19.13/21.15). On QuALITY the gap is smaller and Top-3 sometimes wins (Qwen3-1.7B 39.93 > 33.15; Qwen3-8B 46.26 > 44.10).",
-        "source": "[§7 Q12, p.7]"
-      },
-      {
-        "rq": "Q14 headline",
-        "result": "'merging the top-3 modules outperforms selecting the top-1, with the sole exception of the 1B model in the closed-book setting' — verified: Llama-3.2-1B NQA closed-book Top1 16.87 > Top3 16.85; every other pair in Table 2 has Top3 ≥ Top1. The single best number in the entire table is Multi Top3 + ICL on Qwen3-8B QuALITY, 76.26.",
-        "source": "[§7 Q14, p.7; Table 2]"
-      },
-      {
-        "rq": "Q15 — latency (see cost_table.L_w for full values)",
-        "result": "30 sequential questions, one NarrativeQA document, Llama-3.1-8B-Instruct. FA-enabled totals: Multi-LoRA (Dynamic) 77.6 s > ICL 75.0 s > Multi-LoRA (Preloaded) 65.9 s > RAG 43.5 s > Single LoRA 40.0 s > Base Model 35.6 s. FA-disabled totals: ICL 318.4 s > Multi-LoRA (Dynamic) 120.5 s > Multi-LoRA (Preloaded) 109.3 s > RAG 86.1 s > Single LoRA 56.7 s > Base Model 32.5 s. Claim made: 'our multi-LoRA pre-loading system achieves a lower total processing time than the ICL-based approach. The remaining overhead is largely systems-driven, leaving clear headroom for further optimization.'",
-        "source": "[§7 Q15, p.8; Fig. 8, p.8; Fig. 22, p.38; App. U]"
-      },
-      {
-        "rq": "App. E.1 — placement ablation (Llama-3.1-8B, PB and CF, r ∈ {2,4,8,16,32,64})",
-        "result": "Early layers (first 16 of 32) generally beat Late layers (last 16), and Late saturates earlier. FFN-only LoRA 'consistently outperforms attn-only LoRA' in all tested settings. Critically: 'in CF, we occasionally observe Early outperforming the all-layer baseline' — i.e. the configuration used everywhere in the main paper is not the best one found. Counter-consideration given: selective placement is 'more sensitive to hyperparameters and sometimes unstable: in PB, some low-rank selective configurations failed to train reliably.'",
-        "source": "[App. E.1, pp.19–21; Figs. 9–12]"
-      },
-      {
-        "rq": "App. E.2 — LoRA variants",
-        "result": "PaperQA LLM-judge (Fig. 13): the six printed values are Llama {5.40, 5.27, 7.17} and Qwen {5.58, 5.43, 4.88}; prose fixes the ordering — 'PiSSA improves performance for Llama in our runs, while for Qwen, it is the least effective among the three; DoRA is competitive, but the gap is small.' NarrativeQA ROUGE-L (Table 4, exact): Llama-3.1-8B — LoRA 27.05 / 22.42 / 38.78; DoRA 25.04 / 22.96 / 38.41; PiSSA 8.56 / 23.38 / 38.34 (columns: Single, Multi Top3, Multi+ICL). Qwen3-8B — LoRA 25.78 / 21.15 / 37.23; DoRA 27.48 / 20.52 / 40.82; PiSSA 24.33 / 20.80 / 40.51. Verdict: 'simply swapping to DoRA/PiSSA does not reliably yield large gains in our knowledge-memory setting.'",
-        "source": "[App. E.2, p.19; Fig. 13, p.20; Table 4, p.20]"
-      },
-      {
-        "rq": "App. Q — 100K+ token regime (Table 7, exact values)",
-        "result": "∞Bench ROUGE-L (20 docs >100K tokens) / LongBench v2 accuracy (30 docs, 101K–364K tokens), for Qwen3-8B and Qwen3-1.7B. ∞Bench Qwen3-8B — Single LoRA 24.37, Multi Top3 23.49, ICL 30.89, RAG 32.80, Multi Top3+ICL 34.92, Multi Top3+RAG 32.10. ∞Bench Qwen3-1.7B — 17.91, 20.41, 14.30, 30.46, 29.60, 31.39. LongBench v2 Qwen3-8B — 30.00, 30.00, 20.00, 20.00, 33.33, 16.67. LongBench v2 Qwen3-1.7B — 23.33, 36.67, 20.00, 16.67, 26.67, 30.00. Claim: 'LoRA-based methods do not uniformly collapse in the 100K+ token regime; instead, their effectiveness remains setting-dependent.'",
-        "source": "[App. Q, Table 7, p.34]"
-      }
-    ]
-  },
-
-  "scale_ceiling": {
-    "largest_model": "Qwen3-14B — and only for one experiment (Q6, PaperQA base-model scale sweep, App. K). Every other result caps at 8B (Llama-3.1-8B, Qwen3-8B). [Table 3; App. K]",
-    "largest_knowledge_load": "64K tokens for the controlled multi-LoRA PoC (PhoneBook, 8 partitions of 8K, oracle routing) [Q8]. The single-module capacity sweep tops out at 20K tokens [Q2, Table 3]. Real documents: 10K–20K tokens for NarrativeQA (40 documents) [App. Q]; 100K+ for ∞Bench (20 documents) and 101K–364K for LongBench v2 (30 documents) [App. Q].",
-    "largest_rank": "r = 1024 (Q1–Q3). Main-paper defaults are far smaller: r = 16 for PaperQA single LoRA, r = 4 for multi-LoRA, r = 32 for the 64K single-LoRA baseline. [App. D]",
-    "largest_module_count": "15 modules (one per PaperQA paper) and 8 modules (64K PhoneBook). For NarrativeQA the count is implicit: 10K–20K-token documents chunked at 2,048 tokens ⇒ roughly 5–10 modules per document, never stated as a number. Merge fan-in never exceeds N_m = 5. This is two to three orders of magnitude below the deployment regime the paper itself cites — LAG (Fleshman & Van Durme) 'select[s] appropriate modules from libraries containing thousands of LoRAs' [App. A].",
-    "hardware_ceiling": "Single-GPU class: NVIDIA RTX PRO 6000 Blackwell. No multi-GPU, no serving fleet, no concurrency, inference batch size never stated (implicitly 1). [App. D; App. U]",
-    "one_sentence": "Everything load-bearing in this paper was measured at ≤8B parameters, ≤64K tokens of controlled knowledge, ≤15 adapters, ≤5-way merges, batch size 1, on one workstation GPU."
-  },
-
-  "concept_ledger_delta": {
-    "new_concepts_this_paper_contributes": [
-      {"name": "parameter efficiency of parametric memory — Efficiency = T_max/N_params", "why_it_matters": "The first tokens-per-parameter figure of merit for a slow-weight write in this corpus. Directly comparable in spirit to the bits-per-parameter of 'How much do LMs memorize' (2505.24832), but measured behaviourally (tokens retrievable above a threshold) rather than information-theoretically. [Eq. 1]"},
-      {"name": "rank-dependent saturation", "why_it_matters": "Gives the Θ-path the same 'the state is finite, budgeting is unavoidable' discipline the W-path already has. 'capacity is finite, making memory budgeting unavoidable' [§4 Discussion]."},
-      {"name": "routing–merging trade-off in N_m", "why_it_matters": "Small N_m risks routing failure, large N_m is dominated by parameter interference. The paper maps this as a peaked curve. [§6 Q11; App. P]"},
-      {"name": "scale mismatch vs rank expansion (the CAT diagnosis)", "why_it_matters": "A clean, reusable analytic distinction: concatenating N adapters sums N deltas instead of averaging them, injecting an N× over-perturbation; rescaling factors by 1/√N restores the mean while keeping rank N·r. This 'refine[s] the common view that concatenation is intrinsically unsuitable for LoRA composition'. [App. O]"},
-      {"name": "knowledge dilution", "why_it_matters": "The paper's name for the degradation from merging relevant-but-distinct modules. [App. P]"},
-      {"name": "hybrid parametric/non-parametric memory as the default deployment", "why_it_matters": "'LoRA memory is rarely a standalone solution' [§1]; 'a complementary axis of memory alongside RAG and ICL' [Abstract]. This is the paper's actual thesis and it is a *negative* one about the Θ-path."}
-    ],
-    "extended_or_renamed": [
-      {"term": "memory capacity", "prior_owner": "ch14 (Atlas — formal capacity of a fast-weight matrix, number of key–value pairs storable) and ch05 (classical Hopfield capacity)", "what_changes_here": "Same word, different object: here it is the empirical *token* capacity of a slow-weight low-rank delta, threshold-indexed and training-recipe-dependent. The monograph must flag the equivocation on first use, or the reader will import the Atlas intuition (a closed-form m ≤ D) into a quantity that has no closed form and moves with η_Θ, n_steps and data format."},
-      {"term": "composability", "prior_owner": "MoE / adapter-library literature", "what_changes_here": "Demoted from an assumed property to a measured, failing one: 'testing their viability as composable building blocks' [App. O] → answer, for factual memory, is that they compose only weakly and monotonically worse with N_m."},
-      {"term": "gen(𝓗; B_s) (S0 (U-Θ))", "prior_owner": "S0-DESIGN §2.2", "what_changes_here": "Given empirical content for the first time in the corpus: format matters more than volume, and generator quality caps the student. This paper is the natural citation for the (U-Θ) 𝓡-construction discussion in T4."}
-    ],
-    "conspicuously_absent_vocabulary": "The words 'sleep', 'consolidation', 'replay', 'dream', 'test-time training' and 'fast weight' do not occur anywhere in the source text (verified by exhaustive search). 'forgetting' occurs 4 times, all inside citations or bibliography entries, never as something measured. This paper therefore contributes a Θ-path capacity constraint to the monograph while being entirely outside the monograph's own vocabulary."
-  },
-
-  "inherited_open_question": {
-    "from": "The LoRA-as-pipeline-component line: PRAG (Su et al., 2025), SEAL (Zweiger et al., 2025, arXiv:2506.10943 — the Θ-3 chapter of the S0 roster), and DCD/KMSDCD (Caccia et al., 2025).",
-    "question": "What can a LoRA module actually store, when does it saturate, how does supervision format affect factual retrievability, and how many modules can be merged before interference dominates — questions that the pipeline papers leave unanswered because they only report end-to-end gains.",
-    "evidence": "§1 Introduction, p.1: 'Although recent works have begun utilizing LoRA as knowledge storage (Su et al., 2025; Zweiger et al., 2025; Caccia et al., 2025), these works do not prove LoRA's ability as knowledge memory, because they focus on performance gain in specific problem settings. They happen to include LoRA as a component of a pipeline, rather than systematically examining LoRA's intrinsic memory properties. Hence, the observed gains remain difficult to account for, raising doubts about the fundamental capabilities and limitations of LoRA as a general solution for knowledge memory.' §2 Related Work, LoRA paragraph, p.2: '[these] methods primarily emphasize end-to-end system for a single module, leaving the memory-specific questions of what LoRA can store, when it saturates, and how supervision format affects factual retrievability less pinned down.' §2 Related Work, Multi-LoRA paragraph, p.2: 'practical questions such as how many modules can be merged and under what interference regimes are not fully characterized.'",
-    "honesty_caveat": "IMPORTANT for the bridge-in: this is a gap the present authors *attribute* to SEAL/DCD/PRAG, not a question those papers themselves posed. The paper quotes no prior open question. For the chapter's §1 bridge-in the chain is therefore Θ-3 (SEAL) → this chapter via an *externally asserted* gap; the honest phrasing is '이 논문이 SEAL·DCD·PRAG에 대해 스스로 세운 공백'이지 '전작이 남긴 open question'이 아니다."
-  },
-
-  "open_questions": [
-    "Continual / time-incremental operation is entirely untested. Verbatim [§8 Limitation and Future Work, p.9]: 'Our study isolates the memory properties of LoRA modules in controlled settings, but does not constitute a full continual-update deployment. A key next step is to evaluate and design LoRA memory under time-incremental, topic-diverse streams (e.g., daily news updates), where new information is logically connected over time and must be stored, retrieved, and revised continuously.' This is exactly the regime the STC monograph cares about, and this paper does not enter it.",
-    "Adapter serving is named as unsolved: '[on] the system side, scaling requires more robust routing and interference-aware merging for long-document multi-hop queries, as well as practical adapter serving (caching, prefetching, and kernel-level optimization) to manage the latency of multi-module composition.' [§8, p.9]",
-    "How to choose N_m adaptively: 'Future work should explore methods for dynamically adjusting N based on retrieval confidence or developing merging algorithms that are more robust to interference, thereby striking a more effective balance between routing and merging.' [App. P, p.34]",
-    "Why does routing fail across router families? 'improving robustness likely requires considering routing together with partitioning granularity and merging interference' [App. N, p.32] — i.e. the paper suspects the partition boundary, not the router, is the real object, and does not test it.",
-    "Training dynamics of selective placement: 'we found it to be more sensitive to hyperparameters and sometimes unstable: in PB, some low-rank selective configurations failed to train reliably… A deeper study of these training dynamics for knowledge LoRA is a promising direction for future work.' [App. E.1, p.21]",
-    "The PEFT / FlashAttention latency anomaly is left unexplained: 'This discrepancy strongly suggests that the presence of the PEFT adapter may inadvertently prevent the underlying model from activating certain default optimization strategies during its forward pass… another counterintuitive trend was observed. The inference speed of the base model paradoxically decreased… while the inference speed for the single LoRA model significantly improved.' [App. U, p.41] No resolution offered.",
-    "IMPLICIT, never raised by the paper: whether writing ΔΘ damages the base model's general capability. The paper opens on catastrophic forgetting [§1] and cites Pletenev et al. 2025 ('…without harming llm?') [§2 / App. A], then never measures it. ρ is left completely open.",
-    "IMPLICIT: no capacity model. The paper repeatedly gestures at 'scaling laws in complex, long-context scenarios' [App. A] but produces no functional form relating T_max to r, and never tabulates T_max at all.",
-    "IMPLICIT: composition with the E-path and W-path is untested. LoRA + ICL / LoRA + RAG are tested; LoRA on top of a fast-weight architecture, or LoRA driven by a Letta-style sleep-time context summariser, is never attempted."
+  "equations": [
+   {
+    "label": "(L-1) low-rank slow-weight write — the Θ-path restriction",
+    "latex": "\\Theta \\;=\\; \\Theta_0 \\;+\\; \\Delta\\Theta, \\qquad \\Delta\\Theta^{(j)} \\;=\\; A^{(j)} B^{(j)}, \\quad A^{(j)}\\in\\mathbb{R}^{d\\times r},\\; B^{(j)}\\in\\mathbb{R}^{r\\times d_{\\mathrm{out}}}, \\quad r \\ll \\min(d, d_{\\mathrm{out}})",
+    "source": "[lora-as-knowledge-memory App. O, unnumbered display eq., 'The merge operates directly on the low-rank factors A_i and B_i rather than on the materialized delta ΔW_i = B_i A_i'] — the only place in the paper where the LoRA parameterisation is written down at all. Θ_0 frozen: 'LoRA (Hu et al., 2022) is a widely used fine-tuning technique that freezes the pre-trained model and injects trainable low-rank matrices' [§1, p.1]. Factor order corrected per notation_conflicts.source_dimension_slip.",
+    "gloss": "This is the entire mechanism the paper studies. r is the single capacity knob; the paper's headline result is that this knob controls how much text can be stored, and that its parameter-efficiency optimum is at the small end."
+   },
+   {
+    "label": "(L-2) the sleep-time write — canonical (U-Θ) restricted to the low-rank subspace",
+    "latex": "\\big(A^{(j)},B^{(j)}\\big)_{k+1} \\;=\\; \\big(A^{(j)},B^{(j)}\\big)_{k} \\;-\\; \\eta_\\Theta\\, \\nabla_{(A,B)}\\, \\mathcal{L}\\big(\\mathcal{R}^{(j)};\\ \\Theta_0 + A^{(j)}B^{(j)}\\big), \\qquad \\mathcal{R}^{(j)} \\;=\\; \\mathrm{gen}\\big(\\mathcal{H}^{(j)};\\ B_s\\big)",
+    "source": "No equation in the paper. Reconstructed from [App. D 'Note on Hyperparameters'] (η_Θ ∈ {1e-5,5e-5,1e-4,5e-4}; n_steps ∈ {150,250,500,1000,1500,2000}; batch 8 or 32) and [§5 Q4 / App. I] (the construction of 𝓡). 𝓛 is standard next-token cross-entropy — the paper never states the objective explicitly, which is itself notable.",
+    "gloss": "Identical in form to S0 (U-Θ) except that ∇ is taken only in the r-dimensional subspace. 𝓗^{(j)} = the raw document (or PhoneBook/CounterFact slice) assigned to partition j; 𝓡^{(j)} = its synthetic re-expression."
+   },
+   {
+    "label": "(L-3) the gen(·; B_s) operator — this paper's main empirical contribution to the Θ-path",
+    "latex": "\\mathcal{R}^{(j)} \\;=\\; \\bigcup_{f \\in F} \\mathrm{gen}_f\\big(\\mathcal{H}^{(j)};\\ n_f\\big), \\qquad F \\subseteq \\{\\mathrm{orig},\\ \\mathrm{QA},\\ \\mathrm{Summary},\\ \\mathrm{Rewrite}\\}, \\quad n_{\\mathrm{QA}}\\in\\{10,20,40\\},\\ n_{\\mathrm{Sum}}\\in\\{2,4,8\\},\\ n_{\\mathrm{Rew}}\\in\\{1,2,4\\}",
+    "source": "[§5 Q4, p.4] and [App. I, Experimental Setup] ('we compare three synthetic data generation strategies against a raw text baseline… 10, 20, and 40 pairs for QA; 2, 4, and 8 variations for Summary; and 1, 2, and 4 variations for Rewrite. All synthetic data was generated using GPT-4.1'); mixtures in [§5 Q5, Table 1] and [App. J]. Generator prompts verbatim in [App. I.1–I.3].",
+    "gloss": "S0's (U-Θ) leaves gen(·; B_s) abstract. This paper *measures* it: the format of 𝓡, not just its size, determines how much of 𝓗 survives into ΔΘ. The union operator is literal — mixtures are produced by 'concatenating the text files of these individual components' [App. J]."
+   },
+   {
+    "label": "(L-4) parameter efficiency — the paper's one numbered equation",
+    "latex": "\\mathrm{Efficiency} \\;=\\; \\frac{T_{\\max}(\\pi_{\\mathrm{thr}},\\, r)}{N_{\\mathrm{params}}(r)}",
+    "source": "[lora-as-knowledge-memory Eq. 1, §4 Q3, p.3]. Definition of T_max in the same paragraph: 'we estimate the largest tokenized knowledge load T_max for which performance stays above a fixed threshold τ (i.e., before saturation; Q2), and normalize it by the number of trainable parameters.'",
+    "gloss": "This is the quantitative constraint the monograph wants: tokens of retrievable knowledge per trainable parameter. Reported non-monotonic in r, peaking at low rank ('The most efficient configuration was consistently found at a small rank, such as r = 4' [App. H])."
+   },
+   {
+    "label": "(L-5) wake-time routing — an E-shaped index over Θ-deltas",
+    "latex": "J(q) \\;=\\; \\operatorname*{top-}N_m{}_{\\,j}\\ \\mathrm{sim}\\big(\\mathrm{emb}(q),\\ \\mathrm{emb}(\\mathcal{H}^{(j)})\\big), \\qquad \\mathrm{emb} = \\texttt{BAAI/bge-large-en-v1.5}",
+    "source": "[§6 Q9, p.5] and [App. N, Experimental Setup] ('we employed the BGE-large-en-v1.5 (Chen et al., 2024) model to select LoRA modules based on embedding similarity between the query and source documents'). Token-based alternatives Arrow / SpectR / LAG in [App. N, Table 6].",
+    "gloss": "The retrieval index is textual and external — an E-object — but what it returns is a *weight delta*, not text. This is the hinge on which the paper sits astride the E- and Θ-paths, and neither the paper nor the E-path literature names the hybrid."
+   },
+   {
+    "label": "(L-6) wake-time Θ-composition — the step with no canonical counterpart",
+    "latex": "\\Delta\\Theta_{\\mathrm{merged}} \\;=\\; \\mathrm{merge}\\big(\\{\\Delta\\Theta^{(j)}\\}_{j\\in J(q)}\\big), \\qquad \\hat y \\;=\\; f\\big(q;\\ \\Theta_0 + \\Delta\\Theta_{\\mathrm{merged}},\\ \\cdot,\\ \\mathrm{ret}(E,q)\\big)",
+    "source": "[§6 Q10, p.6] and [App. O]. The read equation is S0 (R) with W absent (LoRA has no fast-weight state) and ret(E,q) present only in the hybrid configurations of [§7 Q13, Table 2].",
+    "gloss": "merge(·) is a *wake-time write into Θ that is not a gradient step*. S0's (U-Θ) has no slot for this. It is the operation that Q11 shows does not compose (see below)."
+   },
+   {
+    "label": "(L-7) the five merge operators",
+    "latex": "\\begin{aligned} \\text{Linear:}\\quad & A_{\\mathrm{m}} = \\tfrac{1}{N_m}\\textstyle\\sum_j A^{(j)},\\ \\ B_{\\mathrm{m}} = \\tfrac{1}{N_m}\\textstyle\\sum_j B^{(j)} \\\\ \\text{CAT:}\\quad & A_{\\mathrm{m}} = \\mathrm{concat}_{\\dim=1}\\big([A^{(1)}\\ldots A^{(N_m)}]\\big),\\ B_{\\mathrm{m}} = \\mathrm{concat}_{\\dim=0}\\big([B^{(1)}\\ldots B^{(N_m)}]\\big) \\ \\Rightarrow\\ \\Delta\\Theta_{\\mathrm{CAT}} = \\textstyle\\sum_j A^{(j)}B^{(j)} \\\\ \\text{CAT-}1/\\sqrt{N_m}:\\quad & \\tilde A^{(j)} = \\tfrac{1}{\\sqrt{N_m}}A^{(j)},\\ \\tilde B^{(j)} = \\tfrac{1}{\\sqrt{N_m}}B^{(j)} \\ \\Rightarrow\\ \\Delta\\Theta = \\tfrac{1}{N_m}\\textstyle\\sum_j A^{(j)}B^{(j)} \\\\ \\text{DARE:}\\quad & \\widehat{\\Delta\\Theta} = \\tfrac{1}{1-p_{\\mathrm{drop}}}\\big(\\Delta\\Theta \\odot Z\\big),\\quad Z \\sim \\mathrm{Bernoulli}(1-p_{\\mathrm{drop}}) \\\\ \\text{TIES:}\\quad & \\text{trim (top-}k\\text{ magnitude)} \\to \\text{elect sign (magnitude-weighted majority)} \\to \\text{average sign-aligned entries only} \\end{aligned}",
+    "source": "[lora-as-knowledge-memory App. O, all unnumbered display eqs., pp.32–33]. TIES is prose-only in App. O ('Trim / Elect Sign / Merge', three numbered steps); original TIES = Yadav et al. 2023; DARE = Yu et al. 2024. ⊙ used per STYLE §1.3 for elementwise product.",
+    "gloss": "The three arithmetic operators differ only in scale and support. The paper's cleanest analytic result is that vanilla CAT's collapse is a *scale* bug, not a rank bug: 'vanilla CAT applies an N× over-perturbation… This confirms that scale mismatch—not rank expansion—is CAT's dominant failure mode' [App. O]. The residual CAT-1/√N → TIES gap 'isolates the cost of unmanaged interference' [App. O]."
+   }
   ],
-
-  "unfavorable_facts": [
-    {
-      "fact": "The paper's own Q13 headline is contradicted by its own Table 2. The implication box reads 'LoRA achieves stronger performance when paired with external context, outperforming standalone LoRA, RAG, or ICL' [§7 Q13, p.7] and App. S states 'the integration of LoRA with external context improves performance across all configurations… the hybrid systems outperform their standalone LoRA, ICL, and RAG counterparts.' On Llama-3.1-8B QuALITY, standalone ICL scores 70.20 and the best hybrid (Multi-LoRA Top3 + ICL) scores 69.22 — ICL alone wins.",
-      "source": "[Table 2, p.7; §7 Q13, p.7; App. S, p.36]"
-    },
-    {
-      "fact": "Adding LoRA to RAG makes RAG substantially worse on QuALITY, in every model where the comparison exists. Llama-3.1-8B: RAG 63.79 → Single LoRA+RAG 42.42 (−21.4 points) and → Multi Top1+RAG 47.26. Qwen3-8B: RAG 64.53 → 44.10 (−20.4) and → 48.14. Qwen3-1.7B: RAG 43.43 → 33.15 (−10.3) and → 38.40. This is the single most damaging pattern in the paper for the 'complementary axis' thesis, and it is never mentioned in the text.",
-      "source": "[Table 2, p.7]"
-    },
-    {
-      "fact": "A prior-work baseline beats the authors' own single-LoRA on the headline long-document benchmark for half the models tested. KMSDCD (Caccia et al., 2025) vs Single LoRA on closed-book NarrativeQA: Llama-3.1-8B 29.07 vs 27.05; Qwen3-8B 28.68 vs 25.78. KMSDCD also beats every Multi-LoRA configuration in closed-book NarrativeQA for all four models. The paper never comments on this row.",
-      "source": "[Table 2, p.7]"
-    },
-    {
-      "fact": "Multi-LoRA — the paper's own scaling proposal — loses to a single LoRA on closed-book NarrativeQA for all four base models (23.81>16.87/16.85; 27.05>19.95/22.42; 24.78>15.90/16.27; 25.78>19.13/21.15), and embedding-routed multi-LoRA also loses to the single-LoRA baseline on PaperQA (Llama 4.94 vs 5.24; Qwen 5.52 vs 5.65). The modular story survives only under an oracle router.",
-      "source": "[Table 2, p.7; Fig. 6 right / Fig. 19, p.31; §6 Q9]"
-    },
-    {
-      "fact": "The multi-LoRA advantage is a designed-in result and the authors say so. The 64K PhoneBook PoC partitions the data into eight disjoint 8K slices, trains one adapter per slice, and then uses an oracle that names the correct slice for every query — under which multi-LoRA reaches ~99.8%. App. M: 'While this outcome might be anticipated given the experimental design, its value lies not in its novelty but in its function as a clear proof of concept.'",
-      "source": "[§6 Q8, p.5; Fig. 6 left; App. M, p.30]"
-    },
-    {
-      "fact": "Composition — the core promise of modular parametric memory — does not compose. With routing error removed entirely (only ground-truth-relevant modules merged), performance peaks at N_m = 1 and decreases monotonically through N_m = 5. 'even when all necessary knowledge is included, merging additional modules can progressively dilute or interfere with the stored information, quickly degrading answer quality.'",
-      "source": "[§6 Q11, p.6; Fig. 7 right; Fig. 21, p.30; App. P, p.34]"
-    },
-    {
-      "fact": "Two of the three core benchmarks are author-built, and the third is repurposed. PhoneBook is generated by the authors [App. B]; PaperQA is built by the authors from 15 papers, with questions generated by Gemini 2.5 Pro and answers scored by a GPT-4.1 LLM-judge [App. C]. Both headline capacity findings (Q1–Q3) rest on PhoneBook + CounterFact; all of §5 and most of §6 rest on PaperQA.",
-      "source": "[App. B, p.14; App. C, pp.15–18]"
-    },
-    {
-      "fact": "The best-format finding is contaminated by format alignment, as the authors concede: 'The QA format's top performance may be partially attributed to its structural alignment with the evaluation task, which is also QA-based. This suggests that consistency between the training data format and the target task is an important factor.' PaperQA's evaluation is QA; PhoneBook's *training data itself* is emitted in QA form ('Question: What is the phone number of Jane Doe? Answer: …'). The Q4 conclusion 'QA achieves the strongest gains and the best token-efficiency' is therefore partly a measurement of the benchmark.",
-      "source": "[App. I, p.25; App. B, p.14; §5 Q4, p.4]"
-    },
-    {
-      "fact": "An ablation reverses the main-paper configuration. 'in CF, we occasionally observe Early outperforming the all-layer baseline, suggesting a slightly different behavior than the \"apply everywhere\" guidance of (Schulman & Lab, 2025) in this specific knowledge-memory setup.' The main paper nonetheless applies LoRA everywhere — chosen 'for robustness and reproducibility', not for performance — and the reason given is that the better configuration is unstable: 'in PB, some low-rank selective configurations failed to train reliably.' So the reported capacity numbers are from a knowingly sub-optimal placement.",
-      "source": "[App. E.1, p.21]"
-    },
-    {
-      "fact": "A variant result reverses direction across benchmarks. PiSSA is reported as the best adapter on PaperQA for Llama (bar value 7.17 vs LoRA 5.40), but collapses on NarrativeQA single-LoRA for the same model: ROUGE-L 8.56 vs LoRA's 27.05 — a 3× degradation. The paper reports both and reconciles them only with 'the overall trends are not consistent across models and settings.'",
-      "source": "[Fig. 13, p.20; Table 4, p.20; App. E.2, p.19]"
-    },
-    {
-      "fact": "The 100K+ token evidence is statistically empty. LongBench v2 is evaluated on 30 documents and every reported accuracy is an exact multiple of 3.33 (30.00, 20.00, 33.33, 16.67, 23.33, 36.67, 26.67) — consistent with 30 binary outcomes. On a multiple-choice benchmark whose random-guess floor is ~25%, ICL scores 20.00 on both models and RAG scores 20.00/16.67, i.e. below chance. ∞Bench uses 20 documents. The conclusion drawn from these tables — 'LoRA-based methods do not uniformly collapse in the 100K+ token regime' — is not supported at this sample size.",
-      "source": "[App. Q, p.35; Table 7, p.34]"
-    },
-    {
-      "fact": "The sleep-time cost is excluded from the only cost comparison in the paper. The Q15 component list [App. U, pp.39–40] enumerates, for every LoRA condition, model loading / adapter loading / rag setup / query embedding / faiss search / lora merge / lora activation / tokenization / inference — and contains no LoRA-training term. The claim 'the LoRA-based memory approach offers a substantial computational advantage over context-dependent methods' [§7 Q15 implication] is therefore an amortisation over N_q = 30 queries with the write cost set to zero.",
-      "source": "[§7 Q15, p.8; App. U, pp.39–40]"
-    },
-    {
-      "fact": "RAG is faster than the paper's proposed multi-LoRA serving mode, in both runs, and this is not stated. Fig. 22 with Flash Attention: RAG 43.5 s vs Multi-LoRA (Preloaded) 65.9 s. Without: RAG 86.1 s vs 109.3 s. The conclusion compares multi-LoRA only against ICL ('achieves a lower total processing time than the ICL-based approach').",
-      "source": "[Fig. 22, p.38; §7 Q15, p.8]"
-    },
-    {
-      "fact": "The latency measurements rest on an unexplained kernel-path artifact that the authors flag but do not resolve: with FlashAttention disabled, single-LoRA inference is ~2× the base model's on identical short prompts; with FlashAttention enabled, the base model got *slower* than its own non-FA run while single-LoRA got faster and overtook it. Until this is explained, the absolute seconds in Fig. 8 / Fig. 22 cannot be read as a property of LoRA.",
-      "source": "[App. U, p.41]"
-    },
-    {
-      "fact": "No forgetting, no interference with base capability, no repeated rounds, and therefore no ρ. Catastrophic forgetting is the paper's opening motivation [§1] and Pletenev et al. 2025 ('How much knowledge can you pack into a lora adapter without harming llm?') is cited [§2 / App. A]; neither is ever evaluated. The word 'forgetting' appears only inside citations.",
-      "source": "[§1, p.1; §2, p.2; App. A, p.13; absence verified by exhaustive search of the source text]"
-    },
-    {
-      "fact": "No seeds, no variance, no confidence intervals anywhere in the paper. The words 'seed', 'standard deviation' and 'error bar' do not appear; no table carries ±; no figure caption describes error bars. Many of the differences the paper argues from are small — e.g. Q14's 'sole exception' rests on 16.87 vs 16.85 (0.02 ROUGE-L), and Table 6's Top-3 NQA row spans 21.15–21.33.",
-      "source": "[Tables 1, 2, 4, 6, 7; absence verified by exhaustive search of the source text]"
-    },
-    {
-      "fact": "Q6's model-scale conclusion is confounded with hyperparameter search. Each Qwen3 size uses its own grid-searched η and step count (0.6B: 5e-4/250; 1.7B: 5e-4/1000; 4B: 1e-4/500; 8B: 5e-4/1000; 14B: 5e-4/250), so 'performance improves with model size, non-linearly' mixes the size effect with a per-size tuning budget. The stated method sentence — 'To ensure that the base model's scale was the sole variable.' — is a sentence fragment and is not, in fact, what the protocol achieves.",
-      "source": "[App. K, p.27; Table 5, p.27]"
-    },
-    {
-      "fact": "The generator-quality comparison (Q7) runs at a reduced budget because the local generator could not do the job: 'we standardized the amount of synthetic data to 20 QA pairs per document for both generation models. This adjustment was necessary because preliminary experiments showed that the local models had difficulty reliably generating the larger set of 40 QA pairs used in other experiments.' The failure of the open model to emit 40 items is itself never quantified, and the headline GPT-4.1 advantage is measured at half the data volume used elsewhere.",
-      "source": "[App. L, p.29]"
-    },
-    {
-      "fact": "The paper's capacity claims are never given a number. Eq. 1 defines T_max, and T_max is never tabulated for any rank, model or threshold — it appears only inside plotted ratios (Figs. 3, 15, 16). N_params is never stated either. A reader cannot reproduce a single point of the paper's central quantity from the text.",
-      "source": "[Eq. 1, p.3; Figs. 3, 15, 16]"
-    },
-    {
-      "fact": "Suspicious repeated values in Table 2 that the text cannot disambiguate. The value 42.42 appears four times across different methods and settings (Llama-3.1-8B QuALITY: Single LoRA closed-book, Multi Top3 closed-book, Single LoRA+RAG open-book; and Table 6 QuALITY Embedding Top-3). The value 30.21 appears as KMSDCD's QuALITY score for two different base models (Llama-3.2-1B and Llama-3.1-8B). Similarly Llama-3.1-8B QuALITY Single LoRA+RAG = 42.42 = Single LoRA closed-book, and Qwen3-8B Single LoRA+RAG = 44.10 = Single LoRA closed-book, and Qwen3-1.7B Single LoRA+RAG = 33.15 = Single LoRA closed-book — i.e. for all three larger models the 'Single LoRA + RAG' row exactly equals the 'Single LoRA' closed-book row, which is the signature of a copy error rather than a measurement. This should be flagged in the chapter, not smoothed over.",
-      "source": "[Table 2, p.7; Table 6, p.32]"
-    },
-    {
-      "fact": "The same baseline is named three different ways: 'KMSDCD' [Table 2], 'SDCD (Caccia et al., 2025)' [App. R, Baselines], 'DCD (Caccia et al., 2025)' [App. A], and 'KMSDCD (Caccia et al., 2025)' [§7 setup]. Minor, but it means the reader cannot be certain the Table 2 row and the App. R protocol describe the same system.",
-      "source": "[Table 2, p.7; §7, p.6; App. A, p.13; App. R, p.36]"
-    },
-    {
-      "fact": "Dimensional inconsistency in the merging formulas: App. O declares A_i ∈ R^{d×r}, B_i ∈ R^{r×k} and then writes ΔW_i = B_i A_i and ΔW_CAT = B_merged A_merged, products that do not type-check with the declared shapes. The intended object is unambiguous but the formulas as printed are wrong.",
-      "source": "[App. O, pp.32–33]"
-    },
-    {
-      "fact": "Scale far below deployment. The paper's own related work cites LAG as selecting 'from libraries containing thousands of LoRAs' [App. A]; this study never exceeds 15 adapters, 5-way merges, one 8B model, batch size 1, and a single workstation GPU. Every routing and interference conclusion is drawn in a regime two to three orders of magnitude smaller than the one it is offering guidance for.",
-      "source": "[App. A, p.13; App. D, p.19; §6]"
-    }
-  ],
-
-  "cross_path_citations": {
-    "verdict": "Partial, and asymmetric. This paper cites all three paths — but engages only the Θ-path. The W-path and E-path appear exclusively as one-line lump citations in Related Work, with no experiment, no comparison and no conceptual engagement. And the entire sleep-time-compute literature by name is absent: the string 'sleep' does not occur once in the paper.",
-    "Theta_path_engaged": [
-      "SEAL / Zweiger et al. 2025 (arXiv:2506.10943) — cited in §1, §2, and discussed at length in App. A, with an explicit positioning claim: 'SEAL relies on a computationally expensive outer loop to train a generator LLM, often targeting much longer contexts, which limits its practical applicability… we distinguish our approach by eliminating the computational overheads associated with SEAL's outer loop.' This is the S0 roster's Θ-3 chapter, so the bridge is real.",
-      "DCD / Caccia et al. 2025 — cited and, uniquely, RUN as a baseline (the 'KMSDCD' row of Table 2). The only prior Θ-path method actually reproduced.",
-      "PRAG / Su et al. 2025 (SIGIR) and DyPRAG / Tan et al. 2025 — the document-specific-LoRA-retrieval line, cited and used as motivation for Q10/Q14.",
-      "LoRA / Hu et al. 2022; DoRA / Liu et al. 2024; PiSSA / Meng et al. 2024 — the parameterisation itself, plus variants tested in App. E.2.",
-      "Model editing: ROME / Meng et al. 2022 (the CounterFact source) and MEMIT / Meng et al. 2023 (cited for FFN-as-fact-store). WISE / Wang et al. 2024 for lifelong editing. This is the S0 roster's Θ-1 chapter (LoRA / ROME / MEMIT).",
-      "LoRA composition and routing: LoraHub (Huang et al. 2023), Mixture-of-LoRAs (Feng et al. 2024), LoRAMoE (Dou et al. 2024), MoLE (Wu et al. 2024), LoRA Soups (Prabhakar et al. 2025), Arrow (Ostapenko et al. 2024b), SpectR and LAG (Fleshman & Van Durme 2025a/b/c), TIES (Yadav et al. 2023), DARE (Yu et al. 2024).",
-      "Hypernetwork adapter generation: Text-to-LoRA (Charakorn et al. 2025), Doc-to-LoRA (Charakorn et al. 2026), SHiNe (Liu et al. 2026) — the amortised-adapter direction, cited in App. A but not tested."
-    ],
-    "W_path_cited_but_not_engaged": "Titans (Behrouz, Zhong & Mirrokni 2024, arXiv:2501.00663), Atlas (Behrouz et al. 2025, arXiv:2505.23735) and Mamba-2 / SSD (Dao & Gu 2024) are in the bibliography. They appear in the body exactly twice, both times inside a list: §2 LLM Memory — 'parametric or architectural mechanisms that internalize updates in weights or structure (Wang et al., 2024; Behrouz et al., 2024; 2025; Dao & Gu, 2024)'; and App. A — 'Advancing further into long-context capabilities, strategies such as Behrouz et al. (2024; 2025); Dao & Gu (2024) attempt to extend memory through architectural adaptation.' No fast-weight method is compared against, and the concepts test-time training / fast weights / inner loop are never named. NOT CITED at all: TTT (Sun et al. 2024), Miras, TNT, Nested Learning (2512.24695), 'Do Language Models Need Sleep?' (2605.26099), Memory Caching (2602.24281).",
-    "E_path_cited_but_not_engaged": "Mem0 (Chhikara et al. 2025, arXiv:2504.19413) and A-MEM (Xu et al. 2025, arXiv:2502.12110) appear once each, inside a single sentence: '[prior] approaches span writable/readable non-parametric stores (Xu et al., 2025; Chhikara et al., 2025)' [§2] / 'system-level solutions introduce non-parametric external memory modules that can be dynamically written and retrieved, as seen in Xu et al. (2025) and Chhikara et al. (2025)' [App. A]. RAG (Lewis et al. 2020) and the embedding-retrieval limitation result (Weller et al. 2025) are genuinely used — Weller is invoked three times to explain the routing bottleneck. NOT CITED at all: MemGPT (2310.08560), Letta 'Sleep-time Compute' (2504.13171) — the paper that names this entire research line — Zep (2501.13956), ReasoningBank (2509.25140).",
-    "bio_and_capacity_paths": "CLS (McClelland et al. 1995) not cited. EWC (Kirkpatrick et al. 2017) cited once, in the first sentence of §1, purely to name catastrophic forgetting. Deep Generative Replay not cited. 'How much do LMs memorize' (2505.24832) not cited — a notable omission for a paper whose central quantity is tokens-per-parameter. Pletenev et al. 2025 ('How much knowledge can you pack into a lora adapter without harming llm?') is cited but only inside a list of continual-learning LoRA works, never as a capacity result and never run.",
-    "the_finding_for_the_monograph": "The Θ-path can produce a careful, 15-question empirical audit of parametric memory without once using the word 'sleep', without citing the paper that coined 'sleep-time compute', and without comparing against a single fast-weight architecture. Meanwhile it independently rediscovers, in weight space, the two problems the E-path has been fighting in text space — retrieval error and evidence fragmentation — and cites the E-path's own theoretical result (Weller et al. 2025) to explain its routing failure. That is the sharpest available instance of S0 §5's '경로가 서로를 인용하지 않는 지점은 그 자체가 발견이다', and it should be the [평가] block of this chapter."
-  },
-
-  "figures": [
-    {"figure": "Figure 1 (p.2)", "shows": "CounterFact efficacy vs LoRA rank 2→1024, one curve per knowledge load (CF-8K/10K/12K/14K). The capacity-scales-with-rank claim in its entirety. Visible y-ticks 70/80/90 — reproduce with the axis range intact so the reader sees that 512× of rank buys ~20 points."},
-    {"figure": "Figure 2 (p.3)", "shows": "Performance vs data size 4→16K tokens, with ICL and RAG plotted as horizontal reference curves alongside r ∈ {4,16,64}. Left PhoneBook (exact match), right CounterFact (efficacy). The single most useful figure for the chapter: it puts the Θ-path and the E-path on the same axes and shows where the crossover is."},
-    {"figure": "Figure 3 (p.3)", "shows": "Parameter efficiency (Tokens/Param) vs rank, three thresholds per panel. Non-monotonic, peaking at low rank. Left PhoneBook (90/95/100% thresholds), right CounterFact (75/80/85%). This is the paper's quantitative constraint on the Θ-path in one picture."},
-    {"figure": "Figure 6 (p.5)", "shows": "Left: the 64K-PhoneBook multi-LoRA proof of concept under an oracle router (~99.8% vs a collapsed baseline at 32.2%). Right: the routing gap — Perfect > Single LoRA > Embedding. Reproduce BOTH panels together; the left panel is the promise and the right panel is the price, and separating them misrepresents the paper."},
-    {"figure": "Figure 7 (p.6)", "shows": "Left: six merging operators side by side (CAT collapse, DARE underperformance, Linear/TIES at the top). Right: LLM-judge score vs number of merged LoRAs N_m = 1…5 with ground-truth modules only — monotone decline from a peak at N_m = 1. The right panel is the paper's most important negative result and belongs in the chapter's caveat section."},
-    {"figure": "Figure 8 (p.8)", "shows": "Stacked-bar latency breakdown for 30 sequential NarrativeQA questions: ready time / adapter loading / merge / tokenization+inference across Multi-LoRA (Dynamic), ICL, Multi-LoRA (Preloaded), RAG, Single LoRA. The systems figure. Reproduce with the explicit note that no training time appears in any bar."},
-    {"figure": "Figure 14 (p.23)", "shows": "The full capacity sweep the main text only samples: all ranks 2→1024 plus ICL and RAG, load 1→20K tokens, PhoneBook and CounterFact, Llama (top row) and Qwen (bottom row). If the chapter reproduces one figure at full size, this is the candidate — it is the raw material behind Q1, Q2 and Q3 simultaneously."},
-    {"figure": "Figure 16 (p.23)", "shows": "The (rank, threshold, efficiency) surface for Llama on CounterFact and PhoneBook. Figures 3 and 15 are slices of it. Useful for showing that the 'optimal rank' is threshold-dependent, which the prose does not say."},
-    {"figure": "Figure 17 (p.25)", "shows": "Synthetic-format scaling in full: LLM judge, BLEU and ROUGE-L vs token count, for Llama and Qwen, with every QA/Summary/Rewrite variant labelled in the plot. This is the empirical picture of gen(𝓗; B_s) and is the right figure for the T4 module."},
-    {"figure": "Figure 22 (p.38)", "shows": "The full component-level latency breakdown with and without FlashAttention. Reproduce the two panels together — the 318.4 s → 75.0 s change in ICL between them is the honest demonstration that these measurements are stack-dependent, and it is the evidence for the paper's own unresolved anomaly."},
-    {"figure": "Figures 9–12 (pp.20–21)", "shows": "Layer (Early vs Late, 16+16 of Llama's 32) and module (Attn vs FFN) placement ablations across ranks, on both PhoneBook and CounterFact. Worth one composite figure: FFN-only consistently beats attention-only, which tells the systems reader exactly which GEMMs the delta traffic lands on."},
-    {"figure": "Figure 13 + Table 4 (p.20)", "shows": "DoRA / PiSSA vs LoRA. Worth reproducing precisely because they disagree with each other (PiSSA best on PaperQA-Llama, catastrophic on NQA-Llama) — a compact illustration of how fragile single-benchmark adapter comparisons are."}
-  ],
-
-  "systems_implications": {
-    "preamble": "The monograph reader's first question is '그래서 decode에서 뭐가 바뀌는데?'. For this paper the answer is unusually clean and unusually uncomfortable: at decode, nothing changes — the weights are static and the prompt is short. What changes is *before* decode, and it is a weight-space read-modify-write of the whole adapted parameter set, once per query.",
-    "items": [
-      {
-        "claim": "Decode itself is the cheap part, and that is the whole value proposition. LoRA-based methods 'exhibit shorter pure inference times by eliminating the need to process thousands of context tokens per query' [§7 Q15]. Concretely, closed-book Single LoRA totals 40.0 s (FA) / 56.7 s (non-FA) for 30 questions against ICL's 75.0 s / 318.4 s.",
-        "grounding": "PAPER — [Fig. 22, p.38; §7 Q15, p.8]"
-      },
-      {
-        "claim": "The amortisation denominator this paper actually uses is N_q = 30: thirty sequential questions against one document. In S0's formula C_avg = C_wake + C_sleep/N_q, this paper measures C_wake at N_q = 30 and sets C_sleep = 0 by omission. A monograph-side reconstruction of C_sleep would have to start from 250 optimizer steps at batch 32 per single-LoRA module and 150 steps at batch 32 per chunk module [App. D] — the paper gives no FLOPs, so this cannot be completed from the text.",
-        "grounding": "PAPER for N_q = 30 and the step counts [App. U, p.39; App. D, p.19]; NOTE-WRITER'S INFERENCE for the observation that C_sleep = 0 in the comparison."
-      },
-      {
-        "claim": "The per-query cost that replaces prompt processing is a weight merge, not a lookup. In the preloaded configuration the per-question path is: query embedding → FAISS search → 'lora merge' (TIES over the top-3 adapters via model.add_weighted_adapter) → 'lora activation' (model.set_adapter) → tokenize → generate. The merge touches every adapted matrix in the model for every query.",
-        "grounding": "PAPER — [App. U, 'MULTI-LORA (PRELOADED)', p.40]"
-      },
-      {
-        "claim": "That per-query merge is what breaks shared-weight batching. Two concurrent requests routed to different document partitions require two different ΔΘ_merged, so they cannot share a weight tensor in a single GEMM — the same structural break S0/NM already identify for per-request fast-weight state, arriving here from the Θ-path instead of the W-path. The paper never discusses batching; its inference batch size is never stated and is implicitly 1.",
-        "grounding": "NOTE-WRITER'S INFERENCE. The paper's only adjacent statement is the future-work line 'practical adapter serving (caching, prefetching, and kernel-level optimization) to manage the latency of multi-module composition' [§8, p.9]."
-      },
-      {
-        "claim": "Disk is already the bottleneck at 8B / 15 adapters. Dynamic per-query adapter loading costs 11.7 s more than preloading over 30 questions with FlashAttention (77.6 vs 65.9) and 11.2 s more without (120.5 vs 109.3), i.e. roughly 0.4 s per query of pure I/O. The authors call it 'the prohibitive I/O latency of dynamically loading modules' and adopt preloading to avoid it.",
-        "grounding": "PAPER for the totals and the quoted judgement [Fig. 22, p.38; §7 Q15, p.8]; NOTE-WRITER'S ARITHMETIC for the differences and the per-query division."
-      },
-      {
-        "claim": "Preloading means the working set is 'all of a document's adapters resident in GPU memory' — and the paper gives no byte figure for it. 'all lora loading: A one-time setup cost to load all LoRA modules corresponding to the document's chunks into GPU memory.' For a 20K-token NarrativeQA document at 2,048-token chunks that is ~10 rank-4 adapters; for PaperQA it is 15 rank-16 adapters. Sizing this is exactly the memory-device question the monograph wants answered, and the paper does not answer it.",
-        "grounding": "PAPER for the mechanism and chunk sizes [App. U, p.40; Table 3, p.19]; the module counts for NQA are NOTE-WRITER'S ARITHMETIC from the stated chunk size and document length filter; the byte figure is ABSENT."
-      },
-      {
-        "claim": "Rank is simultaneously the capacity knob and the bytes knob, and the two optima disagree. r ∈ {2…1024} spans 512× in adapter size; absolute capacity rises with r [Q1] while tokens-stored-per-parameter peaks at small r, 'consistently found at a small rank, such as r = 4' [App. H]. For a per-session adapter store that has to be sized in bytes, the byte-optimal configuration is at the small end — which is also the configuration the paper's own multi-LoRA system uses (r = 4).",
-        "grounding": "PAPER — [§4 Q1/Q3, p.3; App. H, p.24; App. D, p.19]"
-      },
-      {
-        "claim": "The delta traffic lands on the FFN, i.e. on the largest matrices in the model. 'In all tested settings, FFN-only LoRA consistently outperforms attn-only LoRA' and early layers beat late [App. E.1]. For a Llama-class model the FFN projections (gate/up/down) dominate the per-layer parameter count, so a byte-efficient knowledge adapter is not a small perturbation of the attention path — it is a delta on the widest GEMMs, which is where a memory-centric accelerator would want to intercept it.",
-        "grounding": "PAPER for the ablation result [App. E.1, p.21]; the parameter-count and accelerator framing is NOTE-WRITER'S INFERENCE."
-      },
-      {
-        "claim": "The LoRA decode path in their stack is not fused, and the paper says the numbers show it. 'the inference time for the single LoRA configuration was approximately twice as long as that of the base model, despite both processing identical short-context prompts… the presence of the PEFT adapter may inadvertently prevent the underlying model from activating certain default optimization strategies during its forward pass' [App. U]. Combined with 'The remaining overhead is largely systems-driven, leaving clear headroom for further optimization' [§7 Q15], the practical reading is that everything in Fig. 8 above the base-model bar is implementation, not algorithm.",
-        "grounding": "PAPER — [App. U, p.41; §7 Q15, p.8]"
-      },
-      {
-        "claim": "The routing stage imports the full RAG serving stack into a supposedly parametric system. Every multi-LoRA configuration pays 'rag setup' (embedding model load + chunk embedding + FAISS index build) as a one-time cost and 'query embedding' + 'faiss search' per question — identical components to the RAG baseline. A Θ-path memory that needs an E-path index to be usable inherits the E-path's cost structure *and* its failure mode; Weller et al. 2025's embedding limitation is cited by the paper itself as the explanation for why routing fails.",
-        "grounding": "PAPER — [App. U, pp.39–40; §6 Q9, p.5; Weller citation at §6 Q9]"
-      },
-      {
-        "claim": "Composition scales the wrong way for a serving fleet. The interference curve peaks at N_m = 1 [Q11], so hedging against router error by merging more modules costs accuracy monotonically — meaning a production system cannot buy robustness with fan-in. It must buy it with better partitioning or better routing, both of which the paper leaves open. Combined with the merge being per-query work, the design pressure is toward N_m = 1 with a very good router, i.e. toward exactly the oracle assumption the paper shows is doing all the work.",
-        "grounding": "PAPER for the curve and the open questions [§6 Q11, p.6; App. P, p.34; §8, p.9]; the 'design pressure' conclusion is NOTE-WRITER'S INFERENCE."
-      },
-      {
-        "claim": "For the monograph's A2 candidate thesis (write capacity as the new bottleneck): this paper supplies the capacity *shape* — finite, rank-controlled, saturating, and non-composable — but supplies no bytes, no write bandwidth, no per-user state figure and no forgetting rate. It constrains the Θ-path argument; it cannot ground it numerically.",
-        "grounding": "NOTE-WRITER'S ASSESSMENT, based on cost_table above (C = absent as bytes, ρ = absent, B_s in steps only)."
-      }
-    ]
-  },
-
-  "todo_verify": [
-    {"item": "Figure 5 (left) bar-to-model-size assignment for the Qwen3 scale sweep. The five printed values are 3.51, 4.58, 4.32, 4.65, 5.12; the prose fixes the shape (rise 0.6B→1.7B, plateau 1.7B→8B, rise 8B→14B) but not the mapping.", "search_term": "In the PDF, Figure 5 left panel: search the bar labels near x-tick '4B' and read the value printed above each of the five bars."},
-    {"item": "Figure 7 (left) / Figure 20 bar-to-operator assignment for the six merging strategies. Llama values {5.41, 4.92, 4.77, 1.63, 1.32, 0.19}; Qwen values {5.87, 5.76, 5.41, 5.18, 5.06, 2.30}.", "search_term": "In the PDF, Figure 20 top-left panel 'Llama - LLM Judge': read the value above the bar labelled 'DARE-Linear' and the bar labelled 'CAT'."},
-    {"item": "Figure 6 (left) 64K-PhoneBook: which of ICL / Single LoRA carries the 32.2 value, and what the third bar reads.", "search_term": "In the PDF, Figure 6 left panel: read the values above the bars labelled 'ICL', 'Single LoRA' and 'Multi LoRA'; confirm '99.8' belongs to Multi LoRA."},
-    {"item": "Whether Figure 8 (main body) plots the FlashAttention-enabled run of Figure 22 (bottom). Inferred here from the 0–80 s x-axis matching the FA totals.", "search_term": "Figure 8 caption in the published PDF / the sentence in §7 Q15 immediately preceding 'Figure 8 illustrates the results' — look for any mention of Flash Attention."},
-    {"item": "Sign of the exponent on the efficiency axis label, printed in the text extraction as 'Tokens/Param (10 4)'.", "search_term": "In the PDF, Figure 3 y-axis label — read whether it is 10^{-4} or 10^{4}. (Order-of-magnitude reasoning favours 10^{-4}, but that reasoning is not in the paper and must not be written as a paper claim.)"},
-    {"item": "Numeric N_params for any (model, rank) pair, and hence any single reproducible point of Eq. 1.", "search_term": "Search the PDF and the released code/dataset link (Abstract: 'Code and datasets are available at link') for 'trainable parameters', 'Nparams', 'target_modules'."},
-    {"item": "Per-component seconds in Figure 22 (lora loading / lora merge / lora activation / tokenization / inference). Only the six totals are recoverable from the text extraction.", "search_term": "In the PDF, Figure 22 stacked bars — read the segment labels for 'Multi-LoRA (Preloaded)' in both panels."},
-    {"item": "Any wall-clock, GPU-hour or FLOP figure for LoRA training. Exhaustive search of the source text found none.", "search_term": "Search the PDF for 'training time', 'GPU hours', 'minutes', 'FLOP'. If absent, the B_s = 'steps only' finding is confirmed."},
-    {"item": "Number of evaluation questions behind each QuALITY accuracy (115 articles, question count never stated) and behind each LongBench v2 accuracy (30 documents).", "search_term": "Search the PDF for 'QuALITY' + 'questions' and App. Q for the LongBench v2 protocol; needed to decide whether the Table 2 / Table 7 differences exceed sampling noise."},
-    {"item": "Whether Table 2's identical 'Single LoRA' and 'Single LoRA + RAG' QuALITY values for Llama-3.1-8B (42.42), Qwen3-8B (44.10) and Qwen3-1.7B (33.15) are a transcription error or a genuine result.", "search_term": "In the PDF, Table 2, QuALITY columns — compare the 'Single LoRA' closed-book row against the 'Single LoRA + RAG' open-book row for each of the three models."},
-    {"item": "Whether any seed count, repetition count or variance is reported anywhere. Exhaustive search of the source text found no occurrence of 'seed', 'standard deviation' or 'error bar'.", "search_term": "Search the PDF for 'seed', 'std', '±', 'averaged over', 'runs'."}
+  "what_the_paper_does_NOT_write_down": "There is no forward equation for LoRA (h = W_0 x + s_LoRA·A B x never appears). There is no training objective. There is no capacity model, bound or scaling law — despite the paper describing its own contribution as covering 'scaling laws in complex, long-context scenarios' [App. A]. Everything in core_mechanism except Eq. 1 and the App. O merge formulas is reconstructed by this note from prose and hyperparameter tables."
+ },
+ "outer_vs_inner": {
+  "preamble": "The monograph reader has never trained a model. Read this table as: 'each row is a set of numbers; the column says at which of the three clocks — pre-training, offline write, per-query — those numbers change.' The single most important fact for this reader: in this paper *nothing at all moves during decoding*. There is no fast-weight state W. The only thing that changes per query is which frozen delta is bolted on.",
+  "rows": [
+   {
+    "learnable_object": "Θ_0 — the pre-trained backbone weights (Llama-3.1-8B, Llama-3.2-1B, Qwen3-{0.6,1.7,4,8,14}B)",
+    "who_learns_it": "Nobody, in this paper",
+    "when": "Frozen throughout. Learned by the original model vendors before the paper starts.",
+    "source": "[§1 p.1: 'freezes the pre-trained model and injects trainable low-rank matrices']"
+   },
+   {
+    "learnable_object": "A^{(j)}, B^{(j)} — the low-rank factors of knowledge partition j",
+    "who_learns_it": "Gradient descent on 𝓛 over 𝓡^{(j)}",
+    "when": "SLEEP-TIME UPDATE. One offline training run per partition, before any query exists. 1,500 steps @ batch 8 (PhoneBook / CounterFact); 1,000 steps @ batch 8, η_Θ = 5e-5 (PaperQA); 150 steps @ batch 32, η_Θ = 5e-4 for multi-LoRA r=4 and 250 steps for single LoRA r=16 (NarrativeQA / QuALITY).",
+    "source": "[App. D, 'Note on Hyperparameters']"
+   },
+   {
+    "learnable_object": "𝓡^{(j)} — the synthetic training corpus (QA pairs / summaries / rewrites)",
+    "who_learns_it": "Not learned — *generated* by a frozen external teacher (GPT-4.1; Llama-3.1-8B or Qwen3-8B in the ablation)",
+    "when": "SLEEP-TIME, strictly before the write. Prompt templates are fixed and hand-written [App. I.1–I.3]. There is no reward, no RL, no meta-learning of the generator — the explicit contrast with SEAL: 'we distinguish our approach by eliminating the computational overheads associated with SEAL's outer loop' [App. A].",
+    "source": "[§5 Q4/Q7; App. I; App. L]"
+   },
+   {
+    "learnable_object": "r (rank), s_LoRA (scaling α), η_Θ, n_steps, batch size, layer/module placement",
+    "who_learns_it": "Human grid search",
+    "when": "OUTER-LOOP-BY-HAND, before sleep. Q6 sweeps η_Θ ∈ {1e-5,5e-5,1e-4,5e-4} × n_steps ∈ {250,500,1000,2000} per model size and reports the winner (Table 5). Nothing is meta-learned.",
+    "source": "[App. K, Table 5]"
+   },
+   {
+    "learnable_object": "emb(·) — the BGE-large-en-v1.5 router embedding model",
+    "who_learns_it": "Nobody, in this paper",
+    "when": "Frozen, off-the-shelf. Document embeddings + FAISS index are built once per document as a one-time setup cost ('rag setup': embedding creation + index creation) [App. U].",
+    "source": "[App. N; App. U]"
+   },
+   {
+    "learnable_object": "J(q) — which partitions are selected for this query",
+    "who_learns_it": "Not learned; computed by nearest-neighbour search",
+    "when": "WAKE-TIME, per query. Cost = 'query embedding' + 'faiss search' per question [App. U]. The paper deliberately excludes learned MoE-style routers: 'retraining a routing network at test time is computationally impractical for the continuous, plug-and-play learning settings we target' [App. A].",
+    "source": "[§6 Q9; App. A; App. U]"
+   },
+   {
+    "learnable_object": "ΔΘ_merged — the composed delta actually installed for this query",
+    "who_learns_it": "Not learned; produced by a closed-form arithmetic operator (TIES / Linear / CAT / DARE)",
+    "when": "WAKE-TIME MOVEMENT IN Θ, per query. This is the one thing in the paper that changes model weights at serving time. Measured as the 'lora merge' + 'lora activation' components of latency [App. U]. It is a weight-space read-modify-write, not a gradient step.",
+    "source": "[§6 Q10; App. O; App. U]"
+   },
+   {
+    "learnable_object": "W — fast weights / any test-time inner-loop state",
+    "who_learns_it": "DOES NOT EXIST in this paper",
+    "when": "Never. There is no per-token or per-chunk state update anywhere. The KV cache of the frozen backbone is the only per-query state, and only in the ICL/RAG hybrid rows.",
+    "source": "Absence verified: the words 'test-time training', 'fast weight' and 'inner loop' do not occur in the source text."
+   },
+   {
+    "learnable_object": "ret(E, q) — external text context (ICL full document, or RAG top-3 chunks)",
+    "who_learns_it": "Not learned; retrieved or pasted",
+    "when": "WAKE-TIME, per query, only in the hybrid rows of Table 2 and Table 7. RAG retrieves top-3 chunks via the same FAISS index.",
+    "source": "[§7 Q13, Table 2; App. S; App. U]"
+   }
   ]
+ },
+ "update_layer": {
+  "primary": "(U-Θ)",
+  "secondary": "(U-E), in a degenerate form",
+  "order": "Sleep: (U-Θ) per partition, independently and in parallel — there is no sequential/continual stream, every ΔΘ^{(j)} is trained from the same Θ_0 in isolation. Then (U-E): the router index is built once (document embeddings + FAISS) — this is an E-write whose payload is a *pointer to a weight delta* rather than text. Wake: (U-E) read (routing) → non-gradient Θ-composition (merge) → optional ordinary retrieval read ret(E,q) → decode. So the layer order at serving time is E first, Θ second, and there is no W layer at all.",
+  "how_it_differs_from_canonical_U_Theta": [
+   "Subspace restriction. Canonical (U-Θ) moves all of Θ. Here ∇_Θ is confined to an r-dimensional factorisation and Θ_0 is frozen. The whole paper is an experiment on what that restriction costs. [App. O; §1]",
+   "𝓡_k is instantiated and measured, not assumed. Canonical (U-Θ) hides gen(𝓗_k; B_s). Q4/Q5/Q7 turn it into the dominant experimental variable: raw text is a bad substrate, QA is the best single format, format mixtures beat any single format, and generator quality upper-bounds the result. [§5; Table 1; App. I/J/L]",
+   "No round index. Canonical (U-Θ) is indexed by k — successive consolidation rounds. This paper has k = 1 only. Every adapter is trained once, from Θ_0, on a static corpus. The authors state this: 'Our study isolates the memory properties of LoRA modules in controlled settings, but does not constitute a full continual-update deployment.' [§8 Limitation and Future Work]. Consequently ρ is undefined here (see cost_table).",
+   "Θ is plural and sharded. Instead of one Θ_{k+1}, the state is a *set* {ΔΘ^{(j)}} plus an index. This is the structural novelty relative to every other Θ-path paper in the S0 roster, and it is what imports E-path failure modes (retrieval error) into the Θ-path.",
+   "An extra, non-gradient wake-time Θ-move. merge(·) has no term in (U-Θ). It is the paper's second-order finding that this operator is the binding constraint: performance peaks at N_m = 1 and declines monotonically to N_m = 5 even when every merged module is ground-truth relevant. [§6 Q11; Fig. 7 right; Fig. 21; App. P]"
+  ],
+  "one_sentence_for_the_chapter": "This paper instantiates (U-Θ) with a rank-r subspace restriction and an explicitly measured gen(·; B_s), then adds a wake-time Θ-composition operator that the canonical rule does not contain — and shows that it is that added operator, not the write itself, that fails first."
+ },
+ "cost_table": {
+  "B_s": {
+   "value": "Partially reported, in optimizer steps only — never in FLOPs, GPU-hours or wall-clock. Verbatim [App. D, 'Note on Hyperparameters']: PhoneBook/CounterFact (Q1–Q3, Q8) — 'Training is conducted for 1,500 steps with a batch size of 8. We set the scaling factor α equal to the rank (α = r).' PaperQA (Q4–Q7, Q9–Q11) — 'Training is conducted for 1,000 steps with a learning rate of 5 × 10^-5 and a batch size of 8. We adopt a default rank of r = 16 with α = r.' NarrativeQA/QuALITY (Q12–Q14) — 'We use a batch size of 32 and a learning rate of 5 × 10^-4. For multi-LoRA, we use r = 4, α = 8 trained for 150 steps; for single LoRA, we use r = 16, α = 32 trained for 250 steps.' Q6 grid: η ∈ {1e-5, 5e-5, 1e-4, 5e-4} × S ∈ {250, 500, 1000, 2000}, selected values in Table 5. Hardware: 'All experiments were conducted on NVIDIA RTX PRO 6000 Blackwell GPUs.' [App. D]",
+   "what_is_absent": "absent — training wall-clock, training FLOPs, energy, number of GPUs, and the GPT-4.1 API cost of generating 𝓡. Also absent: the *total* B_s of a multi-LoRA system, i.e. steps × number of partitions (8 modules for 64K PhoneBook; 15 for PaperQA; one per 2,048-token chunk for NarrativeQA).",
+   "critical_note": "The Q15 latency study [§7, App. U, Fig. 8, Fig. 22] measures only wake-time. Its component list for every LoRA condition contains model loading, adapter loading/merging/activation, tokenization and inference — and no training term. B_s is therefore excluded from the paper's only cost comparison. Any amortisation claim built on Fig. 8 has C_sleep = 0 baked in."
+  },
+  "L_w": {
+   "value": "Reported as end-to-end wall-clock for 30 sequential questions from one NarrativeQA document on Llama-3.1-8B-Instruct, RTX PRO 6000 Blackwell [§7 Q15; App. U; Fig. 22]. Fig. 22 (Top) — Flash Attention DISABLED, totals: ICL 318.4 s (inference component 312.2 s); Multi-LoRA (Dynamic) 120.5 s; Multi-LoRA (Preloaded) 109.3 s; RAG 86.1 s; Single LoRA 56.7 s; Base Model (closed-book) 32.5 s. Fig. 22 (Bottom) — Flash Attention ENABLED, totals: Multi-LoRA (Dynamic) 77.6 s; ICL 75.0 s; Multi-LoRA (Preloaded) 65.9 s; RAG 43.5 s; Single LoRA 40.0 s; Base Model 35.6 s.",
+   "what_is_absent": "absent — per-token latency, TTFT, tokens/s, prompt lengths, generation lengths, batch size at inference (implicitly 1), and any per-query breakdown in milliseconds. Everything is a 30-question aggregate that includes one-time setup ('Ready time denotes one-time setup before processing any query, including base model loading and, for retrieval-based methods, RAG initialization such as embedding-model loading, chunk embedding, and FAISS index construction' [Fig. 8 caption]).",
+   "caveats": "(a) The bar-to-total assignment above for Fig. 22 is read from the figure's stated method ordering; the FA-enabled totals are also consistent with Fig. 8's descending bar order (Multi-LoRA Dynamic > ICL > Multi-LoRA Preloaded > RAG > Single LoRA). Fig. 8 itself never states which of the two runs it plots — its x-axis maximum of 80 s matches the FA-enabled run and rules out the 318.4 s non-FA run; that identification is this note-writer's inference. (b) The paper reports an unresolved measurement anomaly: with FA disabled, 'the inference time for the single LoRA configuration was approximately twice as long as that of the base model, despite both processing identical short-context prompts' and with FA enabled 'the inference speed of the base model paradoxically decreased… while the inference speed for the single LoRA model significantly improved, becoming faster than the base model' [App. U]. The authors attribute this to the PEFT adapter suppressing default optimisations and leave it unexplained."
+  },
+  "C": {
+   "value": "absent, as bytes. The paper never states the byte size of an adapter, never states N_params for any rank, and never states how many adapters a system would hold. What it reports instead: (i) rank sweep r ∈ {2, 4, 8, …, 1024} as the capacity knob [§4 Q1; Table 3]; (ii) knowledge load in *tokens*, 1K → 20K in 1K steps [Table 3, Q2] and 64K for the multi-LoRA PoC [Q8]; (iii) the derived ratio Efficiency = T_max / N_params [Eq. 1], plotted with axis label 'Tokens/Param (10 4)' [Fig. 3, Fig. 15] with plotted values in the range 0–8 (PhoneBook panel) and 0–15 (CounterFact panel).",
+   "what_is_absent": "absent — N_params(r) numeric, adapter file size in MB, GPU-resident bytes for the preloaded multi-LoRA configuration, and the sign of the exponent on the 'Tokens/Param (10 4)' axis (the text extraction loses it; see todo_verify).",
+   "closest_thing_to_a_capacity_number": "The only extractable capacity statement is qualitative + threshold-indexed: at fixed r, accuracy holds up to a load and then 'degrades sharply' [App. G]; 'higher-rank LoRA modules are capable of internalizing a significantly larger volume of knowledge before their performance collapses' [App. G]; and 'The most efficient configuration was consistently found at a small rank, such as r = 4' [App. H]. Numeric T_max values are never tabulated — only plotted (Fig. 3, Fig. 14, Fig. 15, Fig. 16). For a monograph that needs bytes/session, this paper supplies a shape, not a number."
+  },
+  "rho": {
+   "value": "absent. The paper measures no forgetting rate of any kind. Catastrophic forgetting motivates the first paragraph ('full retraining or supervised fine-tuning risks catastrophic forgetting (Kirkpatrick et al., 2017)' [§1]) and is never returned to. Base-model general capability after the LoRA write is never evaluated; Pletenev et al. 2025, 'How much knowledge can you pack into a lora adapter without harming llm?', is cited once in a related-work list [§2 LoRA para / App. A] and never run. There are no repeated consolidation rounds, so no per-round loss can exist.",
+   "two_near_misses_that_are_NOT_rho": "(1) Capacity-overflow degradation: at fixed r, performance collapses past the saturation point [Q2, Fig. 2, Fig. 14]. That is a static capacity limit, not a decay over rounds. (2) Merge-interference degradation: with only ground-truth-relevant modules merged, LLM-judge score peaks at N_m = 1 and 'degrades steadily as N grows' to N_m = 5 [Q11, Fig. 7 right, Fig. 21, App. P]. That is a composition loss, not a temporal one. Neither can be substituted for ρ in the S0 cost table; the chapter must write '논문에 없음'."
+  }
+ },
+ "experiments": {
+  "models_used": [
+   "Llama-3.1-8B — Q1–Q5, Q7–Q11 (main); Llama-3.1-8B-Instruct for the Q15 timing study [App. U]",
+   "Qwen3-8B — Q1–Q5, Q7–Q14",
+   "Qwen3-0.6B, Qwen3-1.7B, Qwen3-4B, Qwen3-14B — Q6 only (PaperQA scale sweep) [App. K]",
+   "Llama-3.2-1B, Qwen3-1.7B — added for Q12–Q14 (NQA/QuALITY) [Table 2]",
+   "Qwen3-1.7B, Qwen3-8B — ∞Bench / LongBench v2 [Table 7]",
+   "GPT-4.1 — synthetic-data generator (Q4, Q5, Q7) and LLM judge (PaperQA, 0–10 rubric) [App. C, App. I]",
+   "Gemini 2.5 Pro — PaperQA question generator (30 questions/paper) [App. C]",
+   "BAAI/bge-large-en-v1.5 — router / RAG embedder [App. N, App. U]"
+  ],
+  "hardware_and_stack": "NVIDIA RTX PRO 6000 Blackwell GPUs [App. D]. PyTorch + HuggingFace transformers + PEFT + sentence-transformers + faiss [App. U].",
+  "benchmarks": [
+   {
+    "name": "PhoneBook (PB)",
+    "provenance": "AUTHOR-BUILT [App. B]",
+    "detail": "Fictional name → North-American-format phone-number pairs, programmatically generated, formatted as 'Question: What is the phone number of Jane Doe? Answer: 123-456-7890'. Tokenised with the Qwen3-8B tokenizer; slices built by accumulating entries until the target token count is first exceeded, so smaller slices are exact subsets of larger ones. Metric: strict character-for-character Exact Match — '(987) 654-3210' scores 0 against '987-654-3210'."
+   },
+   {
+    "name": "CounterFact (CF)",
+    "provenance": "External — Meng et al. 2022 (ROME)",
+    "detail": "Counterfactual edits that conflict with pre-trained beliefs, e.g. 'Paris is in Italy'. Metric: efficacy score. Sizes used in Q1: 8K/10K/12K/14K tokens; Q2 sweep 1K–20K."
+   },
+   {
+    "name": "PaperQA",
+    "provenance": "AUTHOR-BUILT [App. C]",
+    "detail": "15 recent papers (5 oral/spotlight each from NeurIPS 2024, ICLR 2025, ICML 2025; full list with arXiv IDs in App. C.1). Introduction sections only are used as the knowledge source. 30 questions per paper × 15 = 450 QA pairs, generated by Gemini 2.5 Pro across three levels (10 Key Information Recall / 10 Contextual Comprehension / 10 Logical Structure Inference). Scored by GPT-4.1 with a 0–10 rubric. BLEU/ROUGE-L reported as supplements and explicitly described as unsuitable ('absolute scores for these metrics are notably low (e.g., BLEU ≈ 0.1, ROUGE-L ≈ 0.3)')."
+   },
+   {
+    "name": "NarrativeQA (NQA)",
+    "provenance": "External — Kočiský et al. 2018",
+    "detail": "Restricted to documents of 10K–20K tokens; 40 documents randomly sampled from official train+dev splits. Metric: multi-reference ROUGE-L. Chunking for multi-LoRA: 2,048 tokens with 200 overlap [Table 3]."
+   },
+   {
+    "name": "QuALITY",
+    "provenance": "External — Pang et al. 2022",
+    "detail": "Validation split, 115 articles, no length filtering. Metric: multiple-choice accuracy. Chunking: 768 tokens with 77 overlap [Table 3]."
+   },
+   {
+    "name": "∞Bench",
+    "provenance": "External — Zhang et al. 2024a",
+    "detail": "20 documents exceeding 100K tokens; ROUGE-L [App. Q, Table 7]."
+   },
+   {
+    "name": "LongBench v2",
+    "provenance": "External — Bai et al. 2025",
+    "detail": "30 documents of 101K–364K tokens; accuracy [App. Q, Table 7]."
+   }
+  ],
+  "headline_numbers": [
+   {
+    "rq": "Q1 — capacity scales with rank",
+    "result": "On CounterFact at 8K/10K/12K/14K token loads, efficacy rises monotonically as r goes 2 → 1024. The y-axis tick labels visible on Fig. 1 are 70, 80, 90 (%), i.e. the entire 512× rank sweep moves efficacy across roughly a 20-point band. Diminishing returns explicitly noted: 'The marginal performance gain for each incremental increase in rank tends to decrease, especially at higher rank values.'",
+    "source": "[§4 Q1, p.3; Fig. 1, p.2; App. F]"
+   },
+   {
+    "rq": "Q2 — finite, rank-dependent saturation",
+    "result": "Sweeping load 1K → 20K tokens at fixed rank: 'performance remains high or increases as the data volume grows, but only up to a certain threshold. Beyond this point, performance degrades sharply.' Higher rank shifts the collapse point later. Fig. 2 overlays ICL and RAG baselines over 4–16K tokens for r ∈ {4,16,64}; Fig. 14 gives the full sweep for r ∈ {2,…,1024} over 1–20K on both Llama and Qwen. No numeric saturation points are tabulated.",
+    "source": "[§4 Q2, p.3; Fig. 2, p.3; Fig. 14, p.23; App. G]"
+   },
+   {
+    "rq": "Q3 — parameter efficiency is non-monotonic in rank",
+    "result": "Efficiency = T_max/N_params peaks at a small rank and declines. 'The most efficient configuration was consistently found at a small rank, such as r = 4.' Thresholds plotted: 90/95/100% for PhoneBook, 75/80/85% for CounterFact. Axis label 'Tokens/Param (10 4)'; plotted range 0–8 on the PhoneBook panel and 0–15 on the CounterFact panel. Fig. 16 gives the full (rank, threshold, efficiency) surface for Llama.",
+    "source": "[§4 Q3 + Eq. 1, p.3; Fig. 3, p.3; Fig. 15 and Fig. 16, p.23; App. H]"
+   },
+   {
+    "rq": "Q4 — synthetic supervision format",
+    "result": "All three synthetic formats beat raw text; performance rises monotonically with the amount of synthetic supervision; ordering most→least effective: QA > Summary > Rewrite > Original. 'The performance gain per token was highest for the QA format, followed by Summary and then Rewrite.' The authors themselves qualify the winner: 'The QA format's top performance may be partially attributed to its structural alignment with the evaluation task, which is also QA-based.'",
+    "source": "[§5 Q4, p.4; Fig. 4, p.4; Fig. 17, p.25; App. I]"
+   },
+   {
+    "rq": "Q5 — format mixtures (Table 1, PaperQA LLM-judge, exact values)",
+    "result": "Method / Llama-3.1-8B / Qwen3-8B / avg tokens — Original: 3.187 / 4.587 / 947. QA40: 5.893 / 5.409 / 1,401. Original+QA40: 6.300 / 5.371 / 1,841. Summary8+QA40: 6.380 / 5.662 / 2,995. Rewrite4+QA40: 6.650 / 5.427 / 3,004. Original+Summary8+Rewrite4+QA40: 6.822 / 5.614 / 4,088. Note the split verdict the paper reports honestly: 'on Llama, the most comprehensive mixture achieves the best score, while on Qwen the best result is obtained by Summary+QA' — and on Qwen, Original+QA40 (5.371) is *below* QA40 alone (5.409).",
+    "source": "[§5 Q5, p.4; Table 1, p.4; App. J]"
+   },
+   {
+    "rq": "Q6 — base-model scale (Qwen3 0.6B→14B, PaperQA)",
+    "result": "'performance improved with model size but non-linearly: significant gains from 0.6B-1.7B and 8B-14B, minimal improvement from 1.7B-8B.' The five bar values printed on Fig. 5 (left) are 3.51, 4.58, 4.32, 4.65 and 5.12 on the LLM-judge scale; the bar-to-size assignment is not recoverable from the text extraction (see todo_verify), but the prose fixes the shape: rise, plateau, rise. Selected hyperparameters per size (Table 5): 0.6B η=5e-4/S=250; 1.7B η=5e-4/S=1000; 4B η=1e-4/S=500; 8B η=5e-4/S=1000; 14B η=5e-4/S=250.",
+    "source": "[§5 Q6, p.4–5; Fig. 5 left, p.4; Table 5, p.27; App. K]"
+   },
+   {
+    "rq": "Q7 — generator quality",
+    "result": "LLM-judge, PaperQA, 20 QA pairs per document (reduced from 40 — see unfavorable_facts). Llama-3.1-8B student: Original 3.19, Llama-3.1-8B-generated 4.46, GPT-4.1-generated 5.47. Qwen3-8B student: Original 4.59, Qwen3-8B-generated 4.84, GPT-4.1-generated 5.14. 'GPT-4.1-generated data consistently yielded higher performance than Llama-3.1-8B data.' The authors' framing: the generator's knowledge 'may act as a practical upper bound on the knowledge that the LoRA module can effectively learn' [App. L].",
+    "source": "[§5 Q7, p.5; Fig. 5 right, p.4; Fig. 18, p.28; App. L]"
+   },
+   {
+    "rq": "Q8 — multi-LoRA PoC, 64K-token PhoneBook, oracle routing",
+    "result": "Three configurations at matched parameter budget: full-context ICL over 64K; one r=32 LoRA on all 64K; eight r=4 LoRAs on eight disjoint 8K partitions with an oracle router. Multi-LoRA reaches ~99.8% exact-match accuracy; one of the two baselines is at 32.2% (Fig. 6 left; which of ICL / single-LoRA carries 32.2 is not recoverable from the text extraction — see todo_verify). Prose: 'ICL degrades under long context and a single LoRA saturates at this knowledge load. In contrast, multi-LoRA maintains high accuracy.' The authors concede the design: 'While this outcome might be anticipated given the experimental design, its value lies not in its novelty but in its function as a clear proof of concept.' [App. M]",
+    "source": "[§6 Q8, p.5; Fig. 6 left, p.5; App. M]"
+   },
+   {
+    "rq": "Q9 — routing degradation, PaperQA LLM-judge",
+    "result": "Llama-3.1-8B: Perfect (oracle) 5.92, Single LoRA baseline 5.24, Embedding routing 4.94. Qwen3-8B: Perfect 6.57, Single LoRA 5.65, Embedding 5.52. In both models embedding routing falls BELOW the monolithic single-LoRA baseline. 'selecting an incorrect, highly specialized LoRA module can be more detrimental to performance than using a single, non-specialized module that contains the entirety of the knowledge base.' [App. N]",
+    "source": "[§6 Q9, p.5–6; Fig. 6 right, p.5; Fig. 19, p.31; App. N]"
+   },
+   {
+    "rq": "Q9b — token-based routers (Table 6, exact values)",
+    "result": "NarrativeQA ROUGE-L on Qwen3-8B over 40 documents / QuALITY accuracy on Llama-3.1-8B over 115 articles; Top-3 uses TIES after routing. NQA Top-1: Arrow 21.93, SpectR 19.42, LAG 18.34, Embedding 19.13. NQA Top-3: Arrow 21.15, SpectR 21.33, LAG 21.25, Embedding 21.15. QuALITY Top-1: Arrow 33.68, SpectR 35.59, LAG 36.28, Embedding 37.84. QuALITY Top-3: Arrow 39.38, SpectR 42.13, LAG 41.71, Embedding 42.42. 'no token-based method consistently dominates the embedding-based baseline across datasets and retrieval depths.'",
+    "source": "[Table 6, p.32; App. N]"
+   },
+   {
+    "rq": "Q10 — merging strategy, PaperQA LLM-judge, top-3 embedding routing",
+    "result": "Six operators compared: Linear, CAT, CAT-1/√N, TIES, DARE-Linear, DARE-TIES. The Llama panel's six printed values are {5.41, 4.92, 4.77, 1.63, 1.32, 0.19} and the Qwen panel's are {5.87, 5.76, 5.41, 5.18, 5.06, 2.30}; the bar-to-operator assignment is not recoverable from the text extraction (todo_verify). What the prose fixes: TIES is highest and 'reaches performance comparable to the single LoRA model'; Linear is 'a surprisingly strong baseline… comparable to TIES, particularly in the Qwen model' with TIES holding 'a slight performance edge'; DARE underperforms both ('stochastic dropping may discard critical information in this memorization setting'); vanilla CAT 'collapses' and is 'the lowest performance by a wide margin'; CAT-1/√N 'recovers most of the gap to Linear'. Conclusion: 'scale mismatch—not rank expansion—is CAT's dominant failure mode.'",
+    "source": "[§6 Q10, p.6; Fig. 7 left, p.6; Fig. 20, p.30; App. O]"
+   },
+   {
+    "rq": "Q11 — number of merged modules, ground-truth set only",
+    "result": "Merging the N_m ground-truth modules the queries were drawn from, N_m = 1 → 5, with TIES. Performance peaks at N_m = 1 and 'decreases monotonically as N grows'. 'even when all necessary knowledge is included, merging additional modules can progressively dilute or interfere with the stored information, quickly degrading answer quality.' The visible LLM-judge axis range on Fig. 7 (right) is 4–6 for Llama and 5–7 for Qwen; individual point values are not extractable.",
+    "source": "[§6 Q11, p.6; Fig. 7 right, p.6; Fig. 21, p.30; App. P]"
+   },
+   {
+    "rq": "Q12–Q14 — long-document case study (Table 2, exact values)",
+    "result": "Columns: Llama-3.2-1B / Llama-3.1-8B / Qwen3-1.7B / Qwen3-8B, each as (NarrativeQA ROUGE-L, QuALITY accuracy). CLOSED BOOK — Base model: (9.08, 25.75) (13.08, 32.01) (13.27, 26.42) (16.35, 26.06). KMSDCD: (23.32, 30.21) (29.07, 30.21) (19.45, 28.73) (28.68, 33.67). Single LoRA: (23.81, 29.86) (27.05, 42.42) (24.78, 33.15) (25.78, 44.10). Multi-LoRA Top1: (16.87, 24.32) (19.95, 37.83) (15.90, 32.71) (19.13, 39.46). Multi-LoRA Top3: (16.85, 26.43) (22.42, 42.42) (16.27, 39.93) (21.15, 46.26). OPEN BOOK — ICL: (24.52, 26.01) (33.81, 70.20) (27.34, 46.80) (35.22, 72.89). RAG: (21.90, 26.12) (29.20, 63.79) (23.80, 43.43) (31.15, 64.53). Single LoRA+ICL: (24.73, 28.34) (35.39, 64.12) (28.37, 46.59) (32.34, 67.49). Single LoRA+RAG: (24.12, 29.86) (32.18, 42.42) (27.12, 33.15) (31.37, 44.10). Multi Top1+ICL: (20.57, 27.23) (33.62, 58.69) (19.09, 43.48) (24.48, 64.34). Multi Top1+RAG: (19.22, 28.90) (25.03, 47.26) (19.10, 38.40) (24.42, 48.14). Multi Top3+ICL: (26.41, 30.00) (38.78, 69.22) (29.17, 56.52) (37.23, 76.26). Multi Top3+RAG: (24.53, 31.20) (35.55, 60.34) (29.10, 54.99) (37.64, 64.31).",
+    "source": "[Table 2, p.7; §7 Q12/Q13/Q14; App. R/S/T]"
+   },
+   {
+    "rq": "Q12 headline",
+    "result": "'In the closed-book setting on NarrativeQA, multi-LoRA underperforms a single LoRA across all four base models' — confirmed by Table 2 (23.81>16.87/16.85; 27.05>19.95/22.42; 24.78>15.90/16.27; 25.78>19.13/21.15). On QuALITY the gap is smaller and Top-3 sometimes wins (Qwen3-1.7B 39.93 > 33.15; Qwen3-8B 46.26 > 44.10).",
+    "source": "[§7 Q12, p.7]"
+   },
+   {
+    "rq": "Q14 headline",
+    "result": "'merging the top-3 modules outperforms selecting the top-1, with the sole exception of the 1B model in the closed-book setting' — verified: Llama-3.2-1B NQA closed-book Top1 16.87 > Top3 16.85; every other pair in Table 2 has Top3 ≥ Top1. The single best number in the entire table is Multi Top3 + ICL on Qwen3-8B QuALITY, 76.26.",
+    "source": "[§7 Q14, p.7; Table 2]"
+   },
+   {
+    "rq": "Q15 — latency (see cost_table.L_w for full values)",
+    "result": "30 sequential questions, one NarrativeQA document, Llama-3.1-8B-Instruct. FA-enabled totals: Multi-LoRA (Dynamic) 77.6 s > ICL 75.0 s > Multi-LoRA (Preloaded) 65.9 s > RAG 43.5 s > Single LoRA 40.0 s > Base Model 35.6 s. FA-disabled totals: ICL 318.4 s > Multi-LoRA (Dynamic) 120.5 s > Multi-LoRA (Preloaded) 109.3 s > RAG 86.1 s > Single LoRA 56.7 s > Base Model 32.5 s. Claim made: 'our multi-LoRA pre-loading system achieves a lower total processing time than the ICL-based approach. The remaining overhead is largely systems-driven, leaving clear headroom for further optimization.'",
+    "source": "[§7 Q15, p.8; Fig. 8, p.8; Fig. 22, p.38; App. U]"
+   },
+   {
+    "rq": "App. E.1 — placement ablation (Llama-3.1-8B, PB and CF, r ∈ {2,4,8,16,32,64})",
+    "result": "Early layers (first 16 of 32) generally beat Late layers (last 16), and Late saturates earlier. FFN-only LoRA 'consistently outperforms attn-only LoRA' in all tested settings. Critically: 'in CF, we occasionally observe Early outperforming the all-layer baseline' — i.e. the configuration used everywhere in the main paper is not the best one found. Counter-consideration given: selective placement is 'more sensitive to hyperparameters and sometimes unstable: in PB, some low-rank selective configurations failed to train reliably.'",
+    "source": "[App. E.1, pp.19–21; Figs. 9–12]"
+   },
+   {
+    "rq": "App. E.2 — LoRA variants",
+    "result": "PaperQA LLM-judge (Fig. 13): the six printed values are Llama {5.40, 5.27, 7.17} and Qwen {5.58, 5.43, 4.88}; prose fixes the ordering — 'PiSSA improves performance for Llama in our runs, while for Qwen, it is the least effective among the three; DoRA is competitive, but the gap is small.' NarrativeQA ROUGE-L (Table 4, exact): Llama-3.1-8B — LoRA 27.05 / 22.42 / 38.78; DoRA 25.04 / 22.96 / 38.41; PiSSA 8.56 / 23.38 / 38.34 (columns: Single, Multi Top3, Multi+ICL). Qwen3-8B — LoRA 25.78 / 21.15 / 37.23; DoRA 27.48 / 20.52 / 40.82; PiSSA 24.33 / 20.80 / 40.51. Verdict: 'simply swapping to DoRA/PiSSA does not reliably yield large gains in our knowledge-memory setting.'",
+    "source": "[App. E.2, p.19; Fig. 13, p.20; Table 4, p.20]"
+   },
+   {
+    "rq": "App. Q — 100K+ token regime (Table 7, exact values)",
+    "result": "∞Bench ROUGE-L (20 docs >100K tokens) / LongBench v2 accuracy (30 docs, 101K–364K tokens), for Qwen3-8B and Qwen3-1.7B. ∞Bench Qwen3-8B — Single LoRA 24.37, Multi Top3 23.49, ICL 30.89, RAG 32.80, Multi Top3+ICL 34.92, Multi Top3+RAG 32.10. ∞Bench Qwen3-1.7B — 17.91, 20.41, 14.30, 30.46, 29.60, 31.39. LongBench v2 Qwen3-8B — 30.00, 30.00, 20.00, 20.00, 33.33, 16.67. LongBench v2 Qwen3-1.7B — 23.33, 36.67, 20.00, 16.67, 26.67, 30.00. Claim: 'LoRA-based methods do not uniformly collapse in the 100K+ token regime; instead, their effectiveness remains setting-dependent.'",
+    "source": "[App. Q, Table 7, p.34]"
+   }
+  ]
+ },
+ "scale_ceiling": {
+  "largest_model": "Qwen3-14B — and only for one experiment (Q6, PaperQA base-model scale sweep, App. K). Every other result caps at 8B (Llama-3.1-8B, Qwen3-8B). [Table 3; App. K]",
+  "largest_knowledge_load": "64K tokens for the controlled multi-LoRA PoC (PhoneBook, 8 partitions of 8K, oracle routing) [Q8]. The single-module capacity sweep tops out at 20K tokens [Q2, Table 3]. Real documents: 10K–20K tokens for NarrativeQA (40 documents) [App. Q]; 100K+ for ∞Bench (20 documents) and 101K–364K for LongBench v2 (30 documents) [App. Q].",
+  "largest_rank": "r = 1024 (Q1–Q3). Main-paper defaults are far smaller: r = 16 for PaperQA single LoRA, r = 4 for multi-LoRA, r = 32 for the 64K single-LoRA baseline. [App. D]",
+  "largest_module_count": "15 modules (one per PaperQA paper) and 8 modules (64K PhoneBook). For NarrativeQA the count is implicit: 10K–20K-token documents chunked at 2,048 tokens ⇒ roughly 5–10 modules per document, never stated as a number. Merge fan-in never exceeds N_m = 5. This is two to three orders of magnitude below the deployment regime the paper itself cites — LAG (Fleshman & Van Durme) 'select[s] appropriate modules from libraries containing thousands of LoRAs' [App. A].",
+  "hardware_ceiling": "Single-GPU class: NVIDIA RTX PRO 6000 Blackwell. No multi-GPU, no serving fleet, no concurrency, inference batch size never stated (implicitly 1). [App. D; App. U]",
+  "one_sentence": "Everything load-bearing in this paper was measured at ≤8B parameters, ≤64K tokens of controlled knowledge, ≤15 adapters, ≤5-way merges, batch size 1, on one workstation GPU."
+ },
+ "concept_ledger_delta": {
+  "new_concepts_this_paper_contributes": [
+   {
+    "name": "parameter efficiency of parametric memory — Efficiency = T_max/N_params",
+    "why_it_matters": "The first tokens-per-parameter figure of merit for a slow-weight write in this corpus. Directly comparable in spirit to the bits-per-parameter of 'How much do LMs memorize' (2505.24832), but measured behaviourally (tokens retrievable above a threshold) rather than information-theoretically. [Eq. 1]"
+   },
+   {
+    "name": "rank-dependent saturation",
+    "why_it_matters": "Gives the Θ-path the same 'the state is finite, budgeting is unavoidable' discipline the W-path already has. 'capacity is finite, making memory budgeting unavoidable' [§4 Discussion]."
+   },
+   {
+    "name": "routing–merging trade-off in N_m",
+    "why_it_matters": "Small N_m risks routing failure, large N_m is dominated by parameter interference. The paper maps this as a peaked curve. [§6 Q11; App. P]"
+   },
+   {
+    "name": "scale mismatch vs rank expansion (the CAT diagnosis)",
+    "why_it_matters": "A clean, reusable analytic distinction: concatenating N adapters sums N deltas instead of averaging them, injecting an N× over-perturbation; rescaling factors by 1/√N restores the mean while keeping rank N·r. This 'refine[s] the common view that concatenation is intrinsically unsuitable for LoRA composition'. [App. O]"
+   },
+   {
+    "name": "knowledge dilution",
+    "why_it_matters": "The paper's name for the degradation from merging relevant-but-distinct modules. [App. P]"
+   },
+   {
+    "name": "hybrid parametric/non-parametric memory as the default deployment",
+    "why_it_matters": "'LoRA memory is rarely a standalone solution' [§1]; 'a complementary axis of memory alongside RAG and ICL' [Abstract]. This is the paper's actual thesis and it is a *negative* one about the Θ-path."
+   }
+  ],
+  "extended_or_renamed": [
+   {
+    "term": "memory capacity",
+    "prior_owner": "ch14 (Atlas — formal capacity of a fast-weight matrix, number of key–value pairs storable) and ch05 (classical Hopfield capacity)",
+    "what_changes_here": "Same word, different object: here it is the empirical *token* capacity of a slow-weight low-rank delta, threshold-indexed and training-recipe-dependent. The monograph must flag the equivocation on first use, or the reader will import the Atlas intuition (a closed-form m ≤ D) into a quantity that has no closed form and moves with η_Θ, n_steps and data format."
+   },
+   {
+    "term": "composability",
+    "prior_owner": "MoE / adapter-library literature",
+    "what_changes_here": "Demoted from an assumed property to a measured, failing one: 'testing their viability as composable building blocks' [App. O] → answer, for factual memory, is that they compose only weakly and monotonically worse with N_m."
+   },
+   {
+    "term": "gen(𝓗; B_s) (S0 (U-Θ))",
+    "prior_owner": "S0-DESIGN §2.2",
+    "what_changes_here": "Given empirical content for the first time in the corpus: format matters more than volume, and generator quality caps the student. This paper is the natural citation for the (U-Θ) 𝓡-construction discussion in T4."
+   }
+  ],
+  "conspicuously_absent_vocabulary": "The words 'sleep', 'consolidation', 'replay', 'dream', 'test-time training' and 'fast weight' do not occur anywhere in the source text (verified by exhaustive search). 'forgetting' occurs 4 times, all inside citations or bibliography entries, never as something measured. This paper therefore contributes a Θ-path capacity constraint to the monograph while being entirely outside the monograph's own vocabulary."
+ },
+ "inherited_open_question": {
+  "from": "The LoRA-as-pipeline-component line: PRAG (Su et al., 2025), SEAL (Zweiger et al., 2025, arXiv:2506.10943 — the Θ-3 chapter of the S0 roster), and DCD/KMSDCD (Caccia et al., 2025).",
+  "question": "What can a LoRA module actually store, when does it saturate, how does supervision format affect factual retrievability, and how many modules can be merged before interference dominates — questions that the pipeline papers leave unanswered because they only report end-to-end gains.",
+  "evidence": "§1 Introduction, p.1: 'Although recent works have begun utilizing LoRA as knowledge storage (Su et al., 2025; Zweiger et al., 2025; Caccia et al., 2025), these works do not prove LoRA's ability as knowledge memory, because they focus on performance gain in specific problem settings. They happen to include LoRA as a component of a pipeline, rather than systematically examining LoRA's intrinsic memory properties. Hence, the observed gains remain difficult to account for, raising doubts about the fundamental capabilities and limitations of LoRA as a general solution for knowledge memory.' §2 Related Work, LoRA paragraph, p.2: '[these] methods primarily emphasize end-to-end system for a single module, leaving the memory-specific questions of what LoRA can store, when it saturates, and how supervision format affects factual retrievability less pinned down.' §2 Related Work, Multi-LoRA paragraph, p.2: 'practical questions such as how many modules can be merged and under what interference regimes are not fully characterized.'",
+  "honesty_caveat": "IMPORTANT for the bridge-in: this is a gap the present authors *attribute* to SEAL/DCD/PRAG, not a question those papers themselves posed. The paper quotes no prior open question. For the chapter's §1 bridge-in the chain is therefore Θ-3 (SEAL) → this chapter via an *externally asserted* gap; the honest phrasing is '이 논문이 SEAL·DCD·PRAG에 대해 스스로 세운 공백'이지 '전작이 남긴 open question'이 아니다."
+ },
+ "open_questions": [
+  "Continual / time-incremental operation is entirely untested. Verbatim [§8 Limitation and Future Work, p.9]: 'Our study isolates the memory properties of LoRA modules in controlled settings, but does not constitute a full continual-update deployment. A key next step is to evaluate and design LoRA memory under time-incremental, topic-diverse streams (e.g., daily news updates), where new information is logically connected over time and must be stored, retrieved, and revised continuously.' This is exactly the regime the STC monograph cares about, and this paper does not enter it.",
+  "Adapter serving is named as unsolved: '[on] the system side, scaling requires more robust routing and interference-aware merging for long-document multi-hop queries, as well as practical adapter serving (caching, prefetching, and kernel-level optimization) to manage the latency of multi-module composition.' [§8, p.9]",
+  "How to choose N_m adaptively: 'Future work should explore methods for dynamically adjusting N based on retrieval confidence or developing merging algorithms that are more robust to interference, thereby striking a more effective balance between routing and merging.' [App. P, p.34]",
+  "Why does routing fail across router families? 'improving robustness likely requires considering routing together with partitioning granularity and merging interference' [App. N, p.32] — i.e. the paper suspects the partition boundary, not the router, is the real object, and does not test it.",
+  "Training dynamics of selective placement: 'we found it to be more sensitive to hyperparameters and sometimes unstable: in PB, some low-rank selective configurations failed to train reliably… A deeper study of these training dynamics for knowledge LoRA is a promising direction for future work.' [App. E.1, p.21]",
+  "The PEFT / FlashAttention latency anomaly is left unexplained: 'This discrepancy strongly suggests that the presence of the PEFT adapter may inadvertently prevent the underlying model from activating certain default optimization strategies during its forward pass… another counterintuitive trend was observed. The inference speed of the base model paradoxically decreased… while the inference speed for the single LoRA model significantly improved.' [App. U, p.41] No resolution offered.",
+  "IMPLICIT, never raised by the paper: whether writing ΔΘ damages the base model's general capability. The paper opens on catastrophic forgetting [§1] and cites Pletenev et al. 2025 ('…without harming llm?') [§2 / App. A], then never measures it. ρ is left completely open.",
+  "IMPLICIT: no capacity model. The paper repeatedly gestures at 'scaling laws in complex, long-context scenarios' [App. A] but produces no functional form relating T_max to r, and never tabulates T_max at all.",
+  "IMPLICIT: composition with the E-path and W-path is untested. LoRA + ICL / LoRA + RAG are tested; LoRA on top of a fast-weight architecture, or LoRA driven by a Letta-style sleep-time context summariser, is never attempted."
+ ],
+ "unfavorable_facts": [
+  {
+   "fact": "The paper's own Q13 headline is contradicted by its own Table 2. The implication box reads 'LoRA achieves stronger performance when paired with external context, outperforming standalone LoRA, RAG, or ICL' [§7 Q13, p.7] and App. S states 'the integration of LoRA with external context improves performance across all configurations… the hybrid systems outperform their standalone LoRA, ICL, and RAG counterparts.' On Llama-3.1-8B QuALITY, standalone ICL scores 70.20 and the best hybrid (Multi-LoRA Top3 + ICL) scores 69.22 — ICL alone wins.",
+   "source": "[Table 2, p.7; §7 Q13, p.7; App. S, p.36]"
+  },
+  {
+   "fact": "Adding LoRA to RAG makes RAG substantially worse on QuALITY in the three larger models, though not universally. Llama-3.1-8B: RAG 63.79 → Single LoRA+RAG 42.42 (−21.4 points) and → Multi Top1+RAG 47.26. Qwen3-8B: RAG 64.53 → 44.10 (−20.4) and → 48.14. Qwen3-1.7B: RAG 43.43 → 33.15 (−10.3) and → 38.40. This is the single most damaging pattern in the paper for the 'complementary axis' thesis, and it is never mentioned in the text. CORRECTION 2026-08-06: the original wording of this note claimed the pattern held 'in every model where the comparison exists'. That is false — Llama-3.2-1B goes the other way (26.12 -> 29.86). The damaging pattern is real at 1.7B and above and reverses at 1B, which if anything sharpens the finding: the interference appears where the LoRA actually has capacity to write. Chapter ch19 carries the corrected scoping; this note was the stale source.",
+   "source": "[Table 2, p.7]"
+  },
+  {
+   "fact": "A prior-work baseline beats the authors' own single-LoRA on the headline long-document benchmark for half the models tested. KMSDCD (Caccia et al., 2025) vs Single LoRA on closed-book NarrativeQA: Llama-3.1-8B 29.07 vs 27.05; Qwen3-8B 28.68 vs 25.78. KMSDCD also beats every Multi-LoRA configuration in closed-book NarrativeQA for all four models. The paper never comments on this row.",
+   "source": "[Table 2, p.7]"
+  },
+  {
+   "fact": "Multi-LoRA — the paper's own scaling proposal — loses to a single LoRA on closed-book NarrativeQA for all four base models (23.81>16.87/16.85; 27.05>19.95/22.42; 24.78>15.90/16.27; 25.78>19.13/21.15), and embedding-routed multi-LoRA also loses to the single-LoRA baseline on PaperQA (Llama 4.94 vs 5.24; Qwen 5.52 vs 5.65). The modular story survives only under an oracle router.",
+   "source": "[Table 2, p.7; Fig. 6 right / Fig. 19, p.31; §6 Q9]"
+  },
+  {
+   "fact": "The multi-LoRA advantage is a designed-in result and the authors say so. The 64K PhoneBook PoC partitions the data into eight disjoint 8K slices, trains one adapter per slice, and then uses an oracle that names the correct slice for every query — under which multi-LoRA reaches ~99.8%. App. M: 'While this outcome might be anticipated given the experimental design, its value lies not in its novelty but in its function as a clear proof of concept.'",
+   "source": "[§6 Q8, p.5; Fig. 6 left; App. M, p.30]"
+  },
+  {
+   "fact": "Composition — the core promise of modular parametric memory — does not compose. With routing error removed entirely (only ground-truth-relevant modules merged), performance peaks at N_m = 1 and decreases monotonically through N_m = 5. 'even when all necessary knowledge is included, merging additional modules can progressively dilute or interfere with the stored information, quickly degrading answer quality.'",
+   "source": "[§6 Q11, p.6; Fig. 7 right; Fig. 21, p.30; App. P, p.34]"
+  },
+  {
+   "fact": "Two of the three core benchmarks are author-built, and the third is repurposed. PhoneBook is generated by the authors [App. B]; PaperQA is built by the authors from 15 papers, with questions generated by Gemini 2.5 Pro and answers scored by a GPT-4.1 LLM-judge [App. C]. Both headline capacity findings (Q1–Q3) rest on PhoneBook + CounterFact; all of §5 and most of §6 rest on PaperQA.",
+   "source": "[App. B, p.14; App. C, pp.15–18]"
+  },
+  {
+   "fact": "The best-format finding is contaminated by format alignment, as the authors concede: 'The QA format's top performance may be partially attributed to its structural alignment with the evaluation task, which is also QA-based. This suggests that consistency between the training data format and the target task is an important factor.' PaperQA's evaluation is QA; PhoneBook's *training data itself* is emitted in QA form ('Question: What is the phone number of Jane Doe? Answer: …'). The Q4 conclusion 'QA achieves the strongest gains and the best token-efficiency' is therefore partly a measurement of the benchmark.",
+   "source": "[App. I, p.25; App. B, p.14; §5 Q4, p.4]"
+  },
+  {
+   "fact": "An ablation reverses the main-paper configuration. 'in CF, we occasionally observe Early outperforming the all-layer baseline, suggesting a slightly different behavior than the \"apply everywhere\" guidance of (Schulman & Lab, 2025) in this specific knowledge-memory setup.' The main paper nonetheless applies LoRA everywhere — chosen 'for robustness and reproducibility', not for performance — and the reason given is that the better configuration is unstable: 'in PB, some low-rank selective configurations failed to train reliably.' So the reported capacity numbers are from a knowingly sub-optimal placement.",
+   "source": "[App. E.1, p.21]"
+  },
+  {
+   "fact": "A variant result reverses direction across benchmarks. PiSSA is reported as the best adapter on PaperQA for Llama (bar value 7.17 vs LoRA 5.40), but collapses on NarrativeQA single-LoRA for the same model: ROUGE-L 8.56 vs LoRA's 27.05 — a 3× degradation. The paper reports both and reconciles them only with 'the overall trends are not consistent across models and settings.'",
+   "source": "[Fig. 13, p.20; Table 4, p.20; App. E.2, p.19]"
+  },
+  {
+   "fact": "The 100K+ token evidence is statistically empty. LongBench v2 is evaluated on 30 documents and every reported accuracy is an exact multiple of 3.33 (30.00, 20.00, 33.33, 16.67, 23.33, 36.67, 26.67) — consistent with 30 binary outcomes. On a multiple-choice benchmark whose random-guess floor is ~25%, ICL scores 20.00 on both models and RAG scores 20.00/16.67, i.e. below chance. ∞Bench uses 20 documents. The conclusion drawn from these tables — 'LoRA-based methods do not uniformly collapse in the 100K+ token regime' — is not supported at this sample size.",
+   "source": "[App. Q, p.35; Table 7, p.34]"
+  },
+  {
+   "fact": "The sleep-time cost is excluded from the only cost comparison in the paper. The Q15 component list [App. U, pp.39–40] enumerates, for every LoRA condition, model loading / adapter loading / rag setup / query embedding / faiss search / lora merge / lora activation / tokenization / inference — and contains no LoRA-training term. The claim 'the LoRA-based memory approach offers a substantial computational advantage over context-dependent methods' [§7 Q15 implication] is therefore an amortisation over N_q = 30 queries with the write cost set to zero.",
+   "source": "[§7 Q15, p.8; App. U, pp.39–40]"
+  },
+  {
+   "fact": "RAG is faster than the paper's proposed multi-LoRA serving mode, in both runs, and this is not stated. Fig. 22 with Flash Attention: RAG 43.5 s vs Multi-LoRA (Preloaded) 65.9 s. Without: RAG 86.1 s vs 109.3 s. The conclusion compares multi-LoRA only against ICL ('achieves a lower total processing time than the ICL-based approach').",
+   "source": "[Fig. 22, p.38; §7 Q15, p.8]"
+  },
+  {
+   "fact": "The latency measurements rest on an unexplained kernel-path artifact that the authors flag but do not resolve: with FlashAttention disabled, single-LoRA inference is ~2× the base model's on identical short prompts; with FlashAttention enabled, the base model got *slower* than its own non-FA run while single-LoRA got faster and overtook it. Until this is explained, the absolute seconds in Fig. 8 / Fig. 22 cannot be read as a property of LoRA.",
+   "source": "[App. U, p.41]"
+  },
+  {
+   "fact": "No forgetting, no interference with base capability, no repeated rounds, and therefore no ρ. Catastrophic forgetting is the paper's opening motivation [§1] and Pletenev et al. 2025 ('How much knowledge can you pack into a lora adapter without harming llm?') is cited [§2 / App. A]; neither is ever evaluated. The word 'forgetting' appears only inside citations.",
+   "source": "[§1, p.1; §2, p.2; App. A, p.13; absence verified by exhaustive search of the source text]"
+  },
+  {
+   "fact": "No seeds, no variance, no confidence intervals anywhere in the paper. The words 'seed', 'standard deviation' and 'error bar' do not appear; no table carries ±; no figure caption describes error bars. Many of the differences the paper argues from are small — e.g. Q14's 'sole exception' rests on 16.87 vs 16.85 (0.02 ROUGE-L), and Table 6's Top-3 NQA row spans 21.15–21.33.",
+   "source": "[Tables 1, 2, 4, 6, 7; absence verified by exhaustive search of the source text]"
+  },
+  {
+   "fact": "Q6's model-scale conclusion is confounded with hyperparameter search. Each Qwen3 size uses its own grid-searched η and step count (0.6B: 5e-4/250; 1.7B: 5e-4/1000; 4B: 1e-4/500; 8B: 5e-4/1000; 14B: 5e-4/250), so 'performance improves with model size, non-linearly' mixes the size effect with a per-size tuning budget. The stated method sentence — 'To ensure that the base model's scale was the sole variable.' — is a sentence fragment and is not, in fact, what the protocol achieves.",
+   "source": "[App. K, p.27; Table 5, p.27]"
+  },
+  {
+   "fact": "The generator-quality comparison (Q7) runs at a reduced budget because the local generator could not do the job: 'we standardized the amount of synthetic data to 20 QA pairs per document for both generation models. This adjustment was necessary because preliminary experiments showed that the local models had difficulty reliably generating the larger set of 40 QA pairs used in other experiments.' The failure of the open model to emit 40 items is itself never quantified, and the headline GPT-4.1 advantage is measured at half the data volume used elsewhere.",
+   "source": "[App. L, p.29]"
+  },
+  {
+   "fact": "The paper's capacity claims are never given a number. Eq. 1 defines T_max, and T_max is never tabulated for any rank, model or threshold — it appears only inside plotted ratios (Figs. 3, 15, 16). N_params is never stated either. A reader cannot reproduce a single point of the paper's central quantity from the text.",
+   "source": "[Eq. 1, p.3; Figs. 3, 15, 16]"
+  },
+  {
+   "fact": "Suspicious repeated values in Table 2 that the text cannot disambiguate. The value 42.42 appears four times across different methods and settings (Llama-3.1-8B QuALITY: Single LoRA closed-book, Multi Top3 closed-book, Single LoRA+RAG open-book; and Table 6 QuALITY Embedding Top-3). The value 30.21 appears as KMSDCD's QuALITY score for two different base models (Llama-3.2-1B and Llama-3.1-8B). Similarly Llama-3.1-8B QuALITY Single LoRA+RAG = 42.42 = Single LoRA closed-book, and Qwen3-8B Single LoRA+RAG = 44.10 = Single LoRA closed-book, and Qwen3-1.7B Single LoRA+RAG = 33.15 = Single LoRA closed-book — i.e. for all three larger models the 'Single LoRA + RAG' row exactly equals the 'Single LoRA' closed-book row, which is the signature of a copy error rather than a measurement. This should be flagged in the chapter, not smoothed over.",
+   "source": "[Table 2, p.7; Table 6, p.32]"
+  },
+  {
+   "fact": "The same baseline is named three different ways: 'KMSDCD' [Table 2], 'SDCD (Caccia et al., 2025)' [App. R, Baselines], 'DCD (Caccia et al., 2025)' [App. A], and 'KMSDCD (Caccia et al., 2025)' [§7 setup]. Minor, but it means the reader cannot be certain the Table 2 row and the App. R protocol describe the same system.",
+   "source": "[Table 2, p.7; §7, p.6; App. A, p.13; App. R, p.36]"
+  },
+  {
+   "fact": "Dimensional inconsistency in the merging formulas: App. O declares A_i ∈ R^{d×r}, B_i ∈ R^{r×k} and then writes ΔW_i = B_i A_i and ΔW_CAT = B_merged A_merged, products that do not type-check with the declared shapes. The intended object is unambiguous but the formulas as printed are wrong.",
+   "source": "[App. O, pp.32–33]"
+  },
+  {
+   "fact": "Scale far below deployment. The paper's own related work cites LAG as selecting 'from libraries containing thousands of LoRAs' [App. A]; this study never exceeds 15 adapters, 5-way merges, one 8B model, batch size 1, and a single workstation GPU. Every routing and interference conclusion is drawn in a regime two to three orders of magnitude smaller than the one it is offering guidance for.",
+   "source": "[App. A, p.13; App. D, p.19; §6]"
+  }
+ ],
+ "cross_path_citations": {
+  "verdict": "Partial, and asymmetric. This paper cites all three paths — but engages only the Θ-path. The W-path and E-path appear exclusively as one-line lump citations in Related Work, with no experiment, no comparison and no conceptual engagement. And the entire sleep-time-compute literature by name is absent: the string 'sleep' does not occur once in the paper.",
+  "Theta_path_engaged": [
+   "SEAL / Zweiger et al. 2025 (arXiv:2506.10943) — cited in §1, §2, and discussed at length in App. A, with an explicit positioning claim: 'SEAL relies on a computationally expensive outer loop to train a generator LLM, often targeting much longer contexts, which limits its practical applicability… we distinguish our approach by eliminating the computational overheads associated with SEAL's outer loop.' This is the S0 roster's Θ-3 chapter, so the bridge is real.",
+   "DCD / Caccia et al. 2025 — cited and, uniquely, RUN as a baseline (the 'KMSDCD' row of Table 2). The only prior Θ-path method actually reproduced.",
+   "PRAG / Su et al. 2025 (SIGIR) and DyPRAG / Tan et al. 2025 — the document-specific-LoRA-retrieval line, cited and used as motivation for Q10/Q14.",
+   "LoRA / Hu et al. 2022; DoRA / Liu et al. 2024; PiSSA / Meng et al. 2024 — the parameterisation itself, plus variants tested in App. E.2.",
+   "Model editing: ROME / Meng et al. 2022 (the CounterFact source) and MEMIT / Meng et al. 2023 (cited for FFN-as-fact-store). WISE / Wang et al. 2024 for lifelong editing. This is the S0 roster's Θ-1 chapter (LoRA / ROME / MEMIT).",
+   "LoRA composition and routing: LoraHub (Huang et al. 2023), Mixture-of-LoRAs (Feng et al. 2024), LoRAMoE (Dou et al. 2024), MoLE (Wu et al. 2024), LoRA Soups (Prabhakar et al. 2025), Arrow (Ostapenko et al. 2024b), SpectR and LAG (Fleshman & Van Durme 2025a/b/c), TIES (Yadav et al. 2023), DARE (Yu et al. 2024).",
+   "Hypernetwork adapter generation: Text-to-LoRA (Charakorn et al. 2025), Doc-to-LoRA (Charakorn et al. 2026), SHiNe (Liu et al. 2026) — the amortised-adapter direction, cited in App. A but not tested."
+  ],
+  "W_path_cited_but_not_engaged": "Titans (Behrouz, Zhong & Mirrokni 2024, arXiv:2501.00663), Atlas (Behrouz et al. 2025, arXiv:2505.23735) and Mamba-2 / SSD (Dao & Gu 2024) are in the bibliography. They appear in the body exactly twice, both times inside a list: §2 LLM Memory — 'parametric or architectural mechanisms that internalize updates in weights or structure (Wang et al., 2024; Behrouz et al., 2024; 2025; Dao & Gu, 2024)'; and App. A — 'Advancing further into long-context capabilities, strategies such as Behrouz et al. (2024; 2025); Dao & Gu (2024) attempt to extend memory through architectural adaptation.' No fast-weight method is compared against, and the concepts test-time training / fast weights / inner loop are never named. NOT CITED at all: TTT (Sun et al. 2024), Miras, TNT, Nested Learning (2512.24695), 'Do Language Models Need Sleep?' (2605.26099), Memory Caching (2602.24281).",
+  "E_path_cited_but_not_engaged": "Mem0 (Chhikara et al. 2025, arXiv:2504.19413) and A-MEM (Xu et al. 2025, arXiv:2502.12110) appear once each, inside a single sentence: '[prior] approaches span writable/readable non-parametric stores (Xu et al., 2025; Chhikara et al., 2025)' [§2] / 'system-level solutions introduce non-parametric external memory modules that can be dynamically written and retrieved, as seen in Xu et al. (2025) and Chhikara et al. (2025)' [App. A]. RAG (Lewis et al. 2020) and the embedding-retrieval limitation result (Weller et al. 2025) are genuinely used — Weller is invoked three times to explain the routing bottleneck. NOT CITED at all: MemGPT (2310.08560), Letta 'Sleep-time Compute' (2504.13171) — the paper that names this entire research line — Zep (2501.13956), ReasoningBank (2509.25140).",
+  "bio_and_capacity_paths": "CLS (McClelland et al. 1995) not cited. EWC (Kirkpatrick et al. 2017) cited once, in the first sentence of §1, purely to name catastrophic forgetting. Deep Generative Replay not cited. 'How much do LMs memorize' (2505.24832) not cited — a notable omission for a paper whose central quantity is tokens-per-parameter. Pletenev et al. 2025 ('How much knowledge can you pack into a lora adapter without harming llm?') is cited but only inside a list of continual-learning LoRA works, never as a capacity result and never run.",
+  "the_finding_for_the_monograph": "The Θ-path can produce a careful, 15-question empirical audit of parametric memory without once using the word 'sleep', without citing the paper that coined 'sleep-time compute', and without comparing against a single fast-weight architecture. Meanwhile it independently rediscovers, in weight space, the two problems the E-path has been fighting in text space — retrieval error and evidence fragmentation — and cites the E-path's own theoretical result (Weller et al. 2025) to explain its routing failure. That is the sharpest available instance of S0 §5's '경로가 서로를 인용하지 않는 지점은 그 자체가 발견이다', and it should be the [평가] block of this chapter."
+ },
+ "figures": [
+  {
+   "figure": "Figure 1 (p.2)",
+   "shows": "CounterFact efficacy vs LoRA rank 2→1024, one curve per knowledge load (CF-8K/10K/12K/14K). The capacity-scales-with-rank claim in its entirety. Visible y-ticks 70/80/90 — reproduce with the axis range intact so the reader sees that 512× of rank buys ~20 points."
+  },
+  {
+   "figure": "Figure 2 (p.3)",
+   "shows": "Performance vs data size 4→16K tokens, with ICL and RAG plotted as horizontal reference curves alongside r ∈ {4,16,64}. Left PhoneBook (exact match), right CounterFact (efficacy). The single most useful figure for the chapter: it puts the Θ-path and the E-path on the same axes and shows where the crossover is."
+  },
+  {
+   "figure": "Figure 3 (p.3)",
+   "shows": "Parameter efficiency (Tokens/Param) vs rank, three thresholds per panel. Non-monotonic, peaking at low rank. Left PhoneBook (90/95/100% thresholds), right CounterFact (75/80/85%). This is the paper's quantitative constraint on the Θ-path in one picture."
+  },
+  {
+   "figure": "Figure 6 (p.5)",
+   "shows": "Left: the 64K-PhoneBook multi-LoRA proof of concept under an oracle router (~99.8% vs a collapsed baseline at 32.2%). Right: the routing gap — Perfect > Single LoRA > Embedding. Reproduce BOTH panels together; the left panel is the promise and the right panel is the price, and separating them misrepresents the paper."
+  },
+  {
+   "figure": "Figure 7 (p.6)",
+   "shows": "Left: six merging operators side by side (CAT collapse, DARE underperformance, Linear/TIES at the top). Right: LLM-judge score vs number of merged LoRAs N_m = 1…5 with ground-truth modules only — monotone decline from a peak at N_m = 1. The right panel is the paper's most important negative result and belongs in the chapter's caveat section."
+  },
+  {
+   "figure": "Figure 8 (p.8)",
+   "shows": "Stacked-bar latency breakdown for 30 sequential NarrativeQA questions: ready time / adapter loading / merge / tokenization+inference across Multi-LoRA (Dynamic), ICL, Multi-LoRA (Preloaded), RAG, Single LoRA. The systems figure. Reproduce with the explicit note that no training time appears in any bar."
+  },
+  {
+   "figure": "Figure 14 (p.23)",
+   "shows": "The full capacity sweep the main text only samples: all ranks 2→1024 plus ICL and RAG, load 1→20K tokens, PhoneBook and CounterFact, Llama (top row) and Qwen (bottom row). If the chapter reproduces one figure at full size, this is the candidate — it is the raw material behind Q1, Q2 and Q3 simultaneously."
+  },
+  {
+   "figure": "Figure 16 (p.23)",
+   "shows": "The (rank, threshold, efficiency) surface for Llama on CounterFact and PhoneBook. Figures 3 and 15 are slices of it. Useful for showing that the 'optimal rank' is threshold-dependent, which the prose does not say."
+  },
+  {
+   "figure": "Figure 17 (p.25)",
+   "shows": "Synthetic-format scaling in full: LLM judge, BLEU and ROUGE-L vs token count, for Llama and Qwen, with every QA/Summary/Rewrite variant labelled in the plot. This is the empirical picture of gen(𝓗; B_s) and is the right figure for the T4 module."
+  },
+  {
+   "figure": "Figure 22 (p.38)",
+   "shows": "The full component-level latency breakdown with and without FlashAttention. Reproduce the two panels together — the 318.4 s → 75.0 s change in ICL between them is the honest demonstration that these measurements are stack-dependent, and it is the evidence for the paper's own unresolved anomaly."
+  },
+  {
+   "figure": "Figures 9–12 (pp.20–21)",
+   "shows": "Layer (Early vs Late, 16+16 of Llama's 32) and module (Attn vs FFN) placement ablations across ranks, on both PhoneBook and CounterFact. Worth one composite figure: FFN-only consistently beats attention-only, which tells the systems reader exactly which GEMMs the delta traffic lands on."
+  },
+  {
+   "figure": "Figure 13 + Table 4 (p.20)",
+   "shows": "DoRA / PiSSA vs LoRA. Worth reproducing precisely because they disagree with each other (PiSSA best on PaperQA-Llama, catastrophic on NQA-Llama) — a compact illustration of how fragile single-benchmark adapter comparisons are."
+  }
+ ],
+ "systems_implications": {
+  "preamble": "The monograph reader's first question is '그래서 decode에서 뭐가 바뀌는데?'. For this paper the answer is unusually clean and unusually uncomfortable: at decode, nothing changes — the weights are static and the prompt is short. What changes is *before* decode, and it is a weight-space read-modify-write of the whole adapted parameter set, once per query.",
+  "items": [
+   {
+    "claim": "Decode itself is the cheap part, and that is the whole value proposition. LoRA-based methods 'exhibit shorter pure inference times by eliminating the need to process thousands of context tokens per query' [§7 Q15]. Concretely, closed-book Single LoRA totals 40.0 s (FA) / 56.7 s (non-FA) for 30 questions against ICL's 75.0 s / 318.4 s.",
+    "grounding": "PAPER — [Fig. 22, p.38; §7 Q15, p.8]"
+   },
+   {
+    "claim": "The amortisation denominator this paper actually uses is N_q = 30: thirty sequential questions against one document. In S0's formula C_avg = C_wake + C_sleep/N_q, this paper measures C_wake at N_q = 30 and sets C_sleep = 0 by omission. A monograph-side reconstruction of C_sleep would have to start from 250 optimizer steps at batch 32 per single-LoRA module and 150 steps at batch 32 per chunk module [App. D] — the paper gives no FLOPs, so this cannot be completed from the text.",
+    "grounding": "PAPER for N_q = 30 and the step counts [App. U, p.39; App. D, p.19]; NOTE-WRITER'S INFERENCE for the observation that C_sleep = 0 in the comparison."
+   },
+   {
+    "claim": "The per-query cost that replaces prompt processing is a weight merge, not a lookup. In the preloaded configuration the per-question path is: query embedding → FAISS search → 'lora merge' (TIES over the top-3 adapters via model.add_weighted_adapter) → 'lora activation' (model.set_adapter) → tokenize → generate. The merge touches every adapted matrix in the model for every query.",
+    "grounding": "PAPER — [App. U, 'MULTI-LORA (PRELOADED)', p.40]"
+   },
+   {
+    "claim": "That per-query merge is what breaks shared-weight batching. Two concurrent requests routed to different document partitions require two different ΔΘ_merged, so they cannot share a weight tensor in a single GEMM — the same structural break S0/NM already identify for per-request fast-weight state, arriving here from the Θ-path instead of the W-path. The paper never discusses batching; its inference batch size is never stated and is implicitly 1.",
+    "grounding": "NOTE-WRITER'S INFERENCE. The paper's only adjacent statement is the future-work line 'practical adapter serving (caching, prefetching, and kernel-level optimization) to manage the latency of multi-module composition' [§8, p.9]."
+   },
+   {
+    "claim": "Disk is already the bottleneck at 8B / 15 adapters. Dynamic per-query adapter loading costs 11.7 s more than preloading over 30 questions with FlashAttention (77.6 vs 65.9) and 11.2 s more without (120.5 vs 109.3), i.e. roughly 0.4 s per query of pure I/O. The authors call it 'the prohibitive I/O latency of dynamically loading modules' and adopt preloading to avoid it.",
+    "grounding": "PAPER for the totals and the quoted judgement [Fig. 22, p.38; §7 Q15, p.8]; NOTE-WRITER'S ARITHMETIC for the differences and the per-query division."
+   },
+   {
+    "claim": "Preloading means the working set is 'all of a document's adapters resident in GPU memory' — and the paper gives no byte figure for it. 'all lora loading: A one-time setup cost to load all LoRA modules corresponding to the document's chunks into GPU memory.' For a 20K-token NarrativeQA document at 2,048-token chunks that is ~10 rank-4 adapters; for PaperQA it is 15 rank-16 adapters. Sizing this is exactly the memory-device question the monograph wants answered, and the paper does not answer it.",
+    "grounding": "PAPER for the mechanism and chunk sizes [App. U, p.40; Table 3, p.19]; the module counts for NQA are NOTE-WRITER'S ARITHMETIC from the stated chunk size and document length filter; the byte figure is ABSENT."
+   },
+   {
+    "claim": "Rank is simultaneously the capacity knob and the bytes knob, and the two optima disagree. r ∈ {2…1024} spans 512× in adapter size; absolute capacity rises with r [Q1] while tokens-stored-per-parameter peaks at small r, 'consistently found at a small rank, such as r = 4' [App. H]. For a per-session adapter store that has to be sized in bytes, the byte-optimal configuration is at the small end — which is also the configuration the paper's own multi-LoRA system uses (r = 4).",
+    "grounding": "PAPER — [§4 Q1/Q3, p.3; App. H, p.24; App. D, p.19]"
+   },
+   {
+    "claim": "The delta traffic lands on the FFN, i.e. on the largest matrices in the model. 'In all tested settings, FFN-only LoRA consistently outperforms attn-only LoRA' and early layers beat late [App. E.1]. For a Llama-class model the FFN projections (gate/up/down) dominate the per-layer parameter count, so a byte-efficient knowledge adapter is not a small perturbation of the attention path — it is a delta on the widest GEMMs, which is where a memory-centric accelerator would want to intercept it.",
+    "grounding": "PAPER for the ablation result [App. E.1, p.21]; the parameter-count and accelerator framing is NOTE-WRITER'S INFERENCE."
+   },
+   {
+    "claim": "The LoRA decode path in their stack is not fused, and the paper says the numbers show it. 'the inference time for the single LoRA configuration was approximately twice as long as that of the base model, despite both processing identical short-context prompts… the presence of the PEFT adapter may inadvertently prevent the underlying model from activating certain default optimization strategies during its forward pass' [App. U]. Combined with 'The remaining overhead is largely systems-driven, leaving clear headroom for further optimization' [§7 Q15], the practical reading is that everything in Fig. 8 above the base-model bar is implementation, not algorithm.",
+    "grounding": "PAPER — [App. U, p.41; §7 Q15, p.8]"
+   },
+   {
+    "claim": "The routing stage imports the full RAG serving stack into a supposedly parametric system. Every multi-LoRA configuration pays 'rag setup' (embedding model load + chunk embedding + FAISS index build) as a one-time cost and 'query embedding' + 'faiss search' per question — identical components to the RAG baseline. A Θ-path memory that needs an E-path index to be usable inherits the E-path's cost structure *and* its failure mode; Weller et al. 2025's embedding limitation is cited by the paper itself as the explanation for why routing fails.",
+    "grounding": "PAPER — [App. U, pp.39–40; §6 Q9, p.5; Weller citation at §6 Q9]"
+   },
+   {
+    "claim": "Composition scales the wrong way for a serving fleet. The interference curve peaks at N_m = 1 [Q11], so hedging against router error by merging more modules costs accuracy monotonically — meaning a production system cannot buy robustness with fan-in. It must buy it with better partitioning or better routing, both of which the paper leaves open. Combined with the merge being per-query work, the design pressure is toward N_m = 1 with a very good router, i.e. toward exactly the oracle assumption the paper shows is doing all the work.",
+    "grounding": "PAPER for the curve and the open questions [§6 Q11, p.6; App. P, p.34; §8, p.9]; the 'design pressure' conclusion is NOTE-WRITER'S INFERENCE."
+   },
+   {
+    "claim": "For the monograph's A2 candidate thesis (write capacity as the new bottleneck): this paper supplies the capacity *shape* — finite, rank-controlled, saturating, and non-composable — but supplies no bytes, no write bandwidth, no per-user state figure and no forgetting rate. It constrains the Θ-path argument; it cannot ground it numerically.",
+    "grounding": "NOTE-WRITER'S ASSESSMENT, based on cost_table above (C = absent as bytes, ρ = absent, B_s in steps only)."
+   }
+  ]
+ },
+ "todo_verify": [
+  {
+   "item": "Figure 5 (left) bar-to-model-size assignment for the Qwen3 scale sweep. The five printed values are 3.51, 4.58, 4.32, 4.65, 5.12; the prose fixes the shape (rise 0.6B→1.7B, plateau 1.7B→8B, rise 8B→14B) but not the mapping.",
+   "search_term": "In the PDF, Figure 5 left panel: search the bar labels near x-tick '4B' and read the value printed above each of the five bars."
+  },
+  {
+   "item": "Figure 7 (left) / Figure 20 bar-to-operator assignment for the six merging strategies. Llama values {5.41, 4.92, 4.77, 1.63, 1.32, 0.19}; Qwen values {5.87, 5.76, 5.41, 5.18, 5.06, 2.30}.",
+   "search_term": "In the PDF, Figure 20 top-left panel 'Llama - LLM Judge': read the value above the bar labelled 'DARE-Linear' and the bar labelled 'CAT'."
+  },
+  {
+   "item": "Figure 6 (left) 64K-PhoneBook: which of ICL / Single LoRA carries the 32.2 value, and what the third bar reads.",
+   "search_term": "In the PDF, Figure 6 left panel: read the values above the bars labelled 'ICL', 'Single LoRA' and 'Multi LoRA'; confirm '99.8' belongs to Multi LoRA."
+  },
+  {
+   "item": "Whether Figure 8 (main body) plots the FlashAttention-enabled run of Figure 22 (bottom). Inferred here from the 0–80 s x-axis matching the FA totals.",
+   "search_term": "Figure 8 caption in the published PDF / the sentence in §7 Q15 immediately preceding 'Figure 8 illustrates the results' — look for any mention of Flash Attention."
+  },
+  {
+   "item": "Sign of the exponent on the efficiency axis label, printed in the text extraction as 'Tokens/Param (10 4)'.",
+   "search_term": "In the PDF, Figure 3 y-axis label — read whether it is 10^{-4} or 10^{4}. (Order-of-magnitude reasoning favours 10^{-4}, but that reasoning is not in the paper and must not be written as a paper claim.)"
+  },
+  {
+   "item": "Numeric N_params for any (model, rank) pair, and hence any single reproducible point of Eq. 1.",
+   "search_term": "Search the PDF and the released code/dataset link (Abstract: 'Code and datasets are available at link') for 'trainable parameters', 'Nparams', 'target_modules'."
+  },
+  {
+   "item": "Per-component seconds in Figure 22 (lora loading / lora merge / lora activation / tokenization / inference). Only the six totals are recoverable from the text extraction.",
+   "search_term": "In the PDF, Figure 22 stacked bars — read the segment labels for 'Multi-LoRA (Preloaded)' in both panels."
+  },
+  {
+   "item": "Any wall-clock, GPU-hour or FLOP figure for LoRA training. Exhaustive search of the source text found none.",
+   "search_term": "Search the PDF for 'training time', 'GPU hours', 'minutes', 'FLOP'. If absent, the B_s = 'steps only' finding is confirmed."
+  },
+  {
+   "item": "Number of evaluation questions behind each QuALITY accuracy (115 articles, question count never stated) and behind each LongBench v2 accuracy (30 documents).",
+   "search_term": "Search the PDF for 'QuALITY' + 'questions' and App. Q for the LongBench v2 protocol; needed to decide whether the Table 2 / Table 7 differences exceed sampling noise."
+  },
+  {
+   "item": "Whether Table 2's identical 'Single LoRA' and 'Single LoRA + RAG' QuALITY values for Llama-3.1-8B (42.42), Qwen3-8B (44.10) and Qwen3-1.7B (33.15) are a transcription error or a genuine result.",
+   "search_term": "In the PDF, Table 2, QuALITY columns — compare the 'Single LoRA' closed-book row against the 'Single LoRA + RAG' open-book row for each of the three models."
+  },
+  {
+   "item": "Whether any seed count, repetition count or variance is reported anywhere. Exhaustive search of the source text found no occurrence of 'seed', 'standard deviation' or 'error bar'.",
+   "search_term": "Search the PDF for 'seed', 'std', '±', 'averaged over', 'runs'."
+  }
+ ]
 }
