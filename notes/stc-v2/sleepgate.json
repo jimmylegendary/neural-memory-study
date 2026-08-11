@@ -1,0 +1,1032 @@
+{
+  "paper_id": "sleepgate",
+  "arxiv": "2603.14517",
+  "arxiv_version": "v1 [cs.AI] 15 Mar 2026 [title block, p.1, L5]",
+  "title": "Learning to Forget: Sleep-Inspired Memory Consolidation for Resolving Proactive Interference in Large Language Models",
+  "authors": "Ying Xie, Kennesaw State University, yxie2@kennesaw.edu. SINGLE AUTHOR, single affiliation. [title block, p.1, L7-9]",
+  "venue": "arXiv preprint. No venue, no submission target, and no peer-review status is stated anywhere on the vendored text.",
+  "date": "2026-03-15",
+  "path": "/home/jimmy/repos/neural-memory-study/papers/stc/2603.14517.txt",
+  "code": "ABSENT. No repository URL, no data release, no artifact statement appears anywhere in the paper. A grep for 'github' over the full text returns 0 hits. This matters more than usual here: the entire evidence base is a 917K-parameter model trained from scratch on a synthetic vocabulary, i.e. the one kind of result in this corpus that a reader could actually reproduce on a laptop if the code existed.",
+  "acknowledgment_of_note": "'Claude.ai was used to assist with polishing the writing of this paper.' [SleepGate Acknowledgments, p.17, L1027-1028]. Recorded as a fact, not as an inference about any specific defect. See todo_verify TV-9.",
+
+  "axis": "NONE of E / W / Theta. See discriminant_verdict. The paper self-identifies as sleep-inspired consolidation (title, abstract, Appendix C's five-row biology mapping) but at test time it changes no state in any of the three layers this book partitions. The state it touches is the KV cache, which the book's three-layer partition does not contain. Book placement: B군 (판별식 불충족), 탈락 조건 (3), filed beside Memory Caching (2602.24281). This is the corpus's sharpest instance of the spine thesis — 이름이 기제보다 넓다.",
+
+  "problem_stated": {
+    "as_the_paper_frames_it": "'Large language models (LLMs) suffer from proactive interference (PI): previously processed but now-outdated information in the context window disrupts retrieval of current, relevant values.' [SleepGate Abstract, p.1, L12-13]. The paper insists this is not a context-length problem: 'This finding reveals a working memory bottleneck that is fundamentally distinct from context length limitations. The model can see the relevant tokens—the difficulty is suppressing the irrelevant ones.' [SleepGate §1, p.2, L57-58]",
+    "the_mechanistic_diagnosis": "'In the standard transformer attention mechanism, every entry in the key-value cache participates in every attention computation with no mechanism for selective inhibition. As stale entries accumulate, they collectively drown out the signal from current, relevant entries through sheer numerical mass.' [SleepGate §1, p.2, L58-61]. This sentence is the paper's real thesis: the missing capability is an inhibition lever inside softmax, not a memory.",
+    "the_operational_question": "Given a KV cache in which many entries refer to the same semantic slot and only the last one is current, can a learned, content-dependent per-entry modifier suppress the stale ones — and can that modifier be trained end-to-end alongside the language-modelling objective? [SleepGate §1.2, p.2-3, L92-107; §4, p.8, L472-474]",
+    "the_inherited_empirical_claim": "The whole problem statement is downstream of one prior result: 'Wang & Sun [2025] recently provided a clear demonstration of this phenomenon... retrieval accuracy declines log-linearly toward zero as the number of prior (now-superseded) associations increases. The errors are not random—models systematically retrieve overwritten values' [SleepGate §1, p.2, L49-55], citing Wang, C. & Sun, J. V. (2025), 'Unable to forget: Proactive interference reveals working memory limits in LLMs beyond context length', arXiv:2506.08184 [SleepGate References, p.18, L1127-1128].",
+    "note_writer_remark": "[note-writer] The problem statement is well posed and the diagnosis in §1 is correct as a statement about softmax. The gap between that diagnosis and what the paper actually builds is where every problem in this note lives: the diagnosis names a READ-side defect (no inhibition lever in attention) and the paper correctly builds a READ-side fix (an additive pre-softmax bias), but then dresses the fix in write-side vocabulary — sleep, consolidation, eviction, forgetting — that its evaluated configuration never performs."
+  },
+
+  "inherited_open_question": {
+    "verdict": "one-inherited-empirical-result, zero-inherited-open-questions-from-this-corpus",
+    "justification": "The paper explicitly names what it inherits and from whom: 'Our work builds directly on this finding by proposing an architectural solution.' [SleepGate §2 'Proactive Interference in LLMs', p.3, L121-124]. The inherited object is a *finding* (log-linear PI decay, Wang & Sun 2025), not an open question, and Wang & Sun is not in this book's corpus. From the 29-paper corpus the paper inherits nothing — it cites none of the nine discriminant-passing papers (see cross_path_citations).",
+    "what_it_does_inherit_from_the_corpus_indirectly": "Three C군 and B군 papers appear in its bibliography and are the only textual contact with this book's corpus: Memorizing Transformers (Wu et al. 2022) [SleepGate §2, p.4, L169-170], RAG (Lewis et al. 2020) [same], and — the closest thing to a genuine inheritance — Kumaran, Hassabis & McClelland 2016, the CLS update: 'Kumaran et al. [2016] revisit complementary learning systems theory, showing how hippocampal–neocortical interactions can mitigate interference. Our work differs in targeting in-context interference during inference rather than cross-task interference during training.' [SleepGate §2 'Biological Inspiration in Machine Learning', p.4, L175-178]. That last sentence is a lineage statement of *contrast*, and it is more precise about its own position relative to CLS than any of the nine A군 papers manages.",
+    "bridge_in_material": "[note-writer] If this paper enters the book it enters at ch11/ch24 (the census) and at ch18 (the condition-(3) exclusion), not as a chapter of its own in a path. Its bridge-in is therefore not a path bridge but a *census* bridge: ch11 §11.2.3 already names Memory Caching as the paper that changes the read equation and gets excluded by condition (3); SleepGate is the second instance of that exact failure, and the first one that self-identifies as sleep. The bridge-in sentence writes itself — 조건 (3)이 무엇을 막는지는 Memory Caching에서 한 번, SleepGate에서 다시 한 번 보인다. 차이는 둘째 논문이 제목·초록·부록 전체를 sleep 어휘로 쓴다는 것이다."
+  },
+
+  "core_mechanism": {
+    "one_line_unified": "SleepGate instantiates none of (U-W), (U-Θ), (U-E). In the soft-biasing configuration that produced every reported number it modifies the READ map of (R) by inserting a learned, content-dependent additive pre-softmax bias over the KV cache (its Eq. 11 replaces its Eq. 1); the only state it persistently mutates is the KV cache itself, and in that configuration the mutation reduces to a deterministic, parameter-free key decay whose isolated contribution the paper's own ablation measures at baseline level.",
+
+    "the_two_variants_must_never_be_conflated": "The paper specifies two systems and evaluates only one. Algorithm 1 splits at line 16: lines 1-15 (key decay + gate scoring) are common; lines 16-21 are the '— Soft Biasing Variant (used in experiments) —' and return an attention bias vector; lines 22-33 are the '— Hard Eviction Variant (Phases 3-5) —' and return a modified cache. [SleepGate Algorithm 1, p.22, L1309-1358]. Figure 1's caption states the same split: 'In the soft biasing variant used in our experiments, the cache passes through decay and the forgetting gate, and the resulting retention scores are converted to additive attention biases (Eq. 10) for a second forward pass. In the hard eviction variant, entries additionally pass through consolidation before eviction.' [SleepGate Figure 1 caption, p.4, L163-168]. §6.3 confirms the soft variant was used and that Stage 3 threshold calibration was skipped [SleepGate §6.3, p.11, L707-711]. EVERY statement in this note distinguishes the two, because the paper's theory (§5), its consolidation module (§3.4), its eviction rule (Eq. 6) and its three-way Gumbel head (Eq. 8-9) all belong to the variant that was never run.",
+
+    "notation_conflicts": {
+      "preamble": "This paper collides with the book's reserved symbols more often than any other in the corpus. It overwrites at least twelve reserved glyphs — $W$, $S$, $r$, $f$, $b$, $\\hat y$, $\\rho$, $\\alpha$, $\\beta$, $\\eta$, $\\tau$, $s$, $C$ — and in three cases overloads a glyph against itself within four pages ($\\sigma$, $\\varepsilon$, $\\alpha$). The chapter that uses this paper must never write a bare paper symbol in body prose. Equation numbers below are the paper's own (Eq. 1-25), which are genuine numbered equations — unlike Letta STC, this paper does number its mechanism.",
+      "map": [
+        {
+          "paper_symbol": "$\\rho_t$",
+          "paper_meaning": "conflict density — the fraction of current cache entries flagged superseded, $\\rho_t = \\frac{1}{|C_t^+|}\\sum_{i\\in C_t^+}\\sigma_i$ [SleepGate Eq. 15, p.8, L443-451]; trigger fires when $\\rho_t > \\rho_{\\max}$, with $\\rho_{\\max}=0.4$ [Table 3, p.20, L1179+1198]",
+          "reserved_meaning": "$\\rho$ = 망각·열화율, 비용 4종의 하나, 라운드당 성능 손실 [STC-STYLE-NOTATION §1.2; 첨자 없는 맨 $\\rho$는 언제나 이 뜻이다, §1.3]",
+          "unified_replacement": "$\\rho_{\\text{conf}}(t)$, registered in the chapter's mapping table per STC-STYLE-NOTATION §1.3. THE MOST DANGEROUS COLLISION IN THE CORPUS: the paper's $\\rho$ is a read-side crowding measure and the book's $\\rho$ is a write-side degradation rate. Writing them with the same glyph in the same chapter would silently assert the identification that this note's cost_table.rho explicitly rejects."
+        },
+        {
+          "paper_symbol": "$W_s$, $W_1$, $W_a$, $W_K'$, $W_V'$, $w_r$, $w$",
+          "paper_meaning": "learned projection matrices (signature Eq. 3; gate hidden Eq. 7; action head Eq. 8; consolidation key/value Eq. 13/12), gate readout vector (Eq. 7), and LocalPool half-window (Eq. 3, $w=4$ per Table 3)",
+          "reserved_meaning": "$W$ = fast weights, the object of (U-W). Reserved by Neural Memory and inherited without exception [STC-STYLE-NOTATION §1.2, P1-P2]",
+          "unified_replacement": "$P_m$ (signature projection), $U_1$ (gate hidden), $U_a$ (action head), $P_K, P_V$ (consolidation), $u_r$ (readout), $h_{\\text{pool}}$ (window half-width). Capital $W$ must not appear in this chapter except as fast weights — and this paper has no fast weights."
+        },
+        {
+          "paper_symbol": "$r_i$",
+          "paper_meaning": "retention score in $[0,1]$ produced by the gate, $r_i=G_\\theta(f_i)$ [SleepGate Eq. 6-7, p.6, L270-289]",
+          "reserved_meaning": "$r$ = LoRA rank, fixed in STC-STYLE-NOTATION v0.2 §1.3 precisely because rank appears far more often in this book than any competitor",
+          "unified_replacement": "$\\pi_i$ — reads correctly as a per-entry retention probability. Capital $\\Pi$ (지속학습 성능 행렬, ch07) must be kept distinct by case; register that fact."
+        },
+        {
+          "paper_symbol": "$f_i$",
+          "paper_meaning": "the gate's input feature vector $[k_i \\Vert v_i \\Vert \\mathrm{PE}(\\tau_i,t)\\Vert s_i \\Vert \\sigma_i \\Vert a_i \\Vert \\bar c]$ [SleepGate Eq. 5, p.6, L262-265]; and separately $f_e$ = fraction evicted per cycle [Prop. 1, p.10, L639-641]",
+          "reserved_meaning": "$f(\\cdot)$ = the read map of (R), $\\hat y = f(q;\\Theta,W,\\mathrm{ret}(E,q))$ [S0-DESIGN §2.1]",
+          "unified_replacement": "$\\phi_i$ (feature vector), $\\phi_e$ (eviction fraction). The collision is not cosmetic — this chapter's whole argument is that the paper modifies $f$, so $f$ must mean only the read map here."
+        },
+        {
+          "paper_symbol": "$b_i$; $b_1$, $b_r$, $b_a$",
+          "paper_meaning": "the additive pre-softmax attention bias $b_i=\\beta\\log(\\max(r_i,\\varepsilon))$ [SleepGate Eq. 10, p.6-7, L310-315]; and MLP bias terms",
+          "reserved_meaning": "$b$ is FORBIDDEN outright [STYLE-NOTATION §1.5, inherited via P1] — it was Titans' inner mini-batch size and was retired",
+          "unified_replacement": "$\\psi_i$ for the attention bias. This is the paper's single most important quantity, so the chapter needs a clean symbol for it."
+        },
+        {
+          "paper_symbol": "$S_m$",
+          "paper_meaning": "the $m$-th cluster of compress-marked entries [SleepGate §3.4, p.7, L356-359]",
+          "reserved_meaning": "bare $S$ is FORBIDDEN [STC-STYLE-NOTATION §1.5]: $S_t$ = inner momentum (always time-subscripted) vs $S(\\cdot;B_s)$ = offline processing procedure (always carries the budget argument). $S_m$ has a subscript and no argument, so it reads as momentum",
+          "unified_replacement": "$\\mathcal{C}_m$ for the cluster."
+        },
+        {
+          "paper_symbol": "$\\hat y_i$",
+          "paper_meaning": "the Gumbel-softmax relaxed 3-way action distribution over {keep, compress, evict} [SleepGate Eq. 9, p.6, L298-302]",
+          "reserved_meaning": "$\\hat y$ = the model's answer in (R)",
+          "unified_replacement": "$\\pi_i^{\\text{act}}$."
+        },
+        {
+          "paper_symbol": "$\\alpha_k$, $\\alpha_e$; $\\alpha_i^{(m)}$; $\\alpha_{t,i}^{(h)}$",
+          "paper_meaning": "THREE different objects: keep/evict thresholds on the retention score [Eq. 6, p.6, L270-282]; recency-biased consolidation weights [Eq. 13, p.7, L383-404]; and ordinary attention weights inside the entropy definition [Eq. 14, p.7, L425-437]",
+          "reserved_meaning": "$\\alpha_t$ = retention gate in (U-W), 남기는 비율 [STC-STYLE-NOTATION §1.2]",
+          "unified_replacement": "$\\pi_{\\text{keep}}, \\pi_{\\text{evict}}$ (thresholds); $w_i^{(m)}$ (consolidation weights); $A_{t,i}^{(h)}$ (attention weights). The first of these is especially treacherous: the paper's $\\alpha_k$ is a *threshold on* a retention score, and the book's $\\alpha_t$ *is* a retention factor. Same word, different mathematical role."
+        },
+        {
+          "paper_symbol": "$\\beta$",
+          "paper_meaning": "the bias scale, $\\beta=5.0$ [Eq. 10, p.7, L313-315; Table 3, p.20]",
+          "reserved_meaning": "$\\beta_t$ = momentum decay in (U-W)",
+          "unified_replacement": "$\\beta_{\\text{bias}}$; bare $\\beta$ never appears in this chapter."
+        },
+        {
+          "paper_symbol": "$\\eta$",
+          "paper_meaning": "recency weight inside consolidation, $\\eta=2$ [Eq. 13, p.7, L404-411]",
+          "reserved_meaning": "$\\eta_t$ = inner learning rate, $\\eta_\\Theta$ = sleep/outer learning rate; mixing them is a defect [STC-STYLE-NOTATION §1.5]",
+          "unified_replacement": "$\\nu_{\\text{rec}}$."
+        },
+        {
+          "paper_symbol": "$\\tau_i$; $\\tilde\\tau_i$; $\\tau_{\\text{temp}}$",
+          "paper_meaning": "position timestamp of a cache entry [Eq. 2, p.5, L226-231]; normalized timestamp $\\tau_i/\\max_j\\tau_j$ [Eq. 13]; Gumbel temperature, annealed $1.0\\to0.1$ [Eq. 9; Table 3]",
+          "reserved_meaning": "$\\tau$ = 세션 첨자 [STC-STYLE-NOTATION §1.2, P3]. None of the three paper uses is a session index",
+          "unified_replacement": "the entry's own token index $i$ (drop $\\tau_i$ entirely — it is definitionally the position); $i/\\max_j j$; $T_{\\text{gum}}$."
+        },
+        {
+          "paper_symbol": "$s_i$, $d_s$",
+          "paper_meaning": "semantic signature vector and its width, $d_s=64$ [Eq. 3, p.5, L232-242; Table 3]",
+          "reserved_meaning": "$s$ = SGD step index [STC-STYLE-NOTATION v0.2 §1.3]",
+          "unified_replacement": "$m_i$, $d_m$ ('slot' vector). Note the paper's own gloss — 'The semantic signature $s_i$ captures what \"slot\" or \"entity\" the entry refers to' [§3.2, p.5, L232-233] — supplies the name."
+        },
+        {
+          "paper_symbol": "$\\sigma_i$ vs $\\sigma(\\cdot)$",
+          "paper_meaning": "binary superseded flag [Eq. 2, Eq. 4] AND the sigmoid function, both in §3.3: 'and $\\sigma(\\cdot)$ denotes the sigmoid function' [p.6, L307-309]",
+          "reserved_meaning": "not reserved by the book, but the paper's self-collision is real and appears inside a single paragraph",
+          "unified_replacement": "$u_i\\in\\{0,1\\}$ for the superseded flag; keep $\\sigma(\\cdot)$ for sigmoid."
+        },
+        {
+          "paper_symbol": "$\\varepsilon$ / $\\epsilon$",
+          "paper_meaning": "THREE meanings: numerical-stability floor in $\\log\\max(r_i,\\varepsilon)$ [Eq. 10]; numerical-stability constant in the consolidation denominator [Eq. 12, p.7, L370-378]; and the gate's error rate, $p_c\\ge1-\\epsilon$ [Theorem 1, p.10, L607-609]",
+          "reserved_meaning": "not reserved by the book",
+          "unified_replacement": "$\\varepsilon_0$ (numerical floor) and $\\epsilon_{\\text{gate}}$ (error rate). The third meaning carries the entire theorem, so it must be distinguished."
+        },
+        {
+          "paper_symbol": "$C$, $C^{\\ell,h}$, $C^+$, $C'^+$, $C_t^+$; $c$; $\\bar c$",
+          "paper_meaning": "the KV cache and its augmented / post-consolidation / current forms [Eq. 1, Eq. 2, Eq. 19]; $c\\ge2$ = per-cluster compression ratio [Prop. 1, p.10, L639-641]; $\\bar c$ = global context summary, mean-pooled over recent entries [Eq. 5, p.6, L262, L269]",
+          "reserved_meaning": "$C$ = chunk size; $C_{\\text{cap}}$ = 상태 용량. Bare $C$ is chunk size only [STC-STYLE-NOTATION §1.5]",
+          "unified_replacement": "$\\mathcal{K}$ (cache), $\\mathcal{K}^+$ (augmented), $\\mathcal{K}'^+$ (post-consolidation); $\\gamma_{\\text{comp}}$ (compression ratio); $\\bar\\phi$ (context summary). $C_{\\text{cap}}$ stays reserved for capacity in bytes — which this paper does not report."
+        },
+        {
+          "paper_symbol": "$L_{\\text{wake}}$, $L_{\\text{sleep}}$, $L_{\\text{compress}}$, $L_{\\text{align}}$, $L_{\\text{total}}$",
+          "paper_meaning": "the four loss terms and their sum [Eq. 17-21, p.8-9, L474-534]",
+          "reserved_meaning": "$L$ = sequence length (NM-inherited, v0.2 §1.3); $\\mathcal{L}$ = outer/task loss; $\\ell$ = inner loss",
+          "unified_replacement": "$\\mathcal{L}_{\\text{wake}}$ etc. — calligraphic is the correct assignment, since all four are optimized by the OUTER loop (Algorithm 2 backpropagates all four through $\\Theta$, $G_\\theta$ and the tagger [SleepGate Algorithm 2 line 21, p.23, L1404])."
+        },
+        {
+          "paper_symbol": "$T$; $N$; $N_{\\max}$; $n$",
+          "paper_meaning": "sequence length $x=(x_1,\\dots,x_T)$ [§3.1, p.5, L196-198]; sleep-cycle interval in tokens [Theorem 1, p.10]; the fallback periodic trigger interval, $N_{\\max}=128$ [Eq. 16; Table 3]; the PI depth = number of updates to one key [§3.1, p.5, L216-218]",
+          "reserved_meaning": "$L$ = sequence length; $N_q$ = 한 문맥을 공유하는 질의 수; $n$ = 저장된 항목 수",
+          "unified_replacement": "$L$; $T_{\\text{cyc}}$; $T_{\\text{cyc}}^{\\max}$; $n_{\\text{PI}}$. $n_{\\text{PI}}$ must be subscripted because it is the independent variable of every table in the paper and must not be confused with the global 'stored item count'."
+        },
+        {
+          "paper_symbol": "$H_t$, $\\bar H$, $\\mathrm{std}(H)$, $\\kappa$",
+          "paper_meaning": "mean attention entropy across heads at position $t$, its running mean and standard deviation, and the trigger multiplier $\\kappa=1.5$ [Eq. 14, Eq. 16, p.7-8; Table 3]",
+          "reserved_meaning": "$\\mathcal{H}_k$ = $k$라운드까지 누적된 경험 [STC-STYLE-NOTATION §1.2]. Different font, same letter",
+          "unified_replacement": "keep $H_t$ upright/italic for entropy and never calligraphic; $\\kappa_H$ for the multiplier."
+        },
+        {
+          "paper_symbol": "$G_\\theta$; $\\theta$",
+          "paper_meaning": "the forgetting gate network and its parameters [§3.3, p.5, L257-258]",
+          "reserved_meaning": "$\\Theta$ = slow weights. Lowercase $\\theta$ is not separately reserved, but $G_\\theta$'s parameters ARE part of $\\Theta$ in this book's sense — they are learned in the outer loop and frozen at inference",
+          "unified_replacement": "keep $G_\\theta$, and state explicitly in the chapter that $\\theta \\subset \\Theta$. This is load-bearing for the discriminant: the gate is slow weights, so 'the gate learns to forget' is an outer-loop statement, not a test-time one."
+        },
+        {
+          "paper_symbol": "$d$, $d_s$, $d_g$, $d_h$, $d_{\\text{model}}$, $d_{\\text{ff}}$",
+          "paper_meaning": "key/value width; signature width 64; gate input width; GATE HIDDEN width 128; model width 128; FFN width 256 [§3.3, p.6, L290-291; §6.1, p.11, L663-664; Table 3]",
+          "reserved_meaning": "$d$ = 모델 폭",
+          "unified_replacement": "compatible, but register one trap explicitly: $d_h$ here is the GATE's hidden dimension, not the attention head dimension. This reader will assume head dim on sight. (Head dim in this paper is $128/4=32$ and is never written.)"
+        },
+        {
+          "paper_symbol": "$q_{\\text{latest}}$",
+          "paper_meaning": "a LEARNED query vector used to compute recency-biased consolidation weights [Eq. 13, p.7, L379-404]",
+          "reserved_meaning": "$q$ = the user query (S0 §2.3); $q_t$ = query vector",
+          "unified_replacement": "$\\hat q_{\\text{cons}}$. The paper's name is misleading: it is a fixed learned parameter, not the latest query."
+        },
+        {
+          "paper_symbol": "$\\lambda$; $\\lambda_s,\\lambda_c,\\lambda_g$; $\\delta$; $\\gamma$; $a_i$; $\\mathcal{M}_{\\text{current}}$; $p_c$/$p_{\\text{correct}}$",
+          "paper_meaning": "key decay rate $\\lambda=0.01$ [Alg. 1 line 4; Table 3]; loss weights $0.5/0.1/0.3$ [Eq. 17; Table 3]; cosine conflict threshold $0.85$ [Eq. 4; Table 3]; compress-action weight in the 3-way compression loss [§4, p.8, L502-504]; cumulative attention received by entry $i$, the H2O heavy-hitter score [Eq. 2, Eq. 5]; the set of active associations [Eq. 19, p.8, L490-498]; the gate's per-entry correct-eviction probability [Theorem 1]",
+          "reserved_meaning": "$\\mathcal{M}(\\cdot;W)$ = memory read function; $\\gamma$ and $\\delta$ unreserved; $a_i$ unreserved",
+          "unified_replacement": "$\\lambda_{\\text{dec}}$; keep $\\lambda_s,\\lambda_c,\\lambda_g$; keep $\\delta$; $\\gamma_{\\text{cmp}}$; keep $a_i$; $\\mathcal{A}_{\\text{cur}}$; keep $p_c$."
+        }
+      ]
+    },
+
+    "equations_unified": [
+      {
+        "id": "SG-1 (the baseline read)",
+        "latex": "\\hat y \\;=\\; f\\big(q;\\ \\Theta,\\ \\varnothing,\\ \\varnothing\\big),\\qquad \\mathrm{Attn}(q_t,\\mathcal{K})=\\sum_{i=1}^{t}\\frac{\\exp(q_t^\\top k_i/\\sqrt d)}{\\sum_{j=1}^{t}\\exp(q_t^\\top k_j/\\sqrt d)}\\,v_i",
+        "gloss": "Standard causal attention over the KV cache. In the book's frame the second and third slots of (R) are EMPTY: there are no fast weights and there is no external store. Everything this paper does happens inside the first slot's read.",
+        "source": "[SleepGate Eq. 1, p.5, L198-214]"
+      },
+      {
+        "id": "SG-2 (the augmented cache)",
+        "latex": "\\mathcal{K}^+ = \\{(k_i,\\ v_i,\\ i,\\ m_i,\\ u_i,\\ a_i)\\}_{i=1}^{t}",
+        "gloss": "Each entry gains four metadata fields: its own position, a slot signature $m_i\\in\\mathbb{R}^{64}$, a binary superseded flag $u_i$, and the cumulative attention it has received. The last field is the H2O heavy-hitter statistic, imported as an input feature to the very gate that is supposed to beat H2O.",
+        "source": "[SleepGate Eq. 2, p.5, L226-231]"
+      },
+      {
+        "id": "SG-3 (slot signature and conflict flag)",
+        "latex": "m_i=\\mathrm{LayerNorm}\\big[P_m\\,(k_i \\Vert \\mathrm{LocalPool}\\{k_j\\}_{j=i-h_{\\text{pool}}}^{i+h_{\\text{pool}}})\\big],\\qquad u_i=\\mathbb{1}\\big[\\exists\\,j>i:\\ \\cos(m_i,m_j)>\\delta\\big]",
+        "gloss": "The tagger is a single learned projection with a local-pooled context window ($h_{\\text{pool}}=4$, $\\delta=0.85$). An entry is flagged superseded if any LATER entry lands in the same slot. Amortised $O(1)$ per token via LSH is claimed but never measured.",
+        "source": "[SleepGate Eq. 3-4, p.5, L232-251; Table 3, p.20]"
+      },
+      {
+        "id": "SG-4 (the gate)",
+        "latex": "\\pi_i=\\sigma\\big(u_r^\\top\\,\\mathrm{GeLU}(U_1\\phi_i+b_1)+b_r\\big),\\qquad \\phi_i=[\\,k_i\\Vert v_i\\Vert \\mathrm{PE}(i,t)\\Vert m_i\\Vert u_i\\Vert a_i\\Vert\\bar\\phi\\,]",
+        "gloss": "A 2-layer MLP scores each cache entry. All of its parameters live in $\\Theta$ — they are trained in the outer loop and frozen at test time. Nothing about $\\pi_i$ is a state update; it is a function evaluation on the current cache.",
+        "source": "[SleepGate Eq. 5, Eq. 7, p.6, L262-291]"
+      },
+      {
+        "id": "SG-5 (the biased read) — THIS IS THE PAPER'S ACTUAL MECHANISM",
+        "latex": "\\psi_i=\\beta_{\\text{bias}}\\log\\!\\big(\\max(\\pi_i,\\varepsilon_0)\\big),\\qquad \\mathrm{Attn}_{\\text{sleep}}(q_t,\\mathcal{K})=\\sum_{i=1}^{t}\\frac{\\exp\\!\\big(q_t^\\top k_i/\\sqrt d+\\psi_i\\big)}{\\sum_{j=1}^{t}\\exp\\!\\big(q_t^\\top k_j/\\sqrt d+\\psi_j\\big)}\\,v_i",
+        "gloss": "The read map changes and nothing else does. Because $\\psi_i$ enters the logit additively and $\\psi_i=\\beta_{\\text{bias}}\\log\\pi_i$, the softmax numerator is multiplied by $\\pi_i^{\\beta_{\\text{bias}}}$ — i.e. this is exactly a learned multiplicative reweighting of the attention distribution, $\\mathrm{Attn}_{\\text{sleep}}\\propto\\sum_i \\pi_i^{\\beta_{\\text{bias}}}\\exp(q_t^\\top k_i/\\sqrt d)v_i$. [note-writer] Stating it that way makes the classification unavoidable: it is a reweighting of a read, in the same formal family as ALiBi/relative-position biases and as H2O's masking, differing only in that the weights are produced by a learned content-dependent head instead of a fixed rule.",
+        "source": "[SleepGate Eq. 10-11, p.6-7, L310-341]"
+      },
+      {
+        "id": "SG-6 (the only persistent mutation in the evaluated variant)",
+        "latex": "k_i \\;\\leftarrow\\; k_i\\cdot(1+\\mathrm{age}_i)^{-\\lambda_{\\text{dec}}},\\qquad \\mathrm{age}_i=t-i,\\quad \\lambda_{\\text{dec}}=0.01",
+        "gloss": "Key decay, Algorithm 1 Phase 1, executed in BOTH variants. Compare with (U-W): $W_t=\\alpha_t W_{t-1}+S_t$. SG-6 is formally $\\alpha_t$ applied entry-wise with $S_t\\equiv0$ — a retention factor with the surprise term deleted, applied to a SET of vectors rather than to a fixed-shape operator. That is why it is not (U-W): (U-W)'s defining content is the $-\\eta_t\\nabla_W\\ell$ term, and nothing in this paper computes an inner loss at test time.",
+        "source": "[SleepGate Algorithm 1 lines 1-5, p.22, L1313-1319; Table 3 'Decay rate $\\lambda$ 0.01', p.20]"
+      },
+      {
+        "id": "SG-7 (consolidation — hard variant only, never executed)",
+        "latex": "k^*_m=\\frac{\\sum_{i\\in\\mathcal{C}_m}\\pi_i k_i}{\\sum_{i\\in\\mathcal{C}_m}\\pi_i+\\varepsilon_0},\\qquad v^*_m=\\sum_{i\\in\\mathcal{C}_m} w_i^{(m)} P_V v_i,\\qquad w_i^{(m)}=\\mathrm{softmax}_i\\Big(\\hat q_{\\text{cons}}^\\top P_K k_i/\\sqrt d+\\nu_{\\text{rec}}\\,\\tfrac{i}{\\max_j j}\\Big)",
+        "gloss": "Greedy clustering by slot similarity (threshold $\\delta/2$), then a recency-biased cross-attention pool into one synthetic entry, compression ratio $|\\mathcal{C}_m|{:}1$. This is the only module in the paper that could plausibly be called consolidation, and it produced zero numbers: Algorithm 1 places it in Phase 3 of the hard-eviction variant, and §6.3 states the soft variant was used.",
+        "source": "[SleepGate §3.4, Eq. 12-13, p.7, L349-414; Algorithm 1 lines 22-28, p.22]"
+      },
+      {
+        "id": "SG-8 (the trigger)",
+        "latex": "\\mathrm{trigger}(t)=\\big[H_t>\\bar H+\\kappa_H\\,\\mathrm{std}(H)\\big]\\ \\vee\\ \\big[\\rho_{\\text{conf}}(t)>\\rho_{\\max}\\big]\\ \\vee\\ \\big[t \\bmod T_{\\text{cyc}}^{\\max}=0\\big],\\qquad H_t=-\\frac{1}{|\\mathcal H|}\\sum_{h}\\sum_{i\\in\\mathcal{K}_t^+}A^{(h)}_{t,i}\\log A^{(h)}_{t,i}",
+        "gloss": "A three-way OR on attention entropy, conflict density, and a periodic fallback ($\\kappa_H=1.5$, $\\rho_{\\max}=0.4$, $T_{\\text{cyc}}^{\\max}=128$). The clock of the whole system is $t$, a TOKEN index inside the ongoing forward pass — this is the equation that decides the discriminant's condition (1). No firing statistics, no trigger ablation and no trigger cost appear anywhere in §6-§7.",
+        "source": "[SleepGate Eq. 14-16, p.7-8, L416-460; Table 3, p.20]"
+      },
+      {
+        "id": "SG-9 (the training objective — all four terms are outer-loop)",
+        "latex": "\\mathcal{L}_{\\text{total}}=\\mathcal{L}_{\\text{wake}}+\\lambda_s\\mathcal{L}_{\\text{sleep}}+\\lambda_c\\mathcal{L}_{\\text{compress}}+\\lambda_g\\mathcal{L}_{\\text{align}},\\qquad \\mathcal{L}_{\\text{sleep}}=-\\!\\!\\sum_{(k,v)\\in\\mathcal{A}_{\\text{cur}}}\\!\\!\\log p(v\\mid k,\\mathcal{K}'^+),\\qquad \\mathcal{L}_{\\text{align}}=-\\frac{1}{|\\mathcal{K}^+|}\\sum_i\\big[(1-u_i)\\log\\pi_i+u_i\\log(1-\\pi_i)\\big]",
+        "gloss": "$\\mathcal{L}_{\\text{sleep}}$ IS the evaluation metric — log-likelihood of the current value given the post-bias cache — so the system is directly supervised on the quantity Table 2 reports. $\\mathcal{L}_{\\text{align}}$ supervises the gate against ground-truth-derived supersession flags throughout training. Baselines receive neither. This is the single most important fact for reading Table 2.",
+        "source": "[SleepGate Eq. 17, 19, 21, p.8-9, L474-534; §4.2 Stage 1, p.9, L562-564]"
+      },
+      {
+        "id": "SG-10 (the theory — about the variant that was never run)",
+        "latex": "\\mathbb{E}[\\text{stale}]\\le\\min\\!\\Big(T_{\\text{cyc}},\\ \\frac{\\epsilon_{\\text{gate}}\\,n_{\\text{PI}}}{1-(1-p_c)^{n_{\\text{PI}}/T_{\\text{cyc}}}}\\Big)=O\\big(\\max(T_{\\text{cyc}},\\epsilon_{\\text{gate}} n_{\\text{PI}})\\big),\\qquad p(\\text{retrieve } v_{n})\\ge\\frac{1}{1+O(T_{\\text{cyc}})},\\qquad |\\mathcal{K}'^+|\\le\\frac{T_{\\text{cyc}}}{\\phi_e+(1-\\phi_e)(1-1/\\gamma_{\\text{comp}})}",
+        "gloss": "Theorem 1, Corollary 1, Proposition 1. All three presuppose EVICTION ('entries marked as superseded are evicted'; 'Each sleep cycle evicts each stale entry independently with probability $p_c$'), which the evaluated soft variant never performs. Three separate defects are recorded in unfavorable_facts: the printed bound does not follow from the printed proof sketch; a $\\min$ is restated as an $O(\\max)$; and Prop. 1's own numerical instantiation is arithmetically wrong.",
+        "source": "[SleepGate §5.2 Eq. 23-24, p.10, L600-633; §5.3 Eq. 25, p.10, L635-648]"
+      },
+      {
+        "id": "SG-11 (the phenomenon being fixed)",
+        "latex": "p(\\text{retrieve } v_{n})\\approx\\frac{1}{n_{\\text{PI}}}\\ \\Longrightarrow\\ \\log p\\approx-\\log n_{\\text{PI}}",
+        "gloss": "The paper's model of PI without SleepGate: because all $n$ entries share the same semantic key, attention is approximately uniform over them. [note-writer] This prediction is testable against the paper's own Table 2 and fails there — the Full KV Cache baseline goes 8.0, 9.0, 3.5, 2.0, 3.0, 1.5, 2.5 across $n_{\\text{PI}}=1..30$, which is neither $1/n$ nor monotone, and it starts at 8.0% rather than near 100%. See unfavorable_facts UF-1.",
+        "source": "[SleepGate Eq. 22, p.10, L586-598; Table 2, p.12]"
+      }
+    ],
+
+    "what_is_NOT_in_the_mechanism": [
+      "NO external store. There is no $E$, no record, no index, no retrieval, no persistence beyond the request. $\\mathrm{ret}(E,q)$ has no referent in this paper.",
+      "NO fast weights. There is no fixed-shape recurrent state and no inner loss. The paper makes the absence a selling point: 'SleepGate occupies a middle ground: it preserves the random-access property of the KV cache while adding selective forgetting' [SleepGate §8.2, p.15, L929-930].",
+      "NO weight update at inference. $\\Theta$ — including the gate, tagger and consolidation parameters — is frozen after training. Every 'learned' claim in the paper is an outer-loop claim.",
+      "NO persistence across queries. Each evaluated episode contains exactly one query [SleepGate §6.2, p.11, L697-700]. $N_q=1$ by construction, so the amortisation identity (A) has no denominator and cannot be exercised.",
+      "NO consolidation in any reported number. Module 3 (33,152 parameters, 26.7% of the paper's own 'sleep overhead') is counted in Table 1 but is unreachable in the soft-biasing variant and receives no gradient during Stage 2.",
+      "NO pre-trained model, no natural language, no real corpus. A 793,344-parameter transformer trained from scratch on a 1024-token synthetic vocabulary [SleepGate §6.1, p.11, L663-665].",
+      "NO measurement of the adaptive trigger. Eq. 16 is specified with three signals and three hyperparameters and is never evaluated, ablated, or reported as having fired.",
+      "NO cost in any absolute unit. Grep over the full text: 'FLOP' 0 hits, 'latency' 0 hits, 'throughput' 0 hits, 'wall-clock' 0 hits, 'byte' 0 hits, 'seed' 0 hits, 'confidence' 0 hits, 'significan' 0 hits."
+    ]
+  },
+
+  "outer_vs_inner": {
+    "headline": "Everything that is learned is learned in the outer loop, and nothing at all moves at test time except the KV cache. This paper has no inner loop in the Neural Memory sense — there is no test-time loss, no test-time gradient, and no state that accumulates across queries. The word 'sleep' names a scheduled re-read, not a learning phase.",
+    "rows": [
+      {"object": "base transformer $\\Theta$ (4 layers, 793,344 params)", "who_learns_it": "outer loop, AdamW lr $3\\times10^{-4}$, batch 16, 45 epochs total", "when": "training only", "moves_in_this_paper": "no at test time", "source": "[SleepGate §6.1, p.11, L663-665; §6.3, p.11, L707-713; Table 1, p.11]"},
+      {"object": "tagger projection $P_m$ (16,576 params)", "who_learns_it": "outer loop; jointly in Stage 2", "when": "training only", "moves_in_this_paper": "no at test time", "source": "[SleepGate Eq. 3, p.5; Table 1, p.11]"},
+      {"object": "forgetting gate $G_\\theta$ (74,241 params)", "who_learns_it": "outer loop; isolated in Stage 1 with ground-truth supersession labels (BCE), then jointly in Stage 2", "when": "training only", "moves_in_this_paper": "no at test time — the gate EVALUATES, it does not learn, at inference", "source": "[SleepGate §4.2 Stages 1-2, p.9, L562-570; Table 1, p.11]"},
+      {"object": "consolidation projections $P_K,P_V,\\hat q_{\\text{cons}}$ (33,152 params)", "who_learns_it": "nominally the outer loop", "when": "never, in the reported runs", "moves_in_this_paper": "no — unreachable under soft biasing, so no gradient flows to these 33,152 parameters in Stage 2", "source": "[SleepGate Eq. 12-13, p.7; Algorithm 1 Phase 3 (hard variant), p.22; §6.3, p.11, L707-711]"},
+      {"object": "thresholds $\\delta,\\pi_{\\text{keep}},\\pi_{\\text{evict}},\\rho_{\\max}$", "who_learns_it": "'learned or tuned' (the paper says both, never says which)", "when": "Stage 3, explicitly OMITTED", "moves_in_this_paper": "no. 'Stage 3 (threshold calibration) is omitted, as the soft bias mechanism is self-calibrating'", "source": "[SleepGate Eq. 4, Eq. 6, p.5-6; §4.2 Stage 3, p.9, L571-573; §6.3, p.11, L710-711]"},
+      {"object": "retention score $\\pi_i$", "who_learns_it": "nobody — it is a function evaluation", "when": "recomputed at each cycle from the current cache", "moves_in_this_paper": "changes with the cache, but is NOT state: nothing carries it forward", "source": "[SleepGate Eq. 6-7, p.6]"},
+      {"object": "attention bias $\\psi_i$", "who_learns_it": "nobody", "when": "computed inside the micro-cycle and consumed by the immediately following attention re-run", "moves_in_this_paper": "returned by Algorithm 1 and discarded. THIS IS THE OBJECT THAT PRODUCES THE PAPER'S RESULT, AND IT IS NOT PERSISTED", "source": "[SleepGate Eq. 10, p.6-7; Algorithm 1 lines 16-21, p.22, L1337-1343]"},
+      {"object": "KV cache keys $k_i$", "who_learns_it": "nobody", "when": "mutated in place at every micro-cycle by SG-6", "moves_in_this_paper": "YES — the only persistent mutation under soft biasing. Magnitude: $(1+\\mathrm{age})^{-0.01}$, i.e. 0.933 at age 1023 [본서 산술]", "source": "[SleepGate Algorithm 1 lines 2-5, p.22; Table 3 $\\lambda=0.01$, p.20]"},
+      {"object": "KV cache values $v_i$", "who_learns_it": "nobody", "when": "never, under soft biasing", "moves_in_this_paper": "no", "source": "[SleepGate Algorithm 1, p.22 — Phase 1 touches $k_i$ only]"},
+      {"object": "cache metadata $(i, m_i, u_i, a_i)$", "who_learns_it": "$m_i$ via $P_m$ (outer loop); $u_i$ by rule; $a_i$ by accumulation", "when": "$u_i$ set during the wake pass as later entries arrive; $a_i$ accumulates per token", "moves_in_this_paper": "yes, but as bookkeeping over the same cache, not as a new state layer", "source": "[SleepGate Eq. 2, Eq. 4, p.5; Algorithm 2 lines 8-11, p.23, L1378-1384]"},
+      {"object": "entropy running statistics $\\bar H,\\mathrm{std}(H)$", "who_learns_it": "nobody — a running estimate", "when": "wake, per token", "moves_in_this_paper": "yes, and this is the only quantity in the paper with a genuinely cross-position memory. It is never reported.", "source": "[SleepGate Eq. 14, Eq. 16, p.7-8]"},
+      {"object": "$E$ — external store", "who_learns_it": "n/a", "when": "n/a", "moves_in_this_paper": "does not exist in this paper", "source": "—"},
+      {"object": "$W$ — fast weights", "who_learns_it": "n/a", "when": "n/a", "moves_in_this_paper": "does not exist in this paper. §8.2 explicitly positions SleepGate AGAINST the fixed-size-state family", "source": "[SleepGate §8.2, p.15, L922-931]"}
+    ],
+    "reader_takeaway": "Read the rows in order and the classification falls out mechanically. Rows 1-5 are $\\Theta$ and move only during training. Rows 6-7 are functions, not state. Row 8 is the only persistent test-time mutation and it is a fixed arithmetic shrink. Rows 12-13 are empty. There is no row in which a layer of the three-layer partition changes state before a query."
+  },
+
+  "update_layer": {
+    "instantiates": "NONE of (U-W), (U-Θ), (U-E) at test time. The training-time optimisation of $\\Theta$ (including $G_\\theta$) is ordinary outer-loop learning on the training-epoch clock, which every paper in the corpus does and which the discriminant's step 3 sends to 'not a sleep round'.",
+    "canonical_forms_and_why_each_fails": [
+      "(U-E): $E_{k+1}=\\mathrm{wr}(E_k,\\hat c_k)$ — there is no $E$. No record is written, no store exists, nothing survives the request. The bias vector $\\psi$ is not a record: it is not stored, not indexed, not retrieved, and is discarded by Algorithm 1's caller.",
+      "(U-Θ): $\\Theta_{k+1}=\\Theta_k-\\eta_\\Theta\\nabla_\\Theta\\mathcal{L}(\\mathcal{R}_k;\\Theta_k)$ — $\\Theta$ moves only during training. The deployment artifact is fixed. There is no $\\mathcal{R}_k$, no self-generated training set, no sleep round index $k$.",
+      "(U-W): $W_t=\\alpha_t W_{t-1}+S_t$, $S_t=\\beta_t S_{t-1}-\\eta_t\\nabla_W\\ell(W_{t-1};k_t,v_t)$ — there is no $W$. The nearest object is SG-6, key decay, which is $\\alpha_t$ with $S_t\\equiv0$ applied entry-wise to a growing set. (U-W)'s content is the surprise term; delete it and what remains is not a memory update but a fixed forgetting schedule. The book's own $W$-경로 판별식 (→ ch17 §17.4.1) requires (U-W) to be EXECUTED on a separate clock, not merely for its retention factor to be borrowed."
+    ],
+    "what_it_actually_changes": "The READ map. Its Eq. 11 replaces its Eq. 1: $\\mathrm{Attn}_{\\text{sleep}}\\propto\\sum_i \\pi_i^{\\beta_{\\text{bias}}}\\exp(q_t^\\top k_i/\\sqrt d)\\,v_i$. In the book's frame this is a modification of $f(\\cdot)$ in (R), leaving all three write rules untouched. This is exactly the pattern ch11 §11.2.3 names when it explains what condition (3) blocks — '읽기를 바꾼 논문이 쓰기를 바꾼 논문으로 둔갑한다' — and which it illustrates with Memory Caching.",
+
+    "where_does_KV_cache_compression_belong_the_judgment": {
+      "verdict": "The KV cache is a FOURTH state. It must not be folded into $W$. SleepGate's operation on it is a change to (R), not a fourth update rule, so the book gains a state but not a path.",
+      "reason_1_the_book_already_does_this_ad_hoc": "ch17's own layer table carries a row '| KV cache $K_t,V_t$ | 비모수 상태 |' — a bin that exists nowhere in ch01's three-layer partition and nowhere in STC-STYLE-NOTATION §1.2. The book has therefore already been using a fourth category, silently, in the one chapter where a KV cache had to be classified. SleepGate is the paper that makes that silence load-bearing, because here the KV cache is not a side object but the entire subject.",
+      "reason_2_capacity_scales_in_a_different_variable": "ch26 판정 1-2 rests on the three capacity expressions being functions of DIFFERENT variables — $E\\propto n$, $\\Theta_{\\text{delta}}\\propto r\\,d\\,L_{\\text{layer}}$, $W\\propto d^2 L_{\\text{layer}}$ (식 (26-1)) — and derives the memory-tier placement from those exponents. A KV cache is $2\\,d\\,L\\,L_{\\text{layer}}$: it scales in sequence length $L$, a fourth variable that appears in none of the three. Folding it into $W$ would put a length-dependent object into a length-independent row and break the exponent argument that ch26's 판정 2 is built on.",
+      "reason_3_the_access_pattern_is_the_paper_s_own_differentia": "$W$ is read by a single operator application over the whole state; a KV cache is randomly addressable per entry. The paper makes precisely this the definition of its position: 'SleepGate occupies a middle ground: it preserves the random-access property of the KV cache while adding selective forgetting' [SleepGate §8.2, p.15, L929-930]. Classifying it as $W$ would erase the distinction the paper itself is organised around.",
+      "reason_4_the_Rosetta_row_survives_but_needs_a_caveat": "STC-STYLE-NOTATION §3 teaches 'KV cache ↔ $W$: KV는 append-only 무손실, $W$는 고정 크기 손실 압축'. SleepGate erodes exactly one of the two differentiae — under the hard variant the cache becomes lossy and bounded (Prop. 1), and even under the soft variant it stops being untouched (SG-6). The other differentia — fixed-shape, weight-shaped, non-addressable — is untouched. So the row is not overturned; it must gain a caveat saying the append-only/lossless half is a design choice rather than a property of caches. See book_impact.",
+      "alternatives_considered_and_rejected": [
+        "Fold into $W$ because the augmented metadata plus decayed keys look like 'session state'. REJECTED: they are per-entry rather than per-model, recomputed rather than accumulated, and carry no gradient or surprise term. Accepting this would also admit H2O, StreamingLLM and every eviction policy into the $W$-path, which would raise the $W$-path sample from 1 to dozens for the wrong reason and destroy ch27 판정 3.",
+        "Fold into $E$ because the bias is a 'learned context' $\\hat c$. REJECTED: $\\hat c$ in (U-E) is a record produced by offline inference and consumed by later queries through $\\mathrm{ret}$. $\\psi$ is none of those — no store, no retrieval, no persistence.",
+        "Create a fourth PATH ($\\mathcal{K}$-경로) alongside $E$/$W$/$\\Theta$. REJECTED, and this is the finer judgment. A path in this book is defined by which UPDATE RULE it executes (→ STC-STYLE-NOTATION §1.6, '판별식' column). SleepGate executes no update rule; it edits the read. Creating a path for it would grant an update-rule-shaped status to a read-side method and would let every attention-mask paper into the taxonomy. The correct move is smaller and stricter: register the KV cache as a fourth STATE in the ledger, note that operations on it are (R)-side unless a paper shows a state that survives to a later query, and leave the three paths at three."
+      ],
+      "the_one_configuration_that_would_change_this_verdict": "The hard-eviction variant, actually run, with cycles firing before the query, would produce a cache that (a) persists to later queries within the same request and (b) has been modified by a $B_s>0$ procedure. That configuration would still not be $E$/$W$/$\\Theta$ — it would be the first genuine instance of an offline update to the fourth state, and the book would have to decide whether condition (3) is a statement about THREE layers or about ANY state. See discriminant_verdict.the_third_grey_zone."
+    },
+    "ordering": "Within one forward pass at position $t$: wake pass computes $(k_t,v_t)$ and logits → signature $m_t$ and conflict flags $u_j$ are set → entry appended → $\\mathrm{trigger}(t)$ evaluated → if fired, key decay mutates all $k_i$, the gate scores all entries, the bias $\\psi$ is formed, and attention is re-run. There is no phase in which the model is idle, no phase in which no query is pending, and no state that crosses a request boundary.",
+    "source": "[SleepGate Algorithm 1, p.22, L1309-1358; Algorithm 2, p.23, L1362-1405; Figure 1 caption, p.4, L163-168; §6.3, p.11, L703-717]"
+  },
+
+  "discriminant_verdict": {
+    "verdict": "FAIL — 판별식 불충족. B군 (인접 문헌).",
+    "deciding_condition": "(3) 대상. No state in $\\Theta$, $W$ or $E$ changes at any point in the evaluated system. This is decisive on its own and does not depend on how condition (1) is resolved.",
+    "one_line": "SleepGate is the second paper in the corpus to be excluded by condition (3) for changing the read equation instead of a write rule — and the first to be excluded by condition (3) while wearing the vocabulary of every other condition.",
+    "conditions": [
+      {
+        "condition": "(1) 시계 — does the state-changing operation execute BEFORE the query arrives?",
+        "verdict": "INDETERMINATE as specified; FAILS as evaluated.",
+        "as_specified": "Eq. 16's trigger is a function of the token index $t$ inside the ongoing stream, and Algorithm 2 line 12 gates the sleep phase on $\\mathrm{trigger}(t)$. In a PI-LLM episode the updates precede the query, so a cycle firing during the update stream would be 'before the query'. On the specification alone, condition (1) is satisfiable.",
+        "as_evaluated": "The paper says the sleep path runs on EVERY forward pass, not on a trigger: 'every forward pass computes both unbiased (wake) and soft-biased (sleep) logits' [SleepGate §4.2 Stage 2, p.9, L565-567] and 'Each forward pass produces both unbiased logits (for the wake loss) and soft-biased logits (for the sleep loss)' [§6.3, p.11, L715-717]. Table 2's caption states the reported numbers are read off the biased pass: 'SleepGate uses post-sleep (soft-biased) evaluation.' [Table 2 caption, p.12, L721-723]. So the bias that produces the result is computed and applied AT the query position, from features that include the query-time cache. On what was measured, the state-changing (read-changing) operation and the query are the same event.",
+        "why_it_cannot_be_settled": "The paper never reports how many micro-cycles fired, at which positions, or under which of the three trigger arms. §4.2/§6.3 and Algorithm 2 line 12 directly contradict each other on whether the trigger gates anything at all. See unfavorable_facts UF-6 and todo_verify TV-1.",
+        "note_writer_arithmetic": "[본서 산술] With $T_{\\text{cyc}}^{\\max}=128$ tokens [Table 3] and episodes of $n_{\\text{PI}}\\le30$ updates, the periodic fallback arm can never fire inside an evaluated episode unless an update consumes more than ~4 tokens — the paper does not state tokens-per-update, so this is conditional. See todo_verify TV-2."
+      },
+      {
+        "condition": "(2) 예산 — does it consume $B_s>0$?",
+        "verdict": "PASSES for the gate+re-read component; FAILS for the component that persists.",
+        "detail": "The gate is a genuine extra forward pass over the whole cache, and the paper says so: 'Each sleep micro-cycle requires a forward pass through the gate network for every cache entry. For a cache of size C and a gate with $d_h=128$ hidden units, this is $O(C\\cdot d_g\\cdot d_h)$ per cycle—negligible compared to a transformer forward pass, but non-zero.' [SleepGate §8.5, p.16, L973-976]. On top of that, Algorithm 1 line 20 re-runs attention with the bias, and Figure 1's caption calls it 'a second forward pass'. So $B_s>0$ in an absolute sense.",
+        "the_split_that_matters": "The component that persists (SG-6 key decay) is a parameter-free elementwise scalar multiply — arithmetic, not inference. Under the book's application step 4 ('저장·복사·색인만 한다면 $B_s=0$'), a fixed arithmetic transform with no learned content-dependence sits on the $B_s\\approx0$ side. The component with $B_s>0$ (the gate and the biased re-read) leaves nothing behind. NO SINGLE COMPONENT OF SLEEPGATE SATISFIES BOTH (2) AND (3)-with-(4).",
+        "the_deeper_point": "Because the whole mechanism runs inside inference, whatever it costs is charged to $L_w$, not to $B_s$. The book's touchstone — 'sleep은 정의상 $L_w$에 0을 기여한다' (→ ch11 §11.2.3, → ch01 표 1-4) — is violated in the opposite direction from MemGPT: MemGPT spends decode budget inside the user turn, SleepGate spends attention budget inside the same forward pass."
+      },
+      {
+        "condition": "(3) 대상 — does a layer among $\\Theta$/$W$/$E$ actually change state?",
+        "verdict": "FAILS. This is the deciding condition.",
+        "detail": "$\\Theta$ is frozen after training (including $G_\\theta$, $P_m$, $P_K$, $P_V$). $W$ does not exist — the architecture has no fast weights, and §8.2 positions the method against the fixed-size-state family. $E$ does not exist — there is no store, no record, no retrieval. What changes is the KV cache: decayed keys in the soft variant, evicted/consolidated entries in the hard variant that was never run. The KV cache is not one of the three layers (see update_layer.where_does_KV_cache_compression_belong_the_judgment).",
+        "the_sharper_form": "Even granting the KV cache the status of a layer, the evaluated variant fails: under soft biasing the effective mechanism does not modify the cache at all. It computes $\\psi_i$ from the cache and re-runs attention. Eq. 11 differs from Eq. 1 by a term that lives in the read. This is the Memory Caching pattern verbatim — ch11 §11.2.3: '갱신 규칙은 baseline과 글자 그대로 같고... 바뀐 것은 읽기'.",
+        "the_residue": "The one thing that both persists and changes is SG-6 key decay. Its isolated contribution is measured by the paper: the Decay Only ablation reaches at most 12.5% across all depths and 'performs comparably to other baselines' [SleepGate §7.2, p.13, L861-864]. So the persistent change is, by the paper's own ablation, worth nothing."
+      },
+      {
+        "condition": "(4) 소비자 — is the changed state consumed by a LATER query?",
+        "verdict": "FAILS as evaluated; unresolvable as specified.",
+        "detail": "Each evaluated episode contains exactly one query ('followed by a query for the most recent value' [SleepGate §6.2, p.11, L697-700]), so there is no later query anywhere in the experiments — $N_q=1$ by construction. Within a request, Algorithm 1's soft branch returns $\\psi$ and the caller consumes it immediately (line 20-21); nothing about $\\psi$ is carried forward, and it is a pure function of the current cache, so it is recomputed rather than reused. The decayed keys do survive to the next position, but see (3)'s residue.",
+        "contrast_with_MemGPT": "MemGPT fails only (1): its writes are real, persistent, and consumed by later turns. SleepGate fails (3) and (4) and is indeterminate on (1). It is therefore NOT a boundary case in MemGPT's sense and must not be filed as one."
+      }
+    ],
+    "component_decomposition": {
+      "headline": "Decomposed by component, the four conditions are failed by different components. That is the cleanest possible statement of the verdict, and it is stronger than a single verdict on the whole system.",
+      "table": [
+        {"component": "key decay (SG-6)", "cond_1": "pass (fires during the stream)", "cond_2": "FAIL — arithmetic, not inference", "cond_3": "changes the KV cache, not a layer", "cond_4": "pass (survives to later positions)", "measured_value": "Decay Only ablation ≤ 12.5%, comparable to baselines [§7.2, p.13]"},
+        {"component": "gate + biased re-read (SG-4, SG-5)", "cond_1": "FAIL as evaluated (computed at the query)", "cond_2": "pass — a real extra pass", "cond_3": "FAIL — modifies (R), not any (U-*)", "cond_4": "FAIL — consumed by the same forward pass", "measured_value": "this component produces 100% of the reported gain"},
+        {"component": "eviction + consolidation (SG-7, Eq. 6)", "cond_1": "unknown", "cond_2": "pass", "cond_3": "changes the KV cache, not a layer", "cond_4": "would pass", "measured_value": "NEVER RUN — zero numbers"},
+        {"component": "gate/tagger/consolidation parameter learning (SG-9)", "cond_1": "n/a — training clock", "cond_2": "pass", "cond_3": "changes $\\Theta$", "cond_4": "pass", "measured_value": "ordinary outer-loop training; every paper does this. Step 3 of the application procedure sends it to 'not a sleep round'"}
+      ],
+      "reading": "[note-writer] The last row is the trap. If one reads 'the gate is trained to forget' as a $\\Theta$ update, SleepGate passes all four conditions — and so does every trained model in existence, which is why the discriminant reads the clock at step 3 before the layer at step 2 for this purpose. The row above it is the honest candidate, and it was never executed."
+    },
+    "the_third_grey_zone": {
+      "claim": "ch11 §11.2.4 states that the discriminant has exactly two grey zones ('회색지대가 둘 있고, 둘 다 의도된 것이다'): clock-less papers, and condition (2) being an inequality. SleepGate exposes a THIRD, and it is not intended.",
+      "what_it_is": "Step 2 of the application procedure — '좌변을 세 층에 배정한다. 배포 아티팩트의 일부이면 $\\Theta$, 요청·세션에 붙는 가중치 형태의 상태이면 $W$, 모델 밖 레코드이면 $E$다' — is not exhaustive over states. A KV cache is a per-request state that is neither weight-shaped nor outside the model, so step 2 has no bin for it and the procedure routes it to failure at step 2 rather than at a named condition. The verdict comes out right and the reason is not printed.",
+      "why_it_matters": "Without naming it, the book cannot distinguish two very different exclusions: 'this paper changes nothing' (true of Memory Layers post-deployment) and 'this paper changes something the book does not model' (true of SleepGate). ch11 must say the second out loud, because the second is the class into which the entire KV-cache-management literature falls — H2O, StreamingLLM, sliding window, SnapKV, PagedAttention eviction, quantised caches — and this reader lives in that literature.",
+      "does_it_falsify_the_discriminant": "NO. ch11 §11.2.4's own falsification condition is '네 조건을 모두 만족하는데 이 책이 배제한 절차가 발견되면'. SleepGate does not satisfy all four. The discriminant survives; its documentation is incomplete."
+    },
+    "counting_consequence": "Corpus 29 → 30. Split becomes 통과 9 + 경계 1 + 불충족 20. B군 9 → 10, C군 unchanged at 10. Every aggregate in ch11 §11.3, ch24 판정 1, ch27 표 27-1 A1, and 부록 C must be re-run with the new denominator. The 통과 9 / 경계 1 counts are UNCHANGED, which is the point worth stating: a paper that named itself after this line does not enter it."
+  },
+
+  "cost_table": {
+    "B_s": {
+      "value": "absent",
+      "detail": "No sleep budget in any absolute unit appears anywhere. Grep over the full text: 'FLOP' 0 hits, 'wall-clock' 0 hits, 'latency' 0 hits, 'throughput' 0 hits. What the paper does print is (i) one asymptotic expression, '$O(C\\cdot d_g\\cdot d_h)$ per cycle—negligible compared to a transformer forward pass, but non-zero' [SleepGate §8.5, p.16, L973-976], and (ii) a PARAMETER overhead of 15.6% in Table 1 [p.11, L666-693], which is a storage figure and not a compute figure. Table 1's own label — 'Sleep overhead 15.6%' — invites the misreading, so the chapter must relabel it 파라미터 오버헤드.",
+      "what_the_paper_s_own_overhead_account_omits": "Algorithm 1 line 20 ('Re-run attention with additive bias b (Eq. 11)') and Figure 1's caption ('for a second forward pass') both mandate a re-read that §8.5's overhead paragraph does not count. §8.5 counts only the gate MLP.",
+      "note_writer_arithmetic": "[본서 산술] At the paper's own configuration ($L=1024$, 4 layers, $d=128$, causal attention, non-embedding matmul parameters $793{,}344-131{,}072=662{,}272$): one full sequence forward costs $\\approx2.43\\times10^{9}$ FLOPs, of which attention is $\\approx1.07\\times10^{9}$ and matmuls $\\approx1.36\\times10^{9}$. Re-running attention only adds $\\approx+44\\%$; a full second forward pass adds $+100\\%$; the gate over all $C=1024$ entries ($2\\cdot C\\cdot d_g\\cdot d_h$ with $d_g=578$, $d_h=128$) adds $\\approx+6.2\\%$. So the true compute overhead of the EVALUATED configuration is between roughly +50% and +106% per pass, not the 15.6% that Table 1's label suggests and not 'negligible'. These are lower bounds on the ratio's magnitude, stated as form not value — the paper prints no measurement to compare against.",
+      "finding": "This is the fourth corpus paper (after Letta STC, SCM, `Do LMs Need Sleep?`) to leave the numerator of the amortisation argument empty, and it is the first to leave it empty while HAVING a fully specified, tiny, reproducible cost model — 917,313 parameters, one architecture, one sequence length. Everything needed to print $B_s$ in FLOPs is in Table 1 and §6.1. It is not printed. That strengthens ch24 §24.3.1's judgment that the silence is about reporting convention rather than measurement difficulty (→ ch26 판정 6)."
+    },
+    "L_w": {
+      "value": "absent — and structurally, this paper's cost IS $L_w$",
+      "detail": "No wall-clock, TTFT, ms/token or ITL figure appears. The word 'latency' does not occur in the paper at all (0 hits), which is unusual even by this corpus's standards — Letta STC at least used latency rhetorically in motivation.",
+      "the_structural_statement": "[note-writer] Because every module executes inside the ongoing forward pass ('These components are activated periodically during inference in \"sleep micro-cycles\"' [SleepGate Abstract, p.1, L22-23]), the gate pass and the attention re-run are charged to the wake path by construction. The book's touchstone is that sleep contributes 0 to $L_w$ (→ ch11 §11.2.3, → ch01 표 1-4). Here the entire cost lands on $L_w$ and none on $B_s$. That single sentence is an alternative route to the same verdict as condition (1)'s failure, and it is the form a systems reader will find most convincing.",
+      "proxy_values_actually_reported": "None. Not even a token-count proxy of the kind Letta STC used. The only quantitative axis anywhere in the paper is PI depth."
+    },
+    "C_cap": {
+      "value": "absent in bytes; UNIQUELY IN THIS CORPUS, reported as a bound in entries",
+      "detail": "Proposition 1 states $|\\mathcal{K}'^+|\\le T_{\\text{cyc}}/(\\phi_e+(1-\\phi_e)(1-1/\\gamma_{\\text{comp}}))$ [SleepGate §5.3 Eq. 25, p.10, L635-648]. That is a steady-state state-capacity bound — the only one in the corpus. But: (a) the unit is cache ENTRIES, not bytes, and no dtype is stated anywhere in the paper; (b) it applies to the hard-eviction variant, which was never run; (c) it has no proof, not even a sketch; (d) its own printed numerical instantiation is wrong (see unfavorable_facts UF-11).",
+      "what_a_byte_figure_would_require_and_where_it_is_missing": "The augmented cache (Eq. 2) adds four metadata fields per entry — position, a 64-dim slot signature, a binary flag, and a scalar attention accumulator — and the paper never prices any of them.",
+      "note_writer_arithmetic": "[본서 산술] Reconstructing from the parameter counts (see experiments.parameter_reconstruction), the tagger's projection is $P_m\\in\\mathbb{R}^{64\\times256}$, which requires a 128-wide input key, so the slot signature is computed ONCE PER TOKEN at model width and is shared across all 4 layers and 4 heads — it is not per-(layer,head). Under that reading and bf16: base KV per token = $2\\times128\\times2\\,\\mathrm{B}\\times4\\ \\text{layers}=2048$ B; metadata per token $\\approx 64\\times2 + 4 + 1 + 2 = 135$ B, i.e. $\\approx+6.6\\%$. If instead the signature were materialised per (layer, head) as Eq. 2's scoping over $C^{\\ell,h}$ literally implies, the same figure would be $16\\times$ larger and the metadata would dominate the cache. The paper does not resolve which. See todo_verify TV-3.",
+      "finding": "The obligatory caveat 'corpus 전체에서 상태 용량을 바이트로 보고한 논문이 0편이다' (ch26 판정 6, PRE-RESEARCH §4) SURVIVES — no bytes here either. But the caveat's wording should be tightened: this paper bounds the state in entries, so the honest form is '바이트로 보고한 논문이 0편이고, 어떤 단위로든 상태를 상한한 논문은 1편이다'."
+    },
+    "rho": {
+      "value": "absent — and the paper's central quantity is NOT $\\rho$",
+      "detail": "There is no round index anywhere. One pass, one episode, one query, one evaluation. Repeated consolidation is proposed only as future work: 'applying multi-round sleep cycles may address this limitation' [SleepGate §8.5, p.15, L960-962]. So $\\rho$ is excluded by construction, exactly as in Letta STC.",
+      "is_proactive_interference_the_same_as_rho": {
+        "answer": "No. They are distinct quantities on the two different sides of this book's frame, and they are near-duals rather than variants.",
+        "axis": "$\\rho$ is a WRITE-side quantity — 라운드당 성능 손실, the damage the state takes from being rewritten. It attaches to (U-W)/(U-Θ)/(U-E) and is indexed by the sleep round $k$. PI is a READ-side quantity — the loss of retrieval precision caused by a state that retained too much. It attaches to (R) and is indexed by the update count $n_{\\text{PI}}$.",
+        "what_is_damaged": "Under $\\rho$, the thing you wanted to keep degrades. Under PI nothing stored degrades — every entry is intact and byte-perfect, and that is precisely the problem. The paper says so: 'The model can see the relevant tokens—the difficulty is suppressing the irrelevant ones.' [SleepGate §1, p.2, L57-58]. $\\rho$ is a pathology of lossy retention; PI is a pathology of LOSSLESS retention.",
+        "the_shape_coincidence_that_makes_the_confusion_tempting": "Both degrade monotonically in a round-like index — $\\rho$ in $k$, PI in $n_{\\text{PI}}$ (log-linear in Wang & Sun; $\\approx1/n$ in this paper's Eq. 22). Anyone plotting the two curves side by side would see the same shape. The shape is the same and the mechanism is opposite, so the identification must be refused explicitly rather than left to the reader.",
+        "how_they_are_related_and_this_is_where_the_paper_earns_its_place": "They are the two ends of one trade-off. The cure for PI is deliberately inducing loss, and the paper names the price of that cure using the book's own concept: 'Over-Forgetting. The soft attention biasing approach partially mitigates the risk of over-forgetting compared to hard eviction: entries are downweighted, not deleted, allowing the model to recover if the gate makes errors. However, the risk remains for entries with very low retention scores, where the bias is effectively $-\\infty$.' [SleepGate §8.5, p.15, L963-966]. So in this paper $\\rho$ appears as the COST of reducing PI, never as PI itself. Any mechanism that resolves PI by forgetting buys a read-axis gain by taking on a write-axis risk — and this paper's own failure mode at $n_{\\text{PI}}\\ge15$ is the read-axis side of that ledger, not the write-axis side.",
+        "ledger_consequence": "The book's cost quadruple has a symbol for degradation-from-lossy-writing ($\\rho$) and none for degradation-from-accumulation. That gap was invisible while the corpus contained no paper whose subject was accumulation. RECOMMENDATION: do NOT create a fifth cost symbol — STC-STYLE-NOTATION §1.2 P4 forbids it ('비용 기호는 §1.2의 4종 외에 신설하지 않는다') and a B군 paper cannot justify amending the global cost table. Instead (i) register the distinction as a CONCEPT in the ledger (see concept_ledger_delta), (ii) use $\\rho_{\\text{conf}}$ note-locally for this paper's conflict density, and (iii) state the gap plainly in ch11 or ch18 rather than papering over it.",
+        "one_more_asymmetry_worth_printing": "$\\rho$ is measured by re-testing OLD material after new writes (the book's $\\Pi$ matrix, BWT). PI is measured by testing the NEWEST material in the presence of old. The two experiments are mirror images: $\\rho$ holds the query fixed and grows the write history; PI holds the write history's target fixed at the most recent item and grows the distractor count. A single experiment cannot report both."
+      }
+    },
+    "N_q": {
+      "value": "1, by construction",
+      "detail": "'Each episode consists of a stream of key-value update tokens for a single entity: $(e,v_1),(e,v_2),\\dots,(e,v_n)$, followed by a query for the most recent value.' [SleepGate §6.2, p.11, L697-700]. One query per episode. The amortisation identity (A) has denominator 1, so $C_{\\text{avg}}=C_{\\text{wake}}+C_{\\text{sleep}}$ and no amortisation is possible even in principle. The paper never mentions amortisation, reuse across queries, or cost sharing — consistent with, and a further confirmation of, its not being in this category."
+    }
+  },
+
+  "experiments": {
+    "headline_framing_by_the_authors": "'preliminary experimental validation on a controlled PI-LLM benchmark' [Abstract, p.1, L26-27]; 'We validate SleepGate through a controlled proof-of-concept experiment on synthetic PI sequences, using a small-scale transformer trained from scratch.' [§6, p.11, L654-657]. The paper is consistently honest in these framing sentences and consistently less careful in the Abstract's and Conclusion's numeric sentences. Both must be quoted together.",
+
+    "model": {
+      "architecture": "4-layer causal transformer, $d_{\\text{model}}=128$, 4 attention heads, $d_{\\text{ff}}=256$, max_seq_len 1024, vocabulary 1024 synthetic tokens.",
+      "parameters": "base transformer 793,344; temporal tagger 16,576; forgetting gate 74,241; consolidation 33,152; total 917,313; 'Sleep overhead 15.6%'.",
+      "source": "[SleepGate §6.1, p.11, L659-693; Table 1, p.11]"
+    },
+
+    "parameter_reconstruction": {
+      "status": "[본서 산술] Every figure in Table 1 reconstructs EXACTLY from §6.1's configuration. This is a genuine point in the paper's favour and it is also how several architectural facts the paper never states can be recovered.",
+      "base": "per layer: attention $4\\times(128\\times128)+4\\times128=66{,}048$; FFN $128{\\cdot}256+256+256{\\cdot}128+128=65{,}920$; two LayerNorms $512$ → 132,480. $\\times4=529{,}920$. Plus embedding $1024{\\cdot}128=131{,}072$, LM head $128{\\cdot}1024+1024=132{,}096$, final LayerNorm 256 → 793,344 EXACT. Corollary: positional encoding is parameter-free (sinusoidal or rotary); a learned table would have added another 131,072 and broken the count.",
+      "tagger": "$P_m\\in\\mathbb{R}^{64\\times256}=16{,}384$, plus LayerNorm $2\\times64=128$, plus bias 64 → 16,576 EXACT. Corollary: the input is 256-wide $=2\\times128$, i.e. model width — so the slot signature is per token, not per (layer, head).",
+      "gate": "$d_g=128(k)+128(v)+128(\\mathrm{PE})+64(m)+1(u)+1(a)+128(\\bar\\phi)=578$; $U_1\\in\\mathbb{R}^{128\\times578}=73{,}984$, $b_1=128$, $u_r=128$, $b_r=1$ → 74,241 EXACT. Corollaries: the positional-encoding feature and the global context summary are each 128-wide, and $k_i,v_i$ enter at model width, not head width — so ONE retention score per token is shared across all 4 layers and 4 heads.",
+      "consolidation": "$P_K,P_V\\in\\mathbb{R}^{128\\times128}$ = 32,768, plus $\\hat q_{\\text{cons}}\\in\\mathbb{R}^{128}$ and two 128-wide biases → 33,152 EXACT.",
+      "overhead": "$(16{,}576+74{,}241+33{,}152)/793{,}344=15.626\\%$ → matches Table 1's 15.6%.",
+      "why_this_matters": "The reconstruction settles a question the paper leaves open and that decides its entire systems reading: the bias $\\psi_i$ is a single per-token scalar applied identically at every layer and head. That is far cheaper than per-(layer,head) gating and far more restrictive — a token judged stale is suppressed everywhere at once, in every attention pattern, with no layer able to dissent. The paper never says this. See systems_implications SI-4 and todo_verify TV-3."
+    },
+
+    "data": {
+      "evaluation": "'We adopt the PI-LLM paradigm of Wang & Sun [2025] in a synthetic setting.' Single entity per episode. Entity keys from a vocabulary of 100 entities, values from 500 possible values. Seven PI depths $n\\in\\{1,2,5,10,15,20,30\\}$, 200 episodes per depth per method. [SleepGate §6.2, p.11, L695-701; Table 2 caption, p.12]",
+      "training_data_as_specified": "Four families declared in §4.1 [p.9, L536-551]: (1) PI Sequences with $n\\in[2,50]$; (2) Mixed-Relevance Sequences; (3) Multi-Entity Sequences; (4) Natural Text with Synthetic Updates — 'Real documents augmented with \"correction\" statements (e.g., \"The previous figure was wrong; the actual revenue is \\$4.2B\")'.",
+      "training_data_as_run": "§6.3 describes only a PI-depth curriculum over single-entity PI sequences [p.11, L714-717]. Family (4) is impossible with a 1024-token synthetic vocabulary and no real corpus. Families (2) and (3) reappear as FUTURE work in §9.1 item 3 ('multi-entity PI, long-document QA with corrections'). So at most one of the four declared training families was executed. See unfavorable_facts UF-13.",
+      "the_benchmark_is_author_constructed": "The Abstract's 'controlled PI-LLM benchmark' is not the PI-LLM benchmark of Wang & Sun. It is a synthetic re-implementation of the paradigm, so no number in this paper can be placed beside any number in the paper it builds on. Same defect class as Letta STC's Stateful GSM-Symbolic (→ ch14 의무 caveat)."
+    },
+
+    "protocol": [
+      "Total budget 45 epochs for ALL methods. SleepGate: 10 epochs Stage 0 warm-start (sleep modules disabled), 5 epochs Stage 1 gate pre-training on ground-truth supersession labels, 30 epochs Stage 2 joint training with soft attention biasing. Stage 3 threshold calibration omitted. [§6.3, p.11, L707-711]",
+      "Baselines: 45 epochs of standard autoregressive training with their cache-management strategy active in training and evaluation. [§6.3, p.11, L711-713]",
+      "AdamW, lr $3\\times10^{-4}$, batch size 16, for all methods. [§6.3, p.11, L712-713; Table 3, p.20]",
+      "Stage 2 PI-depth curriculum: $n\\le5\\to n\\le10\\to n\\le15\\to n\\le30$. [§6.3, p.11, L714-716; §7.4, p.14, L897-899]",
+      "$\\beta_{\\text{bias}}=5.0$; every forward pass produces unbiased and soft-biased logits. [§6.3, p.11, L716-717]",
+      "Reported SleepGate numbers are read off the biased pass: 'SleepGate uses post-sleep (soft-biased) evaluation.' [Table 2 caption, p.12, L721-723]",
+      "NOT reported anywhere: number of random seeds, confidence intervals, significance tests, variance across runs, trigger firing counts, wall-clock, FLOPs. Greps for 'seed', 'confidence', 'significan' all return 0."
+    ],
+
+    "table_2_full_transcription": {
+      "note": "Each cell is retrieval accuracy / stale retrieval rate, in %. $N=200$ episodes per depth per method. The vendored text extraction displaces the $n=15$ column header and its five baseline cells; the mapping below is reconstructed and CONFIRMED by §7.3's prose ('degrading from 97.0% ($n=10$) to 73.5% ($n=15$) and further to 16.5% ($n=30$)' and 'For $n=15$–30: Stale retrieval rate rises to 23.5–62.0%'). No values are rounded.",
+      "source": "[SleepGate Table 2, p.12, L721-768; §6.2 for the depth set; §7.3, p.13-14, L866-885 for the cross-check]",
+      "rows": [
+        {"method": "SleepGate", "n1": "82.5 / 0.0", "n2": "99.0 / 0.5", "n5": "99.5 / 0.0", "n10": "97.0 / 3.5", "n15": "73.5 / 23.5", "n20": "30.5 / 55.5", "n30": "16.5 / 62.0"},
+        {"method": "StreamingLLM", "n1": "17.5 / 0.0", "n2": "18.0 / 9.0", "n5": "10.0 / 28.5", "n10": "6.0 / 19.5", "n15": "6.0 / 22.5", "n20": "4.0 / 31.5", "n30": "5.5 / 29.0"},
+        {"method": "Sliding Window", "n1": "12.5 / 0.0", "n2": "12.5 / 7.0", "n5": "8.0 / 23.5", "n10": "8.5 / 23.0", "n15": "6.5 / 23.0", "n20": "4.0 / 22.5", "n30": "2.0 / 30.0"},
+        {"method": "Decay Only (ablation)", "n1": "9.5 / 0.0", "n2": "12.5 / 7.0", "n5": "7.0 / 22.0", "n10": "7.5 / 23.0", "n15": "8.5 / 25.0", "n20": "3.5 / 23.5", "n30": "4.5 / 22.5"},
+        {"method": "Full KV Cache", "n1": "8.0 / 0.0", "n2": "9.0 / 7.5", "n5": "3.5 / 21.0", "n10": "2.0 / 17.0", "n15": "3.0 / 20.0", "n20": "1.5 / 18.5", "n30": "2.5 / 19.5"},
+        {"method": "H2O", "n1": "6.5 / 0.0", "n2": "7.5 / 5.5", "n5": "1.0 / 7.5", "n10": "4.0 / 11.0", "n15": "3.0 / 11.5", "n20": "0.0 / 10.0", "n30": "0.5 / 9.0"}
+      ],
+      "derived_residual_column": "[본서 산술] $100-\\text{accuracy}-\\text{stale}$ = the share of predictions that are neither the current value nor any superseded value, i.e. values that were never in the context. Full KV Cache: 92.0, 83.5, 75.5, 81.0, 77.0, 80.0, 78.0 across $n=1..30$. H2O: 93.5, 87.0, 91.5, 85.0, 85.5, 90.0, 90.5. SleepGate: 17.5, 0.5, 0.5, $-0.5$, 3.0, 14.0, 21.5. Two things follow, and they are the most important derived facts in this note. First, the baselines' errors are overwhelmingly NOT stale retrievals — 75–93% of their predictions are out-of-context values — so the toy setup does not reproduce the phenomenon it claims to fix (see UF-1). Second, SleepGate's $n=10$ cell gives $97.0+3.5=100.5>100$, which is only possible if a predicted value is simultaneously the current value and a superseded one, i.e. if values repeat within an episode. The paper never states whether values are drawn with replacement from the 500-value set, so either the metric is ill-defined on repeat episodes or the cell is wrong (see UF-12, TV-4)."
+    },
+
+    "headline_numbers": [
+      {
+        "claim": "99.5% at PI depth 5, 97.0% at depth 10, all five baselines below 18% at all depths",
+        "exact_wording": "'In proof-of-concept experiments with a small-scale transformer (4 layers, 793K parameters), SleepGate achieves 99.5% retrieval accuracy at PI depth 5 and 97.0% at depth 10, while all five baselines—full KV cache, sliding window, H2O, StreamingLLM, and a decay-only ablation—remain below 18% across all depths.'",
+        "scope_restriction_stated_by_authors": "'proof-of-concept', 'small-scale', 'preliminary'. The depth range is not restricted in this sentence.",
+        "problem": "'below 18% across all depths' is contradicted by the paper's own Table 2: StreamingLLM at $n=2$ is 18.0%, and §7.1 itself writes 'the best baseline (StreamingLLM at 18.0%)'. The Conclusion repeats the same claim verbatim [§9, p.16, L993-994].",
+        "source": "[SleepGate Abstract, p.1, L26-31; §7.1, p.12, L801-803; §9, p.16, L993-994]"
+      },
+      {
+        "claim": "5.5× over the best baseline at $n=2$; 10× at $n=5$",
+        "exact_wording": "'outperforming the best baseline (StreamingLLM at 18.0%) by a factor of 5.5× at n = 2. The gap widens further at n = 5: SleepGate achieves 99.5% vs. 10.0% for the best baseline—a 10× improvement.'",
+        "check": "[본서 산술] $99.0/18.0=5.50$ ✓. $99.5/10.0=9.95$, printed as 10× — rounded up, within normal usage.",
+        "source": "[SleepGate §7.1, p.12, L801-804]"
+      },
+      {
+        "claim": "the theory's prediction is confirmed by experiment",
+        "exact_wording": "'Our theoretical analysis shows that the mechanism can eliminate the log-linear accuracy degradation observed under PI, and our preliminary experiments confirm this prediction: SleepGate achieves 97–99.5% retrieval accuracy at PI depths 2–10, while all five baselines remain below 18%.'",
+        "problem": "Corollary 1's claim is that retrieval probability is 'a constant independent of n, eliminating the log-linear degradation' [§5.2, p.10, L625-633]. Table 2 shows 99.5 → 97.0 → 73.5 → 30.5 → 16.5 across $n=5..30$: strongly $n$-dependent. The sentence asserts confirmation and then narrows the range to 2–10 in its own second clause without acknowledging that the narrowing is what makes it true.",
+        "source": "[SleepGate §9, p.16, L991-994]"
+      },
+      {
+        "claim": "the gate learns supersession almost perfectly",
+        "exact_wording": "'The gate achieves 99.3% accuracy on ground-truth supersession labels after just 5 epochs of pre-training (Stage 1), indicating that conflict detection is a relatively easy task for the learned semantic signatures.'",
+        "scope_restriction": "Stage 1 only, on ground-truth labels, at unstated PI depth. Never re-measured at $n=15$–30, i.e. never measured in the regime where the paper attributes its failure to exactly this component.",
+        "source": "[SleepGate §7.4, p.14, L892-894]"
+      },
+      {
+        "claim": "SleepGate's advantage exists in a regime where all information is visible",
+        "exact_wording": "'Our results confirm this: the full KV cache baseline achieves only 8.0% accuracy even at n = 1, while SleepGate reaches 99.5% at n = 5—a regime where all information is visible but the model cannot suppress the stale entries without architectural support.'",
+        "problem": "This comparison crosses both the method axis and the depth axis in one sentence (baseline at $n=1$ vs method at $n=5$), and it uses the very number — 8.0% at $n=1$ — that §7.3 attributes to 'base transformer retrieval capability', which is what SleepGate scores 82.5% on. See UF-2.",
+        "source": "[SleepGate §8.1, p.14, L914-918]"
+      }
+    ],
+
+    "negative_and_qualifying_results_reported_by_the_authors": [
+      {
+        "result": "Sharp collapse beyond $n_{\\text{PI}}\\approx15$",
+        "exact_wording": "'SleepGate exhibits a sharp performance transition around n = 15, degrading from 97.0% (n = 10) to 73.5% (n = 15) and further to 16.5% (n = 30).'",
+        "status": "reported and analysed by the authors, with two proposed causes (bias saturation; $d_s=64$ signature capacity), neither of which is tested",
+        "source": "[SleepGate §7.3, p.13-14, L866-881; §8.5 'Depth Saturation', p.15, L958-962]"
+      },
+      {
+        "result": "Stale retrieval rate rises to 62.0% at $n=30$ — worse than every baseline at that depth",
+        "exact_wording": "'For n = 15–30: Stale retrieval rate rises to 23.5–62.0%, indicating the gate's semantic signatures (ds = 64) lack sufficient capacity to disambiguate 15–30 near-identical entries for the same entity.'",
+        "status": "reported. [본서 관찰] At $n=30$ SleepGate's stale rate (62.0%) is 2.1× the worst baseline's (StreamingLLM 29.0%) — i.e. in its failure regime the method exhibits MORE of the pathology it was built to remove than any method it was compared against. The paper does not make this comparison.",
+        "source": "[SleepGate §7.3, p.14, L874-877; Table 2, p.12]"
+      },
+      {
+        "result": "The depth-1 anomaly",
+        "exact_wording": "'Accuracy at n = 1 (82.5%) is lower than at n = 2–10. At n = 1 there is no prior value to supersede, so the sleep mechanism provides no benefit—the model relies entirely on base transformer retrieval capability.'",
+        "status": "reported and explained — and the explanation is what breaks the baseline comparison. See UF-2.",
+        "source": "[SleepGate §7.3, p.14, L882-885]"
+      },
+      {
+        "result": "Over-forgetting risk remains",
+        "exact_wording": "'the risk remains for entries with very low retention scores, where the bias is effectively $-\\infty$.'",
+        "status": "reported, unmeasured. No experiment in the paper measures false eviction or false suppression of a current entry.",
+        "source": "[SleepGate §8.5 'Over-Forgetting', p.15, L963-966]"
+      },
+      {
+        "result": "Scale and generalisation unvalidated",
+        "exact_wording": "'Our proof-of-concept uses a small transformer (793K base parameters) on synthetic data. Whether the mechanism transfers to pre-trained models at scale and generalizes to naturalistic PI patterns (e.g., document corrections, evolving facts) remains to be validated. The synthetic setting isolates the PI phenomenon but does not capture the full complexity of natural language interference.'",
+        "status": "reported clearly. This is the paper's most honest paragraph.",
+        "source": "[SleepGate §8.5 'Scale and Generalization', p.15, L967-969]"
+      },
+      {
+        "result": "Composition with the actual serving stack unvalidated",
+        "exact_wording": "'SleepGate must compose correctly with grouped-query attention (GQA), PagedAttention, and quantized KV caches. We expect compatibility since SleepGate operates on the logical cache structure, but empirical validation is required.'",
+        "status": "reported as an expectation with no evidence. This note disagrees with the expectation on three specific counts — see systems_implications SI-6, SI-7, SI-8.",
+        "source": "[SleepGate §8.5 'Interaction with Existing Optimizations', p.16, L977-979]"
+      },
+      {
+        "result": "The curriculum is load-bearing",
+        "exact_wording": "'The PI depth curriculum is essential: exposing the model to n = 30 sequences from the start leads to training instability, while the progressive schedule (n ≤ 5 → n ≤ 10 → n ≤ 15 → n ≤ 30) produces stable convergence.'",
+        "status": "reported without the failed run's numbers. 'Training instability' is asserted; no loss curve, no divergence figure, no final accuracy for the non-curriculum arm.",
+        "source": "[SleepGate §7.4, p.14, L897-899]"
+      }
+    ]
+  },
+
+  "scale_ceiling": {
+    "model_size": "793,344 base parameters (917,313 including all sleep modules). 4 layers, $d_{\\text{model}}=128$, 4 heads. This is the smallest model in the corpus by roughly three orders of magnitude among papers that train a transformer at all — ch17's `Do LMs Need Sleep?` anchors at Ouro 1.4B, and the $E$-path papers use frontier APIs. [SleepGate §6.1, p.11, L659-665; Table 1, p.11]",
+    "training_data_scale": "Not reported in tokens or examples. Only 45 epochs, batch 16, over synthetically generated PI sequences. The number of distinct training sequences is never stated.",
+    "vocabulary_and_task_scale": "1024 synthetic tokens; 100 entities; 500 values; sequence length $\\le1024$. Chance accuracy $1/500=0.2\\%$ as the paper states.",
+    "evaluation_scale": "7 depths × 200 episodes × 6 methods = 8,400 episodes total. [본서 산술] Binomial standard error at $N=200$ is 1.5 pp at $p=0.05$ and 2.7 pp at $p=0.175$, so most inter-baseline differences in Table 2 are inside one standard error — see UF-3.",
+    "realism_ceiling": "Zero natural language. Zero pre-trained models. Zero real documents. The one training family that would have involved naturalistic corrections (§4.1 item 4) is incompatible with the synthetic vocabulary and reappears as future work.",
+    "in_distribution_ceiling": "[본서 관찰] The failure is IN-DISTRIBUTION. §4.1 declares training PI sequences with $n\\in[2,50]$ and §6.3's curriculum reaches $n=30$; every evaluated depth is therefore inside the training range. So the collapse from 97.0% at $n=10$ to 16.5% at $n=30$ is not a generalisation gap but a capacity failure on depths the model was trained on. That distinction is not drawn in the paper and it makes the proposed remedy ($d_s>64$) a conjecture about capacity rather than about coverage.",
+    "deployment_gap": "Total. There is no claim in this paper that survives contact with a served model, and the paper says so. The gap this note flags additionally: the mechanism's cost is charged to the request's critical path, so the deployment question is not 'does it transfer' but 'what does one extra attention pass per micro-cycle cost at $L=128\\text{K}$' — a question the toy scale cannot answer even in form, since attention/matmul cost ratios invert with $L$."
+  },
+
+  "concept_ledger_delta": {
+    "new_concepts_this_paper_introduces": [
+      {"term": "proactive interference (PI) in LLMs", "definition": "degradation of retrieval for the current value of a semantic slot caused by the continued presence of superseded values for the same slot in the context window; distinct from context-length limits", "owner_chapter": "ch11 or ch18 (wherever this paper is filed)", "source": "[SleepGate Abstract, p.1; §1, p.2, L49-61]", "note": "The concept is inherited from Wang & Sun 2025 (arXiv:2506.08184), which is NOT in this corpus. If the book adopts the concept it should vendor that paper too, or attribute the concept to it without asserting its numbers."},
+      {"term": "PI depth $n_{\\text{PI}}$", "definition": "the number of updates written to one semantic slot before the query", "owner_chapter": "same", "source": "[SleepGate §3.1, p.5, L216-218; §6.2, p.11]"},
+      {"term": "stale retrieval rate", "definition": "the fraction of episodes in which the prediction matches a superseded value — a direct measure of interference severity rather than of accuracy", "owner_chapter": "same", "source": "[SleepGate §6.5, p.12, L786-787]", "note": "This is the most transferable measurement idea in the paper. The book's $E$-path chapters have no analogue: no $E$-path paper reports what fraction of its errors are retrievals of superseded records, which is exactly the number that would make Zep's knowledge-update regression (76.9→74.4) diagnosable (→ ch15)."},
+      {"term": "PI slope", "definition": "the slope of the accuracy-vs-$\\log n$ regression line; 0 means perfect PI resistance", "owner_chapter": "same", "source": "[SleepGate §6.5, p.12, L788-789]", "note": "DEFINED AND NEVER REPORTED. See UF-5."},
+      {"term": "soft attention biasing", "definition": "converting a learned per-entry retention score into an additive pre-softmax attention bias $\\psi_i=\\beta_{\\text{bias}}\\log\\max(\\pi_i,\\varepsilon_0)$, so that suppression is continuous, differentiable without a discrete relaxation, and recoverable from gate error", "owner_chapter": "same", "source": "[SleepGate Eq. 10-11, §3.3, p.6-7, L310-347]", "note": "This is the paper's real contribution and it is a READ-side primitive. It deserves to be named as such in the book precisely because naming it correctly is what excludes the paper from the category."},
+      {"term": "conflict-aware temporal tagger / semantic signature / superseded flag", "definition": "per-entry metadata identifying which slot an entry occupies and whether a later entry has claimed the same slot", "owner_chapter": "same", "source": "[SleepGate §3.2, Eq. 2-4, p.5, L220-251]"},
+      {"term": "sleep micro-cycle and the adaptive trigger", "definition": "a scheduled in-inference pass over the cache, fired by attention entropy, conflict density, or a periodic fallback", "owner_chapter": "same", "source": "[SleepGate §3.5-3.6, Eq. 14-16, p.7-8; Algorithm 1, p.22]", "note": "The trigger's entropy arm is the corpus's only proposal to schedule anything off an internal signal of the model's own uncertainty. SCM triggers on buffer entropy and conflict density too [SCM §3.6] — an unremarked convergence between two papers that do not cite each other."},
+      {"term": "dual-phase objective (wake loss + post-consolidation retrieval loss + compression pressure + gate alignment)", "definition": "a single training objective in which the same forward pass is scored twice, unbiased and biased", "owner_chapter": "same", "source": "[SleepGate §4, Eq. 17-21, p.8-9]"},
+      {"term": "multi-scale sleep (micro / meso / macro cycles)", "definition": "a proposed hierarchy of cache maintenance at 512–2K, 8K–32K, and document-boundary intervals", "owner_chapter": "ch18 if the frequency-continuum argument is revisited", "source": "[SleepGate §8.3, p.15, L933-942]", "note": "Structurally identical in spirit to Nested Learning's update-frequency continuum, proposed three months later, with no citation. See cross_path_citations."}
+    ],
+    "renamed_or_corrected_for_the_monograph": [
+      {"paper_term": "'sleep micro-cycle'", "problem": "contributes 0 to $B_s$ and 100% to $L_w$; nothing sleeps and nothing is idle", "monograph_term": "in-pass 캐시 재읽기 (bias pass)", "note": "The chapter may quote the paper's term in the paper's voice but must not adopt it in its own."},
+      {"paper_term": "'Sleep overhead 15.6%' (Table 1 label)", "problem": "it is a parameter-count ratio, and the compute overhead of the evaluated configuration is 50–106% by this note's arithmetic", "monograph_term": "파라미터 오버헤드 15.6% (계산 오버헤드는 논문에 없음)"},
+      {"paper_term": "'consolidation module' as a contribution", "problem": "unreachable in the evaluated variant; 33,152 parameters that receive no gradient in Stage 2 and produce no number", "monograph_term": "미실행 모듈", "note": "Abstract lists it as contribution (3) and §9 credits it in the results sentence."},
+      {"paper_term": "'the three sleep-inspired modules—key decay, learned gating, and consolidation' (§9)", "problem": "the paper's own §1.2 and §3 enumerate the three modules as tagger / gate / consolidation. The Conclusion swaps the tagger for key decay. The paper cannot keep its own three-part structure fixed across 14 pages", "monograph_term": "state the two enumerations side by side and do not adopt either"},
+      {"paper_term": "'controlled PI-LLM benchmark' (Abstract)", "problem": "it is an author-built synthetic re-implementation of the PI-LLM paradigm, not the PI-LLM benchmark", "monograph_term": "저자 제작 합성 PI 과제", "note": "Same obligation as ch14's Stateful GSM-Symbolic caveat."},
+      {"paper_term": "$\\rho_t$ 'conflict density'", "problem": "collides with the book's reserved $\\rho$ and asserts, by glyph alone, an identification this note rejects", "monograph_term": "$\\rho_{\\text{conf}}(t)$, registered per STC-STYLE-NOTATION §1.3"}
+    ],
+    "extended": [
+      {"term": "the state ledger", "extension": "a FOURTH state — the KV cache (비모수 문맥 상태) — must be registered explicitly. ch17 표 17-2 already uses the bin ad hoc; this paper makes it the subject.", "monograph_use": "ch01 (the layer table gains a row marked '이 책의 세 경로 밖'), ch11 §11.2.4 (third grey zone), ch18 (filed with Memory Caching as the second condition-(3) exclusion)."},
+      {"term": "degradation, as a concept rather than as a cost symbol", "extension": "the book distinguishes $\\rho$ (loss under lossy writing) but has no name for loss under lossless accumulation. Register the distinction as a concept; do NOT add a fifth cost symbol (STC-STYLE-NOTATION §1.2 P4 forbids it).", "monograph_use": "ch11 or ch18, plus one sentence in ch25's cost-accounting preamble noting that the quadruple covers the write axis only."},
+      {"term": "the KV↔$W$ Rosetta row", "extension": "gains a caveat: append-only and lossless are design choices, not properties of caches. A learned per-entry retention score makes the cache lossy while leaving it randomly addressable.", "monograph_use": "STC-STYLE-NOTATION §3, ch01's Rosetta section."}
+    ]
+  },
+
+  "open_questions": [
+    {
+      "question": "Does the mechanism survive at scale on a pre-trained model, and does it generalise to naturalistic interference?",
+      "exact_wording": "'Integrating SleepGate into pre-trained models (e.g., Llama-3, Mistral) via post-hoc fine-tuning to validate the mechanism at scale and on natural language PI scenarios.'",
+      "source": "[SleepGate §9.1 item 1, p.16, L1010-1011; §8.5, p.15, L967-969]",
+      "bridge_out": "This is the whole paper's warrant, deferred. Until it is answered no chapter can cite this paper for anything but the read-side primitive and the measurement idea."
+    },
+    {
+      "question": "What causes the depth-15 cliff, and is it really signature capacity?",
+      "exact_wording": "'Investigating higher semantic signature dimensions (ds > 64), larger bias scales (β > 5), and hybrid soft-bias/hard-eviction strategies to extend effective PI resistance beyond n = 10.'",
+      "source": "[SleepGate §9.1 item 2, p.16-17, L1012-1014; §7.3, p.14, L878-881]",
+      "bridge_out": "The paper offers two mechanisms (bias saturation; $d_s$ capacity) and tests neither. Both are one-line experiments in a 917K-parameter model. Their absence is the clearest instance in this note of a paper stopping exactly where its own diagnosis becomes checkable."
+    },
+    {
+      "question": "Does SleepGate degrade non-PI performance?",
+      "exact_wording": "'Evaluating on multi-entity PI, long-document QA with corrections, streaming agent tasks, and standard long-context benchmarks (RULER, LongBench) to test generalization and confirm that SleepGate does not degrade non-PI performance.'",
+      "source": "[SleepGate §9.1 item 3, p.17, L1015-1017]",
+      "bridge_out": "This is the over-forgetting question in measurable form, and it is unanswered. A method whose loss function explicitly rewards retaining less (Eq. 20) and which suppresses everything the tagger flags has an obvious failure mode on tasks where superseded values are the answer (version histories, audit trails, 'what did it used to say'). No experiment addresses it."
+    },
+    {
+      "question": "Can the model's own generated text serve as sleep-phase rehearsal?",
+      "exact_wording": "'Dream-like training: Using the model's own generated text during \"sleep\" phases to rehearse and consolidate important patterns, analogous to dream-based memory processing.'",
+      "source": "[SleepGate §9.1 item 4, p.17, L1021-1022]",
+      "bridge_out": "This is exactly the $\\mathcal{R}_k=\\mathrm{gen}(\\mathcal{H}_k;B_s)$ of (U-Θ), proposed without knowing that SEAL and `LM Need Sleep` built it and that model collapse and Continual Facts bound it (→ ch06, ch20, ch21, ch22). The book should note that the future-work item is a corpus that already exists."
+    },
+    {
+      "question": "Can in-context forgetting and cross-task forgetting be unified?",
+      "exact_wording": "'Cross-timescale integration: Unifying in-context forgetting (SleepGate) with cross-task forgetting (continual learning) into a single sleep-inspired framework operating at multiple timescales.'",
+      "source": "[SleepGate §9.1 item 5, p.17, L1023; §8.4, p.15, L944-952]",
+      "bridge_out": "The paper's §8.4 states the correct version of this: 'PI in the context window mirrors catastrophic forgetting in continual learning, but at a different timescale: within-context vs. across-training.' [p.15, L948-950]. That sentence is the paper's most useful contribution to this book — it is the same distinction this note draws in cost_table.rho, arrived at independently, and it is the correct one. The paper then proposes to dissolve the distinction, which is the move the book should decline."
+    },
+    {
+      "question": "What does the forgetting gate actually learn?",
+      "exact_wording": "'Mechanistic interpretability: Analyzing what the forgetting gate learns—which features drive eviction decisions—to understand how transformers represent and distinguish current from outdated information.'",
+      "source": "[SleepGate §9.1 item 6, p.17, L1024-1025]",
+      "bridge_out": "Sharpened by this note's parameter reconstruction: the gate sees $k_i,v_i,\\mathrm{PE},m_i,u_i,a_i,\\bar\\phi$, and $u_i$ is a near-oracle label supplied by the tagger and reinforced by $\\mathcal{L}_{\\text{align}}$. The interpretability question therefore has an obvious null hypothesis the paper never states — that the gate learns to copy $u_i$ — and a one-line test: zero out $u_i$ at inference. That test is absent."
+    },
+    {
+      "question": "[note-writer] When does the trigger actually fire, and what does it cost?",
+      "source": "not asked by the paper",
+      "bridge_out": "Eq. 16 is fully specified with three arms and three hyperparameters, and the experiments report nothing about it while §4.2/§6.3 say the sleep path ran unconditionally. Whether SleepGate is a triggered system at all is the question that decides its discriminant condition (1), and the paper does not pose it."
+    }
+  ],
+
+  "unfavorable_facts": [
+    {
+      "id": "UF-1",
+      "fact": "The experiment does not reproduce the phenomenon it claims to fix. In the paper's own Table 2, 75–93% of the baselines' predictions are values that were never in the context at all — neither the current value nor any superseded one.",
+      "numbers": "[본서 산술] $100-\\text{acc}-\\text{stale}$ for Full KV Cache across $n=1..30$: 92.0, 83.5, 75.5, 81.0, 77.0, 80.0, 78.0. For H2O: 93.5, 87.0, 91.5, 85.0, 85.5, 90.0, 90.5. And Full KV Cache's accuracy series is 8.0, 9.0, 3.5, 2.0, 3.0, 1.5, 2.5 — flat near zero from $n=1$, non-monotone, and nothing like the $1/n$ that the paper's own Eq. 22 predicts or the log-linear decay-from-high that Wang & Sun report on real LLMs.",
+      "why_it_bites": "Proactive interference is defined by the paper as systematic retrieval of OVERWRITTEN values from a starting point of competence — 'The errors are not random—models systematically retrieve overwritten values' [SleepGate §1, p.2, L54-55]. The baselines here never had competence to lose and their errors are mostly not stale retrievals. So §7.1's conclusion, 'confirming that no existing cache management strategy addresses proactive interference', does not follow: the setup measures general incompetence of a 793K-parameter model on a synthetic lookup, and the effect size attributed to interference resolution is unidentified.",
+      "source": "[SleepGate Table 2, p.12; §1, p.2, L49-55; §7.1, p.12-13, L804-848; Eq. 22, p.10]"
+    },
+    {
+      "id": "UF-2",
+      "fact": "The paper's own explanation of its depth-1 result contradicts its own baseline comparison. At $n=1$ SleepGate scores 82.5% and the paper says the sleep mechanism contributes nothing there — but the Full KV Cache baseline, which is the same architecture with the same full cache at $n=1$, scores 8.0%.",
+      "exact_wording": "'At n = 1 there is no prior value to supersede, so the sleep mechanism provides no benefit—the model relies entirely on base transformer retrieval capability.' [§7.3] and, four pages later, 'the full KV cache baseline achieves only 8.0% accuracy even at n = 1' used as evidence FOR the method [§8.1].",
+      "why_it_bites": "Both sentences cannot be true. If at $n=1$ SleepGate's score is base-transformer capability, then base-transformer capability is 82.5%, and the 8.0% baseline differs from it by something other than the sleep mechanism — namely the training objective (Eq. 19 is the evaluation metric) and the depth curriculum. A 10.3× gap at the one depth where the mechanism is declared inert localises the paper's headline effect in its training protocol, not in its architecture. This is the single most damaging internal inconsistency in the paper and it is visible from two sentences the paper itself prints.",
+      "source": "[SleepGate §7.3, p.14, L882-885; §8.1, p.14, L914-918; Table 2, p.12]"
+    },
+    {
+      "id": "UF-3",
+      "fact": "No seeds, no confidence intervals, no significance tests, no variance of any kind. Greps for 'seed', 'confidence', 'significan' return 0 hits over the whole paper.",
+      "numbers": "[본서 산술] At $N=200$ episodes the binomial standard error is 1.5 pp at $p=0.05$ and 2.7 pp at $p=0.175$. The standard error of the H2O–FullKV difference at $n=1$ (6.5 vs 8.0) is 2.6 pp, so that difference is under 0.6 SE. Most inter-baseline differences in Table 2 are within one standard error of zero.",
+      "why_it_bites": "§7.2's entire baseline analysis — 'H2O performs worst', 'StreamingLLM is the best baseline' — is an ordering of numbers that are not separated by the reported sample size. The one comparison that does survive (StreamingLLM 17.5 vs FullKV 8.0 at $n=1$, 9.5 pp ≈ 2.9 SE) is also the one the paper explains away as an attention-sink artifact.",
+      "source": "[SleepGate Table 2, p.12; §7.2, p.13, L850-864]"
+    },
+    {
+      "id": "UF-4",
+      "fact": "'H2O performs worst... the lowest accuracy across all depths' is falsified by the paper's own table.",
+      "numbers": "At $n=10$, H2O scores 4.0% and Full KV Cache scores 2.0% — H2O is higher. At $n=15$ both are 3.0% — a tie. So H2O is strictly lowest at 5 of 7 depths, not all 7.",
+      "why_it_bites": "This is a §7.2 section heading and the anchor of the paper's most-cited mechanistic claim ('cumulative attention scores are anti-correlated with freshness under PI... Retaining heavy hitters actively preserves interference'). The claim may well be right; the paper's own table does not establish it, and the table is on the facing page.",
+      "source": "[SleepGate §7.2, p.13, L855-857; Table 2, p.12]"
+    },
+    {
+      "id": "UF-5",
+      "fact": "PI Slope is defined as one of the paper's three metrics and is never reported for any method.",
+      "exact_wording": "'PI Slope: Slope of the accuracy-vs-log(n) regression line. A slope of 0 indicates perfect PI resistance; more negative slopes indicate greater susceptibility.' [§6.5]",
+      "why_it_bites": "It is the metric that would directly test Corollary 1's claim of $n$-independence, and it is the only one of the three declared metrics that does not appear anywhere in §7, in Table 2, or in Figure 2. The metric that could falsify the theory is the metric that goes unreported.",
+      "source": "[SleepGate §6.5, p.12, L788-789; §7, pp.12-14]"
+    },
+    {
+      "id": "UF-6",
+      "fact": "The paper contradicts itself on whether the sleep path is triggered at all.",
+      "exact_wording": "Algorithm 2 line 12: 'if trigger(t) then // Sleep phase (trigger per Eq. 16)'. Against §4.2 Stage 2: 'every forward pass computes both unbiased (wake) and soft-biased (sleep) logits' and §6.3: 'Each forward pass produces both unbiased logits (for the wake loss) and soft-biased logits (for the sleep loss)'.",
+      "why_it_bites": "Section 3.5 spends a page and three hyperparameters ($\\kappa_H=1.5$, $\\rho_{\\max}=0.4$, $T_{\\text{cyc}}^{\\max}=128$) on the adaptive trigger, §8.5 credits it ('The adaptive trigger ensures cycles only execute when beneficial'), and the experimental sections describe a system in which it does nothing. No firing count, no trigger ablation, no per-arm attribution appears anywhere. This is also the fact that makes the discriminant's condition (1) unresolvable from the paper alone.",
+      "source": "[SleepGate §3.5, p.7-8, L416-460; §4.2, p.9, L565-567; §6.3, p.11, L715-717; §8.5, p.16, L976; Algorithm 2, p.23, L1386-1390; Table 3, p.20]"
+    },
+    {
+      "id": "UF-7",
+      "fact": "The theoretical analysis is about a variant that was never run. Theorem 1, Corollary 1 and Proposition 1 all presuppose eviction; the evaluated soft-biasing variant evicts nothing.",
+      "exact_wording": "'With SleepGate, after each sleep cycle, entries marked as superseded are evicted.' and 'Each sleep cycle evicts each stale entry independently with probability $p_c$.' [§5.2] Against §6.3: the soft variant was used and Stage 3 threshold calibration — the stage that sets the eviction thresholds — was omitted.",
+      "why_it_bites": "Contribution 3 in §1.2 is the theory and contribution 4 is the validation; the paper presents them as the same claim ('our preliminary experiments confirm this prediction' [§9]). They are claims about two different systems. Nothing in §7 tests anything in §5.",
+      "source": "[SleepGate §1.2, p.3, L103-107; §5.2, p.10, L600-624; §6.3, p.11, L707-711; §9, p.16, L991-994]"
+    },
+    {
+      "id": "UF-8",
+      "fact": "Theorem 1's printed bound does not follow from its own printed proof sketch.",
+      "numbers": "[본서 산술] The proof sketch says: at most $T_{\\text{cyc}}$ new entries accumulate between cycles; a stale entry survives each cycle with probability $1-p_c$; 'Summing over all $n$ stale entries and taking the expectation gives the bound.' Carrying out that sum, entry $j$ has survived $\\lfloor(n-j)/T_{\\text{cyc}}\\rfloor$ cycles, so $\\mathbb{E}[\\text{stale}]=\\sum_j(1-p_c)^{\\lfloor(n-j)/T_{\\text{cyc}}\\rfloor}=T_{\\text{cyc}}\\,\\frac{1-(1-p_c)^{n/T_{\\text{cyc}}}}{p_c}\\ \\le\\ T_{\\text{cyc}}/p_c$. The printed bound is $\\min\\big(T_{\\text{cyc}},\\ \\epsilon n/(1-(1-p_c)^{n/T_{\\text{cyc}}})\\big)$ — the same factor $(1-(1-p_c)^{n/T_{\\text{cyc}}})$ appears, but in the denominator instead of the numerator, and $p_c$ is replaced by $\\epsilon n$.",
+      "why_it_bites": "The paper's qualitative conclusion ($O(T_{\\text{cyc}})$ for $p_c$ near 1) happens to be right, but by a different expression than the one printed. And the printed $\\min(T_{\\text{cyc}},\\cdot)$ is false in the regime it is supposed to cover: at $p_c=0$ the true expected stale count is $n-1$, which exceeds $T_{\\text{cyc}}$ for any $n>T_{\\text{cyc}}+1$, while $\\min(T_{\\text{cyc}},\\cdot)\\le T_{\\text{cyc}}$ always. A bound that holds for a gate that never evicts anything is not bounding what the theorem claims to bound.",
+      "source": "[SleepGate §5.2 Eq. 23 and proof sketch, p.10, L607-624]"
+    },
+    {
+      "id": "UF-9",
+      "fact": "A minimum is restated as a big-O of a maximum. Eq. 23 prints '$\\le\\min(N,\\ \\ldots)=O(\\max(N,\\epsilon\\cdot n))$'.",
+      "why_it_bites": "$\\min(a,b)\\le\\max(a,b)$, so the restatement is not an equality, and as an upper bound it is strictly weaker than the expression it is derived from. The following sentence — 'For $p_c$ close to 1 (low $\\epsilon$) and moderate $N$, this is $O(N)$ regardless of $n$' — is then true of the $\\min$ form for trivial reasons and not established for the $\\max$ form.",
+      "source": "[SleepGate Eq. 23 and the sentence at p.10, L613-620]"
+    },
+    {
+      "id": "UF-10",
+      "fact": "Corollary 1's guarantee is vacuous at the paper's own hyperparameters.",
+      "numbers": "[본서 산술] $p(\\text{retrieve } v_n)\\ge 1/(1+O(T_{\\text{cyc}}))$ with the paper's fallback interval $T_{\\text{cyc}}^{\\max}=128$ [Table 3] gives $1/129=0.78\\%$ — below every baseline in Table 2 at every depth except H2O at $n=20$ and $n=30$, and 128× below the method's own reported 99.5%.",
+      "why_it_bites": "The corollary is offered as the reason the method should work ('a constant independent of $n$, eliminating the log-linear degradation'), and instantiated at the paper's own settings it guarantees near-chance performance. A bound whose value at the paper's configuration is below the numbers it is meant to explain carries no explanatory load.",
+      "source": "[SleepGate §5.2 Eq. 24, p.10, L625-633; Table 3, p.20; Table 2, p.12]"
+    },
+    {
+      "id": "UF-11",
+      "fact": "Proposition 1's own numerical instantiation is arithmetically wrong, and the proposition has no proof.",
+      "numbers": "[본서 산술] $|\\mathcal{K}'^+|\\le T_{\\text{cyc}}/(\\phi_e+(1-\\phi_e)(1-1/\\gamma_{\\text{comp}}))$. At the paper's own $\\phi_e=0.3,\\ \\gamma_{\\text{comp}}=4$: denominator $=0.3+0.7\\times0.75=0.825$, so the bound is $1.212\\,T_{\\text{cyc}}$. The paper prints 'this gives $|C'^+|\\le1.67N$'. $1.67=1/0.6$ and no substitution of the stated values produces 0.6.",
+      "why_it_bites": "This is the corpus's only state-capacity bound, and the one number the paper derives from it is wrong by 38%. It is also the only place in the paper where a capacity claim is made concrete, so a reader taking away one capacity figure takes away the wrong one. No proof or derivation accompanies the proposition.",
+      "source": "[SleepGate §5.3 Eq. 25 and the following sentence, p.10, L635-648]"
+    },
+    {
+      "id": "UF-12",
+      "fact": "Table 2's $n=10$ cell for SleepGate sums to more than 100%: accuracy 97.0 + stale 3.5 = 100.5.",
+      "why_it_bites": "By the §6.5 definitions a prediction is 'accurate' if it matches the most recent value and 'stale' if it matches a superseded value; the two can coexist only if a value repeats within an episode. The paper never states whether the 500 values are sampled with or without replacement, so either the metric is undefined on a nonzero share of episodes or the cell is wrong. Every stale-rate number in the table inherits the ambiguity.",
+      "source": "[SleepGate Table 2, p.12; §6.2, p.11, L700-701; §6.5, p.12, L785-787]"
+    },
+    {
+      "id": "UF-13",
+      "fact": "Three of the four declared training-data families were not run, and one of them could not have been.",
+      "detail": "§4.1 declares PI Sequences, Mixed-Relevance Sequences, Multi-Entity Sequences, and 'Natural Text with Synthetic Updates: Real documents augmented with \"correction\" statements'. §6.1 fixes the vocabulary at 1024 synthetic tokens and §6.2 evaluates single-entity synthetic PI only; §6.3 describes only a PI-depth curriculum. Family (4) is impossible without real text. Families (2) and (3) reappear as FUTURE work in §9.1 item 3 ('multi-entity PI, long-document QA with corrections').",
+      "why_it_bites": "§4.1 is written in the present indicative ('We construct training sequences...'), so a reader carries away a training regime three quarters of which did not happen. It also removes the paper's only claimed contact with naturalistic correction — the setting its motivation section leans on.",
+      "source": "[SleepGate §4.1, p.9, L536-551; §6.1-6.3, p.11, L659-717; §9.1 item 3, p.17, L1015-1017]"
+    },
+    {
+      "id": "UF-14",
+      "fact": "The consolidation module produced no number, received no gradient, and is nevertheless counted in the overhead and credited in the results.",
+      "numbers": "33,152 parameters = 26.7% of the 123,969-parameter 'sleep overhead' in Table 1. Algorithm 1 places consolidation in Phase 3 of the hard-eviction variant; §6.3 states the soft variant was used, so no forward pass reaches Eq. 12-13 and $P_K,P_V,\\hat q_{\\text{cons}}$ receive no gradient in Stage 2.",
+      "why_it_bites": "It is contribution (3) of the abstract ('a consolidation module that merges related surviving entries into compact summary representations'), it is one of the five rows of the biology mapping in Table 4 (mapped to hippocampal-neocortical replay), and §9 credits it in the sentence that reports the results: 'The three sleep-inspired modules—key decay, learned gating, and consolidation—give the model a direct mechanism for interference resolution'. It is also the module that carries the word 'consolidation', i.e. the one that makes the paper's title accurate.",
+      "source": "[SleepGate Abstract, p.1, L20-23; Table 1, p.11; Algorithm 1 lines 22-28, p.22; §6.3, p.11, L707-711; Table 4, p.21; §9, p.16, L990-991]"
+    },
+    {
+      "id": "UF-15",
+      "fact": "The gate's parameter overhead is claimed to be '< 0.01%' of the base model and is 9.36% of it in the paper's own Table 1.",
+      "exact_wording": "'The total parameter count is negligible relative to the base model (typically < 0.01%).' [§3.3]",
+      "numbers": "[본서 산술] $74{,}241/793{,}344=9.358\\%$ — a factor of ~936 above the stated bound. All sleep modules together: 15.626%, matching Table 1's 15.6%.",
+      "why_it_bites": "The hedge 'typically' can be read as referring to a production-scale base model, but the paper never says so and never reconciles the two figures, which sit five pages apart. A reader who takes the §3.3 sentence at face value carries away the wrong order of magnitude for the only overhead the paper actually quantifies.",
+      "source": "[SleepGate §3.3, p.6, L290-291; Table 1, p.11, L666-693]"
+    },
+    {
+      "id": "UF-16",
+      "fact": "The abstract's and conclusion's 'all five baselines remain below 18% across all depths' is contradicted by the paper's own table and by its own results section.",
+      "numbers": "StreamingLLM at $n=2$ is 18.0%, and §7.1 writes 'the best baseline (StreamingLLM at 18.0%)'.",
+      "why_it_bites": "Small in magnitude, but it is the abstract's only universally quantified claim, it is repeated verbatim in the conclusion, and it is refuted by a number printed in the same document.",
+      "source": "[SleepGate Abstract, p.1, L28-29; §7.1, p.12, L802; §9, p.16, L993-994; Table 2, p.12]"
+    },
+    {
+      "id": "UF-17",
+      "fact": "'All baselines perform near chance (roughly 1/500 = 0.2% for random guessing) at deeper PI levels' overstates by more than an order of magnitude.",
+      "numbers": "At $n=30$ the baselines score 5.5, 4.5, 2.5, 2.0 and 0.5% — i.e. 2.5× to 27.5× the stated chance level. Several are also non-monotone in $n$ (StreamingLLM 4.0 at $n=20$ → 5.5 at $n=30$; Full KV 1.5 → 2.5; Decay Only 3.5 → 4.5), which no accumulation account predicts.",
+      "why_it_bites": "'Near chance' is the phrase that licenses the sentence immediately after it — 'confirming that no existing cache management strategy addresses proactive interference'. With baselines an order of magnitude above chance and moving non-monotonically, the data support neither the phrase nor the inference.",
+      "source": "[SleepGate §7.1, p.12-13, L804-848; Table 2, p.12]"
+    },
+    {
+      "id": "UF-18",
+      "fact": "There is exactly one ablation in the paper, and it removes the component that the paper's own analysis says does not matter.",
+      "detail": "'Decay Only' removes the gate and consolidation, leaving key decay. Absent: any ablation of the tagger, of $\\mathcal{L}_{\\text{align}}$ (Eq. 21, the oracle-derived gate supervision), of $\\mathcal{L}_{\\text{compress}}$, of the trigger or any of its three arms, of $\\beta_{\\text{bias}}$, of $d_s$, of the curriculum with numbers, and of the $a_i$ (heavy-hitter) input feature.",
+      "why_it_bites": "The paper diagnoses its own failure as $d_s=64$ being too small and $\\beta_{\\text{bias}}=5$ saturating [§7.3, §8.5], and then lists raising $d_s$ and $\\beta$ as FUTURE work [§9.1 item 2]. Both are single-hyperparameter reruns of a 917K-parameter model. The most informative missing ablation is $\\mathcal{L}_{\\text{align}}$ / $u_i$: the gate is fed the tagger's supersession flag as an input feature AND trained by cross-entropy against it, so the null hypothesis 'the gate copies $u_i$' is never excluded.",
+      "source": "[SleepGate §6.4 item 5, p.12, L777-779; §7.3, p.14, L878-881; §8.5, p.15, L958-962; §9.1 item 2, p.16-17; Eq. 5, Eq. 21]"
+    },
+    {
+      "id": "UF-19",
+      "fact": "The comparison is asymmetric in supervision while being described as fair. SleepGate is trained directly on the evaluation metric and on oracle supersession labels; the baselines are trained on neither.",
+      "exact_wording": "The paper's fairness claim: 'This establishes basic sequence modeling capability before introducing the sleep mechanism, and ensures a fair comparison since baselines receive the same total training budget.' [§4.2 Stage 0]. What SleepGate additionally receives: $\\mathcal{L}_{\\text{sleep}}=-\\sum_{(k,v)\\in\\mathcal{A}_{\\text{cur}}}\\log p(v\\mid k,\\mathcal{K}'^+)$ — the log-likelihood of the exact quantity Table 2 scores [Eq. 19]; Stage 1 gate pre-training 'on PI sequences with ground-truth supersession labels' [§4.2 Stage 1]; and $\\mathcal{L}_{\\text{align}}$ supervising the gate against those flags throughout Stage 2 [Eq. 21].",
+      "why_it_bites": "Equal epochs is not equal supervision. The baselines are cache policies bolted onto a plain LM objective; SleepGate is a system whose loss function is the benchmark. Combined with UF-2 (a 10.3× gap at the depth where the mechanism is declared inert), this is sufficient to explain the headline without invoking interference resolution at all — and the paper runs no arm that would separate the two explanations, e.g. the base transformer trained with $\\mathcal{L}_{\\text{sleep}}$ but with $\\beta_{\\text{bias}}=0$.",
+      "source": "[SleepGate §4.2, p.9, L558-570; Eq. 19, Eq. 21, p.8-9; §6.3, p.11, L707-713]"
+    },
+    {
+      "id": "UF-20",
+      "fact": "No trivial baseline and no oracle upper bound. The task is 'return the most recent value for this entity', which a pure recency prior solves exactly, and no such arm is run.",
+      "detail": "The five baselines are all cache-eviction policies (full, sliding window, H2O, StreamingLLM, decay). Absent: attend-to-last-entry; a fixed recency bias on the attention logits (i.e. SleepGate with $\\pi_i$ replaced by a monotone function of age, which would separate 'learned content-dependent gating' from 'any recency signal at all'); and oracle eviction using the ground-truth supersession labels the training pipeline already computes, which would give the achievable ceiling.",
+      "why_it_bites": "This is the same defect the book records across the $E$-path — the missing arm is always the cheapest and most obvious one (→ ch27 판정 5, '빠진 대조군은 매번 가장 싸고 가장 자명한 baseline이다'). Here the oracle arm is not merely cheap: the labels already exist inside Stage 1.",
+      "source": "[SleepGate §6.4, p.12, L770-779; §4.2 Stage 1, p.9, L562-564]"
+    },
+    {
+      "id": "UF-21",
+      "fact": "The gate's input feature vector includes the H2O heavy-hitter statistic, which the paper's own analysis identifies as anti-correlated with the right answer, and the paper never remarks on it.",
+      "detail": "Eq. 5 includes $a_i$, 'the cumulative attention received by this entry (analogous to the \"heavy hitter\" score of Zhang et al. [2023])'. §7.2 then explains H2O's failure: 'cumulative attention scores are anti-correlated with freshness under PI: the model attends most to the entries it has seen most often, which are precisely the stale values. Retaining heavy hitters actively preserves interference.'",
+      "why_it_bites": "Either the feature is useful (and §7.2's mechanism claim is wrong) or it is anti-correlated (and it is a liability the gate must learn to invert). The paper asserts both and tests neither. Removing $a_i$ from Eq. 5 is a one-line ablation.",
+      "source": "[SleepGate Eq. 5 and surrounding text, p.6, L262-269; §7.2, p.13, L855-857]"
+    },
+    {
+      "id": "UF-22",
+      "fact": "The failure is in-distribution. Every evaluated depth lies inside the training range, so the collapse at $n\\ge15$ is not a generalisation gap.",
+      "detail": "§4.1 specifies PI training sequences with $n\\in[2,50]$; §6.3's curriculum reaches $n=30$ by the final epoch; evaluation depths are $\\{1,2,5,10,15,20,30\\}$. (§4.1 and §6.3 also disagree with each other about the maximum, 50 vs 30.)",
+      "why_it_bites": "The paper frames the cliff as a capacity limit to be fixed by a larger $d_s$, which is plausible; but it never states that the model was trained on exactly the depths where it fails, which is the fact that makes the capacity reading the only remaining one and rules out under-exposure. It also means the curriculum's final stage was training on sequences the model ends up scoring 16.5% on.",
+      "source": "[SleepGate §4.1 item 1, p.9, L542-544; §6.2, p.11, L700-701; §6.3, p.11, L714-717; Table 2, p.12]"
+    },
+    {
+      "id": "UF-23",
+      "fact": "The computational-overhead paragraph omits the second forward pass that Algorithm 1 and Figure 1 both mandate, and calls the remainder 'negligible' without measurement.",
+      "exact_wording": "'Each sleep micro-cycle requires a forward pass through the gate network for every cache entry... this is $O(C\\cdot d_g\\cdot d_h)$ per cycle—negligible compared to a transformer forward pass, but non-zero.' [§8.5]",
+      "numbers": "[본서 산술] At the paper's configuration the gate over the whole cache is ~6.2% of one full-sequence forward — small but not negligible, and the comparison as written (per-entry gate cost vs a whole forward pass) is the wrong ratio, since the gate runs over all $C$ entries. The omitted re-read adds ~44% (attention-only) to ~100% (full second pass).",
+      "why_it_bites": "This is the only cost sentence in the paper, and it accounts for the cheapest of the three cost terms while omitting the most expensive. Under STC-STYLE-NOTATION §6.4 rule 3, a method whose cost cells are empty cannot be described as efficient; here the paper does not describe itself as efficient but does describe its overhead as negligible, which is the same move.",
+      "source": "[SleepGate §8.5 'Computational Overhead', p.16, L973-976; Algorithm 1 line 20, p.22; Figure 1 caption, p.4]"
+    },
+    {
+      "id": "UF-24",
+      "fact": "Key decay is multiplicative on the key vector, so it is not a monotone suppression operator, and at the paper's own $\\lambda=0.01$ its magnitude is at most 6.7%.",
+      "numbers": "[본서 산술] $k_i\\leftarrow k_i(1+\\mathrm{age}_i)^{-\\lambda}$ with $\\lambda=0.01$: at the maximum age of 1023 the factor is $1024^{-0.01}=0.933$. Since the logit is $q_t^\\top k_i/\\sqrt d$, scaling $k_i$ by $c<1$ scales the logit by $c$ — which pushes it toward zero. Entries whose logit is POSITIVE are suppressed; entries whose logit is NEGATIVE are boosted relative to the softmax mean. Decay therefore compresses the attention distribution toward uniform rather than monotonically down-weighting old entries.",
+      "why_it_bites": "Table 4 maps this operator to synaptic homeostasis and asserts it 'preserves relative importance while reducing absolute interference' [§1.1, Table 4] — but a multiplicative shrink of the logit does not preserve relative importance under softmax; it reduces the temperature-scaled contrast in both directions. It is also the operator the paper elsewhere treats as the persistent part of its mechanism, and its own ablation puts it at baseline level (≤12.5%), which is consistent with the 6.7% magnitude computed here.",
+      "source": "[SleepGate Algorithm 1 lines 3-4, p.22; Table 3 'Decay rate $\\lambda$ 0.01', p.20; §1.1, p.2, L72-76; Table 4 row 1, p.21; §7.2, p.13, L861-864]"
+    },
+    {
+      "id": "UF-25",
+      "fact": "No code, no data, no released artifact, no seeds — for a result that is a 917K-parameter model on a synthetic vocabulary and therefore reproducible in minutes if any of these existed.",
+      "why_it_bites": "Among the papers in this corpus this is the one whose reproduction cost is lowest by orders of magnitude, and it is the one that supplies the least reproduction material. Letta STC released a repository; this paper releases nothing.",
+      "source": "[grep 'github' over the full text: 0 hits; no data/code availability statement anywhere]"
+    },
+    {
+      "id": "UF-26",
+      "fact": "The paper's own three-module enumeration changes between the introduction and the conclusion.",
+      "detail": "§1.2 and §3 name the three modules as (1) conflict-aware temporal tagger, (2) forgetting gate, (3) consolidation module. §9 names them as 'key decay, learned gating, and consolidation'. Key decay is Phase 1 of Algorithm 1 and is not one of the three modules in §3; the tagger has vanished.",
+      "why_it_bites": "It matters because the tagger is the module that supplies $u_i$, which is both an input feature and the supervision target of $\\mathcal{L}_{\\text{align}}$ — i.e. the module through which the oracle signal enters. Dropping it from the conclusion's enumeration removes from the summary the component most responsible for the result being easy.",
+      "source": "[SleepGate §1.2, p.3, L100-101; §3, p.4, L186-189; §9, p.16, L990-991]"
+    },
+    {
+      "id": "UF-27",
+      "fact": "Presentation defects in the vendored text: Appendix B ('Pseudocode for Training Loop') is an empty heading with Algorithm 2 appearing after Appendix C's table; Figure 2's x-axis reads 'Number of Prior Updates (PI Depth)' while its tick values are $n$ (total updates), so at $n=1$ the axis claims one prior update where §7.3 says there are none; the Gumbel-softmax relaxation is used in §3.3 with no citation while Jang et al. 2017 sits uncited in the bibliography (the only uncited entry of 46).",
+      "why_it_bites": "Individually minor. Together with UF-8, UF-9, UF-11 and UF-15 they establish that the paper's numeric and structural claims were not checked against each other, which is the reason this note verifies every arithmetic statement rather than quoting any of them.",
+      "source": "[SleepGate App. B heading, p.20, L1228-1230; Algorithm 2, p.23; Figure 2 axis, p.13, L836; §3.3, p.6, L292-294; References, p.18, L1085-1086]"
+    }
+  ],
+
+  "cross_path_citations": {
+    "verdict": "INVERTED SILENCE — the first paper in the corpus that engages the biology substantively and the sleep-time-compute literature not at all. Of 46 bibliography entries, exactly 2 are in this book's corpus (RAG and Memorizing Transformers, both B군 ancestors of the $E$-path). ZERO of the nine discriminant-passing papers appear, and zero of the boundary case. Eleven entries are neuroscience or CLS.",
+    "bibliography_size": "46 entries [SleepGate References, p.17-19, L1030-1134]. One (Jang et al. 2017, Gumbel-softmax) is never cited in the body.",
+    "corpus_overlap": {
+      "cited": [
+        "Lewis et al. 2020 (RAG, 2005.11401) — book B군, ch10/ch13. Cited once, in the memory-augmented-architectures paragraph.",
+        "Wu et al. 2022 (Memorizing Transformers, 2203.08913) — book B군, ch12. Cited once, in the same paragraph."
+      ],
+      "not_cited_and_predating_this_paper": [
+        "MemGPT 2310.08560 (2023-10) — the boundary case",
+        "Zep 2501.13956 (2025-01)",
+        "Letta `Sleep-time Compute` 2504.13171 (2025-04) — THE PAPER THAT NAMED THIS LINE, 11 months prior",
+        "Mem0 2504.19413 (2025-04)",
+        "SEAL 2506.10943 (2025-06)",
+        "ReasoningBank 2509.25140 (2025-09)",
+        "Nested Learning 2512.24695 (2025-12) — whose update-frequency continuum is structurally what §8.3's multi-scale sleep proposes",
+        "Memory Caching 2602.24281 (2026-02) — one month prior, and the paper this one most resembles under the discriminant",
+        "LoRA, ROME, MEMIT, Memory Layers, Generative Adapter, EWC, DGR, GEM, model collapse, and the capacity/rate-distortion line — none"
+      ],
+      "not_cited_because_chronology_forbids_it": [
+        "SCM 2604.20943, Multi-Timescale 2605.05097, `Do LMs Need Sleep?` 2605.26099, `LM Need Sleep` 2606.03979 — all postdate 2026-03-15"
+      ],
+      "count": "6 of the 10 rows of ch11 표 11-1 predate this paper. None is cited. That is chosen silence, not chronology."
+    },
+    "E_path": {
+      "citations": "ancestors only — Graves et al. 2014 (Neural Turing Machines), Sukhbaatar et al. 2015 (End-to-End Memory Networks), Wu et al. 2022 (Memorizing Transformers), Lewis et al. 2020 (RAG), Borgeaud et al. 2022 (RETRO), Munkhdalai et al. 2024 (Infini-attention)",
+      "note": "The paper's stated reason for setting them aside is correct and is the sharpest one-sentence statement of the $E$-path's limit in the whole corpus: 'these systems typically add memory capacity without addressing the interference problem within the existing context' [SleepGate §2, p.4, L171-172]. It engages the ancestors and none of the descendants."
+    },
+    "W_path": {
+      "citations": "Gu & Dao 2023 (Mamba), Dao & Gu 2024 (Mamba-2/SSD), Sun et al. 2023 (RetNet), Hochreiter & Schmidhuber 1997 (LSTM), Tay et al. 2022 (efficient-transformer survey), Child et al. 2019 (sparse transformers), Beltagy et al. 2020 (Longformer)",
+      "note": "It engages the fixed-size-state family more seriously than any other paper in the corpus and states the trade-off correctly: 'this comes at the cost of losing direct access to individual past tokens. SleepGate occupies a middle ground' [§8.2, p.15, L928-930]. It cites none of the test-time-learning line (Titans/Atlas/Nested Learning/Memory Caching) and none of ch17's paper — the latter by chronology, the former by choice.",
+      "the_closest_precedent_it_does_name": "'The forgetting gate in LSTM [Hochreiter & Schmidhuber, 1997] is the closest architectural precedent to our proposal, but operates at the hidden-state level within a single timestep, not over an extended KV cache.' [§2, p.4, L181-182]. That is the correct precedent and it is stated more precisely than most lineage claims in this corpus."
+    },
+    "Theta_path": {
+      "citations": "ZERO. No LoRA, no PEFT, no model editing, no EWC/GEM/DGR, no distillation, no self-training, no SEAL.",
+      "note": "The continual-learning contact is entirely through McCloskey & Cohen 1989, French 1999, and the two sleep-replay simulation papers. So the paper proposes 'dream-like training: using the model's own generated text during \"sleep\" phases to rehearse and consolidate' [§9.1 item 4] with no reference to any of the work that has built and bounded exactly that (→ ch06, ch20, ch21, ch22)."
+    },
+    "bio_CLS_path": {
+      "citations": "ELEVEN — Tononi & Cirelli 2006 and 2014 (synaptic homeostasis), Diekelmann & Born 2010, Rasch & Born 2013, Ellenbogen et al. 2006, Abel et al. 2013, Staresina et al. 2015 (spindles/ripples), Berry & Davis 2014 and Davis & Zhong 2017 (active forgetting), Kumaran, Hassabis & McClelland 2016 (CLS updated), Tadros et al. 2022, González et al. 2020.",
+      "finding": "This is the most substantive biological engagement in the corpus, and it is qualitatively different from the corpus's usual pattern: §1.1 is a mechanism-level account (SHY → downscaling; SWS replay → selective consolidation; dopaminergic active forgetting) and Appendix C's Table 4 maps five biological mechanisms onto five modules with a 'Functional Correspondence' column. Where Letta STC's silence map row reads '생물 ✗ (제목에 빌려 씀)', this paper's reads '생물 ○, 세 경로 ✗'.",
+      "relation_to_this_book_s_bio_corpus": "It cites neither of the book's two bio papers, but it cites their immediate neighbours from the same laboratory: González et al. 2020 (eLife 9:e51005, 'Can sleep protect memories from catastrophic forgetting?') shares authors Delanois and Bazhenov with the book's `sleep prevents catastrophic forgetting` (Golden, Delanois, Sanda, Bazhenov, PLoS Comput Biol 2022), and Tadros et al. 2022 (Nature Communications) is Bazhenov lab as well. So all three of its sleep-replay-in-ANN citations come from one group, and the specific paper this book vendored is not among them. PAD (eLife 2022) is absent.",
+      "what_it_does_NOT_do": "It does not test any biological prediction. Table 4 is a correspondence table, not an experiment: no ablation is organised around a biological hypothesis, no biological claim is used to make a falsifiable prediction about the model, and the sleep-stage hierarchy of §8.3 is offered as a hypothesis with no experiment attached. The argument comes along with the name, but stops at analogy."
+    },
+    "what_it_DOES_engage_fully": "The serving and long-context literature, exhaustively and accurately: Longformer, sparse transformers, H2O, StreamingLLM, FastGen (Ge et al. 2024), Infini-attention, KVQuant, PagedAttention, GQA, RULER, LongBench, Lost-in-the-Middle. Five of these are run as baselines. This is the one community that every other paper in the corpus ignores and the one this book's reader belongs to.",
+    "monograph_implication": "Two things follow. (i) The silence finding is confirmed at its sharpest — a paper titled after sleep-dependent memory consolidation, published 2026-03, cites none of the nine papers this book identifies as the category, including the one that named it 11 months earlier. (ii) The silence map needs a new ROW SHAPE, because this paper's pattern is the inverse of every existing row: bio ○, KV-cache/serving ○○, $E$ ancestors only, $W$ adjacent families only, $\\Theta$ ✗, sleep-time-compute corpus ✗. The book has been describing a field in which the biology is borrowed without its argument; here the argument is borrowed carefully and the field is ignored. Both are failures of the same kind — communities that do not read each other — and printing them side by side is stronger than printing either alone (→ ch23 §23.8, ch11 §11.7)."
+  },
+
+  "systems_implications": {
+    "preamble": "This is the only paper in the corpus whose mechanism lands inside the attention kernel, so it is the only one that can be translated into the reader's world without extrapolation. The translation is mixed: the soft variant is the cheapest possible intervention, and the parts the paper leaves for future work are the ones that break the serving stack. Items marked [PAPER] are the paper's; [본서 산술] and [본서 추론] are this note's, per STC-STYLE-NOTATION §6.2.",
+    "items": [
+      {
+        "id": "SI-1",
+        "claim": "The retention score is ONE scalar per token, shared across all layers and all heads. The paper never says this; it follows from its parameter counts.",
+        "grounding": "[본서 산술] $P_m\\in\\mathbb{R}^{64\\times256}$ requires a 128-wide key input, and $d_g=578$ decomposes only if $k_i,v_i,\\mathrm{PE},\\bar\\phi$ each enter at $d_{\\text{model}}=128$ rather than at head width 32. Both counts match Table 1 exactly. Consequence for serving: the whole mechanism is one length-$L$ fp16 vector per request, not $L\\times L_{\\text{layer}}\\times n_{\\text{heads}}$. That is 2 bytes per token per request — negligible — and it makes the soft variant trivially compatible with GQA, which the paper worries about in §8.5. Consequence for quality: a token judged stale is suppressed in every head at every layer simultaneously, including heads doing syntax rather than retrieval, with no layer able to dissent. [본서 추론] That is the sharpest reason to doubt transfer to a pre-trained model, and it is a different reason from the one the paper gives ($d_s$ capacity)."
+      },
+      {
+        "id": "SI-2",
+        "claim": "The soft-bias mechanism itself is the cheapest intervention available in an attention kernel. An additive per-key pre-softmax bias is the same slot that ALiBi and relative-position biases already occupy.",
+        "grounding": "[본서 추론] grounded in Eq. 11. The bias enters as $\\exp(q^\\top k_i/\\sqrt d+\\psi_i)$, so a fused kernel needs one extra length-$L$ vector loaded alongside K, at 2 B/entry (bf16) against 2·$d_{\\text{head}}$·2 B of K+V per entry per head. At $d_{\\text{head}}=128$ that is +0.4% of KV traffic per head, and by SI-1 the vector is shared across heads, so it is loaded once. This is the favourable half of the systems reading and it should be stated as clearly as the unfavourable half."
+      },
+      {
+        "id": "SI-3",
+        "claim": "The expensive kernel term is not the bias — it is the gate's INPUT features. Two of them are quantities a fused attention kernel does not produce.",
+        "grounding": "[본서 추론] Eq. 5 requires (a) $a_i$, the cumulative attention mass received by each cache entry, i.e. column sums of the attention matrix, and (b) via Eq. 14 the per-head attention entropy $H_t$. FlashAttention-style kernels never materialise the attention matrix, so column sums require either a second pass or cross-tile atomic accumulation — this is the same cost that H2O implementations pay and it is well known in that literature. Entropy is the better case: since $H_t=\\log Z-\\frac1Z\\sum_i s_i\\,\\ell_i$ with $s_i=\\exp(\\ell_i)$, it CAN be accumulated online with the same rescaling trick used for $\\sum_i s_i v_i$, at the cost of one extra accumulator channel per query row. So the entropy trigger is implementable in a fused kernel but requires a kernel change; the heavy-hitter feature requires a pass or an atomic. The paper prices neither."
+      },
+      {
+        "id": "SI-4",
+        "claim": "The cost is charged to the request's critical path, not to idle time. This is a serving statement, not only a taxonomic one.",
+        "grounding": "[PAPER] 'These components are activated periodically during inference in \"sleep micro-cycles\"' [Abstract, p.1] and Algorithm 2 places the sleep branch inside the per-token loop. [본서 산술] At the paper's configuration one extra attention pass is ~+44% of a full-sequence forward and a full second pass is +100%. At production sequence lengths the ratio moves further against the method, because attention grows as $L^2$ while the matmul term grows as $L$: at $L=128\\text{K}$ on a model with $d=4096$ and 32 layers the attention term dominates, so re-running attention approaches doubling the prefill. Whatever this mechanism is, it is not a way of moving work off the request."
+      },
+      {
+        "id": "SI-5",
+        "claim": "The augmented cache adds per-entry metadata whose byte cost the paper never states, and whose scoping the paper's own equations leave ambiguous.",
+        "grounding": "[본서 산술] Under SI-1's reading (one signature per token at model width, bf16): $\\approx135$ B/token of metadata against $2\\,d\\,L_{\\text{layer}}\\cdot2$ B of KV, i.e. +6.6% at the paper's toy config and $\\approx+0.05\\%$ at an 8B-class config where KV per token is far larger. Under the literal reading of Eq. 2, which scopes $\\mathcal{K}^+$ over $C^{\\ell,h}$, the same metadata is materialised per (layer, head) and the figure rises by $L_{\\text{layer}}\\times n_{\\text{heads}}$. The paper does not resolve which, and the two readings differ by more than an order of magnitude in the only capacity number a serving engineer would care about."
+      },
+      {
+        "id": "SI-6",
+        "claim": "Hard eviction breaks PagedAttention's block invariants; the paper's expectation of compatibility is not grounded.",
+        "grounding": "[본서 추론] against [PAPER] §8.5's 'We expect compatibility since SleepGate operates on the logical cache structure'. PagedAttention allocates the cache in fixed-size blocks (16 tokens is the common default) and addresses them through a block table. Evicting scattered entries produces partially-valid blocks, which requires either a per-entry validity mask threaded into the kernel (giving up the density that makes paging cheap) or a compaction pass that rewrites the block table and moves KV bytes. Neither is free, and neither is 'logical'."
+      },
+      {
+        "id": "SI-7",
+        "claim": "Consolidation is incompatible with cross-request prefix caching and with position-encoding schemes applied at write time, and this is the more serious of the two.",
+        "grounding": "[본서 추론] Eq. 12 produces a synthetic $(k^*_m,v^*_m)$ that corresponds to no token. Two consequences. (i) Prefix caching keys a cached KV block on the token prefix that produced it; once the cache contains entries that are content-dependent weighted averages, it is no longer a function of the prefix, so cross-request reuse is dead for any request that has slept. That removes the single largest serving optimisation available to long-context workloads — the same optimisation ch25 판정 2 identifies as the one that decides the $E$-path's amortisation argument. (ii) With RoPE the rotation is baked into $k_i$ at write time, so a weighted average of rotated keys is a key at no well-defined position; the paper's recency-weighted pool over $\\tilde\\tau_i$ does not repair this because the weighting is on the pooling coefficients, not on the rotation."
+      },
+      {
+        "id": "SI-8",
+        "claim": "Quantised KV caches interact with the gate through its inputs, not through the bias.",
+        "grounding": "[본서 추론]. Eq. 5 feeds $k_i$ and $v_i$ into the gate. With an int4/int8 cache those must be dequantised to score, or the gate must be trained on quantised inputs; and the gate's discrimination is exactly a fine-grained comparison among near-identical entries for the same slot — the regime where quantisation error is most likely to matter. The paper's §8.5 lists KVQuant compatibility as expected. [본서 판단] The expectation is untested and the mechanism is one where it is least likely to hold."
+      },
+      {
+        "id": "SI-9",
+        "claim": "The state here is HOT-tier and per-request, which is a third coordinate distinct from both this book's and Neural Memory's memory-centric opportunities.",
+        "grounding": "[본서 추론] against ch29 표 29-2. Neural Memory's coordinate is HBM read-modify-write bandwidth for a session-lifetime $W$ at token granularity; this book's is warm-tier random-read deadline and write endurance for a user-lifetime $\\Theta$ delta at sleep-round granularity. SleepGate's is neither: a per-request, request-lifetime object already resident in HBM, touched at micro-cycle granularity, with no persistence and no staging. It therefore adds a third row to 표 29-2 rather than filling either existing one — which independently supports ch29's refusal to weld the two monographs' conclusions, by showing that 'memory-centric opportunity' resolves into at least three unrelated coordinates."
+      },
+      {
+        "id": "SI-10",
+        "claim": "The one transferable measurement idea is the stale retrieval rate.",
+        "grounding": "[본서 판단] §6.5 defines a metric that partitions errors into 'retrieved a superseded value' and 'everything else'. No $E$-path paper in this corpus reports that partition, and it is precisely the number that would diagnose Zep's knowledge-update regression (76.9→74.4 on gpt-4o-mini) and Mem0's loss to full-context (66.88 vs 72.90) — both of which are currently unexplained because the papers report only accuracy (→ ch15). The metric costs nothing to add to an existing eval harness. This is the item ch29 or ch30 should carry forward from this paper, and it is worth more than the mechanism."
+      },
+      {
+        "id": "SI-11",
+        "claim": "The trigger, if it were real, would be the corpus's only proposal to schedule maintenance off the model's own uncertainty — and it converges with SCM without either paper knowing.",
+        "grounding": "[본서 관찰] Eq. 16's arms are attention entropy above a running threshold, conflict density above $\\rho_{\\max}$, and a periodic fallback. SCM triggers its cycles on buffer entropy, conflict density, and elapsed time [SCM §3.6] (→ ch15). Two papers, different layers, no shared citation, same three signals. [본서 판단] That convergence is evidence that the scheduling question has a natural answer independent of what is being scheduled, and it is a better argument for the frequency-continuum idea than Nested Learning's (→ ch18) because it is an empirical coincidence rather than a notational one."
+      },
+      {
+        "id": "SI-12",
+        "claim": "For the serving reader the correct one-sentence summary is: this is a learned, content-dependent attention mask, trained end-to-end, applied uniformly across layers and heads.",
+        "grounding": "[본서 판단] grounded in SG-5 and SI-1. Everything else — the trigger, the tagger, the consolidation module, the biology table, the theory — is either unexercised, oracle-supplied, or about a different system. Saying it this way is not a dismissal: a learned attention mask is a real and useful primitive, it sits in the same family as H2O and StreamingLLM but with a learned score instead of a fixed rule, and it is the first thing in this corpus a serving engineer could implement in an afternoon. It is simply not a write to any layer, and therefore not sleep-time compute."
+      }
+    ]
+  },
+
+  "figures": [
+    {"number": "Figure 1", "page": "p.4 (L135-168)", "shows": "The wake/sleep flow: input tokens → transformer → tagged KV cache → 'Sleep?' branch → either updated cache or the micro-cycle (Tagger → Decay → Gate → Consolidate). The caption carries the soft/hard split and the phrase 'a second forward pass'.", "why_reproduce": "It is the only place where the paper draws the two variants side by side, and the caption is the primary evidence that the evaluated configuration produces a bias rather than a modified cache. A chapter arguing the condition-(3) exclusion should show this figure and point at its caption."},
+    {"number": "Table 1", "page": "p.11 (L666-693)", "shows": "Parameter breakdown: base 793,344 / tagger 16,576 / gate 74,241 / consolidation 33,152 / total 917,313 / 'Sleep overhead 15.6%'.", "why_reproduce": "Every number reconstructs exactly from §6.1's configuration, which is what lets this note recover the per-token, layer-shared scoping (SI-1). It is also where the 26.7% of overhead belonging to the never-run consolidation module becomes visible."},
+    {"number": "Table 2", "page": "p.12 (L721-768)", "shows": "Accuracy / stale rate for six methods at seven PI depths, $N=200$ per cell.", "why_reproduce": "The single most informative object in the paper and the source of UF-1, UF-2, UF-4, UF-12, UF-16, UF-17. Any reproduction must add the derived residual column ($100-\\text{acc}-\\text{stale}$) — without it the reader cannot see that the baselines' errors are mostly not stale retrievals."},
+    {"number": "Figure 2", "page": "p.13 (L807-846)", "shows": "Accuracy vs PI depth for all six methods; SleepGate near 1.0 through $n=10$ then falling, all baselines flat near zero.", "why_reproduce": "It makes the cliff and the flatness of the baselines visible in one glance — including the fact that the baselines are flat from $n=1$ rather than decaying, which is the visual form of UF-1. Note the axis-label defect (UF-27)."},
+    {"number": "Table 3", "page": "p.20 (L1143-1226)", "shows": "All 18 hyperparameters with symbols and values, including $d_s=64$, $\\delta=0.85$, $\\lambda=0.01$, $\\kappa=1.5$, $\\rho_{\\max}=0.4$, $N_{\\max}=128$, $\\beta=5.0$, $\\eta=2.0$, $\\tau_{\\text{temp}}\\ 1.0\\to0.1$.", "why_reproduce": "It is the completest hyperparameter disclosure in the corpus and it is what makes the arithmetic checks in this note possible (UF-10, UF-11, UF-24). Cite it as the counter-example to the corpus's usual under-reporting — the paper's problem is not disclosure, it is that the disclosed values were never used to check the paper's own claims."},
+    {"number": "Table 4", "page": "p.21 (L1241-1303)", "shows": "Five biological mechanisms mapped to five SleepGate modules with a 'Functional Correspondence' column: synaptic homeostasis→key decay, hippocampal-neocortical replay→consolidation, dopaminergic active forgetting→gate, spindles/ripples→trigger, REM pattern separation→semantic signatures.", "why_reproduce": "This is the corpus's most explicit biology→module mapping, and it is exactly what ch23's verdict says does not exist ('이름은 생물학에서 왔고 논증은 오지 않았다'). Reproduce it in ch23 as the partial counter-example, alongside the observation that three of the five mapped modules were never run and none of the five mappings generates a tested prediction."},
+    {"number": "Algorithm 1", "page": "p.22 (L1309-1358)", "shows": "The micro-cycle: Phase 1 key decay, Phase 2 gate scoring, then the explicit soft/hard fork at line 16, with consolidation/eviction/renormalisation as Phases 3-5 of the hard branch only.", "why_reproduce": "Line 16's comment '— Soft Biasing Variant (used in experiments) —' and line 20's 'Re-run attention with additive bias b' are the two lines on which this note's entire classification turns. If one object from this paper enters the book, it is this algorithm with those two lines highlighted."},
+    {"number": "Algorithm 2", "page": "p.23 (L1362-1405)", "shows": "The training loop, with the sleep branch gated on `if trigger(t)` at line 12 and a single backward pass through $\\Theta$, $G_\\theta$ and the tagger at line 21.", "why_reproduce": "Line 12 is one half of the trigger contradiction (UF-6) and line 21 is the proof that everything learned here is learned in the outer loop."}
+  ],
+
+  "todo_verify": [
+    {"id": "TV-1", "item": "Whether the adaptive trigger fired at all in the reported experiments, and if so at which positions relative to the query token. Algorithm 2 line 12 gates the sleep phase on trigger(t); §4.2 and §6.3 say every forward pass computes the biased logits.", "search_term": "'if trigger(t)' in Algorithm 2 against 'every forward pass computes both unbiased (wake) and soft-biased (sleep) logits' in §4.2 and 'Each forward pass produces both' in §6.3; and any released code, which does not appear to exist", "why_it_matters": "It is the ONLY thing that could move condition (1) from FAIL-as-evaluated to PASS. It cannot move condition (3), so it cannot change the verdict — but it decides whether the paper is filed as 'read-side method with a hypothetical schedule' or 'read-side method with no schedule at all'."},
+    {"id": "TV-2", "item": "Tokens per key-value update in the synthetic encoding. The paper says episodes are streams of '(e,v1),(e,v2),...' but never states the token count per update.", "search_term": "§6.2 'stream of key-value update tokens' and §4.1; and Figure 2's x-axis range against max_seq_len 1024", "why_it_matters": "At 2 tokens/update the longest episode is ~62 tokens, so the periodic fallback arm of the trigger ($N_{\\max}=128$) can never fire in any evaluated episode, and only the entropy and conflict arms could have. This note's arithmetic in discriminant_verdict is conditional on that count."},
+    {"id": "TV-3", "item": "Whether the semantic signature and the gate operate per token at model width (as the parameter counts imply) or per (layer, head) as Eq. 2's scoping over $C^{\\ell,h}$ literally states.", "search_term": "§3.1 'At each layer $\\ell$ and head $h$, the model maintains a KV cache $C^{\\ell,h}$' against Eq. 2, Eq. 3's $W_s\\in\\mathbb{R}^{d_s\\times(d+d)}$, Eq. 5's $f_i$, and Table 1's 16,576 / 74,241", "why_it_matters": "Decides SI-1 and SI-5, i.e. both the cost of the metadata and the entire quality argument about whether one token can be suppressed in all heads at once. The parameter counts reconstruct exactly under the per-token reading, so this note adopts it — but it is a reconstruction, not a statement the paper makes."},
+    {"id": "TV-4", "item": "Whether the 500 values are sampled with replacement within an episode.", "search_term": "§6.2 'values from 500 possible values'; §6.5's definitions of accuracy and stale retrieval rate", "why_it_matters": "SleepGate's $n=10$ cell sums to 100.5%, which requires a predicted value to be simultaneously current and superseded. Either repeats occur (and the stale-rate metric is ill-defined on those episodes) or Table 2 has an error. Every stale-rate number depends on the answer."},
+    {"id": "TV-5", "item": "Whether Proposition 1's '1.67N' or its formula is the error, against the published PDF rather than the vendored text extraction.", "search_term": "'For typical values (fe = 0.3, c = 4), this gives' in §5.3, p.10", "why_it_matters": "The formula gives 1.212N. If the PDF's formula differs from the extraction, the defect is in the vendoring; if not, the corpus's only state-capacity bound has a wrong instantiation. UF-11 is stated conditionally on this check."},
+    {"id": "TV-6", "item": "Whether Eq. 23's fraction is printed with $(1-(1-p_c)^{n/N})$ in the denominator in the published PDF, since two-line fractions are the extraction's weakest point.", "search_term": "Theorem 1 Eq. 23 in the arXiv PDF, p.10", "why_it_matters": "UF-8's derivation shows the proof sketch yields $T_{\\text{cyc}}(1-(1-p_c)^{n/T_{\\text{cyc}}})/p_c$, i.e. the same factor in the NUMERATOR. If the PDF matches the extraction the theorem's statement does not follow from its proof; if the extraction inverted the fraction, the theorem is close to correct and only the $\\min$/$O(\\max)$ restatement (UF-9) stands."},
+    {"id": "TV-7", "item": "Whether Table 2's column headers in the PDF are $n\\in\\{1,2,5,10,15,20,30\\}$ with the $n=15$ column in fourth-from-last position, as this note reconstructs.", "search_term": "Table 2 header row in the arXiv PDF, p.12, against §7.3's '97.0% (n = 10) to 73.5% (n = 15) and further to 16.5% (n = 30)'", "why_it_matters": "The vendored extraction displaces the $n=15$ header and its five baseline cells. The reconstruction is confirmed by §7.3 for the SleepGate row but only inferred for the baseline rows, and UF-4 (H2O not lowest at $n=10$) depends on the baseline column alignment."},
+    {"id": "TV-8", "item": "Whether Appendix B contains pseudocode in the PDF or is genuinely an empty heading, and whether Algorithm 2's placement after Appendix C is a layout artifact.", "search_term": "'B Pseudocode for Training Loop' in the arXiv PDF, p.20", "why_it_matters": "Only presentation, but it belongs in the UF-27 cluster and should not be asserted as a paper defect if it is a vendoring artifact."},
+    {"id": "TV-9", "item": "Whether Wang & Sun 2025 (arXiv:2506.08184) should be vendored into this corpus.", "search_term": "arXiv:2506.08184, 'Unable to forget: Proactive interference reveals working memory limits in LLMs beyond context length'", "why_it_matters": "Every empirical claim about PI in this paper is inherited from it, including the log-linear decay this paper's own baselines fail to reproduce (UF-1). If the book prints the PI concept at all it should print it from the source. Note the source paper is itself an evaluation paper, not a mechanism paper, so it would enter as C군 (제약·배경) if vendored — it does not change any count in ch11 표 11-1 or 표 11-2."},
+    {"id": "TV-10", "item": "Whether any code or data artifact exists outside the paper (author page, lab page, later version).", "search_term": "arXiv listing for 2603.14517 (v2+), and yxie2@kennesaw.edu / Kennesaw State University pages", "why_it_matters": "This is the one corpus paper whose result could be independently reproduced cheaply. If an artifact exists, the arithmetic defects (UF-8, UF-11, UF-12) and the trigger question (TV-1) become decidable rather than open, and the note should be revised."}
+  ],
+
+  "book_impact": {
+    "summary": "Confirms the book's spine thesis and four specific verdicts, more sharply than any single paper in the existing corpus. Threatens no verdict. Threatens two pieces of the book's APPARATUS — ch11 §11.2.4's claim to have exactly two grey zones, and the KV↔$W$ Rosetta row's implicit claim that append-only losslessness is a property of caches rather than a design choice — and forces a mechanical recount from 29 to 30. Overturns nothing. It also supplies ch29 with the corpus's only kernel-level material and ch23 with a partial counter-example that must be printed.",
+
+    "confirms": [
+      {
+        "chapter": "ch24 판정 2 — '이름과 기제의 간격은 구조적이다. 우연한 지체가 아니다.'",
+        "how_this_paper_bears": "This is the strongest confirmation available. A paper titled 'Sleep-Inspired Memory Consolidation', with sleep in its method name, a five-row biology mapping in Appendix C, and 'sleep micro-cycles' as its central object, published 2026-03, (i) changes no layer among $\\Theta$/$W$/$E$, (ii) charges 100% of its cost to $L_w$ and 0 to $B_s$, and (iii) cites none of the nine papers this book identifies as the category — including Letta STC, 11 months prior, which coined the term. 판정 2's stated condition is '이 판정은 이 책이 원문 대조로 읽은 29편에 대한 것이다'; the 30th, arriving from outside, behaves identically without having read any of them. That is closer to independent replication than to another instance.",
+        "action": "ch24 §24.3.1 should cite it as the first out-of-sample instance, and 판정 2's condition clause should be updated to 30편."
+      },
+      {
+        "chapter": "ch24 §24.5 F6 — '용어가 수렴함을 보이는 관측... 새 논문의 정의문이 네 조건 중 몇 개를 명시하는지 센다'",
+        "how_this_paper_bears": "F6 is the falsifier for 판정 2 and 3, and it is NOT triggered. This paper's definition of its own object specifies ZERO of the four conditions: it never says which state changes, never places the operation relative to the query, never gives a budget in any unit, and never names a consumer. Running F6's counting procedure on the newest paper in the corpus returns 0/4. 판정 2 and 판정 3 stand.",
+        "action": "Record the 0/4 score in ch24 §24.5 as the first execution of F6's procedure. It converts a proposed observation into a performed one."
+      },
+      {
+        "chapter": "ch11 §11.2.3 조건 (3) — '읽기를 바꾼 논문이 쓰기를 바꾼 논문으로 둔갑한다'",
+        "how_this_paper_bears": "Second instance, and more legible than the first. Memory Caching's read-side change is visible only by comparing its update rule to a baseline's [Memory Caching Eq. 4 vs Eq. 7]. Here the read-side change is a single equation replacing a single equation — Eq. 11 replaces Eq. 1 — and the paper's own algorithm returns a bias vector rather than a cache. Two independent instances also make the point that condition (3) is not a device built to exclude one inconvenient paper.",
+        "action": "ch11 §11.2.3's (3) paragraph gains a second example; 표 11-2 gains a row: SleepGate | 2603.14517 | (3) | (R)의 $f$를 바꾼다. 평가된 변종은 캐시를 고치지 않고 bias만 만든다 [SleepGate Eq. 10-11; Algorithm 1 lines 16-21] | ch11·ch18."
+      },
+      {
+        "chapter": "ch11 §11.7 / ch23 §23.8 / ch27 — the path-silence finding",
+        "how_this_paper_bears": "Confirmed and INVERTED. The silence map's existing rows describe papers that borrow the biology's name without its argument; this row is the mirror image — eleven biology and CLS citations, a mechanism-level §1.1, an explicit CLS-contrast lineage statement, and zero citations to any of the nine. It also names one silence the map does not yet have a column for: the KV-cache/serving literature, which this paper engages exhaustively (five of its baselines are from it) and which no other corpus paper touches at all.",
+        "action": "표 11-6 (침묵 지도) gains a row with a new shape: | SleepGate | $E$ 조상만 | $W$ 인접 계열만 | ✗ | ○○ (11편) | 서빙·KV 문헌 ○○ |. ch23 §23.8 gains the inversion as its closing observation."
+      },
+      {
+        "chapter": "ch27 판정 3 — '$W$-경로는 현재 문헌으로 판정 불가이며, 그 판정 불가 자체가 결과다' (표본 1)",
+        "how_this_paper_bears": "CONFIRMED, not threatened. ch27's falsifier FW1 requires '판별식 네 조건을 정면으로 통과하는 $W$-경로 논문이 두 편 이상 추가되면'. A reader might reach for SleepGate as that second $W$-path paper, because it manipulates cache state. It is not: it passes none of the four into $W$, it has no fast weights, and §8.2 positions it explicitly against the fixed-size-state family. The $W$-path sample stays at 1.",
+        "action": "Add one sentence to ch27 §27.5 FW1 naming SleepGate as the nearest candidate that does not qualify and why — this pre-empts the obvious objection."
+      },
+      {
+        "chapter": "ch25 판정 1 / ch28 판정 1 / ch26 판정 6 — the reporting silences ($B_s$ 미보고, $C_{\\text{cap}}$ 바이트 0편)",
+        "how_this_paper_bears": "All three confirmed. $B_s$: no FLOPs, no tokens, no seconds — only an asymptotic and a parameter ratio mislabelled 'Sleep overhead'. $C_{\\text{cap}}$: no bytes, no dtype anywhere. And this paper makes ch26 판정 6's argument stronger than any existing member, because 판정 6's claim is that the silence reflects intent rather than difficulty — here the model is 917,313 parameters with every hyperparameter printed in Table 3, so both cells are one multiplication away and neither is printed.",
+        "action": "ch26 판정 6 gains it as its cleanest example. ch28's X3 audit denominator moves 29→30 and the $B_s$-absent count rises by one."
+      },
+      {
+        "chapter": "ch30 판정 4 — '판별식은 이 책의 선택이며, 그 선택이 척추 논지를 만들지 않았다'",
+        "how_this_paper_bears": "ch30 §30.3.3 computed four discriminant variants abstractly, one of which is 조건 (3) 확장. This paper makes that variant concrete: relaxing (3) to 'any state, including the KV cache' would admit SleepGate and, with it, H2O, StreamingLLM, sliding window, FastGen and the whole cache-management literature — a large fourth population that shares no benchmark, no cost unit and no citation with the other three. The spine thesis ('서로 모르는 축') would be strengthened, not broken. 판정 4 survives with new evidence.",
+        "action": "ch30 §30.3.3's 변형 3 gains a worked instance instead of a hypothetical."
+      }
+    ],
+
+    "threatens": [
+      {
+        "chapter": "ch11 §11.2.4 — the grey-zone inventory",
+        "verdict_quoted": "'도구의 한계를 먼저 밝혀 둔다. 회색지대가 둘 있고, 둘 다 의도된 것이다.' (첫째, 시계를 스스로 정하지 않는 논문 — LoRA·ROME·MEMIT. 둘째, 조건 (2)는 부등식이라 크기를 묻지 않는다.)",
+        "what_is_wrong": "There is a third, and unlike the other two it is not intended. Step 2 of the application procedure — '좌변을 세 층에 배정한다. 배포 아티팩트의 일부이면 $\\Theta$, 요청·세션에 붙는 가중치 형태의 상태이면 $W$, 모델 밖 레코드이면 $E$다' — is not exhaustive over states. A KV cache is a per-request state that is neither weight-shaped nor outside the model, so the procedure fails it at step 2 rather than at a named condition. The verdict comes out right; the reason does not get printed. Evidence that this is a real gap and not a hypothetical: ch17 표 17-2 already carries a row '| KV cache $K_t,V_t$ | 비모수 상태 |', a bin that exists in no other part of the book.",
+        "severity": "apparatus, not verdict. The discriminant's own falsification condition ('네 조건을 모두 만족하는데 이 책이 배제한 절차가 발견되면') is not met — SleepGate satisfies at most two.",
+        "action": "ch11 §11.2.4 becomes three grey zones. The third reads: 세 층 중 어디에도 속하지 않는 상태를 바꾸는 절차 — KV cache 관리 문헌 전체가 여기 해당하며, 판별식은 이들을 조건 (3)에서 탈락시키되 그 탈락이 '아무것도 바꾸지 않아서'가 아니라 '이 책이 모형화하지 않은 것을 바꿔서'임을 밝혀야 한다. And ch01's layer table gains a fourth row marked 이 책의 세 경로 밖."
+      },
+      {
+        "chapter": "STC-STYLE-NOTATION §3 (Rosetta) and ch01's Rosetta section",
+        "verdict_quoted": "'| KV cache | $W$ (fast weights) | KV는 append-only 무손실, $W$는 고정 크기 손실 압축 |'",
+        "what_is_wrong": "Half the differentia is now demonstrably a design choice rather than a property. SleepGate's hard variant makes the cache lossy and bounded (Prop. 1); even its soft variant mutates the stored keys (Algorithm 1 Phase 1). The other half — fixed-shape, weight-shaped, non-addressable — is untouched, and the paper itself insists on it: 'it preserves the random-access property of the KV cache while adding selective forgetting' [SleepGate §8.2].",
+        "severity": "teaching apparatus. The row still teaches the right distinction; it currently teaches it as if the wrong half were necessary.",
+        "action": "Append to the row's third column: '단 append-only·무손실은 설계 선택이지 캐시의 성질이 아니다 — 학습된 per-entry 유지 점수를 붙이면 캐시는 무작위 접근을 유지한 채 손실 압축이 된다.' Do NOT change the row's mapping."
+      },
+      {
+        "chapter": "ch23 §23.8 / 표 30-3 row '이름은 생물학에서 왔고 논증은 오지 않았다'",
+        "verdict_quoted": "표 30-3: '이름은 생물학에서 왔고 논증은 오지 않았다 | ch23 §23.8 | 반증 관측: 세 경로 논문이 CLS·생물 sleep을 근거로 설계를 정당화하고 그 예측을 시험함'",
+        "what_is_wrong": "The falsifying observation has two conjuncts and this paper satisfies one and a half. It DOES justify its design from CLS and sleep biology, module by module, in §1.1 and Table 4 — more carefully than any of the nine. It does NOT test any biological prediction (Table 4 is a correspondence table; no ablation is organised around a biological hypothesis; §8.3's sleep-stage hierarchy is offered untested), and it is NOT a 세 경로 논문 (it fails the discriminant). So the verdict is not falsified. But the observation window has moved in a way ch23 must print: the first paper to bring the biological argument along with the name is a paper that is not in the category, and three of the five modules it maps to biology were never run.",
+        "severity": "verdict survives; the chapter's framing must acknowledge the partial counter-example or it will be read as having missed it.",
+        "action": "ch23 §23.8 gains a paragraph and 표 30-3's 반증 관측 cell is sharpened to require BOTH conjuncts explicitly, since this paper shows the first can be met alone."
+      },
+      {
+        "chapter": "Every aggregate: ch11 §11.3, ch24 판정 1, ch27 표 27-1 A1, ch28 X3, 부록 C",
+        "verdict_quoted": "'corpus는 29편이고, 갈림은 통과 9편 + 경계 사례 1편 + 불충족 19편이다... 이 책의 모든 집계는 이 규약을 쓴다.'",
+        "what_is_wrong": "Mechanical. 29→30, 불충족 19→20, B군 9→10, C군 unchanged. 통과 9 and 경계 1 are UNCHANGED, which is itself the sentence worth printing: a paper that named itself after this line does not enter it.",
+        "severity": "bookkeeping, book-wide.",
+        "action": "One recount pass over the five locations, plus the counting-convention paragraph in ch11 §11.3 and PRE-RESEARCH §2.2. If Wang & Sun (2506.08184) is also vendored per TV-9 the count goes to 31 with C군 10→11; that decision should be taken before the recount, not after."
+      },
+      {
+        "chapter": "ch26 판정 6's wording",
+        "verdict_quoted": "'판별식 통과 논문 중 사용자당 상태 바이트를 인쇄한 논문이 0편이고... $C_{\\text{cap}}$은 가장 보고하기 쉬운 칸이다.'",
+        "what_is_wrong": "The claim survives literally (this paper prints no bytes and no dtype), but the corpus now contains its first state-capacity BOUND — Prop. 1's $|\\mathcal{K}'^+|\\le T_{\\text{cyc}}/(\\phi_e+(1-\\phi_e)(1-1/\\gamma_{\\text{comp}}))$, in entries, for a variant that was never run, with a wrong numerical instantiation. Leaving that unmentioned would make the 0편 claim read as stronger than it is.",
+        "severity": "wording.",
+        "action": "Tighten to: 바이트로 보고한 논문이 0편이고, 어떤 단위로든 상태를 상한한 논문은 1편이며 그 1편의 인쇄된 수치는 자기 식과 맞지 않는다."
+      }
+    ],
+
+    "overturns": [
+      "NOTHING. No verdict in Part II or Part III is reversed by this paper. Stated plainly because the alternative — quietly listing only confirmations and threats — would let a reader infer that the check for overturns was not performed. It was: the four candidate reversals were (i) a second $W$-path member (ch27 판정 3) — refuted, it is not $W$-path; (ii) a paper satisfying all four conditions that the book excludes (ch11 §11.2.4's own falsifier, ch24 F1) — refuted, it satisfies at most two; (iii) the path-silence finding broken by a paper that cites across paths (ch24 F3, 표 30-3) — refuted, F3 requires an $E$-path paper running $W$ or $\\Theta$ methods as baselines in the same table, and this paper is not an $E$-path paper and runs no such baseline; (iv) $B_s$ reported in absolute units (ch24 F4, the book's most-wanted falsifier) — refuted, no absolute budget appears."
+    ],
+
+    "no_effect": [
+      "ch14 (Letta STC) and ch15 (Mem0·Zep·ReasoningBank·SCM) — no contact. This paper has no external store, no $N_q>1$, no amortisation, and cites none of them. The one thing it could give ch15 is the stale-retrieval-rate metric (SI-10), which is a suggestion for future measurement, not a bearing on any verdict.",
+      "ch19-ch22 (the $\\Theta$-path and the falsifier axis) — no contact. Zero $\\Theta$-path citations, no weight update of any kind at test time, no repeated rounds. §9.1's 'dream-like training' proposal touches ch06/ch20/ch21 conceptually but carries no evidence.",
+      "ch25 판정 2·3·4 and 실험 X1 (the amortisation accounting) — no contact. $N_q=1$ by construction, so identity (A) is not exercised and nothing here bears on the prefill term, the crossover, or the regime ordering.",
+      "ch26 판정 1-5 and ch29 판정 1 (state capacity, memory-tier placement, warm-tier delta staging, DWPD) — no contact with the verdicts. The paper's state is hot-tier, per-request and non-persistent, i.e. a third coordinate (SI-9). It adds material to ch29 §29.3.2's contrast table without changing 판정 1.",
+      "ch06 (synthetic data and collapse), ch07 (replay and forgetting), ch09 (capacity) — no contact. No training-data generation from model output, no replay, no capacity measurement.",
+      "ch28 판정 2 ('$B_s$는 $(N,D)$와 같은 종류의 축이 아니다') — no contact beyond the census. The paper puts no two points on any budget axis."
+    ],
+
+    "new_material_the_book_gains": [
+      "ch29: the corpus's only kernel-level requirements list — additive per-key pre-softmax bias as the cheapest possible intervention (SI-2), attention-column-sum and attention-entropy statistics as the actual kernel cost (SI-3), PagedAttention block-invariant breakage under eviction (SI-6), prefix-cache and RoPE breakage under consolidation (SI-7), and a third memory-centric coordinate for 표 29-2 (SI-9). ch29 currently derives almost all of its systems content from this book's own accounting rather than from any paper; this is the first paper that supplies some.",
+      "ch11 or ch18: the PI-vs-$\\rho$ distinction worked out (cost_table.rho). The book has a symbol for degradation-under-lossy-writing and none for degradation-under-lossless-accumulation, and the two have the same curve shape and opposite mechanisms. Registering the distinction as a concept — without adding a fifth cost symbol, which STC-STYLE-NOTATION §1.2 P4 forbids — closes a hole that was invisible until a paper whose subject is accumulation entered the corpus.",
+      "ch15 or ch30: the stale retrieval rate as a measurement to demand (SI-10). It is the number that would make Zep's knowledge-update regression and Mem0's loss to full-context diagnosable, it costs nothing to add to an existing harness, and no $E$-path paper reports it.",
+      "ch18: an unremarked convergence — SleepGate's trigger (attention entropy ∨ conflict density ∨ periodic) and SCM's (buffer entropy, conflict density, elapsed time) are the same three signals proposed at different layers by papers that do not cite each other (SI-11). That is a better argument for a scheduling continuum than Nested Learning's notational one."
+    ],
+
+    "recommended_placement": "Do NOT give this paper a chapter. It is B군, it changes no layer, and Part II's chapter slots are for the paths. Place it in three spots: (1) ch11 표 11-2 as the second 조건 (3) exclusion, with §11.2.3's (3) paragraph gaining it as a second example; (2) ch11 §11.2.4's new third grey zone, where it is the exhibit; (3) ch23 §23.8 as the partial counter-example to '논증은 오지 않았다'. Its systems content goes to ch29 §29.3 as cited material, and its measurement idea to ch15 or ch30. Total added length ≈ 2-3 pages spread across four chapters, which fits inside the existing 분량 배정 without reopening §6 of PRE-RESEARCH."
+  }
+}
