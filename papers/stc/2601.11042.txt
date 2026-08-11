@@ -1,0 +1,4524 @@
+Spectral Characterization and Mitigation of
+Sequential Knowledge Editing Collapse
+Chi Zhang1 , Mengqi Zhang1 * , Xiaotian Ye2 , Runxi Cheng3 ,
+Zisheng Zhou1 , Ying Zhou1 , Pengjie Ren1 , Zhumin Chen1
+1
+Shandong University
+2
+School of Computer Science, Beijing University of Posts and Telecommunications
+3
+Tsinghua Shenzhen International Graduate School, Tsinghua University
+zhangchi2001@sdu.edu.cn, mengqi.zhang@sdu.edu.cn
+
+Abstract
+
+1
+
+Introduction
+
+Large language models (LLMs) often generate outdated or incorrect information due to limitations
+in pretraining data or evolving real-world knowledge (Cao et al., 2021). Knowledge editing (Meng
+et al., 2022b; Zhang et al., 2026, 2025b,a) provides a lightweight way to correct specific facts
+without retraining models from scratch. In practice, however, edits are rarely isolated: models are
+updated repeatedly over time, leading to the setting of sequential knowledge editing (Fang et al.,
+* Corresponding author.
+
+Para.
+
+Alphaedit
+Score
+
+Score
+50
+2000
+
+Neigh.
+
+100
+
+100
+
+4000 10000 20000
+Edit Number
+
+2000
+
+50
+2000
+
+4000 10000 20000
+Edit Number
+
+4000 10000 20000
+Edit Number
+
+RECT
+Score
+
+60
+
+NSE
+
+50
+
+MEMIT
+Score
+
+arXiv:2601.11042v2 [cs.CL] 9 May 2026
+
+Sequential knowledge editing in large language
+models often causes catastrophic collapse of
+the model’s general abilities, especially for
+parameter-modifying methods. Existing approaches mitigate this issue through heuristic
+constraints on parameter updates, yet the mechanisms underlying such degradation remain
+insufficiently understood. In this work, we
+present a spectral analysis of sequential knowledge editing and show that a model’s general
+abilities are closely associated with dominant
+singular directions of pretrained weight matrices. These directions are highly sensitive to perturbations and are progressively disrupted by
+repeated edits, closely tracking the collapse in
+both editing efficacy and general performance.
+Building on this insight, we propose REVIVE,
+a plug-and-play framework that stabilizes sequential editing by explicitly preserving the
+dominant singular subspace. REVIVE represents parameter updates in the spectral basis of
+the original weights and filters components that
+would interfere with the protected region. Extensive experiments across multiple models and
+benchmarks show that REVIVE consistently
+improves editing efficacy while substantially
+preserving general abilities under long-horizon
+sequential editing, including extreme settings
+with up to 20,000 edits.
+
+Eff.
+
+60
+50
+2000
+
+4000 10000 20000
+Edit Number
+
+Figure 1: Performance of representative sequential
+knowledge editing methods on C OUNTER FACT using
+LLaMA3.
+
+2024), which requires both accurate edits and the
+preservation of general abilities (Gu et al., 2024).
+These challenges are particularly pronounced for
+parameter-modifying methods that directly update
+model weights, which are the focus of this work.
+Despite the development of several sequential
+knowledge editing methods, including RECT (Gu
+et al., 2024), PRUNE (Ma et al., 2024), and A L PHA E DIT (Fang et al., 2024), long-horizon degradation remains largely unresolved. As illustrated
+in Figure 1, although these approaches appear to
+be effective in short or small-scale setting, they
+still suffer pronounced drops in both editing efficacy and general abilities as the number of edits
+increases. A key limitation is that most existing
+methods primarily mitigate interference across updates through heuristic constraints or regularization,
+such as bounding update magnitudes, reducing interference across edits, or minimizing disruption to
+unrelated knowledge, without explicitly modeling
+how parameter updates interact with the intrinsic
+structure of pretrained weights. In particular, they
+do not clarify which parts of the pretrained weights
+are most relevant to general abilities, or how repeated updates accumulate and gradually degrade
+
+them. As a result, these methods provide limited
+mechanistic insight into why performance progressively degrades as edits accumulate.
+In this work, we conduct a systematic analysis
+of sequential knowledge editing from a spectral
+perspective (§2). Through a detailed study of the
+singular value decomposition (SVD) of weight matrices, we obtain three key findings: (i) general
+abilities are concentrated in a low-rank spectral
+structure spanned by dominant singular directions
+(§2.2); (ii) this structure is unusually fragile, such
+that even small perturbations aligned with dominant directions can disproportionately degrade general performance (§2.3); and (iii) repeated edits
+progressively distort these dominant directions in
+practice (§2.4). Together, these findings provide
+strong empirical evidence that interference with
+the dominant singular subspace is closely tied
+to failure in sequential editing, suggesting a primary mechanism underlying this collapse.
+Despite this insight, preserving dominant spectral structure during editing is nontrivial: editing objectives are local and offer little direct control over global spectral properties, and parametermodifying editors differ substantially across methods. To address these challenges, we develop
+a Robust sEquential editing Via domInant subspace preserVation framEwork (REVIVE) (§3), a
+plug-and-play framework that stabilizes sequential
+knowledge editing by explicitly protecting dominant spectral structure. The core idea of REVIVE is
+to analyze parameter updates in the singular vector
+basis of the original weight matrix, which enables
+a fine-grained characterization of how edits interact with intrinsic functional directions. Based on
+this representation, REVIVE identifies the dominant subspace using a spectral energy criterion and
+constructs constrained updates by filtering out components that interfere with this critical region. This
+design allows factual knowledge to be incorporated
+through lower-energy directions while preserving
+the dominant spectral structure associated with general abilities.
+Our contributions can be summarized as follows:
+• We present a systematic spectral analysis of sequential knowledge editing, revealing that interference with the dominant singular subspace of
+pretrained weight matrices is a key mechanism
+underlying model collapse.
+• Based on this analysis, we propose REVIVE, a
+simple and plug-and-play framework that stabi-
+
+lizes sequential knowledge editing by explicitly
+preserving the dominant singular subspace during parameter updates.
+• We conduct extensive experiments on multiple
+models and benchmarks, demonstrating that REVIVE consistently outperforms state-of-the-art
+methods in both editing efficacy and the preservation of general abilities under sequential editing.
+
+2
+
+Why Sequential Editing Collapses: A
+Spectral Perspective
+
+To understand why sequential editing leads to
+model collapse, this section presents a spectral analysis of parameter matrices. We begin by viewing
+each weight matrix as a composition of independent input-output mappings derived from its Singular Value Decomposition (SVD). Based on this
+perspective, we empirically investigate three key
+questions: (i) where a model’s general abilities are
+concentrated within these spectral components, (ii)
+how sensitive these components are to perturbations, and (iii) how sequential editing progressively
+distorts these components in practice.
+Together, these analyses lead to a unified insight:
+sequential editing fails when cumulative update
+progressively corrupt the dominant singular directions of weight matrices, which are strongly
+associated with general abilities. As mainstream
+editing methods primarily target feed-forward network (FFN) layers for modification (Meng et al.,
+2022b,a), we ground our investigation in the FFN
+matrices of LLaMA3-8B.
+2.1
+
+Spectral View of Weight Matrices
+
+From a spectral perspective, a parameter matrix
+W ∈ Rm×n can be decomposed into a set of independent input-output mappings using Singular
+Value Decomposition (SVD):
+⊤
+
+W = UΣV =
+
+r
+X
+
+σi ui vi⊤ ,
+
+(1)
+
+i=1
+
+where U ∈ Rm×m and V ∈ Rn×n contain orthogonal left and right singular vectors, respectively, and Σ ∈ Rm×n contains the singular values
+σ1 ≥ σ2 ≥ · · · ≥ σr ≥ 0.
+Each rank-one component σi ui vi⊤ acts as a distinct input-output mapping: an input vector x ∈ Rn
+is projected onto vi , scaled by σi , and expanded
+along ui to produce the output. The orthogonality
+
+2.2
+
+Where Are General Abilities
+Concentrated?
+
+To identify where general abilities are concentrated,
+we evaluate model performance on GLUE tasks
+(MRPC, CoLA, RTE, NLI) (Wang et al., 2019)
+using weight matrices reconstructed from subsets
+of their singular components.
+Specifically, we define thePsingular value energy
+of an index set I asPEI = i∈I σi , and the total
+energy as Etotal = ri=1 σi . We then reconstruct
+the weight matrix using the smallest set of singular
+components
+n% of the total energy,
+P that captures
+n
+⊤
+W̃ =
+i∈I σi ui vi , and evaluate model performance using the reconstructed matrices.
+Finding: General abilities are highly concentrated in the dominant singular subspace. As
+shown in Figure 2, reconstructing weight matrices with only the top 5% of singular components
+(by energy) recovers approximately 62.6% of the
+model’s original performance. This result indicates
+that a substantial portion of a model’s general abilities is concentrated in a small, low-rank subspace
+spanned by the singular vectors associated with the
+largest singular values.
+2.3
+
+How Sensitive Are These Components to
+Perturbations?
+
+To evaluate the robustness of different singular
+components, we partition the spectrum into ten
+non-overlapping groups by cumulative energy (0–
+10%, . . . , 90–100%). For each group G, we inject
+a structured perturbation that selectively acts on
+the corresponding input singular directions. Concretely, we first generate
+∆=
+
+r
+XX
+j∈G i=1
+
+αi,j ui vj⊤ , αi,j ∼ N (0, 1),
+
+(2)
+
+which randomly remaps the input directions
+{vj }j∈G to output directions. The perturbation is
+then normalized and scaled to a fixed strength: ε:
+
+MRPC
+
+COLA
+
+RTE
+
+MRPC
+
+NLI
+
+0.8
+
+0.8
+
+0.6
+
+0.6
+
+F1 Score
+
+F1 Score
+
+of the singular vectors ensures these mappings operate independently. Pretraining learns this highly
+structured functional decomposition, making it a
+critical component of the model’s general abilities
+(Wang et al., 2024b; Hao et al., 2025). Crucially,
+this spectral view provides a unified lens for analyzing the failure of sequential editing. In the
+remainder of this section, we use this perspective
+to systematically investigate the three questions
+outlined above.
+
+0.4
+0.2
+0.0 0 10 20 30 40 50 60 70 80 90 100
+Retain Percentage (%)
+
+Figure 2: General ability
+recovery with increasing
+proportion of retained singular components.
+
+COLA
+
+RTE
+
+NLI
+
+0.4
+0.2
+0.0 1 2 3 4 5 6 7 8 9 10
+Perturbated Group Index
+
+Figure 3: Sensitivity of
+model’s general ability to
+perturbations across different spectral groups.
+
+˜ = ε · ∆ . This ensures identical Frobenius
+∆
+∥∆∥F
+norms across groups, thereby enabling a fair comparison. We evaluate the impact of the perturbed
+˜ on general performance. A
+matrix W′ = W + ∆
+symmetric analysis on output directions is provided
+in Appendix F.1 and exhibits similar trends.
+Finding: The dominant singular subspace most
+strongly associated with general abilities is
+highly sensitive to perturbations. As shown in
+Figure 3, perturbations applied to high-energy singular components (e.g., 0–20%), which span the
+dominant singular subspace, lead to sharp and consistent degradation in performance. In contrast, perturbations to low-energy components (70–100%)
+produce only minor or negligible effects. These
+results reveal a paradoxical property: the spectral
+directions most associated with general abilities
+are also the most fragile under perturbations.
+2.4
+
+How Does Sequential Editing Distort
+These Components in Practice?
+
+Having established that general abilities are concentrated in a fragile dominant singular subspace, we
+now analyze how these critical subspaces degrade
+during sequential editing progress. We apply 2, 000
+edits from C OUNTERFACT dataset to LLaMA3 using MEMIT, organized into 20 rounds with 100
+edits per round. After each editing round, we evaluate (i) editing performance using Efficacy Score
+and Paraphrase Score, (ii) general abilities using
+the GLUE benchmark, and (iii) the spectral metrics
+introduced below. This allows us to analyze the
+relationship between behavioral degradation and
+structural changes in model parameters. We conduct the same analytical experiments on AlphaEdit;
+due to space constraints, these results are reported
+in Appendix F.2.
+Spectrum-based metrics. To characterize the
+stability of the dominant singular subspace (top
+10% components by singular value energy), we in-
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+0.6
+
+SSj12
+
+0.2
+0.0
+
+0 1000 2000 3000 4000
+
+LSt
+
+0.4
+
+SSj18
+
+0.04
+
+0.08
+
+Index of Singular Vectors
+
+0.6
+
+0.06
+
+0.16
+
+0.00
+
+0 1000 2000 3000 4000
+
+0.08
+
+0.24
+
+LSt
+
+0.8
+
+Index of Singular Vectors
+
+0.32
+
+0 1000 2000 3000 4000
+
+1.0
+
+0.4
+
+Index of Singular Vectors
+
+SSj16
+
+SSj14
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+0.7
+0.6
+0.5
+0.4
+0.3
+0.2
+0.1
+0.0
+
+0.8
+
+SSj20
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+0.5
+0.4
+0.3
+0.2
+0.1
+0.0
+
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+
+SSj10
+
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+
+SSj8
+
+SSj6
+
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+
+0.02
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+0.00
+
+0.2
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+0.0
+
+1
+
+3
+
+5
+
+7
+
+9
+
+11 13 15 17 19
+
+Editing Rounds
+
+Figure 4: Singular vector similarity (SS) under sequential editing from
+rounds 6 to 20.
+MRPC
+
+Para.
+
+0.8
+
+90
+
+0.6
+
+F1 Score
+
+Score
+
+Eff.
+
+100
+
+80
+70
+600
+
+500
+
+1000
+
+1500
+
+Edit Number
+
+2000
+
+COLA
+
+RTE
+
+NLI
+
+1000
+
+1500
+
+2000
+
+0.4
+0.2
+0.0
+
+0
+
+500
+
+Edit Number
+
+Figure 6: The Efficacy Figure 7: General Ability
+Score and Paraphrase Performance on GLUE vs.
+Score vs. Edit Number.
+Edit Number.
+
+troduce two complementary metrics that capture
+degradation at different granularities.
+• Low-rank Subspace Similarity (LS) measures
+the macroscopic drift of the dominant singular
+subspace. It is defined as the Frobenius cosine
+similarity between the low-rank reconstructions
+of the original matrix Ŵ0 and the edited matrix
+Ŵt at editing round t:
+⟨Ŵ ,Ŵ ⟩
+
+0 F
+LSt = ∥Ŵ ∥t ·∥Ŵ
+.
+∥
+t F
+
+0 F
+
+(3)
+
+• Singular Vector Similarity (SS) provides a microscopic view by quantifying how individual
+dominant singular vectors rotate during editing.
+We compute the cosine similarity between a dominant singular vector vt of the edited matrix Wt
+and each original singular vector vj of W0 (a
+vector basis): SSjt = ⟨vt , vj ⟩. Results for left
+singular vectors show the same trend and are
+reported in Appendix F.3.
+Finding: Sequential editing progressively degrades the dominant singular subspace, accompanying model collapse. This finding is supported
+by consistent evidence across behavioral, macroscopic, and microscopic analyses. At the behavioral level, both editing performance and general
+ability remain stable in early rounds but deteriorate
+rapidly after round 10, collapsing almost entirely
+
+Figure 5: LSt from rounds 1 to 20.
+
+by round 20 (Figure 6 and 7). At the macroscopic
+level, this behavioral degradation is closely mirrored by a marked decline in the Low-rank Subspace Similarity (LS) metric (Figure 4). LS remains near its initial value in early rounds, indicating that the dominant singular subspace is largely
+preserved, before drifting and dropping sharply after roughly round 15. At the microscopic level,
+the Singular Vector Similarity (SS) metric (Figure 5) reveals that individual dominant singular
+directions gradually rotate away from their original
+directions, becoming nearly orthogonal by round
+20. This gradual rotation reflects a systematic corruption of the learned input–output mappings represented by the dominant singular subspace. Taken
+together, these observations provide strong empirical evidence that collapse under sequential editing is structurally associated with the progressive
+degradation of the dominant singular subspace.
+
+3
+
+Methodology
+
+Our analysis in Section 2 show that collapse under
+sequential editing is closely associated with the cumulative degradation of the dominant singular subspace, which is strongly linked to a model’s general
+performance. This motivates explicitly preserving
+this subspace to stabilize long-horizon sequential
+editing.
+To this end, we introduce a Robust sEquential
+editing Via domInant subspace preserVation
+framEwork (REVIVE), a plug-and-play framework
+that operates directly on parameter updates produced by existing editing methods. Rather than
+modifying editing objectives or imposing methodspecific constraints, REVIVE analyzes each update
+in the singular-vector basis of the original weight
+matrix, providing a unified spectral coordinate system for characterizing how edits interact with intrinsic functional directions. Within this representation,
+
+Dominant Subspace Identification
+
+REVIVE identifies update components that interfere with dominant singular directions and removes
+them before applying the update. An overview of
+the framework is shown in Figure 8, and the complete algorithm is provided in Appendix A.
+3.1
+
+∆W =
+
+m X
+n
+X
+
+αij ui vj⊤ ,
+
+Dominant
+Subspace
+Protection
+Safe Update
+Construction
+
+Project
+
+Spectral Decomposition of Parameter
+Updates
+
+SVD-Aligned Decompostion
+
+To explicitly characterize how a parameter update
+interacts with different spectral components of the
+original weight matrix, REVIVE analyzes parameter updates through spectral decomposition.
+Recall from Section 2.1 that the SVD of the
+original weight matrix W defines sets of left and
+right singular vectors {ui } and {vj }. The rank-one
+outer products {ui vj⊤ }i,j constitute an orthogonal
+basis for the matrix space Rm×n ; a formal proof
+is provided in Appendix B. Using this basis, any
+update matrix ∆W produced by an editing method
+can be expressed as
+(4)
+
+i=1 j=1
+
+where the coefficients are given by αij =
+⟨∆W, ui vj⊤ ⟩F . This spectral decomposition resolves a parameter update into its effects on individual input–output mappings of the original weight
+matrix. Each coefficient αij quantifies the contribution of the update along the mapping from input
+singular direction vj to output singular direction
+ui . As a result, update components aligned with
+dominant spectral directions can be distinguished
+from those operating in lower-energy regions.
+3.2
+
+SVD
+
+Dominant Subspace Protection
+
+Building on the spectral decomposition above, REVIVE introduces a Dominant Subspace Protection
+(DSP) mechanism that constrains parameter updates to avoid interference with the dominant singular subspace. DSP consists of two components:
+Dominant Subspace Identification and Safe Update
+Construction.
+Dominant Subspace Identification. To identify
+the critical components for preservation, we adopt
+an energy-based criterion. Given a singular-value
+energy threshold τ ∈ (0, 1) (analyzed in Section 4.2), we select the smallest index k such that
+the cumulative energy of the top-k singular values
+exceeds τ :
+Pk
+σi
+Pi=1
+≥ τ.
+(5)
+r
+i=1 σi
+
+Figure 8: Overview of the REVIVE. An update matrix
+∆W is represented in the singular vector basis of the
+original weight matrix. The dominant subspace, identified by an energy threshold τ , is then used to filter
+out update components that would interfere with this
+protected region. The resulting safe update ∆Wsafe preserves the dominant subspace while allowing effective
+knowledge modification.
+
+The corresponding singular vectors {ui }ki=1 and
+{vi }ki=1 span the dominant input and output subspaces, respectively.
+Safe Update Construction. Once the dominant
+subspace is identified, we construct a safe update
+by removing update components associated with
+this protected region. Concretely, the coefficient
+αij is set to zero whenever the corresponding input
+direction vj or output direction ui lies in the dominant subspace, i.e., αij = 0 if i ≤ k or j ≤ k. The
+resulting safe update is given by
+∆Wsafe =
+
+XX
+
+αij ui vj⊤ .
+
+(6)
+
+i>k j>k
+
+By construction, ∆Wsafe operates exclusively in
+lower-energy spectral directions, thereby limiting
+interference with dominant components that are
+critical for preserving general abilities.
+Importantly, the protection mechanism of REVIVE operates as a plug-and-play wrapper that can
+be applied to existing parameter-modifying knowledge editing methods, without altering how edits
+are generated.
+
+4
+
+Experiments
+
+4.1
+
+Experiment Setup
+
+Base Models. We conduct experiments on three
+LLMs that are widely used in prior knowledge editing work: GPT2-XL (1.5B) (Radford et al., 2019),
+GPT-J (6B) (Wang and Komatsuzaki, 2021), and
+LLaMA3 (8B) (Grattafiori et al., 2024). Due to
+space constraints, results on GPT2-XL are reported
+in Appendix G.1.
+
+0.690.76
+
+aEd
+lph
+
+A
+
+0.76
+
+0.20
+
+0.27
+
+0.20
+
+*
+CT
+
+RE
+
+T*
+MI
+ME
+dit
+haE
+Alp
+
+RE
+
+CT
+T
+
+M
+
+I
+EM
+
+0
+
+0.00
+0.00
+
+0.28
+0.00
+
+it*
+
+10000
+8000
+6000 er
+b
+4000 m
+2000 it Nu
+Ed
+
+(a) COLA
+
+0.00
+
+h
+Alp
+
+it*
+aEd
+
+*
+
+CT
+
+RE
+
+T*
+MI
+
+ME
+
+Alp
+
+dit
+
+haE
+
+CT
+
+RE
+
+MI
+ME
+
+0.55
+0.66
+0.66
+0.66
+0.66
+0.66
+
+0.60
+
+0.28
+0.28
+0.28
+0.28
+0.28
+
+0.00
+0.00
+
+0.51
+
+0.80
+
+F1 Score
+
+0.40
+
+0.40
+
+F1 Score
+
+F1 Score
+
+0.76
+0.76
+0.76
+0.76
+0.76
+
+0.60
+
+0.70
+
+0.34
+0.28
+
+0.65
+
+0.80
+
+T
+
+0
+
+10000
+8000
+6000 er
+b
+4000 m
+2000 it Nu
+Ed
+
+(b) RTE
+
+0.40
+
+aEd
+lph
+
+A
+
+0.66
+
+0.20
+
+0.00
+0.00
+
+it*
+CT
+
+RE
+
+*
+T*
+MI
+
+ME
+
+Alp
+
+dit
+haE
+
+CT
+
+RE
+
+T
+
+MI
+
+ME
+
+0
+
+0.04
+
+10000
+8000
+6000 er
+b
+4000 m
+2000 it Nu
+Ed
+
+(c) MRPC
+
+Figure 9: Performance of baselines and their REVIVE-enhanced versions (*) on GLUE.
+
+Baselines. We compare REVIVE against a suite
+of strong baselines, including the canonical
+MEMIT (Meng et al., 2022b) , as well as four stateof-the-art methods designed for sequential editing:
+PRUNE (Ma et al., 2024), RECT (Gu et al., 2024),
+A LPHA E DIT (Fang et al., 2024), D ELTA E DIT (Cao
+et al., 2025), and NSE (Jiang et al., 2025b). Due
+to differences in experimental settings, comparison
+with DeltaEdit can be found in Appendix G.2. Additional implementation details and baseline comparisons are provided in Appendix C.1.
+Datasets and Metrics. We evaluate all methods
+on two standard factual knowledge editing benchmarks, C OUNTERFACT (Meng et al., 2022b) and
+Z S RE (Levy et al., 2017). For Z S RE, we report Efficacy, Paraphrase, and Neighborhood Scores. For
+C OUNTERFACT, we additionally report Fluency
+and Consistency metrics. Detailed definitions of
+all datasets and evaluation metrics are provided in
+Appendix C.2, C.3, and C.4.
+4.2
+
+Results and Analysis
+
+This section presents a comprehensive evaluation
+of REVIVE. We first assess its performance under
+extended sequential editing, measuring both editing success and the preservation of general abilities. We then analyze robustness properties, including scalability to 20,000 edits, sensitivity to hyperparameters, the stability of internal representations using t-SNE visualizations, and matrix norm
+growth. Additionally, Appendix G.6 provides a
+direct verification that REVIVE preserves the dominant singular directions during long editing sequences. Further efficiency analyses are reported
+in Appendix G.8.
+Sequential Editing Performance. We evaluate
+the effectiveness of REVIVE over an extended sequence of 10,000 edits, applied in 100 rounds of
+100 edits each, on the C OUNTER FACT and Z S RE
+
+benchmarks. As shown in Table 1, incorporating REVIVE as a plug-and-play module consistently improves performance across all base methods and models. The improvements are particularly pronounced on the more challenging Z S RE
+benchmark, where several baselines, including
+MEMIT and RECT, degrade rapidly when applied
+sequentially without protection. When augmented
+with REVIVE, these methods remain stable and
+achieve substantially higher efficacy (e.g., 83.45%
+for MEMIT+REVIVE on LLaMA3). Notably, the
+standard MEMIT+REVIVE combination consistently outperforms specialized sequential baselines
+such as PRUNE and RECT, suggesting that proactively constraining harmful update directions is
+more effective than post-hoc regularization. For
+certain methods such as NSE, applying REVIVE
+leads to a moderate decrease in Neighborhood Success. This behavior is likely attributable to the fact
+that high neighborhood scores can arise trivially
+when edits fail to modify the model. In contrast,
+REVIVE achieves large gains in Efficacy and Paraphrase while maintaining strong Neighborhood performance, reflecting a more meaningful form of
+successful editing.
+Preservation of General Abilities. To evaluate
+the preservation of general abilities, we assess
+edited LLaMA3 models on the GLUE benchmark
+after 10,000 sequential edits. For clarity, Figure 9
+reports results on three representative tasks, with
+full results provided in Appendix G.3. All tasks
+exhibit consistent trends. As shown in Figure 9,
+baseline methods without protection experience
+rapid degradation in general performance. MEMIT
+and RECT collapse to near-zero performance after
+only 3, 000 edits, and even the more robust A L PHA E DIT eventually suffers a complete collapse
+after 8, 000 edits. In contrast, REVIVE enhanced
+methods maintains an overall average 86.34% of
+
+Table 1: Performance on sequential editing over 10,000 Samples. The abbreviations Eff. (Efficacy Success), Para. (Paraphrase
+Success), Neigh. (Neighborhood Success), Flu. (Generation Entropy), and Consis. (Reference Score) denote respective
+evaluation metrics. Relative improvements (%) are shown in blue and decreases in orange . ↑↑ indicates a large improvement
+where the baseline score was near zero.
+Method
+
+Counterfact
+
+ZsRE
+
+Eff.↑
+
+Para.↑
+
+Neigh.↑
+
+Flu.↑
+
+Consis.↑
+
+Eff.↑
+
+Para.↑
+
+Neigh.↑
+
+7.02
+
+9.44
+
+89.73
+
+635.47
+
+24.24
+
+35.67
+
+34.81
+
+31.83
+
+MEMIT
+62.3
+55.02
+48.11
+522.1
+4.4
++REVIVE 95.62 ↑ 53.5% 84.60 ↑ 53.8% 62.17 ↑ 29.2% 603.22 ↑ 15.5% 29.39 ↑ 568.0%
+
+0.08
+83.45 ↑↑
+
+0.08
+79.90 ↑↑
+
+1.36
+32.01 ↑↑
+
+PRUNE
+59.98
+55.72
+48.56
+571.27
++REVIVE 80.57 ↑ 34.3% 69.54 ↑ 24.7% 54.76 ↑ 12.8% 570.85 ↓ 0.1%
+
+0.00
+56.61 ↑↑
+
+0.00
+53.30 ↑↑
+
+0.08
+27.74 ↑↑
+
+0.00
+84.20 ↑↑
+
+0.00
+80.27 ↑↑
+
+0.00
+31.92 ↑↑
+
+85.66
+89.31 ↑ 4.3%
+
+30.5
+31.72 ↑ 4.0%
+
+LLaMA3
+
+1.89
+28.49 ↑↑
+
+RECT
+60.23
+54.9
+50.56
+441.61
+5.08
++REVIVE 92.69 ↑ 53.9% 79.95 ↑ 45.6% 63.09 ↑ 24.8% 600.13 ↑ 35.9% 29.28 ↑ 476.8%
+
+AlphaEdit
+62.48
+56.9
+52.31
+505.5
+4.25
+90.57
++REVIVE 98.74 ↑ 58.0% 90.08 ↑ 58.4% 60.19 ↑ 15.1% 615.97 ↑ 21.9% 32.66 ↑ 668.5% 93.40 ↑ 3.1%
+NSE
+77.59
+44.42
+86.12
+607.86
++REVIVE 98.89 ↑ 27.4% 92.28 ↑ 107.8% 65.72 ↓ 23.6% 618.66 ↑ 1.8%
+GPT-J
+
+15.22
+
+17.65
+
+83.50
+
+622.01
+
+23.31
+45.61
+45.04
+31.27
+32.74 ↑ 40.5% 94.37 ↑ 107.0% 90.57 ↑ 101.2% 32.17 ↑ 2.9%
+29.61
+
+26.45
+
+25.74
+
+27.04
+
+MEMIT
+54.03
+52.66
+53.63
+594.16
+5.17
++REVIVE 97.63 ↑ 80.7% 87.76 ↑ 66.6% 66.52 ↑ 24.1% 616.47 ↑ 3.8% 40.69 ↑ 687.4%
+
+0.10
+88.88 ↑↑
+
+0.10
+83.22 ↑↑
+
+0.17
+27.87 ↑↑
+
+PRUNE
+52.92
+51.47
+53.91
+576.95
+5.14
++REVIVE 86.95 ↑ 64.3% 81.03 ↑ 57.5% 64.21 ↑ 19.1% 583.05 ↑ 1.1% 35.73 ↑ 595.7%
+
+0.03
+63.08 ↑↑
+
+0.02
+58.90 ↑↑
+
+0.05
+26.03 ↑↑
+
+RECT
+63.60
+55.33
+56.69
+404.13
+4.49
+23.60
+22.02
+12.44
++REVIVE 94.96 ↑ 49.4% 77.27 ↑ 39.6% 67.78 ↑ 19.6% 612.76 ↑ 51.62% 38.69 ↑ 761.7% 81.28 ↑ 244.4% 74.78 ↑ 239.6% 28.20 ↑ 126.7%
+AlphaEdit
+96.51
++REVIVE 99.50 ↑ 3.1%
+
+86.76
+60.80
+544.18
+19.33
+87.84
+78.65
+93.92 ↑ 8.3% 67.35 ↑ 10.8% 600.64 ↑ 10.4% 40.63 ↑ 110.3% 97.53 ↑ 11.0% 91.33 ↑ 16.1%
+
+NSE
+88.95
+69.69
+75.46
+611.35
++REVIVE 94.88 ↑ 6.7% 89.49 ↑ 28.4% 64.06 ↓ 15.1% 608.12 ↓ 0.5%
+
+its performance across all tasks after 10, 000 edits.
+These results clearly demonstrate that shielding the
+dominant singular subspace is a highly effective
+strategy for preserving a model’s general abilities
+during sequential editing.
+
+Scalability under Extreme Sequential Editing.
+We further evaluate the scalability of REVIVE under substantially extended sequential editing on
+LLaMA3. Specifically, we apply 20,000 sequential edits on C OUNTER FACT, organized into 200
+rounds of 100 edits each, as well as the full set of
+19,086 edits on Z S RE. As shown in Figure 10, REVIVE continues to deliver substantial gains over the
+original base methods. On C OUNTER FACT, REVIVE achieves average improvements of +75.1%
+in Efficacy and +53.1% in Fluency. Complete results for all metrics and methods, provided in Appendix G.4. These results indicate that REVIVE effectively maintains editing performance even when
+the number of edits is significantly scaled up.
+
+22.31
+23.40 ↑ 4.9%
+
+33.31
+44.03
+42.39
+24.86
+40.18 ↑ 20.6% 97.80 ↑ 122.1% 91.75 ↑ 116.4% 26.84 ↑ 8.0%
+
+Sensitivity Analysis. We evaluate the robustness
+of REVIVE with respect to its only intrinsic hyperparameter, the singular value energy threshold
+τ , defined in Section 3.2. This threshold controls
+the size of the dominant singular subspace that is
+protected from modification: larger values of τ emphasize stronger preservation of general abilities,
+while smaller values permit more flexible updates
+by exposing a larger portion of the parameter space
+to editing. Figure 11 shows that REVIVE exhibits
+strong robustness, maintaining high performance
+across a wide range of τ values. This behavior
+indicates that the effectiveness of REVIVE is not
+sensitive to the precise choice of the dominant subspace boundary, and that stable performance can
+be achieved without careful hyperparameter tuning.
+Further hyperparameter results for all models are
+reported in Appendix G.5.
+Visualization of Representational Stability. To
+qualitatively examine how extended sequential
+editing affects internal representations, we apply
+
+500
+50
+
+0
+
+Eff.
+
+Para. Neigh.Consis.
+
+0
+
+Flu.
+
+500
+50
+
+0
+
+Eff.
+
+Para. Neigh.Consis.
+
+Flu.
+
+Fluency
+Score (%)
+
+MEMIT
+Fluency
+Score (%)
+
+Score (%)
+
+Rect
+
+Original
+
+AlphaEdit
+
+100
+
+500
+50
+
+0
+
+0
+
+Eff.
+
+Para. Neigh.Consis.
+
+Flu.
+
+Fluency
+
+REVIVE
+
+0
+
+Figure 10: REVIVE vs. original methods under 20,000 sequential edits on C OUNTERFACT.
+
+t-SNE (Maaten and Hinton, 2008) to visualize
+the representations of 1,000 factual prompts from
+LLaMA3, both before and after applying 20,000
+edits. As illustrated in Figure 12, a strong baseline
+like A LPHA E DIT causes a noticeable distributional
+shift, where post-edit representations drift away
+from their original positions. In contrast, when
+combined with REVIVE, MEMIT exhibits considerably smaller shifts, with post-edit representations remaining closely aligned with their original
+clusters. This visualization is consistent with our
+quantitative findings and suggests that preserving
+the dominant singular subspace helps maintain the
+overall representational geometry of the model under extended sequential editing.
+
+Para.
+
+Neigh.
+
+Consis.
+
+80
+
+Flu.
+
+620
+
+90
+
+600
+
+60
+
+580
+
+60
+
+560
+540
+
+40
+0.1
+
+0.2
+
+Threshold
+
+0.3
+
+Fluency
+
+Eff./Para./Neigh./Consis.
+
+Eff.
+
+Pre−Edit
+AlphaEdit
+MEMIT−REVIVE
+
+tor. The results are summarized in Table 2. As edits
+accumulate, the unprotected baseline exhibits severe norm inflation, with the L2 norm surging from
+105.51 to 20946.66. In contrast, REVIVE substantially constrains and stabilizes this growth. This
+empirical evidence confirms that by addressing the
+interference in the dominant subspace, REVIVE
+naturally suppresses the abnormal weight inflation
+associated with long-horizon degradation.
+Table 2: Evolution of parameter matrix norms in GPT-J
+(Layer 3) over 10, 000 sequential edits.
+Edits
+
+L1 N orm
+MEMIT
+
+0
+2000
+4000
+6000
+8000
+10000
+
+5
+
+6.88 × 10
+1.37 × 106
+1.75 × 106
+2.29 × 106
+2.51 × 106
+3.92 × 106
+
+L2 N orm
+
++REVIVE
+
+MEMIT
+
++REVIVE
+
+5
+
+105.51
+5590.36
+8649.95
+13012.32
+13871.72
+20946.66
+
+105.51
+153.57
+156.45
+159.32
+161.41
+163.47
+
+6.88 × 10
+7.47 × 105
+7.71 × 105
+7.96 × 105
+8.13 × 105
+8.30 × 105
+
+30
+0
+
+520
+
+−30
+
+500
+
+−60
+−100 −50
+
+0
+
+50
+
+100
+
+150
+
+Figure 11: Performance Figure 12: t-SNE visualof MEMIT-REVIVE on ization of LLaMA3 repreLLaMA3 (CounterFact) un- sentations before and after
+der different thresholds.
+20,000 sequential edits.
+
+Matrix Norm Growth Analysis Prior studies
+(Gupta et al., 2025; Xu et al., 2025) have consistently observed that parameter matrix norms tend
+to exhibit abnormal growth during sequential editing, a phenomenon often linked to model instability
+and catastrophic collapse. To verify whether preserving the dominant singular subspace inherently
+mitigates this issue, we examine the evolution of
+weight magnitudes during long-horizon editing.
+Specifically, we track the L1 and L2 norms of
+the parameter matrix at Layer 3 of the GPT-J (6B)
+model over a sequence of 10,000 edits on the
+C OUNTER FACT, utilizing MEMIT as the base edi-
+
+5
+
+Related Work
+
+Our work focuses on parameter-modifying methods for knowledge editing. Early methods such as
+MEND and MEMIT (Mitchell et al., 2022a; Meng
+et al., 2022b) demonstrate strong performance for
+isolated edits, but often degrade under sequential
+editing due to the accumulation of interfering parameter updates.
+To mitigate interference across edits, several sequential editing methods introduce mechanisms
+that restrict or regularize parameter updates during
+editing (Fang et al., 2024; Ma et al., 2024; Gu et al.,
+2024; Cao et al., 2025). A common strategy among
+these approaches is to construct protection subspaces that constrain how updates are applied. Notably, these subspaces are typically derived from
+empirical statistics over external data, such as
+covariance estimates computed from sampled
+factual triples (Fang et al., 2024), or from historical editing directions accumulated during
+
+previous updates (Cao et al., 2025). While effective in reducing empirically observed conflicts,
+such approaches are largely driven by external data
+distributions or past editing trajectories, and are not
+explicitly grounded in the intrinsic organization of
+the model’s parameter space.
+By contrast, our approach directly analyzes the
+spectral structure of the model’s weight matrices,
+identifies degradation of dominant functional subspaces as the primary failure mechanism under sequential editing, and introduces a plug-and-play
+intervention to preserve these subspaces during updates. A more comprehensive discussion of related
+work, including detailed comparisons with SVDbased editing methods, is provided in Appendix D
+and Appendix E.
+
+6
+
+Conclusion
+
+In this work, we investigated the mechanisms behind model collapse in sequential knowledge editing from a spectral perspective. Our analysis reveals that repeated parameter updates progressively
+distort dominant singular directions of pretrained
+weight matrices, which are crucial for maintaining
+a model’s general abilities. Based on this insight,
+we propose REVIVE, a plug-and-play framework
+that protects this intrinsic structure by filtering update components that interfere with dominant singular directions. Extensive experiments across multiple models and benchmarks show that REVIVE
+substantially improves editing performance while
+preserving general abilities, even under large numbers of sequential edits. Overall, our work provides
+a structural explanation for sequential editing failure and offer a principled approach for maintaining
+the long-term stability of edited LLMs.
+
+Acknowledgements
+This work was supported by the National Natural Science Foundation of China (Nos. 62502286,
+62472261, 62576339, 62372275). It was also
+Funded by Basic Research Program of Jiangsu
+(BK20250429), the Shandong Provincial Natural
+Science Foundation (ZR2024QF203), the Technology Innovation Guidance Program of Shandong Province (YDZX2024088), and the Provincial Key R&D Program of Shandong Province
+(Nos. 2024CXGC010108, 2025CXGC010112).
+
+Limitations
+While our results demonstrate the effectiveness of
+preserving the dominant singular subspace for stabilizing sequential knowledge editing, several limitations remain and suggest directions for future
+work.
+First, the dominant subspace in REVIVE is identified using a singular-value energy criterion. While
+this choice is empirically stable and effective across
+models and tasks, it is not theoretically optimal in a
+strict sense. Exploring alternative criteria for defining task-relevant or functionally critical spectral
+components remains an open direction.
+Second, our analysis and experiments primarily
+focus on the feed-forward network (FFN) layers,
+which are known to play a central role in factual
+knowledge storage. However, other architectural
+components, such as attention mechanisms, may
+also contribute to knowledge representation and
+could exhibit different spectral behaviors under
+sequential editing. Extending our spectral analysis and protection strategy to these components
+remains an important avenue for future work.
+Third, while recent inspiring works (Liu et al.,
+2025, 2026) have questioned the adequacy of existing evaluation protocols, this study primarily focuses on mitigating model collapse. Consequently,
+we did not benchmark our method against these
+emerging metrics at this stage. We are committed
+to investigating these evaluation-related issues in
+our subsequent research.
+
+Usage of large language models
+In the preparation of this work, large language models (LLMs) have been utilized to assist in several
+stages of writing. In particular, LLMs played a significant role in polishing the manuscript by improving readability and correcting grammatical issues.
+Moreover, they provided valuable assistance in certain aspects of data visualization, such as generating and refining plotting scripts, which streamlined
+the experimental analysis process.
+
+Ethics Statement
+This work investigates knowledge editing techniques for large language models to enable targeted updates of factual behaviors. All experiments
+are conducted on publicly available datasets and
+do not involve the collection of personal data or
+interaction with human subjects. We emphasize
+that knowledge editing methods should be applied
+
+with caution, as they could potentially be misused
+to inject harmful, misleading, or inappropriate information into model parameters. Our approach
+is intended solely for controlled research settings,
+such as correcting erroneous knowledge and analyzing model behavior, and should not be deployed
+without appropriate safeguards and oversight. We
+acknowledge that edited models may still inherit
+biases present in the original training data.
+
+References
+Luisa Bentivogli, Bernardo Magnini, Ido Dagan,
+Hoa Trang Dang, and Danilo Giampiccolo. 2009.
+The fifth PASCAL recognizing textual entailment
+challenge. In TAC. NIST.
+Ding Cao, Yuchen Cai, Rongxi Guo, Xuesong He, and
+Guiquan Liu. 2025. Deltaedit: Enhancing sequential
+editing in large language models by controlling superimposed noise. arXiv preprint arXiv:2505.07899.
+Nicola De Cao, Wilker Aziz, and Ivan Titov. 2021. Editing factual knowledge in language models. In Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing, pages 6491–
+6506.
+William B. Dolan and Chris Brockett. 2005. Automatically constructing a corpus of sentential paraphrases.
+In IWP@IJCNLP. Asian Federation of Natural Language Processing.
+Qingxiu Dong, Damai Dai, Yifan Song, Jingjing Xu,
+Zhifang Sui, and Lei Li. 2022. Calibrating factual
+knowledge in pretrained language models. In Findings of the Association for Computational Linguistics:
+EMNLP 2022, pages 5937–5947.
+Yanai Elazar, Nora Kassner, Shauli Ravfogel, Abhilasha Ravichander, Eduard Hovy, Hinrich Schütze,
+and Yoav Goldberg. 2021. Measuring and improving
+consistency in pretrained language models. Transactions of the Association for Computational Linguistics, 9:1012–1031.
+Junfeng Fang, Houcheng Jiang, Kun Wang, Yunshan
+Ma, Jie Shi, Xiang Wang, Xiangnan He, and TatSeng Chua. 2024. Alphaedit: Null-space constrained
+knowledge editing for language models. In The Thirteenth International Conference on Learning Representations.
+Mor Geva, Roei Schuster, Jonathan Berant, and Omer
+Levy. 2021. Transformer feed-forward layers are
+key-value memories. In Proceedings of the 2021
+Conference on Empirical Methods in Natural Language Processing, pages 5484–5495.
+Aaron Grattafiori, Abhimanyu Dubey, Abhinav Jauhri,
+Abhinav Pandey, Abhishek Kadian, Ahmad AlDahle, Aiesha Letman, Akhil Mathur, Alan Schelten,
+
+Alex Vaughan, and 1 others. 2024. The llama 3 herd
+of models. arXiv preprint arXiv:2407.21783.
+Jia-Chen Gu, Hao-Xiang Xu, Jun-Yu Ma, Pan Lu, ZhenHua Ling, Kai-Wei Chang, and Nanyun Peng. 2024.
+Model editing harms general abilities of large language models: Regularization to the rescue. In Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing, EMNLP 2024,
+pages 16801–16819.
+Akshat Gupta, Phudish Prateepamornkul, Maochuan Lu,
+Ahmed M. Alaa, Thomas Hartvigsen, and Gopala
+Anumanchipalli. 2025. Lifelong knowledge editing
+requires better regularization. In Findings of the Association for Computational Linguistics: EMNLP
+2025, Suzhou, China, November 4-9, 2025, pages
+22653–22675. Association for Computational Linguistics.
+Jitai Hao, Qiang Huang, Hao Liu, Xinyan Xiao,
+Zhaochun Ren, and Jun Yu. 2025. A token is worth
+over 1,000 tokens: Efficient knowledge distillation
+through low-rank clone. In The Thirty-ninth Annual
+Conference on Neural Information Processing Systems.
+Tom Hartvigsen, Swami Sankaranarayanan, Hamid
+Palangi, Yoon Kim, and Marzyeh Ghassemi. 2023.
+Aging with grace: Lifelong model editing with discrete key-value adaptors. Advances in Neural Information Processing Systems, 36:47934–47959.
+Dan Hendrycks, Collin Burns, Steven Basart, Andy Zou,
+Mantas Mazeika, Dawn Song, and Jacob Steinhardt.
+2021. Measuring massive multitask language understanding. In The Ninth International Conference on
+Learning Representations.
+Zeyu Huang, Yikang Shen, Xiaofeng Zhang, Jie Zhou,
+Wenge Rong, and Zhang Xiong. 2023. Transformerpatcher: One mistake worth one neuron. In The
+Eleventh International Conference on Learning Representations.
+Houcheng Jiang, Junfeng Fang, Ningyu Zhang,
+Mingyang Wan, Guojun Ma, Xiang Wang, Xiangnan
+He, and Tat-Seng Chua. 2025a. Anyedit: Edit any
+knowledge encoded in language models. In Fortysecond International Conference on Machine Learning.
+Houcheng Jiang, Junfeng Fang, Tianyu Zhang, Baolong
+Bi, An Zhang, Ruipeng Wang, Tao Liang, and Xiang
+Wang. 2025b. Neuron-level sequential editing for
+large language models. In Proceedings of the 63rd
+Annual Meeting of the Association for Computational
+Linguistics (Volume 1: Long Papers), 2025, pages
+16678–16702.
+Omer Levy, Minjoon Seo, Eunsol Choi, and Luke Zettlemoyer. 2017. Zero-shot relation extraction via reading comprehension. In 21st Conference on Computational Natural Language Learning, CoNLL 2017,
+pages 333–342. Association for Computational Linguistics (ACL).
+
+Wei Liu, Haomei Xu, Bingqing Liu, Zhiying Deng,
+Haozhao Wang, Jun Wang, Ruixuan Li, Yee Whye
+Teh, and Wee Sun Lee. 2025. Is model editing built
+on sand? revealing its illusory success and fragile
+foundation. arXiv preprint arXiv:2510.00625.
+Wei Liu, Haomei Xu, Hongkai Liu, Zhiying Deng, Ruixuan Li, Heng Huang, Yee Whye Teh, and Wee Sun
+Lee. 2026. Are we evaluating the edit locality
+of llm model editing properly? arXiv preprint
+arXiv:2601.17343.
+Jun-Yu Ma, Hong Wang, Hao-Xiang Xu, ZhenHua Ling, and Jia-Chen Gu. 2024. Perturbationrestrained sequential model editing. In The Thirteenth International Conference on Learning Representations.
+Laurens van der Maaten and Geoffrey Hinton. 2008.
+Visualizing data using t-sne. Journal of machine
+learning research, 9(Nov):2579–2605.
+Aman Madaan, Niket Tandon, Peter Clark, and Yiming Yang. 2022. Memory-assisted prompt editing to
+improve GPT-3 after deployment. In Proceedings
+of the 2022 Conference on Empirical Methods in
+Natural Language Processing, EMNLP 2022, pages
+2833–2861.
+Kevin Meng, David Bau, Alex Andonian, and Yonatan
+Belinkov. 2022a. Locating and editing factual associations in gpt. Advances in neural information
+processing systems, 35:17359–17372.
+Kevin Meng, Arnab Sen Sharma, Alex J Andonian,
+Yonatan Belinkov, and David Bau. 2022b. Massediting memory in a transformer. In The Eleventh
+International Conference on Learning Representations.
+Eric Mitchell, Charles Lin, Antoine Bosselut, Chelsea
+Finn, and Christopher D. Manning. 2022a. Fast
+model editing at scale. In The Tenth International
+Conference on Learning Representations.
+Eric Mitchell, Charles Lin, Antoine Bosselut, Christopher D Manning, and Chelsea Finn. 2022b. Memorybased model editing at scale. In International Conference on Machine Learning, pages 15817–15831.
+PMLR.
+Alec Radford, Jeffrey Wu, Rewon Child, David Luan,
+Dario Amodei, Ilya Sutskever, and 1 others. 2019.
+Language models are unsupervised multitask learners. OpenAI blog, 1(8):9.
+Richard Socher, Alex Perelygin, Jean Wu, Jason
+Chuang, Christopher D. Manning, Andrew Y. Ng,
+and Christopher Potts. 2013. Recursive deep models for semantic compositionality over a sentiment
+treebank. In Conference on Empirical Methods in
+Natural Language Processing., pages 1631–1642.
+Chenmien Tan, Ge Zhang, and Jie Fu. 2024. Massive
+editing for large language models via meta learning.
+In The Twelfth International Conference on Learning
+Representations.
+
+Alex Wang, Amanpreet Singh, Julian Michael, Felix
+Hill, Omer Levy, and Samuel R. Bowman. 2019.
+GLUE: A multi-task benchmark and analysis platform for natural language understanding. In The
+Seventh International Conference on Learning Representations.
+Ben Wang and Aran Komatsuzaki. 2021. Gpt-j-6b: A 6
+billion parameter autoregressive language model.
+Peng Wang, Zexi Li, Ningyu Zhang, Ziwen Xu, Yunzhi
+Yao, Yong Jiang, Pengjun Xie, Fei Huang, and Huajun Chen. 2024a. Wise: Rethinking the knowledge
+memory for lifelong model editing of large language
+models. Advances in Neural Information Processing
+Systems, 37:53764–53797.
+Xin Wang, Yu Zheng, Zhongwei Wan, and Mi Zhang.
+2024b. Svd-llm: Truncation-aware singular value
+decomposition for large language model compression. In The Thirteenth International Conference on
+Learning Representations.
+Alex Warstadt, Amanpreet Singh, and Samuel R. Bowman. 2019. Neural network acceptability judgments.
+Trans. Assoc. Comput. Linguistics, 7:625–641.
+Adina Williams, Nikita Nangia, and Samuel R. Bowman. 2018. A broad-coverage challenge corpus
+for sentence understanding through inference. In
+NAACL-HLT, pages 1112–1122. Association for
+Computational Linguistics.
+Hao-Xiang Xu, Jun-Yu Ma, Zhen-Hua Ling, Ningyu
+Zhang, and Jia-Chen Gu. 2025. Constraining sequential model editing with editing anchor compression.
+In Findings of the Association for Computational
+Linguistics: NAACL 2025, pages 5499–5515.
+Lang Yu, Qin Chen, Jie Zhou, and Liang He. 2024.
+Melo: Enhancing model editing with neuron-indexed
+dynamic lora. In Proceedings of the AAAI Conference on Artificial Intelligence, volume 38, pages
+19449–19457.
+Mengqi Zhang, Bowen Fang, Qiang Liu, Xiaotian Ye,
+Shu Wu, Pengjie Ren, Zhumin Chen, and Liang
+Wang. 2025a. Kele: Residual knowledge erasure for
+enhanced multi-hop reasoning in knowledge editing.
+In Findings of the Association for Computational
+Linguistics: EMNLP 2025, pages 24537–24552.
+Mengqi Zhang, Xiaotian Ye, Qiang Liu, Pengjie Ren,
+Shu Wu, and Zhumin Chen. 2024a. Knowledge
+graph enhanced large language model editing. In
+Proceedings of the 2024 Conference on Empirical
+Methods in Natural Language Processing, EMNLP
+2024, pages 22647–22662.
+Mengqi Zhang, Xiaotian Ye, Qiang Liu, Shu Wu,
+Pengjie Ren, and Zhumin Chen. 2025b. Uncovering overfitting in large language model editing. In
+The Thirteenth International Conference on Learning
+Representations.
+
+Mengqi Zhang, Zisheng Zhou, Xiaotian Ye, Qiang Liu,
+Zhaochun Ren, Zhumin Chen, and Pengjie Ren. 2026.
+Disentangling knowledge representations for large
+language model editing. In The Fourteenth International Conference on Learning Representations.
+Ningyu Zhang, Bozhong Tian, Siyuan Cheng, Xiaozhuan Liang, Yi Hu, Kouying Xue, Yanjie Gou,
+Xi Chen, and Huajun Chen. 2024b. Instructedit:
+Instruction-based knowledge editing for large language models. In Proceedings of the Thirty-Third
+International Joint Conference on Artificial Intelligence, 2024, pages 6633–6641.
+Ningyu Zhang, Zekun Xi, Yujie Luo, Peng Wang,
+Bozhong Tian, Yunzhi Yao, Jintian Zhang, Shumin
+Deng, Mengshu Sun, Lei Liang, and 1 others. 2024c.
+Oneedit: A neural-symbolic collaboratively knowledge editing system. Proceedings of the VLDB Endowment. ISSN, 2150:8097.
+Ce Zheng, Lei Li, Qingxiu Dong, Yuxuan Fan, Zhiyong
+Wu, Jingjing Xu, and Baobao Chang. 2023. Can we
+edit factual knowledge by in-context learning? In
+Proceedings of the 2023 Conference on Empirical
+Methods in Natural Language Processing,EMNLP
+2023, pages 4862–4876.
+
+A
+
+Algorithm Details
+
+Algorithm 1 REVIVE
+Require: Current weight matrix W ∈ Rm×n ; update matrix ∆W; singular-value energy threshold τ ∈ (0, 1)
+Ensure: Safe update ∆Wsafe
+1: SVD-Aligned Decomposition:
+r
+n
+2: {ui }m
+i=1 , {σi }i=1 , {vi }i=1 = SVD(W)
+3: Construct orthogonal basis {ui vj⊤ | i =
+1, . . . , m; j = 1, . . . , n}
+4: for i = 1 to m do
+5:
+for j = 1 to n do
+6:
+αij ← ⟨∆W, ui vj⊤ ⟩F
+7:
+end for
+8: end for
+update
+as
+∆W
+=
+9: Represent
+Pm Pn
+⊤
+i=1
+j=1 αij ui vj
+10: Dominant Subspace Identification:
+P
+k
+
+σi
+
+≥τ
+12: Define dominant subspace {u1 , . . . , uk },
+{v1 , . . . , vk }
+13: Safe Update Construction:
+14: Initialize ∆Wsafe ← 0
+15: for i = 1 to m do
+16:
+for j = 1 to n do
+17:
+if i > k and j > k then
+18:
+∆Wsafe ← ∆Wsafe + αij ui vj⊤
+19:
+end if
+20:
+end for
+21: end for
+22: return ∆Wsafe
+
+11: Find smallest k s.t. Pi=1
+r
+σ
+i=1
+
+B
+
+i
+
+Proof of the SVD-aligned Matrix Basis
+
+This section provides the formal proof for the claim
+made in Section 3.1 that the set of rank-one outer
+products {ui vj⊤ }i,j derived from the singular vectors of a matrix W, forms an orthonormal basis for
+the space of matrices Rm×n .
+Theorem 1 (Outer-product bases from two orthonormal vector bases). Let {u1 , . . . , um } ⊂ Rm
+and {v1 , . . . , vn } ⊂ Rn be orthonormal bases of
+Rm and Rn respectively. Consider the set of mn
+matrices
+n
+o
+B = up vq⊤ : p = 1, . . . , m, q = 1, . . . , n .
+(7)
+Then B forms an orthonormal basis of the real
+vector space Rm×n with respect to the Frobenius
+inner product ⟨X, Y⟩F = tr(X⊤ Y).
+
+For any fixed indices (p′ , q ′ ), we compute
+
+In particular, every X ∈ Rm×n admits the
+unique expansion
+X=
+
+m X
+n
+X
+
+cpq up vq⊤ ,
+
+(8)
+
+b up′ v⊤′ ⟩F =
+⟨X,
+q
+
+X
+
+=
+
+X
+
+p=1 q=1
+
+where the coefficients are given by
+cpq = ⟨X, up vq⊤ ⟩F = u⊤
+p Xvq .
+
+But by definition, cp′ q′ = ⟨X, up′ vq⊤′ ⟩F , hence
+
+where δij is the Kronecker delta:
+(
+1, if i = j,
+δij =
+0, if i ̸= j.
+
+b − X, up′ v⊤′ ⟩F = 0
+⟨X
+q
+
+for all p′ , q ′ .
+
+(17)
+
+Since B spans the space, the only matrix orthogonal to every basis element is the zero matrix. Thereb − X = 0, proving X = X.
+b This provides
+fore, X
+an explicit expansion of any matrix in the basis B,
+proving completeness.
+
+(10)
+
+Since {up } and {vq } are orthonormal bases, we
+have
+vq⊤ vq′ = δqq′ ,
+
+(16)
+
+= cp′ q′ .
+
+(9)
+
+(i) Orthogonality. Take two generic elements
+up vq⊤ and up′ vq⊤′ from B. Their Frobenius inner
+product is
+
+u⊤
+p up′ = δpp′ ,
+
+cpq δpp′ δqq′
+
+p,q
+
+Proof. We split the proof into three parts: (i) orthogonality, (ii) spanning (completeness), and (iii)
+uniqueness / coefficient formula.
+
+⊤
+⟨up vq⊤ , up′ vq⊤′ ⟩F = (u⊤
+p up′ )(vq vq ′ ).
+
+p,q
+
+cpq ⟨up vq⊤ , up′ vq⊤′ ⟩F
+
+(iii) Uniqueness. Orthogonality immediately
+gives that the coefficients are unique and equal
+to the Frobenius inner products:
+cpq = ⟨X, up vq⊤ ⟩F = u⊤
+p Xvq .
+
+(11)
+
+(12)
+
+(18)
+
+This completes the proof. Therefore, using the u
+and v matrices obtained from the SVD of a matrix
+to construct such outer-product basis matrices is
+valid and well-founded.
+
+Therefore,
+⟨up vq⊤ , up′ vq⊤′ ⟩F = δpp′ δqq′ .
+
+(13)
+
+In particular, if either p ̸= p′ or q ̸= q ′ , then one
+of the Kronecker deltas vanishes, making the inner
+product equal to 0. This proves that distinct basis
+elements are orthogonal.
+(ii) Completeness. The vector space Rm×n has
+dimension mn. We have produced mn elements
+in B, which are mutually orthonormal. Mutual
+orthonormality implies linear independence. Since
+we have exactly mn linearly independent matrices
+in an mn-dimensional space, B must span Rm×n ,
+and therefore forms a basis.
+For a constructive argument, let X ∈ Rm×n be
+arbitrary. Define coefficients
+cpq = ⟨X, up vq⊤ ⟩F = u⊤
+p Xvq .
+
+(14)
+
+Form the matrix
+b =
+X
+
+m X
+n
+X
+p=1 q=1
+
+cpq up vq⊤ .
+
+(15)
+
+C
+
+Experimental Details
+
+C.1
+
+Baselines
+
+• MEMIT (Meng et al., 2022b) is the first method
+to support large-scale knowledge injection across
+multiple layers. It exploits the key–value structure (Geva et al., 2021) of FFNs and improves
+upon ROME by restricting updates to a contiguous set of layers, allowing thousands of new facts
+to be inserted in one pass. However, MEMIT
+does not consider sequential editing, leaving
+space for later improvements.
+• RECT (Gu et al., 2024)RECT is designed to
+mitigate the degradation of general abilities during sequential editing. It observes that general
+ability performance declines as more edits are applied, and addresses this by updating parameters
+based on the magnitude of change in individual
+weights. However, as our earlier analysis suggests, general abilities are governed by mappings
+between directions rather than individual parameters. Consequently, RECT remains too localized
+
+at the parameter level and fails to effectively preserve general abilities in long-horizon sequential
+editing.
+• PRUNE (Ma et al., 2024) is specifically designed
+for sequential editing with the goal of protecting
+the general abilities of LLMs. From the perspective of matrix conditioning, it constrains the
+maximum singular value of the update matrix so
+that it does not exceed that of the original parameter matrix, thereby reducing the risk of collapse.
+However, unlike our method, PRUNE does not
+filter the directions associated with large singular values, which may weaken knowledge retention. Moreover, its constraint only limits singular
+values to remain below a threshold, effectively
+attenuating but not eliminating the influence of
+noise.
+• NSE (Jiang et al., 2025b) is a method specifically
+designed for sequential knowledge editing. It
+preserves the original parameters during update
+computation, ensuring that each new edit does
+not interfere with previously injected knowledge.
+Inspired by the key–value view of FFN layers
+(Geva et al., 2021), NSE uses activation values to
+identify those neurons most relevant to the current update, restricting parameter changes within
+this subset. While this reduces unnecessary disturbance to the model, neuron-level selection
+alone cannot fully protect general abilities due to
+the problem of superposition, where a single neuron may encode multiple orthogonal directions.
+As a result, NSE still fails to maintain general
+abilities under long-horizon sequential editing.
+• AlphaEdit (Fang et al., 2024) is a method specifically designed for sequential knowledge editing. It constructs a protection subspace for previously stored knowledge by collecting 100K
+(subject, relation, object) triples from Wikipedia.
+During subsequent edits, parameter updates are
+projected onto the null space of this protection
+subspace to prevent interference with existing
+knowledge. However, based on our earlier analysis, sequential editing primarily perturbs the subspace associated with general abilities rather than
+factual knowledge alone. Thus, the choice of protection subspace in AlphaEdit is not sufficiently
+precise. As shown in our experiments, AlphaEdit
+can withstand more editing steps compared to
+other baselines, but eventually still suffers from
+a collapse of general abilities.
+
+• DeltaEdit (Cao et al., 2025) is a sequential
+knowledge editing method that addresses the
+superimposed noise accumulation problem in
+LLMs. It mitigates performance degradation by
+identifying and reducing conflicts between consecutive edits. Specifically, it employs a dynamic
+orthogonal constraint strategy to ensure that new
+knowledge updates remain orthogonal to previous ones, thereby minimizing interference between different editing instances and maintaining
+model stability over long-term sequences.
+• MEND (Mitchell et al., 2022a) is a
+hypernetwork-based
+knowledge
+editing
+method that addresses the scalability and
+efficiency challenges of updating massive
+LLMs. It enables fast, localized modifications
+by learning to transform standard fine-tuning
+gradients into targeted parameter updates.
+Specifically, it employs a low-rank gradient
+decomposition strategy to parameterize the
+editor network, thereby reducing the immense
+computational overhead and allowing rapid
+fact corrections without degrading the model’s
+general capabilities.
+C.2
+
+Datasets
+
+• ZsRE (Levy et al., 2017) is a question-answering
+(QA) dataset. Each sample contains a subject
+string and a corresponding answer, which serve
+as the editing target to assess Efficacy. To
+evaluate Paraphrase, it utilizes rephrased questions generated through back-translation. Following prior work, it employs out-of-scope Natural
+Questions to measure Neighborhood (also referred to as Locality).
+• Counterfact (Meng et al., 2022b) is a more challenging dataset that contrasts Counterfactual with
+factual statements. Each record is derived from
+an entry in the PARAREL dataset (Elazar et al.,
+2021), with all entities originating from WikiData. It uses metrics similar to ZsRE to evaluate
+Efficacy Score, Paraphrase Score, and Neighborhood Score. For its out-of-scope data, it replaces the subject entity with an approximate
+entity that shares the same predicate. Furthermore, Counterfact uniquely includes multiple
+generation prompts with the same meaning to
+test the Fluency(Generation Entropy) and Consistency(Reference Score) of the generated text.
+
+C.3
+
+ZsRE Metrics
+
+In line with prior work (Meng et al., 2022a,b),
+we define the evaluation metrics on the ZSRE
+dataset. Given a language model fθ , a factual
+prompt (si , ri ), its target output oi , and the model’s
+pre-edit prediction oci , the following metrics are
+used:
+• Efficacy: This metric reflects the model’s accuracy on the edited samples, computed as the
+average top-1 success rate:
+n
+o
+Ei oi = arg max Pfθ (o | (si , ri ) .
+o
+
+(19)
+
+• Paraphrase: This measures how well the model
+transfers the edit to paraphrased forms of (si , ri ),
+denoted as N ((si , ri )). It is defined as the average top-1 accuracy over these rephrasings:
+n
+o
+Ei oi = arg max Pfθ (o | N ((si , ri )) . (20)
+o
+
+• Neighborhood: This evaluates whether unrelated prompts O(si , ri ) remain unaffected by the
+edit. It is measured as the proportion of cases
+where predictions for such prompts stay consistent:
+n
+o
+Ei oci = arg max Pfθ (o | O((si , ri )) . (21)
+o
+
+C.4
+
+Counterfact Metrics
+
+In line with prior work (Meng et al., 2022a,b), we
+further define the metrics used in the Counterfact
+benchmark. Given a language model fθ , a factual
+prompt (si , ri ), a target output oi , and the model’s
+pre-edit prediction oci , we define:
+• Efficacy Score: The fraction of cases where, for
+the prompt (si , ri ), the target oi receives higher
+probability than the original output oic :
+
+
+Ei Pfθ [oi | (si , ri )] > Pfθ [oic | (si , ri )] . (22)
+• Paraphrase Score: The proportion of paraphrased prompts N ((si , ri )) where the edited
+output oi is ranked higher than the original response oci :
+
+• Neighborhood Score: The proportion of semantically related but distinct prompts O((si , ri ))
+where the model maintains correct predictions,
+assigning higher probability to oi over oic :
+
+
+Ei Pfθ [oi | O((si , ri ))] > Pfθ [oic | O((si , ri ))] .
+(24)
+• Fluency: A measure of output repetition, defined
+using the entropy of the n-gram distribution:
+2X
+4X
+g2 (k) log2 g2 (k)+
+g3 (k) log2 g3 (k),
+3
+3
+k
+k
+(25)
+where gn (·) denotes the frequency distribution
+over n-grams.
+−
+
+• Consistency: This evaluates how consistent the
+model’s generations are with external references.
+Given a subject s, we compute the cosine similarity between TF-IDF embeddings of the model’s
+text and the corresponding Wikipedia article
+about o.
+C.5
+
+Details of GLUE
+
+GLUE (Wang et al., 2019) is a comprehensive
+benchmark, and this paper leverages the following six subtasks:
+• SST (Socher et al., 2013) (Stanford Sentiment
+Treebank): A single-sentence classification task
+based on movie reviews, where the goal is to
+predict binary sentiment labels.
+• MRPC (Dolan and Brockett, 2005) (Microsoft
+Research Paraphrase Corpus): A sentence-pair
+task aiming to identify whether two sentences are
+semantically equivalent.
+• MMLU (Hendrycks et al., 2021) (Massive Multitask Language Understanding): A broad benchmark covering diverse subjects, designed to evaluate models under zero-shot and few-shot conditions.
+• RTE (Bentivogli et al., 2009) (Recognizing Textual Entailment): A natural language inference
+task where the objective is to determine if a
+premise entails its corresponding hypothesis.
+
+• CoLA (Warstadt et al., 2019) (Corpus of Linguistic Acceptability): A single-sentence classifica
+
+Ei Pfθ [oi | N ((si , ri ))] > Pfθ [oic | N ((si , ri ))] .
+tion benchmark that tests whether sentences are
+(23)
+grammatically acceptable.
+
+• NLI (Williams et al., 2018) (Natural Language
+Inference): A task requiring models to infer the
+logical relationship between a premise and a hypothesis.
+C.6
+
+Method Implementation Details
+
+All experiments based on GPT-J and LLaMA3
+are conducted on NVIDIA A800 GPUs (80GB),
+while experiments on GPT2-XL are performed
+on NVIDIA RTX 4090 GPUs (24GB). For baselines, we adopt the official implementations of A L PHA E DIT and NSE and keep their default hyperparameter configurations unchanged. The only additional hyperparameter introduced by our method is
+the singular value projection threshold. Following
+Appendix G.5, we set this threshold to preserve
+the top 10% dominant singular components for all
+models. We use the same threshold across baselines
+because the protected structure is model-dependent
+and determined solely by the spectrum of the underlying pretrained weights. For SVD computation,
+we use torch.linalg.svd. Before each update,
+we perform SVD on the current parameter matrix to
+construct the spectral basis used by our projection.
+
+D
+
+Related Work (Full Version)
+
+Knowledge editing methods for large language
+models can be broadly categorized into parameterpreserving and parameter-modifying approaches,
+depending on whether the original model parameters are directly updated. These two lines of work
+differ fundamentally in their design philosophy,
+flexibility, and susceptibility to interference under
+sequential editing. Below we review representative methods in each category, with an emphasis on
+techniques relevant to sequential knowledge editing.
+Parameter-Preserving Methods. Parameterpreserving approaches maintain the base model’s
+parameters unchanged and instead incorporate
+external mechanisms to realize edits. A common direction is to attach additional modules
+that store and retrieve edited knowledge. For
+example, SERAC (Mitchell et al., 2022b) introduces an auxiliary memory with a Counterfactual model, CaliNet (Dong et al., 2022) and TPatcher (Huang et al., 2023) insert neuron-based
+units, and GRACE (Hartvigsen et al., 2023) organizes edits in a dynamic codebook. MELO (Yu
+et al., 2024) uses additional LoRA-style adapters to
+preserve original parameters, while WISE (Wang
+
+et al., 2024a) improves stability and general ability with dual-memory and conflict-free sharding. Another line of work performs edits through
+prompting: MemPrompt (Madaan et al., 2022) and
+IKE (Zheng et al., 2023) rely on injecting new facts
+into the input context. More recent efforts combine
+symbolic structures with neural editing, such as
+OneEdit (Zhang et al., 2024c), which leverages
+knowledge graphs for collaborative knowledge updates.
+
+Parameter-Modifying Methods. Parametermodifying methods directly update the model’s
+weights to encode new knowledge. Meta-learning
+based techniques predict parameter shifts through
+hypernetworks, including MEND (Mitchell et al.,
+2022a), MALMEN (Tan et al., 2024), and InstructEdit (Zhang et al., 2024b). Locate-then-edit
+methods first determine the locations where knowledge is stored and then apply targeted modifications. Typical examples are ROME (Meng et al.,
+2022a), which computes updates using closed-form
+equations, MEMIT (Meng et al., 2022b), which
+scales editing to batches, GLAME (Zhang et al.,
+2024a), which integrates knowledge graphs, and
+AnyEdit (Jiang et al., 2025a), which recursively
+edits knowledge of arbitrary structure.
+
+When parameter-modifying edits are applied sequentially, additional difficulties arise due to the accumulation of interfering updates. To address these
+issues, several methods introduce explicit mechanisms to regularize or constrain updates during editing. RECT (Gu et al., 2024) enforces sparsity at the
+level of individual parameters, PRUNE (Ma et al.,
+2024) controls the conditioning of update matrices,
+AlphaEdit (Fang et al., 2024) restricts edits to a null
+space derived from previously stored knowledge,
+and DeltaEdit (Cao et al., 2025) mitigates edit–edit
+interference by projecting new updates onto the
+orthogonal complement of historical update directions. NSE (Jiang et al., 2025b) selects editing
+locations based on neuron activation patterns that
+are deemed most relevant for knowledge storage.
+While these methods alleviate certain forms of interference, they do not explicitly account for how
+sequential updates interact with the intrinsic structure of pretrained model parameters, which is the
+focus of our work.
+
+Table 3: Comparison between REVIVE and representative SVD-based or subspace-constrained editing methods.
+
+Method
+PRUNE
+AlphaEdit
+Delta-Edit
+REVIVE
+
+E
+
+Protected Subspace
+Singular value magnitude constraint
+Feature covariance from external factual data
+Historical update directions
+Dominant singular vectors of weight matrices
+
+Comparison with SVD-based Editing
+Methods
+
+This section clarifies the conceptual and methodological differences between REVIVE and prior
+knowledge editing methods that employ SVD or
+subspace-based constraints, including PRUNE (Ma
+et al., 2024), AlphaEdit (Fang et al., 2024), and
+DeltaEdit (Cao et al., 2025). Although these approaches share a common mathematical tool (e.g.,
+singular value decomposition or subspace projection), they differ fundamentally in how protected
+subspaces are defined, which failure modes they
+are intended to mitigate, and what aspects of
+model degradation they address.
+PRUNE. PRUNE constrains parameter updates
+by limiting the singular values of the update matrix relative to those of the original weights. This
+design primarily regulates the magnitude of updates and provides a form of spectral regularization.
+However, it does not distinguish between different
+singular directions and therefore does not explicitly preserve functionally meaningful subspaces of
+the pretrained model. Consequently, PRUNE may
+suppress useful update components while failing
+to preserve the functional subspace that supports
+general model abilities.
+AlphaEdit. AlphaEdit constructs a protected subspace based on the covariance of feature activations
+induced by a large external factual dataset (e.g.,
+100k triples from wikipedia). This approach aims
+to reduce interference between factual representations during sequential edits. As a result, the
+protected subspace is extrinsic to the model and
+reflects correlations arising from the sampled data
+distribution rather than the intrinsic structure of the
+pretrained weight matrices. While effective at mitigating interference between edits, this design does
+not explicitly safeguard the dominant spectral components of the model parameters. Empirically, AlphaEdit exhibits severe degradation after long edit
+sequences, with both editing efficacy and general
+abilities collapsing after approximately 8k edits.
+
+Failure Mode Addressed
+Large-magnitude updates
+Interference across factual activations
+Edit–edit interference
+Dominant subspace corruption
+
+DeltaEdit. DeltaEdit focuses on preventing edit–
+edit interference by tracking historical update directions and projecting new edits to be orthogonal to them. The protected subspace is thus derived entirely from past edits, without reference to
+the pretrained model’s internal parameter structure.
+Consequently, DeltaEdit addresses interference between edits but does not target model-level spectral
+drift, and cannot prevent degradation of general
+abilities that may arise even when consecutive edits are semantically independent.
+REVIVE (ours). REVIVE is motivated by a failure mode that has received limited attention in prior
+sequential editing work: the progressive degradation of the dominant singular subspace of weight
+matrices over long edit sequences. Our spectral
+analyses suggest that high-energy singular directions are strongly associated with general abilities.
+REVIVE therefore protects an intrinsic, modelderived subspace defined by the dominant singular
+vectors of the pretrained weights. By selectively filtering update components that would interfere with
+this subspace, REVIVE mitigates spectral degradation and supports stable editing over long horizons
+(up to 20k sequential edits in our experiments).
+Summary. As summarized in Table 3, existing
+methods employ subspace constraints to mitigate
+different forms of interference, they are primarily
+designed to control interactions between edits or
+between data instances. In contrast, REVIVE identifies degradation of the model’s intrinsic dominant
+singular subspace as a fundamental cause of failure
+in sequential editing and intervenes by selectively
+filtering update components that interfere with the
+dominant singular subspace.
+
+F
+
+Supplementary Spectral Analyses for
+Section 2
+
+F.1
+
+Robustness to Output-Side Perturbations
+
+To complement the input-side perturbation analysis
+presented in Section 2.3, we conduct a symmetric
+study on output-side perturbations, examining how
+
+MRPC
+
+COLA
+
+RTE
+
+NLI
+
+0.8
+
+F1 Score
+
+0.6
+0.4
+0.2
+0.0 1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+Perturbated Group Index
+
+9
+
+10
+
+Figure 13: Sensitivity of general ability to perturbations
+across different output side (left singular vector) spectral
+groups.
+
+perturbations aligned with different groups of left
+singular vectors affect model robustness.
+Specifically, we partition the left singular vectors
+{ui } of the weight matrix W into groups based on
+the cumulative energy of their corresponding singular values, using the same grouping strategy as in
+the main text. For a selected group H, we construct
+structured perturbations that modify the contribution of these output directions while mixing them
+with all input directions:
+∆=
+
+r
+XX
+i∈H j=1
+
+βi,j ui vj⊤ , βi,j ∼ N (0, 1).
+
+To ensure comparability across groups, the perturbation is normalized and rescaled to a fixed magnitude:
+˜ =ε· ∆ .
+∆
+∥∆∥F
+
+The perturbed weight matrix is given by W′ =
+˜ This construction can be interpreted as alW + ∆.
+tering the input representation of selected outputs
+{ui }i∈H (left singular vector) into random mixtures of all inputs {vj }rj=1 (right singular vector).
+Figure 13 reports the robustness curves under output-side perturbations for different singular
+value groups. The observed trends closely mirror
+those of the input-side experiments: perturbations
+aligned with dominant singular directions lead to
+substantially larger degradation in model performance than perturbations confined to lower-energy
+components.
+F.2
+
+Spectral Dynamics of AlphaEdit under
+Sequential Editing
+
+This section supplements the analysis in Section 2.4 by examining the spectral dynamics of
+
+the strongest existing baseline, A LPHA E DIT, under long-sequence editing. We consider the same
+experimental setting as in the main text: 10,000 sequential edits (100 edits per round for 100 rounds)
+on the C OUNTER FACT dataset using the LL A MA3
+model. We track the evolution of the Singular Vector Similarity (SS) metric for dominant singular
+vectors throughout the editing process.
+As shown in Figure 14, A LPHA E DIT exhibits relatively small deviations in dominant singular vectors during the early editing rounds. However, as
+edits accumulate, the maximum SS value steadily
+decreases, indicating progressive rotation of critical singular directions. By the end of the editing
+sequence, the maximum SS drops below 0.3, suggesting substantial distortion of the dominant singular subspace. This spectral degradation closely
+mirrors the collapse in general abilities observed
+on the GLUE benchmark (Figure 9). These results
+further support the conclusion that corruption of
+the dominant singular subspace is a general failure
+mode of long-sequence knowledge editing, rather
+than a method-specific artifact.
+F.3
+
+Dynamics of Left Singular Vectors
+
+In Section 2.4, we focus on the evolution of right
+singular vectors to characterize microscopic degradation of the dominant subspace during sequential
+editing. Here, we provide a complementary analysis on the corresponding left singular vectors. As
+shown in Figure 15, left singular vectors exhibit
+the same qualitative behavior as their right counterparts: dominant singular directions progressively
+rotate away from their original orientations as edits accumulate. This consistency confirms that sequential editing induces a symmetric degradation
+of input–output mappings, rather than an artifact
+specific to one side of the decomposition.
+
+G
+
+Supplementary Experimental Results
+
+G.1
+
+Performance on GPT2-XL under
+Sequential Editing
+
+In this subsection, we additionally report the results on GPT2-XL (1.5B). Table 4 summarizes the
+performance of REVIVE under sequential editing
+on this model. Across all evaluated baselines, incorporating REVIVE consistently improves editing
+performance and stability. These results indicate
+that the effectiveness of REVIVE generalizes well
+across different model sizes.
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+0 1000 2000 3000 4000
+
+0.25
+0.20
+0.15
+0.10
+0.05
+0.00
+
+Index of Singular Vectors
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+0.35
+0.30
+0.25
+0.20
+0.15
+0.10
+0.05
+0.00
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+0.25
+0.20
+0.15
+0.10
+0.05
+0.00
+
+SSj100
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+0.5
+0.4
+0.3
+0.2
+0.1
+0.0
+
+SSj50
+
+SSj40
+
+0.5
+0.4
+0.3
+0.2
+0.1
+0.0
+
+SSj90
+
+0.30
+0.25
+0.20
+0.15
+0.10
+0.05
+0.00
+
+SSj70
+
+SSj60
+
+0.5
+0.4
+0.3
+0.2
+0.1
+0.0
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+SSj80
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+0.6
+0.5
+0.4
+0.3
+0.2
+0.1
+0.0
+
+SSj30
+
+0.8
+0.7
+0.6
+0.5
+0.4
+0.3
+0.2
+0.1
+0.0
+
+SSj20
+
+SSj10
+
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+Figure 14: Evolution of SS of AlphaEdit over sequential editing, from SS10 to SS100 with step size 10.
+
+0.4
+0.2
+0.0
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+0.7
+0.6
+0.5
+0.4
+0.3
+0.2
+0.1
+0.0
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+SSj10
+
+SSj8
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+0.32
+
+0.06
+
+0.16
+
+0.04
+
+0.08
+
+0 1000 2000 3000 4000
+
+0.00
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+0.08
+
+0.24
+
+Index of Singular Vectors
+
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+
+SSj20
+
+SSj14
+
+SSj12
+
+0.6
+
+0.5
+0.4
+0.3
+0.2
+0.1
+0.0
+
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+
+SSj18
+
+0.8
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+SSj16
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+
+SSj6
+
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+
+SSj4
+
+SSj2
+
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+
+0.02
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+0.00
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+Figure 15: Evolution of Left Singular Vector Similarity (SS) over sequential editing.from SS2 to SS20 with step size
+2.
+
+G.2 Performance Comparison with DeltaEdit
+DeltaEdit (Cao et al., 2025) is evaluated under
+an experimental protocol that differs substantially
+from our main setting. Specifically, DeltaEdit performs one edit per sample and reports results over
+3,000 edited samples, whereas our primary experiments apply batched updates (100 edits per round)
+over a total of 10,000 edits. To ensure a fair and
+meaningful comparison, we therefore conduct a
+separate evaluation of DeltaEdit under its original
+experimental setting. Moreover, since DeltaEdit is
+proposed as an extension of AlphaEdit, we compare it against A LPHA E DIT+REVIVE to ensure a
+fair and meaningful evaluation.
+Table 5 reports the results. Both DeltaEdit and
+the REVIVE-enhanced model substantially improve over the AlphaEdit baseline across most
+metrics. Notably, A LPHA E DIT+REVIVE achieves
+the strongest overall performance, outperforming
+DeltaEdit on all metrics except for Neighborhood
+Score on C OUNTER FACT. We further note that REVIVE and DeltaEdit address long-horizon degradation from different perspectives. REVIVE prevents
+collapse by protecting a model-derived dominant
+structure during parameter updates, which yields
+broad and consistent improvements across metrics.
+
+In contrast, DeltaEdit primarily improves edit quality by reducing interference between edits. Overall,
+REVIVE delivers more pronounced gains in our
+evaluation.
+G.3
+
+Full Glue Results
+
+This section reports the remaining GLUE evaluation results that were omitted from Section 4.2
+due to space constraints. Results for the remaining
+three GLUE tasks are shown in Figure 16.
+G.4
+
+REVIVE Enhanced Baselines Under
+Extreme Settings
+
+This subsection reports the complete results of
+REVIVE-enhanced methods under extreme sequential editing settings. Table 6 presents detailed performance metrics, including results on the Z S RE
+dataset that were omitted from the main text due to
+space constraints.
+G.5
+
+Full Threshold Experiments Results
+
+This section provides detailed results that complement the sensitivity analysis reported in Section 4.2.
+We present extended experiments on the singular
+value energy threshold τ , which determines the
+size of the dominant singular subspace protected by
+
+Table 4: Performance on sequential editing over 10,000 Samples. The abbreviations Eff. (Efficacy Success), Para.
+(Paraphrase Success), Neigh. (Neighborhood Success), Flu. (Generation Entropy), and Consis. (Reference Score)
+denote respective evaluation metrics. Relative improvements (%) are shown in blue and decreases in orange. ↑↑
+indicates a large improvement where the baseline score was near zero.
+Method
+
+GPT2-XL
+
+Counterfact
+
+ZsRE
+
+Eff.↑
+
+Para.↑
+
+Neigh.↑
+
+Flu.↑
+
+Consis.↑
+
+Eff.↑
+
+Para.↑
+
+Neigh.↑
+
+21.82
+
+24.16
+
+78.32
+
+626.69
+
+31.34
+
+22.17
+
+21.28
+
+24.20
+
+MEMIT
+70.56
+62.42
+55.94
+516.26
+8.74
+53.00
+46.27
+12.76
++REVIVE 90.46 ↑ 28.2% 75.88 ↑ 21.5% 63.83 ↑ 14.1% 598.21 ↑ 15.9% 34.32 ↑ 292.7% 68.20 ↑ 28.7% 60.80 ↑ 31.4% 27.09 ↑ 112.4%
+PRUNE
+57.61
+54.01
+52.87
+596.56
+6.93
++REVIVE 82.00 ↑ 42.4% 70.90 ↑ 31.3% 62.82 ↑ 18.8% 600.99 ↑ 0.7% 34.55 ↑ 398.1%
+
+0.21
+40.92 ↑↑
+
+0.19
+37.61 ↑↑
+
+2.06
+25.29 ↑ 1127.2%
+
+RECT
+86.52
+69.50
+55.71
+499.64
+11.41
+29.80
+27.17
+6.94
++REVIVE 82.99 ↓ 4.1% 69.20 ↓ 0.4% 65.60 ↑ 17.7% 595.69 ↑ 19.2% 34.05 ↑ 198.3% 62.45 ↑ 109.6% 55.17 ↑ 103.0% 26.20 ↑ 278.0%
+AlphaEdit
+92.13
+76.80
+56.85
+581.49
+31.72
+53.00
+46.27
+12.76
++REVIVE 94.48 ↑ 2.6% 78.70 ↑ 2.5% 62.87 ↑ 10.6% 587.94 ↑ 1.1% 38.51 ↑ 21.5% 68.10 ↑ 28.5% 57.17 ↑ 23.5% 20.35 ↑ 59.4%
+NSE
+69.22
+54.54
+69.26
+596.41
+28.87
+33.71
+32.31
+22.70
++REVIVE 96.12 ↑ 38.8% 84.49 ↑ 54.9% 64.17 ↓ 7.4% 592.71 ↓ 0.6% 37.74 ↑ 30.9% 77.83 ↑ 131.0% 70.55 ↑ 118.4% 24.84 ↑ 9.4%
+
+Table 5: Comparison between AlphaEdit-REVIVE and DeltaEdit.
+
+Model
+
+CounterFact
+
+Method
+
+Llama3-8B
+
+ZsRE
+
+Eff.↑
+
+Para.↑
+
+Neigh.↑
+
+Eff.↑
+
+Para.↑
+
+Neigh.↑
+
+MEMIT
+PRUNE
+RECT
+DeltaEdit
+
+50.54
+50.33
+49.02
+98.63
+
+50.50
+50.40
+49.23
+83.20
+
+49.46
+49.63
+51.00
+78.67
+
+0.05
+0
+0
+94.94
+
+0.05
+0
+0
+91.19
+
+1.41
+0
+0
+30.08
+
+AlphaEdit
++REVIVE
+
+93.83
+99.37
+
+84.75
+93.50
+
+64.44
+64.40
+
+94.49
+95.19
+
+91.52
+91.58
+
+29.77
+32.17
+
+Table 6: Performance results of REVIVE enhanced Baseilnes under extreme sequential editing (20,000 edits).
+Model
+
+LLaMA3
+
+Method
+
+Counterfact
+
+ZsRE
+
+Eff.↑
+
+Para.↑
+
+Neigh.↑
+
+Flu.↑
+
+Consis.↑
+
+Eff.↑
+
+Para.↑
+
+Neigh.↑
+
+MEMIT-REVIVE
+
+91.94
+
+79.67
+
+56.90
+
+557.61
+
+26.44
+
+84.11
+
+79.85
+
+32.92
+
+RECT-REVIVE
+
+89.00
+
+76.78
+
+60.54
+
+594.38
+
+27.93
+
+79.35
+
+76.35
+
+30.24
+
+AlphaEdit-REVIVE
+
+97.50
+
+87.24
+
+57.65
+
+613.22
+
+32.77
+
+92.62
+
+88.25
+
+31.31
+
+NSE-REVIVE
+
+98.50
+
+90.38
+
+61.78
+
+615.65
+
+33.23
+
+93.91
+
+89.67
+
+31.58
+
+REVIVE. We report results for MEMIT+REVIVE
+across three base models. Table 7 summarizes the
+variations of editing-related metrics under different
+threshold values. In addition, Figure 17 reports the
+corresponding GLUE performance on LLaMA3
+for different choices of τ . Consistent with the observations in the main text, the results indicate that
+REVIVE maintains stable performance across a
+broad range of threshold values. Results on GPTJ and GPT2-XL for GLUE are omitted, as these
+
+models exhibit limited GLUE performance prior
+to editing, making threshold-dependent variations
+less informative in this setting.
+G.6 Preserving Dominant Singular Directions
+with REVIVE
+We now investigate whether the spectral degradation observed above can be mitigated by explicitly
+protecting the dominant singular subspace. To this
+end, we compare the singular vector dynamics of
+
+0.77
+
+0.58
+0.57
+0.57
+
+0.67
+0.67
+
+0.20
+
+RE
+
+0.56
+0.56
+0.56
+0.56
+0.56
+
+0.40
+
+0.56
+
+0.20
+
+0.00
+*
+
+CT
+
+ME
+
+T*
+MI
+
+dit
+haE
+Alp
+CT
+RE
+T
+MI
+ME
+
+0
+
+10000
+8000
+6000 er
+4000 mb
+2000 it Nu
+
+0.40
+
+*
+
+CT
+
+RE
+
+T*
+MI
+
+ME
+
+Ed
+
+(a) NLI
+
+dit
+
+haE
+
+Alp
+
+T
+
+C
+RE
+
+T
+
+MI
+
+ME
+
+0
+
+10000
+8000
+6000 er
+4000 mb
+2000 it Nu
+Ed
+
+(b) MMLU
+
+0.83
+
+0.20
+0.00
+
+*
+
+h
+Alp
+
+0.60
+
+0.02
+0.00
+
+it
+aEd
+
+0.57
+0.61
+
+0.83
+0.83
+0.83
+0.83
+0.83
+
+0.80
+
+0.00
+0.00
+
+it*
+aEd
+
+h
+
+0.50
+0.39
+
+F1 Score
+
+0.40
+
+Alp
+
+0.60
+
+0.67
+0.67
+0.67
+0.67
+
+F1 Score
+
+F1 Score
+
+0.60
+
+0.43
+
+0.00
+0.00
+0.00
+
+*
+
+Alp
+
+dit
+haE
+
+*
+
+CT
+
+RE
+
+ME
+
+T*
+MI
+
+dit
+
+haE
+Alp
+
+CT
+RE
+T
+MI
+ME
+
+0
+
+10000
+8000
+6000 er
+4000 mb
+2000 it Nu
+Ed
+
+(c) SST
+
+Figure 16: Baseline and corresponding REVIVE version(*) performance on GLUE across datasets.
+
+MEMIT with those of MEMIT-REVIVE. All experiments follow the same setup as in Section 2.4.
+Figure 18 reports the evolution of the maximum SS
+value for MEMIT-REVIVE throughout the entire
+editing sequence.
+In contrast to MEMIT, MEMIT-REVIVE consistently maintains a maximum SS value of 1 across
+all rounds, indicating that the dominant singular
+vectors remain aligned with their original directions throughout the editing process. This absence
+of spectral drift demonstrates that REVIVE effectively shields the critical subspace from cumulative
+perturbations. Importantly, this spectral stability
+directly corresponds to the preserved general performance observed on the GLUE benchmark. Together with the results in Section 2.4, these findings
+provide strong evidence that explicitly protecting
+the dominant singular subspace is sufficient to prevent the collapse of general abilities under longsequence knowledge editing.
+
+and-play module effectively stabilizes the process.
+After 1, 000 sequential edits, MEND equipped with
+REVIVE maintains 81.20% Efficacy on ZSRE
+and 86.60% on COUNTERFACT, while generative
+metrics such as Fluency and Consistency remain
+stable.
+
+G.7
+
+G.8
+
+Generalization to Meta-Learning
+Methods
+
+To evaluate whether REVIVE generalizes beyond
+locate-then-edit methods to meta-learning-based
+editors, we conduct additional experiments using
+MEND (Mitchell et al., 2022a) on the GPT-J model.
+Because meta-learning methods compute parameter updates independently for each sample, we
+evaluate sequential editing with a batch size of 1
+and scale the sequence up to 1, 000 edits.
+As shown in Table 8, the standard MEND model
+suffers from rapid catastrophic collapse under sequential updates. For instance, on the ZSRE
+dataset, its Efficacy drops to 2.40% after just 50 edits and completely collapses to 0.00% by 1, 000 edits. In sharp contrast, applying REVIVE as a plug-
+
+This strong generalization stems from REVIVE’s structural design. REVIVE operates purely
+on the resulting update matrix within the spectral
+basis of the pretrained weights, making no assumptions about the underlying algorithm or hypernetwork generating the update. Consequently, whether
+the update is derived from a closed-form editor
+or a meta-learning method, REVIVE can consistently filter out harmful components aligned with
+the dominant singular subspace, thereby preserving
+the model’s general abilities.
+
+Computational Overhead Analysis
+
+REVIVE introduces additional spectral projections
+based on singular value decomposition, which may
+incur extra computational cost. To quantify this
+overhead, we measure the runtime of a baseline
+editing method and its REVIVE-augmented variant when editing 100 samples. Since the projection
+operation is independent of the underlying editing
+algorithm, we conduct this analysis using MEMIT
+as a representative baseline. As can be seen from
+Table 9, since knowledge editing is applied only to
+the FFN weight matrices in a subset of model layers, the number of required SVD computations is
+limited, making the additional projection overhead
+negligible.
+
+0.70
+
+0.52
+0.68
+
+0.80
+
+0.52
+0.64
+
+0.76
+
+0.76
+
+0.40
+
+0.76
+
+0.30
+
+0.59
+
+0.46 0.50
+
+0.80
+0.70
+
+0.56
+0.56
+0.32
+
+0.56
+
+0.30
+
+0.56
+
+0.20
+
+0.20
+0.10
+10000
+
+5
+
+0.2
+
+0.3
+
+8000
+
+0.2
+
+0.66
+
+0.50
+
+0.66
+
+0.40
+
+0.33
+
+0.66
+
+0.30
+
+0.66
+
+0.10
+10000
+
+5
+0.2
+
+0.1
+
+re
+
+sh
+
+it
+Ed
+
+mb
+Nu
+
+Th
+
+re
+
+0
+
+4000
+
+0.1
+
+2000
+
+.05
+
+0
+
+sh
+
+(a) COLA
+
+10000
+
+5
+0.2
+
+6000
+
+5
+
+0.1
+
+er
+
+4000
+2000
+
+5
+0.0
+
+0.3
+
+8000
+
+0.2
+
+6000
+
+5
+
+0.1
+
+Th
+
+it
+Ed
+
+8000
+
+0.2
+
+er
+
+mb
+
+Nu
+
+Th
+
+0
+
+5
+0.1
+
+6000
+
+0.1
+
+re
+s
+
+h
+
+(b) MMLU
+
+4000
+2000
+
+5
+0.0
+
+0.29
+0.60
+
+0.30
+
+0
+
+0.74
+
+0.35
+
+0.74
+0.31
+
+0.40
+
+0.57
+
+0.67
+
+0.27
+0.67
+
+0.30
+
+0.46
+0.67
+
+0.40
+
+0.67
+
+0.30
+0.20
+
+0.83
+
+0.28
+0.28
+
+0.20
+
+0.28
+0.28
+
+0.10
+
+0.28
+
+0.61
+
+0.83
+
+0.70
+
+0.28
+
+0.83
+
+0.60
+
+0.83
+0.83
+
+0.50
+
+0.83
+
+0.40
+
+0.32
+
+0.30
+0.20
+
+0.10
+0.3
+
+0.80
+
+0.32
+
+F1 Score
+
+F1 Score
+
+F1 Score
+
+0.67
+
+0.79
+
+0.90
+
+0.67
+
+0.50
+
+er
+
+mb
+
+Nu
+
+0.76
+
+0.67
+
+0.60
+
+it
+Ed
+
+(c) MRPC
+
+0.63 0.67
+
+0.70
+
+0.55
+
+0.66
+
+0.20
+
+0.10
+0.3
+
+0.52
+0.66
+
+0.60
+0.56
+
+0.40
+
+F1 Score
+
+0.46
+
+F1 Score
+
+F1 Score
+
+0.76
+
+0.50
+
+0.56
+
+0.50
+
+0.76
+
+0.60
+
+0.44
+
+0.60
+
+0.65
+
+0.76
+
+0.70
+
+0.69
+
+0.50
+0.62
+
+0.10
+10000
+
+5
+
+0.2
+
+8000
+
+0.2
+
+re
+
+sh
+
+10000
+
+5
+0.2
+
+8000
+
+0.2
+
+6000
+
+5
+
+0.1
+
+Th
+
+0.3
+
+0.1
+
+4000
+
+5
+0.0
+
+2000
+
+it
+Ed
+
+5
+
+0.1
+
+er
+
+mb
+Nu
+
+Th
+
+re
+
+0
+
+sh
+
+(d) NLI
+
+0.3
+
+10000
+
+5
+0.2
+
+6000
+4000
+
+0.1
+
+.05
+
+0
+
+2000
+0
+
+(e) RTE
+
+it
+Ed
+
+8000
+
+0.2
+
+er
+
+mb
+
+Nu
+
+Th
+
+re
+s
+
+h
+
+5
+0.1
+
+6000
+
+0.1
+
+4000
+
+5
+0.0
+
+2000
+
+it
+Ed
+
+er
+
+mb
+
+Nu
+
+0
+
+(f) SST
+
+Figure 17: GLUE evaluation results on LLaMA3 after 10,000 edits on the CounterFact dataset using MEMITREVIVE with different protection thresholds.
+Table 9: Runtime comparison under the setting of editing 100 samples.
+
+Method
+
+GPT-J
+
+LLaMA3-8B
+
+MEMIT
++REVIVE
+
+319.21s
+332.14s
+
+813.86s
+829.39s
+
+Table 7: Performance results of MEMIT-REVIVE on sequential editing task under different singular value energy thresholds
+(10,000 Samples from CounterFact).
+
+Para.↑
+
+Neigh.↑
+
+Flu.↑
+
+Consis.↑
+
+Eff.↑
+
+Para.↑
+
+Neigh.↑
+
+0.05
+
+94.46
+
+86.03
+
+59.70
+
+587.30
+
+29.83
+
+78.66
+
+75.89
+
+29.29
+
+0.10
+
+95.62
+
+84.60
+
+62.17
+
+603.22
+
+29.39
+
+86.56
+
+83.07
+
+31.88
+
+0.15
+
+95.03
+
+80.60
+
+64.49
+
+613.66
+
+29.19
+
+87.10
+
+83.36
+
+32.41
+
+0.20
+
+94.58
+
+78.38
+
+66.19
+
+621.15
+
+29.63
+
+86.85
+
+83.46
+
+32.75
+
+0.25
+
+92.96
+
+73.94
+
+68.94
+
+624.63
+
+29.49
+
+83.85
+
+80.23
+
+33.27
+
+0.30
+
+88.94
+
+67.56
+
+71.86
+
+625.68
+
+28.84
+
+81.18
+
+77.81
+
+33.02
+
+0.05
+
+91.23
+
+83.72
+
+57.26
+
+596.20
+
+33.29
+
+78.50
+
+73.19
+
+27.44
+
+0.10
+
+97.09
+
+87.01
+
+67.10
+
+616.15
+
+40.00
+
+83.87
+
+77.28
+
+29.77
+
+0.15
+
+96.74
+
+81.20
+
+69.98
+
+617.42
+
+39.63
+
+88.57
+
+82.87
+
+29.15
+
+0.20
+
+94.95
+
+76.59
+
+72.13
+
+621.01
+
+38.36
+
+85.83
+
+79.97
+
+29.27
+
+0.25
+
+92.84
+
+69.42
+
+74.15
+
+621.61
+
+37.19
+
+81.67
+
+74.67
+
+27.59
+
+0.30
+
+88.49
+
+64.30
+
+74.94
+
+623.53
+
+36.66
+
+81.32
+
+73.54
+
+28.56
+
+0.05
+
+91.89
+
+80.72
+
+61.13
+
+575.14
+
+32.12
+
+62.13
+
+55.40
+
+25.90
+
+0.10
+
+90.82
+
+77.24
+
+63.73
+
+595.36
+
+34.28
+
+63.34
+
+55.29
+
+25.93
+
+0.15
+
+87.82
+
+73.39
+
+65.89
+
+607.06
+
+35.33
+
+66.19
+
+58.40
+
+27.13
+
+0.20
+
+83.10
+
+66.95
+
+68.44
+
+615.17
+
+35.46
+
+64.53
+
+57.45
+
+26.60
+
+0.25
+
+78.77
+
+61.82
+
+69.66
+
+618.28
+
+35.17
+
+58.11
+
+51.80
+
+26.89
+
+0.30
+
+73.03
+
+57.28
+
+71.12
+
+621.46
+
+34.60
+
+57.05
+
+51.15
+
+26.42
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+
+SSj70
+
+SSj60
+
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+
+SSj50
+
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+
+SSj100
+
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+
+SSj80
+
+SSj10
+
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+
+Eff.↑
+
+SSj20
+
+GPT2-XL
+
+ZsRE
+
+SSj40
+
+GPT-J
+
+Counterfact
+
+SSj90
+
+LLaMA3
+
+Thresh
+
+SSj30
+
+Model
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+0 1000 2000 3000 4000
+
+Index of Singular Vectors
+
+Figure 18: Evolution of SS of MEMIT-REVIVE over sequential editing, from SS10 to SS100 with step size 10.
+
+Table 8: Performance comparison of MEND and MEND + REVIVE on the GPT-J model under sequential editing.
+Results demonstrate that REVIVE successfully prevents catastrophic collapse for meta-learning methods.
+
+Edits
+
+COUNTERFACT
+
+Method
+
+ZSRE
+
+Eff. ↑
+
+Para. ↑
+
+Neigh. ↑
+
+Flu. ↑
+
+Consis. ↑
+
+Eff. ↑
+
+Para. ↑
+
+Neigh. ↑
+
+1
+
+MEND
++ REVIVE
+
+100.00
+100.00
+
+50.00
+50.00
+
+30.00
+30.00
+
+627.95
+626.93
+
+31.78
+31.08
+
+75.00
+75.00
+
+75.00
+75.00
+
+66.67
+66.67
+
+50
+
+MEND
++ REVIVE
+
+54.00
+86.00
+
+48.00
+41.00
+
+54.00
+65.60
+
+488.27
+617.13
+
+6.18
+28.19
+
+2.40
+95.91
+
+1.60
+91.25
+
+93.11
+30.27
+
+100
+
+MEND
++ REVIVE
+
+43.00
+89.00
+
+42.50
+45.50
+
+58.50
+60.26
+
+524.40
+618.11
+
+1.19
+28.98
+
+0.20
+97.41
+
+0.60
+89.98
+
+0.02
+27.85
+
+500
+
+MEND
++ REVIVE
+
+45.40
+85.20
+
+45.90
+45.50
+
+54.10
+60.28
+
+498.58
+615.47
+
+2.92
+28.85
+
+0.34
+86.01
+
+0.34
+78.96
+
+0.64
+27.09
+
+1000
+
+MEND
++ REVIVE
+
+46.10
+86.60
+
+46.40
+50.80
+
+53.60
+56.77
+
+488.05
+619.08
+
+2.41
+29.38
+
+0.00
+81.20
+
+0.00
+74.38
+
+0.08
+25.97
+
+

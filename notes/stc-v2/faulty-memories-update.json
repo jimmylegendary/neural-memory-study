@@ -1,0 +1,760 @@
+{
+  "paper_id": "faulty-memories-update",
+  "arxiv": "2605.12978",
+  "arxiv_version": "v1 [cs.AI] 13 May 2026",
+  "title": "Useful Memories Become Faulty When Continuously Updated by LLMs",
+  "authors": "Dylan Zhang (1), Yanshan Lin (2), Zhengkun Wu (2), Yihang Sun (1), Bingxuan Li (1), Dianqi Li, Hao Peng (1). (1) University of Illinois Urbana-Champaign, (2) IIIS Tsinghua University; 'Work done at UIUC'. Corresponding: Dylan Zhang, shizhuo2@illinois.edu (title block, p.1)",
+  "venue": "arXiv preprint (no venue stated on the vendored text)",
+  "date": "2026-05-13",
+  "path": "/home/jimmy/repos/neural-memory-study/papers/stc/2605.12978.txt",
+  "code": "none stated in the vendored text (no repository URL appears anywhere)",
+  "axis": "E",
+  "note_written": "2026-08-11, editor direct read of the vendored full text (4694 lines, 199 KB). No delegation.",
+
+  "one_line": "The first paper in this corpus to put the sleep-round index $k$ on the x-axis of a real LLM loop and print a no-memory reference line beside it — and the answer it gets is that repeated (U-E) is a net loss, that it is a net loss even when every input trajectory is a ground-truth solution, and that an episodic-only control which never runs $S(\\cdot;B_s)$ at all beats the consolidators in 26 of 28 measured cells.",
+
+  "problem_stated": {
+    "as_the_paper_frames_it": "Agentic-memory systems 'pursue the consolidated form: an LLM rewrites past trajectories into a textual memory bank that it continuously updates with new interactions, promising self-improving agents without parameter updates. Yet we find that such consolidated memories produced by today's LLMs are often faulty even when derived from useful experiences.' [Abstract, p.1]",
+    "the_assumption_it_attacks": "'Many recent agentic-memory systems—CLIN (Majumder et al., 2023), Agent Workflow Memory (Wang et al., 2024), Dynamic Cheatsheet (Suzgun et al., 2026), and ACE (Zhang et al., 2025)—adopt update-after-every-interaction designs that treat each consolidation step as at worst neutral; our results contradict this assumption.' [§1, p.3]",
+    "the_experimental_move": "Make the inputs demonstrably useful by construction, so that any regression must be attributable to the write operator rather than to the data: 'we study settings in which the input trajectories are demonstrably useful: either drawn from problems the agent has already solved without memory, or supplied with ground-truth solutions.' [§1, p.2]",
+    "the_attribution_argument": "'Because the trajectory pool is held fixed across these comparisons, the variance across schedules and the episodic-only control together point to the consolidation step itself, not the underlying experience, as the source of the failure.' [§1, p.2]",
+    "note_writer_remark": "[note-writer] This is the corpus's first paper whose object of study is the write operator $\\mathrm{wr}$ of (U-E) rather than a system built on it. Every other $E$-path note in `notes/stc-v2/` records a system proposing a write rule; this one holds the data fixed and varies the rule."
+  },
+
+  "core_mechanism": {
+    "one_line_unified": "The paper does not propose a new (U-E); it instruments the existing one. It holds the experience pool $\\mathcal{H}$ fixed and varies (i) the number of rounds $k$, (ii) the batch $m$ of trajectories fed per round, (iii) whether the store is split into $E^{\\mathrm{epi}} \\oplus E^{\\mathrm{abs}}$, and (iv) whether $S(\\cdot;B_s)$ is mandatory, optional, or disabled — then measures held-out quality as a function of $k$ against a no-memory reference line.",
+
+    "notation_conflicts": {
+      "preamble": "The paper contains ZERO numbered equations and no formal notation section. Its mechanism is entirely prose plus prompt listings (App. B). The severe problem for the monograph is not symbol collision but ROUND-COUNTER PROLIFERATION: the paper uses FIVE different names for the sleep-round index $k$ across five experiments, never relates them, and never states a conversion. The chapter must fix one and print the conversion for the rest.",
+      "round_counter_proliferation": [
+        {"paper_name": "consolidation stage $S$", "where": "[§App. F.1, p.45; App. G.1, p.50; App. G.2, p.53]", "what_one_unit_is": "one full-memory rewrite conditioned on a mini-batch of 6 trajectory abstracts (G.1) or 6 same-type trajectories (G.2)", "range_run": "$S = 0 \\ldots 200$", "unified": "$k$"},
+        {"paper_name": "refresh round $R$", "where": "[Fig. 2 caption, p.5]", "what_one_unit_is": "ONE PASS over the 19-problem pool. For Stream this is 19 individual updates; for Static it is one whole-pool consolidation call", "range_run": "$R \\in \\{1, 10, 50\\}$", "unified": "$k_{\\mathrm{pass}}$; the chapter must print the conversion 1 pass = 19 updates, established at [App. D.5, p.41]: 'After 10 passes (190 steps)'"},
+        {"paper_name": "Distill Iter.", "where": "[Fig. 8a, p.9]", "what_one_unit_is": "one repeated abstraction over the same pool", "range_run": "$1, 20, 50, 100$", "unified": "$k$"},
+        {"paper_name": "epoch", "where": "[App. H.1.2, p.58]", "what_one_unit_is": "one pass of AWM-style consolidation over 128 trajectories at batch size 16", "range_run": "1–3", "unified": "$k_{\\mathrm{pass}}$"},
+        {"paper_name": "round", "where": "[App. J.1.3, p.65]", "what_one_unit_is": "one full pass over all 485 ScienceWorld rollouts in mini-batches", "range_run": "1, 10, 20", "unified": "$k_{\\mathrm{pass}}$"},
+        {"paper_name": "step", "where": "[Fig. 5, p.7; Fig. 9b, p.10]", "what_one_unit_is": "one problem presented to the agent in the 400-step ARC-AGI Stream", "range_run": "0–400", "unified": "NOT a sleep round — this is the wake stream index. The chapter must not read Fig. 5's x-axis as $k$."}
+      ],
+      "map": [
+        {"paper_symbol": "$|M|$", "paper_meaning": "memory bank size cap, in ITEMS: $|M| \\in \\{16, 50, \\infty\\}$ [Fig. 1a legend, p.2; Fig. 4, p.6]; also `max_memory_size=50` [App. G.1, p.50]", "reserved_meaning": "$\\mathcal{M}(\\cdot;W)$ is the memory READ function [STC-STYLE-NOTATION §1.2, NM 승계]; $C_{\\mathrm{cap}}$ is capacity and must be in bytes with dtype [§1.2]", "unified_replacement": "$C_{\\mathrm{cap}}^{\\mathrm{item}}$ (note-local, items) — and the chapter must state that an item cap is NOT $C_{\\mathrm{cap}}$ in the book's unit. The paper does separately print character counts (see cost_table.C), which are closer."},
+        {"paper_symbol": "$|B|$", "paper_meaning": "batch size of buffered rollouts consumed per consolidation call: $|B| \\in \\{1, 4, 6, 8, 16, 32\\}$ [§3, p.4; Fig. 4, p.6; Table 4, p.15]", "reserved_meaning": "$B_s$ / $B_t$ are the sleep and wake COMPUTE BUDGETS [STC-STYLE-NOTATION §1.2]. A bare $B$ for batch size collides with the only two budget symbols the book allows", "unified_replacement": "$m$ (note-local). The chapter must never write the paper's $|B|$."},
+        {"paper_symbol": "$S$ (consolidation stage index)", "paper_meaning": "the round counter, e.g. $S = 168 \\to 169$ [App. G.2, p.53]", "reserved_meaning": "DOUBLE collision — $S_t$ is the inner momentum buffer (NM 승계) and $S(\\cdot;B_s)$ is the offline processing operator [STC-STYLE-NOTATION §1.5: '첨자 없는 맨 $S$ 금지']", "unified_replacement": "$k$. This is the single most dangerous symbol in the paper for this book, because the paper's $S$ counts applications of the book's $S(\\cdot;B_s)$."},
+        {"paper_symbol": "$R$", "paper_meaning": "refresh round [Fig. 2, p.5]", "reserved_meaning": "$R$ = reward [STC-STYLE-NOTATION §1.3]", "unified_replacement": "$k_{\\mathrm{pass}}$"},
+        {"paper_symbol": "'Episodic buffer' / 'Abstract store'", "paper_meaning": "two parallel stores maintained by the ARC-AGI Stream agent [§3, p.4]", "reserved_meaning": "$E$ is the whole external store [S0-DESIGN §2.1]", "unified_replacement": "$E = E^{\\mathrm{epi}} \\oplus E^{\\mathrm{abs}}$. This decomposition is NEW to the corpus — no other $E$-path note needs it, because no other paper in the corpus keeps raw episodes and abstractions as architecturally separate stores with separate size caps."},
+        {"paper_symbol": "Retain / Delete / Consolidate", "paper_meaning": "the exposed memory-operation vocabulary of ARC-AGI Stream [§3, p.4]", "reserved_meaning": "$\\mathrm{wr}(E,\\hat c)$ is the write operator [S0-DESIGN §2.2]", "unified_replacement": "$\\mathrm{wr} \\in \\{\\text{Retain}, \\text{Delete}, \\text{Consolidate}\\}$. Compare Mem0's $\\{$ADD, UPDATE, DELETE, NOOP$\\}$ (→ note `mem0`) — same slot, different alphabet. Retain is the operation Mem0's alphabet has no name for."},
+        {"paper_symbol": "'score' (ScienceWorld)", "paper_meaning": "'average test score' [App. J.1.3, p.65]: 7.45 / −7.68 / −8.66", "reserved_meaning": "none, but the book requires units", "unified_replacement": "DO NOT USE. The scale is never defined and the values go negative; ScienceWorld's native score is 0–100. See todo_verify."},
+        {"paper_symbol": "'score' (WebShop, Fig. 1)", "paper_meaning": "'the parenthesized value next to each marker is the average score, a separate WebShop metric' [Fig. 1 caption, p.2]", "reserved_meaning": "none", "unified_replacement": "distinguish from 'mean reward' [Table 3, p.15] and 'success rate' (wins/50). Three WebShop quantities circulate in this paper."},
+        {"paper_symbol": "'utility'", "paper_meaning": "the y-quantity in 'memory utility first rises, then degrades' [Abstract, p.1]", "reserved_meaning": "none", "unified_replacement": "the chapter must say which metric — the word covers TGC%, task-success%, mean reward ×100, ARC-AGI %, and the undefined ScienceWorld score at different points in the paper."}
+      ]
+    },
+
+    "equations_unified": [
+      {
+        "id": "FM1",
+        "latex": "\\textbf{canonical stream (U-E):}\\qquad E_{k+1} \\;=\\; \\mathrm{wr}\\big(E_k,\\ \\hat c_k\\big), \\qquad \\hat c_k \\;=\\; S\\big(\\mathcal{B}_k;\\ B_s\\big), \\qquad \\mathcal{B}_k \\subset \\mathcal{H},\\ \\ |\\mathcal{B}_k| = m",
+        "paper_form": "'Stream updates in batches, simulating an agent that evolves continually.' [§3, p.4]",
+        "gloss": "This is (U-E) verbatim, with the addition that $\\hat c_k$ is computed from a MINI-BATCH of the experience pool rather than from one context. The pool $\\mathcal{H}$ is held fixed across all conditions — that fixity is the paper's whole attribution argument.",
+        "source": "[§3, p.4]"
+      },
+      {
+        "id": "FM2",
+        "latex": "\\textbf{one-shot control (Static-All):}\\qquad E_1 \\;=\\; S\\big(\\mathcal{H};\\ B_s\\big), \\qquad k = 1 \\ \\text{only}",
+        "paper_form": "'Static-All abstracts memory from the entire pool in one-shot'",
+        "gloss": "The $k=1$ arm. CRITICAL for this book: this is the regime Letta STC operates in — exactly one sleep round (→ note `letta-stc`, update_layer: '$k$ never exceeds 1'). The paper runs $k=1$ and $k=K$ on the same data and reports both.",
+        "source": "[§3, p.4]"
+      },
+      {
+        "id": "FM3",
+        "latex": "\\textbf{grouped one-shot (Static-Group):}\\qquad E_1 \\;=\\; \\bigoplus_{g \\in \\mathcal{G}} S\\big(\\mathcal{H}_g;\\ B_s/|\\mathcal{G}|\\big)",
+        "paper_form": "'Static-Group does so for each task type ... and concatenate: this simulates offline memory construction and is used for control'",
+        "gloss": "Segment the pool by task family first, consolidate within family, then concatenate. $\\mathrm{wr}$ here is CONCATENATION across families, OVERWRITE within family.",
+        "source": "[§3, p.4]"
+      },
+      {
+        "id": "FM4",
+        "latex": "\\textbf{two-store split:}\\qquad E \\;=\\; E^{\\mathrm{epi}} \\oplus E^{\\mathrm{abs}}, \\qquad |E^{\\mathrm{epi}}| \\le C^{\\mathrm{epi}},\\ \\ |E^{\\mathrm{abs}}| \\le C^{\\mathrm{abs}}, \\qquad \\mathrm{ret}(E,q) = E^{\\mathrm{epi}} \\ \\text{or}\\ E^{\\mathrm{abs}} \\ \\text{or both}",
+        "paper_form": "'we maintain two stores: an Episodic buffer of problem–solution pairs and an Abstract store of consolidated lessons; the solver can be conditioned on either store or both stores.'",
+        "gloss": "The architectural move, taken from CLS. Caps used: $C^{\\mathrm{epi}} \\in \\{50, 100\\}$ episodes, $C^{\\mathrm{abs}} \\in \\{1,2,3,4,10\\}$ [Fig. 9b legend, p.10]. This split is what lets the paper ablate $S(\\cdot;B_s)$ out of the loop entirely while keeping (U-E) running.",
+        "source": "[§3, p.5]"
+      },
+      {
+        "id": "FM5",
+        "latex": "\\textbf{Force:}\\qquad E^{\\mathrm{epi}}_{k+1} = \\varnothing \\ \\ \\forall k, \\qquad \\mathrm{wr} = \\text{Consolidate (mandatory)}",
+        "paper_form": "'Force requires consolidation each round and no Episodic entries persist between rounds'",
+        "gloss": "TWO changes at once — mandatory abstraction AND mandatory episode deletion. See unfavorable_facts: the Auto-vs-Force contrast therefore cannot separate the two, and the paper's causal conclusion assumes it can.",
+        "source": "[§3, p.5]"
+      },
+      {
+        "id": "FM6",
+        "latex": "\\textbf{Auto:}\\qquad \\mathrm{wr}_k \\;=\\; \\pi_{\\Theta}\\big(E_k,\\ c_k\\big) \\in \\{\\text{Retain}, \\text{Delete}, \\text{Consolidate}\\}",
+        "paper_form": "'Auto lets the model choose whether to retain raw or abstract'",
+        "gloss": "The write POLICY is itself the frozen LLM. This is the first corpus paper in which the choice of write operator is a per-round decision by the same frozen model that will later read the store, and in which that decision is logged and audited (Fig. 7c action shares).",
+        "source": "[§3, p.5]"
+      },
+      {
+        "id": "FM7",
+        "latex": "\\textbf{Episodic Management Only:}\\qquad \\mathrm{wr}_k \\in \\{\\text{Retain}, \\text{Delete}\\}, \\qquad S(\\cdot;B_s) \\equiv \\mathrm{id}, \\qquad E^{\\mathrm{abs}} = \\varnothing",
+        "paper_form": "'Episodic Management Only allows only retention and deletion, disabling abstraction entirely'",
+        "gloss": "THE CONTROL THIS BOOK HAS BEEN ASKING FOR. With $S(\\cdot;B_s)$ the identity, this configuration still satisfies discriminant conditions (1)(3)(4) but has $B_s \\approx 0$ for the abstraction call — it is (U-E) with the offline INFERENCE removed and only the offline SELECTION kept. It matches or exceeds full Auto [§5, p.8].",
+        "source": "[§3, p.5; §5, p.8]"
+      },
+      {
+        "id": "FM8",
+        "latex": "\\textbf{what is measured:}\\qquad \\rho(k) \\;=\\; \\frac{\\mathrm{Acc}\\big(E_{k^\\ast}\\big) - \\mathrm{Acc}\\big(E_k\\big)}{k - k^\\ast}, \\qquad k^\\ast \\;=\\; \\arg\\max_k \\mathrm{Acc}(E_k)",
+        "gloss": "NOT written by the paper. The paper prints $\\mathrm{Acc}(E_k)$ as a curve with a no-memory reference line; $\\rho$ and $k^\\ast$ are one subtraction away. This is the single fact that makes this paper matter to ch25/ch29/ch30. [본서 산술]",
+        "source": "[derived from Fig. 16, p.51; Fig. 2, p.5; Fig. 1a, p.2]"
+      },
+      {
+        "id": "FM9",
+        "latex": "\\textbf{frozen layers:}\\qquad \\Theta_{k+1} = \\Theta_k\\ \\forall k, \\qquad W \\ \\text{not used}",
+        "paper_form": "'parametric memory (weight updates, distillation into the model) and structured non-textual memory representations are out of scope'",
+        "gloss": "Explicit scope exclusion of the $\\Theta$-path, stated in the Limitations section. The $W$-path is not mentioned at all.",
+        "source": "[§8, p.11]"
+      }
+    ],
+
+    "what_is_NOT_in_the_mechanism": [
+      "No cost model of any kind. No tokens, no FLOPs, no dollars, no wall-clock, no latency. The paper argues about when to spend offline compute and never prices the spending. [whole-text grep for token/latency/cost returns only §8's 'API-cost constraints' and prompt-internal `eval_max_tokens=4096`]",
+      "No retriever. 'At evaluation we provide all memory entries in context' [§3, p.4]; 'The full memory is supplied in the prompt context at every step' [App. G.1, p.50]. $\\mathrm{ret}(E,q)$ is the identity, exactly as in Letta STC. No index, no embedding, no top-$m$.",
+      "No gate. The paper's headline prescription is 'gate consolidation explicitly rather than firing it after every interaction' [Abstract, p.1] and it never specifies what the gate reads. Auto is not a gate — it is the same LLM choosing freely.",
+      "No parameter update, no adapter, no distillation into weights. [§8, p.11]",
+      "No continuous-signal diagnostic. Every degradation curve in the paper is a THRESHOLD task metric (wins/48, wins/50, TGC%, %). Nothing measures the store's information content continuously. This matters for ch29 판정 5 — see book_impact."
+    ]
+  },
+
+  "outer_vs_inner": {
+    "headline": "The outer-loop column is empty again, as in every $E$-path paper. What is new is that the WRITE POLICY has been promoted from a fixed prompt to a per-round decision by the frozen model, and that decision is logged. So the paper has an 'inner loop' in a sense no other $E$-path paper does — but nothing is learned in it either.",
+    "rows": [
+      {"object": "$\\Theta$ — solver backbones: GPT-5.4, GPT-5.4-mini, GPT-5-mini, GPT-5-nano, Qwen3.5-{4B,9B,27B}, Claude-Haiku-4.5", "who_learns_it": "the vendors, before this paper", "when": "outside the paper", "moves": "no — frozen; explicitly out of scope [§8, p.11]", "source": "[§4.1, p.5; Table 2, p.6; App. F]"},
+      {"object": "$\\Theta$ — consolidator/manager backbones: gpt-5.4 (seed abstraction), gpt-5-nano (200-stage management), gpt-5.4-mini (WebShop/ScienceWorld), GPT-5.4 (ARC-AGI)", "who_learns_it": "nobody", "when": "n/a", "moves": "no", "source": "[App. F.1, p.45; App. G.1, p.50; App. H.1.2, p.58; App. J.1.3, p.65]"},
+      {"object": "$W$ — fast weights", "who_learns_it": "nobody", "when": "n/a", "moves": "no — the layer does not exist in the architectures used and is never mentioned", "source": "[absent throughout]"},
+      {"object": "$E^{\\mathrm{abs}}$ — the abstract/lesson store", "who_learns_it": "the frozen consolidator, by prompting", "when": "every consolidation round $k$", "moves": "YES — this is the object under study", "source": "[§3, p.4; App. B.3, B.4]"},
+      {"object": "$E^{\\mathrm{epi}}$ — the raw episodic buffer", "who_learns_it": "the frozen agent, by Retain/Delete", "when": "every round in Auto and Episodic-Management-Only; never persists in Force", "moves": "YES", "source": "[§3, p.5]"},
+      {"object": "the consolidator decision prompt / extraction prompt / failure-recording prompt / strategy-selection prompt", "who_learns_it": "the authors, by hand", "when": "never — fixed", "moves": "no", "source": "[App. B.3 p.29, B.4 p.31, B.5 p.33, B.6 p.34, B.7 p.36]"},
+      {"object": "the ScienceWorld CLIN-style memory grammar ('X MAY BE NECCESSARY to Y' etc., sic)", "who_learns_it": "the authors, by hand, inherited from CLIN", "when": "fixed", "moves": "no", "source": "[App. F.3, p.47]"},
+      {"object": "memory caps $C^{\\mathrm{item}} = 50$, $C^{\\mathrm{epi}} \\in \\{50,100\\}$, $|M| \\in \\{16,50,\\infty\\}$, FIFO replacement", "who_learns_it": "nobody; swept by hand", "when": "experiment configuration", "moves": "swept, not learned. NOTE: Fig. 7c shows the cap CHANGES the agent's own write-policy distribution, so the cap is not an innocent knob", "source": "[§3, p.4; App. F.3, p.47; Fig. 7c, p.9]"},
+      {"object": "batch size $m$ and within-batch task composition (homogeneous vs heterogeneous)", "who_learns_it": "nobody; swept", "when": "experiment configuration", "moves": "swept — and the sweep is the paper's third finding", "source": "[§3, p.4; §4.1, p.6; Fig. 4, p.6]"},
+      {"object": "the LLM judge that labels memory entries normal / over-generalized / over-specific / garbage", "who_learns_it": "nobody; frozen model, unnamed", "when": "post-hoc analysis instrument", "moves": "no. Its accuracy is never validated", "source": "[§6.2, p.10; App. K.2, p.68; App. J.1.2, p.62]"},
+      {"object": "the SkillRL abstraction pipeline (3 LLM calls per trajectory → contextual_description / refined_trajectory / strategic_guidelines)", "who_learns_it": "nobody; fixed pipeline", "when": "data preparation, before any consolidation round", "moves": "no. THIS IS THE ONLY PLACE IN THE PAPER WHERE $B_s$ IS COUNTABLE — 3 calls per trajectory", "source": "[App. F.1, p.45; App. F.2, p.46]"}
+    ],
+    "reader_takeaway": "[note-writer] For the monograph reader the useful contrast is with `letta-stc`: there, the sole moving part was one text block moved once. Here the sole moving part is a text bank moved 200 times, and the paper's finding is that the 200th state is worse than the 1st and, in two of three rollouts, no better than never having moved anything. Same layer, same absence of gradients, opposite conclusion — and the difference between the two papers is exactly the round index $k$."
+  },
+
+  "update_layer": {
+    "instantiates": "(U-E) — and only (U-E). Explicitly and by declared scope.",
+    "canonical_form": "$E_{k+1} = \\mathrm{wr}(E_k, \\hat c_k)$, $\\hat c_k = S(c_k; B_s)$ [S0-DESIGN §2.2]",
+    "how_this_paper_differs_from_the_canonical_form": [
+      "$k$ IS THE INDEPENDENT VARIABLE. Every other $E$-path note in this corpus records $k$ as fixed (Letta STC: $k=1$ always; Mem0/Zep/ReasoningBank: $k$ grows but is never an axis). Here $k$ runs to 200 consolidation stages [App. G.1], 190 update steps [App. D.5], 250 steps [App. D.5 Example 2], 400 stream steps [Fig. 5], and 100 distill iterations [Fig. 8a], with quality printed at intervals against a no-memory line.",
+      "$\\mathrm{wr}$ IS A TYPED ACTION SET, not a fixed operator: $\\{$Retain, Delete, Consolidate$\\}$, chosen per round by the frozen model [§3, p.5]. Retain is the operation the rest of the corpus's write alphabets omit — Mem0 has ADD/UPDATE/DELETE/NOOP, Letta STC has destructive overwrite only, ReasoningBank has pure union. None of them can express 'keep this raw'.",
+      "$E$ IS SPLIT into $E^{\\mathrm{epi}} \\oplus E^{\\mathrm{abs}}$ with independent caps, so $S(\\cdot;B_s)$ can be ablated OUT while (U-E) keeps running [FM7]. This makes the offline-inference term separable from the offline-selection term for the first time in the corpus.",
+      "$S(\\cdot;B_s)$ IS THE TREATMENT, NOT THE METHOD. The paper's control conditions differ 'only in how trajectories are presented to the memory manager' [§3, p.4] — same data, same model, same eval. That is the design the book's ch25 §25.2.1 says nobody ran.",
+      "THE STORE IS CAPPED AND THE CAP BINDS. ALFWorld: 50 items, and the paper attributes a specific lost meta-strategy to eviction ('The 50-item cap evicted it to make room for paraphrases of the desklamp template' [App. G.1, p.52]). ScienceWorld: explicit FIFO with the cap announced to the LLM in the prompt [App. F.3, p.47]. This is the corpus's first $E$-path paper where capacity pressure is instrumented rather than ignored.",
+      "$\\mathrm{ret}$ IS STILL THE IDENTITY. 'we provide all memory entries in context' [§3, p.4]. So the paper measures the store's content quality without any retrieval confound — which is exactly why the negative result cannot be blamed on a retriever."
+    ],
+    "other_layers": {
+      "U-W": "not touched, not mentioned anywhere in the paper.",
+      "U-Theta": "not touched, and excluded by declaration: 'parametric memory (weight updates, distillation into the model) and structured non-textual memory representations are out of scope' [§8, p.11]. Unlike Letta STC, this paper does not even gesture at feeding $\\hat c$ into $\\mathcal{R}_k$."
+    },
+    "ordering": "Single-layer, multi-round. $E_0 \\to E_1 \\to \\cdots \\to E_K$ offline over a fixed pool, then a single read on a disjoint held-out split. In the 'Running' regime only, the rounds interleave with the evaluated stream (see discriminant_verdict)."
+  },
+
+  "cost_table": {
+    "B_s": {
+      "value": "absent in the required units (FLOPs or tokens); proxies printed",
+      "detail": "No token count, FLOP count, dollar figure, or call-cost anywhere. The paper's only acknowledgement of cost is a constraint on itself: 'due to API-cost constraints we report point estimates from a small number of repeats per question rather than formal error bars' [§8, p.11]. PROXIES THAT ARE PRINTED, and they are better than most of the corpus: (a) 'The abstraction makes 3 LLM calls per trajectory' [App. F.1, p.45] — so the ALFWorld n=128 golden set costs 768 × 3 = 2304 abstraction calls before any consolidation round begins [본서 산술]; (b) 200 consolidation stages × 1 full-memory rewrite each, each conditioned on 6 abstracts [App. G.1, p.50]; (c) 190 update steps for the ARC-AGI 19-task × 10-pass run [App. D.5, p.41]; (d) 20 rounds over 485 rollouts in mini-batches for ScienceWorld [App. F.3, p.47; App. J.1.3, p.65]; (e) 3 epochs at batch size 16 over 128 trajectories for WebShop AWM [App. H.1.2, p.58]; (f) 400 steps for the ARC-AGI Stream [Fig. 5, p.7].",
+      "finding": "This is the corpus's most COUNTABLE $B_s$ and still not a reportable one. Call counts × round counts are multiplicable to a call budget but not to tokens, and the paper's whole normative claim ('gate consolidation explicitly rather than firing it after every interaction' [Abstract]) is a claim about how to SPEND $B_s$ made without ever measuring $B_s$. The chapter must say this plainly: a paper telling the field to stop wasting offline compute prints no offline-compute figure."
+    },
+    "L_w": {
+      "value": "absent",
+      "detail": "Zero wall-clock, TTFT, ms/token, or latency figures. The only time-like quantities are step counts inside episodes: `max_steps=50` (ALFWorld) [App. F.1, p.45], `eval_max_steps=30` (WebShop) [App. I.1, p.59], and mean trajectory length in steps (12.4 / 11.4 for gpt-5.4-mini; 18.2 / 15.8 for gpt-5-mini) [Table 12, p.61].",
+      "the_one_wake_side_number_that_matters": "Table 12's mean-steps column is the closest thing to a wake-cost measurement in the paper, and it moves the RIGHT way when memory is REMOVED: deleting one workflow (W8) from the consolidated memory cuts mean steps from 12.4 to 11.4 and from 18.2 to 15.8, and cuts step-cap hits from 22/50 to 17/50 [Table 12, p.61]. [본서 관찰] A faulty $E$ entry costs wake-time steps as well as accuracy — the two costs move together, and the paper never says so."
+    },
+    "C": {
+      "value": "PRESENT as character counts and item counts — the corpus's first $E$-path paper to print store size in a byte-adjacent unit",
+      "detail": "Printed values: (a) ALFWorld stage 168 — '50 items totalling 48,506 characters (i.e., the cap is saturated, average ~970 characters per item)' [App. G.2, p.53]; (b) stage 169 — '1 item of 1,960 characters'; (c) stage 170 — '2 items, 3,410 chars'; (d) ACE on WebShop stage 100 — '32 bullets totalling about 14k characters' [App. H.1.1, p.56]; (e) Dynamic Cheatsheet on WebShop stage 100 — 'roughly 8.3k characters' [App. H.1.1, p.57]; (f) AWM on WebShop epoch 3 — '16 workflows, ~8.2k chars' [App. H.1.2, p.58]; (g) stage 20 peak — 42 items, stage 200 — 38 items [App. G.1, pp.50–52]. Item caps: 50 (ALFWorld), 16/50/∞ (ScienceWorld and Fig. 1a/Fig. 4), 50/100 episodes and 1–10 abstracts (ARC-AGI) [Fig. 9b legend, p.10].",
+      "finding": "[본서 산술] At the cap, one saturated $E$ store is 48,506 characters ≈ 48.5 KB assuming one byte per character. The book's ch26 anchor for the $E$-path is 56.0 KB per user. The two agree to within 13.4%. That is an INDEPENDENT confirmation of ch26 판정 2's cold-tier placement for $E$ — see book_impact. CAVEATS the chapter must carry: the unit is per-store-per-run, not per-user; no encoding is stated; and the store here is capped by an author-chosen policy rather than by a system's natural growth."
+    },
+    "rho": {
+      "value": "PRESENT as a round-indexed quality curve with a no-memory reference line. NOT printed as a per-round loss rate. Derivable by one subtraction.",
+      "printed_curves": [
+        {"setting": "ALFWorld, 200 consolidation stages, gpt-5-nano manager, cap 50, eval on 48 held-out episodes every 20 stages, three Qwen3.5 rollout sizes", "no_memory_line": "15/48 (4B), 15/48 (9B), 19/48 (27B)", "peak": "35/48 at stage 20 (4B), 35/48 at stage 20 (9B), 41/48 at stage 0 (27B — the un-consolidated seed)", "endpoint": "15/48 (4B), 16/48 (9B), 22/48 (27B)", "source": "[App. G.1, p.50; Fig. 16, p.51]"},
+        {"setting": "ARC-AGI 19-problem slice, GT solutions at every step, GPT-5.4", "no_memory_line": "100% (dashed ceiling — the slice is chosen because the model solves it perfectly without memory)", "values": "Static R10 94.7%, Static R50 94.7%, Stream R1 73.7%, Stream R10 52.6%", "source": "[Fig. 2, p.5]"},
+        {"setting": "ScienceWorld CLIN-style, 20 rounds over 485 rollouts, GPT-5.4-mini", "values": "round 1 score 7.45 (bank 16 items), round 10 score −7.68 (bank 10), round 20 score −8.66 (bank 17)", "caveat": "the scale of 'average test score' is never defined and goes negative", "source": "[App. J.1.3, pp.65, 66, 67]"},
+        {"setting": "Repeated abstraction on one pool, 100 distill iterations", "values": "≈70.4% → 22.2% (Δ −48.2) and ≈37.0% → 11.1% (Δ −25.9); caption: 'Auto falls below zero-shot'", "caveat": "figure-only reading; the two series are labelled Qwen3.5-27B and GPT-5-Nano but the extraction cannot bind value to series with certainty", "source": "[Fig. 8a, p.9]"},
+        {"setting": "ScienceWorld with CLIN, batches of 4, memory sizes 16/50/∞", "values": "prose only — 'the score peaks near step 20 and declines through step 100 for every memory size and sometimes below no-memory baseline'", "source": "[§4.1, p.5; Fig. 1a, p.2]"},
+        {"setting": "WebShop with AWM, memory-size axis (not a round axis)", "values": "'AWM goes from 0.64 at 8 examples to 0.20 at 128 while no-memory sits at 0.20'", "source": "[§4.1, p.5; Fig. 1b, p.2]"}
+      ],
+      "derived_rho_for_the_book": {
+        "preamble": "[본서 산술] Every value below is computed from the printed curves above by dividing the quality drop by the round count. The paper prints neither the rate nor the denominator conversion; the ARC-AGI conversion (1 pass = 19 updates) comes from [App. D.5, p.41].",
+        "ALFWorld_mean_rate": "Qwen3.5-4B: (35−15)/48 = 41.67 pp over 180 stages = 0.231 pp per consolidation stage. Qwen3.5-9B: (35−16)/48 = 39.58 pp over 180 stages = 0.220 pp/stage. Qwen3.5-27B: (41−22)/48 = 39.58 pp over 200 stages = 0.198 pp/stage.",
+        "ALFWorld_unit_definition": "1 stage = one full-memory rewrite by gpt-5-nano conditioned on 6 fresh trajectory abstracts (1 per task type), under a 50-item cap, with the whole memory placed in the solver's context at eval.",
+        "ARC_AGI_GT_rate": "First pass: (100−73.7)/19 updates = 1.384 pp per update. Ten passes: (100−52.6)/190 updates = 0.249 pp per update. Passes 2–10 alone: (73.7−52.6)/171 = 0.123 pp per update, i.e. 2.34 pp per pass. The rate is strongly SUBLINEAR in $k$ — most of the damage is done in the first pass.",
+        "instantaneous_maximum": "A single consolidation stage (S=168 → 169, 50 items → 1 item) costs 6/48 = 12.5 pp (4B), 10/48 = 20.83 pp (9B), 13/48 = 27.08 pp (27B) [Table 11, p.53]. Against the ALFWorld mean rates above, that is 54× to 137× the mean. $\\rho$ IS NOT A CONSTANT IN $k$ — this single comparison is the strongest empirical support in the corpus for ch29 판정 5.",
+        "K_star": "Qwen3.5-4B and 9B: $k^\\ast = 20$ stages. Qwen3.5-27B: $k^\\ast = 0$ — 'the 27B rollout's peak is the un-consolidated base seed at stage 0 (41/48), so consolidation never helps it' [Fig. 16 caption, p.51].",
+        "the_control_that_matters_most": "Static R10 = Static R50 = 94.7% [Fig. 2, p.5]. Forty additional whole-pool refreshes cost ZERO. So at matched data and matched refresh count, $\\rho_{\\text{Static}} \\approx 0.0$ pp per refresh (after an initial 5.3 pp = 1/19 problems) while $\\rho_{\\text{Stream}} = 0.249$ pp per update. The schedule-only gap at $k_{\\mathrm{pass}}=10$ is 94.7 − 52.6 = 42.1 pp. [본서 산술] **$\\rho$ is not a property of repetition. It is a property of incrementality — of rewriting a rewrite instead of re-deriving from the preserved pool.**"
+      },
+      "why_it_is_still_not_a_filled_cell_under_the_book_s_rule": "ch25 §25.2 requires 'a number with the required unit printed in the source'; for $\\rho$ the required unit is a per-round loss rate. This paper prints $\\mathrm{Acc}(E_k)$, not $\\rho$. Under the strict rule the cell holds a 대용치 (round-axis curve + no-memory reference line), not a fill. Under ch25 §25.5's stated falsifier — 'sleep 라운드 수를 독립변수로 놓은 실험에서 인쇄하는 경우' — the condition IS met. The chapter must make that call in one sentence rather than leave it ambiguous."
+    },
+    "N_q": {
+      "value": "not applicable and not reported",
+      "detail": "There is no $N_q$ in this design: the store is not built for a single context shared by several queries but for a task family shared by a held-out split. The closest analogue is the eval-set size (48 ALFWorld episodes / 50 WebShop sessions / 100 AppWorld tasks / 44 ScienceWorld cases / 50 held-out ARC-AGI tasks), across which the one consolidated store is amortised. [본서 관찰] Under identity (A) that would make $N_q$ = eval-set size, but the paper never frames it that way and never counts sleep cost, so (A) cannot be instantiated."
+    }
+  },
+
+  "experiments": {
+    "table_extraction_warning": "The vendored pdftotext output interleaves Table 2 column-major with bold cells and dashed cells pulled into separate font runs. The editor reconstructed the table and verified the reconstruction is internally consistent under the caption's two rules ('Best per row in bold', '(–) marks any non-trajectory-log approach beaten by at least one trajectory-log baseline in the same row') — every bold cell is the row maximum and every dashed cell is below its row's trajectory-log maximum, with no exceptions. The reconstruction is recorded below and flagged in todo_verify for a PDF check before any cell value is printed in the book.",
+
+    "settings_table": "Table 1 (p.3) lists the settings: ALFWorld (GT expert trajectories, 128 per type, 6 types → Figs. 3, 4); ScienceWorld w. GPT5.4-mini (offline task stream, batch size 4 → Fig. 1a; self-solve task-switch sequence → Fig. 10); WebShop w. GPT-5.4-mini (AWM, 50-episode held-out eval → Fig. 1b); AppWorld (AWM with trajectories from AgentGym → Figs. 11, 8b, 8a, 2); ARC-AGI subsets (Stream offline GT-solution, eval on 50 held-out tasks same family unseen → Figs. 9, 7, Tab. 4; Stream self-solve 400 steps → Fig. 5). NOTE: the figure→setting mapping in this table does not match the figure captions in several places (Fig. 2 is ARC-AGI but is listed under AppWorld; Fig. 8a is ALFWorld/ARC-AGI per §6 but listed under AppWorld). See unfavorable_facts.",
+
+    "benchmarks_and_metrics": [
+      {"name": "ALFWorld", "training_data": "3 variants: n=64 golden (gpt-4.1, 64/type, 384 total, success-only), n=128 golden (gpt-4.1, 768 total, success-only), n=64 with_failures (gpt-5-nano, 384, unfiltered)", "abstraction": "SkillRL pipeline, gpt-5.4, 3 LLM calls per trajectory → {contextual_description, refined_trajectory, strategic_guidelines}", "eval": "eval_id_balanced_48 — 48 in-distribution episodes, 8 per task type × 6 types", "metric": "binary success within max_steps=50; reported as wins/48", "source": "[App. F.1, pp.45–46; Table 7, p.46]"},
+      {"name": "WebShop", "training_data": "golden 128 (AgentGym AgentTraj-L replay, seed 42, score = 1.0 only, session IDs 72–6772 sparse) and non-golden 128 (gpt-5.4-mini self-rollout, session IDs 1500–1627 contiguous, unfiltered — only 20/128 reach score 1.0)", "eval": "test50_seed42_no_leak.json — 50 sessions from index range [0,500), 13 overlapping training IDs excluded, final indices 3–467, num_products=1000", "metric": "wins/50 (reward = 1.0) and mean reward over 50 sessions", "source": "[App. F.2, pp.46–47; Table 8, p.47]"},
+      {"name": "ScienceWorld", "training_data": "15 medium-difficulty tasks (optimal action length 20–100), 485 rollout cases total, per-task counts in Table 9", "protocol": "CLIN setting with four modifications: bounded memory bank with FIFO announced in-prompt, four operations {delete, replace, add, retain}, mini-batch joint comparison, periodic evaluation after each full pass", "eval": "44 cases from the same 15 tasks, 2–4 per task", "metric": "'average test score' — SCALE NEVER DEFINED, goes negative", "source": "[App. F.3, pp.47–48; Table 9, p.49]"},
+      {"name": "AppWorld", "training_data": "140 trajectories — 90 from the train split (AppWorld's official ReAct baseline, gpt-4o-2024-05-13) + 50 from the dev split (Qwen3.5-27B ReAct, difficulty-stratified). Mean TGC over the 140 = 61.4% (86/140): 52.2% train, 78.0% dev. Plus a parallel 140-trajectory GT set built by replaying AppWorld's released ground-truth solutions, 100% pass, identical task IDs and ordering", "entry_form": "'a Qwen3.5-27B–generated prose summary of the full ReAct trajectory ... used in place of the raw token-level trajectory to keep per-entry length tractable for prompt-time concatenation'", "eval": "100 tasks, proportional stratified sample of 50 from test_normal (168) and 50 from test_challenge (417), seed 42, no overlap", "metric": "Task Goal Completion (TGC) — a task counts only when ALL its Python unit tests pass", "source": "[App. F.4, pp.48–49; Table 10, p.49]"},
+      {"name": "ARC-AGI Stream (introduced by this paper)", "built_on": "ARCGEN (Moffitt, 2025) with a ConceptARC-style latent taxonomy — 6 problem families, 7 skills (App. A)", "three_properties": "'(i) a fully specified latent task taxonomy ... (ii) programmatic ground-truth and (iii) an exposed, structured vocabulary of memory operations whose use we can audit per step'", "control_loops": "Force / Auto / Episodic Management Only; trajectory regimes GT and Running", "eval": "50 held-out tasks from the same families, unseen (Table 1); solver emits Python `solve(grid)` scored against 10 test grids per task", "source": "[§3, pp.4–5; App. A, pp.17–20; App. B, pp.21–36]"},
+      {"name": "Mind2Web", "status": "NAMED in §3 as one of the studied benchmarks and again in §8 as a scope condition, but produces NO figure, NO table, NO appendix section, and NO row in Table 1. There is no Mind2Web result anywhere in the paper.", "source": "[§3, p.4; §8, p.11 vs Table 1, p.3 and App. F.1–F.4]"}
+    ],
+
+    "consolidators_evaluated": "CLIN (Majumder et al. 2023), Agent Workflow Memory / AWM (Wang et al. 2024), Dynamic Cheatsheet / DC (Suzgun et al. 2026), ACE (Zhang et al. 2025), plus ExpeL (Zhao et al. 2024) in App. G.3, plus the paper's own ARC-AGI Stream agent. [§3, p.4; App. G.3, p.54]",
+
+    "headline_numbers": [
+      {
+        "claim": "Iterated stream consolidation collapses on tasks the model already solves, with ground-truth solutions supplied at every step",
+        "exact_numbers": "19-problem ARC-AGI slice, 100% solvable without memory (dashed ceiling). Static R10 = 94.7%, Static R50 = 94.7%, Stream R1 = 73.7%, Stream R10 = 52.6%.",
+        "exact_wording": "'Static remains at the ceiling after R = 10 and R = 50 refresh rounds, whereas Stream falls to 52.6% by Round 10 on the same previously solved problems.'",
+        "granularity": "19 problems ⇒ one problem = 5.263 pp [본서 산술]. 94.7% = 18/19, 73.7% = 14/19, 52.6% = 10/19.",
+        "source": "[Fig. 2 and caption, p.5; §4.1, p.5]"
+      },
+      {
+        "claim": "Streaming loses 17–38 points against whole-batch consolidation",
+        "exact_wording": "'Stream loses 17–38 pts vs. whole-batch Pool.'",
+        "conditions": "Four backbones (GPT-5-Nano, Qwen3.5-27B, Qwen3.5-9B, Qwen3.5-4B); five conditions (No Memory, Summary, Grouped, Ungrp., Stream). Annotated deltas visible on the figure: −17.2, −18.6, −26.0, −38.5.",
+        "note": "Also establishes the grouping effect: Static-Group (per task family) > Static-All (Ungrp., pooled across families).",
+        "source": "[Fig. 3 and caption, p.4; §4.1, p.6]"
+      },
+      {
+        "claim": "One consolidation step can cost 6–13 wins out of 48",
+        "exact_numbers": "S=168 (50 items, 48,506 chars) → S=169 (1 item, 1,960 chars). Qwen3.5-4B 35/48 → 29/48 (−6); Qwen3.5-9B 36/48 → 26/48 (−10); Qwen3.5-27B 37/48 → 24/48 (−13). No-memory baselines 15/48, 15/48, 19/48.",
+        "authors_own_qualifier": "'Across all three sizes the post-collapse memory still sits above the no-memory baseline, so the collapse degrades the memory's value but does not zero it out.' And: 'n=3 sizes, single run, no significance test.'",
+        "source": "[Table 11 and caption, p.53; App. G.2, pp.53–54]"
+      },
+      {
+        "claim": "Removing a single consolidated memory entry roughly doubles WebShop wins",
+        "exact_numbers": "gpt-5.4-mini: 7/50 → 14/50 wins, mean reward 0.23 → 0.37, mean steps 12.4 → 11.4, step-cap hits 0/50 → 0/50. gpt-5-mini: 18/50 → 23/50, mean reward 0.49 → 0.59, mean steps 18.2 → 15.8, step-cap hits 22/50 → 17/50.",
+        "behavioural_evidence": "page-turn counts 421 → 181 (gpt-5.4-mini) and 559 → 246 (gpt-5-mini), both a 2.3× ratio; episodes issuing at least one click[Buy Now] 14/50 → 21/50 and 28/50 → 33/50.",
+        "the_entry": "W8 'Search across pages when the first results do not match' — distilled from 128 trajectories with task reward 1.0. Three named defects: no stop criterion, an unbound `<candidate_item_id>` placeholder, and promotion of the click[Next >] navigation primitive to a first-class workflow.",
+        "authors_own_qualifier": "'even so, gpt-5.4-mini reaches only 14/50 wins after removal, so the bulk of failures under this rollout is not attributable to W8 alone.' 'n=50 episodes per cell, single run.'",
+        "source": "[Tables 12 and 13, p.61; App. I.1, pp.59–61]"
+      },
+      {
+        "claim": "The episodic-only control is competitive with, and usually beats, the lesson-style consolidators",
+        "exact_wording": "'In most cases, abstracted memory cannot significantly outperform direct in-context learning from trajectory logs (or subsets of them).' And the prescription: 'we suggest that a memory method whose value depends on distillation should be tested against the unabstracted rollouts it distills.'",
+        "counted": "[본서 산술] Across Table 2's two panels there are 28 consolidator cells (4 methods × 7 backbone-rows). 26 of 28 carry the red (–). The two exceptions are ACEGT = 76 on AppWorld/Qwen3.5-27B and ACE = 74 on AppWorld/Claude-Haiku-4.5, both of which are that row's bold maximum.",
+        "source": "[§4.2, pp.6–7; Table 2 and caption, p.6; Table 3, p.15]"
+      },
+      {
+        "claim": "Episodic memory carries essentially all of the gain; abstract memory alone is worth nothing",
+        "exact_wording": "'Removing episodic evidence and using only abstract lessons collapses accuracy back to the no-memory baseline (Fig. 9a), indicating that the useful information was retained in raw episodes rather than distilled entries.' And in the appendix: 'Episodic Only accounts for nearly all of the gain; Abstract Only stays at or below the zero-shot baseline (dotted) throughout.'",
+        "figure_endpoint_labels": "Auto 54%, Episodic Only 48%, Abstract Only 38% ≡ zero-shot 38% [Fig. 17, p.69]. Also labelled: 'Auto (|Episodic|=100), Success = 62%' and 'Auto (|Episodic|=50), Success = 54%' [Fig. 7b, p.9].",
+        "source": "[§5, pp.7–8; App. K.1, p.68; Fig. 17, p.69]"
+      },
+      {
+        "claim": "Disabling consolidation entirely matches the gated regime",
+        "exact_wording": "'Episodic Management Only—retention and deletion of raw episodes with abstraction disabled—matches or exceeds the full Auto mode (Fig. 9a). In this regime, the agent's gains do not require an abstract store at all.'",
+        "source": "[§5, p.8]"
+      },
+      {
+        "claim": "Plain in-context learning on the family beats every memory configuration",
+        "exact_numbers": "Fig. 9b prints two in-context reference lines — In Context (Code) 86% and In Context (NL) 66% — described as 'in-context learning results on all problems of the same family', against a zero-shot line of 38%. The best memory configuration curve tops out below the Code line.",
+        "note": "[본서 관찰] The paper does not comment on this. It is the same pattern the book records for Mem0's full-context row and Zep's full-conversation row: the strongest arm on the plot is the one with no memory system in it.",
+        "source": "[Fig. 9b and caption, p.10]"
+      },
+      {
+        "claim": "Heterogeneous batches accelerate erosion",
+        "exact_wording": "'Even when updates must be streamed, batches that mix tasks produce worse memory than batches drawn from one task at a time (Fig. 4): the model merges incompatible lessons inside a single update.'",
+        "conditions": "Three rollout sizes × three (batch, cap) configurations: (|B|=6, |M|=50), (|B|=32, |M|=50), (|B|=6, |M|=∞). Bars labelled Start / From / To Worst with Max Drop annotations.",
+        "source": "[§4.1, p.6; Fig. 4, p.6]"
+      },
+      {
+        "claim": "Cumulative consolidation across a task-switch sequence ends 203 points behind per-task consolidation",
+        "exact_wording": "'Cumulative ends +203 points behind Fresh (Fig. 10).' Figure label: 'Final gap: +203', with an intermediate '+53' and a 'Fresh advantage' band.",
+        "mechanism_evidence": "'Cumulative accumulates overgeneralized memories at ~5× Fresh's rate and garbage memories at ~20×, with both gaps widening monotonically across the 15 tasks.' App. K.2's Fig. 18 prints running totals: over-gen 94 (Cumulative) vs 18 (Fresh); garbage 217 (Cumulative) vs 11 (Fresh).",
+        "judge": "an unnamed LLM judge labels every entry normal / over-generalized / over-specific / garbage; its accuracy is never validated.",
+        "source": "[§6.2, pp.9–10; Fig. 10, p.10; App. K.2, p.68; Fig. 18, p.69]"
+      },
+      {
+        "claim": "Correct segmentation is possible but slow, and forced consolidation destroys it",
+        "exact_numbers": "'only after 71 steps (568 examples) does the model admit all six problem types into the buffer' — i.e. 8 examples per step [본서 산술]. Table 4 (Memory Coverage) at |B|=8: Avg. Covered 2.17 (Auto) vs 5.00 (Force); Avg. Fused 1.06 (Auto) vs 1.20 (Force); Buffer Size 50.00 (Auto) vs — (Force). At |B|=1: Avg. Covered 1.33 vs 1.67; Avg. Fused 1.00 vs 1.04; Buffer Size 3.33 vs —.",
+        "exact_wording": "'The bottleneck is not recognizing class structure but preserving it through cross-episode abstraction: the forced act of abstraction overrides the segmentation the model is otherwise capable of.'",
+        "source": "[§6.1, pp.8–9; Fig. 6, p.8; Fig. 7a, p.9; Table 4, p.15]"
+      },
+      {
+        "claim": "Narrow streams cause overfitting to seen instances",
+        "exact_wording": "'performance remains stable on exact repetitions of those problems but collapses on simple variations within the same strategy family'. Caption: 'Memory turns overspecified and hurt performance outside of the compressed questions.'",
+        "figure_values": "ID/OOD pairs read off Fig. 11: ID values 0.80/0.65/0.50/0.45/0.65/0.55/0.30/0.10 and OOD values 0.05, 0.05, 0.00, 0.10 across GPT5.4 / GPT5-mini / Qwen3.5-27B under Code and Code-Summ. conditions. Figure-only reading; the value→condition binding is not resolvable from the vendored text.",
+        "source": "[§6.3, p.10; Fig. 11, p.10]"
+      },
+      {
+        "claim": "Collapse to a single strategy under multi-family compression, with per-task before/after code",
+        "exact_numbers": "Example 1 — 19 tasks × 10 passes (190 steps), each with its ground-truth solver code; the final memory contains ONE entry, from the inside-frame family. On a held-out colour-removal task the same GPT-5.4 goes from 10/10 without memory to 0/10 with memory. Example 2 — 250 tasks streamed once; the final memory contains TWO entries, both from the group-by-shape family; the other five of six families have no entry at all. On a held-out largest-object task the solver goes from 10/10 to 2/10.",
+        "why_it_is_the_sharpest_result_in_the_paper": "[본서 판단] The two code listings differ in ONE line — the selection criterion — and the paper shows the memory rewriting exactly that line. It is the only place in the entire corpus where a faulty $E$ entry's effect on the model's output is traced token-by-token.",
+        "source": "[App. D.5, pp.40–43; Figs. 14 and 15, pp.42–43]"
+      },
+      {
+        "claim": "The agent, given the choice, saturates the episodic buffer and keeps the abstract store sparse",
+        "exact_numbers": "Fig. 7c action shares — |Episodic|=50: Keep 58.5%, Compress 32.5%, Remove 9.0%. |Episodic|=100: Keep 60.8%, Compress 18.5%, Remove 20.8%. Caption: 'Bigger buffer halves Compress, grows Keep.'",
+        "note": "[본서 관찰] The caption emphasises Keep (58.5 → 60.8, +2.3 pp) but the largest change is Remove (9.0 → 20.8, +11.8 pp). The claim the caption should make is that the bigger buffer shifts pressure from Compress to Remove.",
+        "source": "[§5, p.8; Fig. 7c, p.9]"
+      }
+    ],
+
+    "table2_reconstruction": {
+      "status": "Editor reconstruction from the column-interleaved extraction; verified self-consistent against both caption rules with zero exceptions. Flagged in todo_verify.",
+      "columns": "NoMem | All | FS=64 | FS=32 | FS=16 | Incr. Keep | One-Pass Keep | ACEGT | ACE | AWM | DC. Columns 2–7 are trajectory-log baselines (summarized raw rollouts as in-context exemplars); columns 8–11 are the consolidators.",
+      "AppWorld_TGC_percent": [
+        {"backbone": "Qwen3.5-27B", "NoMem": 73, "All": 66, "FS64": 65, "FS32": 68, "FS16": 69, "IncrKeep": 69, "OnePassKeep": 66, "ACEGT": "76 (bold, row max)", "ACE": "65 (–)", "AWM": "68 (–)", "DC": "68 (–)"},
+        {"backbone": "GPT-5-Mini", "NoMem": "23 (bold, row max)", "All": 15, "FS64": 20, "FS32": 16, "FS16": 15, "IncrKeep": 19, "OnePassKeep": 14, "ACEGT": "10 (–)", "ACE": "13 (–)", "AWM": "19 (–)", "DC": "8 (–)"},
+        {"backbone": "GPT-5.4-Mini", "NoMem": 59, "All": 58, "FS64": 58, "FS32": 54, "FS16": "64 (bold, row max)", "IncrKeep": 57, "OnePassKeep": 52, "ACEGT": "57 (–)", "ACE": "52 (–)", "AWM": "52 (–)", "DC": "52 (–)"},
+        {"backbone": "Claude-Haiku-4.5", "NoMem": 66, "All": 69, "FS64": 69, "FS32": 70, "FS16": 70, "IncrKeep": 59, "OnePassKeep": 68, "ACEGT": "60 (–)", "ACE": "74 (bold, row max)", "AWM": "68 (–)", "DC": "64 (–)"}
+      ],
+      "ALFWorld_task_success_percent": [
+        {"backbone": "GPT-5.4-Mini", "NoMem": 54, "All": 90, "FS64": "92 (bold, row max)", "FS32": 81, "FS16": 77, "IncrKeep": 85, "OnePassKeep": 81, "ACEGT": "85 (–)", "ACE": "79 (–)", "AWM": "65 (–)", "DC": "58 (–)"},
+        {"backbone": "GPT-5-Mini", "NoMem": 52, "All": 81, "FS64": 81, "FS32": 77, "FS16": 67, "IncrKeep": 75, "OnePassKeep": 65, "ACEGT": "56 (–)", "ACE": "60 (–)", "AWM": "48 (–)", "DC": "50 (–)"},
+        {"backbone": "Claude-Haiku-4.5", "NoMem": 79, "All": "92 (bold, row max)", "FS64": 85, "FS32": 77, "FS16": 73, "IncrKeep": 79, "OnePassKeep": 90, "ACEGT": "83 (–)", "ACE": "73 (–)", "AWM": "81 (–)", "DC": "81 (–)"}
+      ],
+      "derived_census": {
+        "consolidator_cells_beaten_by_a_trajectory_log_baseline": "26 of 28 = 92.9% [본서 산술]",
+        "consolidator_cells_below_the_no_memory_baseline": "AppWorld 13 of 16, ALFWorld 3 of 12 → 16 of 28 = 57.1% [본서 산술]",
+        "all_memory_cells_below_no_memory_on_AppWorld": "31 of 40 [본서 산술]. Per row: Qwen3.5-27B 9/10, GPT-5-Mini 10/10 (no memory condition of any kind beats NoMem=23), GPT-5.4-Mini 9/10, Claude-Haiku-4.5 3/10.",
+        "all_memory_cells_below_no_memory_on_ALFWorld": "5 of 30, plus 1 tie [본서 산술]. ALFWorld is where memory works: GPT-5.4-Mini goes 54 → 92 with raw trajectory logs.",
+        "the_honest_summary": "[본서 판단] The paper's thesis is benchmark-dependent and the paper does not say so. On ALFWorld memory is a large win (up to +38 pp) and only 5 of 30 cells fall below no-memory; on AppWorld memory is mostly a loss (31 of 40 cells below no-memory, and for GPT-5-Mini every single condition loses). Pooling the two under 'memory utility degrades' hides a factor the chapter should name."
+      }
+    },
+
+    "table3_webshop": {
+      "metric": "mean reward × 100",
+      "rows": [
+        {"backbone": "GPT-5.4-Mini", "NoMem": 18, "All": 47, "FS64": 44, "FS32": 49, "FS16": "51 (bold, row max)", "IncrKeep": 40, "OnePassKeep": 41, "ACEGT": "—", "ACE": "00*", "AWM": "23 (–)", "DC": "03*"},
+        {"backbone": "GPT-5-Mini", "NoMem": 39, "All": 53, "FS64": 41, "FS32": "63 (bold, row max)", "FS16": 49, "IncrKeep": 49, "OnePassKeep": 50, "ACEGT": "—", "ACE": "—", "AWM": "59 (–)", "DC": "—"},
+        {"backbone": "Claude-Haiku-4.5", "NoMem": 19, "All": 59, "FS64": "63 (bold, row max)", "FS32": 55, "FS16": 49, "IncrKeep": 54, "OnePassKeep": 54, "ACEGT": "—", "ACE": "—", "AWM": "32 (–)", "DC": "—"}
+      ],
+      "the_asterisk": "'The results with * are evaluted [sic] by model GPT-5-Mini. Then we observed that its performance were near to 0, so we did not do remaining ACE or DC experiments on webshop.' So ACE = 0.00 and DC = 0.03 mean reward against a no-memory baseline of 0.18 — a catastrophic below-baseline result that the authors neither debugged nor completed. [Table 3 caption, p.15]",
+      "cross_check": "AWM = 23 for GPT-5.4-Mini matches the 'full (8 workflows)' mean reward 0.23 of Table 12 exactly, and NoMem = 18 gives the available headroom. Removing W8 alone reaches 0.37. [본서 산술] The shipped 8-workflow memory therefore captures only (0.23−0.18)/(0.37−0.18) = 26.3% of the gain available at 7 workflows — one bad entry out of eight destroys nearly three-quarters of the method's value."
+    },
+
+    "protocol_and_statistics": [
+      "'At evaluation we provide all memory entries in context and average two repeats per question unless noted otherwise.' [§3, p.4]",
+      "'due to API-cost constraints we report point estimates from a small number of repeats per question rather than formal error bars; we mitigate this by checking that conclusions hold across multiple models, benchmarks, and memory frameworks, but per-figure variance should be interpreted with this in mind.' [§8, p.11]",
+      "Table 11: 'n=48 episodes per cell, single run.' Table 12: 'n=50 episodes per cell, single run.' Table 13: 'single run; no significance test.' App. G.2 collapse mode (3): 'n=3 sizes, single run, no significance test.'",
+      "No confidence interval, standard deviation, seed count, or significance test appears anywhere in the paper.",
+      "ARC-AGI eval: 10 test grids per held-out task; scores reported as x/10 in the case studies [App. D.5, pp.42–43]."
+    ]
+  },
+
+  "scale_ceiling": {
+    "model_size": "Two open-weight families with stated sizes — Qwen3.5-4B / 9B / 27B, used as rollout policies with reasoning mode disabled ('no-thinking'). All GPT-5.4-family and Claude models are closed APIs with undisclosed parameter counts. So the paper's only parameter-indexed axis is the three Qwen sizes, and on that axis the erosion result is size-robust in direction and size-INVERTED in magnitude: the largest rollout loses the most from a bad consolidation step (−13 wins vs −6) and is the only one for which consolidation never helps at all [Fig. 16 caption, p.51; Table 11, p.53].",
+    "training_data_scale": "Zero. No parameter update of any kind, by declaration [§8, p.11].",
+    "round_scale": "THE PAPER'S REAL CEILING, AND IT IS THE HIGHEST IN THE CORPUS. 200 consolidation stages (ALFWorld), 400 stream steps (ARC-AGI), 250 single-pass steps and 190 update steps (ARC-AGI GT), 192 stages (ACE on WebShop), 100 distill iterations (Fig. 8a), 20 full passes over 485 rollouts (ScienceWorld), 3 epochs × 128 trajectories (WebShop AWM). Compare: every other $E$-path paper in `notes/stc-v2/` runs $k=1$ (Letta STC) or leaves $k$ unreported.",
+    "evaluation_scale": "Smallest and most load-bearing: the 19-problem ARC-AGI slice behind the headline (one problem = 5.26 pp). Then 33 → no; 44 ScienceWorld cases; 48 ALFWorld episodes; 50 WebShop sessions; 50 held-out ARC-AGI tasks; 100 AppWorld tasks. Largest training pool: 768 ALFWorld trajectories (n=128 golden × 6 types).",
+    "context_length_ceiling": "Not reported as a length. The nearest quantity is the store size in characters (48,506 max) plus the full trajectory-log baselines placed in context ('All' = the entire pool of summarized rollouts). AppWorld entries are explicitly summarized 'to keep per-entry length tractable for prompt-time concatenation' [App. F.4, p.49] — an admission that the raw-log baseline would not fit, with no length figure attached.",
+    "realism_ceiling": "Four public agent benchmarks plus one synthetic testbed the authors built. The authors state the boundary themselves: 'whether the same erosion dynamics appear in embodied, multi-modal, or tool-rich production settings remains open' [§8, p.11]. No deployed system, no real user traffic, no production memory store is examined.",
+    "deployment_gap": "[note-writer] The paper's normative claim is about production defaults ('robust agent memory should treat raw episodes as first-class evidence and gate consolidation explicitly rather than firing it after every interaction' [Abstract]) and its evidence is 48–100 held-out items per cell at single-run point estimates. The claim is one order of magnitude broader than the evidence — which is the same complaint this book files against the $E$-path systems, applied to their critic."
+  },
+
+  "concept_ledger_delta": {
+    "new_concepts_this_paper_introduces": [
+      {"term": "faulty memory", "definition": "a consolidated store that is syntactically well-formed and derived from useful experience, yet lowers downstream task performance relative to not having it", "owner_chapter": "ch15 or ch27 (see book_impact)", "source": "[title; Abstract, p.1]", "note": "The corpus has no name for this. Zep's 'knowledge-update regression' and ReasoningBank's monotone decline are instances; this paper names the class."},
+      {"term": "memory erosion", "definition": "the non-monotone quality trajectory of a store under repeated (U-E): rise, plateau, then decline toward or below the no-memory baseline", "owner_chapter": "ch29 / ch30", "source": "[Fig. 1a label 'Memory Erosion', p.2; App. G.1 title 'Erosion: good memory degrading over time', p.50]"},
+      {"term": "episodic-only control", "definition": "an ablation arm that consumes the same trajectories as the consolidator but appends them raw to context, running no abstraction step at all", "owner_chapter": "ch27 §27.3.5 (표 27-4 대조 상태)", "source": "[§4.2, p.6; Table 2 caption, p.6]", "note": "This is a METHODOLOGICAL primitive the book should adopt by name. The paper states it as a norm: 'a memory method whose value depends on distillation should be tested against the unabstracted rollouts it distills.'"},
+      {"term": "Force / Auto / Episodic Management Only", "definition": "three control loops over $\\mathrm{wr}$ — mandatory consolidation with no episode persistence, free choice, and consolidation disabled", "owner_chapter": "ch15 or ch27", "source": "[§3, p.5]"},
+      {"term": "ARC-AGI Stream", "definition": "a controlled memory testbed with a fully specified latent task taxonomy, programmatic ground truth, and an audited memory-operation vocabulary", "owner_chapter": "n/a — a benchmark, cite only", "source": "[§3, pp.4–5]"},
+      {"term": "memory surgery", "definition": "removing one entry from a store and re-evaluating, holding policy and all other entries fixed, to price that entry's contribution", "owner_chapter": "ch27 §27.5 (반증 관측의 형태로)", "source": "[App. I, p.59]", "note": "[note-writer] This is a cheap, general, per-entry ablation the book should recommend in its falsifier lists. Nothing in the corpus does it."},
+      {"term": "collapse by accretion", "definition": "a store that degrades not by shrinking but by accumulating redundant restatements of entries it already holds, with no cap ever binding", "owner_chapter": "ch26 (용량 논의) or ch27", "source": "[App. H.1.2, p.58: 'We treat this as collapsed by accretion: the cap of the consolidation pipeline does not bind here, but the consolidator nevertheless stores redundant restatements of the same templates.']"},
+      {"term": "misclassification count / Avg. Fused", "definition": "the number of memory-management actions that combine episodes from two or more distinct problem classes; and the mean number of classes fused per action", "owner_chapter": "ch27 (T8-type 결함 계측의 사례)", "source": "[§6.1, p.9; Fig. 7a, p.9; Table 4, p.15]"}
+    ],
+    "renamed_or_corrected_for_the_monograph": [
+      {"paper_term": "consolidation", "problem": "The paper uses it for the LLM's textual rewrite. The book's §2.4 term list has 'consolidation' as an unmodified loanword and the $\\Theta$-path papers use it for weight-space distillation.", "monograph_term": "keep 'consolidation' but always name the layer: '$E$층 consolidation'. This paper is the reason the qualifier becomes mandatory rather than stylistic — it is the first corpus paper where the same word denotes an operation that PROVABLY loses information at the $E$ layer."},
+      {"paper_term": "'memory utility'", "problem": "pools five incommensurable metrics", "monograph_term": "name the metric each time"},
+      {"paper_term": "$S$, $|B|$, $|M|$, $R$", "problem": "collide with $S_t$/$S(\\cdot;B_s)$, $B_s$/$B_t$, $\\mathcal{M}(\\cdot;W)$/$C_{\\mathrm{cap}}$, and $R$ (reward)", "monograph_term": "$k$, $m$, $C^{\\mathrm{item}}_{\\mathrm{cap}}$, $k_{\\mathrm{pass}}$"}
+    ],
+    "extended": [
+      {"term": "$\\mathrm{wr}$ (write operator)", "extension": "The corpus's write alphabets — Letta STC {overwrite}, Mem0 {ADD, UPDATE, DELETE, NOOP}, ReasoningBank {union}, Zep {invalidate} — all lack an operation meaning 'keep this raw and do not abstract it'. This paper adds Retain and shows it is the operation that carries the value.", "monograph_use": "ch15's write-operator comparison table gains a column, and the empty cell under Retain for every prior system becomes a finding rather than an omission."},
+      {"term": "$C_{\\mathrm{cap}}$", "extension": "First $E$-path store size printed in characters (48,506 chars at a 50-item cap; ~970 chars/item; 8.2k–14k chars for ACE/DC/AWM WebShop stores).", "monograph_use": "ch26's $E$-row anchor gains an independent cross-check — see book_impact."},
+      {"term": "$\\rho$", "extension": "First round-indexed degradation curves in a real LLM loop with a no-memory reference line, on the $E$-path.", "monograph_use": "ch25 표 25-1's $\\rho$ row, ch29 판정 5, ch30 표 30-3 — see book_impact."}
+    ]
+  },
+
+  "inherited_open_question": {
+    "verdict": "STATED, and unusually cleanly — this paper inherits a testable PREDICTION and tests it. That makes it one of very few papers in this corpus with a textbook bridge-in.",
+    "the_inherited_assumption_it_falsifies": "'Many recent agentic-memory systems—CLIN (Majumder et al., 2023), Agent Workflow Memory (Wang et al., 2024), Dynamic Cheatsheet (Suzgun et al., 2026), and ACE (Zhang et al., 2025)—adopt update-after-every-interaction designs that treat each consolidation step as at worst neutral; our results contradict this assumption.' [§1, p.3]",
+    "the_inherited_prediction_it_tests": "'Following the Complementary Learning Systems framing (McClelland et al., 1995; Sun et al., 2023; Tse et al., 2007), we maintain two stores: an Episodic buffer of problem–solution pairs and an Abstract store of consolidated lessons; the control conditions below are designed to test this gating prediction directly.' [§3, p.5]. The prediction is spelled out in §5: 'Complementary Learning Systems make this prescription explicitly: a fast episodic store and a slow schema-forming store are kept architecturally distinct so that fast learning does not overwrite the slow one, and consolidation is gated by schema fit rather than triggered on every event (McClelland et al., 1995; Kumaran et al., 2016; Tse et al., 2007; Sun et al., 2023). The Force regime collapses this separation into a mandatory rewrite loop, recreating the interference conditions the dual-system design was meant to prevent (McCloskey and Cohen, 1989; French, 1999).' [§5, p.8]",
+    "the_second_inherited_claim": "'Schema formation is beneficial when new evidence fits existing structure (Tse et al., 2007), but harmful when it is non-selective or poorly controlled: nonselective consolidation causes interference and loss of specificity (McClelland et al., 1995; Sun et al., 2023).' [§2, p.4]. The paper's whole design is the LLM instantiation of that conditional.",
+    "what_it_does_NOT_inherit": "It does not cite Letta's `Sleep-time Compute` (2504.13171) and never uses the phrase. Its only Letta citation is the software documentation ('Letta: Stateful agents framework, 2024. URL https://www.letta.com'), listed among forms of 'hierarchical context stores' beside MemGPT [§2, p.3; References, p.12]. So the $E$-path's founding-name paper is invisible to the paper that measures the $E$-path's write operator over 200 rounds.",
+    "bridge_in_material_for_the_chapter": "[note-writer] This is the corpus's counterexample to ch23 §23.8. Here the biology arrives as an ARGUMENT — a named prediction, an architecture derived from it, and control conditions built to test it — and the WORD does not arrive at all ('sleep' appears zero times in the paper). The book's finding was '이름은 생물학에서 왔고 논증은 오지 않았다'; this paper is the exact mirror. The chapter should place the two side by side rather than treat this as a refutation."
+  },
+
+  "open_questions": [
+    {"question": "How can an LLM consolidate without destroying the evidence it depends on?", "exact_wording": "'Looking forward, reliable agentic memory will require LLMs that can consolidate without overwriting the evidence they depend on.'", "source": "[Abstract, p.1]", "bridge_out": "a capability gap, not a method. The paper names no candidate procedure."},
+    {"question": "What replaces episodic accumulation when histories grow unboundedly?", "exact_wording": "'Yet episodic accumulation cannot be the long-term answer: as deployment continues, raw histories grow unboundedly and resist compositional reuse—compression and transfer ultimately require abstraction.'", "source": "[§1, p.3]", "bridge_out": "THIS IS THE $C_{\\mathrm{cap}}$ QUESTION, stated by an author who has just shown the standard compression method is a net loss. The paper leaves the field with a store that must grow and a compressor that must not be used."},
+    {"question": "What should the consolidation gate read?", "exact_wording": "'abstraction, when it happens, should be opt-in and gated by the agent rather than forced on every trajectory' and 'gate consolidation explicitly rather than firing it after every interaction'", "source": "[§5, p.8; Abstract, p.1]", "bridge_out": "No gate signal is specified anywhere. 'Auto' is not a gate — it is the same LLM choosing freely, and its choices are shown to be cap-dependent [Fig. 7c]. Compare Letta STC's $\\log P(q\\mid c)$ predictability signal, which is at least a proposal."},
+    {"question": "Do the erosion dynamics survive outside text-only agent benchmarks?", "exact_wording": "'whether the same erosion dynamics appear in embodied, multi-modal, or tool-rich production settings remains open'", "source": "[§8, p.11]"},
+    {"question": "Does parametric memory suffer the same failure?", "exact_wording": "'parametric memory (weight updates, distillation into the model) and structured non-textual memory representations are out of scope'", "source": "[§8, p.11]", "bridge_out": "An explicit hand-off of the $\\Theta$-path question, made without running a single $\\Theta$-path baseline. This is the cross-path silence in its most polite form."},
+    {"question": "Would a consolidator fine-tuned for the job avoid the failure?", "exact_wording": "'the consolidator and the solver are themselves LLMs, so faulty abstraction reflects current model capability and could shift with stronger consolidators or with consolidator-specific fine-tuning'", "source": "[§8, p.11]", "bridge_out": "the paper's own escape hatch, and the one place it gestures at (U-$\\Theta$) — training the write operator rather than prompting it."},
+    {"question": "What architecture keeps the episodic and schema-forming roles distinct?", "exact_wording": "'our results motivate architectures that keep the episodic and abstraction-forming roles distinct rather than collapsing both into a single rewrite loop'", "source": "[§1, p.3]", "bridge_out": "named, not built. The two-store split of ARC-AGI Stream is a testbed, not a proposed system."},
+    {"question": "Why does grouping by task family help, and can it be automated?", "status": "The paper shows Static-Group > Static-All and that segmentation capability exists but is slow (71 steps / 568 examples to admit all six families), yet proposes no segmentation procedure.", "source": "[§4.1, p.6; §6.1, pp.8–9]"},
+    {"question": "What is the cost of any of this?", "status": "not addressed. Zero tokens, FLOPs, dollars, or wall-clock in a paper whose recommendation is a compute-allocation policy.", "source": "[absent throughout]"}
+  ],
+
+  "unfavorable_facts": [
+    {
+      "fact": "THE HEADLINE NUMBER IS PRINTED THREE INCOMPATIBLE WAYS, and the Abstract's version is the complement of the body's.",
+      "the_four_renderings": "Abstract: 'GPT-5.4 fails on 54% of a set of ARC-AGI problems it had previously solved without memory' [p.1] ⇒ success 46%. §1: 'it then fails on 46% of them (Fig. 2)' [p.2] ⇒ success 54%. §4.1: 'brings GPT-5.4 down to 54% on the very problems it had previously solved (Fig. 2)' [p.5] ⇒ success 54%, fails 46%. Figure 2 itself: 52.6% success ⇒ fails 47.4%.",
+      "why_it_bites": "The Abstract states the complement of what the body states — one of the two is simply wrong — and neither matches the figure the sentence cites. On 19 problems, 54%, 46% and 52.6% are 10.3, 8.7 and 10.0 problems, so the discrepancy is not rounding. This is the paper's single most quoted number.",
+      "source": "[Abstract p.1; §1 p.2; §4.1 p.5; Fig. 2 p.5]"
+    },
+    {
+      "fact": "The cleanest, most-cited result rests on n = 19 problems, evaluated once, with no error bars.",
+      "why_it_bites": "One problem = 5.263 pp. The Static-vs-Stream gap at R10 (94.7 vs 52.6) is 8 problems; the Stream R1-to-R10 decline (73.7 → 52.6) is 4 problems. The paper's own Limitations concede 'point estimates from a small number of repeats per question rather than formal error bars'.",
+      "source": "[Fig. 2, p.5; App. D.5, p.41; §8, p.11]"
+    },
+    {
+      "fact": "The 'double the accuracy' claim appears ONLY in the Abstract and is supported by no numeric statement anywhere in the body.",
+      "exact_wording": "'agents preserve raw episodes by default and double the accuracy of their forced-consolidation counterparts' [Abstract, p.1]. A whole-text search finds 'double' nowhere else except ARC-AGI grid descriptions. §5's three observations are entirely qualitative: 'generally outperforms Force', 'matches or exceeds the full Auto mode', 'collapses accuracy back to the no-memory baseline'.",
+      "why_it_bites": "A 2× factor in the abstract that the reader must reconstruct by eye from Fig. 5 or Fig. 9a. The book forbids exactly this in §6.4.",
+      "source": "[Abstract p.1; §5 pp.7–8; Figs. 5 p.7 and 9 p.10]"
+    },
+    {
+      "fact": "The Force arm changes TWO things at once, so the paper's central causal conclusion is not isolated by its own design.",
+      "exact_wording": "'Force requires consolidation each round and no Episodic entries persist between rounds' [§3, p.5]. The conclusion drawn from it: 'both policies that gate abstraction (Auto) and policies that disable it entirely (Episodic Management Only) match or exceed forced abstraction (Force), pointing to mandatory rewriting at every step—rather than abstraction itself—as the decisive failure mode in this regime' [§5, p.8].",
+      "why_it_bites": "Force = mandatory abstraction AND mandatory episode deletion. Auto = optional abstraction AND episode retention. The Auto>Force gap therefore cannot distinguish 'forced abstraction hurts' from 'deleting your episodes hurts', and the second is the trivial hypothesis. The missing arm — mandatory consolidation WITH episode retention — is never run. Fig. 9a's 'Auto (Abstract Only)' is not that arm either, since it removes episodes at READ time rather than at WRITE time.",
+      "source": "[§3, p.5; §5, p.8; Fig. 9a, p.10]"
+    },
+    {
+      "fact": "The flagship erosion curve confounds repeated consolidation with a consolidator downgrade, and the control is never run.",
+      "exact_wording": "'We first consolidate ALFWorld trajectories with GPT-5.4—the strongest model we test—following the Static-Group setting from §3, then continue updating that store in batches with GPT-5-nano on the same trajectory pool.' [§4.1, p.5]. App. G.1 confirms: the stage-0 seed is a single gpt-5.4 pass; 'Each subsequent stage feeds gpt-5-nano' [p.50].",
+      "why_it_bites": "Stage 0 was written by the strongest model and every one of the next 200 stages by a nano model. The decline is therefore consistent with 'nano rewrites are worse than a 5.4 rewrite' without any cumulative effect at all. The paper frames it as 'A strong memory is not a fixed point' — but a fixed-point claim needs the SAME operator applied repeatedly. No gpt-5.4-for-all-200-stages control exists.",
+      "source": "[§4.1, p.5; App. G.1, p.50; Fig. 4, p.6; Fig. 16, p.51]"
+    },
+    {
+      "fact": "No cost accounting of any kind, in a paper whose thesis is a compute-allocation policy.",
+      "why_it_bites": "Zero tokens, FLOPs, dollars, wall-clock, or latency. The recommendation — 'gate consolidation explicitly rather than firing it after every interaction' — is a claim about when to spend $B_s$, and $B_s$ is never counted. The only cost sentence in the paper is about the authors' own budget: 'due to API-cost constraints'. Under the book's §6.4 rule 3 ('비용 침묵을 성능 주장으로 메우는 것'), this paper commits the mirror error: it fills a cost silence with a quality argument.",
+      "source": "[Abstract p.1; §8 p.11; whole-text grep]"
+    },
+    {
+      "fact": "The ScienceWorld 'average test score' is negative at rounds 10 and 20 and its scale is never defined.",
+      "numbers": "round 1 = 7.45 (bank size 16), round 10 = −7.68 (size 10), round 20 = −8.66 (size 17).",
+      "why_it_bites": "ScienceWorld's native score is 0–100. A negative average implies either a delta against an unstated reference or a rescaling, and the paper says only 'we also report the corresponding average test score'. The numbers cannot be placed on any axis in the rest of the paper, and the sign flip between rounds 1 and 10 is the most dramatic degradation figure in the appendix.",
+      "source": "[App. J.1.3, pp.65, 66, 67]"
+    },
+    {
+      "fact": "A sign/word error in the second-largest reported effect.",
+      "exact_wording": "'Cumulative ends +203 points behind Fresh (Fig. 10).' [§6.2, p.10]. The figure labels the same quantity 'Final gap: +203' inside a band labelled 'Fresh advantage', with the Cumulative curve running below zero to about −150.",
+      "why_it_bites": "'+203 behind' is not a well-formed quantity, the sign convention is never stated, and the score unit is the same undefined ScienceWorld scale as above.",
+      "source": "[§6.2, p.10; Fig. 10, p.10; App. K.2, p.68]"
+    },
+    {
+      "fact": "Two of the WebShop consolidator cells score essentially zero and the authors stopped rather than debugged.",
+      "exact_wording": "'The results with * are evaluted [sic] by model GPT-5-Mini. Then we observed that its performance were near to 0, so we did not do remaining ACE or DC experiments on webshop.' ACE = 00*, DC = 03* against NoMem = 18.",
+      "why_it_bites": "A near-zero result from a published method is more likely a harness bug than a finding, and it is left in the table as evidence with an asterisk that also discloses a backbone mismatch (the cells are evaluated by a different model than the row's label). Table 2 and Table 3 are then read as one body of evidence.",
+      "source": "[Table 3 and caption, p.15]"
+    },
+    {
+      "fact": "The memory cap is a binding, outcome-shaping parameter that is never ablated in the flagship erosion run.",
+      "exact_wording": "App. G.1 attributes a specific loss to the cap: 'The 50-item cap evicted it to make room for paraphrases of the desklamp template' [p.52]. And 'Memory size stays bounded at 38–50 items by the cap throughout, so the erosion is in content quality, not item count' [p.50].",
+      "why_it_bites": "The second sentence argues the cap is not the cause while the first sentence names the cap as the mechanism of the paper's third erosion mode. An uncapped arm exists elsewhere (|M| = ∞ in Fig. 4) but not for the 200-stage curve. Meanwhile App. H.1.2 shows a store that degrades with NO binding cap ('collapse by accretion'), so the paper has both stories and does not reconcile them.",
+      "source": "[App. G.1, pp.50, 52; Fig. 4, p.6; App. H.1.2, p.58]"
+    },
+    {
+      "fact": "The agent's 'own' episodic-first policy is partly an artefact of the buffer size the authors chose.",
+      "exact_wording": "Fig. 7c: 'Bigger buffer halves Compress, grows Keep.' Action shares — |Episodic|=50: Keep 58.5%, Compress 32.5%, Remove 9.0%; |Episodic|=100: Keep 60.8%, Compress 18.5%, Remove 20.8%. §5 concludes: 'The Auto-mode result therefore reflects an episodic-first policy that the agent chooses when the architecture permits it.'",
+      "why_it_bites": "The write-policy distribution moves with a hyperparameter the authors set, so 'the agent chooses' is conditional on that setting. Also the caption's emphasis is wrong: Keep moves +2.3 pp while Remove moves +11.8 pp.",
+      "source": "[§5, p.8; Fig. 7c, p.9]"
+    },
+    {
+      "fact": "Mind2Web is named as a studied benchmark twice and produces no result.",
+      "exact_wording": "'We study how models abstract memory from experience across clean and widely-used agent benchmarks—ALFWorld, ScienceWorld, WebShop, AppWorld (Trivedi et al., 2024), and Mind2Web (Deng et al., 2023)' [§3, p.4]; repeated in §8's scope conditions [p.11].",
+      "why_it_bites": "Table 1's settings list has no Mind2Web row, App. F has no Mind2Web subsection, and no figure or table reports it. The benchmark count in the paper's framing sentence is one larger than the benchmark count in its evidence.",
+      "source": "[§3 p.4; §8 p.11 vs Table 1 p.3; App. F.1–F.4 pp.45–49]"
+    },
+    {
+      "fact": "Table 1's figure→setting mapping does not agree with the figure captions.",
+      "why_it_bites": "Table 1 lists Fig. 2 (an ARC-AGI figure, per its own caption) and Fig. 8a under the AppWorld row, and lists Fig. 8b under AppWorld while its caption reads 'Switch-induced forgetting in ARC-AGI'. A reader reconstructing which benchmark produced which curve cannot rely on the table the paper provides for that purpose.",
+      "source": "[Table 1, p.3 vs Fig. 2 caption p.5, Fig. 8 caption p.9]"
+    },
+    {
+      "fact": "The paper's headline word — that consolidation is the culprit — is not uniformly supported by its own largest table.",
+      "why_it_bites": "[본서 산술] On ALFWorld, consolidated memory beats no-memory in 9 of 12 consolidator cells and raw trajectory logs take GPT-5.4-Mini from 54% to 92%. On AppWorld the pattern reverses (31 of 40 memory cells below no-memory). The paper pools the two under 'memory utility degrades' and never names benchmark identity as a moderator, although it is the single largest factor in the table.",
+      "source": "[Table 2, p.6]"
+    },
+    {
+      "fact": "The LLM judge that supplies the mechanistic account of task-switch interference is unnamed and unvalidated.",
+      "exact_wording": "'We use LLM judge to label each memory entry and find Cumulative accumulates overgeneralized memories at ~5× Fresh's rate and garbage memories at ~20×' [§6.2, p.10].",
+      "why_it_bites": "The 5× and 20× are the paper's only mechanistic numbers for its interference claim, and the instrument that produces them has no stated model, no prompt in the appendix, no inter-rater check, and no accuracy figure. Compare ReasoningBank's judge, whose 72.7% accuracy the book already flags (→ ch15).",
+      "source": "[§6.2, p.10; App. K.2, p.68; App. J.1, pp.62–64]"
+    },
+    {
+      "fact": "Five different round counters, no conversion table, and one of them is a wake-stream index rather than a round index.",
+      "why_it_bites": "consolidation stage $S$, refresh round $R$, Distill Iter., epoch, and step all appear as x-axes. The single conversion the reader needs (1 refresh round = 19 updates on the 19-task pool) is buried in App. D.5 and never appears near Fig. 2. Fig. 5's 'Step' axis is the evaluated stream, not a round count, and sits next to figures whose x-axis IS a round count.",
+      "source": "[Fig. 2 p.5; Fig. 5 p.7; Fig. 8a p.9; App. D.5 p.41; App. G.1 p.50; App. H.1.2 p.58; App. J.1.3 p.65]"
+    },
+    {
+      "fact": "Five incommensurable metrics are pooled under one thesis.",
+      "why_it_bites": "AppWorld TGC%, ALFWorld task-success%, WebShop mean reward ×100 (and separately wins/50 and 'average score'), ARC-AGI %, ScienceWorld 'average test score' on an undefined scale. 'Memory utility degrades as consolidation continues' [Fig. 1 caption] ranges over all of them.",
+      "source": "[Fig. 1 p.2; Table 2 p.6; Table 3 p.15; App. F.3 p.47; App. J.1.3 p.65]"
+    },
+    {
+      "fact": "No no-memory reference line on several degradation figures.",
+      "why_it_bites": "Fig. 16 prints two (15/48 and 19/48) and Fig. 2 prints the 100% ceiling, but Fig. 4 shows Start/From/To-Worst bars with Max-Drop annotations and no baseline, and Fig. 8b/8c show deltas only. The paper's central claim is 'can fall below the no-memory baseline', so a baseline line is the load-bearing element of every such figure.",
+      "source": "[Fig. 4 p.6; Fig. 8 p.9 vs Fig. 16 p.51, Fig. 2 p.5]"
+    },
+    {
+      "fact": "The paper is a diagnosis and says so — it proposes no gate, no architecture, and no repair.",
+      "exact_wording": "'Our findings are diagnostic' [§9, p.12]; 'our diagnosis of failure modes does not constitute a fix' [§9, p.12]. Its two prescriptions (retain episodes; gate consolidation) are, by its own §1, in tension: 'episodic accumulation cannot be the long-term answer'.",
+      "why_it_bites": "Not a flaw, but it bounds what the book may claim from it. The paper establishes that the current $\\mathrm{wr}$ is a net loss under streaming; it does not establish that any $\\mathrm{wr}$ must be.",
+      "source": "[§1 p.3; §9 p.12]"
+    },
+    {
+      "fact": "The vendored text extraction of Table 2 is column-interleaved and the cell values used in this note are an editor reconstruction.",
+      "why_it_bites": "The reconstruction is self-consistent under both caption rules with zero exceptions, which is strong evidence it is correct, but it is not the same as reading the PDF. No Table 2 cell should be printed in the book before the PDF check.",
+      "hedge": "See todo_verify item 1.",
+      "source": "[Table 2 region, vendored text lines 556–648]"
+    }
+  ],
+
+  "cross_path_citations": {
+    "verdict": "A NEW PATTERN for this corpus, and it is the mirror image of Letta STC's. The biological/CLS ancestry is cited HEAVILY and used as a load-bearing argument; the $W$-path and $\\Theta$-path are cited ZERO times; the word 'sleep' appears ZERO times. Letta STC took the name and left the argument; this paper takes the argument and leaves the name.",
+    "bibliography_size": "≈45 entries (References, pp.12–14)",
+    "term_counts_whole_text": "'sleep' (case-insensitive): 0. 'test-time': 0 outside the Dynamic Cheatsheet reference title. 'parametric': 1 (the §8 scope exclusion). 'consolidat*': 124.",
+    "bio_CLS_path": {
+      "citations": "HEAVY AND LOAD-BEARING. McClelland, McNaughton & O'Reilly 1995 (cited in §1, §2, §3, §5 — four separate sections); Squire et al. 2015; Dudai, Karni & Born 2015; Moscovitch et al. 2016; Kumaran, Hassabis & McClelland 2016; Tse et al. 2007 (Science, schemas and memory consolidation); Sun et al. 2023 (Nature Neuroscience, organizing memories for generalization in CLS); Bartlett 1932; Brainerd & Reyna 2002 (fuzzy-trace); Hintzman 1986; Brooks 1978; Medin & Schaffer 1978; Logan 1988 (the four instance-theory citations that justify the episodic-only control); McCloskey & Cohen 1989; French 1999; Zacks et al. 2007 (event segmentation); Flavell 1979, Nelson & Narens 1990, Koriat 1997 (metacognition).",
+      "finding": "This is not decoration. The CLS citation set (i) motivates the two-store architecture, (ii) is stated as a testable prediction, (iii) generates the three control loops, and (iv) supplies the interference mechanism the paper attributes its failures to. The instance-theory set (Hintzman, Brooks, Medin & Schaffer, Logan) is what licenses the episodic-only control as a theoretically motivated arm rather than an ad-hoc baseline: 'Schema-like behavior can emerge from in-context learning on preserved instances comparative to a separately stored abstraction' [§4.2, p.7]. The metacognition set supplies the paper's framing of the LLM as an unreliable monitor of its own abstractions.",
+      "the_twist": "It never says 'sleep'. Not once. The consolidation literature it cites is the same literature Letta STC borrowed the word from without citing."
+    },
+    "E_path_internal": {
+      "citations": "Dense. MemGPT (Packer et al. 2023), Letta software doc (2024), Reflexion (Shinn et al. 2023), Generative Agents (Park et al. 2023), ExpeL (Zhao et al. 2024), Voyager (Wang et al. 2023), CLIN (Majumder et al. 2023), Mem0 (Chhikara et al. 2025), A-Mem (Xu et al. 2025), LangMem (LangChain AI 2024), ACE (Zhang et al. 2025), Dynamic Cheatsheet (Suzgun et al. 2026), ReasoningBank (Ouyang et al. 2026), CoALA (Sumers et al. 2024), PEARL (Li et al. 2026).",
+      "the_absence_that_matters": "Letta's `Sleep-time Compute` (2504.13171) is NOT cited. The paper cites the company's software page and the same team's MemGPT, but not the paper that named this line. So the founding-name paper of the $E$-path is invisible to the paper that measures the $E$-path's write operator over 200 rounds — and the reverse silence already holds (Letta STC cites nothing in agentic memory except MemGPT). [본서 관찰] ch15 already records that Mem0 and ReasoningBank do not cite Letta STC; this paper extends the pattern to the line's most direct critic."
+    },
+    "W_path": {
+      "citations": "ZERO. No fast weights, no test-time training, no TTT/Titans/Miras/Atlas, no linear attention, no state-space models, no KV cache, no recurrent memory. The word 'cache' appears only in 'Dynamic Cheatsheet'."
+    },
+    "Theta_path": {
+      "citations": "ZERO, with an explicit scope exclusion in place of a citation: 'parametric memory (weight updates, distillation into the model) and structured non-textual memory representations are out of scope' [§8, p.11]. No LoRA, no PEFT, no ROME/MEMIT, no SEAL, no continual learning, no EWC, no catastrophic-forgetting literature from the ML side — though McCloskey & Cohen 1989 and French 1999, the cognitive-science originals of catastrophic interference, ARE cited.",
+      "note": "[note-writer] That last detail is the sharpest version of the corpus's silence pattern: the paper cites the 1989 and 1999 papers that named catastrophic interference and none of the thirty years of machine-learning work that tried to fix it."
+    },
+    "adjacent": "Turpin et al. 2023 (unfaithful chain-of-thought) is cited to support the claim that LLMs may not monitor their own abstractions — the paper's one bridge to the interpretability literature.",
+    "monograph_implication": "[note-writer] For ch23/ch24 this paper is a genuine complication and should be written as one, not smoothed. The book's finding was that the sleep-time line borrowed a biological name without the biological argument. Here an $E$-path paper imports the biological argument in full — prediction, architecture, controls — and does not use the name at all. The correct chapter sentence is not '이 논문이 ch23을 반증한다' but '이름과 논증이 서로 다른 논문에 갈라져 실렸다': Letta STC has the word, this paper has the theory, and neither cites the other."
+  },
+
+  "systems_implications": {
+    "preamble": "Grounding key: [PAPER] = a number or statement on the page with a locator; [INFERENCE] = the note-writer's translation. This paper contains no serving numbers at all, so almost everything here is [INFERENCE] from structure — but the structural facts it establishes are unusually consequential for serving.",
+    "items": [
+      {
+        "claim": "The $E$-path's offline write is not free even when it is off the critical path — it can be NEGATIVELY valued. A serving fleet running consolidation on idle capacity can spend $B_s$ to lower quality below the no-memory arm.",
+        "grounding": "[PAPER] 16 of 28 consolidator cells in Table 2 sit below their row's no-memory baseline [본서 산술]; on AppWorld/GPT-5-Mini every one of ten memory conditions loses to NoMem = 23. [INFERENCE] The operational reading: the E-path's cost model is not 'pay $B_s$ once, save prefill many times' but 'pay $B_s$ once, and possibly pay again in quality'. Identity (A) has no term for a negative quality contribution."
+      },
+      {
+        "claim": "The single most actionable finding for a serving stack: KEEP THE POOL AND RE-DERIVE, do not rewrite the rewrite. At matched data and matched refresh count, whole-pool re-consolidation is stable and incremental consolidation collapses.",
+        "grounding": "[PAPER] Static R10 = Static R50 = 94.7% against Stream R10 = 52.6% on the same 19 problems with the same ground-truth solutions [Fig. 2, p.5]. [본서 산술] 42.1 pp attributable to the schedule alone; $\\rho_{\\text{Static}} \\approx 0.0$ pp per refresh over refreshes 2–50 versus $\\rho_{\\text{Stream}} = 0.249$ pp per update. [INFERENCE] In storage terms: a cold archive of raw episodes plus periodic full re-derivation dominates a hot mutable store that is edited in place. That is a concrete tier design, and it is the opposite of what every production $E$-path system in this corpus does."
+      },
+      {
+        "claim": "State bytes ARE computable from this paper, and they land where ch26's accounting put them.",
+        "grounding": "[PAPER] 50 items / 48,506 characters at the cap; ~970 chars/item; ACE 32 bullets / ~14k chars; DC ~8.3k chars; AWM 16 workflows / ~8.2k chars [App. G.2 p.53; App. H.1.1 pp.56–57; App. H.1.2 p.58]. [본서 산술] 48,506 chars ≈ 48.5 KB at one byte per character, against ch26's 56.0 KB $E$-path anchor — agreement within 13.4%. [INFERENCE] The store is a cold-tier object read once per query, exactly as ch26 판정 2 classifies it. Nothing here moves the $E$-path out of the cold tier."
+      },
+      {
+        "claim": "The wake-side cost of a faulty entry is measurable in STEPS, and one bad entry moved it 8%.",
+        "grounding": "[PAPER] Removing W8: mean steps 12.4 → 11.4 (gpt-5.4-mini) and 18.2 → 15.8 (gpt-5-mini); step-cap hits 22/50 → 17/50; page-turn actions 421 → 181 and 559 → 246 [Tables 12–13, p.61]. [INFERENCE] For an agent serving stack, a faulty memory entry is a token-consumption regression as well as a quality regression, and it shows up in the action histogram before it shows up in the reward. Action-category telemetry is therefore a cheaper faulty-memory detector than reward — a monitoring recommendation the paper does not make."
+      },
+      {
+        "claim": "Memory surgery is a per-entry attribution primitive that costs one re-evaluation and no training.",
+        "grounding": "[PAPER] App. I: remove one item, hold policy and all other items fixed, re-evaluate. Result: 7/50 → 14/50 wins. [INFERENCE] This is a shipping-grade diagnostic: for a store of $n$ entries, $n$ re-evaluations price every entry. It generalises to any $E$-path system in the corpus and none of them do it. The book should carry it as a recommended falsifier form."
+      },
+      {
+        "claim": "shared-weight batching is untouched, as for every $E$-path system.",
+        "grounding": "[INFERENCE] Nothing lands in weights; the store is application-level text spliced into the prompt. The $E$-path's structural serving advantage (ch27 A5) survives this paper entirely — and this paper, like the five before it, never mentions it."
+      },
+      {
+        "claim": "The offline write is a SEQUENTIAL chain of model turns whose length is the round count, and the round counts here are large.",
+        "grounding": "[PAPER] 200 consolidation stages each rewriting the whole memory [App. G.1, p.50]; 190 update steps [App. D.5, p.41]; 3 abstraction calls per trajectory before any of it [App. F.1, p.45]. [INFERENCE] For the ALFWorld run that is 2304 abstraction calls + 200 full-memory rewrites per store [본서 산술]. At no point is that priced. A fleet operator reading this paper learns that the spending may be worth less than zero and cannot learn how much the spending is."
+      },
+      {
+        "claim": "Capacity pressure and quality are coupled through the write operator, not through the read path.",
+        "grounding": "[PAPER] 'Memory size stays bounded at 38–50 items by the cap throughout, so the erosion is in content quality, not item count' [App. G.1, p.50]; and the paraphrase-cluster mode: '21 of the 38 items at stage 200 contain this opener. The desklamp directive only applies to look-at-in-light tasks, which are 8/48 of the eval split; the memory devotes 21/38 (>55%) of its prompt-context slots to it' [App. G.1, p.52]. [INFERENCE] Under a fixed prompt budget the relevant resource is not bytes but SLOT ALLOCATION, and the write operator reallocates slots away from rare-but-decisive entries toward frequent-but-generic ones. That is a compression-policy failure with an information-theoretic shape, and it is the closest thing in this corpus to a live instance of the rate–distortion problem ch22 discusses in the abstract."
+      },
+      {
+        "claim": "Byte-identical duplicates survive in a capped store because no pipeline dedups.",
+        "grounding": "[PAPER] 'Items 3 and 5 of stage 200 are character-for-character identical, occupying two of the 50 cap slots with the same content. The pipeline applies no post-hoc deduplication step' [App. G.1, p.52]. Also visible at ScienceWorld round 1, where memories #1/#9 and #2/#10 are identical [App. J.1.3, p.65]. [INFERENCE] A one-line dedup pass would reclaim cap slots for free. That no system in this corpus has one is a shipping-quality observation, not a research one."
+      },
+      {
+        "claim": "The threshold-metric monitor fails exactly as ch29 predicted, but the failure shape is a third shape.",
+        "grounding": "[PAPER] Fig. 16 shows a rise to a peak then a general decline 'with small recoveries' over 180 stages — gradual, not flat-then-cliff. Table 11 shows a single stage costing 12.5–27.1 pp — a cliff. [INFERENCE] The observed $E$-path shape is 'rise → gradual erosion punctuated by single-round cliffs', which is neither the smooth continuous decay nor the flat-then-cliff threshold curve X4 produced. A monitor set on the task metric would catch the cliff and miss the erosion; a monitor set on a rate would be calibrated 54–137× too low for the cliff [본서 산술]."
+      }
+    ]
+  },
+
+  "figures": [
+    {"number": "Figure 1", "page": "p.2", "shows": "(a) ScienceWorld with CLIN: utility rises to ≈step 20 then declines through step 100 across memory sizes 16/50/∞, with a No Memory reference at 0.39; (b) WebShop with AWM: raw trajectories stay robust while AWM-distilled memory degrades as examples scale 8→128.", "why_reproduce": "the one picture that states the paper's thesis — rise, then erosion below the no-memory line — and the only figure in this corpus with $k$ on the x-axis and a no-memory line on the same plot"},
+    {"number": "Figure 2", "page": "p.5", "shows": "GPT-5.4 on a 19-problem ARC-AGI slice that is 100% solvable without memory. Static R10 94.7, Static R50 94.7, Stream R1 73.7, Stream R10 52.6, with −26 and −47 drop annotations against the ceiling.", "why_reproduce": "THE figure for this book. It is simultaneously (i) the ground-truth-input result, (ii) the $k=1$ vs $k=K$ contrast at fixed data, and (iii) the Static-holds/Stream-collapses control that turns $\\rho$ from a property of repetition into a property of incrementality"},
+    {"number": "Figure 3", "page": "p.4", "shows": "Four backbones × five conditions (No Memory / Summary / Grouped / Ungrouped / Stream), with drop annotations −17.2, −18.6, −26.0, −38.5.", "why_reproduce": "establishes both the grouping effect and the one-shot-beats-streaming effect in one plot"},
+    {"number": "Figure 4", "page": "p.6", "shows": "Homogeneous vs heterogeneous mini-batches across three Qwen3.5 sizes and three (batch, cap) settings, as Start / From / To-Worst bars with Max-Drop annotations.", "why_reproduce": "the batch-composition finding; also the clearest example of a degradation figure with no baseline line"},
+    {"number": "Figure 5", "page": "p.7", "shows": "Cumulative success over 400 ARC-AGI Stream steps for No memory / Force / Auto(|Episodic|=100) / Auto(|Episodic|=50) on two backbones; endpoint labels 43.2/37.8/35.5/35.0 and 26.0/23.8/22.0 percent.", "why_reproduce": "the source of the abstract's unstated 2× claim; reproduce only with the caveat that the number is not in the body"},
+    {"number": "Figure 9", "page": "p.10", "shows": "(a) memory-source ablation — Auto+Episodic vs Auto(Episodic) vs Auto(Abstract Only) vs Episodic Management Only vs Force, against a no-memory line at 38; (b) training-time success across memory configurations with two in-context reference lines, In Context (Code) 86% and In Context (NL) 66%, above a Zero-shot 38%.", "why_reproduce": "(b) is the $E$-path's 'the baseline wins' picture in its cleanest form — plain in-context learning on the family beats every memory configuration, and the paper does not remark on it"},
+    {"number": "Figure 16", "page": "p.51", "shows": "wins/48 versus consolidation stage 0→200 for Qwen3.5-4B/9B/27B, with two printed no-memory lines (15/48 and 19/48).", "why_reproduce": "the $\\rho$ figure. Peaks 35/35/41, endpoints 15/16/22, and the 27B curve whose peak is stage 0 — i.e. a rollout for which consolidation never helps at all"},
+    {"number": "Table 11", "page": "p.53", "shows": "The single-stage collapse S=168 → S=169: 35→29, 36→26, 37→24 wins/48 against baselines 15/15/19.", "why_reproduce": "the instantaneous-$\\rho$ number, and the observation that the drop grows monotonically with rollout strength (−6, −10, −13)"},
+    {"number": "Table 12 and Table 13", "page": "p.61", "shows": "Memory surgery on WebShop: full 8-workflow memory vs the same file minus W8. 7/50 → 14/50 wins, 0.23 → 0.37 mean reward, 12.4 → 11.4 mean steps; and the action-category breakdown showing click[Next >] 421 → 181.", "why_reproduce": "the per-entry attribution result, and the corpus's only demonstration that a single consolidated entry can be worth about half the method's total value — negatively"},
+    {"number": "Table 2 and Table 3", "page": "p.6 and p.15", "shows": "Consolidators (ACEGT / ACE / AWM / DC) against raw-trajectory-log baselines and NoMem on AppWorld, ALFWorld and WebShop, with a red (–) on every non-trajectory-log cell beaten by a trajectory-log baseline.", "why_reproduce": "26 of 28 consolidator cells carry the dash. This is the episodic-only control result in table form and it is the most direct new evidence for ch27 판정 2"},
+    {"number": "Figures 14 and 15", "page": "pp.42–43", "shows": "Held-out ARC-AGI tasks solved 10/10 without memory and 0/10 and 2/10 with memory, with the two `solve(grid)` listings side by side and the single differing line (the selection criterion) traceable to the memory entry.", "why_reproduce": "the corpus's only token-level trace from a faulty $E$ entry to a wrong output. Worth reproducing in full because it converts an aggregate claim into a mechanism"},
+    {"number": "Figure 17", "page": "p.69", "shows": "Abstract Only vs Episodic Only vs Auto on the GT-400 stream at four checkpoints; endpoints 38 / 48 / 54 with a dotted zero-shot line at 38.", "why_reproduce": "'Abstract Only stays at or below the zero-shot baseline throughout' — the abstraction term of (U-E) is worth exactly nothing here, isolated from the retention term"},
+    {"number": "Figure 18", "page": "p.69", "shows": "Running totals of LLM-judge-flagged over-generalized and garbage entries across the 15-task ScienceWorld switch sequence: 94 vs 18 (over-gen) and 217 vs 11 (garbage), Cumulative vs Fresh.", "why_reproduce": "the compositional account of interference; cite with the judge caveat"},
+    {"number": "Stage-20 vs stage-200 memory dumps", "page": "pp.50–52", "shows": "Six verbatim items from the healthy store and five from the eroded store, plus the three named erosion modes (byte-identical duplicate, paraphrase cluster occupying 21/38 slots, lost meta-strategy).", "why_reproduce": "the only before/after artifact pair in the corpus. A reader who has never seen a consolidated memory bank learns more from these two pages than from any curve"}
+  ],
+
+  "discriminant_verdict": {
+    "summary": "PASSES all four conditions in its offline settings, on the $E$-path. Condition (1) is the only one requiring an argument, and it is also the condition the paper's own design straddles — so (1) is what decides the verdict.",
+    "conditions": [
+      {
+        "id": "(1) 질의 $q$가 도착하기 전에",
+        "verdict": "PASS in the headline settings; FAIL in one named regime.",
+        "pass_evidence": "In every setting that produces a table or an erosion curve, the store is built from a training pool and then read on a DISJOINT held-out split: ALFWorld `eval_id_balanced_48` [App. F.1, p.46]; WebShop `test50_seed42_no_leak.json` with the 13 overlapping training IDs excluded [App. F.2, p.47]; AppWorld's 100-task test subset drawn from the official test splits, disjoint from the 140 training trajectories [App. F.4, p.49]; ScienceWorld's 44-case test set evaluated 'after each full pass over all rollouts' [App. F.3, p.47]; ARC-AGI Stream 'Stream: offline GT-solution; eval on 50 held-out tasks (same family, unseen)' [Table 1, p.3].",
+        "fail_evidence": "The 'Running' trajectory regime — 'where the agent learns from its own attempts as it solves new problems' [§3, p.5] — updates memory inside the stream it is scored on. Fig. 5's 400-step cumulative-success curve and ScienceWorld's 'self-solve task-switch sequence' [Table 1, p.3] are that regime. There the write is not before the query; it is between queries, exactly the MemGPT situation the book treats as a boundary case (→ ch13, ch11 §11.5).",
+        "why_this_is_the_deciding_condition": "Because the paper is the first in the corpus to run BOTH sides of it under one design, and because the book's classification of this paper depends on which regime the chapter reads. The honest handling is the one ch11 §11.5 already established for MemGPT: admit it on the offline settings and name the regime that does not qualify."
+      },
+      {
+        "id": "(2) 예산 $B_s > 0$",
+        "verdict": "PASS structurally; the budget is never reported in the book's units.",
+        "evidence": "The write is an LLM call — 3 abstraction calls per trajectory [App. F.1, p.45] plus one full-memory rewrite per consolidation stage [App. G.1, p.50]. $B_s > 0$ is not in doubt. But no tokens, FLOPs, or dollars appear anywhere, so the cell stays 'absent' under ch25's rule. Note ch30 §30.3.3's observation that folding reporting quality into condition (2) would collapse the passing set — this paper would fall out under that variant too."
+      },
+      {
+        "id": "(3) $\\Theta \\cdot W \\cdot E$ 중 한 층의 상태를 실제로 바꾼다",
+        "verdict": "PASS, unambiguously, and only $E$.",
+        "evidence": "Textual memory banks are created, rewritten, capped, evicted, and deleted across up to 200 rounds. $\\Theta$ is excluded by declaration: 'parametric memory (weight updates, distillation into the model) ... are out of scope' [§8, p.11]. $W$ is never mentioned."
+      },
+      {
+        "id": "(4) 그 변화가 이후 질의에 쓰인다",
+        "verdict": "PASS.",
+        "evidence": "'At evaluation we provide all memory entries in context' [§3, p.4]; 'The full memory is supplied in the prompt context at every step, so the rollout sees every item in every snapshot' [App. G.1, p.50]. $\\mathrm{ret}$ is the identity, so the store's use is total and unconfounded by retrieval."
+      }
+    ],
+    "which_condition_decides": "**Condition (1).** (2)(3)(4) are satisfied trivially. (1) is satisfied by the offline settings and violated by the Running regime, so the verdict is a PASS conditioned on which settings the chapter cites — and the chapter must name the split rather than let the paper enter as a monolith. Secondarily, condition (2) decides how much the paper can be used FOR: it passes the discriminant while leaving $B_s$ unreported, so it can settle $\\rho$ questions and cannot settle amortisation questions.",
+    "path_assignment": "$E$-path. Not a system proposal but an instrumentation of $\\mathrm{wr}$; it belongs beside Mem0/Zep/ReasoningBank/SCM in ch15's group, or as the closing section of that chapter.",
+    "count_consequence": "If admitted, the book's counting convention '통과 9 + 경계 1 + 불충족 19 = 29' (PRE-RESEARCH §2.2) becomes '통과 10 + 경계 1 + 불충족 19 = 30', and the path split $E$ 6 / $W$ 1 / $\\Theta$ 2 becomes $E$ 7 / $W$ 1 / $\\Theta$ 2. Every aggregate in ch11 §11.3.1, ch24, ch27 표 27-1 A1 and 부록 C moves. The alternative is to hold the corpus at its 2026-08 boundary and cite this paper as post-corpus evidence in Part III only. **That is an editorial decision, not a factual one, and the chapter must state which it took.**"
+  },
+
+  "book_impact": {
+    "summary": "This paper touches eight chapters. It BREAKS one pre-registered corpus census (ch29 판정 6's '$K>100$ 실험 0편'), THREATENS three (ch25 표 25-1's $\\rho$ row, ch27 §27.2 C2, ch26 판정 6 / 요약), CONFIRMS four (ch27 판정 2, ch29 판정 4, ch29 판정 5, ch26 판정 2), COMPLICATES one (ch23 §23.8 / ch30 표 30-3의 생물학 행), and adds a new caveat to one (ch14's reading of Letta STC's headline numbers).",
+
+    "breaks": [
+      {
+        "target": "ch29 판정 6, third item.",
+        "the_book_s_sentence": "\"셋째, **$K^\\ast$** — 반복 지평이 기회의 크기를 정하는데 100회를 넘긴 실험이 0편이고, 라운드당 열화율을 라운드 수의 함수로 인쇄한 논문도 0편이다.\"",
+        "what_breaks_it": "This paper runs 200 consolidation stages (ALFWorld), 190 update steps and 250 single-pass steps (ARC-AGI), 192 stages (ACE on WebShop), 100 distill iterations (Fig. 8a), and 400 stream steps — and prints quality as a function of the round index with no-memory reference lines. Both clauses of the sentence are false as written.",
+        "the_scope_repair": "The sentence is inside a $\\Theta$-경로 judgment about the warm-tier delta opportunity, so the correct repair is a scope qualifier, not a retraction: '$\\Theta$-경로에서 100회를 넘긴 실험이 0편이다. $E$-경로에서는 2026-05의 한 편이 200라운드까지 돌았고 그 결과가 라운드 축으로 인쇄되어 있다.' The $\\Theta$-path claim survives intact; the universal framing does not.",
+        "strength": "BREAK, cleanly, on the literal wording."
+      }
+    ],
+
+    "threatens": [
+      {
+        "target": "ch25 표 25-1의 $\\rho$ 줄, and through it ch25 판정 1.",
+        "the_book_s_sentence": "\"| $\\rho$ | 라운드당 손실률 | **0편** | 4편 — 종점 수준(...) | 17편 |\" and the summary line \"Part II의 §N.5가 원문 대조로 채운 스물한 편에서, 요구 단위대로 인쇄된 칸은 $B_s$ 1편(ReasoningBank의 과제당 3748.4 토큰)뿐이고 $L_w$·$C_{\\text{cap}}$·$\\rho$는 각각 0편이다.\"",
+        "why_it_is_threatened": "ch25 §25.5 pre-registered exactly this falsifier: \"8. **한 편이라도 라운드당 열화율 $\\rho$를 sleep 라운드 수를 독립변수로 놓은 실험에서 인쇄하는 경우.** 판정 1이 '네 칸 중 세 칸이 0편'이라는 corpus 사실 위에 서 있으므로, 표 25-1의 $\\rho$ 줄이 0편에서 벗어나면 판정 1이 덮는 범위가 그만큼 줄어든다. ... 이 항목은 ch29·ch30이 받는다.\" This paper runs the experiment the falsifier specifies.",
+        "the_precise_call_the_chapter_must_make": "The paper prints $\\mathrm{Acc}(E_k)$ with a no-memory reference line — NOT a per-round loss rate. Under ch25's strict unit rule ('그 칸이 요구하는 단위가 붙은 수치가 원문에 인쇄되어 있어야 한다') the cell is still not filled; it holds a 대용치 of the same kind ch25 already counts in its middle column. Under §25.5 항목 8's stated intent ('sleep 라운드 수를 독립변수로 놓은 실험') the condition is met. **Recommendation: move the row from '0편 / 4편 대용치' to '0편 / 5편 대용치' and add a sentence naming this paper as the first 대용치 that is a full round-axis curve rather than an endpoint pair — then let ch29·ch30 do the substantive work, as §25.5 항목 8 says they must.** Do not quietly leave the row at 4편.",
+        "strength": "THREAT — the count moves, the judgment's scope narrows, the judgment itself survives."
+      },
+      {
+        "target": "ch27 §27.2 증거 C2, and the clause it supports in ch27 판정 4 and ch25 §25.2.1.",
+        "the_book_s_sentence": "\"| C2 | A군에서 sleep 라운드 수를 독립변수로 놓은 실험이 0편이다 | ch25 §25.2.1 | 전수 확인 | 단정 |\" and in ch27 §27.3.4: \"**첫째, A군에서 sleep 라운드 수를 독립변수로 놓은 실험이 0편이다**(C2). ... **측정되지 않은 것이 아니라 측정될 실험이 설계되지 않았다.**\"",
+        "what_threatens_it": "Static-All vs Stream at a fixed pool IS that experiment: 'Holding the trajectory pool fixed, Streamed incremental updates underperform a single whole-pool pass' [§4.1, p.6], with Static run at R = 1, 10, 50 and Stream at R = 1, 10 on identical data [Fig. 2, p.5]. The design also includes a round-resolved erosion curve at 200 stages.",
+        "the_scope_repair": "C2 is scoped to A군 = the nine passing papers of the 2026-08 corpus, so it is literally still true of that set. But the sentence that follows it — '측정될 실험이 설계되지 않았다' — is a claim about the field, and the field designed it three months before this book's date stamp. **Recommendation: keep C2 with its corpus scope stated explicitly, and add one sentence: the experiment was designed, and when it was run on the $E$-path the answer was that incremental rewriting loses 42.1 pp against one-shot re-derivation at matched data and matched refresh count.** That sentence strengthens ch27 판정 2 while weakening the 'nobody designed it' rhetoric — and the book's own standard requires taking the weakening.",
+        "strength": "THREAT to the rhetoric, not to the census."
+      },
+      {
+        "target": "ch26 판정 6 and ch26 요약's first bullet.",
+        "the_book_s_sentence": "\"판별식 통과 논문 중 사용자당 상태 바이트를 인쇄한 논문이 **0편**이다\" and \"**비교를 어렵게 만드는 것은 측정의 난이도가 아니라 비교하려는 의도의 부재다.**\"",
+        "what_threatens_it": "This paper prints store size in CHARACTERS at six places: 48,506 chars for a saturated 50-item store, ~970 chars/item, 1,960 chars after collapse, 3,410 chars at rebuild, ~14k chars (ACE), ~8.3k chars (Dynamic Cheatsheet), ~8.2k chars (AWM epoch 3) [App. G.2 p.53; App. H.1.1 pp.56–57; App. H.1.2 p.58]. Characters are one stated encoding away from bytes.",
+        "the_precise_call": "Not a fill under ch26's rule — the unit is per-store-per-run rather than per-user, and no encoding is stated. But 판정 6's rhetorical core ('의도의 부재') is directly contradicted: this author team measured store size because it needed to distinguish 'the store shrank' from 'the store's contents rotted', and printed the number. **Recommendation: keep 판정 6's census, soften its rhetorical clause to '거의 전무하다', and cite this paper as the counterexample that shows the measurement is trivial once a paper has a reason to want it.**",
+        "strength": "THREAT to the rhetorical clause; the census survives with a scope note."
+      }
+    ],
+
+    "confirms": [
+      {
+        "target": "ch27 판정 2 — and this is the strongest new evidence the book could have received for it.",
+        "the_book_s_verdict": "\"$E$-경로는 유망하다. 단 **비용 방법으로서**다. 품질 방법으로서는 현재 문헌이 지지하지 않으며, 그 반증은 이 책이 아니라 논문들 자신의 표에서 나온다.\"",
+        "what_confirms_it": "[본서 산술] 26 of 28 consolidator cells in Table 2 are beaten by a raw-trajectory-log baseline; 16 of 28 fall below no-memory; on AppWorld 31 of 40 memory cells of every kind fall below no-memory and for GPT-5-Mini every single one does; on WebShop ACE = 0.00 and DC = 0.03 against NoMem = 0.18; and 'Abstract Only stays at or below the zero-shot baseline throughout' [Fig. 17, p.69]. Plain in-context learning on the family reaches 86% against every memory configuration below it [Fig. 9b, p.10]. This is a fifth, sixth and seventh independent system showing the pattern ch15 §15.6 found in Mem0, Zep, SCM and ReasoningBank.",
+        "what_it_ADDS_to_the_verdict": "ch27 판정 2's cost half assumes quality parity: '프롬프트를 26k에서 수백 토큰으로 줄이면 prefill이 준다 — 이득의 방향은 구조적으로 참이다'. That argument is valid only against a no-memory arm of comparable quality. **This paper shows the quality can go BELOW no-memory, at which point the cost comparison is not 'same quality, cheaper' but 'worse than free, and you paid $B_s$ for it'.** The chapter should add a clause: 비용 이득의 방향은 여전히 구조적으로 참이지만, 그 논증은 품질이 no-memory 팔 아래로 내려가지 않는 레짐에서만 의미가 있고, 반복 (U-E) 하에서 그 전제가 실증적으로 깨진다.",
+        "strength": "CONFIRM, and materially extend."
+      },
+      {
+        "target": "ch29 판정 4.",
+        "the_book_s_verdict": "\"반복이 이 기회의 시간 지평을 정하고, 반복은 보존된 원본 아카이브를 요구한다. 그러므로 $\\Theta$-경로는 $E$-경로를 대체하지 않는다.\" — supported by X4 F6 (원본 앵커 replay가 자기 출력 앵커보다 모든 $\\omega$에서 오래 버틴다) and [Continual Facts §6.2]'s frozen-teacher contrast.",
+        "what_confirms_it": "The Static-vs-Stream control is the same sign in a third, independent place, on a different layer, with a real LLM: re-deriving from the PRESERVED POOL at every refresh holds 94.7% across 50 refreshes; rewriting the previous rewrite falls to 52.6% on identical data [Fig. 2, p.5]. And the paper's own diagnosis is the anchoring mechanism: 'early abstractions can anchor later rewrites and mistakes are reused as context for future consolidation, so small errors in segmentation or abstraction compound' [§4.1, p.6].",
+        "why_this_matters_for_the_grade": "ch29 판정 4 carries the caveat 'X4는 LLM 실험이 아니므로 이 판정이 X4에서 받는 것은 **부호와 순서뿐**'. The sign now has a real-LLM instance. The judgment's evidence grade rises from (minimal model + one $\\Theta$-path paper's contrast) to (minimal model + $\\Theta$-path contrast + a 200-round $E$-path experiment). **And it generalises the claim: the preserved-original archive is not a $\\Theta$-path requirement, it is a requirement of iterated rewriting as such.**",
+        "strength": "CONFIRM, with a grade upgrade and a scope widening."
+      },
+      {
+        "target": "ch29 판정 5, first half.",
+        "the_book_s_verdict": "\"운영 지표는 라운드당 열화율이 아니라 crossover $K^\\ast$여야 하고, 감시는 임계 과제 지표가 아니라 연속 신호에 걸어야 한다.\" — with the supporting sentence \"그리고 라운드당 비율은 라운드에 대해 상수가 아니므로 SLA로 걸 수 있는 양이 아니다.\"",
+        "what_confirms_it": "[본서 산술] The ALFWorld mean rate is 0.198–0.231 pp per consolidation stage; a single stage (S=168→169) costs 12.5–27.1 pp. That is 54× to 137× the mean, in the same run, on the same benchmark. $\\rho$ is empirically not constant in $k$ — the book asserted this from a minimal model and now has it from an LLM loop. And $K^\\ast$ is directly readable and behaves as the book said an operational quantity should: $K^\\ast = 20$ stages (Qwen3.5-4B, 9B), $K^\\ast = 0$ (Qwen3.5-27B).",
+        "what_is_NOT_confirmed": "The second half — '감시는 연속 신호에 걸어야 한다' — is untested here. This paper measures ONLY threshold task metrics; it has no continuous-signal curve at all. So ch30 표 30-3's row '운영 지표는 $\\rho$가 아니라 $K^\\ast$다 | ch29 판정 5 | 실제 LLM 루프에서 임계 지표가 연속 신호보다 먼저 또는 같은 라운드에 무너짐' remains open, and the chapter must not claim otherwise.",
+        "a_partial_tension_to_report": "X4 produced a flat-then-cliff shape for the threshold metric. Fig. 16 shows a rise then a GRADUAL decline 'with small recoveries' over 180 stages, while Table 11 shows a cliff inside that decline. So the $E$-path shape is a third shape — erosion punctuated by cliffs. The chapter should print that as an observation rather than force it into X4's two-curve story.",
+        "strength": "CONFIRM the first half and the non-constancy; leave the second half open; report the shape tension."
+      },
+      {
+        "target": "ch26 판정 2's $E$-row placement.",
+        "the_book_s_verdict": "\"세 경로는 메모리 계층의 세 층에 각각 내려앉으며 ... $E$는 콜드다 — 사용자당 수십 KB이고 질의당 한 번 읽힌다.\" Anchor: $E$ = 56.0 KB.",
+        "what_confirms_it": "[본서 산술] A real, saturated, capped $E$ store measured at 48,506 characters ≈ 48.5 KB — within 13.4% of the book's accounting anchor, from an entirely independent source that had no interest in the question. ch26 §26.5 R-1 named the falsifier ('$E$-경로가 ... 사용자당 저장이 수십 MB를 넘어 $\\Theta$ delta 자릿수에 들어오면') and this observation is three orders of magnitude away from triggering it.",
+        "strength": "CONFIRM — and the cheapest possible one, since ch26 §26.5 R-1 says '필요한 관측은 실험이 아니라 인쇄 한 줄이다'. The line got printed."
+      }
+    ],
+
+    "complicates": [
+      {
+        "target": "ch23 §23.8 / ch08, and ch30 표 30-3's row for it.",
+        "the_book_s_sentence": "\"| 이름은 생물학에서 왔고 논증은 오지 않았다 | ch23 §23.8 | 세 경로 논문이 CLS·생물 sleep을 근거로 설계를 정당화하고 그 예측을 시험함 |\"",
+        "what_complicates_it": "This paper satisfies the falsifier's OBSERVATION for one path: it cites McClelland 1995 in four separate sections, states the CLS gating rule as a prediction ('the control conditions below are designed to test this gating prediction directly' [§3, p.5]), derives its two-store architecture from it, builds Force / Auto / Episodic-Management-Only as the test, and reads the result back onto the theory ('The Force regime collapses this separation into a mandatory rewrite loop, recreating the interference conditions the dual-system design was meant to prevent' [§5, p.8]). It also imports the instance-theory line (Hintzman, Brooks, Medin & Schaffer, Logan) to justify the episodic-only control.",
+        "why_it_is_a_complication_and_not_a_break": "The falsifier says '세 경로 논문이'. This is one path. The $W$-path and $\\Theta$-path are cited zero times, and the $\\Theta$-path is excluded by declaration. So the inter-path silence is untouched.",
+        "the_finding_the_chapter_should_take_instead": "[본서 판단] **이름과 논증이 서로 다른 논문에 갈라져 실렸다.** Letta STC took the word 'sleep' with zero biological citations (→ ch14, cross_path_citations). This paper takes the full CLS argument and never writes the word 'sleep' — zero occurrences in the whole text. Neither cites the other. That is a sharper and more defensible version of ch23's claim than the original, and it is available at the cost of one paragraph.",
+        "strength": "COMPLICATE — replace the sentence with a stronger one rather than defend the old one."
+      },
+      {
+        "target": "ch27 판정 5's supporting rhetoric.",
+        "the_book_s_sentence": "\"**실행된 대조에서는 방법이 지거나 겨우 비겼고, 방법이 이기는 축에서는 대조가 실행되지 않았다.** ... 그리고 빠진 대조군이 무작위가 아니다. 빠진 것은 언제나 **가장 싸고 가장 자명한 baseline**이다.\"",
+        "what_complicates_it": "This paper runs one of those cheap obvious baselines — the raw trajectory logs the consolidators distill from — across three benchmarks and four backbones, and the consolidators lose in 26 of 28 cells. So one of the missing controls is now run, and the outcome is the one ch27 predicted.",
+        "why_the_verdict_survives_intact": "ch27 §27.5 FQ1 specifies the three cells whose filling would resolve 판정 5: $E$'s cost axis (prefix-cache-on full-context total cost), $W$'s compute-matched control, and $\\Theta$'s retrieval control. None of the three is filled here — this paper has zero cost accounting. **판정 5 stands; its first sentence gains a clause: 이제 실행된 대조가 하나 더 있고, 그 대조에서도 방법이 졌다.**",
+        "strength": "COMPLICATE the rhetoric, CONFIRM the verdict."
+      }
+    ],
+
+    "new_caveat": [
+      {
+        "target": "ch14 (Letta STC) §14.5, and the reading of its 5× / 13% / 18% / 2.5×.",
+        "what_this_paper_adds": "The `letta-stc` note records that $k$ never exceeds 1 in any Letta STC experiment and that $\\rho$ is 'not merely unmeasured but out of scope by construction'. This paper shows that $k=1$ is the regime in which the $E$-path performs BEST — Static R10 and R50 hold 94.7% while Stream falls to 52.6% on the same data. So Letta STC's single-round design is not a neutral simplification; **it is the most favourable point of the axis the method's headline numbers are measured on.**",
+        "the_caveat_sentence_to_add": "\"[Letta STC]의 모든 실험이 sleep 라운드 1회라는 사실은 미측정 칸 하나가 아니라 유리한 레짐의 선택이다 — 같은 층·같은 데이터에서 라운드를 늘리면 품질이 no-memory 아래까지 내려가는 결과가 이후 보고되었다.\"",
+        "strength": "NEW CAVEAT — should be added to ch14 §14.5 or ch27 표 27-2, and to the 의무 caveat 표 in PRE-RESEARCH §4."
+      },
+      {
+        "target": "ch15's write-operator comparison, and ch27 표 27-2 T8 (파괴적 쓰기가 미검증 판정기와 결합한다).",
+        "what_this_paper_adds": "T8's evidence is currently ReasoningBank's 72.7%-accurate judge and Mem0's unaudited DELETE. This paper supplies the outcome T8 predicts, measured: a destructive rewrite loop that runs 200 times, with no verification step, produces a store that is worse than no store — and a single-entry surgery shows one bad entry costs about half the method's total value [Table 12, p.61]. It also names the missing write primitive: Retain. Every write alphabet in ch15 (Letta {overwrite}, Mem0 {ADD, UPDATE, DELETE, NOOP}, ReasoningBank {union}, Zep {invalidate}) lacks an operation meaning 'keep this raw'.",
+        "strength": "NEW EVIDENCE for an existing row, plus one new column for ch15's table."
+      }
+    ],
+
+    "no_impact": "ch12, ch13, ch16, ch17, ch18, ch19, ch20, ch21, ch22, ch28. The paper touches none of the $W$-path or $\\Theta$-path material, and it reports no $B_s$, so ch28's judgment that the $B_s$–quality curve cannot be drawn is completely untouched — indeed this paper is one more paper that would not contribute a point to that curve."
+  },
+
+  "todo_verify": [
+    {"item": "Table 2's cell values. The vendored extraction is column-interleaved; the reconstruction in experiments.table2_reconstruction is self-consistent under both caption rules with zero exceptions, but has not been read off the PDF.", "how": "open the arXiv PDF p.6 and read the two panels directly", "why_it_matters": "the 26/28 and 31/40 censuses in book_impact are computed from it"},
+    {"item": "Which of 'fails on 54%' (Abstract), 'fails on 46%' (§1), 'down to 54%' (§4.1) and 52.6% (Fig. 2) the authors intend.", "how": "compare against the arXiv PDF and any later version; check whether Fig. 2's Stream R10 bar is labelled 52.6", "why_it_matters": "the book must quote one number and flag the other two; it must not silently pick the one that suits it"},
+    {"item": "The scale of ScienceWorld 'average test score' (7.45 / −7.68 / −8.66).", "how": "App. J.1.3 gives no definition; check App. F.3 and the CLIN paper's metric, or the released code if any", "why_it_matters": "this is the paper's most dramatic degradation number and is currently uninterpretable"},
+    {"item": "Fig. 1b's WebShop y-quantity. §4.1 says 'AWM goes from 0.64 at 8 examples to 0.20 at 128 while no-memory sits at 0.20'; the caption says the y-axis is success rate out of 50 held-out episodes with 'average score' in parentheses; the extracted tick labels for panel (b) run 0.1–0.2.", "how": "read the figure in the PDF", "why_it_matters": "the 'falls to the no-memory line' claim for WebShop rests on it"},
+    {"item": "Fig. 5 and Fig. 9a endpoint values, and which pair the abstract's 'double' refers to.", "how": "read the PDF; candidates from the extraction are 43.2 / 37.8 / 35.5 / 35.0 and 26.0 / 23.8 / 22.0 for Fig. 5, and 86 / 68 / 62 / 60 / 56 / 54 / 54 / 48 / 40 / 32 with a no-memory line at 38 for Fig. 9a", "why_it_matters": "the 2× is an abstract-only claim and the book must either print the supporting pair or refuse to repeat the claim"},
+    {"item": "Fig. 8a's series binding — which of 70.4→22.2 (−48.2) and 37.0→11.1 (−25.9) belongs to Qwen3.5-27B and which to GPT-5-Nano.", "how": "read the PDF legend", "why_it_matters": "these are two more $\\rho$ points at 100 rounds; they should not be printed with the wrong model attached"},
+    {"item": "Fig. 11's ID/OOD value-to-condition binding (GPT5.4 / GPT5-mini / Qwen3.5-27B × Code / Code-Summ.).", "how": "read the PDF", "why_it_matters": "the overfit finding's magnitude (OOD 0.00–0.10 against ID 0.45–0.80) is currently a figure reading"},
+    {"item": "Whether the ALFWorld 200-stage erosion run was ever repeated with gpt-5.4 as the per-stage manager.", "how": "search App. F and G for any gpt-5.4-managed multi-stage run; check for a released repo", "why_it_matters": "the consolidator-downgrade confound in unfavorable_facts #5 is the single largest threat to the paper's flagship curve"},
+    {"item": "Whether a 'mandatory consolidation WITH episode retention' arm exists anywhere.", "how": "search §3, §5, App. B and App. K for a fourth control loop", "why_it_matters": "without it the paper's causal attribution to 'mandatory rewriting rather than abstraction itself' is not isolated"},
+    {"item": "The encoding behind 'characters' in App. G.2 and H.1 (48,506 chars etc.).", "how": "not stated; check any released artifact", "why_it_matters": "the 48.5 KB figure used to cross-check ch26's $E$ anchor assumes one byte per character"},
+    {"item": "Whether Mind2Web results exist in any version of the paper.", "how": "check later arXiv versions and any appendix not present in the vendored text (the vendored text runs to p.69 and the ToC ends at App. K)", "why_it_matters": "§3 and §8 both claim it as a studied benchmark"},
+    {"item": "The LLM judge's identity and prompt for the over-gen / garbage labelling.", "how": "search App. J.1 and K.2 for a model name or prompt listing", "why_it_matters": "the 5× and 20× interference rates and Fig. 18's 94/18 and 217/11 totals all come from it"},
+    {"item": "Whether the paper has a released repository or dataset.", "how": "no URL appears in the vendored text; check the arXiv abstract page", "why_it_matters": "several of the items above are settled by artifacts rather than by the PDF"}
+  ]
+}
+

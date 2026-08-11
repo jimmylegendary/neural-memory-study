@@ -1,0 +1,546 @@
+{
+  "paper_id": "weight-vs-compaction",
+  "arxiv": "2605.24657",
+  "arxiv_version": "v1 [cs.AI] 23 May 2026",
+  "title": "Beyond Inference-Only Deployment: Comparing Weight-Based Consolidation Against Cascading Compaction",
+  "authors": "Simon Dennis (i14 / University of Melbourne), Kevin Shabahang (i14), Hao Guo (i14), Rivaan Patil (i14) (title block, p.1)",
+  "venue": "arXiv preprint. The vendored text carries only 'Preprint.' on p.1 (line 55); no venue is named anywhere.",
+  "date": "2026-05-23",
+  "path": "/home/jimmy/repos/neural-memory-study/papers/stc/2605.24657.txt",
+  "code": "none stated. No repository, no released artefacts. 'the full conversations are in the supplementary archive' [App. B, p.10] is the only pointer, and no archive location is given.",
+  "axis": "Theta",
+
+  "read_context": {
+    "why_this_paper_was_read": "The multi-channel gap sweep (dossier/stc-v2/gap-sweep/TRIAGE.md row 1) flagged this as the one corpus-external paper that runs BOTH a no-context floor and a full-context ceiling around a Theta-vs-context head-to-head, and therefore as a direct threat to the sentence proposed in OUTLOOK-REVIEW-2026-08-11 §7.6 ('full-context 팔을 실행한 논문이 아직 0편이다') and to the regime qualifier in ch27 표 27-4's Theta row.",
+    "one_line_answer": "[note-writer] Both control arms exist and are matched on model, task and test set; the Theta arm still LOSES to full context by 9.7 pp overall. The threatened sentence survives only if it is re-scoped, and the book's substantive verdict is CONFIRMED — but confirmed from a paper whose every methodological defect pushes the other way, which is why the confirmation is strong and the paper's own headline is weak."
+  },
+
+  "problem_stated": {
+    "as_the_paper_frames_it": "'Major LLM platforms deploy models in an inference-only configuration: the model serves requests but never updates per-user weights. Users must repeatedly reteach preferences, corrections, and project context, and context-based workarounds consume context-window space and degrade under cascading compaction.' [Abstract, p.1]",
+    "the_counter_observation": "'Some platforms carry forward summaries or compacted context between sessions, but this information competes for finite context window space and degrades under repeated compaction—it is a workaround, not learning.' [§1, p.1]. And: 'over months of collaboration, the volume of relevant project context far exceeds what any context window can hold ... but the context window does not grow to match. Context-based workarounds—retrieval-augmented generation [Lewis et al., 2020] and external memory stores [Zhong et al., 2024, Chhikara et al., 2025]—can defer this problem but cannot solve it.' [§1, pp.1-2]",
+    "the_operational_question": "'Whether this pipeline is preferable to keeping recent context summarised in-window is an empirical question.' [§1, p.2] — i.e. does a nightly weight write retain more of a conversation's knowledge than the summarisation the deployed assistant actually performs?",
+    "note_writer_remark": "[note-writer] This is the first paper in the corpus whose stated problem IS the head-to-head the book says is missing. The framing is explicitly comparative rather than promotional, and the paper prints a floor and a ceiling on the same page as its method. That structural honesty is the paper's principal contribution and must be credited before any of the defects below are counted."
+  },
+
+  "core_mechanism": {
+    "one_line_unified": "A three-stage nightly pipeline that instantiates (U-Theta) alone: an external frozen LLM reads the day's transcripts and emits a structured fact inventory (reflection), turns each fact into 20 paraphrased two-message dialogues (synthesis) — this is the construction of $\\mathcal{R}_k$ by $\\mathrm{gen}(\\mathcal{H}_k;B_s)$ — and a rank-16 LoRA adapter is fitted to that set by supervised fine-tuning (training). $W$ does not exist in the architecture and $E$ is held empty at wake by construction: the consolidated arm receives NO system prompt at test time.",
+
+    "notation_conflicts": {
+      "preamble": "The paper contains ZERO numbered equations and zero displayed mathematics. Its mechanism is three prose stages (§2.2, pp.3-4) plus a hyperparameter table (App. C Table 4, p.12). Every 'original locator' below is a section/table/figure pointer, not an Eq. number. The absence is recorded under unfavorable_facts.",
+      "map": [
+        {"paper_symbol": "$r$ — used for TWO different quantities", "paper_meaning": "(i) LoRA rank, 'rank r = 16' [§2.2, p.4; App. C Table 4, p.12]; (ii) Pearson correlation coefficient, 'r = −0.51', 'r = +0.99' [Abstract, p.1], 'r = +0.994 (Pearson)', 'r = −0.506' [§3.2, p.5; Fig. 2, p.6]", "reserved_meaning": "$r$ = LoRA rank [STC-STYLE-NOTATION §1.3]. Correlation has no reserved symbol in this book", "unified_replacement": "$r$ retained for rank; write correlation out as 'Pearson $\\rho_{\\mathrm{corr}}$' with the §1.3 subscript rule, or spell 'Pearson 상관 −0.51'. The chapter must never let the paper's two $r$'s appear in one paragraph. NOTE: this is an INTERNAL collision in the paper, not merely a collision with this book."},
+        {"paper_symbol": "$\\alpha$", "paper_meaning": "LoRA scaling factor, 'α = 32 — scaling factor, typically set to 2× rank' [§2.2, p.4; App. C Table 4, p.12]", "reserved_meaning": "$\\alpha_t$ = retention gate of (U-W), 'the fraction retained' [STC-STYLE-NOTATION §1.2 — NM 승계]", "unified_replacement": "$\\alpha_{\\mathrm{LoRA}}$. The bare $\\alpha$ is the (U-W) retention gate everywhere in this book and must not be shadowed by a PEFT hyperparameter, especially in a Theta-path chapter where a reader may be carrying the W-path equation."},
+        {"paper_symbol": "$n$", "paper_meaning": "number of conversations = number of independent statistical units, 'n = 10' [Abstract, p.1; Table 2, p.6; Fig. 2, p.6; Fig. 3, p.7]", "reserved_meaning": "$n$ = number of stored items (global) [STC-STYLE-NOTATION §1.3]", "unified_replacement": "$n_{\\mathrm{conv}} = 10$. Convenient here because the paper ALSO has a genuine 'stored items' quantity — 9,198 extracted facts [Table 3, p.10] — which is what this book's $n$ denotes."},
+        {"paper_symbol": "$t(9)$", "paper_meaning": "Student's t statistic on 9 degrees of freedom, 't(9) = 14.78, p < 0.001' [§3.2, p.7; Abstract gives 14.8]", "reserved_meaning": "$t$ = token/chunk index [STC-STYLE-NOTATION §1.2, P3]", "unified_replacement": "keep as a direct quotation only ('paired t(9) = 14.78'); never introduce a bare $t$ in surrounding prose in this chapter."},
+        {"paper_symbol": "'CE' / 'per-token cross-entropy'", "paper_meaning": "validation cross-entropy on the test questions, reported as mean and as median [§3.2, p.5; Fig. 2, p.6]", "reserved_meaning": "$\\ell$ = inner loss, $\\mathcal{L}$ = outer/task loss [STC-STYLE-NOTATION §1.2]", "unified_replacement": "this is the outer loss $\\mathcal{L}$ of (U-Theta) evaluated on a held-out set. Write $\\mathcal{L}^{\\mathrm{val}}$ and distinguish $\\overline{\\mathcal{L}^{\\mathrm{val}}}$ (mean) from $\\mathrm{med}\\,\\mathcal{L}^{\\mathrm{val}}$ (median) — the paper's entire methodological aside is the difference between those two statistics."},
+        {"paper_symbol": "'cycle' (0, 1, 2, 3)", "paper_meaning": "one round of (compaction + continuation) for the context arm; one fresh-LoRA retrain on the accumulated fact set for the weight arm [§3.1, pp.4-5; Fig. 3, p.7]", "reserved_meaning": "$k$ = sleep round index [STC-STYLE-NOTATION §1.2]", "unified_replacement": "$k$, WITH the standing warning that for the weight arm this paper's $k$ does not index a chain $\\Theta_k \\to \\Theta_{k+1}$ — every point is $\\Theta_0 \\to \\Theta$ on a larger $\\mathcal{H}_k$. See update_layer.repeated_rounds."},
+        {"paper_symbol": "'6:1 ratio'", "paper_meaning": "the compaction compression factor, 'a summary of approximately 1/6 the original token count' [§3.1, p.4]", "reserved_meaning": "none", "unified_replacement": "no symbol needed; quote the ratio and its source (a Medium blog post — see unfavorable_facts)."}
+      ]
+    },
+
+    "equations_unified": [
+      {
+        "id": "D1",
+        "latex": "\\textbf{reflection:}\\qquad \\mathcal{F}_k \\;=\\; \\bigcup_{i=1}^{3} \\mathrm{extract}_i\\big(\\mathcal{H}_k\\big)\\ \\Big/\\ \\text{dedup-by-name}, \\qquad \\mathcal{H}_k = \\{\\text{original}\\} \\cup \\{\\text{continuations } 1..k\\}",
+        "paper_form": "'For each conversation in the log we run three independent extraction passes with Claude Sonnet 4, classifying each memory by type and extracting the core content in a concise, testable form ...; the three passes are unioned and deduplicated by fact name, which surfaces different framings of the same underlying knowledge and is what produces the redundancy that the synthesis stage then amplifies.'",
+        "gloss": "$\\mathrm{extract}$ is a frozen third-party frontier model (Claude Sonnet 4), not the model being updated. This is the corpus's cleanest case of an asymmetric teacher: the write operator is strictly stronger than the student it writes into (Qwen2.5-7B-Instruct). Dedup is by NAME only, so semantically redundant rows survive deliberately.",
+        "source": "[§2.2, p.3; §3.1 'Consolidation Protocol' step 1, p.5]"
+      },
+      {
+        "id": "D2",
+        "latex": "\\textbf{synthesis (}\\mathcal{R}_k = \\mathrm{gen}(\\mathcal{H}_k; B_s)\\textbf{):}\\qquad \\mathcal{R}_k \\;=\\; \\bigcup_{\\phi \\in \\mathcal{F}_k}\\ \\{\\,d_{\\phi,1},\\ldots,d_{\\phi,20}\\,\\}, \\qquad d_{\\phi,i} = \\text{a two-message (user, assistant) dialogue}",
+        "paper_form": "'For every fact, regardless of memory type, we prompt the same model (Claude Sonnet 4) to generate 20 such two-message conversations, varying question style (direct, how-to, recall, scenario, negation, task-oriented) and answer length and tone.'",
+        "gloss": "This is (U-Theta)'s $\\mathrm{gen}$ operator made fully explicit for the first time in the corpus — a named generator, a named fan-out factor, and a printed output count (183,393 examples from 9,198 facts = 19.94x [Table 3, p.10] [본서 산술]). The paper's warrant for paraphrastic rehearsal is Allen-Zhu & Li 2024 (Physics of LMs 3.1), and the paper states its own extrapolation: 'we extrapolate this finding from pretraining to per-user fine-tuning' [§5, p.9]. The stated per-concept coverage after dedup is 'roughly 40–60 paraphrased conversations on average' [§2.2, p.3].",
+        "source": "[§2.2, p.3; Table 1, p.3; Table 3, p.10; §5, p.9]"
+      },
+      {
+        "id": "D3",
+        "latex": "\\textbf{training (U-}\\Theta\\textbf{):}\\qquad \\Theta_{\\mathrm{dep}} \\;=\\; \\Theta_0 \\;+\\; \\tfrac{\\alpha_{\\mathrm{LoRA}}}{r}\\,B A, \\qquad r=16,\\ \\alpha_{\\mathrm{LoRA}}=32,\\ \\mathcal{S}=\\{W_q, W_k, W_v, W_o\\},\\ \\Theta_0 = \\text{Qwen2.5-7B-Instruct}",
+        "paper_form": "'fine-tunes the base model on the synthesized training data via LoRA [Hu et al., 2021] (rank r = 16, α = 32) applied to the attention projections of Qwen2.5-7B-Instruct'; App. C Table 4 names Target Modules 'q_proj, k_proj, v_proj, o_proj'",
+        "gloss": "The book's $\\mathcal{S}$ (LoRA target set, ch03) is printed here as all four attention projections — note k_proj and v_proj are included, which the original LoRA paper's headline configuration excludes. Loss: 'Each training example is a two-message user–assistant exchange, formatted with the base model's chat template and fed as a single sequence to the default supervised-fine-tuning loss' [§2.2, p.4]. Optimizer: 8-bit paged AdamW, cosine schedule, 3% linear warmup, lr 2e-4, batch 8, 8 epochs [App. C Table 4, p.12].",
+        "source": "[§2.2, p.4; App. C Table 4, p.12]"
+      },
+      {
+        "id": "D4",
+        "latex": "\\textbf{wake read (R), consolidated arm:}\\qquad \\hat y \\;=\\; f\\big(q;\\ \\Theta_{\\mathrm{dep}},\\ \\cdot,\\ \\varnothing\\big), \\qquad \\mathrm{ret}(E,q) = \\varnothing,\\quad |\\text{system prompt}| = 0",
+        "paper_form": "'The consolidated model receives no context at test time—it must answer from knowledge encoded in weights alone.' and 'the consolidated and no-context conditions do not receive a system prompt.'",
+        "gloss": "The strictest wake condition in the corpus. Every other Theta-path A군 paper leaves some context channel open; here $E$ is emptied by construction, which is what makes the head-to-head against a full-context arm interpretable. Decoding: greedy, temperature 0, up to 512 new tokens [§3.1 'Evaluation', p.5].",
+        "source": "[§3.1 'Consolidation Protocol' step 4 and 'Evaluation', p.5]"
+      },
+      {
+        "id": "D5",
+        "latex": "\\textbf{the compaction arm — an (U-E) instance the book has never classified:}\\qquad E_{k} \\;=\\; \\mathrm{wr}\\big(E_{k-1},\\hat c_k\\big) = \\hat c_k \\,\\Vert\\, u_k, \\qquad \\hat c_k = S\\big(E_{k-1};B_s\\big),\\ \\ |\\hat c_k| \\approx |E_{k-1}|/6",
+        "paper_form": "'1. The current context is summarized at a 6:1 ratio, producing a summary of approximately 1/6 the original token count ... 2. A continuation—a fresh ∼60,000-token conversation of new simulated work on the same project—is generated in the context of this summary and appended. ... 3. The model is tested on the original conversation's facts, using the summary plus continuation as the system prompt.'",
+        "gloss": "[note-writer] Read against this book's discriminant, cascading compaction is itself an $E$-path procedure: it runs before the next queries, it spends a nonzero budget, it rewrites external text state with a destructive lossy $\\mathrm{wr}$, and later queries read the result with $\\mathrm{ret}$ = identity. It is structurally the same shape as Letta STC's write operator with $S(\\cdot;B_s)$ demoted from a reasoner to a summariser. The book's census has never counted the single most widely deployed member of the $E$-path. This is a classification finding independent of anything the paper claims.",
+        "source": "[§3.1 'Compaction Protocol', p.4]"
+      },
+      {
+        "id": "D6",
+        "latex": "\\textbf{the four conditions compared:}\\qquad \\text{no-context } (\\Theta_0,\\varnothing) \\;<\\; \\text{compaction-}k{=}3\\ (\\Theta_0, E_3) \\;<\\; \\text{consolidated } (\\Theta_{\\mathrm{dep}},\\varnothing) \\;<\\; \\text{full-context } (\\Theta_0, E_0)",
+        "paper_form": "Table 2 rows, in the order printed: No context 11.8 ± 1.0 · Compaction (C3) 36.8 ± 3.0 · Consolidated 80.4 ± 1.3 · Full context 90.1 ± 0.9",
+        "gloss": "This ordering IS the paper's result and it is the one the book needs. The Theta arm sits strictly between the floor and the ceiling; it does not reach the ceiling. All four arms share the same base model, the same 1,146 questions, the same judge, the same decoding.",
+        "source": "[Table 2, p.6]"
+      }
+    ],
+
+    "what_is_NOT_in_the_mechanism": [
+      "No equations. Zero displayed or numbered mathematics anywhere in the paper.",
+      "No write verification. Nothing checks whether an extracted fact is true, whether a synthesized answer is correct, or whether a training pair contradicts an earlier one. The word 'verify' does not appear.",
+      "No forgetting control. No EWC, no replay of base-model data, no orthogonality constraint. The paper explicitly declines O-LoRA's protection: 'our pipeline relies instead on the more limited form of isolation that LoRA already provides (the base weights are not touched and the adapter's update is low rank)' [§5, p.9].",
+      "No sequential weight update. Each cycle trains a FRESH LoRA from $\\Theta_0$ on the accumulated fact set — 'trains a fresh LoRA on facts extracted from all conversations seen so far' [Fig. 3 caption, p.7]. The chain $\\Theta_k \\to \\Theta_{k+1}$ is never run.",
+      "No adapter merging, no multi-adapter serving, no quantisation, no delta compression. 'quantiz' returns 0 hits over the full text.",
+      "No retrieval of any kind at wake. $\\mathrm{ret}$ is the empty map for the consolidated arm.",
+      "No named summariser for the compaction arm. The model that performs the 6:1 summarisation is never identified, while the model that performs reflection and synthesis for the weight arm is named four times.",
+      "No general-capability measurement. 'We do not measure general-knowledge or general-coding benchmarks such as MMLU or HumanEval' [§4 Limitations, p.8]; 'whether consolidation perturbs base-model refusal or safety behaviour has not been measured' [§4 Broader Impacts, p.8]."
+    ]
+  },
+
+  "outer_vs_inner": {
+    "headline": "Unlike the E-path founding paper, this one has a real outer loop — but the outer loop trains the STUDENT, not the writer. The write operator itself (Claude Sonnet 4 doing reflection and synthesis) is frozen and hand-prompted; what moves is a 10.09M-parameter LoRA delta on a 7B student. Nothing about the extraction, the synthesis, the judging, or the memory taxonomy is learned.",
+    "rows": [
+      {"object": "$\\Theta_0$ — Qwen2.5-7B-Instruct base weights", "who_learns_it": "the Qwen team, before this paper", "when": "outside this paper", "moves_in_this_paper": "no — frozen; LoRA leaves base weights untouched", "source": "[§2.2, p.4; App. C Table 4, p.12; §5, p.9]"},
+      {"object": "the LoRA delta $BA$ on $\\{W_q,W_k,W_v,W_o\\}$, $r=16$, $\\alpha_{\\mathrm{LoRA}}=32$", "who_learns_it": "supervised fine-tuning on $\\mathcal{R}_k$", "when": "SLEEP — one nightly consolidation event, 8 epochs", "moves_in_this_paper": "YES — this is the sole moving part", "source": "[§2.2, p.4; App. C Table 4, p.12]"},
+      {"object": "$W$ — fast weights", "who_learns_it": "nobody", "when": "n/a", "moves_in_this_paper": "no — this layer does not exist in the architecture used, and the paper mentions weight-space test-time state only through an uncited analogy ('linear attention models, which implement Hebbian learning similar to that proposed for hippocampal area CA3 [Rolls, 2013]')", "source": "[§1, p.2]"},
+      {"object": "$E$ — external store", "who_learns_it": "for the consolidated arm, nobody: it is empty at wake. For the COMPACTION arm it is the summary text, rewritten destructively each cycle by an unnamed summariser", "when": "compaction arm: once per cycle. Consolidated arm: never", "moves_in_this_paper": "only in the baseline arm", "source": "[§3.1, pp.4-5]"},
+      {"object": "the reflection prompt / three-pass extraction protocol", "who_learns_it": "the authors, by hand", "when": "never — fixed", "moves_in_this_paper": "no", "source": "[§2.2, p.3]"},
+      {"object": "the synthesis prompt (20 dialogues per fact; six question styles; per-type framing)", "who_learns_it": "the authors, by hand", "when": "never — fixed", "moves_in_this_paper": "no", "source": "[§2.2, pp.3-4]"},
+      {"object": "the memory taxonomy (procedural / semantic / episodic)", "who_learns_it": "cognitive psychology, imported [Squire 1980; Conway & Pleydell-Pearce 2000]", "when": "n/a — a design decision", "moves_in_this_paper": "no", "source": "[§2.1, p.3]"},
+      {"object": "epoch count = 8", "who_learns_it": "SELECTED BY EVALUATING ALL TWELVE CHECKPOINTS ON THE TEST QUESTIONS", "when": "after training, before reporting", "moves_in_this_paper": "swept and selected — and selected on the reported metric, which is why the 80.4 headline is an argmin over 12 test-set evaluations. See unfavorable_facts.", "source": "[§3.2, p.5; Fig. 2, p.6; App. C Table 4, p.12]"},
+      {"object": "Claude Sonnet 4 — used as (i) conversation generator, (ii) continuation generator, (iii) reflection extractor, (iv) synthesis generator, (v) test-question extractor, (vi) answer judge", "who_learns_it": "Anthropic, before this paper", "when": "outside this paper", "moves_in_this_paper": "no — frozen throughout, but it occupies SIX distinct roles in the experiment including both sides of the train/test boundary", "source": "[§2.2, p.3; §3.1 'Conversation Generation', 'Test Extraction', 'Evaluation', pp.4-5]"},
+      {"object": "the 6:1 compaction ratio", "who_learns_it": "nobody; asserted from a Medium blog post", "when": "fixed", "moves_in_this_paper": "no", "source": "[§3.1, p.4; References 'Reliable Data Engineering, 2026', p.14]"}
+    ],
+    "reader_takeaway": "[note-writer] For the monograph reader this is the cleanest Theta-path worked example in the corpus, and the right one to put beside ch14: same three-stage shape as Letta STC (read the context offline, re-represent it, use the re-representation later) but the re-representation lands in weights instead of in a prompt, and the paper measures both destinations on the same test set. Everything Part I taught — PEFT (T1), synthetic data (T4), replay (T5), CLS (T6) — is exercised here, and the paper self-identifies as a replay method: 'our pipeline falls into this family, using LLM-generated paraphrases as the rehearsal stream' [§5, p.9]."
+  },
+
+  "update_layer": {
+    "instantiates": "(U-Theta) — and only (U-Theta) for the proposed method. The baseline arm instantiates (U-E).",
+    "canonical_form": "$\\Theta_{k+1} = \\Theta_k - \\eta_\\Theta \\nabla_\\Theta \\mathcal{L}(\\mathcal{R}_k; \\Theta_k)$, $\\mathcal{R}_k = \\mathrm{gen}(\\mathcal{H}_k; B_s)$ [S0-DESIGN §2.2]",
+    "how_this_paper_differs_from_the_canonical_form": [
+      "$\\mathrm{gen}$ is a NAMED EXTERNAL FRONTIER MODEL, not the model being updated. The corpus's other Theta-path A군 papers self-generate ($\\mathcal{R}$ from the student itself, SEAL) or graft onto a pretrained backbone; here the teacher is strictly stronger than the student and is a closed vendor API. This makes the pipeline a distillation-into-weights, and it moves the write-quality question entirely outside the measured system.",
+      "$\\mathrm{gen}$ has a printed fan-out: 3 extraction passes, dedup by name, then 20 dialogues per surviving fact, giving 'roughly 40–60 paraphrased conversations' per underlying concept [§2.2, p.3] and 183,393 training examples from 9,198 facts across ten conversations [Table 3, p.10]. No other corpus paper prints the full $\\mathcal{R}$ construction with counts.",
+      "$\\eta_\\Theta$ is printed: 2e-4, 8-bit paged AdamW, cosine schedule, 3% linear warmup, batch 8, 8 epochs [App. C Table 4, p.12]. The book's §1.2 distinction between $\\eta_t$ and $\\eta_\\Theta$ is trivially clean here because $\\eta_t$ has no referent.",
+      "**$k$ NEVER ADVANCES ALONG A CHAIN.** The cycle axis of Figure 3 looks like a round index but is not one: 'Cumulative consolidation (dashed lines, squares) trains a fresh LoRA on facts extracted from all conversations seen so far' [Fig. 3 caption, p.7]. Every point is $\\Theta_0 \\to \\Theta$ with a larger $\\mathcal{H}_k$. So the experiment varies the SIZE OF $\\mathcal{R}$, not the NUMBER OF SEQUENTIAL WRITES, and the canonical form's compounding is never exercised.",
+      "$E$ is FORCED EMPTY at wake for the proposed arm. This is stricter than any other Theta-path paper in the corpus and is what makes the comparison against a full-context arm legible.",
+      "No regularisation toward $\\Theta_0$ beyond LoRA's structural low-rank restriction. The paper surveys EWC, replay and architectural isolation in §5 and adopts none of the first two, and only the weakest form of the third."
+    ],
+    "repeated_rounds": {
+      "verdict": "NOT TESTED, despite the appearance of a cycle axis.",
+      "why_it_matters": "The paper makes an explicit mechanistic claim about repeated writes — 'New consolidation events can still overwrite earlier weights, but each fact has been distributed across many parameters during training, so any one update perturbs each fact only marginally—in contrast to a summary, where the previous version is discarded outright when the next compaction runs' [§3.2, p.7] — and its own protocol never runs a second consolidation event on top of a first. The flat 80–82% curve is evidence about growing $\\mathcal{R}$ under a fresh anchor, not about $\\rho$.",
+      "relation_to_this_book_s_X4": "[note-writer] Retraining from $\\Theta_0$ on a preserved fact inventory every round is the maximal form of the anchoring X4 found to be protective (F6: replay anchored to the preserved original outlasts self-output anchoring at every mixture ratio). The paper's flat curve is therefore CONSISTENT with X4 and tests nothing X4 has not already isolated. The degradation mode the book cares about — anchoring to the previous round's own outputs — is exactly what this protocol avoids.",
+      "source": "[Fig. 3 caption, p.7; §3.1 'Consolidation Protocol', p.5; §3.2, p.7]"
+    },
+    "other_layers": {
+      "U-W": "not touched — $W$ does not exist in the architecture used. The one gesture toward it is an analogy with no citation to any linear-attention or fast-weight paper [§1, p.2].",
+      "U-E": "runs ONLY in the baseline arm (cascading compaction, D5). The proposed method deliberately empties $E$."
+    },
+    "ordering": "Single-layer, single-round per measurement point. $\\mathcal{H}_k$ grows across cycles; $\\Theta$ is re-derived from scratch at each. No interleaving, no cascade, no cross-layer transfer."
+  },
+
+  "cost_table": {
+    "B_s": {
+      "value": "PRESENT — in wall-clock on named devices and in dollars. ABSENT in FLOPs and in tokens.",
+      "printed_values": [
+        "'we measured approximately 1.5 hours per conversation on a single NVIDIA A100-40GB and 8.2 hours on a commodity NVIDIA RTX 5090' [§4 'Deployment Economics', p.8; repeated in App. C Table 4, p.12]",
+        "'In cloud terms the full pipeline (Claude-based synthesis plus LoRA training on a rented A100) is on the order of $5 per user-night; with user-owned compute the marginal cost falls to synthesis API calls alone.' [§4, p.8]",
+        "'All ten runs were trained on NVIDIA A100-40GB GPUs, with checkpoints saved every epoch.' [§3.1, p.5]",
+        "Training set size: 183,393 examples total, 9,198 facts, ~18,339 examples per source conversation [Table 3, p.10; §2.2 says 'approximately 18,000 conversations per source conversation', p.3]",
+        "Schedule: 8 epochs, batch size 8 (effective 8), lr 2e-4, 8-bit paged AdamW, cosine + 3% linear warmup [App. C Table 4, p.12]",
+        "Reflection cost: 3 independent Claude Sonnet 4 extraction passes over 4 conversations per unit [§2.2, p.3; §3.1, p.5]. Synthesis cost: 20 generated dialogues per fact [§2.2, p.3]"
+      ],
+      "derived": "Optimizer steps per adapter = ceil(18,339/8) x 8 epochs ≈ 18,340 steps [본서 산술]. Trainable parameters = 10,092,544 (see C_cap). These two, with the named device, are the inputs the X3 conversion recipe wants.",
+      "what_is_still_missing_for_a_FLOPs_conversion": "sequence length per training example (a two-message dialogue — never printed), tokens per epoch, MFU or achieved throughput, and the split of the $5 between synthesis API calls and GPU rental. Under X3's own closure test the conversion therefore STILL DOES NOT CLOSE — but it is the closest miss in the corpus, because device, base model, trainable-parameter count, batch, epochs and example count are all printed.",
+      "X3_category": "(c) 벽시계 under the priority rule a>b>c. NOT (a): no FLOPs and no token count is printed for $B_s$. Step count is derivable but not printed, so (b) is a derived-only claim. A dollar figure is a reporting form the X3 six-cell taxonomy has no cell for — it belongs with the four taxonomy_gaps already recorded in ch28 §28.2.1.",
+      "finding": "[note-writer] This is the first paper in the corpus to price a sleep round in money and the third to price it in wall-clock. It is also the first to print a device model for BOTH a datacentre and a consumer part, which is what makes the 'overnight on user-owned hardware' deployment claim checkable rather than rhetorical."
+    },
+    "L_w": {
+      "value": "PARTIAL — the wake context-token delta is printed on both sides; no time is measured anywhere.",
+      "detail": "Zero milliseconds, zero TTFT, zero ms/token, zero throughput. A whole-text grep for 'latency' returns 0 hits. What IS printed is the wake-side prompt length of every arm: the full-context arm's system prompt is the original conversation, 'approximately 50,000–65,000 tokens long' [§3.1, p.4]; the consolidated and no-context arms 'do not receive a system prompt' [§3.1, p.5], i.e. zero context tokens, and the paper states the consequence directly — knowledge in weights 'costs zero tokens at inference time' [§3.2, p.7]. Generation is bounded: 'greedy decoding (temperature 0, up to 512 new tokens)' [§3.1, p.5].",
+      "the_compaction_arm_s_wake_cost_is_not_printed": "The cycle-3 system prompt length is never given. From the printed protocol it is derivable: each cycle compresses the prior context 6:1 and appends a fresh ~60,000-token continuation, so the fixed point is roughly 60,000/(1 - 1/6) ≈ 72,000 tokens [본서 산술]. If that derivation holds, the compaction arm pays MORE wake prefill than the full-context ceiling (50,000–65,000) while scoring 36.8 against 90.1 — i.e. in this experiment compaction is dominated on both axes. The paper never states this, and it cuts against the paper's own framing of compaction as the context-saving strategy.",
+      "finding": "[note-writer] For the Theta path this is the corpus's sharpest wake-side accounting: 0 context tokens against 50–65k, on the same model and the same questions. It is the number ch25's amortisation argument has been missing — the term that does not divide by $N_q$ is not merely reduced here, it is zero."
+    },
+    "C": {
+      "value": "absent as printed bytes — but exactly derivable from printed hyperparameters, which no other corpus paper permits.",
+      "detail": "No byte count, no adapter file size, no per-user storage figure appears. A whole-text grep for 'byte' returns 0 hits. What is printed is everything needed: base model Qwen2.5-7B-Instruct, rank r=16, target modules q_proj/k_proj/v_proj/o_proj [App. C Table 4, p.12], and the per-user framing is explicit — 'keeping accumulated knowledge in the user's own weights rather than in a platform-hosted store' [§4 'Broader Impacts', p.8].",
+      "derivation": "[본서 산술] Qwen2.5-7B-Instruct: hidden 3584, 28 layers, 28 query heads x 128, 4 KV heads x 128 = 512. LoRA parameters per matrix = r(d_in + d_out): q_proj 16(3584+3584)=114,688; k_proj 16(3584+512)=65,536; v_proj 65,536; o_proj 114,688. Per layer 360,448; x28 layers = 10,092,544 parameters ≈ 10.09M. At bf16 that is 20.19 MB per user; at fp32, 40.37 MB. Compare the full-context arm's hot-tier state: KV per token = 2 x 28 layers x 512 x 2 B = 57,344 B = 56 KiB/token, so a 60,000-token system prompt costs ≈ 3.44 GB of KV cache. The Theta-path per-user persistent state is therefore ~170x smaller than the context arm's per-request hot state, at 9.7 pp lower accuracy.",
+      "caveat_on_the_derivation": "The Qwen2.5-7B-Instruct layer/head geometry is taken from the model's published configuration, not from this paper. The paper prints the rank and the target-module list but not the architecture constants. Flagged in todo_verify.",
+      "finding": "The book's standing count — 'corpus 전체에서 상태 용량을 바이트로 보고한 논문이 0편' (ch26) — SURVIVES. This paper prints every factor of the product and never performs the multiplication. It is the corpus's cleanest instance of that pattern, on the same shape as the SleepGate observation in OUTLOOK §7.11."
+    },
+    "rho": {
+      "value": "absent in the (U-Theta) sense the book defines; partially reported as a different quantity.",
+      "detail": "What IS reported: retention on the original conversation's facts stays 'essentially flat at 80–82% across cycles' as the fact inventory grows [Fig. 3 caption, p.7]. What is NOT reported: any degradation from repeated sequential weight updates, because each cycle retrains a fresh LoRA from $\\Theta_0$ (see update_layer.repeated_rounds). And base-capability forgetting is excluded by the authors in writing: 'We do not measure general-knowledge or general-coding benchmarks such as MMLU or HumanEval, since consolidation deliberately redirects representational capacity toward user-specific context' [§4 Limitations, p.8]; 'whether consolidation perturbs base-model refusal or safety behaviour has not been measured' [§4 Broader Impacts, p.8].",
+      "finding": "$\\rho$ = 논문에 없음. The paper's own mechanistic claim about repeated writes ('any one update perturbs each fact only marginally' [§3.2, p.7]) is asserted about a protocol it does not run."
+    },
+    "N_q": {
+      "value": "not a reported deployment quantity.",
+      "detail": "Questions per conversation = 115 ± 9 [§3.1, p.4], a benchmark-construction number. No workload distribution, no real serving trace. The paper's amortisation argument is qualitative and per-event rather than per-query: 'the expensive steps—fact extraction and training-data synthesis—are one-time per consolidation event (e.g., nightly), not per query' [§4, p.8]. The book's standing finding — no corpus paper reports a real $N_q$ distribution (ch25 §25.3.3) — SURVIVES."
+    }
+  },
+
+  "experiments": {
+    "design_headline": "A matched four-arm comparison on one base model, one test set and one judge. 'We designed a matched experiment where both conditions—compaction and consolidation—operate on identical conversational data, enabling direct comparison.' [§3.1, p.4]. The unit of statistical analysis is the conversation (n = 10, df = 9) and every reported dispersion is a standard error across those ten. Result tables exist (Table 2 main, Table 5 per-conversation), which by itself puts this paper ahead of most of the corpus.",
+
+    "datasets": [
+      {"name": "Ten synthetic software-development conversations", "size": "10 conversations, 'each approximately 50,000–65,000 tokens long'", "scenarios": "CLI developer tool, data pipeline, ML training framework, monitoring dashboard, web frontend, game development, DevOps IaC, scientific computing, security scanner, distributed message queue", "construction": "'Conversations were generated using Claude Sonnet 4, following realistic multi-turn development patterns including code generation, debugging, refactoring, and design discussion.' A 180-turn / ≈51,500-token excerpt of the CLI conversation is reproduced in App. B (pp.10-11).", "source": "[§3.1 'Conversation Generation', p.4; App. B, pp.10-11]"},
+      {"name": "Continuations", "size": "3 per conversation, each ~60,000 tokens", "construction": "'A continuation—a fresh ∼60,000-token conversation of new simulated work on the same project—is generated in the context of this summary and appended. A continuation is not a re-telling of the original; it introduces new debugging episodes, new design decisions, and new coding patterns.' Generator model not named.", "source": "[§3.1 'Compaction Protocol' step 2, p.4]"},
+      {"name": "Test question set", "size": "1,146 questions (115 ± 9 per conversation): 184 semantic, 154 procedural, 808 episodic", "construction": "'For each conversation, we extracted testable facts using an LLM judge (Claude Sonnet 4). The extraction identified specific, verifiable knowledge across all three memory types: semantic rules (e.g., \"uses Google-style docstrings\"), procedural facts (e.g., \"hmac.new() doesn't exist, use hmac.digest()\"), and episodic facts (e.g., \"the CLI tool is called devtool\").' Constant across all cycles and all arms.", "source": "[§3.1 'Test Extraction', p.4; Table 3, p.10]"},
+      {"name": "Training set", "size": "9,198 facts → 183,393 paraphrased two-message dialogues (19.94x [본서 산술]); per conversation 816–979 facts and 16,286–19,506 examples", "construction": "reflection (3 Claude Sonnet 4 passes over original + 3 continuations, unioned, dedup by fact name) then synthesis (20 dialogues per fact, six question styles, per-type framing)", "source": "[Table 3, p.10; §2.2, p.3]"}
+    ],
+
+    "models": [
+      {"model": "Qwen2.5-7B-Instruct", "role": "the subject model in all four arms; the only model whose weights are ever touched", "why_chosen": "'chosen for strong instruction-following and open weights' [App. C Table 4, p.12]", "source": "[§2.2, p.4; App. C Table 4, p.12]"},
+      {"model": "Claude Sonnet 4", "role": "SIX roles — conversation generator, reflection extractor, synthesis generator, test-question extractor, answer judge, and (by implication) continuation generator", "source": "[§2.2, p.3; §3.1, pp.4-5]"},
+      {"model": "the compaction summariser", "role": "produces the 6:1 summary in the baseline arm", "source": "NEVER NAMED [§3.1, p.4]"}
+    ],
+
+    "protocol": [
+      "Four conditions, all on Qwen2.5-7B-Instruct: (i) no context — no system prompt, no adapter; (ii) compaction cycles 1-3 — the cycle's summary + continuation as system prompt; (iii) consolidated — LoRA adapter, no system prompt; (iv) full context — the original conversation as system prompt [Table 2 caption, p.6; §3.1 'Evaluation', p.5].",
+      "'The model under test generates an answer to each test question via greedy decoding (temperature 0, up to 512 new tokens).' [§3.1, p.5]",
+      "'The answer is then judged by Claude Sonnet 4 (also temperature 0), which receives the question, the expected answer, and the model's response and decides whether the response contains the expected information.' Judge instruction quoted in §3.2: 'lenient on exact wording but strict on factual content.' [§3.1, p.5; §3.2, p.5]",
+      "Epoch selection: 'we trained each LoRA adapter for twelve epochs while saving a checkpoint at the end of every epoch and evaluating all twelve against the test questions ... LLM-judged task fail rate ... reaches its minimum of 19.6% at epoch 8. We therefore adopt 8 epochs as the canonical training schedule; all main-table results (Table 2) are reported at this checkpoint.' [§3.2, p.5]",
+      "No random seeds are reported ('seed' returns 0 hits), no confidence intervals ('confidence' 0 hits), and only one adapter is trained per conversation, so training-run variance is unmeasured. All ± values are standard errors across the ten conversations."
+    ],
+
+    "headline_numbers": [
+      {"claim": "Cascading compaction retains 36.8% after three cycles; consolidation retains 80.4%; the gap is 43.6 pp and is significant", "exact_wording": "'three cycles of cascading compaction retain 36.8 ± 3.0% of knowledge (between an 11.8% no-context floor and a 90.1% full-context ceiling), while consolidation retains 80.4 ± 1.3%—a 43.6 pp gain (paired t(9) = 14.8, p < 0.001) that more than doubles what compaction preserves'", "verification": "[본서 산술] Recomputed from Table 5's ten per-conversation overalls. Consolidated mean 80.35, SE 1.30 ✓ (reported 80.4 ± 1.3). Cycle 3 mean 36.81, SE 2.97 ✓ (reported 36.8 ± 3.0). Paired differences mean 43.54, SE 2.951, t = 14.75 ✓ (reported t(9) = 14.78). Table 2's per-type cells reproduce its Overall column to within macro-vs-micro rounding in all four rows. THE STATISTICS ARE CORRECT AND FULLY RECOMPUTABLE FROM THE PRINTED TABLES.", "source": "[Abstract, p.1; Table 2, p.6; §3.2, p.7; Table 5, p.13]"},
+      {"claim": "Consolidation recovers 87% of the floor-to-ceiling gap", "verification": "(80.4 − 11.8)/(90.1 − 11.8) = 68.6/78.3 = 87.6% ✓ [본서 산술]", "source": "[§3.2, p.6; §6, p.9]"},
+      {"claim": "The first compaction cycle is the most destructive", "exact_wording": "'the first compaction cycle is the most destructive: overall accuracy drops from 90.1% to 43.2%. Subsequent cycles continue to erode what remains, reaching 36.8% by Cycle 3.'", "source": "[§3.2, p.6; Fig. 3, p.7]"},
+      {"claim": "Graded pattern across memory types", "numbers": "Compaction C3 → Consolidated: semantic 62.0 → 94.3; procedural 36.3 → 74.6; episodic 31.5 → 78.2. Full-context ceiling: semantic 91.1, procedural 93.0, episodic 89.3. No-context floor: semantic 31.8, procedural 9.1, episodic 7.7.", "source": "[Table 2, p.6; §3.2, pp.6-7]"},
+      {"claim": "Consolidation exceeds the full-context ceiling on semantic knowledge", "exact_wording": "'the bold cell marks the one category—semantic knowledge—where consolidation also exceeds the full-context ceiling' [Table 2 caption]; 94.3 ± 1.8 vs 91.1 ± 1.7", "status": "NO significance test is reported for this cell. [본서 산술] treating the two SEs as independent, the difference 3.2 pp has a combined SE of sqrt(1.8²+1.7²) = 2.48, i.e. t ≈ 1.29 — not significant at any conventional level, and the paired test the paper uses elsewhere is not applied here. Semantic is also the smallest category (184 questions) and the one with the highest no-context floor (31.8%).", "source": "[Table 2 and caption, p.6]"},
+      {"claim": "Consolidation is flat across cycles while compaction keeps falling", "exact_wording": "'retention drops from the baseline by ≈10 pp once the model gives up its in-context view but then stays essentially flat at 80–82% across cycles' [Fig. 3 caption]; 'the gap between the two strategies grows with the length of the user's ongoing relationship with the assistant' [§6, p.9]", "status": "measured over three cycles only, and with a fresh LoRA at each point — see update_layer.repeated_rounds", "source": "[Fig. 3, p.7; §6, p.9]"},
+      {"claim": "Median per-token validation CE tracks LLM-judged accuracy; mean CE correlates the wrong way", "exact_wording": "'Across epochs, median token CE correlates with fail rate at r = +0.994 (Pearson), while mean token CE correlates at r = −0.506.' Ranges printed in the Fig. 2 legend: mean CE 1.39–2.82 nats, median CE 0.001–0.234 nats, fail rate 19.6–45.9%. '90th-percentile token CE roughly triples from 4.8 to 11.9 nats across training, the latter close to log(vocab size) ≈ 11.93'", "status": "a genuine and transferable methodological observation, and the paper flags it as an aside rather than inflating it", "source": "[Abstract, p.1; §3.2, p.5; Fig. 2, p.6; §6, p.9]"},
+      {"claim": "Per-conversation consistency", "exact_wording": "'Performance is consistent across conversations (from 73.8% to 87.3%)'; 'All ten conversations show substantial consolidation gains' [Table 5 caption]", "verification": "[본서 관찰] Table 5 confirms it at the Overall level for all ten. At the cell level there is one non-gain: ML Training procedural is 81.8 at Cycle 3 and 81.8 consolidated — a tie, not a gain, in a table whose caption says 'Bold indicates consolidation outperforms Cycle 3'.", "source": "[§3.2, p.7; Table 5, p.13]"}
+    ],
+
+    "negative_and_qualifying_results_reported_by_the_authors": [
+      {"result": "Consolidation does NOT reach the full-context ceiling overall", "printed": "80.4 vs 90.1 — a 9.7 pp deficit, printed in the paper's own main table and repeated in the conclusion", "status": "stated plainly, never hedged. The paper calls full context a 'ceiling' and does not claim to pass it except on semantic.", "source": "[Table 2, p.6; §6, p.9]"},
+      {"result": "The compaction ordering contradicts the biology the pipeline is modelled on", "exact_wording": "'We note that this compaction ordering does not recapitulate the classical biological dissociation, in which procedural memory is the most preserved type in amnesia—consistent with procedural memory in the brain depending on separate subcortical systems rather than the hippocampal-to-neocortical pathway that our consolidation pipeline emulates.'", "status": "volunteered by the authors against their own framing device", "source": "[§4, p.8]"},
+      {"result": "Domain is a single one", "exact_wording": "'We evaluate on software-development conversations only; whether the same retention pattern holds in other domains is untested.'", "source": "[§4 Limitations (1), p.8]"},
+      {"result": "The pipeline depends on an external LLM API", "exact_wording": "'Fact extraction and synthesis use an external LLM API; moving them on-device would further reduce platform cost but is not validated here.'", "source": "[§4 Limitations (2), p.8]"},
+      {"result": "General capability and safety after consolidation are unmeasured", "exact_wording": "'We do not measure general-knowledge or general-coding benchmarks such as MMLU or HumanEval'; 'whether consolidation perturbs base-model refusal or safety behaviour has not been measured, motivating a standard-benchmarks audit of each consolidated adapter in production deployments.'", "source": "[§4 Limitations (3) and Broader Impacts, p.8]"},
+      {"result": "The paraphrase warrant is an extrapolation across regimes", "exact_wording": "'we extrapolate this finding from pretraining to per-user fine-tuning'", "source": "[§5, p.9]"}
+    ]
+  },
+
+  "scale_ceiling": {
+    "model_size": "7B (Qwen2.5-7B-Instruct), one model, no scale sweep. The corpus's Theta-path A군 papers all sit in this band; this paper adds no scale evidence.",
+    "training_scale": "10.09M trainable parameters per adapter [본서 산술]; 18,339 training examples per adapter; 8 epochs; ~18,340 optimizer steps. No token count.",
+    "evaluation_scale": "1,146 questions over 10 conversations. Statistical n = 10. Categories: semantic 184, procedural 154, episodic 808 — so the Overall column is 70.5% episodic by question count, though the reported means are macro-averages over conversations.",
+    "context_length_ceiling": "50,000–65,000 tokens for the full-context arm, and (derived) ≈72,000 for the compaction arm at cycle 3. This is by a wide margin the longest context regime in which any corpus paper has run a Theta-vs-context head-to-head. [본서 산술]",
+    "realism_ceiling": "ZERO real conversations. All ten source conversations, all thirty continuations, all facts, all test questions and all judgments come from Claude Sonnet 4. The paper's motivating scenario — a developer who works with an assistant daily over weeks and months — is instantiated as four synthetic conversations and three cycles.",
+    "temporal_ceiling": "Three cycles. The paper's central deployment claim is about 'weeks and months of this cycle' [§1, p.2] and 'the length of the user's ongoing relationship with the assistant' [§6, p.9]; the measurement covers three.",
+    "deployment_gap": "[note-writer] Two arms of the comparison are counterfactual in opposite directions. The full-context ceiling is only ever given the ORIGINAL conversation, never original + 3 continuations (~230–260k tokens), which is the workload the paper says motivates the whole problem — so the ceiling is measured in a regime a real deployment would not be in. Conversely the compaction arm's ≈72k-token cycle-3 prompt is LONGER than that ceiling, so in this experiment compaction does not even buy the context saving that is its reason for existing. Both facts are derivable from printed numbers and neither is stated."
+  },
+
+  "concept_ledger_delta": {
+    "new_concepts_this_paper_introduces": [
+      {"term": "cascading compaction", "definition": "the deployed strategy of summarising the context at a fixed ratio when it overflows and appending new work, repeatedly, so that older content is compressed once per cycle and simultaneously diluted by new content", "owner_chapter": "candidate: ch11 (판별식 회색지대) and ch27", "source": "[§3.1, p.4; §4, p.8]", "note": "[note-writer] The book has no name for this and has never classified it, yet by the book's own four conditions it is an $E$-path (U-E) procedure — and it is the one with by far the largest deployed footprint."},
+      {"term": "the procedural / semantic / episodic split for personalization memory", "definition": "procedural = lessons from the model's own errors, with the goal of executing correctly first time rather than recalling the error; semantic = self-referential stable facts about the user (meta-preferences, conventions, workflow expectations); episodic = project-specific history, decisions and configuration values", "owner_chapter": "candidate: ch11 or ch27 as a cross-cutting axis", "source": "[§2.1, pp.2-3; Table 1, p.3]", "note": "This is the corpus's first per-TYPE decomposition of a retention result. It is a second coordinate on the book's layer axis, in the same way that OUTLOOK §5's Consolidation/Dreaming split is."},
+      {"term": "median-vs-mean per-token validation cross-entropy under a surface-tolerant evaluator", "definition": "when the downstream judge tolerates surface-form variation, mean per-token validation CE is dominated by a heavy tail of tokens the model assigns near-zero probability and can point the wrong way, while the median tracks task accuracy", "owner_chapter": "candidate: ch09 or a Part I methods aside", "source": "[§3.2, p.5; Fig. 2, p.6]", "note": "Transferable beyond this paper and directly relevant to X4's degradation instrumentation."}
+    ],
+    "renamed_or_corrected_for_the_monograph": [
+      {"paper_term": "'consolidation'", "problem": "the paper uses it for its whole three-stage pipeline (extraction + synthesis + SFT), whereas this book's §2.4 term set uses consolidation for the transfer itself", "monograph_term": "the (U-Theta) instance; name the three stages separately when attributing a result, because the missing control (see unfavorable_facts) is precisely the one that separates stage 3 from stages 1-2"},
+      {"paper_term": "$\\alpha$ (LoRA scaling), $r$ (both rank and Pearson correlation), $n$ (conversations), $t(9)$", "problem": "all collide with reserved symbols; $r$ additionally collides with itself", "monograph_term": "$\\alpha_{\\mathrm{LoRA}}$, $r$ for rank only with correlation spelled out, $n_{\\mathrm{conv}}$, and t-statistics quoted verbatim only"}
+    ],
+    "extended": [
+      {"term": "paraphrastic rehearsal", "extension": "'presenting the same content in many surface forms is empirically more effective than presenting a single canonical form [Allen-Zhu and Li, 2024]' [§2.2, p.3], operationalised as 20 dialogues per fact over six question styles", "monograph_use": "This is the corpus's only Theta-path paper that names WHY its $\\mathcal{R}$ has the shape it has and cites a controlled study for it. It gives ch22's falsification axis a mechanism to test: whether the weights-vs-prompt gap that Continual Facts measured is partly a function of rehearsal surface diversity rather than of the $\\Theta$ layer."}
+    ]
+  },
+
+  "inherited_open_question": {
+    "verdict": "none-stated from the sleep-time-compute line, which it does not cite at all. One genuine inheritance from outside the line.",
+    "the_one_real_inheritance": "Allen-Zhu & Li 2024 (Physics of Language Models 3.1). The paper takes a pretraining-time finding and states its own extrapolation in one sentence: 'In a controlled study of pretraining-time fact memorization, they show that models trained on a single canonical statement of a fact memorize it but fail to extract it on simple queries phrased differently, while models trained on many surface paraphrases of the same fact extract it reliably; we extrapolate this finding from pretraining to per-user fine-tuning.' [§5, p.9]. This is an inherited RESULT used as a design warrant, not an inherited open question.",
+    "the_nearest_thing_to_a_lineage_statement": "OPPU [Tan et al., 2024] is named 'The most direct' precedent and the paper differentiates rather than inherits: 'We differ in two ways: we extract a structured fact inventory from each conversation rather than fine-tune on raw transcripts, and we synthesize many paraphrased question–answer rehearsal examples per fact rather than using the original interactions verbatim.' [§5, p.9]. No open question of OPPU's is quoted.",
+    "what_it_implicitly_answers_instead": "It manufactures its gap from deployment practice rather than from literature: 'production assistants overwhelmingly leave user weights frozen and rely on context-based memory' [§1, p.2]. The implicit question is: given that the deployed alternative is summarisation, is a nightly weight write better than the summariser?",
+    "silence_toward_the_line_it_belongs_to": "The paper cites ZERO papers from this book's A군. No Letta STC (2504.13171), no `LM Need Sleep` (2606.03979), no SEAL, no SCM, no `Do LMs Need Sleep?`, no Nested Learning, no Auto-Dreamer. The string 'sleep' occurs exactly TWICE in the whole paper, both times as 'sleep–wake cycle' in a CLS analogy [§1, p.2; §4, p.8]; 'sleep-time' occurs zero times. It reaches the nightly-consolidation design independently.",
+    "bridge_in_material": "[note-writer] For a chapter, the honest bridge-in is: this is the first Theta-path paper in the corpus whose problem statement is set by SHIPPED PRODUCT BEHAVIOUR rather than by a prior paper's future-work paragraph. That is a different kind of un-inherited start from Letta STC's — Letta STC named an assumption inside the test-time-scaling literature; this paper names what Claude Code does when the context fills up. Both are gaps opened rather than closed, and the book should say that the E-path's founding paper and this Theta-path entrant share that property."
+  },
+
+  "open_questions": [
+    {"question": "Does the retention pattern hold outside software-development conversations?", "status": "authors' own Limitation (1)", "source": "[§4, p.8]"},
+    {"question": "Can reflection and synthesis run on-device rather than through an external frontier API?", "status": "authors' own Limitation (2). This is load-bearing: the entire privacy argument of §4 Broader Impacts assumes the pipeline can leave the platform, but two of three stages currently cannot.", "source": "[§4, p.8]"},
+    {"question": "What does consolidation cost in general capability and in safety behaviour?", "status": "authors' own Limitation (3) and Broader Impacts; explicitly unmeasured, with a recommended audit", "source": "[§4, p.8]"},
+    {"question": "What happens when consolidation events are actually sequential — $\\Theta_k \\to \\Theta_{k+1}$ rather than $\\Theta_0 \\to \\Theta$ each night?", "status": "NOT flagged by the authors. The paper asserts a mechanism for this case ('any one update perturbs each fact only marginally') and its protocol retrains from base at every cycle.", "source": "[§3.2, p.7 vs Fig. 3 caption, p.7]", "bridge_out": "this is exactly X4's question, and this paper's design silently adopts X4's protective configuration"},
+    {"question": "How much of the 80.4% comes from the LoRA training and how much from the quality of the Claude Sonnet 4 fact extraction?", "status": "unanswerable from the paper — the facts-in-context arm is not run", "source": "[absent; inferred from §3.1's four conditions, p.5]", "bridge_out": "the single cheapest missing control, and the one that decides whether this is a Theta-path result or a reflection-quality result"},
+    {"question": "How many adapters can a platform hold, stage and serve, and what happens to batching when every user has one?", "status": "not addressed. The paper's serving story is single-user, single-adapter, user-owned hardware.", "source": "[absent; §4 Broader Impacts, p.8 assumes user-owned compute]"},
+    {"question": "Does the ordering survive when the full-context arm is given the same accumulated history (original + continuations) that the consolidated arm was trained on?", "status": "not run. The ceiling arm sees only the original conversation.", "source": "[§3.1 'Evaluation', p.5]"},
+    {"question": "Is 6:1 the right compaction ratio, and does the result survive a summariser told to preserve testable facts?", "status": "not swept. One ratio, sourced to a blog post, with an unnamed summariser and no summarisation-prompt ablation.", "source": "[§3.1, p.4; References p.14]"}
+  ],
+
+  "unfavorable_facts": [
+    {
+      "fact": "THE TRAINING DATA AND THE TEST QUESTIONS ARE PRODUCED BY THE SAME MODEL PERFORMING THE SAME OPERATION ON THE SAME SOURCE TEXT. Reflection: 'we run three independent extraction passes with Claude Sonnet 4 ... extracting the core content in a concise, testable form' [§2.2, p.3]. Test extraction: 'we extracted testable facts using an LLM judge (Claude Sonnet 4). The extraction identified specific, verifiable knowledge across all three memory types' [§3.1, p.4].",
+      "the_smoking_gun": "The SAME fact is printed as an example of both. Table 1's procedural training memory is 'hmac.new() does not exist in Python's stdlib. Use hmac.digest(secret, payload, hashlib.sha256)' [Table 1, p.3]. §3.1's example of an extracted TEST fact is 'procedural facts (e.g., \"hmac.new() doesn't exist, use hmac.digest()\")' [§3.1, p.4]. The paper illustrates its train set and its test set with one item.",
+      "why_it_bites": "There is no train/test separation to speak of. The consolidated arm is trained on 20 paraphrases per fact of an inventory drawn by the same extractor that drew the questions, in a format the paper states was chosen to match: 'The same two-message format is used throughout to match the format of the test questions at evaluation time' [§2.2, p.4]. The 80.4% therefore measures recall of a distilled inventory under near-matched phrasing, not consolidation of a conversation.",
+      "source": "[§2.2, pp.3-4; §3.1, p.4; Table 1, p.3]"
+    },
+    {
+      "fact": "THE VALIDATION SET IS THE TEST SET, AND THE REPORTED HEADLINE IS AN ARGMIN OVER TWELVE TEST-SET EVALUATIONS.",
+      "exact_wording": "'The standard training-time validation signal—mean per-token cross-entropy on the held-out test questions' [§3.2, p.5]; 'we trained each LoRA adapter for twelve epochs while saving a checkpoint at the end of every epoch and evaluating all twelve against the test questions ... reaches its minimum of 19.6% at epoch 8. We therefore adopt 8 epochs ...; all main-table results (Table 2) are reported at this checkpoint' [§3.2, p.5].",
+      "why_it_bites": "100 − 19.6 = 80.4, i.e. the paper's headline number IS the minimum of the twelve test-set evaluations used to choose the epoch. Every derived quantity inherits the selection: the 43.6 pp gap, the 87% gap recovery, the 'more than doubles' claim, and the semantic cell that exceeds the ceiling. The full-context, no-context and compaction arms received no comparable selection.",
+      "source": "[§3.2, p.5; Fig. 2, p.6; Table 2, p.6; App. C Table 4, p.12]"
+    },
+    {
+      "fact": "THE CHEAPEST AND MOST DECISIVE CONTROL IS MISSING: the extracted facts placed in the context window, with no training.",
+      "why_it_bites": "The pipeline has three stages and the experiment varies only whether stage 3 (LoRA SFT) happens. Nothing separates the contribution of the frontier-model reflection and synthesis from the contribution of the weight update. A 'facts-in-context' arm costs one prompt per question and no GPU time, and it is the arm that decides whether this is a Theta-path result at all. Its absence is the same pattern the book already diagnosed across the corpus — the omitted baseline is always the cheapest and hardest-to-beat one.",
+      "source": "[absent. The four conditions are enumerated at §3.1 'Evaluation', p.5 and Table 2 caption, p.6]"
+    },
+    {
+      "fact": "THE TWO ARMS ARE NOT BUDGET-MATCHED AND NO NORMALISATION IS ATTEMPTED. The compaction arm's sleep budget is one summarisation call per cycle. The consolidation arm's is three Claude Sonnet 4 extraction passes over four conversations, plus 20 generated dialogues per fact (9,198 facts → 183,393 examples), plus 8 epochs of LoRA training (~1.5 h on an A100-40GB).",
+      "why_it_bites": "The paper's own §4 prices consolidation at ~$5 per user-night and never prices compaction at all, so the two numbers in the headline comparison sit on incomparable budgets. The paper says the costs are 'practical in absolute terms' — which is a different claim from 'matched'.",
+      "source": "[§2.2, p.3; §3.1, pp.4-5; §4 'Deployment Economics', p.8; Table 3, p.10]"
+    },
+    {
+      "fact": "THE TWO ARMS DO NOT HAVE THE SAME ACCESS TO THE SOURCE TEXT. The consolidation pipeline extracts facts from the ORIGINAL conversation at full fidelity at every cycle — 'Extract facts from all four conversations (original + three continuations)' [§3.1, p.5]. The compaction arm, after cycle 1, only ever sees a cascading 6:1 summary of that same original.",
+      "why_it_bites": "This is a fidelity asymmetry, not merely a budget one: the arms are not two ways of processing the same input. A matched design would either give the summariser the same lossless four conversations, or force the extractor to read the cascaded summary.",
+      "source": "[§3.1 'Compaction Protocol' and 'Consolidation Protocol', pp.4-5]"
+    },
+    {
+      "fact": "THE WRITER OF ONE ARM IS NAMED AND FRONTIER-CLASS; THE WRITER OF THE OTHER IS NEVER NAMED. Claude Sonnet 4 is identified four times as the reflection and synthesis model. The model that performs the 6:1 compaction is not identified anywhere; a whole-text grep for 'summar' returns fourteen hits and none of them names a model.",
+      "why_it_bites": "If the summariser is the 7B model under test while the consolidator is a frontier API, the comparison is between two different systems' writers rather than between two storage destinations.",
+      "source": "[§3.1, p.4; §2.2, p.3]"
+    },
+    {
+      "fact": "THE CENTRAL PARAMETER OF THE BASELINE ARM IS SOURCED TO A MEDIUM BLOG POST. '[The context is] summarized at a 6:1 ratio ... the compression factor reported for Claude Code's automatic compaction [Reliable Data Engineering, 2026]', whose bibliography entry reads 'Medium blog post, March 2026 ... Reports an approximately 6× compression ratio (150,000 input tokens compacted to ∼25,000)'.",
+      "why_it_bites": "One anecdotal data point from a non-primary source fixes the parameter that determines how bad the baseline is, and it is never swept. This is the same failure shape as Letta STC's kappa_cost = 10 sourced to a Databricks docs page — a corpus pattern the book should name rather than treat as two coincidences.",
+      "source": "[§3.1, p.4; References, p.14]"
+    },
+    {
+      "fact": "EVERY CONVERSATION, CONTINUATION, FACT, TEST QUESTION AND JUDGMENT IS PRODUCED BY ONE FROZEN MODEL. Claude Sonnet 4 occupies six roles: conversation generator, continuation generator, reflection extractor, synthesis generator, test-question extractor, and answer judge.",
+      "why_it_bites": "There are zero real users, zero real conversations and zero human-verified facts in the paper. What the judge counts as 'containing the expected information' is decided by the model that wrote the conversation, extracted the expectation, and generated the training data for one of the arms.",
+      "source": "[§2.2, p.3; §3.1 'Conversation Generation', 'Test Extraction', 'Evaluation', pp.4-5]"
+    },
+    {
+      "fact": "THE ONE CELL WHERE THE METHOD BEATS THE CEILING IS BOLDED WITHOUT A SIGNIFICANCE TEST. 'the bold cell marks the one category—semantic knowledge—where consolidation also exceeds the full-context ceiling' [Table 2 caption, p.6]: 94.3 ± 1.8 vs 91.1 ± 1.7.",
+      "why_it_bites": "[본서 산술] The 3.2 pp difference has a combined SE of 2.48, i.e. t ≈ 1.29 — not significant, and the paired test the paper applies to its headline gap is not applied here. Semantic is also the smallest category (184 questions), the one with by far the highest no-context floor (31.8% answerable with zero information), and the one where three of ten conversations score exactly 100.0 on sixteen questions [Table 5, p.13].",
+      "source": "[Table 2 and caption, p.6; Table 5, p.13]"
+    },
+    {
+      "fact": "THE PAPER ASSERTS A MECHANISM FOR REPEATED CONSOLIDATION AND ITS PROTOCOL NEVER RUNS ONE. 'New consolidation events can still overwrite earlier weights, but each fact has been distributed across many parameters during training, so any one update perturbs each fact only marginally' [§3.2, p.7]. The protocol: 'Cumulative consolidation ... trains a fresh LoRA on facts extracted from all conversations seen so far' [Fig. 3 caption, p.7].",
+      "why_it_bites": "The flat 80–82% curve is evidence about a growing training set under a fixed base anchor, not about sequential weight updates. The paper's own forward-looking claim — that the gap 'only widens the longer the assistant is in use' [§6, p.9] — rests on a compounding argument its design excludes.",
+      "source": "[§3.2, p.7; Fig. 3 caption, p.7; §6, p.9]"
+    },
+    {
+      "fact": "THE PAPER CLASSIFIES ITSELF AS A REPLAY METHOD WITHOUT REPLAYING ANYTHING OLD. 'Replay approaches mix examples from prior tasks (real or generated) into each new training batch so the model rehearses old skills while learning new ones [Buzzega et al., 2020]; our pipeline falls into this family, using LLM-generated paraphrases as the rehearsal stream' [§5, p.9].",
+      "why_it_bites": "The rehearsal stream contains only paraphrases of the NEW facts. No base-model data, no prior-task data, no general-capability data is mixed in. The forgetting protection that defines the replay family is therefore absent, which is consistent with the paper declining to measure MMLU or HumanEval.",
+      "source": "[§5, p.9; §4 Limitations (3), p.8]"
+    },
+    {
+      "fact": "NO SEEDS, NO CONFIDENCE INTERVALS, ONE ADAPTER PER CONVERSATION. A whole-text grep returns zero hits for 'seed' and zero for 'confidence'. All dispersion is a standard error across the ten conversations; the run-to-run variance of the LoRA training itself is never measured.",
+      "why_it_bites": "n = 10 is the number of synthetic conversations, not the number of independent training runs. Every conclusion about the weight arm rests on ten single-seed fits.",
+      "source": "[§3.2, pp.5-7; Table 2, p.6; Table 5, p.13]"
+    },
+    {
+      "fact": "THE FULL-CONTEXT ARM'S PROMPT EXCEEDS THE SUBJECT MODEL'S NATIVE CONTEXT WINDOW AND THE PAPER NEVER SAYS HOW IT FITS. Conversations are 'approximately 50,000–65,000 tokens long' [§3.1, p.4] and are placed whole in the system prompt of Qwen2.5-7B-Instruct, whose published max_position_embeddings is 32,768 (extension to 131,072 requires YaRN, off by default). No RoPE scaling, truncation rule or long-context configuration is mentioned.",
+      "why_it_bites": "DIRECTION MATTERS: if the arm silently truncated, the 90.1% ceiling is measured on part of the conversation and the TRUE ceiling is higher, so the consolidated arm's 9.7 pp deficit is understated. This defect works against the paper's own method, which is why the 'context wins' ordering survives it — but the ceiling's exact value should not be quoted as a measured constant. See todo_verify.",
+      "source": "[§3.1, p.4; §3.1 'Evaluation', p.5; architecture constant from the published Qwen2.5-7B-Instruct configuration, not from this paper]"
+    },
+    {
+      "fact": "THE BASELINE IS DOMINATED ON BOTH AXES AND THE PAPER DOES NOT NOTICE. [본서 산술] Each cycle compresses the prior context 6:1 and appends a fresh ~60,000-token continuation, so the cycle-3 system prompt converges to roughly 60,000/(1 − 1/6) ≈ 72,000 tokens — LONGER than the full-context ceiling's 50,000–65,000, at 36.8% against 90.1%.",
+      "why_it_bites": "In this experiment cascading compaction does not even buy the context saving that is its purpose. The paper's framing ('this information competes for finite context window space' [§1, p.1]) describes a pressure its own protocol does not exhibit, because the compaction arm's prompt never shrinks.",
+      "source": "[§3.1 'Compaction Protocol', p.4; §3.1, p.4 for the ceiling's length; derived]"
+    },
+    {
+      "fact": "THE DEPLOYMENT CLAIM IS MODALLY STRONGER THAN THE EVIDENCE. 'Users of context-only assistants are guaranteed to lose the majority of accumulated knowledge over extended interactions' [§4, p.8]. The evidence is three cycles on ten Claude-generated conversations in one domain with one compaction ratio and one unnamed summariser.",
+      "why_it_bites": "'guaranteed' is a universal quantifier over deployments; the measurement is a single configuration. The paper's own Limitations (1) concedes the domain restriction two paragraphs later.",
+      "source": "[§4, p.8]"
+    },
+    {
+      "fact": "NO EQUATIONS, NO RELEASED ARTEFACTS. The paper contains zero numbered or displayed equations. No code repository is given. The only pointer to data is 'the full conversations are in the supplementary archive' [App. B, p.10], with no location.",
+      "why_it_bites": "None of the six Claude Sonnet 4 prompts (conversation generation, continuation, reflection, synthesis, test extraction, judging) is printed. The judge instruction is quoted only as a fragment ('lenient on exact wording but strict on factual content' [§3.2, p.5]). The experiment cannot be reproduced or audited from the paper.",
+      "source": "[whole text; App. B, p.10]"
+    },
+    {
+      "fact": "A CAPTION CLAIM DOES NOT HOLD IN EVERY CELL. Table 5's caption reads 'Bold indicates consolidation outperforms Cycle 3' and the body says 'All ten conversations show substantial consolidation gains'. ML Training procedural is 81.8 at Cycle 3 and 81.8 consolidated — a tie.",
+      "why_it_bites": "Minor, and the Overall column does support the sentence for all ten conversations. Recorded because the book's §6.4 rule forbids passing over caption-versus-table mismatches, and because the bolding cannot be verified in the vendored text extraction.",
+      "source": "[Table 5, p.13]"
+    },
+    {
+      "fact": "THE PAPER DOES NOT CITE THE LITERATURE IT BELONGS TO. Zero citations to any paper in this book's discriminant-passing set: no Letta STC, no `LM Need Sleep`, no SEAL, no SCM, no `Do LMs Need Sleep?`, no Nested Learning, no Auto-Dreamer. 'sleep' occurs exactly twice in the whole paper, both as 'sleep–wake cycle' in a CLS analogy; 'sleep-time' occurs zero times.",
+      "why_it_bites": "Not a defect of the work, but a fact the book must record: a Theta-path paper that reaches nightly consolidation independently, cites the biology properly and the sleep-time-compute line not at all, is direct evidence for this book's silence thesis — and evidence that the thesis is about the LINE's visibility, not about the idea's difficulty.",
+      "source": "[References, pp.14-15; whole-text greps]"
+    }
+  ],
+
+  "discriminant_verdict": {
+    "summary": "PASSES all four conditions, cleanly, on the Theta path. It is the least marginal pass in the corpus for a Theta-path paper. The condition that does real work here does it on the paper's BASELINE, not on its method.",
+    "conditions": [
+      {
+        "condition": "(1) 질의 $q$가 도착하기 전에",
+        "verdict": "PASS",
+        "evidence": "'Overnight, the consolidation pipeline processes the day's conversations—reflecting on what was learned, synthesizing training data, and fine-tuning the model's weights. The next morning, the context is cleared and the model begins fresh' [§1, p.2]. In the experiment the adapter is fitted before any test question is asked, and the questions were never in the conversations — they are extracted from them.",
+        "weakest_point": "It passes only at $k = 1$. The deployment narrative that justifies the paper ('over weeks and months of this cycle') requires the condition to hold round after round, and every measured point retrains from $\\Theta_0$. So condition (1) is satisfied by the experiment and merely narrated for the deployment."
+      },
+      {
+        "condition": "(2) 예산 $B_s > 0$",
+        "verdict": "PASS, and the best-quantified pass in the corpus",
+        "evidence": "~1.5 h/conversation on a named A100-40GB and 8.2 h on a named RTX 5090; ~$5 per user-night in cloud terms; 8 epochs at batch 8 over ~18,339 examples; three Claude Sonnet 4 reflection passes plus 20 generated dialogues per fact [§4, p.8; App. C Table 4, p.12; Table 3, p.10; §2.2, p.3].",
+        "weakest_point": "No FLOPs, no tokens, no sequence length, no MFU, and no split of the $5 between API and GPU."
+      },
+      {
+        "condition": "(3) $\\Theta$·$W$·$E$ 중 어느 한 층의 상태를 실제로 바꾸는가",
+        "verdict": "PASS — $\\Theta$. **AND THIS IS THE CONDITION THAT CARRIES THE JUDGMENT, TWICE.**",
+        "evidence": "A rank-16 LoRA delta on q/k/v/o_proj of Qwen2.5-7B-Instruct is fitted and then serves queries with no context at all [§2.2, p.4; §3.1, p.5; App. C Table 4, p.12]. The deployed artefact changes; the read map is evaluated with $E = \\varnothing$, so nothing else can be doing the work.",
+        "the_second_cut": "Applied to the paper's BASELINE arm, condition (3) admits it too. Cascading compaction runs before the next queries, spends a summarisation budget, destructively rewrites external text state, and later queries read the result with $\\mathrm{ret}$ = identity — the same operator shape as Letta STC with $S(\\cdot;B_s)$ demoted from reasoner to summariser [§3.1, p.4]. **The most widely deployed procedure that satisfies this book's discriminant is one the book's census has never counted.** That is condition (3) doing exactly the work it was designed to do, on a paper that presents the procedure as the foil rather than as a member."
+      },
+      {
+        "condition": "(4) 그 변화가 이후 질의에 쓰이는가",
+        "verdict": "PASS",
+        "evidence": "'The consolidated model receives no context at test time—it must answer from knowledge encoded in weights alone' [§3.1, p.5], scoring 80.4% against an 11.8% no-adapter floor on the identical questions [Table 2, p.6]. The 68.6 pp separation from the floor is the measurement that condition (4) asks for."
+      }
+    ],
+    "which_condition_splits_the_verdict": "Condition (3). For the proposed method it is satisfied so plainly that the paper is the corpus's cleanest Theta-path specimen — the layer that moves is named, its size is derivable, and every other layer is emptied by construction. For the paper's baseline it is satisfied UNEXPECTEDLY, which is the finding: text compaction is an $E$-path (U-E) instance, unlike KV-cache management, which fails condition (3) because it changes a state this book does not model. The two cases together are the sharpest available illustration of what condition (3) filters, and belong in ch11 §11.2.",
+    "census_consequence": "A군 gains a Theta-path member (third, after SEAL and `LM Need Sleep`). All corpus counts of the form 'A군 N편' must be re-stated with a date. Separately, if the book decides to count cascading compaction as an $E$-path procedure — and the discriminant as printed forces that — the $E$-path census and PRE-RESEARCH §2.2's table both change."
+  },
+
+  "book_impact": {
+    "headline": "One printed characterisation BREAKS, one proposed sentence must be re-scoped before it is printed, and four verdicts are CONFIRMED — three of them confirmed by a paper whose every methodological defect pushes the other way, which is why the confirmations are strong.",
+
+    "BREAKS": [
+      {
+        "target": "ch27 표 27-4, $\\Theta$ row",
+        "the_printed_sentence": "\"$\\Theta$ | 같은 사실을 문맥에 넣기(in-context) | 실행되었으나 레짐이 어긋난다. 합성 과제에서 가중치 32% 대 프롬프트 91%이지만, 문맥 채널은 $\\lvert E\\rvert \\le 2$에서만 돌았고 가중치 채널은 100개까지 밀렸다(→ ch22 §22.6) | 방향은 대안 우세. 그러나 동일 레짐 대조가 아니므로 크기는 판정 불가\"",
+        "what_goes_wrong": "The regime qualifier no longer holds corpus-wide. This paper runs the context channel and the weight channel on the SAME model, the SAME 1,146 questions, the SAME judge and the SAME decoding, with the context channel carrying 50,000–65,000 tokens and roughly 115 extracted facts per conversation — not $\\lvert E\\rvert \\le 2$. '동일 레짐 대조가 아니므로 크기는 판정 불가' is therefore false as a corpus statement.",
+        "what_survives": "The DIRECTION. Context still wins: 90.1 ± 0.9 against 80.4 ± 1.3, a 9.7 pp deficit for weights [Table 2, p.6].",
+        "required_edit": "Replace '크기는 판정 불가' with the measured magnitude and its per-type split — weights lose by 9.7 pp overall, lose by 18.4 pp on procedural (74.6 vs 93.0) and 11.1 pp on episodic (78.2 vs 89.3), and lead by 3.2 pp on semantic (94.3 vs 91.1, not significant). Keep the Continual Facts row as the SYNTHETIC-regime evidence and add this as the REALISTIC-regime evidence; the two together are the row's new content."
+      }
+    ],
+
+    "MUST_BE_RESCOPED_BEFORE_PRINTING": [
+      {
+        "target": "OUTLOOK-REVIEW-2026-08-11 §7.6, the proposed revision to ch27 판정 2",
+        "the_proposed_sentence": "\"**다세션 에이전트 스트림 레짐**에서는 $E$-경로 시스템이 memoryless 팔을 비겹침 구간으로 이기지만 **full-context 팔을 실행한 논문이 아직 0편이다.**\"",
+        "verdict": "NOT falsified as literally scoped — but unprintable as written.",
+        "the_careful_reading": "The sentence is scoped to (i) $E$-경로 SYSTEMS in (ii) the multi-session AGENT STREAM regime. This paper is a $\\Theta$-path paper, its comparison arm is cascading compaction rather than an $E$-path system, and its regime is a multi-session software-development CONVERSATION stream (ten synthetic transcripts) rather than an agent stream (no ScienceWorld / ALFWorld / WebArena rollouts). Under that scope the count of zero stands.",
+        "why_it_still_cannot_be_printed": "A reader meets '$E$-경로 시스템이 ... 이기지만 full-context 팔을 실행한 논문이 아직 0편이다' and takes the second clause as a claim about the corpus, not about a sub-scope of the first clause. Read that way it is now FALSE: a paper exists that stands up a no-context floor (11.8 ± 1.0) and a full-context ceiling (90.1 ± 0.9) around the head-to-head, in a multi-session regime, on 1,146 questions.",
+        "required_edit": "Restrict the '0편' explicitly — '$E$-경로 시스템을 에이전트 스트림 벤치에서 full-context와 맞붙인 표가 0개다' — and add a sentence recording that the corpus's first matched floor+ceiling head-to-head arrived on the $\\Theta$ path in 2026-05, together with the fact that the $\\Theta$ arm lost. Then §27.5 FE2's three requirements need a status line for this paper: full-context arm ✓, dispersion printed ✓ (SE, though no CIs and no seeds), conversation length swept over three levels ✗ (one length, three cycles). FE2 does not fire.",
+        "correction_to_the_triage": "dossier/stc-v2/gap-sweep/TRIAGE.md row 1 and §0 state that this paper makes the §7.6 sentence '거짓'. That is too strong: it is false only under the broad reading, and the remedy is scoping plus an added sentence, not retraction. This note supersedes the triage's wording."
+      }
+    ],
+
+    "THREATENS_BUT_SURVIVES": [
+      {
+        "target": "ch27 판정 4, the 미검증 half — C2: 'A군에서 sleep 라운드 수를 독립변수로 놓은 실험이 0편이고'",
+        "why_it_looks_broken": "Figure 3 has a cycle axis with four points and plots consolidation across all of them.",
+        "why_it_survives": "'Cumulative consolidation (dashed lines, squares) trains a fresh LoRA on facts extracted from all conversations seen so far' [Fig. 3 caption, p.7]. Every point is $\\Theta_0 \\to \\Theta$ on a larger $\\mathcal{H}_k$; the chain $\\Theta_k \\to \\Theta_{k+1}$ is never run. The independent variable is $\\lvert\\mathcal{R}\\rvert$, not $k$.",
+        "required_edit": "C2 must stop being a bare count and start quoting this caption. The count survives BECAUSE of a design choice a reader would otherwise mistake for the experiment the book says is missing — and that near-miss is more informative than the zero was."
+      },
+      {
+        "target": "ch27 판정 5 — \"'최선인가'와 '대안 대비 우월한가'는 세 경로 어디에서도 판정되지 않는다. 판정 불가로 남긴다.\"",
+        "why_it_looks_broken": "On the $\\Theta$ path the strongest alternative was run in a matched regime and won by 9.7 pp. That is a judgment.",
+        "why_it_partly_survives": "판정 5's reasoning is CONFIRMED at the same moment: '빠진 대조군은 매번 가장 싸고 가장 자명한 baseline이다.' The arm missing here is facts-in-context — one prompt per question, zero GPU time — and it is the arm that decides whether 80.4% is a weight-consolidation result or a frontier-extraction result.",
+        "required_edit": "Split 판정 5 by path. $\\Theta$: one matched comparison against the strongest alternative now exists and the alternative won; what remains un-judged is the ATTRIBUTION between the write pipeline's three stages. $E$ and $W$: unchanged."
+      }
+    ],
+
+    "CONFIRMS": [
+      {
+        "target": "ch27 판정 2's quality half — '$E$-경로는 ... 품질 방법으로서는 현재 문헌이 지지하지 않으며, 그 반증은 이 책이 아니라 논문들 자신의 표에서 나온다'",
+        "how": "The pattern extends from the four named systems to the most widely deployed $E$-path procedure there is: cascading compaction scores 36.8 ± 3.0 against a full-context 90.1 ± 0.9 on the same model and the same questions [Table 2, p.6]. Once again the quality winner is the arm with no memory management at all, and once again the number is printed by the paper itself.",
+        "required_edit": "Add one sentence to 판정 2 (or to 표 27-2) with this row. Do NOT extend 판정 2's enumeration of five systems — compaction is not one of them; it is a new instance of the same shape."
+      },
+      {
+        "target": "ch27 판정 4's 전제 두 개 — C3 (delta 양자화 회수율 측정 0편) and C4 (쓰기 검증)",
+        "how": "C3 survives: 'quantiz' returns zero hits. C4 is confirmed in its strongest form — there is no write verification of any kind, and the paper's response to the risk is a post-hoc audit recommendation rather than a write gate: 'biases or errors in the day's conversations can be encoded in weights, and whether consolidation perturbs base-model refusal or safety behaviour has not been measured, motivating a standard-benchmarks audit of each consolidated adapter in production deployments' [§4, p.8]."
+      },
+      {
+        "target": "ch26's standing count — 'corpus 전체에서 상태 용량을 바이트로 보고한 논문이 0편이다'",
+        "how": "SURVIVES, and this is now the corpus's sharpest instance. Every factor of the product is printed (rank 16, four named projections, named 7B base) and the per-user framing is explicit, and the multiplication is never performed. [본서 산술] 10,092,544 parameters ≈ 20.19 MB bf16 per user, against ≈3.44 GB of KV cache for a 60,000-token full-context prompt — a ~170x state-size gap, both sides derivable from one paper, at a 9.7 pp accuracy cost. That pair of numbers is new to the book and belongs in ch26 판정 2 and ch29."
+      },
+      {
+        "target": "ch25 §25.3.3 — '상각식 (A)의 분모 $N_q$의 실서빙 분포를 보고한 논문이 corpus에 없다'",
+        "how": "SURVIVES. 115 ± 9 questions per conversation is a benchmark construction. The paper's amortisation argument is per-EVENT ('one-time per consolidation event (e.g., nightly), not per query' [§4, p.8]) and never divides by a query count."
+      },
+      {
+        "target": "ch23 / PRE-RESEARCH §3.1 — the biology-borrowing thesis",
+        "how": "CONFIRMS by counter-example, and the counter-example is the strongest yet. The paper cites CLS primary literature (McClelland 1995, Kumaran 2016, Sun 2023, Rolls 2013) AND volunteers a disconfirming biological observation against its own framing device: 'this compaction ordering does not recapitulate the classical biological dissociation, in which procedural memory is the most preserved type in amnesia' [§4, p.8]. This is the SECOND paper to do what ch23 demanded — Auto-Dreamer (2026-05-20) precedes it by three days — so OUTLOOK §7.9's '이 장이 요구한 것을 실제로 한 첫 논문' must become a dated count of two."
+      }
+    ],
+
+    "CHANGES_A_COUNT": [
+      {
+        "target": "ch28 표 28-2 / X3 — the '29편 중 1편' $B_s$ census",
+        "what_changes": "DENOMINATOR ONLY. 29 → 30. Category (c) 벽시계 goes 2 → 3 (MEMIT, SEAL, this paper).",
+        "what_does_NOT_change": "**Category (a) 절대 FLOPs 또는 토큰 수 stays at 1 (ReasoningBank).** This paper reports GPU-hours on named devices and dollars — not FLOPs, not tokens. Under X3's own priority rule a > b > c it lands in (c). Step count (~18,340) is derivable but not printed, so (b) is a derived claim only. The parent question's premise — that an absolute-unit $B_s$ would flip the tally — does not hold: the tally moves in the denominator and in the (c) cell, and the headline '(a)가 한 편이다' is untouched.",
+        "E4": "'(a)~(c) 후보 8편 중 노트만으로 FLOPs 환산이 닫히는 것 1편' → 9편 중 1편. This paper's conversion still does not close: sequence length per training example and MFU/throughput are both absent. It is nonetheless the closest miss in the corpus — device, base model, trainable-parameter count, batch, epochs and example count are all printed.",
+        "E5": "'MFU 또는 달성 throughput을 보고한 노트가 29편 중 1편' survives — no MFU, no throughput here.",
+        "taxonomy_gap": "ADD A FIFTH gap to §28.2.1's list (which already has PLOS simulation time, EWC sample counts, Generative Adapter axis-only, PAD field absence): **money**. '$5 per user-night' is the corpus's first monetary $B_s$ and the six-cell taxonomy has no cell for it. Five gaps out of thirty papers strengthens rather than weakens §28.2.1's conclusion that the field has no common convention for counting $B_s$.",
+        "table_28_3": "A candidate FIFTH row for '$B_s$ 축에 3점 이상': twelve points on an epoch axis (epochs 1–12) with a printed y-range (fail rate 19.6–45.9%, Fig. 2 legend), on a named public base model and an absolute-budget scale (epochs × batch × examples). That would be the densest $B_s$ sweep in the corpus. **It must not be admitted without its caveat**: every y value was measured on the test set and the reported operating point is the argmin of that same curve, so this is a selection curve, not an independent scaling curve. Admitting it silently would let the book quote as a scaling point the very thing it condemns elsewhere."
+      },
+      {
+        "target": "ch11 §11.3 / ch24 판정 1 / PRE-RESEARCH §2.2 — the A군 census",
+        "what_changes": "A군 gains a $\\Theta$-path member (third, after SEAL and `LM Need Sleep`). Every 'A군 N편' string needs a date. Separately, ch11 §11.2 should gain cascading compaction as a worked example of condition (3): text compaction PASSES (it rewrites external text state), KV-cache management FAILS (it changes a state this book does not model). OUTLOOK §7.5's proposed third gray zone is sharpened by having both cases side by side."
+      }
+    ],
+
+    "MOST_USEFUL_POSITIVE_CONTRIBUTION": {
+      "target": "ch22 (반증 축) and the Continual Facts falsifier",
+      "what_it_gives": "The book's $\\Theta$-path falsifier reports weights 32% against prompt 91% at $\\lvert E\\rvert \\le 2$ (→ ch22 §22.6). This paper reports weights 80.4% against prompt 90.1% at ~115 facts and 50–65k tokens. The weights-versus-prompt gap narrows from roughly 59 pp to 9.7 pp.",
+      "the_candidate_mechanism": "The difference between the two write pipelines is paraphrastic rehearsal: 20 surface forms per fact over six question styles, warranted by Allen-Zhu & Li 2024's controlled pretraining result and explicitly extrapolated by this paper's authors [§2.2, p.3; §5, p.9]. That makes the gap a property of the WRITE PROCEDURE rather than of the $\\Theta$ layer — a testable claim ch22 and X4 can act on.",
+      "the_bound": "The 80.4 is an UPPER bound: the training inventory and the test questions come from the same extractor on the same text, the training format was matched to the test format, and the epoch was chosen on the test set. So the narrowing is an upper bound on the narrowing. The book must state it that way and must not quote 9.7 pp as the true gap."
+    },
+
+    "WHY_THE_CONFIRMATIONS_ARE_STRONG": "[note-writer] Every contamination in this paper — extractor identity, format matching, test-set epoch selection, a frontier teacher writing into a 7B student, a possibly truncated ceiling — biases the result toward the $\\Theta$ arm. The $\\Theta$ arm still loses to full context by 9.7 pp. An ordering that survives a stacked deck is worth more than a clean measurement of the same ordering would be, and it is the one thing in this paper the book can lean on hardest. Conversely the number the book must NOT lean on is 80.4 itself, and everything derived from it: the 43.6 pp gap, the 87% gap recovery, the 'more than doubles', and the semantic cell that exceeds the ceiling."
+  },
+
+  "cross_path_citations": {
+    "verdict": "The first corpus paper to cite THREE of the book's four families — biology/CLS, $E$-path, and $\\Theta$-path — while citing the $W$-path zero times and the sleep-time-compute line it belongs to zero times.",
+    "bibliography_size": "26 entries (References, pp.14-15)",
+    "bio_CLS_path": {
+      "citations": "FOUR, primary and correctly used: McClelland, McNaughton & O'Reilly 1995; Kumaran, Hassabis & McClelland 2016; Sun et al. 2023 (Nature Neuroscience); Rolls 2013 (hippocampal pattern completion/separation).",
+      "how_used": "'The brain uses a fast system (hippocampus) for rapid encoding of new experiences and a slow system (neocortex) for persistent knowledge, with consolidation transferring information from the fast to the slow system' [§1, p.2], and the pipeline stages are mapped onto it ('This is analogous to the initial encoding that occurs in the hippocampus' [§2.2, p.3]).",
+      "the_disconfirmation_the_paper_volunteers": "'We note that this compaction ordering does not recapitulate the classical biological dissociation, in which procedural memory is the most preserved type in amnesia—consistent with procedural memory in the brain depending on separate subcortical systems rather than the hippocampal-to-neocortical pathway that our consolidation pipeline emulates.' [§4, p.8]. A paper printing where its own metaphor fails is what ch23 asked for."
+    },
+    "E_path": {
+      "citations": "THREE, all in one sentence and all as foils: RAG [Lewis et al. 2020], MemoryBank [Zhong et al. 2024], Mem0 [Chhikara et al. 2025] — 'Context-based workarounds—retrieval-augmented generation and external memory stores—can defer this problem but cannot solve it.' [§1, pp.1-2].",
+      "note": "Three sentences of engagement and zero baselines. No $E$-path system is run, and none of the three is discussed again. This is the same shape ch21 recorded for `LM Need Sleep` — the $E$-path named, dismissed, never run."
+    },
+    "Theta_path": {
+      "citations": "The densest $\\Theta$-path bibliography in the corpus: LoRA [Hu et al. 2021], EWC [Kirkpatrick et al. 2017], Zenke et al. 2017, Buzzega et al. 2020 (DER), Rusu et al. 2016 (Progressive Nets), Mallya & Lazebnik 2018 (PackNet), Parisi et al. 2019, Wang et al. 2025 (CL-for-LLM survey), O-LoRA [Wang et al. 2023a], OPPU [Tan et al. 2024], LaMP [Salemi et al. 2024], Allen-Zhu & Li 2024, Self-Instruct [Wang et al. 2023b].",
+      "note": "§5 organises continual learning into regularisation / replay / architectural isolation and places itself in replay. This is the corpus's most competent related-work section on the $\\Theta$ side — and it contains not one paper from the sleep-time-compute line."
+    },
+    "W_path": {
+      "citations": "ZERO. No fast weights, no test-time training, no Titans/Miras/Atlas, no linear-attention paper, no state-space model, no recurrent memory. Whole-text greps: 'fast weight' 0, 'TTT' 0, 'Titans' 0, 'KV' 0, 'cache' 0, 'test-time' 0.",
+      "the_near_miss": "The paper NAMES the $W$-path family and cites neuroscience for it instead: 'The analogy is particularly strong for linear attention models, which implement Hebbian learning similar to that proposed for hippocampal area CA3 [Rolls, 2013].' [§1, p.2]. A claim about linear attention supported by a 2013 hippocampus paper and by nothing from the machine-learning literature it describes."
+    },
+    "the_line_itself": {
+      "citations": "ZERO. No Letta STC (2504.13171), no `LM Need Sleep` (2606.03979), no SEAL, no SCM, no `Do LMs Need Sleep?`, no Nested Learning, no Auto-Dreamer, no Memini. 'sleep' occurs twice in the whole paper, both as 'sleep–wake cycle'; 'sleep-time' zero times.",
+      "chronology": "This is a 2026-05-23 paper. Letta STC predates it by thirteen months and has, per this book's records, 35 citations. The silence is SELECTED, not chronologically forced."
+    },
+    "monograph_implication": "[note-writer] For PRE-RESEARCH §3.1's silence map this is a new row shape and it cuts both ways. It WEAKENS the flat statement '세 경로가 서로를 인용하지 않는다' — here is a paper citing bio + $E$ + $\\Theta$ competently in one bibliography. It STRENGTHENS the deeper thesis, because what the paper does not cite is the line that named the thing it built: the $W$-path and the sleep-time-compute corpus itself. The visible pattern in 2026-05 is convergence on the biology and on continual learning, with the sleep-time-compute line still invisible from outside. The book should date this and state the direction of travel rather than repeat a static claim."
+  },
+
+  "systems_implications": {
+    "preamble": "Grounding key: [PAPER] = a number or statement on the page with a locator; [본서 산술] = arithmetic on printed values; [INFERENCE] = the note-writer's translation. This paper supplies more systems-relevant numbers than any other Theta-path paper in the corpus, and it still supplies no time.",
+    "items": [
+      {"claim": "Wake-time context cost for the Theta arm is ZERO tokens, against 50,000–65,000 for the context arm on the same questions.", "grounding": "[PAPER] §3.1, p.4 for the conversation length; §3.1, p.5 ('the consolidated and no-context conditions do not receive a system prompt'); §3.2, p.7 ('it costs zero tokens at inference time'). This is the corpus's first same-experiment measurement of the wake-side prompt delta that ch25's amortisation identity turns on."},
+      {"claim": "Per-user persistent state is ~20.19 MB in bf16; the context arm's per-request hot state is ~3.44 GB of KV cache. A ~170x ratio, for a 9.7 pp accuracy cost.", "grounding": "[본서 산술] from r=16, {q,k,v,o}_proj, Qwen2.5-7B-Instruct geometry (28 layers, 3584 hidden, 4 KV heads x 128) → 10,092,544 LoRA parameters; KV 57,344 B/token x 60,000 tokens. Neither figure is printed by the paper. See cost_table.C for the derivation and its caveat."},
+      {"claim": "Shared-weight batching is broken by construction and the paper never mentions it.", "grounding": "[INFERENCE] grounded in [PAPER] §4 Broader Impacts, p.8, whose deployment answer is one adapter per user on user-owned hardware. The Rosetta row 'batch로 weight 공유 ↔ $\\Theta$-경로에서 깨짐' is paid in full here, and the paper's economics paragraph prices only the training run, never the serving consequence. Mirror image of ch27's finding on the $E$ side, where the batching WIN goes unclaimed by all five systems."},
+      {"claim": "The sleep job is a batchable, latency-insensitive, single-device fine-tune with a printed wall-clock, and it fits a consumer part overnight.", "grounding": "[PAPER] §4, p.8: 1.5 h on an A100-40GB, 8.2 h on an RTX 5090, ~$5 per user-night in cloud terms. [INFERENCE] 8.2 h is the number that makes the on-device story checkable: it fits an overnight window and it does not fit a typing pause, which bounds the consolidation cadence to roughly once per day per user on owned hardware."},
+      {"claim": "The staging question the book raised in ch26/ch29 gets a second, different answer here.", "grounding": "[INFERENCE]. The book's warm-tier delta-staging analysis assumes a platform holds per-user deltas and pulls them into a request's latency budget. This paper's answer is that the delta never leaves the user's device, so there is no staging latency and no warm tier — at the cost of the platform losing the adapter entirely. Both answers should sit in ch29; the paper argues for the second on privacy grounds ('privacy is an advantage, not a trade-off' [§4, p.8])."},
+      {"claim": "The compaction arm's wake prefill does not shrink. At cycle 3 it converges to ≈72,000 tokens, larger than the full-context ceiling it is meant to replace.", "grounding": "[본서 산술] from [PAPER] §3.1, p.4 (6:1 ratio; ~60,000-token continuation appended each cycle). The fixed point is 60,000/(1 − 1/6) ≈ 72,000. Not stated by the paper, and it inverts the usual reading of compaction as a cost-saving measure: in this protocol it saves nothing and loses 53.3 points."},
+      {"claim": "The write pipeline's cost is dominated by the frontier API, not by the GPU, and the paper does not split it.", "grounding": "[PAPER] §4, p.8: the $5 covers 'Claude-based synthesis plus LoRA training on a rented A100', and 'with user-owned compute the marginal cost falls to synthesis API calls alone'. [INFERENCE] The second clause implies the API is the residual after the GPU is removed, i.e. the dominant term is not measured separately. For a platform the operative number — API tokens per user-night — is absent."},
+      {"claim": "Nothing changes at the decode kernel. The adapter can be merged or served as a low-rank side path; the request shape is unchanged.", "grounding": "[INFERENCE] grounded in D3/D4. The standing reader question — 'so what changes at decode?' — has the same answer here as for any LoRA deployment: the arithmetic is identical and the multi-tenancy is not. That is the whole Theta-path trade in one line, and this paper is the first in the corpus to put a byte figure and a wall-clock figure on both ends of it (both derived rather than printed, in the byte case)."}
+    ]
+  },
+
+  "figures": [
+    {"number": "Table 1", "page": "p.3", "shows": "One extracted memory of each type (procedural / semantic / episodic) beside one of the twenty synthesized conversations it produces.", "why_reproduce": "It makes the write operator concrete in one glance AND it is the exhibit for the train/test overlap: its procedural row is the same hmac fact that §3.1 gives as an example of an extracted TEST question."},
+    {"number": "Figure 2", "page": "p.6", "shows": "Twelve-epoch training dynamics, three curves min/max-normalised: LLM-judged fail rate (min 19.6% at epoch 8), median per-token validation CE (monotone down, r = +0.994 with fail rate), mean per-token validation CE (U-shaped, min at epoch 3, r = −0.506). Legend prints actual ranges.", "why_reproduce": "Two things at once — the paper's genuine methodological contribution (mean CE points the wrong way under a surface-tolerant judge), and the evidence that the reported operating point is the argmin of a test-set curve."},
+    {"number": "Table 2", "page": "p.6", "shows": "The four-arm main result by memory type: no context 11.8 ± 1.0 · compaction C3 36.8 ± 3.0 · consolidated 80.4 ± 1.3 · full context 90.1 ± 0.9, with per-type columns.", "why_reproduce": "This is the table the book has been saying does not exist — a floor and a ceiling around a Theta-vs-context head-to-head on one model and one test set. Reproduce it whole, including the row that shows the method losing to the ceiling."},
+    {"number": "Figure 3", "page": "p.7", "shows": "Retention across cycles 0–3 for both strategies and all three memory types; compaction collapses to 43% after one cycle and erodes to 37%, consolidation drops ~10 pp from baseline and stays flat at 80–82%.", "why_reproduce": "The caption is load-bearing: it is where 'trains a fresh LoRA on facts extracted from all conversations seen so far' is stated, which is what keeps ch27's C2 count alive."},
+    {"number": "Table 3", "page": "p.10", "shows": "Per-conversation test counts (184 / 154 / 808 = 1,146), fact counts (9,198) and training-example counts (183,393).", "why_reproduce": "The only place $B_s$'s data-side magnitude is recoverable, and the source of the 19.94x facts→examples ratio."},
+    {"number": "Table 4", "page": "p.12", "shows": "The full training configuration: Qwen2.5-7B-Instruct, r=16, α=32, q/k/v/o_proj, lr 2e-4, 8-bit paged AdamW, cosine + 3% warmup, batch 8, 8 epochs, 1.5 h on A100-40GB / 8.2 h on RTX 5090.", "why_reproduce": "Every factor of the $C_{\\mathrm{cap}}$ product and most of the $B_s$ conversion inputs are on this one page — which is exactly why the book should show it beside the observation that the paper never multiplies them out."},
+    {"number": "Table 5", "page": "p.13", "shows": "Per-conversation Cycle-3 versus consolidated accuracy for all ten conversations by memory type.", "why_reproduce": "It is what makes the headline statistics independently recomputable (recomputed in experiments.headline_numbers), and it shows the spread the abstract compresses: consolidation 73.8–87.3, compaction 22.8–51.5."}
+  ],
+
+  "todo_verify": [
+    {"item": "How the 50,000–65,000-token full-context system prompt fits Qwen2.5-7B-Instruct, whose published max_position_embeddings is 32,768 (YaRN extension to 131,072 is off by default).", "search_term": "'rope', 'YaRN', 'context length', 'truncat', 'window' throughout the paper and any released config", "why_it_matters": "Decides whether 90.1% is the true ceiling or a truncated one. If truncated, the true ceiling is HIGHER and the Theta arm's deficit is larger — so the direction of the book's conclusion is safe either way, but the constant 90.1 must not be quoted as a measured ceiling until this is settled."},
+    {"item": "The Qwen2.5-7B-Instruct layer/head geometry used in the $C_{\\mathrm{cap}}$ derivation (28 layers, hidden 3584, 4 KV heads x 128).", "search_term": "the published model configuration; the paper prints only 'Qwen2.5-7B-Instruct' and the target-module list", "why_it_matters": "The ~20.19 MB per-user figure and the ~170x state-ratio both depend on it. Confirm before either number is printed with a [본서 산술] marker."},
+    {"item": "Which model performs the 6:1 compaction summarisation.", "search_term": "'summar' in §3.1 and in any released code; the paper never names it", "why_it_matters": "If it is the 7B subject model rather than Claude Sonnet 4, the head-to-head compares two different writers, not two storage destinations, and the 43.6 pp gap must be re-attributed."},
+    {"item": "Whether any test question was excluded from the reflection fact inventory, or whether the two extractions were run with different prompts.", "search_term": "'held-out', 'split', 'exclude', 'disjoint' — none appear in the vendored text", "why_it_matters": "This is the load-bearing contamination. If a separation exists and was simply not described, the 80.4 becomes quotable; if not, only the ordering is quotable."},
+    {"item": "The realised token length of a synthesized two-message training example.", "search_term": "'tokens', 'length', 'max_seq' in §2.2 and App. C", "why_it_matters": "The single missing input for the X3 FLOPs conversion. With it, this paper's $B_s$ would be the first in the corpus to close from printed values."},
+    {"item": "The split of the ~$5 per user-night between Claude API calls and A100 rental.", "search_term": "'cost', 'API', 'rental' in §4", "why_it_matters": "Determines whether the sleep budget is dominated by a frontier API the deployment story says must eventually move on-device."},
+    {"item": "Whether Table 5's bolding, and Table 2's bold semantic cell, survive in the published PDF (the vendored extraction carries no bold).", "search_term": "compare against the arXiv PDF", "why_it_matters": "Table 5's caption claims consolidation outperforms Cycle 3 wherever bolded, and one cell is a tie."},
+    {"item": "Whether the paper's Figure 3 cycle-0 point (≈90%) for BOTH strategies is the same full-context measurement as Table 2's 90.1.", "search_term": "Fig. 3 caption 'At cycle 0 both strategies share the same starting point: the original conversation in full context, no work done yet (≈90%)'", "why_it_matters": "If yes, the figure and the table are one measurement and the book should cite the table; if the figure's ≈90% is a separate run, the discrepancy needs recording."}
+  ]
+}

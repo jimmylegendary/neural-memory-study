@@ -1,0 +1,576 @@
+{
+  "paper_id": "harness-evolution-eval",
+  "arxiv": "2607.12227",
+  "arxiv_version": "v1 [cs.AI] 14 Jul 2026",
+  "title": "Rethinking the Evaluation of Harness Evolution for Agents",
+  "authors": "Yike Wang*1,2, Huaisheng Zhu*3, Zhengyu Hu2, Yige Yuan2, Zhengyu Chen3, Shakti Senthil2, Hannaneh Hajishirzi2, Yulia Tsvetkov2, Pradeep Dasigi1, Teng Xiao*1 (* equal contribution). 1 Allen Institute for AI, 2 University of Washington, 3 Independent (title block, p.1)",
+  "venue": "Preprint (stated as 'Preprint.' on p.1; no venue named)",
+  "date": "2026-07-14",
+  "path": "/home/jimmy/repos/neural-memory-study/papers/stc/2607.12227.txt",
+  "code": "https://github.com/rethinking-harness-evolution (Abstract, p.1)",
+  "axis": "E",
+  "length": "13 pages, 8 body pages + 2 reference pages + 3 appendix pages. 3 tables of results (Tables 1-3), 1 configuration table (Table 4), 3 figures.",
+
+  "why_this_paper_was_read": "[note-writer] Tasked as a possible budget-matched negative answer to ch28's question — is spending $B_s$ better than spending the same budget on $B_t$. The reading does not support that framing (see discriminant_verdict and book_impact.ch28): the budget-matched comparison exists only in the two settings where discriminant condition (1) fails, and the one setting where condition (1) holds has no test-time-scaling arm at all.",
+
+  "problem_stated": {
+    "as_the_paper_frames_it": "The paper attacks an evaluation protocol, not a mechanism. 'Existing harness evolution methods use unit test cases to search for harness configurations and then report final performance on the same public benchmark. This protocol raises two fundamental concerns.' [Abstract, p.1]",
+    "concern_one_missing_baseline": "'harness evolution is itself an iterative search procedure that repeatedly evaluates and revises candidate harnesses using task feedback. As in agentic test-time scaling, it should therefore be compared with simple task-level search baselines under matched feedback and inference budgets to determine whether its gains arise from improved harness design or from additional search alone.' [Abstract, p.1]",
+    "concern_two_shared_task_set": "'because the search and the final evaluation share the same benchmark, the reported gains risk overfitting to that specific task set.' [Abstract, p.1]. Restated as the paper's operational question: 'Does harness evolution yield generalizable improvements in harness design, or are its gains primarily due to repeated sampling?' [§1, p.2]",
+    "what_a_harness_is": "'A harness defines the prompts, tools, memory, verification routines, and control logic through which a model observes tasks and acts [Lopopolo, 2026].' [§1, p.2]",
+    "note_writer_remark": "[note-writer] The problem is inherited cleanly and explicitly — from Meta-Harness [Lee et al. 2026], AHE [Lin et al. 2026] and AEVO [Zhang et al. 2026], all cited by name as the works whose protocol is faulted. But the inheritance runs entirely inside the agent-harness literature. Nothing from the sleep-time-compute corpus is inherited, cited, or visible (see cross_path_citations)."
+  },
+
+  "core_mechanism": {
+    "one_line_unified": "Harness Evolution instantiates (U-E) with the store being the agent's *operating procedure* rather than the task's content — system-prompt rules, middleware, tool guidance and long-term memory — written offline by a meta agent from an accumulated evidence store and, in the unit-test setting, selected by a real verifier; Theta and W never move. The paper's three other methods are foils: Parallel Sampling and Sequential Refinement are pure wake-time scaling ($B_s=0$), and Harness Scaling applies the same write operator on the wrong clock.",
+
+    "notation_conflicts": {
+      "preamble": "The paper numbers only two equations (the pass@1 and pass@k definitions in App. A.5). All method equations in §3 are unnumbered display lines, so every 'original equation' locator below is a section locator. Reserved-symbol collisions are unusually dense because the paper is an RL/agent-evaluation paper and the monograph's reserved set is a memory/training set.",
+      "map": [
+        {"paper_symbol": "$h$, $h_k$, $\\hat h$, $h^\\star$", "paper_meaning": "the harness: prompts, tools, memory, verification routines, control logic [§1, p.2]; $h_k$ the harness at round $k$; $\\hat h$ the harness selected for final use; $h^\\star$ the argmax harness [§3.4, p.4]", "reserved_meaning": "$h$ is not reserved, but the object IS the external store", "unified_replacement": "$E$, $E_k$, $\\hat E$, $E^\\star$ — the harness is the external store of (U-E). The chapter must state once that in this paper $E$ holds a *procedure*, not the task's content."},
+        {"paper_symbol": "$C_k$", "paper_meaning": "the experience store, $C_k = C_{k-1}\\cup\\{e_k\\}$, accumulating harnesses, rollouts and outcomes [§3.4, p.4]; labelled 'Experience Store' in Figure 2, p.3", "reserved_meaning": "$C$ = chunk size (NM inheritance); capacity is $C_{\\text{cap}}$ [STC-STYLE §1.5]. A bare $C$ carrying a store meaning is forbidden.", "unified_replacement": "$\\mathcal{H}_k$ — S0 §2.2 already reserves $\\mathcal{H}_k$ for 'the experience accumulated through round $k$', which is exactly this object. Keep $\\mathcal{H}$ (the evidence log) distinct from $E$ (the artifact read at wake); the paper keeps them distinct too and only $E$ is read at wake."},
+        {"paper_symbol": "$\\Phi$", "paper_meaning": "'a summarization map $\\Phi$, realized by the same underlying model as the policy. The map $\\Phi$ summarizes an experience store into a form that a downstream agent can consume' [§3.1, p.3]; implemented as the AHE Agent Debugger [App. A.2, p.11]", "reserved_meaning": "bare $\\Phi$ is not globally reserved, but ch29 uses $\\Phi_{\\text{wr}}$ for write traffic, so a bare $\\Phi$ in a cost discussion would read wrong", "unified_replacement": "$S(\\cdot;B_s)$ when applied offline (Harness Evolution) and $S(\\cdot;B_t)$ when applied at wake (Sequential Refinement, Harness Scaling). The clock the operator runs on is the whole finding; the symbol must carry the budget argument."},
+        {"paper_symbol": "$M$", "paper_meaning": "the meta agent that emits the next harness, $h_k = M(\\Phi(C_{k-1}))$ [§3.4, p.4]", "reserved_meaning": "$\\mathcal{M}(\\cdot;W)$ = memory read function (NM inheritance) [STC-STYLE §1.2]", "unified_replacement": "do not introduce a symbol — write the composition directly: $E_k=\\mathrm{wr}\\big(E_{k-1},\\,S(\\mathcal{H}_{k-1};B_s)\\big)$. $M\\circ\\Phi$ IS the (U-E) write."},
+        {"paper_symbol": "$x$, $\\mathcal{X}$", "paper_meaning": "a task drawn from a task distribution [§3.1, p.3]", "reserved_meaning": "none", "unified_replacement": "$q$ for the task instance (in this corpus a Terminal-Bench task IS the query; there is no $(c,q)$ split), $\\mathcal{X}$ retained for the distribution"},
+        {"paper_symbol": "$y$, $\\hat y$", "paper_meaning": "$y$ = a trajectory, 'the full sequence of states, actions, and observations'; $\\hat y$ = the returned final trajectory [§3.1, p.3]", "reserved_meaning": "$\\hat y$ = the model's answer [S0 (R)]", "unified_replacement": "$\\hat y$ retained, with one sentence noting that here the returned object is a whole trajectory scored by a verifier, not a string"},
+        {"paper_symbol": "$\\pi_\\theta$", "paper_meaning": "the agent policy [§3.1, p.3]", "reserved_meaning": "$\\Theta$ = slow weights [P2: never overwritten]", "unified_replacement": "$f(\\cdot;\\Theta,\\ldots)$ of S0 (R) with $\\Theta$ frozen. The lowercase $\\theta$ of this paper IS $\\Theta$, and it never moves — say so once."},
+        {"paper_symbol": "$k$, $K$", "paper_meaning": "round index and compute budget, $k=2,\\ldots,K$; $K=5$ in all experiments [§3.1-3.5, pp.3-5; §4.1, p.5]", "reserved_meaning": "$k$ = sleep round index; $K$ used by ch27/ch29 for the round count a service demands [STC-STYLE §1.2]", "unified_replacement": "$k$ and $K$ retained — the correspondence is exact and worth pointing out. CAUTION: the paper reuses $k$ a third time inside 'pass@$k$' [App. A.5, p.11]; write pass@$\\kappa$ there."},
+        {"paper_symbol": "$n$", "paper_meaning": "the number of tasks in the search batch, $\\{x^{(i)}\\}_{i=1}^n$ [§3.4, p.4]", "reserved_meaning": "$n$ = number of stored items (global) [STC-STYLE §1.3]", "unified_replacement": "$n_{\\text{search}}$ (note-local). In §4.4 $n_{\\text{search}}=45$."},
+        {"paper_symbol": "$m$", "paper_meaning": "rollouts per task per round; set to 1 [§3.4, p.4; §4.1, p.5]", "reserved_meaning": "none globally; the letta-stc note uses top-$m$ informally", "unified_replacement": "$m$ retained"},
+        {"paper_symbol": "$R(y,g)\\in\\{0,1\\}$, $\\bar R(h_k)$", "paper_meaning": "binary task outcome from a unit test $g$, and its batch mean [§3.1, p.3; §3.4, p.4]", "reserved_meaning": "$R$ = reinforcement-learning reward [STC-STYLE §1.3]", "unified_replacement": "$R$ retained — the correspondence is exact"},
+        {"paper_symbol": "$r_{i,j}\\in\\{0,1\\}$", "paper_meaning": "binary reward of rollout $j$ on task $i$ [App. A.5, p.11]", "reserved_meaning": "$r$ = LoRA rank [STC-STYLE §1.3]", "unified_replacement": "$R_{ij}$ — §1.3 gives rank the letter $r$ and rewards the letter $R$"},
+        {"paper_symbol": "$J$", "paper_meaning": "'a self judge realized by the agent itself', $\\hat y=\\arg\\max_k J(y_k)$ [§3.2, p.3]", "reserved_meaning": "not globally reserved, but the letta-stc note uses $J\\le 10$ for rewrite depth", "unified_replacement": "$J_{\\text{self}}$ (note-local), or write 'self-judge' in prose"},
+        {"paper_symbol": "$g$", "paper_meaning": "a unit test case [§3.1, p.3]", "reserved_meaning": "none", "unified_replacement": "$g$ retained"},
+        {"paper_symbol": "$D$", "paper_meaning": "the task set, $|D|$ its size [App. A.5, p.11]", "reserved_meaning": "$D$ = training tokens in ch28's local scaling-law declaration [ch28 §28.1]", "unified_replacement": "$\\mathcal{D}$ (note-local). ch28 is precisely the chapter this note feeds, so the clash matters."}
+      ]
+    },
+
+    "equations_unified": [
+      {
+        "id": "H1",
+        "latex": "E_1 \\;=\\; h_1 \\;=\\; \\{\\text{one bash tool}\\}, \\qquad \\text{no skills, no middleware, no persistent memory}",
+        "gloss": "The initial state of the store, and it is deliberately minimal. Every one of the four methods starts here, so the same artifact is both the frozen harness of the two test-time-scaling arms and the seed of the two harness arms.",
+        "source": "[App. A.1, p.11: 'All four methods initialize the code agent from an identical minimal harness: the model is granted access to a single bash tool and nothing else, without skills, middleware, or persistent memory.'] + [§4.1, p.5]"
+      },
+      {
+        "id": "H2",
+        "latex": "\\textbf{read (R):}\\qquad \\hat y \\;\\sim\\; f\\big(q;\\ \\Theta,\\ W,\\ \\mathrm{ret}(E,q)\\big), \\qquad \\mathrm{ret}(E,q)=E",
+        "paper_form": "$y \\sim \\pi_\\theta(\\cdot\\mid x; h)$",
+        "gloss": "Retrieval is the identity, exactly as in Letta STC: the whole harness is in force on every request. There is no index, no scoring, no selection. Unlike Letta STC the store is not spliced only into the prompt — part of it is middleware and tool wiring that executes.",
+        "source": "[§3.1, p.3]"
+      },
+      {
+        "id": "H3",
+        "latex": "\\textbf{sleep write (U-E), Harness Evolution:}\\qquad E_k \\;=\\; \\mathrm{wr}\\big(E_{k-1},\\ \\hat c_k\\big) \\;=\\; \\hat c_k, \\qquad \\hat c_k \\;=\\; S\\big(\\mathcal{H}_{k-1};\\ B_s/(K-1)\\big), \\qquad k=2,\\ldots,K,\\ \\ K=5",
+        "paper_form": "$h_k = M\\big(\\Phi(C_{k-1})\\big)$",
+        "gloss": "wr is FULL REPLACEMENT — the meta agent emits the next harness, not a patch. This is Letta STC's destructive overwrite again, on a different payload.",
+        "source": "[§3.4, p.4] + [§4.1, p.5 for $K=5$]"
+      },
+      {
+        "id": "H4",
+        "latex": "\\textbf{evidence accumulation (pure union):}\\qquad \\mathcal{H}_k \\;=\\; \\mathcal{H}_{k-1}\\cup\\{e_k\\}, \\qquad e_k \\;=\\; \\big(E_k,\\ \\{\\hat y_k^{(i,j)}\\}_{i,j}\\big) \\ \\text{or}\\ \\big(E_k,\\ \\{\\hat y_k^{(i,j)}\\}_{i,j},\\ \\{R(\\hat y_k^{(i,j)},g^{(i)})\\}_{i,j}\\big)",
+        "gloss": "TWO write operators coexist, as in Letta STC and ReasoningBank: the artifact $E$ is overwritten, the evidence log $\\mathcal{H}$ is a pure union with no eviction, no decay, no compaction. The paper never remarks on the difference. $\\mathcal{H}$ is read only by the meta agent; only $E$ is read at wake.",
+        "source": "[§3.4, p.4]"
+      },
+      {
+        "id": "H5",
+        "latex": "\\textbf{write verification:}\\qquad \\hat E \\;=\\; \\begin{cases} E_K & \\text{no unit tests}\\\\[2pt] \\arg\\max_{k\\le K}\\ \\bar R(E_k),\\quad \\bar R(E_k)=\\dfrac{1}{n_{\\text{search}}m}\\sum_{i}\\sum_{j} R\\big(\\hat y_k^{(i,j)},g^{(i)}\\big) & \\text{unit tests available}\\end{cases}",
+        "gloss": "This is the strongest write verification in the corpus. Letta STC verifies $\\hat c$ not at all; ReasoningBank verifies with an LLM judge that is 72.7% accurate; here the selector is a real unit test executed in a sandbox. The finding of §4.4 is therefore not 'the write was unverified' — the write was verified, and still did not transfer.",
+        "source": "[§3.4, p.4]"
+      },
+      {
+        "id": "H6",
+        "latex": "\\textbf{held-out application (§4.4 — the only discriminant-passing configuration):}\\qquad \\hat y \\;\\sim\\; f\\big(q;\\ \\Theta,\\ W,\\ \\hat E\\big), \\qquad q \\in \\mathcal{D}_{\\text{test}},\\ |\\mathcal{D}_{\\text{test}}|=34, \\qquad N_q = 34",
+        "gloss": "One artifact, evolved on 45 training tasks and selected on 10 validation tasks, serves 34 tasks it has never seen. This is the amortisation identity (A) with the largest and cleanest $N_q$ anywhere in the corpus — and the artifact buys +0.6 points on average.",
+        "source": "[§4.4, p.7]"
+      },
+      {
+        "id": "H7",
+        "latex": "\\textbf{Harness Scaling — same operator, wake clock:}\\qquad E_k \\;=\\; \\mathrm{wr}\\big(E_{k-1},\\ S(q,\\,E_{k-1},\\,\\hat y_{k-1};\\ B_t)\\big), \\qquad \\hat y = \\hat y_K,\\qquad E \\text{ discarded}",
+        "paper_form": "$h_k = M\\big(x, \\Phi(h_{k-1},y_{k-1})\\big)$, $y_k\\sim\\pi_\\theta(\\cdot\\mid x;h_k)$",
+        "gloss": "The update conditions on the evaluation task $q$ itself, so the query has already arrived; and the artifact dies with the instance, so nothing is carried to a later query. Two of the four discriminant conditions fail. The paper's own words: 'harness scaling adapts the harness for a single evaluation instance by allocating additional inference budget to harness revision... instance-guided harness adaptation, in contrast to dataset-guided harness evolution.' This is the cleanest foil in the corpus for condition (1).",
+        "source": "[§3.5, p.5]"
+      },
+      {
+        "id": "H8",
+        "latex": "\\textbf{test-time arms:}\\quad \\text{Parallel: } \\hat y=\\arg\\max_{k\\le K} J_{\\text{self}}(\\hat y_k) \\ \\text{ or }\\ \\hat y\\in\\{\\hat y_k: R(\\hat y_k,g)=1\\}; \\qquad \\text{Sequential: } \\hat y_k\\sim f\\big(q,\\,S(\\hat y_{k-1};B_t);\\ \\Theta,W,E\\big),\\ E\\ \\text{fixed}",
+        "gloss": "$B_s = 0$ for both. Note that Sequential Refinement does pay for the summariser $S$ at wake, and Parallel Sampling pays for a self-judge; neither pays for a meta agent.",
+        "source": "[§3.2, pp.3-4; §3.3, p.4]"
+      },
+      {
+        "id": "H9",
+        "latex": "\\textbf{frozen layers:}\\qquad \\Theta_{k+1}=\\Theta_k\\ \\ \\forall k, \\qquad W \\ \\text{does not exist}",
+        "gloss": "Stated as the defining premise of the whole harness literature, not derived. 'Test-time scaling refers to improving a language model's outputs by allocating additional computation at inference, without modifying the model weights'; 'A growing body of work improves agent performance without retraining the underlying model by optimizing the external scaffold around the model.'",
+        "source": "[§2, p.2, both sentences]"
+      },
+      {
+        "id": "H10",
+        "latex": "\\textbf{the budget identity the paper actually enforces:}\\qquad K \\;=\\; 5 \\ \\text{rollouts per task, all four arms}, \\qquad m=1",
+        "paper_form": "'we sample one rollout per task for each harness, setting m = 1, to match the rollout budget across methods. We use a compute budget of K = 5 across methods.'",
+        "gloss": "CRITICAL READING. The matched quantity is a count of agent rollouts, not tokens and not FLOPs. Table 4 caps a single rollout at 300 model turns x 128,000 generated tokens, so a rollout is not a unit of compute. And the two harness arms additionally run a meta agent capped at 500 model turns — a HIGHER cap than the code agent's 300 — plus an Agent Debugger at 25 turns, neither of which the parallel-sampling arm pays. In the monograph's units the arms are $B_s=0,\\ B_t=Kb_{\\text{roll}}+b_J$ (Parallel); $B_s=0,\\ B_t=Kb_{\\text{roll}}+(K-1)b_S$ (Sequential); $B_s=Kn_{\\text{search}}b_{\\text{roll}}+(K-1)(b_S+b_M),\\ B_t=b_{\\text{roll}}$ (Harness Evolution); $B_s=0,\\ B_t=Kb_{\\text{roll}}+(K-1)(b_S+b_M)$ (Harness Scaling). None of $b_{\\text{roll}}, b_S, b_M, b_J$ is measured.",
+        "source": "[§4.1, p.5] + [App. A.4 Table 4, p.12]"
+      }
+    ],
+
+    "what_is_NOT_in_the_mechanism": [
+      "No weight update of any kind. No gradient, no optimizer, no adapter, no LoRA, no fine-tuning. Stated as the premise of the literature, not as a limitation. [§2, p.2]",
+      "No fast-weight or activation-space state. The KV cache is never mentioned; 'Max context 200,000 tokens' and a 'Context compaction threshold 0.75' are the only nods at context management and they appear only in the configuration table. [Table 4, p.12]",
+      "No retrieval. $\\mathrm{ret}$ is the identity — the whole harness is in force on every request. There is no index, no embedding, no top-$m$, no scoring over stored items.",
+      "No eviction, expiry, compaction or capacity bound on either $E$ or $\\mathcal{H}$. The only stated consequence of unbounded growth is a qualitative one: 'the growing volume of persistent prompt text introduces context bloat that can offset the remaining gains'. [§5.1, p.8]",
+      "No budget sweep. $K=5$ is the single operating point for every method in every table.",
+      "No cost measurement of any kind. Zero tokens consumed, zero FLOPs, zero wall-clock, zero dollars, zero GPU-hours. A whole-text probe returns 'FLOP' 0 times and the word 'cost' exactly once, at [§3.1, p.3], where it names something the summariser might report."
+    ]
+  },
+
+  "outer_vs_inner": {
+    "headline": "The outer-loop column is empty, as in Letta STC — nothing is trained. But the moving-part column is richer: three separate frozen-model agents (code agent, Agent Debugger, meta agent) run at three different points in the loop, and only one of them is on the wake path.",
+    "rows": [
+      {"object": "$\\Theta$ — Claude Opus 4.6 / GPT-5.4 / GPT-5.4 mini backbone weights", "who_learns_it": "the vendors, before this paper existed", "when": "outside this paper", "moves_in_this_paper": "no — frozen by the premise of the literature", "source": "[§2, p.2; §4.1, p.5]"},
+      {"object": "$W$ — fast weights / test-time weight state", "who_learns_it": "nobody", "when": "n/a", "moves_in_this_paper": "no — this layer does not exist in the systems used", "source": "[absent throughout]"},
+      {"object": "$E$ — the harness: system-prompt behavioural rules, long-term memory, middleware (turn-budget trackers, output truncation, finalization gates), tool guidance", "who_learns_it": "the meta agent, by prompting; the authors fix its protocol", "when": "SLEEP-TIME for Harness Evolution ($K-1=4$ meta-agent invocations over a batch of tasks); WAKE-TIME for Harness Scaling (same operator, conditioned on the evaluation task)", "moves_in_this_paper": "YES — this is the sole moving part", "source": "[§3.4, p.4; §3.5, p.5; §5.1, pp.7-8]"},
+      {"object": "$\\mathcal{H}$ — the experience store $C_k$ of harnesses, rollouts and (when available) outcomes", "who_learns_it": "nobody; pure union", "when": "one entry per round", "moves_in_this_paper": "grows monotonically; read only by the meta agent", "source": "[§3.4, p.4; Figure 2, p.3]"},
+      {"object": "the meta agent $M$ — a frozen model instance with its own turn/context budget", "who_learns_it": "nobody; the same backbone as the policy", "when": "once per round", "moves_in_this_paper": "no", "source": "[§3.4, p.4; Table 4, p.12 — max model turns 500, max context 200,000, max generation per turn 128,000, compaction threshold 0.75]"},
+      {"object": "the Agent Debugger $\\Phi$ — the AHE summarisation agent that turns raw traces into per-task analysis reports", "who_learns_it": "nobody; imported from AHE [Lin et al. 2026]", "when": "once per round (Harness Evolution/Scaling) or once per step (Sequential Refinement)", "moves_in_this_paper": "no", "source": "[App. A.2, p.11; Table 4, p.12 — max model turns 25, retry 3, backoff 2.0 s]"},
+      {"object": "$K=5$ — the shared budget", "who_learns_it": "nobody; fixed by hand, never swept", "when": "experiment configuration", "moves_in_this_paper": "no", "source": "[§4.1, p.5]"},
+      {"object": "the AHE explore agent (which retrieves benchmark-tuned harnesses from external sources)", "who_learns_it": "n/a", "when": "n/a", "moves_in_this_paper": "DISABLED. 'Because the explore agent imports benchmark-specific harnesses rather than discovering improvements from feedback, it conflates reusable harness evolution with retrieval of solutions already fitted to the evaluation tasks. We therefore disable it'", "source": "[§3.4, p.4; App. A.3, p.11]"},
+      {"object": "the 45/10/34 train/val/test split of Terminal-Bench 2.1", "who_learns_it": "nobody; chosen by the authors, split rule not stated", "when": "§4.4 only", "moves_in_this_paper": "no", "source": "[§4.4, p.7]"}
+    ],
+    "reader_takeaway": "[note-writer] For the monograph this is the cleanest existing separation of *what is frozen and what evolves* in an agent stack, and Figure 2 (p.3) draws it explicitly with a 'Frozen / Evolving' legend. It is the first paper in this corpus where the offline write is performed by a distinct agent with its own budget, and that fact is what breaks the budget matching (see H10)."
+  },
+
+  "update_layer": {
+    "instantiates": "(U-E) — and only (U-E). No layer other than $E$ moves anywhere in the paper.",
+    "canonical_form": "$E_{k+1}=\\mathrm{wr}(E_k,\\hat c_k)$, $\\hat c_k = S(c_k;B_s)$ [S0-DESIGN §2.2]",
+    "how_this_paper_differs_from_the_canonical_form": [
+      "The content of $E$ is PROCEDURAL, not propositional. Every other $E$-path paper in the corpus stores something about the task's content — RAG chunks, Mem0 facts, Zep graph entities, ReasoningBank strategies, Letta STC's re-represented context. Here the store holds the agent's operating procedure: behavioural rules, middleware code, tool guidance, and a long-term memory block. This is a new sub-kind of $E$ and it should be entered in the concept ledger.",
+      "The store's SCOPE is the task distribution, not a context. Letta STC's store is scoped to one context and dies with it; Mem0's and Zep's are scoped to a user or a session. Harness Evolution's artifact is a single per-deployment object that serves every task. In (A) this makes $N_q$ the size of the served task set — 34 in §4.4 — rather than a per-context handful.",
+      "The write is VERIFIED by a real verifier when unit tests are available: $\\hat E$ is the harness with the highest measured aggregate outcome $\\bar R$ over the search batch [§3.4, p.4]. This is stronger write hygiene than anything else in the corpus, and it changes what a negative result means — the failure is not a bad write, it is a write that was measured to be good on the search set and did not transfer.",
+      "The number of rounds is EXPLICIT and small: $K=5$, so $k$ ranges over exactly five sleep rounds, and the paper states it. Letta STC ran exactly one round; ReasoningBank runs one per task; this is one of the few corpus papers with a stated multi-round offline loop. It is still not a sweep — $K$ is never varied.",
+      "$\\mathrm{wr}$ is DESTRUCTIVE OVERWRITE of the artifact ($M$ emits the next harness whole) while $\\mathcal{H}$ is PURE UNION. The paper uses two write operators without naming the difference — the same unremarked doubling that letta-stc and reasoningbank exhibit."
+    ],
+    "other_layers": {
+      "U-W": "not touched — no fast-weight state exists in the systems used",
+      "U-Theta": "not touched, and excluded by the literature's premise: 'improves agent performance without retraining the underlying model' [§2, p.2]. The paper does not gesture at a Theta-path composition even as future work."
+    },
+    "ordering": "Single-layer. For Harness Evolution: $K-1$ offline (U-E) writes over a task batch, then one wake read per held-out query. For Harness Scaling: $K-1$ (U-E) writes interleaved with wake reads on the SAME query, then discard."
+  },
+
+  "cost_table": {
+    "B_s": {
+      "value": "absent in the required units",
+      "detail": "No token count, FLOP count, wall-clock figure, dollar figure or GPU-hour appears anywhere in the paper. Whole-text probe: 'FLOP' occurs 0 times; the word 'cost' occurs exactly once and it is at [§3.1, p.3] naming something the summariser may report, not a measurement. What IS reported is (i) a rollout count, $K=5$ per task for every method with $m=1$ rollout per task per round [§4.1, p.5], and (ii) per-agent CAPS in the configuration table — code agent 300 model turns, Agent Debugger 25 turns, meta agent 500 turns, all with 200,000 max context and 128,000 max generation per turn [Table 4, p.12]. Caps are not consumption.",
+      "finding": "This is a paper whose entire contribution is a budget-matched comparison, and it reports the budget as a count of agent rollouts. A rollout is bounded above by 300 turns x 128k generated tokens, so it is a unit of work, not a unit of compute. ch28's six-bin taxonomy has no bin for this form (see book_impact.ch28)."
+    },
+    "L_w": {
+      "value": "absent",
+      "detail": "Zero latency, TTFT, ms/token, wall-clock or throughput numbers. A whole-text probe for latency / wall-clock / seconds / dollars returns nothing. The wake-side cost delta of the method is acknowledged in prose and never quantified: 'the growing volume of persistent prompt text introduces context bloat that can offset the remaining gains' [§5.1, p.8]. The evolved harness rides in the system prompt on every request, so this is a real per-query prefill increase with no number attached.",
+      "proxy_values_actually_reported": "None. Unlike Letta STC, which at least prints a generated-token axis, this paper reports no compute proxy at all — only accuracy."
+    },
+    "C": {
+      "value": "absent",
+      "detail": "No byte, character or token count for the evolved harness at any round. The composition is described (system-prompt rules, long-term memory, middleware such as turn-budget trackers and output truncation and finalization gates, tool guidance) [§5.1, pp.7-8] and the initial state is described exactly ('a single bash tool and nothing else, without skills, middleware, or persistent memory') [App. A.1, p.11], but the artifact is never sized. The 200,000-token max context [Table 4, p.12] is an upper bound on everything in the prompt, not a measurement of $E$.",
+      "finding": "This is the corpus's first $E$-path artifact whose capacity is O(1) in users — one harness per deployment rather than one per user or per session — and it is still unsized. ch26's count of papers printing $C_{\\text{cap}}$ is unchanged."
+    },
+    "rho": {
+      "value": "absent as a rate; the SIGN is observable and negative under self-feedback",
+      "detail": "No per-round curve is printed anywhere, so no degradation rate can be computed. But the endpoints of a 5-round offline loop are printed and they go the wrong way when the feedback is the agent's own judgement: Harness Evolution ends below the initial harness on the three-model average (67.4 vs 68.2) and 5.6 points below on GPT-5.4 (69.7 vs 75.3) [Table 1, p.6]. The paper reads this as compounding: 'Self generated feedback is noisy, and sequential revision based on such feedback risks compounding early mistakes' [§4.2, p.6]. With unit-test feedback the sign flips positive (75.8 vs 72.9 on pass@1) [Table 2, p.6]. The qualitative degradation mechanism is named — context bloat from monotonically growing prompt text [§5.1, p.8] — and never measured.",
+      "finding": "The corpus's usual complaint is that $\\rho$ is out of scope by construction (Letta STC ran one round). Here five rounds are run and the endpoint moves, so $\\rho$ is in scope and simply unreported. That is a different and more culpable kind of absence."
+    },
+    "N_q": {
+      "value": "structurally explicit in one setting; never a deployment distribution",
+      "detail": "In §4.4 one artifact serves 34 held-out tasks, so $N_q=34$ — the largest and cleanest amortisation denominator in the corpus, and the first one that is a property of the design rather than a synthetic sweep. In §4.2/§4.3 the artifact serves the same 89 tasks it was searched on, so $N_q$ is not well defined (the artifact has seen the query). No real workload distribution is reported, so ch25 §25.3.3's count of papers reporting a serving $N_q$ distribution is unchanged.",
+      "finding": "[note-writer] This is the point ch25 and ch28 should take. The amortisation arithmetic here is maximally favourable — a large $N_q$, a shared prefix, a one-time offline cost — and the method still fails. For this artifact class the binding constraint is not the cost denominator; it is whether the artifact carries anything transferable."
+    }
+  },
+
+  "experiments": {
+    "result_tables_exist": "Three result tables with printed numbers (Tables 1-3), plus a configuration table (Table 4). This is a genuine strength relative to the corpus: unlike Letta STC, every headline number in this paper can be read off a table rather than a line plot. No error bars, confidence intervals, standard deviations or seeds are reported anywhere.",
+
+    "benchmark": {
+      "name": "Terminal-Bench 2.1 [Merrill et al. 2026]",
+      "size": "89 terminal (command-line) tasks",
+      "provenance": "'a verified revision of Terminal-Bench 2.0. It repairs 28 of the 89 tasks, correcting external dependency drift, resource budget mismatches, and instructions misaligned with their tests, while keeping the suite at 89 terminal tasks, providing a more accurate assessment of code agents.'",
+      "why_this_one": "'Following prior work [Lee et al., 2026, Lin et al., 2026, Zhang et al., 2026]' — i.e. it is the benchmark the criticised papers used.",
+      "split_for_the_generalisation_experiment": "45 training tasks / 10 validation tasks / 34 held-out test tasks. The split rule is not stated.",
+      "source": "[§4.1, p.5; §4.4, p.7]"
+    },
+
+    "models": [
+      {"model": "Claude Opus 4.6", "used_in": "§4.2 (no unit tests), §4.3 (unit tests), §4.4 (held-out)", "source": "[§4.1, p.5]"},
+      {"model": "GPT-5.4", "used_in": "§4.2, §4.3, §4.4", "source": "[§4.1, p.5]"},
+      {"model": "GPT-5.4 mini", "used_in": "§4.2 ONLY — absent from both the unit-test setting and the held-out setting", "source": "[§4.1, p.5; Tables 1-3]"},
+      {"note": "The same model serves as code agent, Agent Debugger and meta agent in each run — 'realized by the same underlying model as the policy' [§3.1, p.3], and Table 4 lists the same model row for all three agents. There is no cross-model control: the system that writes the harness is the system that must exploit it. Compare the letta-stc note's clusterer/solver circularity finding.", "source": "[§3.1, p.3; Table 4, p.12]"}
+    ],
+
+    "protocol": [
+      "Maximum generation budget 128k tokens, high reasoning effort, for every model [§4.1, p.5].",
+      "'To reduce variance from stochastic rollouts, all results are averaged over two independent runs.' No dispersion statistic from those two runs is ever printed [§4.1, p.5].",
+      "Shared initial harness $h_1$ for all four methods, taken from AHE [§4.1, p.5; App. A.1, p.11].",
+      "Harness evolution instantiated as AHE [Lin et al. 2026] with its explore agent disabled [§3.4, p.4; App. A.3, p.11]. Meta-Harness [Lee et al. 2026] and AEVO [Zhang et al. 2026] are criticised but never run.",
+      "$m=1$ rollout per task per round, $K=5$ across methods [§4.1, p.5].",
+      "'Each rollout executes in its own freshly provisioned E2B remote sandbox.' [App. A.4, p.11]",
+      "'Rollouts that terminate on an infrastructure exception, such as a sandbox crash or an API timeout, are scored as r = 0 rather than excluded from the average.' [App. A.5, p.11]",
+      "pass@1 = mean binary reward over all rollouts; pass@$\\kappa$ = fraction of tasks solved by at least one of $\\kappa$ rollouts [App. A.5, Eqs. (1)-(2), p.11]."
+    ],
+
+    "table_1_no_unit_tests_pass_at_1": {
+      "caption": "'Experimental results on Terminal-Bench 2.1 when unit test cases are unavailable. All results report pass@1... Under this setting, automatic harness evolution algorithms underperform simple test-time scaling methods.' [Table 1, p.6]",
+      "rows": [
+        {"method": "direct sampling using initial harness", "claude_opus_4_6": 69.9, "gpt_5_4": 75.3, "gpt_5_4_mini": 59.4, "average": 68.2},
+        {"method": "Parallel Sampling (test-time scaling)", "claude_opus_4_6": 74.7, "gpt_5_4": 79.2, "gpt_5_4_mini": 62.9, "average": 72.3},
+        {"method": "Sequential Refinement (test-time scaling)", "claude_opus_4_6": 73.0, "gpt_5_4": 73.0, "gpt_5_4_mini": 61.8, "average": 69.3},
+        {"method": "Harness Evolution", "claude_opus_4_6": 71.4, "gpt_5_4": 69.7, "gpt_5_4_mini": 61.3, "average": 67.4},
+        {"method": "Harness Scaling", "claude_opus_4_6": 76.0, "gpt_5_4": 78.1, "gpt_5_4_mini": 61.2, "average": 71.8}
+      ],
+      "authors_reading": "'Parallel Sampling is the most consistent approach, improving the average score from 68.2 to 72.3 and yielding gains on all three models. Sequential Refinement provides only a marginal average improvement of 1.1 points and even slightly degrades GPT-5.4 relative to direct sampling. In contrast, Harness Evolution fails to outperform the direct sampling baseline on average. The degradation is most pronounced on GPT-5.4, where performance drops sharply from 75.3 to 69.7, indicating that iterative harness revision can actively hurt a strong model when the revision process is guided only by the agent's own judgment. Harness Scaling partially closes this gap, reaching the best single result on Claude Opus 4.6 and a competitive average of 71.8.' [§4.2, p.6]",
+      "authors_conclusion": "'even very strong agents struggle to reliably extract useful learning signals from their own trajectories to revise the harness. Self generated feedback is noisy, and sequential revision based on such feedback risks compounding early mistakes... This indicates that harness revision likely requires a reliable external correctness signal to ground the revision process.' [§4.2, p.6]",
+      "note_writer_observations": [
+        "[note-writer] The best configuration in this table is Parallel Sampling on the initial minimal harness — a harness explicitly defined as having NO skills, NO middleware and NO persistent memory [App. A.1, p.11]. The quality winner is the memory-free, scaffold-free configuration. This is the fifth independent instance of the pattern ch27 판정 2 records for the $E$-path.",
+        "[note-writer] The strongest single number in the table belongs to Harness Scaling on Claude (76.0), which is a wake-time method. If a reader takes 'harness methods lose' from Figure 1, the number that contradicts it belongs to the arm that does no offline work at all."
+      ],
+      "figure_1_duplicate": "Figure 1 (p.2) replots exactly this Average column — 68.2 as the dashed initial-harness line, then 72.3 / 69.3 / 67.4 / 71.8 — with caption 'Harness evolution algorithms fail to outperform simple test-time scaling baselines.'"
+    },
+
+    "table_2_with_unit_tests": {
+      "caption": "'Experimental results on Terminal-Bench 2.1 when unit test cases are available... Automatic harness evolution algorithms still underperform test-time scaling baselines in this setting, on both pass@1 and pass@5.' [Table 2, p.6]",
+      "rows": [
+        {"method": "direct sampling using initial harness", "claude_pass_at_1": 69.9, "claude_pass_at_5": null, "gpt_pass_at_1": 75.9, "gpt_pass_at_5": null, "avg_pass_at_1": 72.9, "avg_pass_at_5": null},
+        {"method": "Parallel Sampling", "claude_pass_at_1": 84.8, "claude_pass_at_5": 84.8, "gpt_pass_at_1": 87.1, "gpt_pass_at_5": 87.1, "avg_pass_at_1": 86.0, "avg_pass_at_5": 86.0},
+        {"method": "Sequential Refinement", "claude_pass_at_1": 83.1, "claude_pass_at_5": 90.4, "gpt_pass_at_1": 85.4, "gpt_pass_at_5": 93.3, "avg_pass_at_1": 84.3, "avg_pass_at_5": 91.8},
+        {"method": "Harness Evolution", "claude_pass_at_1": 73.0, "claude_pass_at_5": 83.2, "gpt_pass_at_1": 78.6, "gpt_pass_at_5": 89.3, "avg_pass_at_1": 75.8, "avg_pass_at_5": 86.2},
+        {"method": "Harness Scaling", "claude_pass_at_1": 83.1, "claude_pass_at_5": 89.9, "gpt_pass_at_1": 82.0, "gpt_pass_at_5": 88.8, "avg_pass_at_1": 82.6, "avg_pass_at_5": 89.3}
+      ],
+      "authors_reading": "'All test-time scaling and automatic harness evolution methods substantially improve over direct sampling with the initial harness, confirming that unit test feedback helps regardless of the mechanism. However, neither Harness Evolution nor Harness Scaling outperforms the simpler baselines on either metric. On pass@1, Harness Evolution barely improves over direct sampling, while Parallel Sampling achieves the best average of 86.0. On pass@5, Sequential Refinement remains the strongest method with an average of 91.8, surpassing Harness Evolution (86.2) and Harness Scaling (89.3) on both models. If harness revision genuinely produced better harnesses, we would expect the improvement to be reflected in pass@1. Instead, the benefit only materializes when we can select among multiple trajectories.' [§4.3, pp.6-7]",
+      "note_writer_observations": [
+        "[note-writer] Parallel Sampling's pass@1 EQUALS its pass@5 in every cell (84.8/84.8, 87.1/87.1, 86.0/86.0). That is forced by the method definition: with unit tests, 'we set $\\hat y$ to any trajectory accepted by the outcome' [§3.2, p.4], so its reported pass@1 is an oracle selection over five rollouts. Harness Evolution's pass@1 is a single fresh rollout under the selected harness [§3.4, p.4]. The sentence 'Parallel Sampling achieves the best average of 86.0' on pass@1 therefore compares an oracle-over-5 quantity with a single-shot quantity. See unfavorable_facts.",
+        "[note-writer] The umbrella sentence 'neither Harness Evolution nor Harness Scaling outperforms the simpler baselines on either metric' is contradicted by the same table. On pass@5 average, Harness Evolution scores 86.2 against Parallel Sampling's 86.0, and Harness Scaling scores 89.3 against 86.0; per model, Harness Scaling beats Parallel Sampling on pass@5 for both Claude (89.9 vs 84.8) and GPT-5.4 (88.8 vs 87.1). The claim is true only against Sequential Refinement.",
+        "[note-writer] Direct sampling with the initial harness on GPT-5.4 is printed as 75.3 in Table 1 and 75.9 in Table 2. That configuration consumes no unit-test feedback in either setting, so the two cells should be the same experiment. The 0.6-point difference is the paper's only visible variance datum, and it is exactly the size of the §4.4 headline gain."
+      ]
+    },
+
+    "table_3_held_out_generalisation": {
+      "caption": "'Experimental results on Terminal-Bench 2.1 with disjoint search and evaluation tasks. We perform Harness Evolution on a training set with unit test cases, select the resulting harness based on validation performance, and report pass@1 on the test set. Compared with the pass@1 test results using the initial harness, Harness Evolution yields no significant gains, suggesting limited generalization and a strong tendency to overfit the search set.' [Table 3, p.7]",
+      "rows": [
+        {"method": "direct sampling using initial harness", "claude_opus_4_6": 63.3, "gpt_5_4": 72.1, "average": 67.7},
+        {"method": "Harness Evolution", "claude_opus_4_6": "64.5 (+1.2)", "gpt_5_4": "72.1 (+0.0)", "average": "68.3 (+0.6)"}
+      ],
+      "comparison_arms_present": "ONE: direct sampling with the initial harness, i.e. a $K=1$ zero-sleep-budget baseline.",
+      "comparison_arms_absent": "Parallel Sampling, Sequential Refinement and Harness Scaling are all omitted. The paper's stated reason: 'The other three methods are not directly applicable in this setting, since they rely on instance-level scaling or refinement rather than producing a reusable artifact.' [§4.4, p.7]",
+      "authors_reading": "'the evolved harness yields only marginal gains over the initial harness on the test set: it improves Claude Opus 4.6 by a mere 1.2 points and brings no improvement at all on GPT-5.4, resulting in an average gain of just 0.6 points. This stands in sharp contrast to the improvements Harness Evolution achieves when evaluated on the same tasks it is optimized on... The discrepancy suggests that the revisions discovered during evolution encode task-specific shortcuts rather than genuinely better harness design principles. In other words, current harness evolution algorithms exhibit limited generalization ability and appear prone to severe overfitting to the training tasks.' [§4.4, p.7]",
+      "note_writer_observations": [
+        "[note-writer] This is the ONLY table in the paper whose configuration satisfies discriminant condition (1), and it is the only table with no test-time-scaling arm. The budget-matched comparison and the clean protocol never co-occur.",
+        "[note-writer] Resolution check. With 34 held-out tasks and two runs averaged, one rollout flip is $1/68 = 1.47$ pass@1 points and one task is $2.94$ points. The reported Claude gain of $+1.2$ is smaller than a single rollout flip; the GPT-5.4 gain is exactly 0.0; the average gain of $+0.6$ corresponds to well under one rollout out of 68. The negative conclusion is safe; any positive reading of $+0.6$ is not. [본서 산술]",
+        "[note-writer] The 'sharp contrast' the authors invoke is between $+2.9$ pass@1 on shared tasks (75.8 vs 72.9, Table 2) and $+0.6$ held out (Table 3). The in-distribution figure it is contrasted against is itself the weakest arm in Table 2."
+      ]
+    },
+
+    "qualitative_findings_section_5_1": {
+      "what_harness_evolution_edits": "'the meta agent's first move is usually at the prompt layer, adding behavioral rules to the system prompt and long-term memory that target recurring failure classes, such as instructions to produce deliverables early with greater budget awareness, to copy fragile state before mutating it, and to recheck task constraints before finishing. When such advisory text plateaus, the meta agent escalates to runtime enforcement through middleware, such as turn budget trackers..., truncation of oversized tool outputs, and finalization gates that block completion when deliverables are missing or unverified. It also edits the tool layer, correcting misleading tool guidance and injecting recovery hints at command execution time.' [§5.1, pp.7-8]",
+      "what_harness_scaling_edits": "'The dominant modification pattern in Harness Scaling is to encode knowledge about specific failures from previous rollouts into the next iteration's prompt or long-term memory. For example, the meta agent records known bugs, implementation templates, verification checks, file paths, and command sequences for particular tasks.' [§5.1, p.8]",
+      "the_diagnosis": "'The core issue is that most edits memorize fixes rather than distilling strategies. Much of this information is precisely what a competent agent can rediscover through exploration within a single rollout, so persisting it in the harness saves time on tasks the agent could already solve but rarely converts failures into successes. Meanwhile, the stable core of hard failures, which stem from deep domain reasoning demands or constraints outside harness control, remains unaffected by accumulated knowledge, and the growing volume of persistent prompt text introduces context bloat that can offset the remaining gains.' [§5.1, p.8]",
+      "case_studies": "Figure 3 (p.13) prints six worked examples with iteration-level outcomes: caffe-cifar-10 (timeout → pass at iter 2), cancel-async-tasks (fail → pass at iter 2), compile-compcert (fail → fail → pass at iter 3), count-dataset-tokens (fail → pass at iter 2, and the result line reads 'PASS (iteration 2, 4, 5)' — i.e. it flips back to fail at iteration 3), db-wal-recovery (fail → pass at iter 2), mteb-retrieve (four fails → pass at iter 5). The edits are visibly task-specific: 'install Coq 8.16.1 directly', 'embed dataset config/domain/column facts directly in prompt', 'use MTEB PromptType.query for query embedding', 'never open SQLite before backing up .db/.db-wal/.db-shm', 'require writing fixed WAL back and verifying all 11 records'. The figure is captioned 'Examples of harness modifications made in **Harness Scaling**.'",
+      "note_writer_observation": "[note-writer] The case study caption matters. The paper's causal explanation for Harness EVOLUTION's failure to generalise is 'edits memorize fixes rather than distilling strategies', but the concrete memorisation evidence is drawn from Harness SCALING, where per-instance memorisation is the design. The Harness Evolution edits the paper actually describes are generic — budget-aware deliverables, copy-before-mutate, finalization gates, oversized-output truncation. No Harness Evolution trace is shown anywhere. See unfavorable_facts."
+    },
+
+    "authors_own_limits_section_5_2": {
+      "explanation_zero": "'this may simply reflect that current models are not yet capable enough to revise the entire harness, in which case stronger priors could help'",
+      "explanation_one": "'agents already achieve relatively high scores on Terminal-Bench, and the small set of remaining failures may stem from limitations in the underlying model rather than deficiencies in the harness'",
+      "explanation_two": "'Terminal-Bench may simply not be very sensitive to harness design: a minimal setup consisting of a shell tool and a basic prompt already suffices for most solvable tasks, so performance is bottlenecked by the model's reasoning rather than by the surrounding scaffolding. Modifying prompts, tool configurations, or middleware therefore yields only marginal gains.'",
+      "the_scope_the_authors_themselves_draw": "'These observations suggest that the value of automatic harness evolution is likely task dependent. We therefore encourage future work to study its effectiveness on benchmarks that satisfy two conditions: (1) the tasks are difficult enough that current agents leave substantial headroom for improvement, and (2) performance depends heavily on the harness, as when specialized tools, skills, or workflows are crucial to success.'",
+      "source": "[§5.2, p.8]",
+      "note_writer_remark": "[note-writer] This section is the paper's own answer to focus item (d). The authors do not claim a general negative result; they claim a benchmark-conditional one and name the benchmark property that would overturn it. Any monograph use of this paper must carry that restriction."
+    }
+  },
+
+  "scale_ceiling": {
+    "benchmark_ceiling": "ONE benchmark, ONE task family. Terminal-Bench 2.1, 89 command-line tasks; the generalisation claim rests on 34 of them. No second benchmark, no cross-benchmark transfer, no non-terminal domain. The paper's motivating literature (Meta-Harness, AHE, AEVO) is also evaluated on Terminal-Bench, so the criticism inherits the criticised setting rather than escaping it.",
+    "model_ceiling": "Three frontier models, all closed vendor APIs with undisclosed parameter counts. Only two of the three (Claude Opus 4.6, GPT-5.4) appear in the unit-test and held-out settings; GPT-5.4 mini appears only in §4.2. No open-weight model, no size sweep, so no model-scale ceiling is established.",
+    "budget_ceiling": "ONE point. $K=5$ for every method in every table, never varied. The paper argues about how a budget should be spent without ever varying the budget. Harness Evolution is the arm whose cost is amortised over a whole task distribution and therefore the arm most plausibly budget-starved at $K=5$ — five rounds, one rollout per task, over 45 tasks.",
+    "algorithm_ceiling": "ONE harness-evolution algorithm: AHE [Lin et al. 2026] with its explore agent disabled [App. A.3, p.11]. Meta-Harness [Lee et al. 2026] and AEVO [Zhang et al. 2026] are named as targets of the critique and never run, and neither published result is reproduced.",
+    "statistical_ceiling": "Two independent runs per cell, no dispersion reported. On 89 tasks one task is 1.12 pass@1 points at one rollout per task; on the 34-task held-out set one rollout is 1.47 points. Every difference the paper interprets in §4.2 and §4.4 is a few task-flips wide.",
+    "cost_ceiling": "Zero. No compute quantity of any kind is measured, so no cost claim can be extracted, and the paper's own 'unified budget' claim cannot be audited from the page.",
+    "authors_stated_ceiling": "§5.2 concedes both that the benchmark may have too little headroom and that it may be harness-insensitive, and asks for benchmarks that are hard and harness-dependent [§5.2, p.8]."
+  },
+
+  "concept_ledger_delta": {
+    "new_concepts_this_paper_introduces": [
+      {"term": "harness", "definition": "'the prompts, tools, memory, verification routines, and control logic through which a model observes tasks and acts'", "owner_chapter": "candidate: an $E$-path chapter or ch27", "source": "[§1, p.2, attributing the definition to Lopopolo 2026]", "note": "For the monograph this is a new SUB-KIND of $E$: a store whose content is the agent's operating procedure rather than the task's content. Every other $E$ in the corpus is propositional (RAG chunks, Mem0 facts, Zep graph, ReasoningBank strategies, Letta STC's re-represented context). Procedural $E$ deserves its own row."},
+      {"term": "automatic harness evolution", "definition": "an offline search loop in which a meta agent reads accumulated rollouts and outcomes across a batch of tasks and emits a revised harness, aiming at a REUSABLE artifact", "owner_chapter": "as above", "source": "[§1, p.2; §3.4, p.4]", "note": "This is (U-E) with the store scoped to a task distribution."},
+      {"term": "harness scaling", "definition": "the wake-time analogue — 'instance-guided harness adaptation, in contrast to dataset-guided harness evolution': the harness is revised for a single evaluation instance and discarded", "owner_chapter": "ch11 or ch24 as a foil", "source": "[§3.5, p.5]", "note": "The most useful concept this paper hands the monograph. It is the same write operator on the wrong clock, invented by the authors as a control, and it is the cleanest illustration in the whole corpus of what discriminant condition (1) excludes and why the exclusion is not pedantic."},
+      {"term": "matched feedback and inference budgets (for harness search)", "definition": "the demand that a harness-search method be compared against task-level search at equal budget and equal feedback access", "owner_chapter": "ch28", "source": "[Abstract, p.1; §3, p.3]", "note": "The demand is exactly ch28's, arrived at independently. What the paper matches, however, is rollouts (see H10)."}
+    ],
+    "renamed_or_corrected_for_the_monograph": [
+      {"paper_term": "'compute budget $K$'", "problem": "$K$ is a count of agent rollouts, not a quantity of compute; a rollout is capped at 300 model turns x 128,000 generated tokens [Table 4, p.12] and the two harness arms additionally run an uncounted meta agent capped at 500 turns", "monograph_term": "rollout budget $K$; reserve 'compute budget' for $B_s$/$B_t$ in FLOPs or tokens", "note": "The chapter must not repeat the paper's phrase without this correction, or it will import an unaudited budget identity into ch28's accounting."},
+      {"paper_term": "'harness'", "problem": "the word suggests scaffolding only, but the object explicitly includes 'memory' and the meta agent writes into 'long-term memory' [§1, p.2; §5.1, pp.7-8]", "monograph_term": "$E$ (procedural), with the memory component named when it matters"},
+      {"paper_term": "Parallel Sampling's 'pass@1' in the unit-test setting", "problem": "under oracle selection it is identical to pass@5 by construction and is not a single-shot quantity", "monograph_term": "oracle-selected pass@1; quote it only alongside the observation that it equals the method's pass@5 in every cell"}
+    ],
+    "extended": [
+      {"term": "write verification", "extension": "This paper supplies the corpus's strongest instance: with unit tests available, the artifact written at round $k$ is retained only if its measured aggregate outcome $\\bar R(E_k)$ is the best in the store [§3.4, p.4], and the verifier is an executed unit test in a sandbox, not an LLM judge.", "monograph_use": "It separates two things the corpus has been conflating. Letta STC does not verify $\\hat c$ at all; ReasoningBank verifies with a 72.7%-accurate judge. Here the write is verified and the write still does not transfer. So write verification is necessary and demonstrably not sufficient — the failure is in the CONTENT's generality, not in the write hygiene. ch27's $\\Theta$-path condition (iii) ('a procedure that judges writes without labels, and its accuracy measured') should be read alongside this: labelled verification exists here, and it did not buy generalisation."},
+      {"term": "the scope of an $E$-path artifact", "extension": "Three scopes are now attested in the corpus: per-context (Letta STC), per-user or per-session (Mem0, Zep), and per-deployment (this paper — one harness for the whole task distribution).", "monograph_use": "ch26's capacity map has no per-deployment row. That shape is the only $E$ profile whose bytes do not grow with users, and it is the cheapest possible capacity profile — and it is still unsized here."}
+    ]
+  },
+
+  "inherited_open_question": {
+    "verdict": "explicitly-stated, but inherited from OUTSIDE this corpus",
+    "the_inherited_question_verbatim": "'The existing evaluation protocol therefore leaves a fundamental question unresolved: Does harness evolution yield generalizable improvements in harness design, or are its gains primarily due to repeated sampling? Moreover, when the tasks used for search overlap with those used for evaluation [Lee et al., 2026], observed gains may reflect adaptation to task-specific patterns rather than improvements in harness design that are transferable to held-out tasks.' [§1, p.2]",
+    "whose_question": "The three harness-evolution papers the study criticises, named repeatedly: Meta-Harness [Lee et al. 2026, arXiv:2603.28052], Agentic Harness Engineering [Lin et al. 2026, arXiv:2604.25850], AEVO / Harnessing agentic evolution [Zhang et al. 2026, arXiv:2605.13821]. The paper does not quote an open question FROM them; it identifies a defect in their shared protocol and turns it into a question. That is the same move Letta STC made against the test-time-scaling literature — manufacture the gap by naming an assumption the cited work never defended.",
+    "what_it_does_NOT_inherit": "Nothing from the sleep-time-compute line. No Letta STC, no MemGPT, no Mem0, no Zep, no ReasoningBank, no RAG, no memory literature of any kind. The question 'is offline compute worth it relative to wake-time compute' is reinvented from scratch inside the agent-harness community (see cross_path_citations).",
+    "bridge_in_material": "[note-writer] If the monograph ever gives this paper a chapter, the bridge-in is the ReasoningBank thread, not the harness thread: ReasoningBank writes reusable experience after task completion and degrades as the store grows; this paper writes a reusable procedure after a batch of tasks and finds the store's growth causes 'context bloat that can offset the remaining gains' [§5.1, p.8]. The two papers do not cite each other and reached the same observation from opposite ends of the same path. That silence is itself the bridge material."
+  },
+
+  "open_questions": [
+    {"question": "Is harness evolution effective on benchmarks with real headroom and real harness sensitivity?", "exact_wording": "'we encourage future work to study its effectiveness on benchmarks that satisfy two conditions: (1) the tasks are difficult enough that current agents leave substantial headroom for improvement, and (2) performance depends heavily on the harness, as when specialized tools, skills, or workflows are crucial to success. Under these conditions, a better harness can effectively expand the set of problems an agent can solve.'", "source": "[§5.2, p.8]", "bridge_out": "the paper's negative result is explicitly conditioned on a benchmark property, and the authors name the property"},
+    {"question": "Are current models capable enough to revise a whole harness at all, or do they need stronger priors?", "exact_wording": "'this may simply reflect that current models are not yet capable enough to revise the entire harness, in which case stronger priors could help'", "source": "[§5.2, p.8]", "bridge_out": "an explicit alternative hypothesis to 'harness evolution does not work'"},
+    {"question": "What fairer evaluation protocol should replace the current one?", "exact_wording": "'highlight the need for fairer evaluation protocols and benchmarks for automatic harness design'; 'This highlights the need for evaluation protocols that separate optimization feedback from final measurement and compare against test-time scaling baselines.'", "source": "[Abstract, p.1; §1, p.2; §6, p.8]", "bridge_out": "the paper demands both properties and delivers a study in which they never co-occur — §4.2/§4.3 have the baselines and share the task set; §4.4 separates the task set and drops the baselines"},
+    {"question": "Does the ranking survive at a larger budget?", "status": "never asked. $K=5$ everywhere; no sweep; no crossover analysis.", "source": "[§4.1, p.5 — inferred from the absence of any other $K$]"},
+    {"question": "What does each arm actually cost in tokens, FLOPs, wall-clock or dollars?", "status": "never asked and never measured. The paper's central claim is about how a budget is spent.", "source": "[whole-text probe: 'FLOP' 0 hits; 'cost' 1 hit at §3.1 p.3; no latency, wall-clock, dollar or GPU-hour anywhere]"},
+    {"question": "Does an evolved harness transfer to a DIFFERENT benchmark rather than to held-out tasks of the same benchmark?", "status": "not addressed. §4.4's held-out set is a split of Terminal-Bench 2.1, and the paper's own framing calls it 'held-out tasks from the same benchmark' [§2, p.2].", "source": "[§2, p.2; §4.4, p.7]"},
+    {"question": "How large does the harness get, and what does the observed context bloat cost per query?", "status": "the mechanism is named and never measured", "source": "[§5.1, p.8]"},
+    {"question": "Would harness evolution and test-time scaling compose — evolve once offline, then sample in parallel at wake?", "status": "never considered. The four methods are treated as competing allocations of one budget, never as composable.", "source": "[absent — §3, p.3 frames all four as alternative uses of the same budget]"}
+  ],
+
+  "unfavorable_facts": [
+    {
+      "fact": "The only experiment that isolates the reusable artifact has no test-time-scaling arm. Table 3 compares Harness Evolution against direct sampling at $K=1$ and nothing else.",
+      "exact_wording": "'The other three methods are not directly applicable in this setting, since they rely on instance-level scaling or refinement rather than producing a reusable artifact.'",
+      "why_it_bites": "The paper's headline claim is that harness evolution does not beat simple test-time scaling under matched budgets. That comparison is run only in §4.2 and §4.3, where the harness was searched on the very tasks it is scored on — the protocol the paper itself indicts. In §4.4, where the search and evaluation sets are disjoint, the matched-budget comparison is dropped. The clean protocol and the matched-budget comparison never co-occur in this paper.",
+      "source": "[§4.4, p.7; Tables 1-3, pp.6-7]"
+    },
+    {
+      "fact": "Budgets are matched in ROLLOUTS, not in computation, and the residual runs against the harness arms.",
+      "exact_wording": "'we sample one rollout per task for each harness, setting m = 1, to match the rollout budget across methods. We use a compute budget of K = 5 across methods.'",
+      "why_it_bites": "A rollout is not a unit of compute: Table 4 caps one at 300 model turns x 128,000 generated tokens. The two harness arms additionally invoke a meta agent capped at 500 model turns — a HIGHER cap than the code agent's 300 — and an Agent Debugger at 25 turns, neither of which Parallel Sampling pays. No token, FLOP, wall-clock or dollar figure appears anywhere in the paper ('FLOP': 0 occurrences; 'cost': 1 occurrence, not a measurement). So the phrase 'under a unified budget' names a rollout identity that cannot be audited as a compute identity. The direction is conservative for the paper's conclusion — harness evolution loses while spending uncounted extra compute — and fatal for any use of this paper as a budget-matched datum in the monograph's accounting.",
+      "source": "[§4.1, p.5; App. A.4 Table 4, p.12; §3, p.3 and §6, p.8 for 'unified budget']"
+    },
+    {
+      "fact": "Table 2's pass@1 column compares an oracle-selected quantity with a single-shot quantity.",
+      "why_it_bites": "With unit tests available, Parallel Sampling returns 'any trajectory accepted by the outcome' [§3.2, p.4], so its pass@1 IS its pass@5 — and the table confirms it in every cell (84.8/84.8 Claude, 87.1/87.1 GPT-5.4, 86.0/86.0 average). Harness Evolution's pass@1 is one fresh rollout under the selected harness [§3.4, p.4]. The claim 'Parallel Sampling achieves the best average of 86.0' on pass@1 is therefore an oracle-over-5 number set against a single-shot 75.8, and the paper's inference from it — 'If harness revision genuinely produced better harnesses, we would expect the improvement to be reflected in pass@1' — rests on that mismatch.",
+      "source": "[§3.2, p.4; §3.4, p.4; Table 2, p.6; §4.3, pp.6-7]"
+    },
+    {
+      "fact": "The paper's own Table 2 contradicts its umbrella claim about that table.",
+      "exact_wording": "'However, neither Harness Evolution nor Harness Scaling outperforms the simpler baselines on either metric.'",
+      "why_it_bites": "On pass@5 average, Harness Evolution scores 86.2 against Parallel Sampling's 86.0, and Harness Scaling scores 89.3 against 86.0. Per model on pass@5, Harness Scaling beats Parallel Sampling on both Claude (89.9 vs 84.8) and GPT-5.4 (88.8 vs 87.1), and Harness Evolution beats it on GPT-5.4 (89.3 vs 87.1). The sentence is defensible only if 'the simpler baselines' silently means 'the best of them', i.e. Sequential Refinement at 91.8. This is the corpus's recurring pattern of a caption or body claim that the paper's own table refutes.",
+      "source": "[Table 2, p.6; §4.3, p.7]"
+    },
+    {
+      "fact": "The headline generalisation gain is the same size as an unreported run-to-run difference in the paper's own baseline cell.",
+      "why_it_bites": "Direct sampling with the initial harness on GPT-5.4 is printed as 75.3 in Table 1 and 75.9 in Table 2. That configuration uses no unit-test feedback in either setting, so the two entries should be the same experiment; they differ by 0.6 points. The §4.4 headline average gain is +0.6 points. No standard deviation, confidence interval, seed or per-run value is reported anywhere in the paper, and 'averaged over two independent runs' is the only variance control described.",
+      "source": "[Table 1, p.6; Table 2, p.6; Table 3, p.7; §4.1, p.5]"
+    },
+    {
+      "fact": "The held-out gains are below the resolution of the held-out set.",
+      "why_it_bites": "34 test tasks averaged over two runs means one rollout flip is $1/68 = 1.47$ pass@1 points and one task is $2.94$ points. The reported Claude gain of $+1.2$ is smaller than one rollout flip; GPT-5.4's gain is exactly $0.0$; the $+0.6$ average is well under one rollout out of 68. This direction favours the paper's negative conclusion, but it forbids the reverse reading — nobody may cite $+0.6$ or $+1.2$ as a measured positive transfer effect. [본서 산술]",
+      "source": "[§4.4, p.7; App. A.5, p.11 for the pass@1 definition; §4.1, p.5 for the two runs]"
+    },
+    {
+      "fact": "The memorisation diagnosis — the paper's causal explanation for Harness Evolution's failure to generalise — is evidenced entirely from Harness Scaling.",
+      "why_it_bites": "§5.1 concludes 'most edits memorize fixes rather than distilling strategies' and §4.4 attributes the generalisation failure to revisions that 'encode task-specific shortcuts'. But §5.1's Harness Evolution paragraph describes GENERIC edits — produce deliverables early with budget awareness, copy fragile state before mutating it, recheck task constraints before finishing, turn-budget trackers, oversized-output truncation, finalization gates — while the memorising pattern (known bugs, file paths, command sequences, dataset facts) is attributed to Harness Scaling, and Figure 3 is captioned 'Examples of harness modifications made in Harness Scaling.' Not one Harness Evolution trace is shown. The mechanism that explains the paper's central result is demonstrated on the arm where memorisation is the design intent.",
+      "source": "[§5.1, pp.7-8; §4.4, p.7; App. B and Figure 3, pp.12-13]"
+    },
+    {
+      "fact": "Only one of the three criticised systems is run, and it is run in a modified form; neither published result is reproduced.",
+      "exact_wording": "'We instantiate harness evolution with AHE [Lin et al., 2026], with its explore agent disabled so that improvements come from evolving the harness on feedback rather than from retrieving benchmark-specific harnesses externally.'",
+      "why_it_bites": "The critique is addressed to Meta-Harness [Lee et al. 2026], AHE [Lin et al. 2026] and AEVO [Zhang et al. 2026] throughout; two of the three are never executed. The disabling of AHE's explore agent is well argued [App. A.3, p.11] but it means the evaluated system is not the published system, and the paper never checks that its AHE reproduction recovers AHE's own reported numbers before concluding that harness evolution underperforms.",
+      "source": "[§3.4, p.4; App. A.3, p.11; §1, p.2; §2, p.2]"
+    },
+    {
+      "fact": "There is a single budget point. $K=5$ everywhere, never varied.",
+      "why_it_bites": "The paper's claim is about how a budget should be ALLOCATED, and it never varies the budget. Harness Evolution is the arm whose cost is amortised over the whole task distribution, so it is the arm most plausibly starved at $K=5$ — five rounds, one rollout per task, over a 45-task search set — and any crossover at larger $K$ is untestable from this paper. In ch28's terms the paper places one point on the $B_s$ axis and reads a ranking off it.",
+      "source": "[§4.1, p.5; all of §4]"
+    },
+    {
+      "fact": "The authors supply two explanations that make the negative result benchmark-conditional, and the abstract does not carry the condition.",
+      "exact_wording": "'agents already achieve relatively high scores on Terminal-Bench, and the small set of remaining failures may stem from limitations in the underlying model rather than deficiencies in the harness'; 'Terminal-Bench may simply not be very sensitive to harness design: a minimal setup consisting of a shell tool and a basic prompt already suffices for most solvable tasks'; 'the value of automatic harness evolution is likely task dependent'.",
+      "why_it_bites": "The abstract states 'automatic harness evolution does not consistently outperform simple test-time scaling methods and exhibits limited generalization' without the benchmark condition that §5.2 concedes. A reader who stops at the abstract acquires a general negative result the paper does not claim.",
+      "source": "[Abstract, p.1; §5.2, p.8]"
+    },
+    {
+      "fact": "Two runs, no dispersion, and differences the paper interprets are a few task-flips wide.",
+      "why_it_bites": "On the 89-task suite at one rollout per task one task is 1.12 pass@1 points. Table 1's key interpreted differences are $-0.8$ (Harness Evolution vs initial harness, average), $+1.1$ (Sequential Refinement's 'marginal average improvement'), and $-2.3$ (Sequential Refinement's 'slightly degrades GPT-5.4'). None is accompanied by a dispersion statistic, and the two-run averaging that was performed is never reported as a spread.",
+      "source": "[§4.1, p.5; §4.2, p.6; Table 1, p.6; App. A.5, p.11]"
+    },
+    {
+      "fact": "Harness Scaling is presented under the 'Automatic Harness Evolution' heading in both Figure 1 and Table 1, yet it has no offline phase at all.",
+      "why_it_bites": "Its update conditions on the evaluation task itself, $h_k = M(x,\\Phi(h_{k-1},y_{k-1}))$ [§3.5, p.5], and its artifact is discarded after the instance. It is test-time scaling in harness space. Grouping it with Harness Evolution in the headline figure lets a reader draw a conclusion about offline harness design from the arm that does none — and it is the arm with the best single result in Table 1 (76.0 on Claude) and the best harness-side average (71.8).",
+      "source": "[§3.5, p.5; Figure 1, p.2; Table 1, p.6]"
+    },
+    {
+      "fact": "The same model instance writes the harness, summarises the traces, and solves the tasks — with no cross-model control.",
+      "why_it_bites": "'a summarization map $\\Phi$, realized by the same underlying model as the policy' [§3.1, p.3], and Table 4 lists the same model row for the code agent, the Agent Debugger and the meta agent. Whether a harness written by model A helps model B — the most natural test of whether an artifact encodes reusable design rather than model-specific habit — is never run, although two frontier models were available in every setting.",
+      "source": "[§3.1, p.3; Table 4, p.12]"
+    },
+    {
+      "fact": "One of the six case studies shows the write flipping back to failure and the caption does not remark on it.",
+      "exact_wording": "'count-dataset-tokens: fail -> pass at iter 2 ... 4 + result: FAIL -> PASS (iteration 2, 4, 5)'",
+      "why_it_bites": "The result line enumerates iterations 2, 4 and 5 as passes, which means iteration 3 regressed after two accepted edits. This is a within-search $\\rho$ signal of exactly the kind the corpus keeps failing to find, and it is printed in a figure whose header says 'fail -> pass at iter 2'.",
+      "source": "[App. B, Figure 3, p.13]"
+    },
+    {
+      "fact": "Zero cost, latency, capacity or throughput measurement of any kind, in a paper about spending compute well.",
+      "why_it_bites": "All four of the monograph's cost cells are empty. There is no token count of any arm's consumption, no wall-clock, no dollars, no GPU-hours, no bytes for the artifact. The word 'cost' appears once in the whole paper and names something the summariser might mention [§3.1, p.3]. The appendix even records a token-consumption motive for the Agent Debugger's file-based interface — 'which reduces token consumption while preserving access to full detail when needed' [App. A.2, p.11] — so token accounting was a design concern and never a measurement.",
+      "source": "[whole-text probe; §3.1, p.3; App. A.2, p.11]"
+    },
+    {
+      "fact": "The 45/10/34 split rule is not stated, and the split is the load-bearing construct of the paper's central claim.",
+      "why_it_bites": "§4.4 says only 'we split Terminal-Bench 2.1 into 45 training tasks, 10 validation tasks, and 34 held-out test tasks'. Whether the split is random, stratified by difficulty, or stratified by task family is not said, and Terminal-Bench tasks are heterogeneous (the case studies range from Caffe builds to SQLite WAL repair to MTEB retrieval). A split that puts the harness-sensitive tasks on one side would move the result. No seed and no repetition of the split is reported.",
+      "source": "[§4.4, p.7]"
+    },
+    {
+      "fact": "Held-out here means held-out within one benchmark, not held-out across benchmarks.",
+      "exact_wording": "'evaluate whether evolved harnesses transfer to held-out tasks from the same benchmark'",
+      "why_it_bites": "The paper's own §2 states the scope precisely, but §4.4's conclusion — 'current harness evolution algorithms exhibit limited generalization ability' — is stated without it. The stronger and more relevant transfer question, whether a harness evolved on one benchmark helps on another, is never posed.",
+      "source": "[§2, p.2; §4.4, p.7]"
+    }
+  ],
+
+  "cross_path_citations": {
+    "verdict": "Total silence toward the $W$-path, the $\\Theta$-path and the biology, and near-total silence toward the $E$-path's own memory literature. The paper reinvents the offline-versus-wake budget question inside the agent-harness community without touching a single paper that has been asking it.",
+    "bibliography_size": "19 entries (References, pp.9-10)",
+    "full_bibliography": ["Agrawal et al. 2025 (GEPA, 2507.19457)", "Brown et al. 2024 (Large Language Monkeys, 2407.21787)", "Khattab et al. 2023 (DSPy, 2310.03714)", "Lee et al. 2026 (Meta-harness, 2603.28052)", "Li et al. 2026 (Benchmark test-time scaling of general LLM agents, 2602.18998)", "Lin et al. 2026 (Agentic Harness Engineering / AHE, 2604.25850)", "Lopopolo 2026 (OpenAI 'Harness engineering' blog post)", "Madaan et al. 2023 (Self-Refine, NeurIPS 36)", "Merrill et al. 2026 (Terminal-Bench, 2601.11868)", "Novikov et al. 2025 (AlphaEvolve, 2506.13131)", "Opsahl-Ong et al. 2024 (MIPRO, EMNLP 2024)", "Snell et al. 2024 (test-time compute scaling, 2408.03314)", "Trivedy 2026 (LangChain 'Improving deep agents with harness engineering' blog post)", "Wang et al. 2022 (Self-consistency, 2203.11171)", "Yang et al. 2024 (SWE-agent, NeurIPS 37)", "Yuksekgonul et al. 2025 (TextGrad, Nature 639)", "Zhang et al. 2026 (Harnessing agentic evolution / AEVO, 2605.13821)", "Zhang et al. 2025 (Agentic Context Engineering / ACE, 2510.04618)", "Zhao et al. 2024 (ExpeL, AAAI 38)"],
+    "E_path": {
+      "citations": "TWO, and only as a background sentence: ExpeL [Zhao et al. 2024] and ACE [Zhang et al. 2025], cited for 'in-context methods accumulate experience as natural language artifacts that the model can reuse at inference time' [§2, p.2].",
+      "absent": "ZERO citations to Letta STC (2504.13171), MemGPT (2310.08560), Mem0 (2504.19413), Zep (2501.13956), ReasoningBank (2509.25140), SCM, RAG, or any vector/graph memory system. The word 'retrieval' appears only inside a task name (mteb-retrieve) and in the description of AHE's disabled explore agent.",
+      "finding": "A 2026 $E$-path artifact paper that stores procedural experience for reuse across tasks cites none of the memory line that has been doing the same thing since 2023. Its nearest neighbour in the corpus is ReasoningBank — same shape, same reuse claim, same degradation-with-growth observation — and neither paper knows the other exists."
+    },
+    "W_path": {"citations": "ZERO. No test-time training, no fast weights, no Titans/Atlas/TTT line, no linear attention, no state-space models, no recurrent memory. The KV cache is never mentioned; 'Max context' and 'Context compaction threshold' appear only as configuration rows [Table 4, p.12]."},
+    "Theta_path": {"citations": "ZERO, and excluded by premise rather than by oversight: 'improves agent performance without retraining the underlying model by optimizing the external scaffold around the model' [§2, p.2]. No LoRA, no PEFT, no model editing, no continual learning, no distillation. Unlike Letta STC, the paper does not even name the $\\Theta$-path as future work."},
+    "bio_CLS_path": {
+      "citations": "ZERO.",
+      "finding": "The word 'sleep' occurs exactly three times in the whole paper and every occurrence is the Unix `sleep(1)` command inside a shell trace: 'repeated sleep/check turns', 'short shell timeout and sleep polling consumed build budget', 'smart wait loop replaces repeated sleep commands' [App. B, Figure 3, p.13]. The corpus's central term survives in this paper only as a shell builtin. That is the sharpest available illustration of the monograph's thesis that the NAME travelled and the mechanism did not."
+    },
+    "shared_ancestry_with_letta_stc": "Two entries in common — Snell et al. 2024 and Brown et al. 2024, both test-time-scaling papers. Both this paper and Letta STC root themselves in the test-time-scaling literature rather than in memory research, and both define their contribution by contrast with it. Letta STC added caching and speculative decoding as its systems ancestry; this paper adds prompt/program optimisation (DSPy, MIPRO, GEPA, TextGrad) and evolutionary search (AlphaEvolve). Neither reaches the other.",
+    "monograph_implication": "[note-writer] The silence map of the dossier gains a row that runs in a new direction. The earlier finding was that the $W$- and $\\Theta$-path papers inherited the phrase 'sleep-time compute' from a paper that never cited them. Here a fourth community — agent harness engineering — independently arrives at the same question (is offline artifact-building worth its budget relative to spending the budget at wake?), builds a better protocol for answering it than anything in the corpus, and cites nobody. The cost of the silence is concrete and measurable this time: this paper's §4.4 needed exactly one more table to answer the corpus's open question, and nothing in its bibliography would have told it that the question was open."
+  },
+
+  "systems_implications": {
+    "preamble": "Grounding key: [PAPER] = a statement or number on the page with a locator; [INFERENCE] = the note-writer's translation, not in the paper. This paper supplies zero systems numbers, so almost everything below is [INFERENCE] built on stated mechanism.",
+    "items": [
+      {"claim": "The mechanism is prompt and scaffold substitution. Nothing in the serving stack changes; $\\Theta$ is frozen, so shared-weight batching is preserved exactly as in the rest of the $E$-path.", "grounding": "[PAPER] §2, p.2 ('without retraining the underlying model', 'without modifying the model weights'). [INFERENCE] for the batching consequence."},
+      {"claim": "The artifact is a per-DEPLOYMENT object, not per-user or per-session. One harness serves the whole task distribution. Its storage cost is therefore O(1) in users — the cheapest capacity profile any path in the corpus can offer.", "grounding": "[PAPER] §3.4, p.4 ('optimize across a task distribution rather than fitting to one task'); §4.4, p.7 (one $\\hat E$ evaluated on 34 held-out tasks). [INFERENCE] for the capacity consequence. The bytes are never reported, so the profile is structural only."},
+      {"claim": "At wake the artifact is a SHARED PREFIX across every request in the deployment, so prefix caching applies maximally — the most favourable prefill situation an $E$-path artifact can have.", "grounding": "[INFERENCE], grounded in H2 and in the artifact's per-deployment scope. The paper measures neither the cost nor the saving; it has no cost model at all. Contrast Letta STC, whose $\\hat c$ is shared only across the $N_q$ queries of one context."},
+      {"claim": "The wake-side cost nevertheless RISES and is unbounded on the page: the evolved harness accumulates prompt text monotonically across rounds and rides in the system prompt on every request.", "grounding": "[PAPER] §5.1, p.8: 'the growing volume of persistent prompt text introduces context bloat that can offset the remaining gains'. [INFERENCE] for the per-request prefill consequence. No harness length is printed at any round, so the delta cannot be computed. Same structural gap as Letta STC's unmeasured $|\\hat c|$."},
+      {"claim": "The sleep-side work is a textbook batch-tier job: a meta agent and a summarisation agent, both latency-insensitive, both off the request path, both capped at large turn budgets. This is exactly the interactive-tier-to-batch-tier conversion Letta STC priced at 10:1 — and this paper prices it at nothing.", "grounding": "[PAPER] §3.4, p.4 for the offline loop; Table 4, p.12 for meta agent 500 turns / debugger 25 turns / 128,000 generation per turn / 200,000 context. [INFERENCE] for the tiering reading."},
+      {"claim": "Sleep wall-clock is bounded by a SEQUENTIAL chain, not by parallel width: $K-1$ meta-agent invocations, each reading the accumulated store and each preceded by $n_{\\text{search}}$ rollouts that must complete first. At $K=5$, $n_{\\text{search}}=45$, $m=1$ that is 4 sequential barriers over 225 rollouts.", "grounding": "[PAPER] §3.4, p.4; §4.1, p.5; §4.4, p.7. [INFERENCE] for the barrier structure and the arithmetic. The paper reports no wall-clock, so pre-warm throughput cannot be estimated."},
+      {"claim": "The sleep budget here includes ENVIRONMENT provisioning, not just tokens. 'Each rollout executes in its own freshly provisioned E2B remote sandbox.'", "grounding": "[PAPER] App. A.4, p.11. [INFERENCE] for the accounting consequence: no paper in the corpus has a cost cell that can hold sandbox provisioning, and for agentic $E$-path writes it may dominate token cost. This is a genuine gap in the monograph's four-cell cost frame, which assumes the sleep budget is model compute."},
+      {"claim": "The pass@1-to-pass@5 gap is a directly useful serving number and the paper names what it means. With unit tests, Sequential Refinement's gap is 91.8 − 84.3 = 7.5 points and Harness Evolution's is 86.2 − 75.8 = 10.4 points.", "grounding": "[PAPER] Table 2, p.6; App. A.5, p.11: 'the gap between the two reflects the variance of the agent across independent attempts'. [INFERENCE] For a serving stack that gap is the value of retry-with-verifier, a pure wake-time knob that needs no offline state and no persistent store at all — which is the paper's own conclusion restated in serving terms."},
+      {"claim": "Where the traffic lands: a per-deployment configuration blob (system prompt text, middleware code, tool descriptions) → tokenizer → prefill → KV cache, plus a middleware execution path. Never HBM-resident weights, never optimizer state, never a per-user shard.", "grounding": "[PAPER] §1, p.2 for the harness composition; §5.1, pp.7-8 for the middleware layer. [INFERENCE] for the hierarchy walk. Note the one novelty against the rest of the $E$-path: part of this store is not text in a prompt but CODE in the control loop, so a fraction of the artifact never touches the model at all."},
+      {"claim": "The standing reader question — what changes at decode — has the same answer as every other $E$-path paper, and the same limit. Nothing about the decode kernel changes; only the prompt and the control loop change. Capacity cannot be raised the way the $\\Theta$-path raises it.", "grounding": "[INFERENCE], grounded in H2 and H9."}
+    ]
+  },
+
+  "figures": [
+    {"number": "Figure 1", "page": "p.2", "shows": "Average pass@1 without unit-test feedback across the three models: dashed line at 68.2 for the initial harness, then Parallel Sampling 72.3, Sequential Refinement 69.3, Harness Evolution 67.4, Harness Scaling 71.8.", "why_reproduce": "the negative result in one picture, and it replots Table 1's Average column exactly. Reproduce only with the caveat that Harness Scaling, plotted under the 'Automatic Harness Evolution' grouping, has no offline phase."},
+    {"number": "Figure 2", "page": "p.3", "shows": "The four-method taxonomy with an explicit 'Frozen / Evolving' legend: (a) Parallel Sampling and (b) Sequential Refinement — 'fixed harness; explore in width' and 'fixed harness; explore in depth'; (c) Harness Evolution — 'shared evolving harness across tasks', with Batch Tasks, Meta Agent, Experience Store; (d) Harness Scaling — 'task-specific evolving harness'.", "why_reproduce": "THE most reusable figure in this paper for the monograph. It separates what is frozen from what evolves and puts the clock difference between (c) and (d) on the page. Redrawn with $E$/$\\Theta$/$W$ labels it is a direct illustration of discriminant condition (1)."},
+    {"number": "Table 1", "page": "p.6", "shows": "pass@1 without unit tests, five methods x three models + average.", "why_reproduce": "the source of the headline, and the place where the quality winner is a memory-free minimal harness."},
+    {"number": "Table 2", "page": "p.6", "shows": "pass@1 and pass@5 with unit tests, Claude and GPT-5.4.", "why_reproduce": "two things must be shown together: that Parallel Sampling's pass@1 equals its pass@5 in every cell, and that Harness Evolution's pass@5 average (86.2) exceeds Parallel Sampling's (86.0) despite the body text saying otherwise."},
+    {"number": "Table 3", "page": "p.7", "shows": "The held-out result: initial harness 63.3 / 72.1 / 67.7 versus Harness Evolution 64.5 (+1.2) / 72.1 (+0.0) / 68.3 (+0.6) on 34 disjoint test tasks.", "why_reproduce": "the only discriminant-passing configuration in the paper, and the only table with no matched-budget comparison arm. Both facts must appear in the same caption."},
+    {"number": "Table 4", "page": "p.12", "shows": "Configuration: code agent / Agent Debugger / meta agent, each with model, reasoning effort (high), max context 200,000, max generation per turn 128,000, and max model turns 300 / 25 / 500 respectively.", "why_reproduce": "the meta agent's 500-turn cap against the code agent's 300 is the whole budget-matching argument in one row, and it is buried in an appendix."},
+    {"number": "Figure 3", "page": "p.13", "shows": "Six worked harness-edit case studies from Harness Scaling with per-iteration outcomes, including 'FAIL -> PASS (iteration 2, 4, 5)' for count-dataset-tokens and 'FAIL x4 -> PASS (iteration 5)' for mteb-retrieve.", "why_reproduce": "lets the reader judge the memorising character of the writes directly ('install Coq 8.16.1 directly', 'embed dataset config/domain/column facts directly in prompt'). Must be captioned as Harness Scaling, not Harness Evolution."}
+  ],
+
+  "todo_verify": [
+    {"item": "Whether Table 3's values are reconcilable with '34 held-out tasks averaged over two independent runs'. 63.3 and 64.5 are not expressible as $n/68$ (the implied granularity is 1.47 points: $43/68=63.24$, $44/68=64.71$), although 72.1 matches $49/68=72.06$.", "search_term": "the released artifacts at github.com/rethinking-harness-evolution for per-task results on the test split; or count the rollouts per task in §4.4", "why_it_matters": "if the rollout count in §4.4 differs from two, the resolution argument in unfavorable_facts changes; if it does not, the printed values do not reconcile with the stated protocol"},
+    {"item": "Whether Harness Evolution consumes $K$ rollouts per task or $K+1$. §3.4 spends $m$ rollouts per task at each of $K$ rounds AND THEN samples a final trajectory under $\\hat E$ ('We then sample the final trajectory for the target task $x$ under this harness').", "search_term": "'we sample one rollout per task for each harness' in §4.1 against the released runner code", "why_it_matters": "if the final rollout is additional, the harness arms exceed the matched rollout budget by 20% before the meta agent's cost is counted at all"},
+    {"item": "Why direct sampling with the initial harness on GPT-5.4 is 75.3 in Table 1 and 75.9 in Table 2 when that configuration consumes no unit-test feedback in either setting.", "search_term": "released result artifacts; or any statement that the two settings re-ran the baseline", "why_it_matters": "it is the paper's only visible run-to-run spread and it equals the §4.4 headline gain"},
+    {"item": "The actual token consumption of the meta agent and the Agent Debugger per round, versus a rollout.", "search_term": "released logs; Table 4 gives caps only (500 / 25 model turns, 128,000 generation per turn)", "why_it_matters": "it decides whether 'matched budget' survives translation into any compute unit, and therefore whether this paper can be cited in ch28 at all"},
+    {"item": "Whether the AHE reproduction (explore agent disabled) recovers AHE's own published Terminal-Bench numbers.", "search_term": "Lin et al. 2026, arXiv:2604.25850, reported Terminal-Bench results, against Tables 1-2 here", "why_it_matters": "the negative conclusion is about a modified reproduction of one of three criticised systems"},
+    {"item": "The 45/10/34 split rule — random, stratified, or hand-chosen — and whether the split was repeated.", "search_term": "§4.4 states only the sizes; check the released split file", "why_it_matters": "the split is the load-bearing construct of the paper's central claim and Terminal-Bench tasks are heterogeneous"},
+    {"item": "The size of the evolved harness in tokens or bytes at each round.", "search_term": "released harness artifacts; the paper prints no length anywhere", "why_it_matters": "it is the only recoverable $C_{\\text{cap}}$ and the only way to quantify the 'context bloat' the paper asserts"},
+    {"item": "Whether Terminal-Bench 2.1's 89 tasks are scored with more than one rollout per task in Tables 1-2, i.e. whether 'averaged over two independent runs' means $k=2$ in the pass@1 formula of Eq. (1).", "search_term": "App. A.5 Eq. (1) definition of $k$ against §4.1's 'two independent runs'", "why_it_matters": "sets the task-flip resolution used throughout unfavorable_facts"}
+  ],
+
+  "discriminant_verdict": {
+    "the_test": "PRE-RESEARCH §2.1: (1) before the query arrives, (2) spending $B_s>0$, (3) actually changing the state of one of $\\Theta$/$W$/$E$, (4) with that change used by LATER queries. All four required.",
+    "headline": "The paper contains four methods and they land in three different places. Harness Evolution PASSES all four conditions in the §4.4 protocol and FAILS condition (1) in the §4.2/§4.3 protocol — same algorithm, same write operator, same budget, different task split. Harness Scaling FAILS (1) and (4). Parallel Sampling and Sequential Refinement FAIL (1), (2) and (3). The paper cannot be given a single verdict.",
+    "per_method": [
+      {
+        "method": "Harness Evolution, §4.4 protocol (disjoint search / validation / test)",
+        "c1_before_the_query": "PASS. The harness is evolved on 45 training tasks, selected on 10 validation tasks, and frozen before any of the 34 held-out test tasks is seen. [§4.4, p.7]",
+        "c2_budget": "PASS but unquantified. $K=5$ rounds, $m=1$ rollout per task over the search batch, plus $K-1$ meta-agent invocations and the Agent Debugger. No token, FLOP, wall-clock or dollar figure. [§4.1, p.5; Table 4, p.12]",
+        "c3_state_changes": "PASS, layer $E$. The harness — system-prompt behavioural rules, long-term memory, middleware, tool guidance — is model-external state that is written offline. $\\Theta$ is frozen by the literature's premise and $W$ does not exist. [§1, p.2; §2, p.2; §5.1, pp.7-8]",
+        "c4_used_by_later_queries": "PASS. $\\hat E$ serves 34 tasks it has never seen, so $N_q=34$. [§4.4, p.7]",
+        "verdict": "PASSES. This is $E$-path sleep-time compute, and the artifact is procedural rather than propositional."
+      },
+      {
+        "method": "Harness Evolution, §4.2 / §4.3 protocol (search and evaluation share the task set)",
+        "c1_before_the_query": "FAIL. The evaluated task is a member of the batch $\\{x^{(i)}\\}$ whose rollouts and outcomes drive the meta agent, so the write is conditioned on the query. The paper is the party that says so: 'because the search and the final evaluation share the same benchmark, the reported gains risk overfitting to that specific task set.' [Abstract, p.1; §3.4, p.4]",
+        "c2_c3_c4": "PASS, PASS, PASS — identical to the §4.4 case.",
+        "verdict": "BORDERLINE, failing on (1) alone. A different species from MemGPT's borderline status: MemGPT's write is inside the user turn and therefore fails (1) in TIME, whereas this write is offline in time and fails (1) in INFORMATION — it has seen the query."
+      },
+      {
+        "method": "Harness Scaling",
+        "c1_before_the_query": "FAIL. $h_k = M(x,\\Phi(h_{k-1},y_{k-1}))$ conditions explicitly on the evaluation task; the paper calls it 'instance-guided harness adaptation'. [§3.5, p.5]",
+        "c2_budget": "PASS in magnitude but it is a WAKE budget, $B_t$, not $B_s$.",
+        "c3_state_changes": "PASS, layer $E$ — the same write operator as Harness Evolution.",
+        "c4_used_by_later_queries": "FAIL. The artifact is discarded with the instance; only $\\hat y = y_K$ is returned. [§3.5, p.5]",
+        "verdict": "NOT sleep-time compute. It is test-time scaling in harness space. It is also the most useful foil in the corpus, because it holds the mechanism fixed and moves only the clock."
+      },
+      {
+        "method": "Parallel Sampling and Sequential Refinement",
+        "verdict": "NOT sleep-time compute. $B_s=0$, the harness is fixed, no layer changes. Pure wake-time scaling — conditions (1), (2) and (3) all fail. [§3.2-3.3, pp.3-4]"
+      }
+    ],
+    "which_condition_decides": "**Condition (1), decisively and twice.** Conditions (2) and (3) are never in doubt anywhere in the paper — the harness is unambiguously external state, $\\Theta$ never moves, and a budget is unambiguously spent. Condition (4) is the second cut and it removes Harness Scaling even under a lenient reading of (1). But condition (1) is what separates the same algorithm from itself across two protocols, and it is what separates Harness Evolution from Harness Scaling. Nothing else in this paper does any classification work.",
+    "the_second_justification_for_condition_1": "ch11 §11.2.3 justifies condition (1) MECHANISTICALLY — without it, a write inside the user turn is indistinguishable from a sleep write and 'sleep-time compute' becomes another name for 'writing'. This paper supplies an independent EVIDENTIAL justification for the same cut, arrived at with no knowledge of the monograph's frame: when the search tasks and the evaluation tasks coincide, the reported gain is not attributable to the artifact, because the artifact may encode the answers. Two unrelated arguments select the same condition. That is the strongest external corroboration condition (1) has received.",
+    "second_instance_of_setting_dependent_passage": "ch27's evidence item B4 already records that `Do LMs Need Sleep?` passes the discriminant only in the Depo setting. This is the second instance, in a different path, and it is sharper: there the two settings differ in dataset layout (whether the question precedes the context), here the mechanism, the write operator, the budget and the model are byte-identical across the two protocols and only the train/test split moves. The consequence for the frame is stated plainly — the discriminant applies to (mechanism, protocol) pairs, not to papers, and a per-paper census cannot represent this paper at all.",
+    "counting_rule_recommendation": "[note-writer] If this paper ever enters a census, it must enter as ONE passing configuration (Harness Evolution under the §4.4 protocol) plus ONE explicit foil (Harness Scaling) plus TWO non-candidates, not as one paper with one label. The dossier's counting convention — pass 9 / borderline 1 / fail 19 over 29 papers — has no cell for a paper whose verdict depends on which of its own experiments is being asked about."
+  },
+
+  "book_impact": {
+    "summary_one_line": "The paper CONFIRMS ch28's verdicts 1 and 6, ch27's verdicts 2 and 5, and ch11/ch24's condition (1); it THREATENS nothing outright; it QUALIFIES ch28 verdict 5's optimism about the cost of fixing the literature; and it does NOT deliver the budget-matched answer the tasking premise expected, because the matched comparison and the clean protocol never co-occur in it.",
+
+    "correction_to_the_tasking_premise": {
+      "the_premise": "That this paper is a budget-matched negative answer to ch28's question — is spending $B_s$ better than spending the same budget on $B_t$ — and that ch28's verdict therefore changes.",
+      "why_it_does_not_hold": "Two independent reasons. (i) The matched-budget comparison exists only in §4.2 and §4.3, and in both of those the harness was searched on the very tasks it is scored on, so discriminant condition (1) fails and the arm being compared is not sleep-time compute. (ii) In §4.4, the only configuration where condition (1) holds, the test-time-scaling arms are absent by the authors' own decision: 'The other three methods are not directly applicable in this setting, since they rely on instance-level scaling or refinement rather than producing a reusable artifact' [§4.4, p.7]. So a discriminant-passing $E$-path procedure is never compared against a matched-budget wake-time arm anywhere in this paper.",
+      "and_the_budget_was_not_matched_in_a_compute_unit": "Even in §4.2/§4.3 the matching is $K=5$ ROLLOUTS, not tokens or FLOPs [§4.1, p.5]. A rollout is capped at 300 model turns x 128,000 generated tokens, and the harness arms additionally run a meta agent capped at 500 turns and a debugger at 25 turns [Table 4, p.12], none of it counted. The residual runs against harness evolution, so the negative finding is conservative — but 'matched budget' does not survive translation into the monograph's units.",
+      "what_the_paper_actually_delivers": "The best-designed protocol in this corpus for the question, executed such that its two halves never meet. It is one table away from answering ch28's question, and that missing table is now the sharpest falsifier the monograph can name."
+    },
+
+    "ch28": {
+      "verdict_1": {"relation": "CONFIRMS, and does not trigger any falsifier", "detail": "ch28 판정 1 — '현재 문헌으로 $B_s$–품질 곡선은 그릴 수 없다' — survives untouched. Against ch28's minimum reporting requirements this paper satisfies R4 strongly (one public benchmark, one metric, a common initial harness, all arms on the same footing — the first paper in view to do this) and R9 (numbers in tables, not read off plots); it partially satisfies R2 (Table 4 prints caps, never consumption, and no MFU or throughput), R5 (the amortisation scope is explicit — one artifact per task distribution, $N_q=34$ in §4.4 — but no deployment distribution) and R8 ($K=5$ stated, never varied); and it FAILS R1 (no absolute FLOPs or tokens; 'FLOP' occurs 0 times), R3 (a single budget point, no sweep), R6 (context bloat asserted, never counted) and R7 (no $C_{\\text{cap}}$ of any kind). ch28's 반증 조건 1 requires three papers with absolute units and three or more points on the axis; 반증 조건 8 requires three papers satisfying R1·R3·R4. This paper satisfies R4 alone. Verdict 1 stands."},
+      "verdict_6": {"relation": "CONFIRMS, and strengthens the diagnosis", "detail": "ch28 판정 6 attributes the $B_s$ silence to inherited reporting convention rather than measurement difficulty. This paper is the strongest available evidence for that diagnosis: a team whose entire contribution is a 'unified budget view' (§3, p.3), who formalise every method by what it spends and what feedback it observes, still chose rollouts as the unit and printed no compute quantity anywhere. Nobody had more reason to count tokens, and nobody counted."},
+      "verdict_5": {"relation": "QUALIFIES — this is the one place the paper pushes back", "detail": "ch28 판정 5 records that R1–R9 are cheap: '아홉 중 새 실험을 요구하는 것은 R3 하나뿐이고... 나머지 여덟은 전부 이미 존재하는 실행 로그의 인쇄다' [ch28 §28.3.7]. The cheapness claim is not refuted — this team's logs certainly contain their token counts. What is refuted is the implicit inference that cheapness will produce compliance. The most methodologically self-conscious paper in view, whose stated contribution is a matched-budget protocol, did not print them. ch28 §28.3.7's closing [평가] should absorb this: the cost has been low since the founding paper and the cell is still empty, so the missing ingredient is a reporting norm, not a budget."},
+      "new_taxonomy_form": {"relation": "EXTENDS 표 28-2", "detail": "ch28's six bins have no cell for this paper's reporting form. $K=5$ rollouts with $m=1$ per task is not (a) absolute FLOPs or tokens, not (b) optimizer steps, not (c) wall-clock, and it is more concrete than (d) an ungraduated ordinal, because a rollout is a countable unit of work with a stated protocol — yet it is not a compute unit, since Table 4 bounds one rollout at 300 turns x 128,000 generated tokens. This is a seventh form: a COUNT OF AGENT ROLLOUTS OR INTERACTIONS. ch28 §28.2.1's taxonomy_gaps list (PLOS simulation time, EWC sample count, Generative Adapter figure-only, PAD absent) gains a fifth entry, and this one is likely to become the dominant form as the $E$-path moves into agent territory. A monograph that wants its census to age well should add the bin now."},
+      "new_regime_for_the_axis": {"relation": "ADDS a data point ch28 §28.3.1 predicts", "detail": "ch28 표 28-4 argues that $B_s$ differs from $(N,D)$ because its denominator $N_q$ is finite and workload-dependent. This paper supplies the corpus's most favourable $N_q$ — one artifact amortised over an entire task distribution, 34 held-out tasks in §4.4 — and the method still fails. That is a boundary result for the accounting: when the amortisation denominator is made as large as the design allows and the artifact is a shared prefix, the cost side of the argument is maximally favourable and the method still loses, because the binding constraint is transfer, not cost. ch28 §28.3.5's 'so what can still be said' section can use this: the $E$-path's failure mode here is on the QUALITY axis at a point where the COST axis was handed every advantage."}
+    },
+
+    "ch27": {
+      "verdict_2": {"relation": "CONFIRMS, with an independent fifth system and a new content type", "quote": "ch27 판정 2 — '$E$-경로는 유망하다. 단 비용 방법으로서다. 품질 방법으로서는 현재 문헌이 지지하지 않으며, 그 반증은 이 책이 아니라 논문들 자신의 표에서 나온다.'", "detail": "The quality winner in this paper is a memory-free, scaffold-free configuration: Parallel Sampling on an initial harness explicitly defined as 'a single bash tool and nothing else, without skills, middleware, or persistent memory' [App. A.1, p.11], scoring the best average in Table 1 (72.3) and the best pass@1 average in Table 2 (86.0). The pattern ch27 records for Mem0, Zep and ReasoningBank recurs in a benchmark, a system family and a research community that share nothing with them. And the new content type widens the evidence base rather than duplicating it: this $E$ is procedural, its scope is per-deployment rather than per-user, and its write is verified by a real unit test rather than an LLM judge — the strongest write hygiene in the corpus — and it still does not transfer."},
+      "verdict_5": {"relation": "CONFIRMS the pattern, with the missing control on the other side", "quote": "ch27 §27.3.5의 [평가]: '실행된 대조에서는 방법이 지거나 겨우 비기고, 방법이 이기는 축에서는 대조가 실행되지 않았다... 빠진 것은 언제나 가장 싸고 가장 자명한 baseline이다.'", "detail": "A textbook new instance, and it runs in the opposite direction, which makes the pattern more general than ch27 stated it. Here the omitted control protects the CRITIC, not the method: §4.4 is the setting where a reusable artifact could show a genuine transferable gain, and it is the setting where the competing arms are declared inapplicable. ch27's formulation should be widened from 'the method's authors omit the hard baseline' to 'whichever side would be decided by the missing arm, that arm is the one that is missing'. The evidence table 표 27-4 gains a row that belongs to a critique paper rather than a method paper."},
+      "verdict_4_theta_condition_iii": {"relation": "SHARPENS", "detail": "ch27 판정 4 lists as $\\Theta$-path condition (iii) 'a procedure that judges writes without labels, and its accuracy measured'. This paper runs the labelled version of that procedure on the $E$-path — the write is selected by an executed unit test [§3.4, p.4] — and the artifact still fails to transfer [Table 3, p.7]. Write verification and write generality are therefore separable, and passing the former does not deliver the latter. Any chapter that treats verification as the bottleneck should carry this."}
+    },
+
+    "ch15_and_reasoningbank": {
+      "relation": "CONFIRMS, twice, from an independent source",
+      "detail_1": "The dossier's ReasoningBank caveat — monotone degradation as retrieved experience grows (49.7 → 46.0 → 45.5 → 44.4) — gains an independent mechanism statement from a different lab, a different benchmark and a different artifact type: 'the growing volume of persistent prompt text introduces context bloat that can offset the remaining gains' [§5.1, p.8]. Two observations of the same sign with no citation link between them.",
+      "detail_2": "The dossier's other ReasoningBank caveat — a 72.7%-accurate judge — gets its limiting case. Here the judge is the agent itself, with no external correctness signal, and five rounds of self-judged (U-E) writes push a strong model DOWN by 5.6 points (GPT-5.4: 75.3 → 69.7) [Table 1, p.6]. The paper's own conclusion is the one the monograph should quote: 'harness revision likely requires a reliable external correctness signal to ground the revision process' [§4.2, p.6]. This is also the corpus's cleanest sign observation for $\\rho$ under self-generated feedback, even though the rate itself is unreported."
+    },
+
+    "ch11_and_ch24": {
+      "relation": "CONFIRMS condition (1) with an independent second justification; MILDLY THREATENS the per-paper census format",
+      "quote": "ch11 §11.2.3: '(1)을 빼면 — 모든 쓰기가 sleep이 된다... 조건 (1)이 없으면 이 둘의 쓰기와 sleep 라운드의 쓰기가 구분되지 않고... 그러면 sleep-time compute은 그냥 쓰기의 다른 이름이 된다.'",
+      "confirmation": "The monograph justified condition (1) mechanistically. This paper justifies the same cut evidentially and independently — when the write has seen the evaluation task, the measured gain cannot be attributed to the artifact — and it builds an entire experimental protocol around the point. Two unrelated derivations selecting the same condition is the best corroboration a definitional choice can get.",
+      "new_foil": "Harness Scaling is the sharpest illustration of condition (1) available anywhere: the same write operator, the same store, the same budget magnitude, the same meta agent, differing from Harness Evolution only in whether the update is conditioned on the evaluation task. ch11 §11.2.3's exposition of condition (1) currently leans on MemGPT and SCM, both of which differ from sleep writes in several respects at once. This one differs in exactly one.",
+      "threat": "The census format assigns one verdict per paper (통과 9 / 경계 1 / 불충족 19 over 29). This paper cannot be so assigned: Harness Evolution passes under one of its own protocols and fails under another with the mechanism held identical, and the paper additionally contains an explicit non-candidate foil. ch27's B4 already recorded setting-dependent passage for `Do LMs Need Sleep?`, so the phenomenon is not new — but this is the sharper instance, and as the $E$-path moves into agent evaluation such papers will become common. ch24 §24.3 should state explicitly that the discriminant applies to (mechanism, protocol) pairs. This is a limitation of the presentation, not an error in any count."
+    },
+
+    "ch25": {
+      "relation": "CONFIRMS the structural finding; ADDS a boundary regime; changes no count",
+      "detail": "All four cost cells are empty again, and since the paper is outside the 29-paper corpus no census count moves. What it adds is a regime ch25's typology does not contain: an $E$-path artifact amortised over a task distribution rather than a context. ch25 판정 2's structural defect — the per-query prompt term does not divide by $N_q$ — applies here in its mildest possible form, since $N_q=34$ and the artifact is a shared prefix across the whole deployment. The method still fails. **The accounting can be handed every advantage and the method can still lose, because ch25 measures cost and this failure is in transfer.** That is a useful boundary statement for ch25 §25.5: a favourable $L^\\ast$ or $N_q^\\ast$ is necessary, not sufficient, and no cost accounting can rescue an artifact that carries nothing generalisable."
+    },
+
+    "ch26": {
+      "relation": "ADDS a capacity shape; confirms the zero count",
+      "detail": "ch26's map has per-session $W$ (transient, hot), per-user $\\Theta$ delta (persistent, warm) and per-user or per-session $E$ (persistent, cold). This paper supplies a fourth shape: a PER-DEPLOYMENT $E$ whose bytes are O(1) in users — one harness serving the whole task distribution. It is the only state shape in view that does not grow with users, and therefore the cheapest capacity profile any path can offer. It is also, of course, unsized: no byte, character or token count for the artifact appears anywhere, so ch26's count of papers printing $C_{\\text{cap}}$ is unchanged. The shape is worth a row in ch26 §26.2's table because it bounds what the $E$-path's best case looks like."
+    },
+
+    "ch30": {
+      "relation": "REINFORCES one row; supplies one new, cheap, high-value falsifier",
+      "reinforced": "ch30's row '$E$-경로에서 품질 1위가 반복적으로 기억 시스템 없는 구성이다' gains its fifth instance, with a falsifying observation still unmet.",
+      "new_falsifier": "The single most valuable missing experiment the monograph can now name concretely: **run this paper's §4.4 held-out protocol WITH the Parallel Sampling and Sequential Refinement arms at matched $K$, and report tokens.** That is one table. It would simultaneously satisfy R1, R3 (if $K$ is swept), R4 and R6, and it would answer, for a discriminant-passing $E$-path procedure, the question ch27 판정 5 left as 판정 불가 and ch28 판정 1 left as ungraphable. Nobody has printed it. Because the enabling infrastructure now demonstrably exists — this paper built all four arms and the held-out split — the falsifier's cost is close to zero, which is exactly the criterion ch30 uses to rank its list."
+    },
+
+    "chapters_with_no_impact": "ch01–ch10 (Part I concepts), ch12, ch16–ch23 ($W$- and $\\Theta$-path chapters, plus biology and capacity theory) take nothing from this paper. It contains no weight update, no fast-weight state, no gradient, no biological argument and no capacity theory, and its bibliography touches none of those literatures. ch29 takes nothing directly either, though its sandbox-provisioning observation (App. A.4, p.11) is a cost class the four-cell frame cannot hold and may be worth one sentence there."
+  }
+}

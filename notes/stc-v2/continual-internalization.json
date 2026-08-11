@@ -1,0 +1,482 @@
+{
+  "paper_id": "continual-internalization",
+  "arxiv": "2606.04703",
+  "arxiv_version": "v1 [cs.CL] 3 Jun 2026 (stamp on p.1, vendored L14)",
+  "title": "Rethinking Continual Experience Internalization for Self-Evolving LLM Agents",
+  "authors": "Jingwen Chen*, Wenkai Yang*, Shengda Fan, Wenbo Nie, Chenxing Sun, Shaodong Zheng, Yangen Hu, Lu Pan, Ke Zeng, Yankai Lin† (* equal, † corresponding). Affiliations: 1 Gaoling School of AI, Renmin University of China; 2 School of Software, Beihang University; 3 Meituan. (title block, vendored L3-11)",
+  "venue": "arXiv preprint (no venue stated on the vendored text; the Limitations / Broader Impact / 'Statement on the Use of LLMs' sections are ACL-template artefacts, so an ACL-family submission is the likely target — not asserted)",
+  "date": "2026-06-03",
+  "path": "/home/jimmy/repos/neural-memory-study/papers/stc/2606.04703.txt",
+  "code": "https://github.com/RUCBM/ExpInternalization (Abstract, vendored L40-41)",
+  "axis": "Theta",
+
+  "role_in_v2": {
+    "why_read": "이 논문은 X4(반복 consolidation 열화 $\\rho$)의 선행 실측 후보로 지목되어 읽혔다. 확정할 것은 넷이었다 — (a) 무엇을 몇 라운드 반복했고 곡선의 모양이 무엇인가, (b) 3축 분해가 무엇인가, (c) X4의 numpy 축소 모형 결과와 부호·함수형·순서가 맞는가, (d) X4를 다시 돌릴 가치가 있는가.",
+    "one_line_answer": "corpus에서 **반복 sleep 라운드를 독립변수로 놓고 성능을 인쇄한 최초의 A군 논문**이다. 그러나 라운드 수가 $K=3$이고 $\\rho$도 $K^\\ast$도 인쇄하지 않으며 replay 축이 아예 없다. 따라서 이 책의 계수 진술 두 개를 깨고, X4의 모양 판정 둘을 실제 LLM에서 확증하며, X4를 중복으로 만들지는 않는다 — 대신 X4가 갖고 있지 않은 기제 하나(교사 능력의 자기 열화)를 드러내 X4의 재설계를 강제한다.",
+    "chapters_touched": ["ch06", "ch11", "ch14", "ch20", "ch22", "ch24", "ch27", "ch28", "ch29", "ch30"]
+  },
+
+  "problem_stated": {
+    "as_the_paper_frames_it": "'Experience internalization converts contextual experience from past interactions into reusable parametric capability, offering a promising path toward continual learning in large language models (LLMs). While prior work has predominantly focused on single-iteration transfer, we discover that under multi-iteration experience learning, existing methods suffer from a progressive capability collapse rather than compounding improvement.' [continual-internalization Abstract, L16-24]",
+    "the_gap_it_names": "'existing approaches largely overlook the necessity of iterative experience internalization, which is a cornerstone of the continual learning paradigm. Through a preliminary study, we reveal a critical vulnerability: as shown in Figure 1, current methods fail to sustain this self-evolving process, with performance collapsing as self-evolution proceeds.' [§1, L93-99]",
+    "why_not_in_context": "'context-based methods retain experience as inference-time context, leaving their benefits bounded by the model's in-context learning ability and vulnerable to context collapse when experience accumulates' [§2.1, L144-146]; 'this paradigm is bounded by in-context capacity and prone to context collapse (Zhang et al., 2025) as the experience pool grows' [§1, L82-84].",
+    "the_three_stage_decomposition": "'We attribute these failures to three stages of the transfer: how experience is represented, how it shapes teacher supervision, and which trajectory distribution is used to transfer the resulting behavior into the student.' [§1, L100-102]",
+    "note_writer_remark": "[note-writer] 이 책의 어휘로 옮기면 문제 진술은 정확히 이것이다 — **(U-E)의 산출물을 $\\mathcal{R}_k$로 삼아 (U-$\\Theta$)를 $k$번 돌리면 $\\Theta$가 어디로 가는가.** ch06 §목표 4가 'SEAL과 LM Need Sleep 어느 쪽도 그 경계를 제시하지 않는다'고 적은 바로 그 질문이며, 이 논문은 $K=3$에서 그 답의 첫 조각을 인쇄한다. 다만 논문은 'sleep' · 'consolidation' · 'catastrophic forgetting' 어느 단어도 쓰지 않는다(전문 grep 0회)."
+  },
+
+  "core_mechanism": {
+    "one_line_unified": "$k$라운드마다 (U-E)와 (U-$\\Theta$)를 **직렬로 한 번씩** 돌리는 닫힌 루프다. $E^{(k)}$는 현재 모델의 롤아웃을 요약해 **전체 교체**로 다시 쓰이고, 그 $E^{(k)}$로 조건화한 $\\Theta_k$ 자신이 교사가 되어 experience-free 학생 $\\Theta_{k+1}$을 만든다. 즉 corpus에서 처음으로 $E$-경로 산출물이 $\\Theta$-경로의 $\\mathcal{R}_k$가 되는 합성이 end-to-end로 실행된다.",
+
+    "notation_conflicts": {
+      "preamble": "논문은 번호 붙은 식 5개(Eq. 1-5)를 갖는다. 예약 기호와의 충돌이 letta-stc보다 심하다 — 특히 $q_t$·$\\tau$·$r$·$R$·$H$ 넷은 이 책의 예약 의미와 **정반대에 가까운** 대상을 가리킨다. 본문에서 논문 기호를 그대로 쓰면 즉시 오독된다.",
+      "map": [
+        {"paper_symbol": "$k = 0,1,\\dots,K$", "paper_meaning": "internalization iteration index [§3, L234-237]", "reserved_meaning": "$k$ = sleep 라운드 첨자 [STC-STYLE §1.2]", "unified_replacement": "$k$ 그대로. **corpus에서 논문 기호와 이 책 기호가 정확히 일치하는 드문 사례**이며, 그 일치 자체가 이 논문이 (U-$\\Theta$) 반복 루프라는 증거다"},
+        {"paper_symbol": "$\\theta^{(k)}$, $\\pi_{\\theta^{(k)}}$", "paper_meaning": "라운드 $k$의 정책 파라미터 [§3, Eq. 3, L246-248]", "reserved_meaning": "$\\Theta$ = slow weights [STC-STYLE §1.2]", "unified_replacement": "$\\Theta_k$. 논문은 소문자 $\\theta$를 쓰지만 대상은 배포 체크포인트 전체이므로 이 책의 $\\Theta$다"},
+        {"paper_symbol": "$E = \\{e_1,\\dots,e_N\\}$, $E^{(k)}$, $E_t \\subseteq E$", "paper_meaning": "자연어 experience pool과 그 라운드별 판·주입 부분집합 [§3, L196-202, L234-244]", "reserved_meaning": "$E$ = external store [STC-STYLE §1.2]. 첨자 $k$는 라운드, $t$는 토큰/청크", "unified_replacement": "$E^{(k)}$ 유지(라운드), 주입 부분집합은 **$\\mathrm{ret}(E^{(k)}, h_j)$** 로 쓴다. 논문의 $E_t$는 라운드가 아니라 **궤적 안의 step**에 붙은 첨자이므로 맨 $E_t$를 본문에 쓰면 라운드 첨자로 오독된다"},
+        {"paper_symbol": "$t$, $T$", "paper_meaning": "ReAct 궤적 안의 agent step 인덱스와 궤적 길이 [§3, L188-196]", "reserved_meaning": "$t$ = 토큰/청크 첨자, $L$ = sequence 길이, $L_{\\text{layer}}$ = 층 수 [STC-STYLE §1.3]", "unified_replacement": "$j$(청크·세그먼트 인덱스 규약, STC-STYLE §1.3 v0.3)와 $J$. **논문의 한 step은 토큰이 아니라 thought+action+observation 한 묶음**이며, 32,768 토큰 문맥 안에서 최대 $T_{\\max}=100$개가 들어간다 [§4, L371-372]"},
+        {"paper_symbol": "$\\tau_t$", "paper_meaning": "step $t$의 thought [§3, L192-194]", "reserved_meaning": "$\\tau$ = **세션 첨자** [STC-STYLE §1.2]", "unified_replacement": "$\\mathrm{th}_j$ 또는 산문으로 'thought'. 맨 $\\tau$ 금지 — 이 책에서 $\\tau$는 시간척도 기호다"},
+        {"paper_symbol": "$H_{t-1}$, $h_{t-1}$, $H_T$", "paper_meaning": "상호작용 이력과 완성된 궤적 [§3, L193-196, L204]", "reserved_meaning": "$\\mathcal{H}_k$ = $k$라운드까지 **누적된 경험** [STC-STYLE §1.2]", "unified_replacement": "궤적은 $\\zeta$, 이력은 $h_j$. **의미 반전 주의** — 이 책의 $\\mathcal{H}_k$는 라운드를 가로질러 누적되는 것이고 논문의 $H$는 한 궤적 안의 접두사다. 그리고 이 논문의 루프에서 $\\mathcal{H}_k$는 실제로 누적되지 않는다(→ what_is_NOT_in_the_mechanism)"},
+        {"paper_symbol": "$r(H_T)$", "paper_meaning": "task-level reward [§3, L195-196]", "reserved_meaning": "$r$ = **LoRA rank**, 보상은 $R$ [STC-STYLE §1.3]", "unified_replacement": "$R(\\zeta)$. 논문 기호를 그대로 옮기면 rank로 읽힌다"},
+        {"paper_symbol": "$p_t = \\pi_T(\\cdot\\mid h_{t-1}, E_t)$, $q_t = \\pi_\\theta(\\cdot\\mid h_{t-1})$", "paper_meaning": "교사·학생의 step별 다음 토큰 분포 [§3, L204-206]", "reserved_meaning": "$q_t$ = **query 벡터**(항상 첨자), 맨 $p$ = $\\ell_p$ 노름 차수 [STC-STYLE §1.5]", "unified_replacement": "$\\pi^{\\mathrm{T}}_j$ / $\\pi^{\\Theta}_j$. **가장 위험한 충돌** — 논문의 $q_t$는 학생 분포이고 이 책의 $q_t$는 질의 벡터다"},
+        {"paper_symbol": "$R_\\phi$", "paper_meaning": "step-wise 주입을 위한 LLM 기반 experience selector [§3, L266-268]", "reserved_meaning": "$R$ = 보상 [STC-STYLE §1.3]", "unified_replacement": "$\\mathrm{sel}_\\phi$, 그리고 그 역할은 통일 표기의 **$\\mathrm{ret}(\\cdot,\\cdot)$** 다. 식 (R)의 검색 연산이 여기서 처음으로 $\\Theta$-경로 루프 안에 등장한다"},
+        {"paper_symbol": "$x$", "paper_meaning": "user query [§3, L191-192]", "reserved_meaning": "없음", "unified_replacement": "$q$ (식 (R))"},
+        {"paper_symbol": "$c_{\\mathrm{glob}} = [x; E^{(k)}]$", "paper_meaning": "global injection의 고정 문맥 [§3, L262-264]", "reserved_meaning": "맨 $c$ = chunk 크기 [STC-STYLE §1.5]", "unified_replacement": "$\\mathrm{ret}(E^{(k)},\\cdot) = E^{(k)}$ — 즉 **검색이 항등사상**인 경우. letta-stc의 $\\mathrm{ret}$ 항등과 같은 구조이며, 이 논문은 그 항등이 반복에서 무엇을 하는지를 잰다"},
+        {"paper_symbol": "$D^{(k)} = \\{H_i^{(k)}\\}$", "paper_meaning": "라운드 $k$의 궤적 집합 [§3, L238-240]", "reserved_meaning": "$\\mathcal{R}_k$ = 라운드 $k$의 학습 집합 [STC-STYLE §1.2]", "unified_replacement": "원 롤아웃은 $D^{(k)}$ 유지, (U-$\\Theta$)에 실제로 들어가는 감독 집합은 $\\mathcal{R}_k$. **둘은 같지 않다** — off-policy 팔에서는 rejection sampling이 사이에 낀다"},
+        {"paper_symbol": "$N$ (in $E=\\{e_1,\\dots,e_N\\}$)", "paper_meaning": "experience pool 크기 [§3, L198]", "reserved_meaning": "$n$ = 저장된 항목 수, $N_q$ = 문맥 공유 질의 수 [STC-STYLE §1.2-1.3]", "unified_replacement": "$n$. 그리고 **이 값은 논문 어디에도 인쇄되지 않는다**"},
+        {"paper_symbol": "$\\mathcal{L}_{\\mathrm{off}}$, $\\mathcal{L}_{\\mathrm{on}}$", "paper_meaning": "두 레짐의 손실 [Eq. 1, Eq. 2]", "reserved_meaning": "$\\mathcal{L}$ = outer/task loss [STC-STYLE §1.2]", "unified_replacement": "충돌 없음. $\\mathcal{L}(\\mathcal{R}_k;\\Theta_k)$의 두 인스턴스"},
+        {"paper_symbol": "$T_{\\max} = 100$", "paper_meaning": "최대 상호작용 step [§4, L371; App. B, L1355-1356]", "reserved_meaning": "$T$ 미예약이나 $L$과 혼동 위험", "unified_replacement": "$J_{\\max}=100$ (장-국소)"}
+      ]
+    },
+
+    "equations_unified": [
+      {
+        "id": "CI-1",
+        "latex": "\\textbf{(U-E), 파괴적 전체 교체:}\\qquad E^{(k)} \\;=\\; \\mathrm{wr}\\big(\\varnothing,\\ \\hat c_k\\big) \\;=\\; \\hat c_k, \\qquad \\hat c_k \\;=\\; S\\big(D^{(k)};\\ B_s\\big), \\qquad D^{(k)} \\sim \\pi_{\\Theta_k}(\\cdot \\mid \\mathcal{Q}_{\\text{fix}})",
+        "paper_form": "'At iteration k, the current policy $\\pi_{\\theta^{(k)}}$ interacts with the environment and produces trajectories $D^{(k)}$. These trajectories are summarized into an experience pool $E^{(k)}$.' [§3, L237-242] + 'each iteration refreshes the experience pool using trajectories generated by the current model' [App. B, L1439-1441]",
+        "gloss": "세 가지가 letta-stc와 같고 하나가 다르다. 같은 것 — $\\mathrm{wr}$이 **덮어쓰기**이지 append가 아니다('refreshes'), $S(\\cdot;B_s)$가 학습된 모듈이 아니라 frozen LLM 프롬프트다(DeepSeek-V4 또는 학생측 Qwen), 산출물이 자연어다. 다른 것 — **$S$의 입력이 사용자 문맥이 아니라 모델 자신의 롤아웃**이다. $\\mathcal{Q}_{\\text{fix}}$는 15K 고정 질의 코퍼스이고 라운드마다 바뀌지 않는다 [§4, L353-359].",
+        "source": "[continual-internalization §3, L234-244; §4, L353-359; App. B, L1434-1441; App. A, L1235-1238]"
+      },
+      {
+        "id": "CI-2",
+        "latex": "\\textbf{검색:}\\qquad \\mathrm{ret}\\big(E^{(k)}, h_j\\big) \\;=\\; \\begin{cases} E^{(k)} & \\text{(global — 항등사상)}\\\\[2pt] \\mathrm{sel}_\\phi\\big(h_{j-1}, E^{(k)}\\big) & \\text{(step-wise — 상태 조건부)}\\end{cases}",
+        "paper_form": "'Under global injection, the teacher uses a fixed experience context $c_{\\mathrm{glob}}=[x;E^{(k)}]$ for the whole trajectory... Under step-wise injection, an LLM-based selector $R_\\phi$ selects experience according to the current interaction history, $E_t^{\\mathrm{step}} = R_\\phi(h_{t-1}, E^{(k)})$' [§3, L260-268]",
+        "gloss": "이 책에 가장 중요한 한 줄이다. **논문의 축 2는 정확히 '$\\mathrm{ret}$를 항등사상으로 둘 것인가 상태 조건부 선택으로 둘 것인가'이며, 항등사상 쪽이 반복에서 무너진다.** letta-stc의 $\\mathrm{ret}$가 항등이라는 ch14의 구조 관찰이 여기서 처음으로 **반복 안정성의 측정 대상**이 된다.",
+        "source": "[continual-internalization §3, L260-268; §5.2, L481-627]"
+      },
+      {
+        "id": "CI-3",
+        "latex": "\\textbf{교사 = 자기 자신 + 읽기:}\\qquad \\pi^{\\mathrm{T}}_j(\\cdot) \\;=\\; f\\big(\\cdot;\\ \\Theta_k,\\ W{=}\\varnothing,\\ \\mathrm{ret}(E^{(k)}, h_{j-1})\\big), \\qquad \\pi^{\\Theta}_j(\\cdot) \\;=\\; f\\big(\\cdot;\\ \\Theta_k,\\ W{=}\\varnothing,\\ \\varnothing\\big)",
+        "paper_form": "'The same policy, when conditioned on $E^{(k)}$, serves as an experience-aware teacher for training the next experience-free student $\\pi_{\\theta^{(k+1)}}$' [§3, L242-244]",
+        "gloss": "교사와 학생이 **같은 가중치**다. 차이는 프롬프트에 $E^{(k)}$가 있느냐뿐이다. 그러므로 (U-$\\Theta$)가 $\\Theta_k$의 '읽기 능력'을 손상시키면 다음 라운드의 교사가 함께 약해진다 — 이것이 이 논문의 핵심 기제이고, **corpus 어느 논문에도 없고 X4의 최소 모형에도 없는 되먹임 채널**이다.",
+        "source": "[continual-internalization §3, L242-244; §5.2.3, L658-671]"
+      },
+      {
+        "id": "CI-4",
+        "latex": "\\textbf{(U-$\\Theta$), 두 레짐:}\\qquad \\Theta_{k+1} \\;=\\; \\Theta_k - \\eta_\\Theta \\nabla_\\Theta \\mathcal{L}\\big(\\mathcal{R}_k;\\Theta_k\\big), \\qquad \\mathcal{L}_{\\mathrm{off}} = \\mathbb{E}_{\\zeta\\sim\\pi^{\\mathrm{T}}}\\!\\sum_j D_{\\mathrm{KL}}\\big(\\pi^{\\mathrm{T}}_j\\,\\|\\,\\pi^{\\Theta}_j\\big), \\qquad \\mathcal{L}_{\\mathrm{on}} = \\mathbb{E}_{\\zeta\\sim\\pi^{\\Theta}}\\!\\sum_j D_{\\mathrm{KL}}\\big(\\pi^{\\Theta}_j\\,\\|\\,\\pi^{\\mathrm{T}}_j\\big)",
+        "paper_form": "Eq. 1 (L208-217), Eq. 2 (L223-232), Eq. 3 ($\\theta^{(k+1)} = \\mathrm{Internalize}(\\theta^{(k)}, E^{(k)})$, L246-248)",
+        "gloss": "off-policy = 교사 궤적 + **forward** KL, on-policy = 학생 궤적 + **reverse** KL. 두 팔은 궤적 분포만이 아니라 KL 방향도 다르고, 구현에서는 **rejection sampling 유무까지** 다르다(→ CI-5). 논문은 §5.3.1에서 '궤적 분포만 다르다'고 쓴다.",
+        "source": "[continual-internalization §3, Eq. 1-3; §5.2, Eq. 4-5, L501-534]"
+      },
+      {
+        "id": "CI-5",
+        "latex": "\\textbf{off-policy의 실제 학습 집합:}\\qquad \\mathcal{R}_k \\;=\\; \\big\\{\\, \\zeta \\in D^{(k)}_{\\mathrm{T}} \\ :\\ R(\\zeta) = \\text{success} \\,\\big\\}, \\qquad D^{(k)}_{\\mathrm{T}} \\sim \\pi^{\\mathrm{T}}",
+        "paper_form": "'Off-policy internalization instead samples trajectories directly from the experience-aware teacher... and applies rejection sampling to retain successful trajectories.' [§5.3.1, L844-847]; 'off-policy context-distillation trains on rejection-filtered teacher-generated trajectories' [App. B, L1376-1377]",
+        "gloss": "**이 식이 논문의 서술과 어긋난다.** §5.3.1은 두 팔이 'differing only in the trajectory distribution'이라고 쓰는데, 같은 문단 두 문장 뒤에 off-policy에만 rejection sampling이 붙는다고 쓴다. rejection sampling은 데이터셋 정답에 앵커된 **외부 정오 필터**이고, 이 책의 어휘로는 '보존된 원본에 앵커된 감독'이다. 따라서 '레짐' 축의 효과는 궤적 분포 효과와 정오 필터 효과의 **합**이며 분해되지 않았다. 필터의 임계·수용률·정의는 어디에도 없다.",
+        "source": "[continual-internalization §5.3.1, L840-847; §5.3.1, L915-922; App. B, L1362-1377]"
+      },
+      {
+        "id": "CI-6",
+        "latex": "\\textbf{닫힌 루프 한 줄:}\\qquad \\Theta_k \\ \\xrightarrow{\\ \\text{rollout on } \\mathcal{Q}_{\\text{fix}}\\ } \\ D^{(k)} \\ \\xrightarrow{\\ S(\\cdot;B_s)\\ } \\ E^{(k)} \\ \\xrightarrow{\\ \\mathrm{ret}\\ +\\ \\Theta_k\\ } \\ \\mathcal{R}_k \\ \\xrightarrow{\\ \\text{(U-}\\Theta)\\ } \\ \\Theta_{k+1}",
+        "gloss": "corpus에서 (U-E)와 (U-$\\Theta$)가 한 라운드 안에 직렬로 연결되고 그 연결이 **여러 라운드 반복**되는 최초의 사례다. letta-stc §7이 미래 과제로만 제안한 합성('using the output of sleep-time compute itself as a form of synthetic data')이 실제로 실행된 형태이며, 이 책이 caveat 표에 '미검증 경로 간 합성'으로 올려 둔 항목이 이 논문으로 검증 상태가 바뀐다.",
+        "source": "[continual-internalization §3, L234-253; App. B, L1434-1441]"
+      }
+    ],
+
+    "what_is_NOT_in_the_mechanism": [
+      "**replay가 없다.** 원본 데이터 rehearsal도, 이전 라운드 데이터 혼합도, 혼합비 $\\omega$도 없다. 라운드마다 학습 집합은 그 라운드 롤아웃으로만 만들어진다. 이 책의 $\\omega$ 축은 이 논문에 존재하지 않는다. [§3-§4, App. B 전체에서 부재]",
+      "**경험이 누적되지 않는다.** 'each iteration **refreshes** the experience pool' [App. B, L1439-1441] — $E^{(k)}$는 합집합이 아니라 교체다. 그러므로 이 루프는 [model collapse]의 **replace 스케줄**이지 accumulate가 아니다. $\\mathcal{H}_k$(누적 경험)라는 대상이 실체로 존재하지 않는다.",
+      "**질의 집합이 자라지 않는다.** 라운드마다 같은 15K web-reasoning 코퍼스를 다시 돈다 [§4, L353-359]. 'self-evolving'이라는 표제와 달리 새 사용자 질의가 유입되는 스트림이 아니라 **고정 질의 위의 자기 증류 루프**다.",
+      "**$W$가 없다.** fast weight, KV 상태, test-time 학습 어느 것도 없다. 배포 아티팩트는 체크포인트 하나다.",
+      "**사용자 수준 개인화가 없다.** $\\Theta$는 전역 하나이고 사용자당 delta가 없다. 인구 수준 $\\Theta$-경로이므로 ch29가 지목한 웜 계층 기회를 만들지 않는다(→ ch29 표 29-3 넷째 행).",
+      "**쓰기 검증이 없다.** experience 항목이 옳은지 검사하는 절차가 없다. 유일한 정오 신호는 off-policy 팔의 rejection sampling이고 그것은 experience가 아니라 **궤적**에 걸린다.",
+      "**연속 신호 계측이 없다.** perplexity, likelihood, margin, 생성 다양성 어느 것도 라운드 함수로 인쇄되지 않는다. 모든 y축이 임계 채점 성공률이다.",
+      "**일반 역량 계측이 없다.** 세 agentic 벤치 밖의 held-out 능력(수학·코드·상식)을 잰 표가 없다. [Continual Facts]가 측정한 capability 축이 여기 없다.",
+      "**$\\|\\Theta_k - \\Theta_0\\|$ 또는 KL$(\\Theta_k\\|\\Theta_0)$ 같은 drift 계측이 없다.**",
+      "**LoRA/PEFT가 아니다.** verl + AdamW, lr $1\\times10^{-5}$, batch 128, 5 epochs, 8×A800 [§4, L367-369; App. B, L1372-1377]. adapter 언급이 없으므로 4B·8B 전체 파라미터 갱신으로 읽힌다(논문이 명시하지는 않는다 → todo_verify)."
+    ]
+  },
+
+  "outer_vs_inner": {
+    "headline": "outer 열이 비어 있지 않다는 점에서 letta-stc와 정반대다 — 이 논문에서는 **배포 아티팩트 자체가 매 라운드 학습된다.** 그러나 학습되는 것은 하나뿐이다($\\Theta_k$). experience 추출기·선택기·필터는 전부 frozen이거나 손으로 고정된 것이며, 그중 둘은 **학생보다 강한 외부 모델**(DeepSeek-V4)이다.",
+    "rows": [
+      {"object": "$\\Theta_k$ — Qwen3-4B-Instruct-2507 / Qwen3-8B (thinking mode off)", "who_learns_it": "이 논문이 학습한다", "when": "라운드마다 1회, (U-$\\Theta$)", "moves_in_this_paper": "YES — 유일하게 움직이는 파라미터이며 배포 아티팩트다", "source": "[§4, L348-350, L367-369; Eq. 3]"},
+      {"object": "experience 추출기 $S(\\cdot;B_s)$ — 궤적을 자연어 experience로 요약", "who_learns_it": "아무도. frozen **DeepSeek-V4**(기본) 또는 학생측 Qwen(self-generated 설정)", "when": "라운드마다 호출", "moves_in_this_paper": "no", "source": "[§3, L196-198; App. A, L1235-1238; App. B, L1367-1371]"},
+      {"object": "selector $\\mathrm{sel}_\\phi$ — step-wise 주입용 experience 선택기", "who_learns_it": "아무도. frozen DeepSeek-V4 또는 학생측 Qwen. $\\phi$는 학습되지 않는다", "when": "궤적의 매 step", "moves_in_this_paper": "no — 기호가 $\\phi$라서 학습되는 것처럼 보이지만 학습 절차가 없다", "source": "[§3, L266-268; App. A, L1235-1238; App. B, L1367-1369]"},
+      {"object": "교사 $\\pi^{\\mathrm{T}}$", "who_learns_it": "따로 학습하지 않는다 — $\\Theta_k$에 $E^{(k)}$를 프롬프트로 얹은 것", "when": "라운드마다 새로 정의됨", "moves_in_this_paper": "간접적으로 YES. **$\\Theta_k$가 바뀌면 교사가 바뀐다** — 이것이 이 논문의 되먹임 채널이다", "source": "[§3, L242-244]"},
+      {"object": "rejection sampling 필터 (off-policy 팔)", "who_learns_it": "아무도. 기준·임계·수용률 모두 미기재", "when": "off-policy 학습 집합 구성 시", "moves_in_this_paper": "no", "source": "[§5.3.1, L847; App. B, L1362-1366]"},
+      {"object": "granularity / injection / regime — 세 설계 축", "who_learns_it": "아무도. 손으로 쓸었다", "when": "실험 구성", "moves_in_this_paper": "swept, not learned", "source": "[§5.1-§5.3]"},
+      {"object": "질의 코퍼스 $\\mathcal{Q}_{\\text{fix}}$ — 5개 공개 데이터셋에서 만든 15K 예제", "who_learns_it": "아무도. 라운드마다 동일", "when": "고정", "moves_in_this_paper": "no", "source": "[§4, L353-359]"},
+      {"object": "환경(Search·Visit·Python·Scholar·File Parser 5개 도구)", "who_learns_it": "아무도", "when": "라운드마다 실제 웹 관측을 되돌려 준다", "moves_in_this_paper": "no — 그러나 **라운드마다 실제 데이터를 루프에 다시 주입하는 유일한 통로**다", "source": "[§4, L350-352; App. B, L1352-1356]"}
+    ],
+    "reader_takeaway": "[note-writer] 이 표에서 읽어야 할 것은 **학습되는 것이 하나이고 그 하나가 동시에 세 역할(정책·교사·요약 대상)을 한다**는 점이다. $\\Theta_k$는 (i) 평가받는 정책이고, (ii) $E^{(k)}$를 읽어 감독을 만드는 교사이며, (iii) 그 $E^{(k)}$의 원재료인 궤적의 생성자다. 세 역할이 한 파라미터에 묶여 있으므로 어느 하나의 손상이 나머지 둘로 번진다. corpus의 다른 $\\Theta$-경로 논문(SEAL, LM Need Sleep)은 (i)과 (iii)만 묶었고 (ii)는 묶지 않았다."
+  },
+
+  "update_layer": {
+    "instantiates": "(U-E)와 (U-$\\Theta$)를 **한 라운드 안에 직렬로**. 순서는 $E$ 먼저, $\\Theta$ 나중이다.",
+    "canonical_form": "$E^{(k)} = \\mathrm{wr}(E^{(k-1)}, \\hat c_k)$ 그리고 $\\Theta_{k+1} = \\Theta_k - \\eta_\\Theta \\nabla_\\Theta \\mathcal{L}(\\mathcal{R}_k;\\Theta_k)$ [S0-DESIGN §2.2]",
+    "how_this_paper_differs_from_the_canonical_form": [
+      "$\\mathrm{wr}$가 **파괴적 전체 교체**다. 'each iteration refreshes the experience pool' [App. B, L1439-1441] — $E^{(k-1)}$은 인자로 들어가지 않는다. ReasoningBank의 순수 합집합과도, Mem0의 ADD/UPDATE/DELETE/NOOP와도 다르며, letta-stc의 블록 덮어쓰기와 같은 부류다. 결과: $E$는 라운드를 가로질러 아무것도 누적하지 않고, 반복의 기억은 전부 $\\Theta$에만 남는다.",
+      "$\\mathcal{R}_k$의 재료가 사용자 문맥이 아니라 **모델 자신의 궤적**이다. $\\hat c_k = S(D^{(k)};B_s)$이고 $D^{(k)} \\sim \\pi_{\\Theta_k}$다. 즉 (U-E)의 입력이 자기 출력이다 — [model collapse]의 replace 스케줄이 $E$층에서 실행된다.",
+      "$\\mathrm{ret}$가 **두 값으로 스윕된다**. 항등사상(global)과 상태 조건부 선택(step-wise). corpus에서 $\\mathrm{ret}$를 실험 축으로 쓴 첫 논문이다.",
+      "$\\mathcal{R}_k$가 **교사 분포에서 나온다**(off-policy) 또는 **학생 분포에서 나온다**(on-policy). 두 팔에서 KL 방향이 뒤집히고, off-policy에만 정오 필터가 붙는다.",
+      "$k \\le 3$. 라운드 총수 $K=3$이며 그 이상은 돌지 않았다. corpus의 반복 상한 기록($k=100$, [Continual Facts])을 갱신하지 않는다.",
+      "$\\Theta$가 **인구 수준 전역 하나**다. 사용자당 delta가 없으므로 shared-weight batching이 온전하고 ch29의 웜 계층 기회가 발생하지 않는다."
+    ],
+    "other_layers": {"U-W": "건드리지 않는다. $W$가 이 아키텍처에 존재하지 않는다"},
+    "ordering": "$k$마다: 롤아웃 → (U-E, 전체 교체) → 교사 조건화 → [off-policy면 rejection sampling] → (U-$\\Theta$). 라운드 사이에 $E$는 살아남지 않고 $\\Theta$만 살아남는다."
+  },
+
+  "cost_table": {
+    "B_s": {
+      "value": "absent",
+      "detail": "절대 단위가 하나도 없다 — FLOPs 0회, 토큰 수 0회, wall-clock 0회, DeepSeek-V4 호출 수 0회. 보고된 것은 구성값뿐이다: 15K 예제 코퍼스 [§4, L353-354], $T_{\\max}=100$ step·문맥 32,768 토큰 [§4, L371-372], lr $1\\times10^{-5}$·batch 128·5 epochs·8×A800 [§4, L367-369], 그리고 라운드 3회. **$B_s$의 유일한 비례 대리값은 Table 3의 평균 assistant turn 수**(base 2.5 / teacher 4.5 / on-policy 갱신 후 학생 21.9)이며, 논문 자신이 그것을 비용 논거로 쓴다 — 'the actual interaction cost largely depends on trajectory length' [§5.3.2, L927-930].",
+      "finding": "$\\Theta$-경로에서 $B_s$가 인쇄되지 않는 관행이 한 편 더 확인된다. 그리고 이 논문의 $B_s$는 다른 논문보다 **분해되어야 할 항이 많다** — 롤아웃 + 요약(외부 모델) + 선택(외부 모델, step마다) + 교사 생성 + rejection sampling + 학습. 여섯 항 중 어느 것도 값이 없다."
+    },
+    "L_w": {
+      "value": "absent",
+      "detail": "ms·TTFT·처리량 0회. 다만 구조적 사실 하나는 인쇄된다 — internalize 후 추론은 **experience-free**다: 'models are evaluated without inference-time experience unless explicitly marked as in-context experience use' [App. B, L1442-1443]. 즉 wake 프롬프트에서 experience pool이 사라진다. 그것이 몇 토큰의 절감인지는 $|E^{(k)}|$가 인쇄되지 않아 계산 불가다.",
+      "note": "[note-writer] 이 논문은 이 책이 $\\Theta$-경로의 정의적 이득이라고 적은 것('담긴 것의 질의당 한계 decode 비용이 0', → ch27 판정 4)을 **실험 팔로 직접 대비시킨 첫 사례**다 — internalized(프롬프트 없음) 대 in-context(프롬프트 있음). 그런데 두 팔의 토큰 수도 지연도 재지 않았다."
+    },
+    "C": {
+      "value": "absent",
+      "detail": "바이트 0회. 배포 아티팩트는 Qwen3-4B/8B 체크포인트 전체로 읽히지만(§4는 adapter를 언급하지 않는다) 파일 크기가 인쇄되지 않았다. experience pool 크기 $n=|E^{(k)}|$도 인쇄되지 않았다 — §5.1의 비율 통계(74.4% 등)가 '우리가 표집한 풀에서'라고만 말하고 표본 수를 주지 않는다 [§5.1, L396-405].",
+      "finding": "corpus에서 상태 용량을 바이트로 인쇄한 논문 0편이라는 집계가 이 논문으로도 바뀌지 않는다(→ ch26)."
+    },
+    "rho": {
+      "value": "**부분 보고 — corpus에서 유일하다.**",
+      "detail": "라운드 $k=1,2,3$을 독립변수로 놓고 성능 **레벨**을 8개 구성 × 3 벤치 × 2 백본에 대해 인쇄한다 [Table 4, L1482-1763], 그리고 Figures 1·2·3·5·6·7·8이 같은 축을 그린다. 인쇄되지 **않은** 것: 라운드당 비율로서의 $\\rho$, 감쇠 상수, 반감기, $K^\\ast$, $K>3$ 외삽, 그리고 어떤 형태의 함수형 적합도. 논문은 함수형을 주장하지 않는다 — 'decline'과 'sustain'이라는 두 정성 상태만 쓴다.",
+      "finding": "이 칸이 이 논문의 유일한 비-absent 비용 셀이며, 이 책의 계수 진술 두 개를 깬다(→ book_impact B1·B2). 동시에 $K=3$이라는 사실이 X4를 중복으로 만들지 않는 이유이기도 하다 — 세 점으로는 선형·지수·포화·임계를 구분할 수 없다."
+    },
+    "N_q": {"value": "해당 없음", "detail": "한 문맥을 여러 질의가 공유하는 구조가 아니다. 상각식 (A)가 이 논문에 적용되지 않는다."}
+  },
+
+  "experiments": {
+    "table_reconstruction_caveat": "**중요.** vendored 텍스트에서 Table 4(L1482-1763)는 PDF 열 추출이 흐트러져 행 레이블과 숫자 블록이 분리되어 있다. WebWalkerQA-internalized 열만 행 레이블과 인접해 확정적이고, 나머지 다섯 열은 **블록 순서로 복원**했다. 복원 근거 셋: (i) base 행과 Qwen-generated 두 구성에서는 레이블과 첫 열이 인접해 순서(WWQA-int → GAIA-int → BCZH-int → WWQA-ic → GAIA-ic → BCZH-ic)가 직접 확인된다, (ii) 모든 구성이 정확히 6블록×3값을 갖는다, (iii) 산술 격자 검사 — BrowseComp-ZH 열의 31개 값 중 30개가 $1/289$의 정수배이고 GAIA 열이 $1/309 = 1/(103\\times3)$의 배수, WebWalkerQA 열이 $1/680$의 배수다. 그럼에도 아래 수치를 본문 단정문으로 쓰기 전에 원 PDF와 대조해야 한다(→ todo_verify).",
+
+    "setup": {
+      "models": "Qwen3-4B-Instruct-2507, Qwen3-8B(thinking mode 비활성) [§4, L348-350]",
+      "agent": "ReAct 형식, 도구 5종(Search, Visit, Python, Scholar, File Parser), $T_{\\max}=100$ step, 문맥 32,768 토큰 [§4, L350-352, L371-372]",
+      "training_corpus": "5개 공개 web-reasoning QA에서 만든 15K 예제 — WebWalkerQA-silver, DeepDive, WebShaper, WebDancer, SailorFog-QA [§4, L353-359]",
+      "benchmarks": "WebWalkerQA(in-domain, WebWalkerQA-silver가 학습 코퍼스에 포함), GAIA-Text-103(OOD), BrowseComp-ZH(OOD) [§4, L360-366]",
+      "metrics": "WebWalkerQA·BrowseComp-ZH는 **질의당 롤아웃 1회의 Pass@1**, GAIA-Text-103은 3롤아웃 평균 정확도. 생성 온도 0.7 [§4, L363-366, L370; App. B, L1442-1446]",
+      "training": "verl, AdamW, lr $1\\times10^{-5}$, batch 128, 5 epochs, 8×A800 [§4, L367-369; App. B, L1372-1377]",
+      "rounds": "self-evolution 3라운드 [App. B, L1434-1435]",
+      "measurement_granularity_note": "[본서 산술] 인쇄값의 격자에서 벤치 크기가 복원된다 — BrowseComp-ZH 1문항 $\\approx 0.346$ pp($N=289$), WebWalkerQA 1문항 $\\approx 0.147$ pp($N=680$), GAIA 한 롤아웃의 1문항 $\\approx 0.324$ pp($103\\times3=309$). 논문은 벤치 크기를 인쇄하지 않는다. 이 격자가 아래 '작은 차이' 판단의 근거다."
+    },
+
+    "axis_1_granularity": {
+      "claim": "principle-level이 instance-level보다 반복에서 오래 간다. instance-level은 iteration 1에서만 오르고 그 뒤 base 아래로 떨어진다 [§5.1, L390-394; Fig. 2, L342]",
+      "content_statistics": "instance-level 풀: 74.4%가 구체적 URL·도메인 포함, 57.3%가 구체적 숫자 포함, 93.9%가 질의·개체 특정 문자열 포함. principle-level 풀: 84.0%가 재사용 가능한 전략성 진술을 포함(instance-level은 3.7%) [§5.1, L396-405]",
+      "unreported": "표본 수 없음('In our sampled pool'), 라벨링 절차·라벨러·일치도 없음, Figure 2의 수치 표 없음. 다섯 비율 전부 Table 4에 대응 행이 없다 — **granularity 축의 수치는 그림에만 있고 표에 없다.**"
+    },
+
+    "axis_2_injection": {
+      "single_iteration_table1": "Qwen self-generated experience 하의 1라운드 효과 [Table 1, L545-566]: Global 23.2 / 16.8 / 4.5 → Step-wise 31.2 / 22.7 / 5.2 (WebWalkerQA +8.0, GAIA +5.9, BrowseComp-ZH +0.7)",
+      "table1_vs_table4_mismatch": "[본서 관찰] §5.2는 이 비교를 **on-policy** 하에서 한다고 쓰지만 [§5.2, L489-492], Table 4('complete self-evolution results')에는 Qwen-generated experience의 on-policy 행이 **아예 없다**. 가장 가까운 행(Qwen-gen · off-policy · iter 1)은 Global 21.0/15.9/3.5, Step-wise 29.0/22.7/5.2다 — 여섯 값 중 둘(GAIA 22.7, BrowseComp-ZH 5.2)이 정확히 일치하고 넷이 다르다. Table 1이 Table 4에 없는 구성이거나, 둘 중 하나가 어긋나 있다.",
+      "premature_answer": "3라운드 모델의 premature-answer 비율 — global 63.82%, step-wise 0% [Table 2, L589-603; §5.2.3, L672-677]. 정의: '<answer> without any preceding <tool_call> or tool observation'. [본서 산술] $63.82\\% = 434/680$이 정확히 맞으므로 이 통계는 WebWalkerQA에서 측정되었다. 논문은 벤치도, 실험 소스도, 레짐도 명시하지 않는다.",
+      "experience_use_ability": "핵심 기제 주장 — 'the updated model must not only perform well without inference-time experience, but also retain experience-use ability... This ability is necessary because the next-round teacher must use the updated experience pool to produce supervision.' [§5.2.3, L658-666]. global 주입은 이 능력을 파괴하고 step-wise는 보존한다 [Fig. 6, Fig. 7, Fig. 8; App. C, L1448-1469]"
+    },
+
+    "axis_3_regime": {
+      "claim": "off-policy context-distillation이 on-policy보다 반복에서 안정적이다 [§5.3, Fig. 5, L679-811]",
+      "mechanism_claimed": "on-policy는 'fundamentally reactive' — 'the teacher can only provide corrections on states that may already be inefficient or off target' [§5.3.1, L905-910]. off-policy는 'proactive experience-guided supervision' — 'the experience-aware teacher generates the full trajectory from the beginning' [§5.3.1, L915-917]",
+      "rollout_cost": "Table 3 [L934-946]: 평균 assistant turn 수 — Base 2.5, Teacher 4.5, **on-policy 1회 갱신 후 학생 21.9**. 논문의 해석: 'This trajectory inflation increases the practical interaction cost of the on-policy regime, even under an identical query budget.' [§5.3.2, L949-951]",
+      "note_writer_remark": "[note-writer] 두 실패 모드가 **정반대 방향**이다 — global 주입은 궤적을 2.5턴 수준의 즉답으로 붕괴시키고(premature answer 63.82%), on-policy는 21.9턴으로 부풀린다. 하나는 조기 종료, 하나는 종료 실패다. 단일 스칼라 $\\rho$로는 어느 쪽도 표현되지 않는다."
+    },
+
+    "table4_by_round": {
+      "note": "값은 (WebWalkerQA / GAIA / BrowseComp-ZH). '내재화'는 experience 없는 추론, '문맥'은 해당 라운드 experience pool을 문맥에 준 추론. 복원값이며 위 caveat 적용.",
+      "base": {
+        "Qwen3-4B_no_experience": "16.6 / 13.6 / 4.5",
+        "Qwen3-4B_in_context_Qwen_generated": "18.5 / 11.7 / 3.1",
+        "Qwen3-4B_in_context_DeepSeek_generated": "25.9 / 19.7 / 3.8",
+        "Qwen3-8B_no_experience": "21.8 / 18.5 / 4.5",
+        "Qwen3-8B_in_context_DeepSeek_generated": "27.79 / 26.21 / 4.2"
+      },
+      "configs": [
+        {"id": "A", "config": "Qwen-generated · Global · 4B · Off-policy", "internalized": ["21.0 / 15.9 / 3.5", "18.7 / 11.3 / 2.1", "8.5 / 6.5 / 0.7"], "in_context": ["19.9 / 10.0 / 2.4", "9.0 / 6.2 / 1.0", "—"], "shape": "가속 붕괴. WWQA $\\Delta=-2.3,-10.2$; GAIA $\\Delta=-4.6,-4.8$(거의 선형); BCZH 10→6→2문항. iter3에서 세 벤치 모두 base 아래"},
+        {"id": "B", "config": "Qwen-generated · Step-wise · 4B · Off-policy", "internalized": ["29.0 / 22.7 / 5.2", "28.5 / 24.0 / 4.5", "30.0 / 24.6 / 5.9"], "in_context": ["32.1 / 24.9 / 5.5", "31.3 / 23.3 / 5.2", "—"], "shape": "평탄·미상승. 3라운드 안에서 열화 없음"},
+        {"id": "C", "config": "DeepSeek-generated · Global · 4B · Off-policy", "internalized": ["25.9 / 25.9 / 1.7", "31.0 / 21.4 / 1.7", "12.8 / 13.6 / 1.4"], "in_context": ["28.1 / 20.4 / 1.4", "14.1 / 12.0 / 1.4", "—"], "shape": "**상승 후 절벽.** WWQA $\\Delta=+5.1,-18.2$. iter2가 이 구성의 최고점이고 iter3가 최저점이다"},
+        {"id": "D", "config": "DeepSeek-generated · Global · 4B · On-policy", "internalized": ["29.0 / 22.8 / 3.1", "22.5 / 19.4 / 3.8", "19.9 / 18.1 / 3.5"], "in_context": ["—", "—", "—"], "shape": "감속하는 단조 감소. WWQA $\\Delta=-6.5,-2.6$; GAIA $\\Delta=-3.4,-1.3$. 포화형에 가깝다"},
+        {"id": "E", "config": "DeepSeek-generated · Step-wise · 4B · Off-policy (논문의 최종 레시피)", "internalized": ["30.6 / 29.8 / 5.2", "30.7 / 30.1 / 4.4", "33.1 / 33.3 / 5.9"], "in_context": ["31.5 / 22.6 / 5.2", "34.6 / 24.7 / 6.2", "—"], "shape": "단조 상승. 3라운드 안에서 열화 없음"},
+        {"id": "F", "config": "DeepSeek-generated · Step-wise · 4B · On-policy", "internalized": ["35.0 / 28.8 / 3.8", "32.4 / 27.2 / 6.6", "31.5 / 25.6 / 3.8"], "in_context": ["—", "—", "—"], "shape": "완만한 감소. WWQA $\\Delta=-2.6,-0.9$; GAIA $\\Delta=-1.6,-1.6$(정확히 선형). **base(16.6/13.6/4.5)보다는 여전히 훨씬 높다**"},
+        {"id": "G", "config": "DeepSeek-generated · Step-wise · 8B · Off-policy", "internalized": ["32.9 / 30.1 / 4.8", "31.8 / 28.8 / 4.2", "34.6 / 29.8 / 6.6"], "in_context": ["—", "—", "—"], "shape": "비단조 평탄"},
+        {"id": "H", "config": "DeepSeek-generated · Step-wise · 8B · On-policy", "internalized": ["33.9 / 28.5 / 4.5", "31.5 / 27.8 / 1.4", "32.2 / 23.9 / 1.4"], "in_context": ["—", "—", "—"], "shape": "WWQA 평탄, GAIA 가속 감소($-0.7,-3.9$), BCZH 13→4→4문항 붕괴. **벤치마다 모양이 다르다**"}
+      ]
+    },
+
+    "the_leading_indicator_result": {
+      "what": "[본서 관찰] 문맥 추론 성적(= 다음 라운드 교사의 능력)이 내재화 성적보다 **한 라운드 먼저** 무너진다.",
+      "case_A": "구성 A: 내재화 $21.0 \\to 18.7$(WWQA, $-2.3$)인 같은 라운드에 문맥 $19.9 \\to 9.0$($-10.9$, 55% 손실). 그 다음 라운드에 내재화가 8.5로 붕괴.",
+      "case_C": "구성 C: 내재화가 $25.9 \\to 31.0$으로 **오르는** 라운드에 문맥은 $28.1 \\to 14.1$로 절반이 된다. 한 라운드 뒤 내재화가 12.8로 18.2점을 잃는다.",
+      "why_it_matters": "배포 지표가 최고점을 찍는 라운드에 진단 지표는 이미 절반이 죽어 있었다. 이것이 이 논문에서 가장 무거운 관측이며, 논문 자신은 이것을 '경보 시점' 문제로 서술하지 않는다 — 'experience-use ability' 보존 논거로만 쓴다 [§5.2.3, L658-671]."
+    },
+
+    "negative_and_qualifying_results": [
+      {"result": "base 4B에 **자기 생성** experience를 문맥에 주면 3개 중 2개 벤치에서 더 나빠진다", "numbers": "GAIA 13.6 → 11.7, BrowseComp-ZH 4.5 → 3.1, WebWalkerQA만 16.6 → 18.5 [Table 4 base 행]", "status": "표에 있으나 본문에서 언급되지 않음"},
+      {"result": "on-policy가 iteration 1·2에서 off-policy를 **이긴다**", "numbers": "DeepSeek·step-wise·4B WebWalkerQA: on 35.0/32.4/31.5 대 off 30.6/30.7/33.1 — off가 앞서는 것은 iteration 3뿐이다. 8B도 iteration 1에서 on 33.9 > off 32.9 [Table 4]", "status": "표에 있으나 본문·초록은 off-policy 우위만 말한다"},
+      {"result": "최종 레시피에서도 문맥 추론이 내재화 추론보다 **낮은** 칸이 있다", "numbers": "구성 E의 GAIA: 내재화 29.8/30.1 대 문맥 22.6/24.7 [Table 4, 복원값]", "status": "Figure 6 캡션의 'preserves the model's ability to benefit from explicit experience'와 어긋난다"},
+      {"result": "BrowseComp-ZH에서는 어떤 축도 안정적 효과를 보이지 않는다", "numbers": "구성 D 9→11→10문항, 구성 F 11→19→11문항. Table 1의 injection 효과 $+0.7$pp는 2문항이다 [본서 산술, $N=289$]", "status": "논문은 'improves across all three benchmarks'라고 쓴다 [§5.2.1, L580-583]"},
+      {"result": "on-policy 열화가 벤치마다 다른 방향이다", "numbers": "구성 H: WWQA 33.9→32.2(거의 평탄), GAIA 28.5→23.9(가속 감소), BCZH 4.5→1.4(붕괴) [Table 4]", "status": "논문은 단일한 'decline'으로 서술한다"}
+    ]
+  },
+
+  "scale_ceiling": {
+    "model_size": "Qwen3-4B-Instruct-2507과 Qwen3-8B **두 점**. 8B에서도 같은 방향이 나온다는 것이 유일한 스케일 증거이고, 두 점으로는 추세를 말할 수 없다 [§4, L348-350; Fig. 5].",
+    "round_ceiling": "**$K=3$.** 이것이 이 논문의 결정적 상한이다. corpus의 반복 기록은 여전히 [Continual Facts]의 $k=100$이며, 이 논문은 그것을 갱신하지 않는다.",
+    "task_ceiling": "web-reasoning agentic QA 한 도메인. 논문 자신이 인정한다 — 'Our experiments focus on web-reasoning agent tasks, so further evaluation is needed to assess whether the findings generalize to other domains, languages, and agent settings.' [Limitations, L991-994]",
+    "statistical_ceiling": "seed 0회, 분산·오차막대·신뢰구간 0회(전문 grep). 두 벤치가 **롤아웃 1회의 Pass@1**이고 온도 0.7이다 [§4, L363-366]. BrowseComp-ZH는 1문항이 0.346pp이므로 보고된 효과 다수가 1–3문항이다[본서 산술].",
+    "corpus_ceiling": "15K 고정 질의. 라운드마다 새 질의가 들어오지 않는다 [§4, L353-359; App. B, L1439-1441].",
+    "deployment_gap": "[note-writer] '자기 진화 에이전트'라는 표제가 상정하는 것은 배포 중 유입되는 상호작용이고, 실측된 것은 고정 15K 코퍼스 위의 3라운드 자기 증류다."
+  },
+
+  "discriminant_verdict": {
+    "verdict": "**네 조건 전부 통과. A군 $\\Theta$-경로 논문이다.**",
+    "conditions": [
+      {"cond": "(1) 질의 $q$가 도착하기 전인가", "verdict": "PASS", "basis": "라운드 $k$의 롤아웃·요약·증류가 전부 끝난 뒤 평가 질의가 온다. 평가 시점의 모델은 experience-free다 — 'models are evaluated without inference-time experience unless explicitly marked' [App. B, L1442-1443]. SEAL·ReasoningBank과 같은 구조(과제 종료 후 갱신, 이후 질의에 사용)이며 이 책이 그 둘을 통과시킨 기준과 동일하다.", "caveat": "다만 experience를 만든 질의는 사용자 질의가 아니라 **고정 15K 학습 코퍼스**다. 조건 (1)의 문면은 만족하지만 '유휴 시간에 축적된 상호작용을 처리한다'는 조작적 정의의 그림과는 다르다. 이 사실은 caveat로 남기되 탈락 사유로 쓰지 않는다."},
+      {"cond": "(2) 예산 $B_s > 0$을 쓰는가", "verdict": "PASS(기제) / 값은 absent", "basis": "롤아웃 + DeepSeek-V4 요약 + step마다의 선택 호출 + 교사 궤적 생성 + rejection sampling + 8×A800 위의 5 epoch 학습. $B_s>0$은 자명하다. 그러나 절대 단위가 하나도 인쇄되지 않았다. 이 책이 조건 (2)를 '보고 품질'로 강화하면(→ ch30 §30.3.3) 이 논문도 탈락한다 — 그 변형에서 A군이 1편으로 줄어든다는 ch30의 계산에 이 논문이 한 편 더 붙지 않는다."},
+      {"cond": "(3) $\\Theta$·$W$·$E$ 중 한 층의 상태를 실제로 바꾸는가", "verdict": "PASS — 두 층", "basis": "$\\Theta_{k+1} = \\mathrm{Internalize}(\\Theta_k, E^{(k)})$ [Eq. 3, L246-248]로 배포 체크포인트가 바뀌고, 같은 라운드에 $E^{(k)}$가 전체 교체된다. **corpus에서 (U-E)와 (U-$\\Theta$)를 한 라운드 안에 직렬로 실행하고 그것을 반복한 첫 논문이다.**"},
+      {"cond": "(4) 그 변화가 이후 질의에 쓰이는가", "verdict": "PASS", "basis": "세 벤치의 평가가 전부 갱신된 $\\Theta_{k}$로 이뤄지고, 동시에 그 $\\Theta_k$가 다음 라운드의 교사가 된다 [§3, L242-244]."}
+    ],
+    "which_condition_splits_the_verdict": "**조건 (3)이다.** 이 논문이 인용하고 확장하는 계보(Reflexion, ExpeL, Synapse, A-Mem, ACE, Contextual Experience Replay)는 전부 (U-E)에서 멈춘다 — 그것이 이 논문이 §2.1에서 'context-based methods retain experience as inference-time context'라며 자기 문제를 세우는 자리다 [§2.1, L143-146]. 조건 (3)에서 $\\Theta$가 움직인다는 사실이 이 논문을 그 계보에서 떼어 낸다. 그리고 그 조건이 이 논문의 **결과**도 설명한다 — $E^{(k)}$는 라운드마다 폐기되므로 $E$만 갱신하는 시스템이었다면 라운드 간 열화가 누적될 자리가 없다. 열화를 라운드를 가로질러 나르는 것은 오직 $\\Theta$이며, 이것이 이 논문이 $E$-경로 논문들이 볼 수 없는 실패를 보게 된 이유다.",
+    "second_order_note": "조건 (1)의 완화 변형(→ ch30 §30.3.3 변형 (a))은 이 논문의 판정을 바꾸지 않는다. 조건 (2)의 강화 변형은 바꾼다. 그러므로 이 논문은 ch30이 계산한 네 변형 중 **하나에만 민감**하며, 그 하나는 이 책이 채택하지 않기로 한 변형이다."
+  },
+
+  "x4_comparison": {
+    "a_what_was_iterated_and_the_shape": {
+      "what": "$K=3$ 라운드. 매 라운드 = 고정 15K 질의 위 롤아웃 → experience pool 전체 교체 → 교사 조건화 → 전체 파라미터 증류. 8개 구성 × 3 벤치 × 2 백본.",
+      "what_broke": "(i) instance-level experience — iteration 1에서만 오르고 base 아래로 [Fig. 2]. (ii) global injection — 3라운드에서 붕괴하고 premature-answer 63.82%로 퇴화 [Table 2]. (iii) on-policy 레짐 — 완만하지만 단조에 가까운 감소, 그리고 궤적이 21.9턴으로 부풀어 비용이 오른다 [Table 3]. (iv) 최종 레시피(principle + step-wise + off-policy)는 3라운드 안에서 **무너지지 않는다**.",
+      "the_shape": "**단일 곡선이 없다.** 복원된 Table 4에서 최소 네 가지 모양이 나온다 — 가속 붕괴(A: WWQA $-2.3, -10.2$), **상승 후 절벽**(C: $+5.1, -18.2$), 감속하는 포화형 감소(D: $-6.5, -2.6$; F: $-2.6, -0.9$), 정확한 선형(F의 GAIA: $-1.6, -1.6$; A의 GAIA: $-4.6,-4.8$). 같은 구성 안에서도 벤치마다 다르다(H: WWQA 평탄, GAIA 가속, BCZH 붕괴).",
+      "verdict_on_shape": "**세 점으로는 함수형이 식별되지 않는다.** 논문도 함수형을 주장하지 않고 'decline' 대 'sustain'이라는 두 정성 상태만 쓴다. 이 논문은 X4가 물은 질문('$\\rho$가 $K$에 대해 어떤 모양인가')에 **답하지 않는다** — 그 질문을 물을 수 있는 라운드 수가 아니다. 다만 X4의 '단일 비율 $\\rho$로 보고하는 관행이 오도다'라는 판정은 이 논문이 실제 LLM에서 독립적으로 확증한다: 여덟 구성이 같은 축 위에서 서로 다른 모양을 낸다."
+    },
+    "b_three_axis_decomposition": {
+      "axis_1": "**Experience Granularity** — $E^{(k)}$의 항목이 궤적 국소 세부(URL 74.4%, 숫자 57.3%, 개체 특정 문자열 93.9%)인가 재사용 가능한 전략 진술(84.0% 대 3.7%)인가 [§5.1, L396-405]. 열화 경로: 국소 세부는 라운드가 지나 궤적 분포가 바뀌면 이전 가능하지 않고, 오히려 instance-specific 행동을 강화한다. **통일 표기로는 $\\hat c_k$의 추상화 수준**이며, 이 축은 corpus의 다른 어떤 논문에도 없다.",
+      "axis_2": "**Experience Injection Pattern** — $\\mathrm{ret}(E^{(k)},h_j)$가 항등사상(global)인가 상태 조건부 선택(step-wise)인가 [§3, L260-268]. 열화 경로: 항등사상은 종료·검증에 관한 experience를 계획 단계에 노출시키고, 그 오정렬이 교사 분포를 조기 종료 쪽으로 민다 — 'This misalignment can shift the teacher distribution toward premature answer generation rather than continued tool use.' [§5.2.3, L820-822]. **이것이 read 연산의 설계가 write 루프의 안정성을 정한다는 첫 실측이다.**",
+      "axis_3": "**Internalization Regime** — $\\mathcal{R}_k$가 교사 궤적(off-policy, forward KL, + rejection sampling)에서 오는가 학생 궤적(on-policy, reverse KL)에서 오는가 [§3 Eq. 1-2; §5.3.1]. 열화 경로: 학생 궤적은 이미 어긋난 상태들이라 교사가 국소 교정밖에 못 하고, 'does not necessarily demonstrate how experience should guide a coherent trajectory' [§5.3.1, L910-911].",
+      "how_they_compose": "세 축은 전이의 세 단계에 순서대로 걸린다 — 표현($\\hat c$) → 교사 조건화($\\mathrm{ret}$) → 학생 분포($\\mathcal{R}_k$) [§1, L100-102]. 그리고 **셋 다 (U-$\\Theta$)의 $\\mathrm{gen}(\\cdot;B_s)$ 안에 있다.** 즉 이 논문이 분해한 것은 갱신식이 아니라 **학습 집합 생성 절차**이고, 그것이 이 책이 (U-$\\Theta$)에서 가장 얇게 다룬 부분이다.",
+      "the_mechanism_the_book_does_not_have": "**교사 능력의 자기 열화.** $\\Theta_k$가 정책이자 교사이므로, 내재화가 '$E$를 읽어 이득을 보는 능력'을 손상시키면 다음 라운드의 감독이 약해지고 그 손상이 복리로 누적된다 — 'the model may provide weaker experience-conditioned supervision and destabilize the model–experience loop' [§5.2.3, L669-671]. 이것은 catastrophic forgetting(간섭)도 model collapse(분포 모멘트)도 아닌 **제3의 채널**이며, corpus 어느 논문에도 없고 X4의 최소 모형에도 없다."
+    },
+    "c_agreement_with_X4": {
+      "X4_F4_task_metric_lags": {"verdict": "**확증(강)**", "detail": "X4 F4는 '저장은 1라운드부터 깎이는데 과제 지표는 한동안 전혀 움직이지 않다가 절벽으로 떨어진다'고 적었다. 이 논문의 구성 C에서 문맥 추론(=교사 능력)이 $28.1\\to14.1$로 절반이 되는 라운드에 내재화 성적은 $25.9\\to31.0$으로 **오르고**, 한 라운드 뒤 12.8로 18.2점을 잃는다. 부호·순서·모양이 전부 같다.", "strengthening": "X4의 grace 구간은 access가 1.0에 **붙어 있는** 구간이라 천장 포화의 산물일 수 있다는 의심이 있었다(X4 access 궤적 k=1..25가 전부 1.0). 이 논문의 지연은 천장에서 일어나지 않는다 — 성공률 26–31%의 작동점에서 일어난다. **그러므로 이 논문은 X4 F4를 확증할 뿐 아니라 X4의 가장 큰 아티팩트 의심을 제거한다.**"},
+      "X4_F3_flat_curve_is_not_stability": {"verdict": "확증(방향)", "detail": "X4 F3은 '평평한 손실 곡선은 안정의 증거가 아니다 — 죽는 좌표는 2차 모멘트'라고 적었다. 이 논문에는 손실 곡선도 분포 퍼짐 측정도 없다. 그러나 **오르는 배포 지표가 안정의 증거가 아니었다**는 사례를 준다(구성 C). 그리고 붕괴의 형태가 행동 모드 붕괴(premature answer 63.82%)라는 점에서 '다양성이 죽는다'는 X4·model-collapse의 서술과 같은 방향이다.", "gap": "다만 이 논문은 그 붕괴를 라운드의 함수로 재지 않았다 — 63.82%는 iteration 3의 한 점이다. X4 F3의 정확한 주장(2차 모멘트가 라운드 함수로 죽는다)은 여전히 corpus에서 미측정이다."},
+      "X4_F5_report_Kstar_not_rho": {"verdict": "확증(간접)", "detail": "이 논문은 $\\rho$를 비율로도, $K^\\ast$로도 보고하지 않는다. 그러나 라운드 축 레벨을 인쇄함으로써 **$\\rho$가 라운드에 대해 상수가 아니라는 사실**을 직접 보인다(구성 C: $+5.1$ 다음 $-18.2$). 라운드당 비율을 SLA로 쓸 수 없다는 X4 F5의 근거가 실제 LLM에서 확인된다."},
+      "X4_F6_replay_must_be_anchored_to_originals": {"verdict": "**부호는 같으나 같은 기제가 아니다 — 병합 금지**", "detail": "X4 F6은 '$\\omega$·예산을 맞춘 채 replay 타깃을 보존된 원본으로 두면 자기 출력으로 둘 때보다 모든 $\\omega$에서 오래 버틴다'이다. 이 논문에는 **replay가 없고 $\\omega$ 축도 없다.** 살아남은 팔(off-policy)이 갖는 것은 replay 앵커가 아니라 **데이터셋 정답에 걸린 정오 필터**(rejection sampling)이며, 그것은 '보존된 원본에 앵커된 감독'의 다른 형태다. 부호는 같은 방향을 가리키지만 조작이 다르므로, ch29 판정 4의 두 근거에 이것을 **세 번째 독립 근거로 세는 것은 과잉이다.**", "the_new_and_uncomfortable_fact": "**작은 $K$에서 순서가 뒤집힌다.** DeepSeek·step-wise·4B WebWalkerQA에서 on-policy가 35.0/32.4/31.5, off-policy가 30.6/30.7/33.1이다 — off-policy가 앞서는 것은 iteration 3뿐이고, iteration 1에서는 4.4점 뒤진다. 8B도 iteration 1에서 on 33.9 > off 32.9다. X4에서는 이 반전이 나타날 수 없다 — gold와 self의 access가 $k\\le25$에서 둘 다 1.0으로 묶여 있어 초기 구간에서 순서 자체가 정의되지 않기 때문이다. **따라서 이 책이 X4에서 이송한 '순서' 판정은 생존 순서이지 레벨 순서가 아니며, 그 구분을 본문이 명시해야 한다.**"},
+      "X4_X2_capability_retention_coupling": {"verdict": "판정 불가", "detail": "X4 X2는 '이 최소 모형에서 capability와 retention이 해리되지 않는다'는 기제 배제였다. 이 논문은 일반 역량을 재지 않아 이 축에 증거를 주지 않는다."},
+      "X4_D5_retention_costs_acquisition": {"verdict": "판정 불가", "detail": "replay 혼합비가 없으므로 유지-습득 거래를 잴 축이 없다."},
+      "shape_fit_note": "X4는 access에 대해 네 후보 중 logistic을 최선으로 골랐고($R^2$: linear 0.765 / exp 0.861 / plateau 0.893 / logistic 0.896), SSE 차이가 작아 모형 선택이 결정적이지 않다고 스스로 적었다. 이 논문은 3점이므로 그 선택에 아무 정보를 주지 않는다. **네 후보 사이의 판정은 여전히 미해결이며, 그것이 X4의 재실행이 정당한 첫째 이유다.**"
+    },
+    "d_is_X4_still_worth_running": {
+      "verdict": "**중복이 아니다. 그러나 원래 설계 그대로 돌리는 것도 옳지 않다.**",
+      "why_not_redundant": [
+        "**지평.** 실제 LLM 다라운드 측정의 상한이 이 논문으로 $K=3$, [Continual Facts]로 $K=100$이 되었을 뿐이고, X4가 답하려던 질문(모양의 식별, $K^\\ast$, 반감기)은 $K\\gg3$에서만 물을 수 있다. 3점으로는 선형·지수·포화·임계가 구분되지 않는다.",
+        "**replay 축의 완전한 부재.** 이 논문에는 $\\omega$가 없고 replay 타깃 대비도 없다. ch29 판정 4와 ch27 판정 4 조건 (i)이 요구하는 팔(원본 앵커 대 자기 출력 앵커)을 이 논문은 실행하지 않았다.",
+        "**연속 신호의 부재.** 모든 y축이 임계 채점이다. X4가 이송한 F4의 두 곡선 대비(임계 대 연속) 중 연속 쪽이 이 논문에 없다.",
+        "**혼동 요인.** 레짐 축의 효과가 궤적 분포와 정오 필터의 합이고 분해되지 않았다. 이 분해는 값싸고 결정적인 실험이며 X4가 할 수 있다.",
+        "**저장-접근 해리, drift, 2차 모멘트, 용량** 어느 것도 측정되지 않았다."
+      ],
+      "why_the_design_must_change": [
+        "**G1 — 교사 되먹임 채널을 모형에 넣어야 한다(최우선).** X4의 루프에는 replay 타깃이 열화하는 채널만 있고, **저장을 읽어 감독을 만드는 연산자 자신이 열화하는 채널**이 없다. 이 논문의 중심 기제가 바로 그것이다. 최소 구현: 라운드 $k$의 파라미터가 (i) 정책이자 (ii) $E^{(k)}$를 읽어 학습 타깃을 만드는 연산자이도록 결합하고, 'read-conditioned lift'를 라운드 함수로 별도 계측한다.",
+        "**G2 — 선행 지표를 이 논문과 같은 양으로 맞춘다.** X4의 lift는 이 책 안의 양이라 외부와 대조되지 않는다. 이 논문이 제공한 **배포 가능한 선행 지표**는 '문맥을 준 성적 − 문맥 없는 성적'이다. X4가 같은 차를 라운드 함수로 인쇄하면 두 결과가 같은 축 위에 놓인다.",
+        "**G3 — 천장에서 돌지 말 것.** X4의 access는 $k\\le25$에서 1.0에 붙어 있어 초기 구간의 조건 간 순서가 정의되지 않았다. 작동점을 천장에서 내려(항목 수를 늘리거나 프로브를 어렵게) **초기 라운드의 순서 반전 유무**를 볼 수 있게 해야 한다. 이 논문이 초기 반전을 보였으므로 이것은 이제 검사해야 할 가설이다.",
+        "**G4 — 2×2로 혼동 요인을 가른다.** {타깃 궤적: 교사 생성 대 학생 생성} × {정오 필터: 있음 대 없음}. 이 논문이 못 한 분해이고 X4의 최소 모형에서는 값싸다. 결과는 ch29 판정 4의 근거 구조를 직접 바꾼다 — '원본 앵커'가 이기는 것인지 '정오 필터'가 이기는 것인지가 갈린다.",
+        "**G5 — 2차 모멘트를 시뮬 파트에서도 인쇄한다.** 현재 X4는 해석 파트에서만 2차 모멘트를 다룬다. 이 논문의 붕괴 형태가 행동 모드 붕괴이므로, 사실 주입 시뮬에서도 생성 분포의 퍼짐을 라운드 함수로 찍어야 F3이 한 언어로 말해진다.",
+        "**G6 — 축 두 개는 범위 밖임을 명시한다.** granularity(추상화 수준)와 injection alignment(상태 조건부 선택)는 선형 연상기억에 대응물이 없다. 억지로 흉내 내지 말고 '이 최소 모형이 다룰 수 없는 축'으로 X4의 honest_limits에 추가한다 — 그리고 그 두 축이 실제 LLM에서 가장 큰 효과를 냈다는 사실을 함께 적는다(Table 1 injection 효과 WebWalkerQA $+8.0$)."
+      ],
+      "one_line": "이 논문은 X4를 대체하지 않고 **X4의 가설을 바꾼다.** 원래 X4의 질문은 '반복하면 얼마나 빨리 무너지는가'였고, 이 논문 뒤의 질문은 **'저장을 읽는 연산자가 자기 자신일 때 그 되먹임이 붕괴를 어떻게 앞당기는가, 그리고 그 앞당김을 무엇이 먼저 알려 주는가'**다."
+    }
+  },
+
+  "book_impact": {
+    "summary": "깨는 것 2건, 위협 2건, 확증 4건, 계수 이동 1건. 척추 논지(A1)는 흔들리지 않는다 — 오히려 이 논문이 세 경로 간 침묵의 새 사례를 추가한다.",
+    "breaks": [
+      {
+        "id": "B1",
+        "chapter": "ch27 §27.2 증거 C2 및 판정 4",
+        "quoted_verdict": "\"| C2 | A군에서 sleep 라운드 수를 독립변수로 놓은 실험이 0편이다 | ch25 §25.2.1 | 전수 확인 | 단정 |\" 그리고 판정 4의 \"**미검증**: A군에서 sleep 라운드 수를 독립변수로 놓은 실험이 0편이고(C2), 존재하는 유일한 다라운드 증거는 반증 축에서 나오며 $k=100$에서 유지율이 25–28%로 고원을 이룬다(C1).\"",
+        "what_goes_wrong": "이 논문은 판별식 네 조건을 전부 통과하므로 A군이고, 라운드 $k=1,2,3$을 독립변수로 놓고 8구성 × 3벤치 × 2백본의 성능을 인쇄한다 [Table 4]. **'0편'이 '1편'이 된다.** 판정 4의 '미검증' 절은 삭제가 아니라 재범위화가 필요하다 — '$K\\le3$에서만 검증되었고, 그 $K$에서 최선 레시피는 열화하지 않으며, $K^\\ast$는 여전히 미측정'. 같은 이유로 ch27 §27.4 표의 C4 행('A군에 다라운드 실험 0건(C2)')도 고쳐야 한다."
+      },
+      {
+        "id": "B2",
+        "chapter": "ch29 §29.2 및 판정 6 셋째 항",
+        "quoted_verdict": "\"반복 열화율 $\\rho$를 라운드 수를 독립변수로 놓고 인쇄한 논문 역시 0편이다\" / 판정 6: \"셋째, **$K^\\ast$** — 반복 지평이 기회의 크기를 정하는데 100회를 넘긴 실험이 0편이고, **라운드당 열화율을 라운드 수의 함수로 인쇄한 논문도 0편이다.**\"",
+        "what_goes_wrong": "둘째 절이 무너진다. 이 논문은 라운드 축 위의 성능 레벨을 인쇄하고, 레벨의 1차 차분이 곧 라운드당 열화다. **살아남는 것**: '100회를 넘긴 실험이 0편'($K=3$), '$K^\\ast$를 측정한 논문 0편'(임계를 정의하지도, 교차를 보고하지도 않았다), '라운드당 열화율을 **비율로** 보고한 논문 0편'. 판정 6의 셋째 항은 '$K>3$의 라운드 축 열화와 $K^\\ast$'로 좁혀 다시 써야 한다."
+      }
+    ],
+    "threatens": [
+      {
+        "id": "T1",
+        "chapter": "ch29 판정 4 / ch27 증거 D5 — X4 F6의 이송 형태",
+        "quoted_verdict": "\"| D5 | 반복 (U-$\\Theta$)에서 이송 가능한 양은 $\\rho$가 아니라 $K^\\ast$이며, **원본 보존 replay가 자기 출력 replay보다 모든 혼합비에서 오래 버틴다** | 실험 X4 [X4 F5, F6] | 최소모형 | 부호와 조건 간 순서만 단정 |\"",
+        "what_is_off": "부호는 위협받지 않는다. 위협받는 것은 **'순서'라는 단어의 범위**다. 이 논문에서 덜 안정한 팔(on-policy)이 iteration 1–2에 더 **높다**(WebWalkerQA 35.0 대 30.6). X4에서는 이 반전이 관측될 수 없었다 — 두 팔의 access가 $k\\le25$에서 모두 1.0이라 초기 순서가 정의되지 않기 때문이다. 그러므로 본문은 '모든 혼합비에서 오래 버틴다'를 **생존 순서**로 못 박고, 레벨 순서는 주장하지 않는다고 명시해야 한다. 그리고 이 논문의 안정화 요인은 replay 앵커가 아니라 **정오 필터**이므로 ch29 판정 4의 독립 근거 수를 늘리는 데 쓰지 않는다."
+      },
+      {
+        "id": "T2",
+        "chapter": "ch14 §14.3 / §14.4 — Letta STC의 $\\mathrm{ret}$ 항등 서술",
+        "quoted_verdict": "ch14가 확정한 구조 사실 — Letta STC에서 \"$\\mathrm{ret}$는 항등사상이다. … 전체 store가 $c$ 자리에 통째로 프롬프트에 들어간다\" (letta-stc 노트 update_layer, [Letta STC §3, p.4])",
+        "what_is_off": "위협이 아니라 **의미의 승격**이다. ch14는 항등 검색을 '검색 비용이 측정되지 않은 이유'로만 다뤘다. 이 논문은 같은 설계 선택(global injection = 항등 검색)을 반복 루프에 넣고, 그것이 3라운드에서 premature-answer 63.82%와 experience-use ability 파괴를 낳는다고 측정한다 [Table 2; §5.2.3]. **$E$-경로의 항등 검색은 단일 라운드에서는 비용 문제였고 반복에서는 안정성 문제다.** ch14 §14.8 또는 ch27이 이 연결을 흡수해야 한다. 반박은 아니다 — 과제도 라운드 수도 다르다."
+      }
+    ],
+    "confirms": [
+      {
+        "id": "C1",
+        "chapter": "ch29 판정 5 및 §29.5 R-9",
+        "detail": "R-9은 판정 5를 반증하는 관측을 '임계 과제 지표가 연속 신호보다 **먼저 또는 같은 라운드에** 무너지는 것'으로 지정했다. 이 논문은 정확히 반대를 준다 — 진단 지표(문맥 추론 = 교사 능력)가 한 라운드 먼저 무너지고, 배포 지표는 그 라운드에 **오르기까지** 한다(구성 C: 문맥 $28.1\\to14.1$ 동안 내재화 $25.9\\to31.0$, 다음 라운드 12.8). **R-9이 실제 LLM에서 발동하지 않았고 판정 5가 첫 외부 시험을 통과했다.** 단 정확히 옮겨야 할 유보 하나 — 여기서의 선행 지표는 연속 신호가 아니라 또 하나의 임계 지표다. 확증되는 것은 '어떤 진단이 먼저 죽는다'는 **순서**이지 '그 진단이 연속이어야 한다'는 처방이 아니다."
+      },
+      {
+        "id": "C2",
+        "chapter": "ch06 — 자기 생성 $\\mathcal{R}$의 제약",
+        "detail": "이 논문의 루프는 $E^{(k)}$를 **교체**하고 학습 집합을 자기 롤아웃에서만 만든다 — [model collapse]의 replace 스케줄이다. 그런데 최선 레시피는 3라운드에서 무너지지 않는다. 이유가 ch06의 논지를 지지한다: 실데이터가 두 통로로 계속 들어온다 — (i) 웹 도구가 라운드마다 실제 관측을 돌려주고, (ii) rejection sampling이 데이터셋 정답에 학습 집합을 건다. **'실데이터가 남아 있으면 유계'라는 ch06의 읽기와 부호가 같다.** 반대로 그 두 통로가 약한 팔(global injection, on-policy)이 무너진다. 덧붙여 이 논문은 model-collapse 문헌을 한 편도 인용하지 않는다(전문 grep 'model collapse' 0회) — $\\Theta$-경로 **안쪽의** 침묵 사례다."
+      },
+      {
+        "id": "C3",
+        "chapter": "ch06 §목표 4 · ch20 · ch21 — 남겨진 반복 질문",
+        "detail": "ch06 목표 4는 'SEAL과 LM Need Sleep 어느 쪽도 그 루프를 $K$번 반복하면 $\\Theta$가 어디로 가는가에 대한 경계를 제시하지 않는다'고 적었다. 이 논문이 그 질문에 $K=3$의 첫 답을 준다 — SEAL은 지식 통합에서 2라운드, few-shot에서 1라운드였다(→ ch20 §20.6). 계보상 다음 점이며, **SEAL도 LM Need Sleep도 인용하지 않는다.**"
+      },
+      {
+        "id": "C4",
+        "chapter": "ch11 §11.6 · ch24 · ch27 — 경로 간 침묵 지도",
+        "detail": "새 행 하나가 추가된다. 이 논문은 $E$-경로 에이전트 기억 문헌을 실제로 인용하고(Reflexion, ExpeL, Synapse, A-Mem, ACE, Contextual Experience Replay, Luo 2026 서베이), $W$-경로를 0편, 생물·CLS를 0편 인용하며, 'sleep' 0회·'consolidation' 0회·'catastrophic forgetting' 0회다. **이 라인의 이름을 만든 논문(Letta STC)도, 같은 $\\Theta$-경로의 SEAL·LM Need Sleep도 인용하지 않는다.** 즉 이름은 넓고 기제는 좁다는 척추 논지가 **반대 방향에서** 한 번 더 확인된다 — 정확히 (U-E)→(U-$\\Theta$)를 반복 실행하면서 그 이름을 쓰지 않는 논문이다."
+      }
+    ],
+    "count_shift": {
+      "chapter": "ch11 §11.3.1 · ch24 판정 1 · PRE-RESEARCH §2.2 카운트 규약",
+      "detail": "이 논문을 corpus에 넣으면 통과군 9 → 10, $\\Theta$-경로 2 → 3($E$ 6 · $W$ 1 · $\\Theta$ 3), 총 29 → 30이 된다. ch30 판정 4가 예고한 대로 편수에 기대는 판정 세 개(ch27 판정 3, ch28 판정 1의 계수, ch24 판정 1의 분할)가 값을 다시 받아야 한다. 척추 논지는 움직이지 않는다."
+    },
+    "no_impact": [
+      "ch25·ch28의 $B_s$ 관련 판정 — 절대 단위 $B_s$가 여전히 absent이므로 계수가 바뀌지 않는다.",
+      "ch26의 용량 판정 — 바이트가 인쇄되지 않았다.",
+      "ch29 판정 1·2·3 — 인구 수준 $\\Theta$-경로라 웜 계층 기회 자체가 발생하지 않고, 표 29-3의 넷째 행에 해당한다.",
+      "ch30 표 30-2의 '원본 앵커 replay 하에서 $K>100$의 $K^\\ast$ 측정' 행 — 발동하지 않는다."
+    ]
+  },
+
+  "inherited_open_question": {
+    "verdict": "명시적으로 상속한다 — 다만 상속원이 이 책의 corpus 밖이다.",
+    "quoted": "'Recent work has therefore shifted toward on-policy context distillation (Gu et al., 2024; Ye et al., 2026b; ...) which supervises trajectories sampled from the student to improve distributional consistency. **However, existing works focus on single-round transfer, leaving the stability of multi-iteration internalization underexplored. We address this gap by studying sustainable experience internalization across self-evolution cycles.**' [§2.1, L158-162]",
+    "who_it_inherits_from": "Ye et al. 2026b(On-policy context distillation, 2602.12275)와 Snell et al. 2022(Learning by distilling context, 2209.15189) 계열. 둘 다 이 책의 29편에 없다. **corpus 안에서의 bridge-in은 없다** — Letta STC·SEAL·LM Need Sleep·Nested Learning 어느 것도 인용되지 않는다.",
+    "bridge_in_material": "[note-writer] 이 논문을 장으로 세운다면 bridge-in은 corpus 밖 계보에서 오되, 이 책이 이미 적어 둔 두 공백과 정확히 맞물린다 — ch06 목표 4('$K$번 반복하면 $\\Theta$가 어디로 가는가')와 ch27 판정 4의 조건 (i)($K^\\ast$ 측정). 그 맞물림 자체가 서술 재료다: **이 책이 corpus 안에서 아무도 묻지 않는다고 판정한 질문을, corpus 밖 공동체는 이미 자기 문제로 세워 놓고 있었다.**"
+  },
+
+  "concept_ledger_delta": {
+    "new_concepts": [
+      {"term": "experience internalization", "definition": "문맥 의존적 experience 사용을 파라미터 능력으로 바꾸는 것 — 통일 표기로 $\\hat c$를 $\\mathcal{R}_k$로 삼아 (U-$\\Theta$)를 도는 것", "source": "[Abstract, L16-19; §2.1, L147-149]"},
+      {"term": "continual / iterative experience internalization", "definition": "위 절차를 $k=0..K$로 반복하는 닫힌 루프. $\\Theta_{k+1} = \\mathrm{Internalize}(\\Theta_k, E^{(k)})$", "source": "[§3, L234-253, Eq. 3]"},
+      {"term": "experience granularity (instance-level vs principle-level)", "definition": "$\\hat c$의 추상화 수준", "source": "[§3, L256-260; §5.1]"},
+      {"term": "experience injection pattern (global vs step-wise)", "definition": "$\\mathrm{ret}(E,\\cdot)$가 항등사상인가 상태 조건부 선택인가", "source": "[§3, L260-268; §5.2]"},
+      {"term": "internalization regime (on-policy vs off-policy context-distillation)", "definition": "$\\mathcal{R}_k$를 어느 분포에서 표집하는가", "source": "[§3, L204-232; §5.3]"},
+      {"term": "**experience-use ability**", "definition": "갱신된 모델이 자기 experience pool을 문맥으로 받았을 때 여전히 이득을 보는 능력. 측정은 문맥 추론과 experience-free 추론의 **차**", "source": "[§5.2.3, L658-666]", "note": "이 책이 채택해야 할 개념이다 — ch29 판정 5가 요구한 '선행 지표'의 배포 가능한 실체이고, 어떤 corpus 논문에도 대응물이 없다"},
+      {"term": "premature-answer rate", "definition": "선행 tool_call/관측 없이 <answer>를 내는 비율. 반복 루프의 행동 모드 붕괴 지표", "source": "[Table 2, L589-603; §5.2.3, L672-677]"},
+      {"term": "trajectory inflation", "definition": "on-policy 갱신 후 학생 궤적 길이가 부풀어 롤아웃 비용이 오르는 현상(2.5 → 21.9 turn)", "source": "[§5.3.2, L927-955; Table 3]"}
+    ],
+    "renamed_for_the_monograph": [
+      {"paper_term": "self-evolution iteration", "monograph_term": "sleep 라운드 $k$", "note": "같은 대상이다. 이 논문이 'sleep'을 한 번도 쓰지 않는다는 사실이 ch11·ch24의 이름-기제 불일치 논지의 새 사례다"},
+      {"paper_term": "experience pool $E$", "monograph_term": "external store $E^{(k)}$", "note": "기호가 우연히 일치한다. 단 이 논문의 $E$는 라운드 사이에 살아남지 않는다"},
+      {"paper_term": "context distillation", "monograph_term": "(U-$\\Theta$)의 한 인스턴스이며 $\\mathrm{gen}(\\cdot;B_s)$가 교사 조건화 + 표집", "note": "→ ch04(distillation)가 소유한 어휘로 환원된다"}
+    ]
+  },
+
+  "open_questions": [
+    {"question": "$K>3$에서 최선 레시피는 어떻게 되는가", "status": "논문이 묻지 않는다. 3라운드에서 멈춘 이유도 적지 않는다", "bridge_out": "이 책의 $K^\\ast$ 공백이 그대로 남는다(→ ch27 판정 4 조건 (i), ch29 판정 6)"},
+    {"question": "experience-pool 크기·selector 품질·필터 기준이 안정성에 어떻게 걸리는가", "exact_wording": "'other factors such as experience-pool size, selector quality, and filtering criteria may also affect stability. We leave a more comprehensive exploration of these factors to future work.'", "source": "[Limitations, L994-998]"},
+    {"question": "웹 추론 밖 도메인·언어·에이전트 설정으로 일반화되는가", "exact_wording": "'Our experiments focus on web-reasoning agent tasks, so further evaluation is needed...'", "source": "[Limitations, L991-994]"},
+    {"question": "레짐 효과에서 궤적 분포와 rejection sampling을 어떻게 가르는가", "status": "논문이 이 질문을 인식하지 않는다 — §5.3.1이 '궤적 분포만 다르다'고 쓴다", "bridge_out": "X4 재설계의 2×2(→ x4_comparison G4)"},
+    {"question": "왜 iteration 1–2에서는 on-policy가 더 높은가", "status": "관측되지만(Table 4) 본문에 언급이 없고 설명도 없다"},
+    {"question": "instance-level·step-wise·off-policy 등 조합의 나머지 칸은 어떻게 되는가", "status": "granularity 축은 on-policy·(주입 패턴 불명)에서만 쓸었고 Table 4에 대응 행이 없다. $2\\times2\\times2$의 여덟 칸 중 실제로 인쇄된 것은 다섯이다"},
+    {"question": "붕괴가 라운드의 함수로 어떤 모양인가", "status": "3점뿐이므로 물을 수 없다. 논문도 묻지 않는다"}
+  ],
+
+  "unfavorable_facts": [
+    {"fact": "레짐 축의 두 팔이 **세 가지가 동시에 다르다** — 궤적 분포, KL 방향, 그리고 rejection sampling 유무. 논문은 하나만 다르다고 쓴다.", "exact_wording": "'We compare on-policy context-distillation and off-policy internalization under the same principle-level, step-wise experience configuration, **differing only in the trajectory distribution** used for supervision.' 바로 두 문장 뒤: 'Off-policy internalization instead samples trajectories directly from the experience-aware teacher ... **and applies rejection sampling to retain successful trajectories.**'", "why_it_bites": "rejection sampling은 데이터셋 정답에 걸린 외부 정오 필터이고, 반복 안정성의 가장 그럴듯한 원인이다. 논문의 인과 서술('reactive 대 proactive supervision')은 이 필터를 통제하지 않은 채 세워졌다. 필터의 정의·임계·수용률 어느 것도 인쇄되지 않았다.", "source": "[§5.3.1, L840-847; §5.3.1, L915-922; App. B, L1362-1366, L1376-1377]"},
+    {"fact": "**iteration 1과 2에서는 열등하다고 판정된 레짐이 더 높다.** DeepSeek·step-wise·4B WebWalkerQA에서 on-policy 35.0/32.4/31.5 대 off-policy 30.6/30.7/33.1 — off-policy가 앞서는 것은 3라운드째 하나뿐이고 1라운드에서는 4.4점 뒤진다. 8B도 iteration 1에서 on 33.9 > off 32.9다.", "why_it_bites": "초록과 결론은 off-policy가 'substantially more stable training signal'을 준다고만 쓰고 초기 열세를 말하지 않는다. 그리고 $K=3$에서 교차가 마지막 점에 걸려 있으므로 **교차의 존재 자체가 한 점에 의존한다.**", "source": "[Table 4, 복원값; Abstract, L32-37; §6, L983-985]"},
+    {"fact": "**seed 0회, 분산·오차막대·신뢰구간 0회.** 그런데 두 벤치는 온도 0.7에서 질의당 롤아웃 **1회**의 Pass@1이다.", "why_it_bites": "[본서 산술] 인쇄값 격자에서 BrowseComp-ZH는 1문항이 0.346pp($N=289$)다. Table 1이 주장하는 injection 효과 $+0.7$pp는 **2문항**이고, 구성 F의 BCZH 궤적 3.8→6.6→3.8은 11→19→11문항이다. 단일 롤아웃 확률 표집에서 이 크기의 차이는 잡음과 구분되지 않으며 논문은 그것을 판단할 통계량을 인쇄하지 않았다.", "source": "[§4, L363-366, L370; App. B, L1442-1446; Table 1, L553-566; Table 4]"},
+    {"fact": "Table 1과 Table 4가 같은 구성에서 어긋난다. §5.2는 injection 비교를 **on-policy** 하에서 한다고 쓰는데, '완전한 self-evolution 결과'라는 Table 4에는 Qwen-generated experience의 on-policy 행이 없다.", "numbers": "Table 1: Global 23.2/16.8/4.5, Step-wise 31.2/22.7/5.2. Table 4의 Qwen-gen·off-policy·iter1: Global 21.0/15.9/3.5, Step-wise 29.0/22.7/5.2. 여섯 값 중 둘이 정확히 일치하고 넷이 다르다.", "why_it_bites": "Table 4는 스스로를 'the complete self-evolution results'라 부르는데(App. D, L1475), 본문 표 하나의 구성이 그 안에 없다. 둘 중 하나가 잘못 라벨되었거나 Table 4가 완전하지 않다.", "source": "[§5.2, L489-492; Table 1, L545-566; App. D, L1471-1480; Table 4]"},
+    {"fact": "논문의 최선 레시피에서도 **문맥 추론이 내재화 추론보다 낮은 칸**이 있다 — 구성 E의 GAIA에서 내재화 29.8/30.1 대 문맥 22.6/24.7. Figure 6의 캡션은 그 설정이 '모델이 명시적 experience로부터 이득을 볼 능력을 보존한다'고 단정한다.", "why_it_bites": "'experience-use ability 보존'이 이 논문의 핵심 기제 주장이고, 그 주장을 광고하는 그림의 세 패널 중 하나에서 부호가 반대다.", "source": "[Fig. 6 캡션, L901-903; Table 4, 복원값]", "hedge": "복원값이므로 원 PDF 대조 필요(→ todo_verify)"},
+    {"fact": "base 모델에 **자기 생성** experience를 문맥에 주면 세 벤치 중 둘에서 더 나빠진다 — GAIA 13.6→11.7, BrowseComp-ZH 4.5→3.1.", "why_it_bites": "$E$-경로에서 반복되는 '품질 1위가 기억 시스템 없음' 패턴(→ PRE-RESEARCH §5 (iii))이 이 논문의 출발점에 그대로 있고, 논문은 이 행을 언급하지 않는다. self-generated 설정을 'a more challenging test'라고만 부른다.", "source": "[Table 4 base 행; §5.2.1, L583-586]"},
+    {"fact": "granularity 축(§5.1)의 근거 수치가 **표에 없다.** Figure 2가 유일한 근거이고, 인용된 다섯 비율(74.4% / 57.3% / 93.9% / 84.0% / 3.7%)은 표본 수·라벨링 절차·라벨러·일치도가 모두 미기재다('In our sampled pool').", "why_it_bites": "세 축 중 첫째 축 전체가 수치 표 없이 그림 하나와 라벨링 근거 없는 비율 다섯 개로 서 있다.", "source": "[§5.1, L390-408; Fig. 2, L342]"},
+    {"fact": "중심 실패 통계 63.82%가 **어느 벤치·어느 구성에서 나왔는지 명시되지 않았다.** 'third-iteration models under different injection patterns'가 전부다.", "why_it_bites": "[본서 산술] $63.82\\% = 434/680$이 정확히 맞으므로 WebWalkerQA에서 잰 것으로 읽히지만, 실험 소스(Qwen 대 DeepSeek)도 레짐도 알 수 없다. 논문의 기제 서사 전체가 이 한 숫자에 걸려 있다.", "source": "[Table 2, L589-603; §5.2.3, L672-677]"},
+    {"fact": "$K=3$이고 그 선택의 근거가 없다. 라운드 수를 왜 3에서 멈췄는지, 4라운드에서 최선 레시피가 어떻게 되는지에 대한 문장이 없다.", "why_it_bites": "논문의 주장은 '지속 가능한(sustainable) 내재화 레시피'인데, 지속성을 3점으로 판정한다. Limitations는 도메인·풀 크기·selector 품질만 적고 **라운드 수를 한계로 적지 않는다.**", "source": "[App. B, L1434-1435; Limitations, L990-998]"},
+    {"fact": "in-context 열이 iteration 3에서 전부 비어 있다(모든 구성에서 '—'). 즉 **가장 중요한 라운드에서 선행 지표가 측정되지 않았다.**", "why_it_bites": "붕괴가 실제로 일어나는 라운드에 진단 지표가 없다. 이 논문의 가장 강한 관측(선행 지표가 먼저 죽는다)이 iteration 1→2 구간에만 근거를 갖는다.", "source": "[Table 4, 복원값]"},
+    {"fact": "비용 4종 중 셋이 absent이고, 그럼에도 §5.3.2가 off-policy를 'a more efficient supervision loop'라고 쓴다.", "why_it_bites": "효율 주장의 유일한 근거가 평균 assistant turn 수 세 개(2.5 / 4.5 / 21.9)다. 토큰도 FLOPs도 wall-clock도 없고, off-policy가 추가로 지불하는 rejection sampling의 표집 배수(기각된 궤적 수)도 인쇄되지 않았다 — 그 배수가 크면 turn 수 비교는 뒤집힐 수 있다.", "source": "[§5.3.2, L923-955; Table 3, L934-946]"},
+    {"fact": "학습 코퍼스와 평가 벤치가 겹친다. WebWalkerQA-silver가 15K 학습 코퍼스에 포함되고 WebWalkerQA가 in-domain 평가다 — 논문이 스스로 밝힌다.", "why_it_bites": "세 벤치 중 효과가 가장 크고 본문이 가장 자주 인용하는 것이 그 in-domain 벤치다(Table 1의 $+8.0$). OOD 두 벤치 중 하나(BrowseComp-ZH)는 효과가 문항 단위이고 다른 하나(GAIA)는 103문항이다.", "source": "[§4, L353-362]"},
+    {"fact": "8B base 행의 두 값만 소수점 두 자리다(27.79, 26.21). 나머지 전 표가 한 자리다.", "why_it_bites": "표가 단일 파이프라인에서 나오지 않았을 정황이며, 값을 그대로 인용하기 전에 확인이 필요하다.", "source": "[Table 4, L1518-1538]"},
+    {"fact": "형식(Eq. 1-2)과 구현이 이어지지 않는다. Eq. 1은 forward KL 분포 매칭인데 App. B는 off-policy를 'trains on rejection-filtered teacher-generated trajectories'라고만 쓴다 — 교사 logit을 쓰는 KL 최소화인지 필터된 텍스트 위의 SFT인지 명시되지 않는다.", "why_it_bites": "후자라면 '두 레짐의 KL 방향 차이'라는 서술이 실제로 실행된 것과 다르고, on-policy만 진짜 증류가 된다.", "source": "[§3, Eq. 1, L208-217; App. B, L1372-1377]"},
+    {"fact": "실험 파이프라인이 학생보다 강한 외부 모델(DeepSeek-V4)에 의존한다 — 요약과 선택 둘 다.", "why_it_bites": "self-generated 설정이 있어 이 의존이 통제되기는 하지만, 헤드라인 표(Table 4의 여섯 구성 중 다섯, Figure 5·6·7 전부)가 DeepSeek-V4 설정이다. 'self-evolving'이라는 표제와 외부 강모델 의존이 같은 논문 안에 있다.", "source": "[§3, L196-198; App. A, L1235-1241; App. B, L1367-1371]"}
+  ],
+
+  "cross_path_citations": {
+    "verdict": "$E$-경로 문헌은 실제로 읽고 인용한다. $W$-경로·생물/CLS는 0편이고, 같은 $\\Theta$-경로의 sleep 계열도 0편이다. 그리고 'sleep'·'consolidation'·'catastrophic forgetting'을 한 번도 쓰지 않는다.",
+    "bibliography_size": "약 44항목 [References, L1016-1224]",
+    "E_path": {"citations": "여럿 — Reflexion(Shinn 2023), ExpeL(Zhao 2024), Synapse(Zheng 2024), A-Mem(Xu 2026), ACE/agentic context engineering(Zhang 2025), Contextual Experience Replay(Liu 2025), Voyager(Wang 2023), 그리고 LLM agent memory 서베이(Luo 2026, 2605.06716)", "but": "**Letta STC 0회, MemGPT 0회, Mem0 0회, Zep 0회, ReasoningBank 0회.** 이 라인의 이름을 만든 논문도, 이 책이 $E$-경로 통과군으로 센 여섯 편 중 어느 것도 없다"},
+    "W_path": {"citations": "ZERO. fast weight·TTT·Titans·Atlas·state-space·linear attention·KV 캐시 어느 것도 없다"},
+    "Theta_path": {"citations": "context distillation 계열(Snell 2022, Askell 2021, Hinton 2015, Gu 2024, Agarwal 2024, Ye 2026a/b, Zhao 2026b, Yang 2026, Hou 2026, Fu 2026, Li 2026), 지속학습 서베이(Wu 2024), self-distillation-for-continual-learning(Shenfeld 2026), Doc-to-LoRA(Charakorn 2026), knowledge injection via self-distillation(Kujanpää 2024)", "but": "**SEAL 0회, `Language Models Need Sleep` 0회, Nested Learning 0회, LoRA 원논문 0회, ROME/MEMIT 0회, EWC/GEM/DGR 0회, model collapse 0회.** 자기 경로의 sleep 계열과 망각 대응의 원형을 모두 지나친다"},
+    "bio_CLS": {"citations": "ZERO"},
+    "vocabulary_check": "[본서 관찰] 전문 grep — 'sleep' 0회, 'consolidation' 0회, 'catastrophic' 0회, 'forget' 0회, 'model collapse' 0회, 'replay' 1회(Contextual Experience Replay 인용). 'collapse'는 3회이고 그중 둘이 'context collapse'(Zhang 2025 인용), 하나가 자기 표현 'progressive capability collapse'다.",
+    "monograph_implication": "[note-writer] ch11·ch24의 침묵 지도에 **반대 방향의 행**이 하나 생긴다. 지금까지 이 책이 센 것은 '이름은 sleep인데 기제가 아닌' 논문들이었다. 이 논문은 그 거울상이다 — **기제는 정확히 (U-E)→(U-$\\Theta$)의 반복 sleep 루프인데 그 이름 어휘를 하나도 쓰지 않고, 그 이름을 쓰는 논문을 하나도 인용하지 않는다.** 이름과 기제의 어긋남이 양방향이라는 사실은 척추 논지 A1을 약화시키지 않고 강화한다. 그리고 실무적으로는 더 무겁다 — 이 라인을 'sleep-time compute'로 검색하는 독자는 이 논문을 찾지 못한다."
+  },
+
+  "systems_implications": {
+    "preamble": "[PAPER] = 원문에 있는 값·진술, [INFERENCE] = 이 노트의 번역.",
+    "items": [
+      {"claim": "인구 수준 $\\Theta$-경로다. 사용자당 delta가 없고 배포 아티팩트는 체크포인트 하나이므로 shared-weight batching이 온전하다.", "grounding": "[PAPER] §4·App. B에 adapter·per-user 언급 없음. [INFERENCE] → ch29 표 29-3 넷째 행에 해당하며, 이 장의 웜 계층 기회를 만들지 않는다."},
+      {"claim": "wake 프롬프트에서 experience pool이 사라지는 것이 이 경로의 서빙 이득이고, 이 논문이 그 이득을 팔로 대비시킨 첫 사례다 — 그런데 토큰도 지연도 재지 않았다.", "grounding": "[PAPER] App. B L1442-1443(experience-free 평가) + Table 4의 internalized 대 in-context 두 열. [INFERENCE] $|E^{(k)}|$가 없어 절감 토큰 수를 계산할 수 없다."},
+      {"claim": "sleep 라운드의 비용 구조가 corpus에서 가장 복잡하다 — 롤아웃(에이전트, 도구 호출 포함) + 외부 모델 요약 + **step마다의** 외부 모델 선택 호출 + 교사 궤적 생성 + 기각 표집 + 5 epoch 학습.", "grounding": "[PAPER] §3·§4·App. B. [INFERENCE] step-wise 주입은 궤적 step마다 selector를 부르므로 $T$에 선형인 추가 호출이 생긴다. $T_{\\max}=100$이고 on-policy 갱신 후 학생이 21.9턴이면 궤적 하나에 수십 회다. **이 항이 sleep 예산에서 가장 클 수 있는데 논문이 세지 않는다.**"},
+      {"claim": "두 실패 모드가 서빙 관점에서 정반대 신호를 낸다 — global 주입은 궤적을 즉답으로 붕괴시켜 비용을 **낮추면서** 품질을 죽이고, on-policy는 궤적을 21.9턴으로 부풀려 비용을 **올린다**.", "grounding": "[PAPER] Table 2(63.82%), Table 3(2.5/4.5/21.9). [INFERENCE] 비용 지표만 보는 감시는 첫째 붕괴를 **개선으로 오독한다.** 이것이 ch29 판정 5의 감시 논거에 붙는 새 사례다."},
+      {"claim": "배포 가능한 선행 지표가 하나 확인되었다 — '문맥을 준 성적 − 문맥 없는 성적'. 배포 지표가 오르는 라운드에 이 차가 이미 절반이 죽어 있다.", "grounding": "[PAPER] Table 4 구성 C(내재화 $25.9\\to31.0$, 문맥 $28.1\\to14.1$), 구성 A. [INFERENCE] 서빙에서 이 지표는 값싸다 — 같은 평가셋을 프롬프트 두 형태로 한 번씩 돌리면 된다. ch29 판정 5가 요구한 감시의 구체적 형태다."},
+      {"claim": "저장 계층 요구는 이 논문에서 하나로 좁혀진다 — 실데이터를 되돌려 주는 통로(웹 도구)와 정답 라벨(기각 표집의 기준)이 라운드마다 살아 있어야 한다.", "grounding": "[PAPER] §4 도구 5종, §5.3.1 rejection sampling. [INFERENCE] ch29 판정 4가 '웜 delta 계층 옆에 콜드 원본 아카이브'로 표현한 요구와 같은 자리이며, 여기서는 아카이브가 아니라 **환경과 라벨**의 형태를 띤다."},
+      {"claim": "이 루프에는 사용자별 상태가 없으므로 ch26·ch29의 바이트 회계가 걸리지 않는다. 대신 걸리는 것은 라운드당 전체 재학습이다 — 4B·8B 전체 파라미터를 8×A800에서 5 epoch.", "grounding": "[PAPER] §4 L367-369. [INFERENCE] 라운드 주기 $T_k$가 여기서는 저장 수명 다이얼이 아니라 **학습 클러스터 점유 다이얼**이 된다."}
+    ]
+  },
+
+  "figures": [
+    {"number": "Figure 1", "page": "p.1", "shows": "반복 on-policy context-distillation에서 세 벤치 성공률이 iteration 1→3으로 감소", "why_reproduce": "이 라인에서 반복 열화를 정면 그림으로 세운 첫 장면. 다만 어느 구성인지 캡션에 없다"},
+    {"number": "Figure 2", "page": "p.4", "shows": "granularity 축 — instance 대 principle, base·in-context 점선과 함께 3 iteration", "why_reproduce": "instance-level이 iteration 1에서 오르고 base 아래로 떨어지는 것이 보이는 유일한 자리. **수치 표가 없다는 사실도 함께 보여야 한다**"},
+    {"number": "Figure 3", "page": "p.5", "shows": "injection 축 — global 대 step-wise, 3 iteration", "why_reproduce": "축 2의 유일한 다라운드 그림"},
+    {"number": "Figure 4", "page": "p.6", "shows": "premature answering 사례 연구 — global 주입 모델이 도구 호출 없이 <answer>1954</answer>를 내고, step-wise 모델은 search→visit 후 <answer>1903</answer>", "why_reproduce": "붕괴가 성능 저하가 아니라 **행동 모드 붕괴**임을 한 눈에 보이는 장면"},
+    {"number": "Figure 5", "page": "p.7", "shows": "레짐 축 — off-policy 대 on-policy, 4B·8B × 3 벤치 6패널, base 점선", "why_reproduce": "이 논문의 헤드라인 그림. 그리고 iteration 1의 on-policy 우위가 보이는 자리"},
+    {"number": "Figure 6", "page": "p.8", "shows": "최종 설정의 내재화(청록) 대 문맥(적색) 막대, Base·Iter1–3", "why_reproduce": "**선행 지표를 같은 그림에 그린 corpus 유일의 장면.** 이 책의 감시 논거가 실제 LLM에서 그려진 형태다"},
+    {"number": "Figures 7-8", "page": "pp.11-12", "shows": "off-policy 하에서 global(상단) 대 step-wise(하단)의 내재화·문맥 대비, 그리고 self-generated + global 단독", "why_reproduce": "선행 지표 붕괴가 주입 패턴에 걸린다는 것을 보이는 부록 증거"},
+    {"number": "Table 2", "page": "p.6", "shows": "premature-answer 63.82% 대 0%", "why_reproduce": "행동 모드 붕괴의 유일한 정량"},
+    {"number": "Table 3", "page": "p.9", "shows": "평균 assistant turn 2.5 / 4.5 / 21.9", "why_reproduce": "반대 방향 실패 모드(궤적 팽창)의 유일한 정량이자 이 논문의 유일한 비용 대리값"},
+    {"number": "Table 4", "page": "pp.13-14", "shows": "8구성 × 3벤치 × 2추론모드 × 3라운드 전체", "why_reproduce": "**corpus에서 sleep 라운드를 축으로 놓은 유일한 완전 표.** 이 책의 두 계수 진술을 깨는 물건이므로 원문 그대로 재현해야 한다"}
+  ],
+
+  "todo_verify": [
+    {"item": "Table 4의 열 배치 복원이 옳은가. 특히 구성 E(DeepSeek·step-wise·4B·off-policy)의 GAIA 문맥 열(22.6/24.7)이 내재화 열(29.8/30.1)보다 낮다는 결과.", "how": "arXiv PDF 2606.04703 p.13-14의 Table 4를 직접 대조. 또는 공개 저장소 github.com/RUCBM/ExpInternalization의 결과 아티팩트", "why_it_matters": "이 노트의 unfavorable_facts 셋과 x4_comparison의 순서 반전 관측이 이 복원에 걸려 있다"},
+    {"item": "학습이 전체 파라미터 갱신인가 PEFT인가.", "how": "'verl' 설정과 공개 저장소의 학습 스크립트에서 LoRA/PEFT 사용 여부", "why_it_matters": "$C_{\\text{cap}}$과 ch29 표 29-3의 행 배정이 갈린다"},
+    {"item": "rejection sampling의 기준·임계·수용률.", "how": "저장소의 필터 코드. 논문에는 'successful' / 'low-quality variants'라는 말뿐", "why_it_matters": "레짐 축 결과의 인과 귀속이 여기서 정해진다 — 이 노트의 첫째 불리 사실"},
+    {"item": "Table 1이 on-policy인가 off-policy인가, 그리고 왜 Table 4에 대응 행이 없는가.", "how": "§5.2 본문과 Table 1 캡션, 저장소의 결과 파일", "why_it_matters": "본문 표와 '완전한 결과' 표가 어긋난다"},
+    {"item": "63.82%가 측정된 벤치·실험 소스·레짐.", "how": "$434/680$이 정확히 맞으므로 WebWalkerQA로 추정. 저장소의 평가 로그로 확정", "why_it_matters": "논문의 기제 서사 전체가 이 숫자 하나에 걸려 있다"},
+    {"item": "granularity 축 통계(74.4% 등)의 표본 수와 라벨링 절차.", "how": "저장소의 experience pool 덤프와 라벨링 스크립트", "why_it_matters": "세 축 중 하나의 유일한 정량 근거다"},
+    {"item": "off-policy의 손실이 실제로 forward KL인가 필터된 궤적 위의 SFT인가.", "how": "저장소의 손실 구현", "why_it_matters": "Eq. 1과 구현의 대응이 확정되지 않으면 '두 레짐의 KL 방향 차이' 서술을 본문에 쓸 수 없다"},
+    {"item": "벤치 크기 $N$(WebWalkerQA 680, BrowseComp-ZH 289)이 이 논문의 평가에서도 그대로인가.", "how": "격자 적합에 근거한 추정이다. 원 벤치 논문(Wu 2025, Zhou 2025)과 이 논문의 평가 스크립트 대조", "why_it_matters": "'효과가 1–3문항'이라는 이 노트의 판단이 여기 걸려 있다"}
+  ],
+
+  "note_writer_provenance": {
+    "read_by": "이 책의 편집자가 vendored 원문 1764줄 전문을 직접 읽고 작성했다. 외부 모델에 위임하지 않았다.",
+    "date": "2026-08-11",
+    "cross_checked_against": [
+      "dossier/stc-v2/S0-DESIGN.md (세 층·판별식·비용 4종)",
+      "dossier/stc-v2/PRE-RESEARCH.md §2 카운트 규약 · §4 의무 caveat · §5 척추 논지",
+      "style/STC-STYLE-NOTATION.md v0.3 §1 예약 기호",
+      "notes/stc-v2/letta-stc.json (노트 깊이의 본보기, $\\mathrm{ret}$ 항등 대조)",
+      "notes/stc-v2/continual-facts-in-weights.json (반복 상한 $k=100$)",
+      "experiments/stc/X4-consolidation-decay/result.json (F1-F9, D1-D5, X1-X3, C0-C3)",
+      "study-kr-stc/part3/ch27-is-it-promising.md (증거 C2·D5, 판정 4, §27.5 FT1)",
+      "study-kr-stc/part3/ch29-systems-and-device.md (§29.2, §29.3.5, 판정 4·5·6, §29.5 R-9)",
+      "study-kr-stc/part3/ch30-limits-and-falsifiers.md (표 30-2, M2)",
+      "dossier/stc-v2/gap-sweep/TRIAGE.md (Tier 1 #3의 판정 근거)"
+    ],
+    "arithmetic_declared": "이 노트의 [본서 산술]은 넷이다 — (i) 벤치 크기 격자 적합($N=289$/680/309), (ii) $63.82\\%=434/680$, (iii) Table 4의 1차 차분, (iv) 문항 단위 환산. 전부 인쇄값에서 나오며 논문의 주장이 아니다.",
+    "what_this_note_does_not_claim": "이 논문이 X4를 반박하지 않는다. $K=3$이므로 X4가 물은 모양 질문에 답할 수 없고, replay 축이 없으므로 X4 F6과 같은 조작을 비교할 수 없다. 확증으로 센 것은 부호와 순서뿐이며 절대치는 어느 방향으로도 이송하지 않았다."
+  }
+}

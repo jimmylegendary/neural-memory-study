@@ -1,0 +1,268 @@
+{
+  "doc_id": "shipped-dreaming-products",
+  "title": "배포된 dreaming 제품 3종 — 판별식 판정과 증거 등급",
+  "created": "2026-08-11",
+  "author_note": "TRIAGE.md §1 Tier1 #10 및 §3.3의 후속. 앞 라운드가 확인한 것과 못 한 것을 이 라운드에서 1차 출처로 재검증했다. 확인 실패도 결과로 기록한다.",
+  "frame": {
+    "discriminant": "S0-DESIGN §2.3 / PRE-RESEARCH §2.1 — (1) 질의 도착 전에 (2) B_s>0을 써서 (3) Θ·W·E 중 한 층의 상태를 실제로 바꾸고 (4) 그 변화가 이후 질의에 쓰이는가. 넷 모두 필요.",
+    "honesty_rule": "PRE-RESEARCH §4 · TRIAGE §4 — 통제군 없는 벤더 자기보고 수치는 본문 수치로 인용 불가.",
+    "evidence_grade_scale": {
+      "A": "벤더 1차 기술문서(API 레퍼런스·사양)를 이 라운드에서 직접 전문 취득. 기제 진술은 '산출물 사양 기술'로 인용 가능.",
+      "B": "벤더 1차 공지·엔지니어링 블로그를 직접 취득. 기제 인용 가능, 수치 불가.",
+      "C": "1차 출처 접근 실패. 독립 2차 보도가 수렴. 기제는 '보도에 따르면'으로만, 수치 불가.",
+      "D": "단일 2차 출처 또는 미공개·플래그 롤아웃. 인용 불가."
+    },
+    "key_distinction": "'무엇이 배포되었는가'(사양·존재 = 관측 가능, 통제군 불요)와 '그것이 얼마나 잘 작동하는가'(효과 크기 = 통제군 필수)는 다른 종류의 주장이다. 이 문서는 둘을 행 단위로 분리한다."
+  },
+
+  "products": [
+    {
+      "name": "Dreams (Claude Managed Agents)",
+      "vendor": "Anthropic",
+      "date": "2026-05-06",
+      "primary_sources": [
+        {
+          "url": "https://platform.claude.com/docs/en/managed-agents/dreams",
+          "type": "공식 API 문서",
+          "access": "이 라운드에서 전문 직독 성공",
+          "grade_contribution": "A"
+        },
+        {
+          "url": "https://claude.com/blog/new-in-claude-managed-agents",
+          "type": "공식 런치 블로그 (2026-05-06)",
+          "access": "직독 성공",
+          "grade_contribution": "B"
+        }
+      ],
+      "secondary_sources": [
+        "https://arize.com/blog/two-labs-started-dreaming-and-they-built-two-different-architectures/ — Anthropic/OpenAI 아키텍처 대조. Anthropic 부분은 공식 문서 인용이라 본 검토의 1차 직독과 일치 확인됨"
+      ],
+      "mechanism": {
+        "summary": "비동기 job. 기존 memory store 1개 + 과거 세션 전사 1~100개를 입력받아, 중복 병합·모순/노후 항목의 최신값 교체·새 통찰 추출을 수행한 뒤 '새로운 별개의' memory store를 산출한다.",
+        "verbatim": [
+          "A dream reads an existing memory store alongside past session transcripts, then produces a new, reorganized memory store: duplicates merged, stale or contradicted entries replaced with the latest value, and new insights surfaced.",
+          "The input store is never modified, so you can review the output and discard it if you don't like the result.",
+          "The dream itself never deletes or modifies its inputs.",
+          "The output store ID appears in the dream's outputs[] shortly after the dream starts running, once the workflow has cloned the input store"
+        ],
+        "trigger": "호출자가 POST /v1/dreams로 생성하는 비동기 job. 공식 문서에 자동 스케줄러는 없다. 런치 블로그는 'a scheduled process'라고 표현하지만 문서화된 API 원시연산은 caller-invoked다 — 마케팅 표현과 사양의 불일치로 기록한다. (Managed Agents는 별도로 '스케줄 실행' 기능을 갖고 있어 운영자가 dream 생성을 스케줄링할 수는 있다.)",
+        "runtime": "\"Dreams run asynchronously and typically take minutes to a few hours, driven by the number of input transcripts.\"",
+        "adoption": "완료 후 출력 store를 이후 세션에 memory_store 리소스로 붙여야 활성화된다 — \"attach it to future sessions as a memory_store resource in place of (or alongside) the input memory store\", 또는 \"Discard it\". 즉 채택이 운영자 게이트다.",
+        "budget_exposure": "B_s가 청구 가능·계량 가능한 양으로 노출된 corpus 최초 사례. \"Dreams are billed at standard API token rates for the model you select; usage on the resource reports the exact totals.\" / \"Cost scales roughly linearly with the number and length of input sessions.\" usage 필드는 input_tokens·output_tokens·cache_read_input_tokens·cache_creation_input_tokens 4분할.",
+        "limits": "세션/dream 100개, instructions 4,096자, 지원 모델 claude-opus-5·claude-fable-5·claude-opus-4-8·claude-opus-4-7·claude-sonnet-5·claude-sonnet-4-6",
+        "dating_note": "beta 헤더가 dreaming-2026-04-21 — 공개 발표(2026-05-06)보다 약 2주 앞선 날짜가 사양에 박혀 있다."
+      },
+      "wr_type": {
+        "label": "non-destructive fork (clone-then-rewrite) + 운영자 게이트 포인터 스왑",
+        "detail": "store 단위 copy-on-write. 입력 store에 대해서는 완전 비파괴이나, 복제된 출력 store '안에서는' 교체가 일어난다(stale/contradicted → 최신값). 즉 파괴성은 fork 내부로 격리되고 원본은 불변으로 남는다. 상태 전이의 커밋 시점은 dream 완료가 아니라 다음 세션의 리소스 지정이다 — 2단계 커밋.",
+        "contrast_to_letta": "ch14가 축으로 세운 'Letta의 wr = 파괴적 덮어쓰기'와 정반대 끝점."
+      },
+      "discriminant_verdict": {
+        "overall": "PASS (4/4) — 단, 사양 기반 판정",
+        "c1_before_query": "충족. 세션 사이에 과거 전사에 대해 실행되며 요청 경로 밖이다.",
+        "c2_budget_positive": "충족. 그리고 corpus 유일하게 정량·과금까지 됨(토큰 단위 usage 보고).",
+        "c3_state_change": "충족(조건부). E층을 바꾸되 입력 store가 아니라 fork를 바꾼다. 유효 상태 변경은 포인터 스왑 시점에 성립.",
+        "c4_used_by_later_queries": "충족(운영자 게이트). 출력 store를 이후 세션에 붙여야 쓰인다. 자동 반영 아님.",
+        "novelty_for_book": "판별식 (3)+(4)를 '오프라인 계산 후 명시적 커밋'의 2단계로 만족하는 첫 사례. corpus의 어느 논문도 이 형태가 아니다."
+      },
+      "reported_numbers": [
+        {
+          "value": "Harvey: 완수율 약 6배 상승 (\"Completion rates went up ~6x in their tests\")",
+          "source": "Anthropic 런치 블로그 내 고객 사례",
+          "comparison_arm": "없음. 과제 정의·분모·기간·이전 구성 모두 미기재. 고객 자체 테스트.",
+          "has_control_group": false,
+          "citable_in_body": false,
+          "why": "통제군 없음 + 과제 미정의 + 고객 자기보고. TRIAGE §4 '벤더 자기보고' 버림 규칙에 그대로 걸린다."
+        }
+      ],
+      "quantitative_claims_in_official_docs": "없음. API 문서에 벤치마크·평가 수치 0건.",
+      "evidence_grade": {
+        "mechanism": "A",
+        "deployment_fact": "A",
+        "performance": "인용 불가 (통제군 0)"
+      },
+      "book_treatment": "ch24 신설 절에 수록. 기제·사양은 인용 가능. 특히 과금 진술은 ch25가 인용할 것 — B_s가 '이미 청구서의 항목'이라는 사실은 통제군이 필요 없는 사양 진술이다. Harvey 6배는 본문 인용 금지, §4 caveat 표에 벤더 수치 예시로만 등장."
+    },
+
+    {
+      "name": "Dreaming V3 (ChatGPT Memory)",
+      "vendor": "OpenAI",
+      "date": "2026-06-04",
+      "primary_sources": [
+        {
+          "url": "https://openai.com/index/chatgpt-memory-dreaming/",
+          "type": "공식 발표 페이지",
+          "access": "★ 이 라운드 접근 실패 — WebFetch가 HTTP 403 반복. help.openai.com도 403. 브라우저 확장 미연결로 우회 불가. 본 검토는 OpenAI 1차 출처를 직독하지 못했다.",
+          "grade_contribution": "미달"
+        }
+      ],
+      "secondary_sources": [
+        "https://www.ghacks.net/2026/06/05/openai-upgrades-chatgpt-memory-with-new-dreaming-architecture-for-plus-and-pro-users/ — 3개년 평가표 전체 수치 보유 (직독 성공)",
+        "https://www.investing.com/news/stock-market-news/dreaming-memory-system-rolls-out-to-chatgpt-plus-and-pro-users-93CH-4727151 — 통신 기사, 동일 수치 독립 확인 (직독 성공)",
+        "https://www.digitalapplied.com/blog/chatgpt-memory-dreaming-v3-openai-2026-guide — 동일 수치 + Singapore 무효화 예시 (직독 성공)",
+        "https://arize.com/blog/two-labs-started-dreaming-and-they-built-two-different-architectures/ — 아키텍처 대조, in-place 판정의 근거를 '명시되지 않았고 추론'이라고 스스로 밝힘",
+        "https://www.techtimes.com/articles/317840/20260605/... — audit trail 축소 보도. ★ 403으로 직독 실패, Arize의 재인용으로만 접함"
+      ],
+      "mechanism": {
+        "summary": "유휴 시간 백그라운드 통합. 누적된 메모리 파편을 요청 경로 밖에서 종합해 정규(canonical) 메모리 상태를 갱신하고, 시간이 지나 무의미해진 사실을 시제 갱신으로 무효화한다.",
+        "reported_wording": [
+          "\"automatically curating information from chat history in the background\" (통신 기사)",
+          "무효화 예시: 'the user is going to Singapore in July' → 'the user went to Singapore in July 2026' (여행 종료 후 자동 재작성)"
+        ],
+        "trigger": "'유휴 시간 백그라운드'까지가 확인 가능한 수준. '4시간 이상 비활성 시 실행'은 단일 2차 출처 주장이며 공식 확인 안 됨. 요약 페이지가 '대략 1시간 단위' 갱신이라는 언급도 2차 출처(Arize의 FAQ 인용).",
+        "adoption": "자동 반영. 사전 승인 게이트 없음. 메모리 요약 페이지에서 사후 열람·수정·삭제만 가능.",
+        "budget_exposure": "없음. 토큰·FLOP 어느 단위로도 B_s 미공개. 유일한 계산 관련 수치는 '무료 사용자에게 dreaming을 서빙하는 데 드는 계산을 약 5배 줄였다'는 상대적 서빙비용 진술이며 절대 기준이 없다.",
+        "scope": "출시 시점 미국 Plus/Pro. Free·Go·기타 국가는 순차 확대."
+      },
+      "wr_type": {
+        "label": "in-place canonical 덮어쓰기 + 시간적 무효화 (자동 적용)",
+        "detail": "이전 항목을 보존하는 대신 정규 상태를 제자리에서 재작성한다. 개별 saved-memory 목록이 제공하던 항목 단위 감사 추적이 축소된다는 보도가 있으나 본 검토는 그 출처를 직독하지 못했다.",
+        "confidence": "중간 — 'in-place'는 공식 문면 확정이 아니라 Singapore 예시와 보도에서의 추론이다. Arize 스스로 \"OpenAI does not state this explicitly\"라고 적었다."
+      },
+      "discriminant_verdict": {
+        "overall": "PASS (4/4) — 단, 사양 기반 + 1차 출처 미직독",
+        "c1_before_query": "충족. 유휴 시간 백그라운드 통합, 요청 경로 밖.",
+        "c2_budget_positive": "충족(정성적). LLM 종합 패스이므로 B_s>0이나 미정량.",
+        "c3_state_change": "충족. E층 정규 상태를 제자리 갱신.",
+        "c4_used_by_later_queries": "충족. 자동 반영, 승인 불요."
+      },
+      "reported_numbers": [
+        {
+          "value": "시간민감(staying current over time) 정확도 9.4%(2024) → 52.2%(2025) → 75.1%(2026)",
+          "source": "OpenAI 내부 평가. 3개 독립 2차 보도가 동일 수치로 수렴.",
+          "comparison_arm": "통제군 아님 — OpenAI '자사 제품의 연도별 세대'다. 9.4%는 2024년 saved memories, 75.1%는 2026년 Dreaming V3.",
+          "has_control_group": false,
+          "citable_in_body": false,
+          "why": "일반적인 벤더 수치보다 더 나쁘다. (i) 명명되지 않은 비공개 내부 평가 — 문항 수·CI·시드 전무. (ii) 대조 팔이 2년 전 자사 제품이라 기반 모델 세대 변화와 교락됨. dreaming 기제를 모델 개선으로부터 분리하는 장치가 없다. (iii) memoryless 바닥도 full-context 천장도 없다 — OUTLOOK §7.6이 기억 주장의 최소 기준으로 삼은 두 팔이 모두 부재. (iv) 헤드라인 대비(9.4→75.1)는 표 전체에서 가장 낮은 칸과 가장 높은 칸을 고른 것이다."
+        },
+        {
+          "value": "factual recall 41.5%(2024) → 67.9%(2025) → 82.8%(2026)",
+          "source": "동일 내부 평가표",
+          "comparison_arm": "동일 — 자사 연도별 세대",
+          "has_control_group": false,
+          "citable_in_body": false,
+          "why": "위와 동일한 교락."
+        },
+        {
+          "value": "preference adherence 31.4%(2024) → 55.3%(2025) → 71.3%(2026)",
+          "source": "동일 내부 평가표",
+          "comparison_arm": "동일 — 자사 연도별 세대",
+          "has_control_group": false,
+          "citable_in_body": false,
+          "why": "위와 동일한 교락."
+        },
+        {
+          "value": "무료 사용자 서빙 계산량 약 5배 감소",
+          "source": "OpenAI 공지 (2차 보도 경유)",
+          "comparison_arm": "자사 이전 구현. 절대 기준값 없음.",
+          "has_control_group": false,
+          "citable_in_body": false,
+          "why": "상대 배수만 있고 분모가 없다. B_s의 대용치로 쓸 수 없다 — 이것은 sleep 예산이 아니라 서빙 비용 진술이다."
+        }
+      ],
+      "citable_fact_extracted_from_numbers": "수치 자체는 인용 불가이나, '벤더가 시간민감 무효화(staleness)를 별도 평가 축으로 세워 측정하고 공개했다'는 사실은 관측 가능하고 인용 가능하다. corpus 논문 중 무효화를 독립 평가 축으로 분리한 사례가 드물다는 점(Zep이 knowledge-update에서 퇴행한 §4 caveat와 대조)에서 ch24·ch27에 값이 있다. 단 크기(magnitude)는 절대 옮기지 않는다.",
+      "evidence_grade": {
+        "mechanism": "C",
+        "deployment_fact": "C (독립 2차 3건 수렴 + 앞 라운드 TRIAGE §3.3의 1차 확인 주장)",
+        "performance": "인용 불가 (통제군 0, 교락 심각)"
+      },
+      "book_treatment": "ch24 신설 절에 수록하되 '보도에 따르면'으로 한정. wr=in-place는 사양 확정이 아니라 보도·추론임을 명시. 9.4→75.1은 §4 caveat 표에 '통제군 없는 벤더 수치가 어떻게 보이는가'의 대표 예시로 올리고 본문 수치로는 절대 쓰지 않는다."
+    },
+
+    {
+      "name": "Dream",
+      "vendor": "Mem0",
+      "date": "2026-08-05",
+      "primary_sources": [
+        {
+          "url": "https://mem0.ai/blog/stale-ai-agent-memory-and-how-mem0-dream-fixes-it",
+          "type": "공식 엔지니어링 블로그 (2026-08-05)",
+          "access": "이 라운드 직독 성공. 쓰기 의미론 문장 축자 확보.",
+          "grade_contribution": "B"
+        },
+        {
+          "url": "https://mem0.ai/blog/dream-background-memory-consolidation-for-ai-agents",
+          "type": "공식 엔지니어링 블로그 (2026-08-04)",
+          "access": "★ 본문 추출 실패(JS 렌더링). 제목·날짜만 확인. 내용은 검색 요약 경유.",
+          "grade_contribution": "부분"
+        }
+      ],
+      "mechanism": {
+        "summary": "세 연산의 복합체이며 시계가 둘로 갈린다. supersede·merge는 메모리 추가 시점에 인라인으로, synthesis는 스케줄 배치로 요청 경로 밖에서 실행된다.",
+        "verbatim": [
+          "it supersedes outdated facts, merges duplicates, and synthesizes higher-order patterns",
+          "Nothing it does is destructive; every change is retained and reviewable",
+          "Superseded memories are kept and still returned in a default read, labelled as history",
+          "Merged duplicates are retained and hidden by default",
+          "Synthesized patterns are added alongside your existing memories, never in place of them.",
+          "every memory carries a lifecycle label, so the full history is always available"
+        ],
+        "trigger": "supersede/merge: \"run as the memories are added, so they show up almost right away\". synthesis: \"runs on a schedule in the background (about once a day on Enterprise, weekly on Pro)\", 요청 경로 밖.",
+        "eligibility": "\"only for users with at least 20 memories\"; \"only memories created after you turn it on are eligible\". Pro·Enterprise 한정.",
+        "read_interface": "latest_only=True → superseded·merged 제외한 active만. include_merged → 전체 레코드 접근. 즉 상태는 누적되고 읽기에서 투영한다.",
+        "budget_exposure": "없음. 토큰·비용 수치 0건. 지연에 대해서는 add·search 경로에 부담을 더하지 않는다고만 진술."
+      },
+      "wr_type": {
+        "label": "append-only + supersede 포인터 + lifecycle 라벨 (읽기 시점 투영)",
+        "detail": "corpus 전체에서 유일하게 비파괴가 사양으로 명시된 wr. 무엇도 지우거나 덮어쓰지 않고 상태 라벨만 전이시킨다. 되돌림이 가능하고 이력이 보존된다. TRIAGE §2.7의 CrystalMem이 정량화한 'wr 비가역성'의 정반대 설계점이며, TRIAGE §2.8의 SkillJack(원본 레코드 삭제 후에도 생존)·Authority Collapse(출처 권한 소실)가 지적한 실패 양식을 구조적으로 회피하는 형태다."
+      },
+      "discriminant_verdict": {
+        "overall": "PASS (4/4) — 단, synthesis 다리만 조건 (1)을 엄밀히 만족",
+        "c1_before_query": "분할 충족. synthesis는 스케줄 오프라인이라 명백히 충족. supersede/merge는 add 시점 인라인이라 Mem0 원논문(2504.19413)의 '메시지쌍마다' 시계를 그대로 물려받는다 — PRE-RESEARCH §2.2가 이미 통과로 판정한 시계다. MemGPT가 실패한 '대화 중' 쓰기와는 다르나, 경계가 가장 얇은 지점이다.",
+        "c2_budget_positive": "충족(정성적). 유사도 그룹핑 + 그룹별 LLM 평가. 미정량.",
+        "c3_state_change": "충족. E층에 새 레코드 추가 + 기존 레코드의 lifecycle 상태 전이.",
+        "c4_used_by_later_queries": "충족. 기본 읽기에 반영되며 superseded 항목도 history 라벨로 함께 반환된다.",
+        "value_for_ch11": "판별식 조건 (1)의 경계를 '한 제품 안에서' 보여주는 가장 깨끗한 실물 표본. OUTLOOK §7.5가 회색지대를 셋으로 늘리기로 한 그 절의 재료로 직접 쓸 수 있다."
+      },
+      "reported_numbers": [],
+      "quantitative_claims_in_official_docs": "0건. 벤치마크·평가·before/after 수치 전무. 사례 서술(Hyrox 선수)만 정성적으로 제시.",
+      "evidence_grade": {
+        "mechanism": "B",
+        "deployment_fact": "B",
+        "performance": "해당 없음 — 벤더가 아무 수치도 주장하지 않았다"
+      },
+      "book_treatment": "ch24 신설 절 + ch11 회색지대 절에 이중 수록. 수치가 0건이므로 인용 위험이 없고, wr 사양은 축자 인용 가능. 비파괴 wr의 존재 증명으로 ch14·ch27에서 Letta 대조군으로 쓴다."
+    }
+  ],
+
+  "cross_product_finding": {
+    "wr_lattice": "ch14가 'Letta의 wr = 파괴적 덮어쓰기'를 축으로 세운 자리가 제품 층위에서 네 점으로 벌어졌다. Letta(파괴적 in-place) → OpenAI(파괴적 in-place + 시간 무효화, 자동) → Anthropic(비파괴 fork + 운영자 커밋) → Mem0(비파괴 append + supersede 포인터). 격자의 양 끝이 모두 실제 배포되어 있다.",
+    "review_correlation": "관측: 비파괴 설계 둘이 곧 검토를 노출하는 둘이다. Anthropic은 커밋 전 검토(출력 store를 보고 버릴 수 있음), Mem0는 사후 감사(이력 보존). 파괴적 설계인 OpenAI는 사후 열람만 가능하고 항목 단위 감사 추적이 축소됐다는 보도가 있다. 되돌릴 수 있게 만드는 것과 보여줄 수 있게 만드는 것이 같은 설계 결정에서 나온다.",
+    "B_s_exposure": "corpus 논문 0편이 B_s를 보고하지 않는데, Anthropic은 dream 1건마다 4분할 토큰 usage를 리소스에 실어 표준 요율로 청구한다. 회계의 부재는 원리적 어려움이 아니라 문헌의 관행이었다는 방증. ch25의 신규성 주장은 '아무도 재지 않는다'가 아니라 '논문이 재지 않는다'로 좁혀 다시 써야 한다.",
+    "no_outcome_evidence": "셋 중 어느 것도 통제된 성과 증거를 갖지 않는다. 제품 축은 '배포되었는가'를 움직이지 '작동하는가'를 움직이지 않는다. ch27은 이 구분을 지켜야 한다."
+  },
+
+  "book_treatment_options": {
+    "a_into_corpus": {
+      "verdict": "기각",
+      "cost": "판별식이 논문에 대해 정의됐다는 전제가 깨진다. 더 중요하게 PRE-RESEARCH §2.2가 2026-08-06에 확정한 계수 규약('통과 9 + 경계 1 + 불충족 19 = 29', '통과 10편은 폐기된 표현')이 ch11·ch24·부록 C 전반에 load-bearing인데 이를 다시 흔든다. 그리고 증거 종(種)이 다른 행을 한 표에 섞으면 §4 caveat 기계가 무력해진다 — 논문 행의 caveat는 읽을 수 있는 방법론 절에서 나오지만 제품 행에는 그런 절이 없다. 마지막으로 미끄러운 경사: Anthropic Dreams가 들어가면 배포된 모든 기억 기능이 후보가 되고, 판별식에는 그것을 막을 출처-종 차원이 없다."
+    },
+    "b_separate_section": {
+      "verdict": "채택",
+      "gain": "증거 등급을 절 머리에서 한 번 선언하고 그 안의 모든 진술이 상속하게 만들 수 있다 — §4가 이미 쓰는 정직성 기계와 같은 방식이다. 그리고 이 책이 가장 필요로 하는 세 가지가 전부 제품 축에만 있다: B_s가 값이 매겨진 유일한 자리, wr이 문서화된 의미론으로 3분기하는 유일한 자리, '오프라인 통합을 실제로 대규모로 돌리는 곳이 있는가'에 답하는 유일한 자리.",
+      "cost": "새 구조 단위를 쓰고 배치해야 하며 ch24 본체와 중복되지 않게 관리해야 한다."
+    },
+    "c_mention_only": {
+      "verdict": "기각",
+      "cost": "ch25가 쓸 수 있는 가장 강한 외부 사실(청구되는 B_s)을 버리고, ch24의 'corpus에 0건'이라는 공백을 설명 없이 남긴다. 지적으로도 회피다 — 판별식은 공표된 시험인데 그것을 명백히 충족하는 셋에 적용하지 않으면 기준을 지키는 게 아니라 계수를 지키는 것처럼 보인다. 척추 논지 A1('이름이 기제보다 넓다')에 대해 기제를 실제로 구현한 사례는 가장 날카로운 반대 추이고, 그것을 버리면 A1의 신뢰도가 떨어진다."
+    }
+  },
+
+  "recommendation": "(b) 별도 절 — 구체적으로 ch24에 §24.5 '배포되었으나 논문이 없는 것'을 신설한다. 실행 조건 7가지: (1) corpus 계수는 불변, '통과 9 + 경계 1 + 불충족 19 = 29(논문)'을 그대로 두고 제품 3종은 별도 계수로 합에 넣지 않는다고 명시. (2) 판별식을 공개적으로 적용하고 셋 다 PASS를 기록하되, 판정 근거가 '보고된 실험'이 아니라 '벤더가 문서화한 의도된 동작 사양'임을 라벨로 붙인다 — 논문보다 약한 warrant이고 그렇게 말하는 것이 요점이다. (3) §4에 의무 caveat 2항 추가: 제품 판정은 사양 근거이며 독립 재현이 0건이라는 것, 그리고 OpenAI 9.4→75.1은 통제군 대비 효과가 아니라 자사 2024년 제품 대비이며 기반 모델 세대와 교락되어 본문 수치로 인용 불가라는 것. (4) ch14는 wr 4점 격자 표를 얻는다 — Letta의 파괴적 덮어쓰기는 이제 네 설계 중 하나다. (5) ch25는 수치가 아니라 Anthropic의 과금 진술을 인용한다: B_s가 계량·청구되는 양이라는 사양 사실은 통제군이 필요 없다. (6) ch11 회색지대 절에 Mem0 Dream의 시계 분할을 한 문장 넣는다 — 조건 (1)의 경계가 한 제품 안에서 보이는 유일한 표본이다. (7) ch27은 한 줄만: 통제된 성과 증거가 0건이므로 제품은 '배포' 질문을 움직이고 '유망' 질문은 움직이지 않는다.",
+
+  "unverified": [
+    "openai.com/index/chatgpt-memory-dreaming/ — 이 라운드 WebFetch 전부 HTTP 403. help.openai.com도 403. 브라우저 확장 미연결로 우회 실패. OpenAI 1차 출처를 직독하지 못했다. OpenAI 관련 모든 항목은 독립 2차 3건 수렴 + TRIAGE §3.3의 앞 라운드 1차 확인 주장에 의존한다.",
+    "techtimes.com의 'audit trail 축소' 보도 — 403으로 직독 실패. Arize의 재인용으로만 접했다. 2단계 전언이므로 인용하지 않는 편이 안전하다.",
+    "OpenAI의 '4시간 이상 비활성 시 통합 실행' 임계 — 단일 2차 출처(dev.to/digitalapplied) 주장. 공식 확인 없음.",
+    "OpenAI 메모리 요약 페이지의 '약 1시간 단위' 갱신 — Arize가 FAQ를 인용한 것이며 본 검토가 원문 확인 못 함.",
+    "OpenAI 평가표의 정체 — 내부 도구인지 명명된 공개 벤치인지 어느 출처도 밝히지 않는다. 문항 수·시드·신뢰구간 전부 미공개.",
+    "OpenAI wr='in-place 덮어쓰기' 판정 — 공식 문면 확정이 아니다. Singapore 재작성 예시와 보도에서의 추론이며 Arize가 스스로 'OpenAI does not state this explicitly'라고 적었다.",
+    "Claude Code 'Auto Dream'(24시간 + 5세션 자동 트리거, MEMORY.md 제자리 재작성, 서버 플래그 tengu_onyx_plover) — 3자 블로그 3건만 존재하고 한 출처는 미출시(unreleased)라고 적는다. 본 검토가 취득한 어떤 공식 Anthropic 문서에도 없다. Managed Agents Dreams API와 다른 표면이며 쓰기 의미론도 반대(제자리 파괴)로 보고된다. 인용 금지 — 확정하려면 별도 라운드 필요.",
+    "Mem0 2026-08-04 포스트 본문 — JS 렌더링으로 추출 실패. 해당 내용(스케줄 상세·요청 경로 밖·Pro/Enterprise 제공)은 검색 요약 경유일 뿐 직독이 아니다.",
+    "Mem0 두 포스트 간 스케줄 표현 불일치 — 08-05는 'Enterprise 약 하루 1회, Pro 주 1회', 08-04(요약 경유)는 '주 단위, 프로젝트별·적격 user ID별'. 해소하지 못했다.",
+    "Anthropic 'standard API token rates'의 실제 요율표 — 과금 방식 진술만 확인했고 모델별 단가는 검증하지 않았다.",
+    "Anthropic 런치 블로그의 'scheduled process' 표현과 API 문서의 caller-invoked 사양 사이의 불일치 — 자동 스케줄러가 별도로 존재하는지 확인하지 못했다. 문서에는 없다.",
+    "Harvey '약 6배' — 과제 정의·분모·측정 기간·비교 구성 전부 미기재. 고객 자체 테스트이며 검증 불가.",
+    "세 제품 어느 것도 독립 3자 재현·벤치마크·감사가 존재하지 않는다. 검색 범위 내 0건."
+  ]
+}

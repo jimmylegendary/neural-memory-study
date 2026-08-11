@@ -1,0 +1,406 @@
+{
+  "paper_id": "copilot-production-traces",
+  "arxiv": "2608.00101",
+  "arxiv_version": "v1 [cs.AI] 30 Jul 2026 (left-margin stamp, p.1)",
+  "title": "Agentic Coding in the Wild: Characterizing GitHub Copilot at Production Scale",
+  "authors": "Banruo Liu*,1, Haoran Qiu2, Íñigo Goiri2, Rodrigo Fonseca2, Ricardo Bianchini3, Esha Choukse2. Affiliations: 1 UIUC, 2 Microsoft Azure Research, 3 Microsoft Azure. (* 'Work done while interning at Microsoft Azure Research', title-block footnote, p.1)",
+  "venue": "arXiv preprint. No venue named on the vendored text. Format and citation style are ACM systems-conference (references [1]-[46], Takeaway boxes, ASPLOS/OSDI-style contribution list); no acceptance is claimed anywhere.",
+  "date": "2026-07-30",
+  "path": "/home/jimmy/repos/neural-memory-study/papers/stc/2608.00101.txt",
+  "code": "None. No repository, no artifact link. The paper states an intention only: 'We plan to release sanitized traces from our characterization data to the public soon.' [§12, p.19]",
+  "axis": "none — this paper updates no layer. It is a workload characterization, admitted to the corpus as an EVIDENCE SUPPLIER, not as a mechanism. See discriminant_verdict.",
+
+  "one_line_for_the_editor": "This is the first production-scale measurement of the quantity this book has been forced to leave blank in ten chapters — how many queries share one context, and how much idle time sits between them — and both answers are UNFAVORABLE to the E-path amortisation argument: the denominator is a single-digit median (3 turns/session) and the idle window that makes sleep schedulable is the same window that destroys the prefix cache the amortisation defence relies on.",
+
+  "why_it_was_read": "Focus assigned by the editor: (a) the distribution of idle intervals at turn boundaries, (b) the exact definition of the 90%→55% KV-hit figure, (c) whether a real-serving $N_q$ distribution finally exists, (d) whether X1's swept parameters (context length, query count) can be given measured ranges, (e) the honest generalisation limit of a single-vendor coding-agent workload.",
+
+  "problem_stated": {
+    "as_the_paper_frames_it": "'Despite this rapid adoption, there is no empirical understanding of how coding agents behave at production scale. LLM serving systems that underpin these agents (e.g., vLLM and SGLang) were originally designed for a fundamentally different workload: independent, short-lived, stateless requests.' [§1, p.1]",
+    "the_gap_it_claims": "Recent agent-serving work (CacheTTL, SAGA, Sutradhara, Parrot, Autellix, Pythia) is 'designed and evaluated primarily using synthetic benchmarks (e.g., SWE-bench), leaving it unclear whether their assumptions and optimizations reflect the behavior of production coding agents.' [§1, p.1; repeated verbatim in §2.2, p.3]",
+    "the_operational_question": "What are the true temporal and structural properties of an agentic coding workload — call structure, KV-cache lifecycle, tool behaviour, user heterogeneity, and idleness — measured rather than assumed? [§1, p.1-2]",
+    "note_writer_remark": "[note-writer] The paper never uses the words 'sleep-time compute', 'amortization', 'offline', or 'precompute' in the sense this book uses them. Its relevance to this book is entirely as measurement. It does not know it is answering this book's questions, which is precisely what makes the answers usable — none of its numbers were produced to defend or attack an amortisation claim."
+  },
+
+  "inherited_open_question": {
+    "from_the_literature_it_cites": "The paper explicitly inherits the gap left by the agent-serving systems papers it lists: those systems 'suggest that workflow-aware cache management, scheduling, and resource allocation can significantly improve agent performance. However, existing designs are largely motivated and evaluated using synthetic benchmarks... or small-scale workloads' [§2.2, p.3]. It inherits from the workload-characterization tradition explicitly — Shahrad et al. (Azure Functions, cold-start policies), Philly, Helios, POLCA — and says 'Our study extends this tradition to the emerging class of AI agent workloads' [§10, p.18].",
+    "from_the_nearest_prior_work": "TraceLab [46] (arXiv:2606.30560) is the closest prior: '4.3K Claude Code and Codex traces from 43 developers, finding autonomous loops, prefix-token cost, idle gaps, and heavy-tailed tool latency.' The paper positions itself as the same findings at 3,000× the session count and 74,000× the user count [§10, p.18]. It does NOT claim to contradict TraceLab.",
+    "from_THIS_book": "[note-writer] Not an inheritance the paper made. But the book's ch14 §14.5.2, ch25 §25.3.3, ch01 §01.5, ch12 §12.5, ch13, ch24, ch27 (C2), ch28 (E10, R5), ch30 (표 30-2) and the glossary entry for $N_q$ all print the same standing sentence — 실서빙 $N_q$ 분포를 보고한 논문이 corpus에 없다 — and ch30 §30 names 'realserving $N_q$ 분포 한 줄' as one of the cheapest observations that would move several verdicts at once. This paper is the closest thing to that line that exists."
+  },
+
+  "what_it_measures": {
+    "not_a_mechanism": "There is no method, no model, no training, and no state update in this paper, with one exception: a LightGBM idle-time predictor introduced in §9.2 as an artifact of the study, not as the subject of it. Everything else is measurement.",
+    "dataset": {
+      "source": "Anonymized client-side telemetry from GitHub Copilot's coding agent in Visual Studio and VS Code, first week of June 2026 [§3.1, p.3].",
+      "captured": "'structural metadata for every LLM call and tool invocation, including timestamps, durations, input/output token counts (without including reasoning tokens), model names, tool names, and success or failure status' [§3.1, p.3].",
+      "explicitly_not_captured": "'We do not collect the prompt text or file content, model outputs, source code, tool arguments, or any user-identifiable information.' [§3.1, p.3]",
+      "headline_scale_as_stated_in_abstract": "3.2M users, 13M sessions, 761M LLM calls, 95T tokens [Abstract, p.1]; §1 adds 775M tool invocations [§1, p.1].",
+      "table_3_scale": "Sessions 13.5M · Turns 95.1M · Users 3.2M · Models 27+ · Tools 45+ · LLM calls 760.5M · Tool calls 774.7M · Prompt tokens 44.9T · Completion tokens 39.3B [Table 3, p.3].",
+      "token_count_conflict": "44.9T + 39.3B = 44.94T, which is 2.1× smaller than the 95T printed in the Abstract and §1. Every OTHER headline figure matches Table 3 to rounding (13M/13.5M, 761M/760.5M, 775M/774.7M, 3.2M/3.2M). See unfavorable_facts U1."
+    },
+    "hierarchy_definitions_verbatim": {
+      "session": "'a coding agent session lifetime.' [§3.2, p.3]",
+      "turn": "'User-Turn (or simply Turn): one agentic coding conversation triggered by the user prompt and followed by the agent's full autonomous response chain. Therefore a single user turn may comprise many LLM calls, depending on the path that the agent takes.' [§3.2, p.3]",
+      "step": "'a single LLM invocation or tool call within a turn; the last step in a turn is always an LLM invocation.' [§3.2, p.3]",
+      "canonical_pattern": "'User prompt → LLM → [LLM | tools → LLM]* → final response'. 'Every turn begins with exactly one user-initiated LLM call; all subsequent LLM invocations or tool calls within the turn are agent-initiated (auto-continued).' [§3.2, p.3]",
+      "why_this_matters_to_this_book": "[note-writer] The TURN is the unit at which a user query arrives. The SESSION is the unit over which a context persists. Therefore 'turns per session' is the natural production reading of $N_q$ — and it is measured. The mapping is not exact, and the inexactness is stated in book_impact and in unfavorable_facts U15."
+    }
+  },
+
+  "notation_conflicts": {
+    "preamble": "The paper contains exactly one symbol: $S(t) = \\Pr(\\text{idle} > t)$, the survival curve of the idle-time predictor [§9.2, p.17]. Everything else is prose and table entries. This single symbol collides head-on with two reserved symbols.",
+    "map": [
+      {"paper_symbol": "$S(t)$", "paper_meaning": "survival function of the inter-turn idle duration, $\\Pr(\\text{idle} > t)$, with the conditional refinement $S(t \\mid \\text{idle} > t_0) = S(t)/S(t_0)$ [§9.2, p.17]", "reserved_meaning": "DOUBLE collision. $S_t$ = inner momentum/surprise buffer [STC-STYLE §1.2, NM-inherited], and $S(c;B_s)$ = the offline processing operator of (U-E) [STC-STYLE §1.2]. STC-STYLE §1.5 forbids a bare $S$ outright.", "unified_replacement": "$\\Pr(T_{\\text{idle}} > t)$ written out, or a note-local $\\mathcal{G}(t)$. The chapter must NEVER write this paper's $S$. Note that the collision is semantically loaded: this paper's $S$ describes the AVAILABILITY of the window in which the book's $S(c;B_s)$ would run."},
+      {"paper_symbol": "$t$", "paper_meaning": "elapsed wall-clock seconds since a turn boundary [§9.2, p.17]", "reserved_meaning": "$t$ = token/chunk index [STC-STYLE §1.2, P3]", "unified_replacement": "$\\Delta$ or explicit seconds. The book's $t$ is never wall-clock."},
+      {"paper_symbol": "$t_0$", "paper_meaning": "the elapsed-time conditioning point for the survival refinement [§9.2, p.17]", "reserved_meaning": "none, but inherits the $t$ collision", "unified_replacement": "$\\Delta_0$"},
+      {"paper_symbol": "'turn'", "paper_meaning": "one user prompt plus the agent's entire autonomous chain [§3.2, p.3]", "reserved_meaning": "the book has no reserved term for this. The book's $q$ is a single query.", "unified_replacement": "map a turn to ONE $q$ arrival. The chapter must state once that a single $q$ in this workload expands into a median of 4.5 LLM calls, so 'query' and 'LLM call' are not interchangeable here — a distinction no other paper in the corpus forces."},
+      {"paper_symbol": "'context compaction'", "paper_meaning": "an LLM call that 'rewrites the prompt, dropping or summarizing older messages, to buy room for the session to continue' [§6, p.10]", "reserved_meaning": "structurally this is $\\mathrm{wr}(E,\\hat c)$ with destructive overwrite — the SAME write operator as Letta STC's `rethink_memory` (→ ch14 L3) — but executed at WAKE time on the critical path", "unified_replacement": "keep the paper's term 'context compaction'; the chapter states the operator identity explicitly. This is the single most important conceptual mapping in this note."},
+      {"paper_symbol": "'cache hit rate'", "paper_meaning": "share of prompt tokens served from the provider's prefix cache, as reported back to the client [§5.2, p.9]", "reserved_meaning": "not reserved, but the book's $w_{\\text{in}}$ knob (→ ch25 (25-1)) is exactly $1 - (\\text{hit rate})$ in effect", "unified_replacement": "state the identity once in the chapter: the paper's measured hit rate is the empirical value of the quantity ch25 §25.3.1 sets by assumption."}
+    ]
+  },
+
+  "update_layer": {
+    "instantiates": "NONE. No (U-E), no (U-W), no (U-$\\Theta$).",
+    "detail": "$\\Theta$ is fixed (27+ vendor models, all anonymized and never fine-tuned in this paper). $W$ does not exist as a mutable layer in the architectures used. $E$ — in the sense of a persistent external store written before a query — does not exist in the system studied at all. The agent's 'memory' is the raw accumulated prompt: conversation history 48% of input tokens, function-call messages 28%, system prompt 14%, retrieved repository instructions and other 10% [§5.1, p.8; Figure 11, p.8]. There is no summarisation step, no vector index, no retrieval, and no write operator applied before a query arrives.",
+    "the_one_thing_that_does_run_before_a_query": "The idle-time predictor. At each turn boundary it emits a survival curve over the duration until the next user turn, and that estimate drives KV-cache offloading, container hibernation, and keep-alive requests [§9.2-9.3, pp.17-18]. It runs before $q$, it costs a printed budget, and its output is consumed by the next query. It changes no layer's state — only the PLACEMENT of state. See discriminant_verdict.",
+    "the_one_write_operator_that_exists_in_production": "Context compaction. 'it rewrites the prompt, dropping or summarizing older messages' via 'a separate LLM call that summarizes the current accumulated context into a condensed representation before the agent resumes execution in the same session' [§6, pp.10-11]. Under the unified frame this is $E_{k+1} = \\mathrm{wr}(E_k, \\hat c_k)$ with $\\mathrm{wr}$ = destructive overwrite and $\\hat c_k = S(c_k; B_s)$ — structurally identical to Letta STC's mechanism (→ ch14 L3). The decisive difference is the CLOCK: it runs at wake, synchronously, on the critical path of the turn, and the paper accounts it purely as overhead. It is triggered by context-window pressure, not by an idle interval.",
+    "ordering": "n/a — no layer sequence exists."
+  },
+
+  "cost_table": {
+    "preamble": "This paper inverts the corpus's usual failure. Where every sleep-time paper prints quality and hides cost, this paper prints cost at production scale and has no quality signal at all (it says so: 'No quality signals', §11, p.19). The cells below are therefore filled from the opposite direction than every other note in this corpus.",
+    "B_s": {
+      "value": "not applicable as a method budget; PRINTED as an availability envelope, and printed for the study's own predictor",
+      "method_budget": "There is no sleep procedure, so there is no $B_s$ to report. Absent by construction, not by omission.",
+      "availability_envelope_first_in_corpus": "What the paper does supply — and no paper in this corpus has supplied — is the WALL-CLOCK BUDGET AVAILABLE for a sleep round, i.e. how long the idle window at a turn boundary actually is. See idle_time_distributions below. This is the quantity the book's operational definition (→ ch01 §01.4: '질의 $q$가 도착하기 전, 유휴 시간에 예산 $B_s$만큼 소비하는 계산') presupposes and never evidences.",
+      "predictor_budget_printed": "'The full model ensemble is roughly 2MB in size so offline training takes under a minute on the 150K training dataset with a single 16-vCPU AMD EPYC 7763 node... At inference time, evaluating all 12 models to reconstruct a survival curve takes under 3 ms per turn boundary' [§9.2, p.17]. 12 LightGBM quantile regressors, 400 trees each, trained on log idle time.",
+      "note": "[note-writer] The 3 ms figure is worth carrying: it is the cheapest 'before the query' computation in the entire corpus, by roughly nine orders of magnitude against a sleep round of LLM calls, and it buys a scheduling decision rather than a state change. It marks the floor of the axis."
+    },
+    "L_w": {
+      "value": "PRINTED at production scale — the only such paper in the corpus — but for a system with no sleep-time method",
+      "per_llm_call": "Median tool call 166 ms vs LLM calls substantially longer [§7.1, p.12; Figure 22, p.13]. The worked timeline in Figure 8 (p.6) shows individual LLM calls of 4.0 s, 6.9 s, 3.8 s, 9.1 s, 5.9 s, 7.4 s, 4.3 s, 12.1 s.",
+      "per_turn": "Turn duration median 63.4 s, P75 163.0 s, P90 392.1 s, mean 396.3 s, skew 6.3× [Table 4, p.4].",
+      "per_session": "Session duration median 4.2 min, P75 39.5 min, P90 177.8 min, mean 62.6 min, skew 14.9× [Table 4, p.4]. 'a P90 exceeding three hours' [§4.2, p.5].",
+      "time_composition": "Single-turn sessions (6% of all): LLM time median 87.7% of session wall clock. Multi-turn sessions (94%): user idle median 80.1%, LLM 13.7%, tool batch 2.0% [§5.1, p.8; Figure 12, p.8].",
+      "compaction_latency": "'the median compaction consumes roughly 22% of the turn's total execution time. The tail is heavy where P90 sits at approximately 34%.' [§6, p.11; Figure 18, p.11]",
+      "tool_latency": "Median across all tool invocations 166 ms; mean 16.7 s; P90 4.4 s; P99 79 s — 'The nearly 100× gap between the mean and median' [§7.1, p.12]. ~320× spread in median latency across tool types [Figure 23, p.12]. run_command_in_terminal and run_build: median hundreds of ms to a few s, mean 68 s and 78 s respectively, P99 several hundred s [§7.1, pp.12-13].",
+      "what_it_does_NOT_give": "No staging latency, no delta-load latency, no TTFT, no ITL, no per-token decode latency. ch29 §29.3's verdict — 세 방식 중 어느 것에 대해서도 $L_w$를 인쇄한 논문이 없다 — concerns the three $\\Theta$-path delta-staging methods and SURVIVES untouched. This paper stages nothing."
+    },
+    "C_cap": {
+      "value": "absent — in bytes",
+      "detail": "Not a single byte figure appears anywhere in the paper. Every capacity-adjacent quantity is in TOKENS: prompt/cached/completion tokens per call, per turn, per user; context utilization as a percentage of the model's context limit [Figure 17, p.11]. No KV-cache byte footprint, no per-user state size in bytes, no dtype, no per-session memory figure.",
+      "finding": "The PRE-RESEARCH §4 caveat — corpus 전체에서 상태 용량을 바이트로 보고한 논문이 0편이다 (ch26) — SURVIVES this paper intact. This is worth stating explicitly in the chapter, because a production systems paper from a cloud provider is exactly where one would expect bytes, and it does not print them. The reason is disclosed: 'No server-side view... However, going into such details can easily erode model-level and serving-engine confidentiality.' [§11, p.19] The silence is confidentiality, not oversight — which upgrades ch30's M5 falsifier from hypothetical to observed. See book_impact item 7."
+    },
+    "rho": {
+      "value": "absent",
+      "detail": "Nothing is consolidated, so nothing degrades across rounds. The paper does contain a repeated-write count — sessions that compact do so a median of 1 time, mean 1.7, 'up to 40 times in the most extreme cases observed' [§6, p.11] — which is the closest thing in the corpus to a production count of repeated destructive rewrites of a context. But no quality is measured before or after ('No quality signals', §11, p.19), so no $\\rho$ can be computed. [note-writer] The 40-round tail is nonetheless the first production evidence that the repeated-$\\mathrm{wr}$ regime that X4 studies actually occurs in deployment."
+    },
+    "N_q": {
+      "value": "PROXY MEASURED at production scale — the headline of this note",
+      "turns_per_session": "Median 3, P75 7, P90 15, mean 6.1, skew 2.0× [Table 4, p.4]. Full CDF over 1–1000 turns in Figure 4a (p.4), annotated 'Median: 3'. Confirmed in prose: 'The median session contains just 3 user turns, 15 LLM calls, and lasts 4.2 minutes, whereas the mean reaches 6.1 turns, 40.6 LLM calls, and 62.6 minutes' [§4.2, p.5]. 'At the 90th percentile, they reach 15 user turns' [§4.2, p.5].",
+      "turns_per_user": "Median 11, P90 74. Sessions per user median 2, P90 8 [§8.2, p.15; Figure 30, p.15].",
+      "turns_per_user_by_archetype": "Readers 6 turns / 2 sessions; Coders 50 turns / 5 sessions; Terminal 7 / 4(sessions col reads 2 in Table 7 layout — cite Table 7 directly); Deep-loop 6 turns / 2 sessions; Chat-only 2 turns / 1 session [Table 7, p.15].",
+      "total_turns": "95.1M turns across 13.5M sessions [Table 3, p.3] — ratio 7.04, consistent with the mean of 6.1 to within sampling.",
+      "the_caveat_that_must_travel_with_it": "This is $N_q$ under the reading 'one context = one session'. It is NOT $N_q$ under the book's exact definition (a FIXED context shared by $N$ independent queries), because the agentic context is append-only, mutated by the agent's own tool outputs between turns, and periodically destroyed by compaction. Under the alternative reading 'one context = the user's working set / repository', the denominator is turns per user: median 11, P90 74. The book must print BOTH readings and state that the paper licenses neither one over the other. See unfavorable_facts U15."
+    }
+  },
+
+  "idle_time_distributions": {
+    "why_this_section_exists": "This is focus item (a) and the reason the paper was assigned. The book's operational definition of sleep-time compute (→ ch01 §01.4) contains the phrase 유휴 시간, and no paper in the corpus has ever measured it.",
+    "definitions_verbatim": {
+      "container_idle": "'the elapsed time between two consecutive tool invocations. During this interval, the agent is processing tool outputs through one or more LLM calls, leaving the tool-execution container idle.' [§9.1, p.16]",
+      "kv_cache_idle": "'the elapsed time between two consecutive LLM calls. During this interval, the agent is executing tools or waiting for user input, while the corresponding KV cache remains allocated but unused.' [§9.1, p.16]",
+      "classification": "'we classify each idle interval as either intra-turn (entirely within an agent turn) or cross-turn (spanning a turn boundary).' [§9.1, p.17]"
+    },
+    "table_8_verbatim": {
+      "container": "Intra-turn P50 5.8 s, P95 44 s; Cross-turn P50 243 s (4.1 min), P95 5,424 s (~90 min) [Table 8, p.16]",
+      "kv_cache": "Intra-turn P50 1.2 s, P95 37 s; Cross-turn P50 172 s (2.9 min), P95 4,500 s (~75 min) [Table 8, p.16]",
+      "all_intervals_pooled": "Container idle median 6.8 s; KV-cache idle median 5.0 s [§9.1, p.16; Figure 32a annotations]. 'nearly one-third of consecutive LLM calls occur with negligible idle time between them' [§9.1, p.17]."
+    },
+    "share_of_intervals": "'More than 90% of idle intervals are intra-turn... In contrast, the relatively small fraction of cross-turn intervals (8–9%) have median durations of 243 s and 172 s, respectively, over two orders of magnitude larger.' [§9.1, p.17]",
+    "the_conflicting_second_median": "'The median user idle time is 1,512 s (25.2 minutes), with a long tail extending beyond one day (users picking up an unattended session the next day)' [§9.1, p.17; Figure 32b]. §9.3 repeats it: 'the session enters an idle period (often long duration, median ∼25 minutes)' [§9.3, p.18]. This is 6.2× the 243 s and 8.8× the 172 s of Table 8, for what is described as the same gap. The paper never reconciles them, and the Abstract/Table 1 propagate only the SMALLER pair ('4.1 (container) and 2.9 (KV cache) minutes'). See unfavorable_facts U3.",
+    "the_answer_to_the_editors_question": "[note-writer] Is there enough idle time to run a sleep round? Read conservatively — Table 8's KV-cache cross-turn P50 of 172 s — the median turn-boundary window is under three minutes, and the P95 is ~75 minutes. Read at the paper's other number, the median window is ~25 minutes. Either way the answer to 'is there a usable window' is YES at the median, and the window is MINUTES not hours at the low reading. Against that, a Letta-style sleep round of up to 10 sequential `rethink_memory` calls (→ ch14 L3) at this paper's measured per-call durations of 3.8–12.1 s [Figure 8, p.6] takes roughly 40–120 s. So a sleep round FITS inside the median turn-boundary gap under the conservative reading, with little margin. This is the first time that sentence can be written with a source.",
+    "the_shape_that_matters_more_than_the_median": "Idle time is abundant in PROPORTION but concentrated in FEW intervals. In multi-turn sessions (94% of all sessions) user idle is a median 80.1% of session wall-clock time [§5.1, p.8; Figure 12b] — yet >90% of idle INTERVALS are intra-turn and only seconds long [§9.1, p.17]. The usable budget therefore sits entirely in the 8–9% of intervals that cross a turn boundary. This is exactly the structure the book needs: sleep is schedulable at turn boundaries and nowhere else. The paper states the same conclusion for its own purposes — 'Intra-turn idle periods are typically too short to justify sleeping containers or evicting KV caches, as reclamation overheads would frequently exceed the idle duration itself. Cross-turn idle periods, however, are long enough to amortize state migration and restoration costs' [§9.1, p.17].",
+    "predictability": "The idle duration is predictable enough to schedule against but not to time precisely: ROC-AUC 0.73 for 'will the gap exceed 60 s' (vs 0.5 always-positive, 0.58 previous-gap heuristic); accuracy and F1 fall from ~80–88% at 30 s elapsed to 25–43% at 30 min; but 'the fraction of total idle time correctly captured by the predictor (Captured idle time) stays consistently high, between 86% and 90% across time' [§9.2, p.17]. Feature importance is dominated by session-level features: 'average accumulated idle duration and turn index together account for over half of total importance' [§9.2, p.17]."
+  },
+
+  "kv_cache_lifecycle": {
+    "why_this_section_exists": "Focus item (b): the exact definition and conditions of the 90% → 55% figure. The answer is that the two numbers are NOT the same statistic, and the mechanism behind the drop is the one thing in this paper that most directly threatens the book's ch25 defence.",
+    "the_90_percent": {
+      "abstract_wording": "'This structure yields KV cache hit rates averaging 90% within a turn' [Abstract, p.1]",
+      "intro_wording_different_scope": "'Prompt prefix caching accounts for an average of 90% of tokens within an agent session' [§1 finding 2, p.2] — SESSION, not turn. Two scopes for the same number.",
+      "section_5_2_wording": "'The result is a cache hit rate of roughly 98% at the median' [§5.2, p.9] — a per-LLM-call median, not a mean.",
+      "takeaway_7_wording": "'Prefix caching rate is high overall (median 98%), and follows a predictable trajectory within a turn—45% on the cold-start call, jumping to 86% by the second call, and plateauing at 92–94% from the third call onward.' [Takeaway 7, p.9]",
+      "figure_13_caption": "'Rates rise from an average cache hit rate of 45% initially to ∼90% at plateau' [Figure 13 caption, p.9] — plateau given as 90%, where Takeaway 7 gives 92–94%.",
+      "bimodality": "'roughly 10% of calls see low reuse (below 20% hit rate), reflecting cold-start calls with minimal prefix to reuse, while the majority cluster at the opposite extreme (over 80% of calls exceed an 90% hit rate)' [§5.2, p.9].",
+      "token_basis": "Per LLM call: prompt median 68K tokens, of which cached median 63K, completion median 247 [Figure 10, p.8]. 63/68 = 92.6%."
+    },
+    "the_55_percent": {
+      "exact_definition": "The average cache hit rate of the FIRST LLM call AFTER a same-model turn boundary. Figure 14 (p.10) plots last-call-before vs first-call-after for three boundary types. Same-model turn boundary: 81% → 55%. Model-switch turn boundary: 75% → 8%. Intra-turn (same model): 87% → 91%.",
+      "the_drop_is_absolute_percentage_points": "'turn boundaries are the primary source of cache hit rate degradation... which leads to the same-model drop of −26% on average' [§5.3, p.9]. 81 − 55 = 26. Figure 14 caption: 'Same-model boundaries cause a ↓26% average drop; model-switch boundaries cause near-complete invalidation (↓67%).' 75 − 8 = 67.",
+      "the_comparison_the_abstract_makes_is_not_like_for_like": "The Abstract juxtaposes 'averaging 90% within a turn' against 'falling to 55% across turn boundaries'. The 90% is an average over ALL calls within a turn (or session); the 55% is the value at ONE specific call, the first after a boundary. The paper's own like-for-like 'before' value is 81%, not 90%. See unfavorable_facts U5."
+    },
+    "the_mechanism_and_why_it_matters_to_this_book": {
+      "attributed_cause": "TIME-BASED EVICTION, not prompt-prefix change. 'The gap between one turn's last LLM call and the next turn's first call is typically long relative to intra-turn call spacing, since it spans user idle time...; the serving system's cache entries are likely evicted after sitting unread for this extended interval' [§5.3, p.9].",
+      "the_decay_curve": "'For idle gaps under 2 minutes, the cache hit rate is high and stable, with medians at or above 95% across the <1s through 30s-2m buckets... Once idle time crosses the 2-10m range, the distribution widens sharply and the median drops to ∼70%, with a long lower tail reaching down to 0%... Beyond 10 minutes, the collapse is essentially complete, with the 10m-1h and >1h buckets showing medians near 0-5% and an upper quartile that rarely exceeds 20%. This pattern, a stable plateau followed by a sharp cliff between roughly 2 and 10 minutes of idle time, is the signature of a time-based KV cache eviction policy at the serving system.' [§5.3, pp.9-10; Figure 15, p.10]",
+      "the_named_deadline": "'Existing cache retention is time-bounded, e.g., the default limit for Claude models is 300s (5 min), so a session idling past this window is evicted and recomputed regardless of when the next turn actually arrives.' [§9.3, p.18, citing Anthropic prompt-caching docs]",
+      "the_finding_for_this_book": "[note-writer] THE IDLE WINDOW THAT MAKES SLEEP SCHEDULABLE IS THE SAME WINDOW THAT DESTROYS THE PREFIX CACHE. ch25 §25.3.1's [해설] concedes that $w_{\\text{in}}=0$ — prefill free, the assumption under which the amortisation argument always wins — 'is true in a serving configuration that actually exists': namely when $\\hat c$ is pinned as a prompt prefix and hits the prefix cache. This paper measures when that configuration holds in production: only for gaps under about 2 minutes. Beyond 10 minutes the median hit rate is 0–5%. A sleep round needs the gap to be long; the prefix-cache defence needs the gap to be short. In production these two conditions are close to mutually exclusive, and the crossover sits inside the same 2–10 minute band that also contains the measured median turn-boundary gap (172–243 s, Table 8). This is the sharpest single result in the note."
+    },
+    "the_other_two_invalidation_events": {
+      "model_switch": "Affects ~6.4% of sessions; predominantly reactive — '36% non-success rate before switches vs. 8% baseline' or rate limiting. Post-switch average hit rate 8%, a −67 point drop. Manual→auto switches: 52% downgrades, 35% lateral, 13% upgrades. Auto→manual: 51% upgrades, 36% lateral, 13% downgrades [§5.4, p.10; Figure 16, p.10].",
+      "context_compaction": "Occurs in 0.5% of calls, 7.8% of sessions, rising to 22.6% among sessions with >100K-token prompts. Median event drops 72.8% of prompt tokens (P25–P75: 58%–81%; 6.1% of events drop ≥90%). Median cache-hit-rate drop 66.1%; 34.3% of events erase ≥90% of hit rate, 21% erase ≥99%. Median compaction costs 22% of turn time, P90 34%. Trigger utilization is multi-modal with peaks near 50%, 65–66% (median), 80%, and near-100% of the model's context limit, and the multi-modality persists within a single model [§6, pp.10-11; Figures 17-20, p.11]."
+    }
+  },
+
+  "experiments": {
+    "nature": "Observational characterization, not an experiment. There is no baseline, no treatment, no ablation, and no statistical test anywhere in the paper. The one constructed artifact — the idle-time predictor — is evaluated against two baselines (always-positive, previous-gap heuristic).",
+    "execution_structure": {
+      "llm_to_tool_ratio": "'the ratio of LLM calls to tool invocations is remarkably close to 1:1 (mean 40.6 vs. 43.6 per session)' [§4.3, p.5; Figures 4d, 6].",
+      "autonomy": "'After a user message, the agent autonomously executes an average of 6.6 LLM calls before returning control, yielding a split of approximately 87% agent-initiated versus 13% user-initiated calls.' [§4.3, p.5]",
+      "parallelism": "'36.7% are strictly sequential, while the remaining 63.3% exhibit at least some overlap between LLM calls... the median concurrency is only 1.15, and the P90 reaches 1.4' [§4.3, p.6; Figure 7, p.6]. Inverted-U within a turn: sequential at start and end, parallel in the middle.",
+      "tool_parallelism": "'93% of tool batches contain a single tool invocation, while only 7% dispatch multiple tools concurrently. Among the parallel batches, the median width is 2 tools and 87.5% contain at most 3 tools' with a tail to 108 [§7.2, p.14; Figure 26, p.14].",
+      "tool_llm_overlap": "'97% of tool batches run at least partially inside an LLM window' but 'only 7.7% of total tool time is actually hidden inside LLM windows, while the remaining 92% sits on the critical path' [§7.2, p.14; Figure 28, p.14]. By duration bucket: >99% overlapped under 500 ms, 76% at 0.5-5 s, 35% at 5-30 s, 5% at 30 s+."
+    },
+    "workflow_archetypes_table_5": "Six turn-level archetypes with median LLM calls and share: Deep-loop read 9 calls / 30.5%; LLM-only 1 / 20.2%; Multi-cycle edit 5 / 19.0%; Multi-cycle other 4 / 13.2%; Deep-loop w/failures 36 / 9.1%; Deep-loop run 7 / 8.1% [Table 5, p.6]. 'These turns result in 36 LLM calls (4 times the median), each processing 80K+ tokens including accumulated error output, and 34 tool batches' [§4.4, p.6].",
+    "user_archetypes_table_7": "Five per-user archetypes (values are per-user medians): Readers 41.7% of users, 2 sessions / 6 turns / 4.8 tools per turn / 203K tokens per turn; Coders 30.4%, 5 / 50 / 6.2 / 417K; Terminal 11.0%, 2 / 7 / 4.0 / 213K; Deep-loop 9.2%, 2 / 6 / 20.0 / 1.1M; Chat-only 7.6%, 1 / 2 / 0.0 / 23K [Table 7, p.15]. The 50x range referenced throughout is 1.1M vs 23K tokens per turn.",
+    "resource_concentration": "Per user: median 2 sessions (P90 8), median 11 turns (P90 74); median 3.2M total prompt tokens vs 33K completion tokens (P90 38M prompt / 282K completion) [§8.2, p.15; Figures 30-31, p.15].",
+    "tool_mix_and_failure": "get_file 35.0% of all invocations, run_command 17.0%, replace_string 9.8%; top 11 tools >90%, top 27 = 99% [§7.1, p.12; Figure 21, p.12]. 'run_command, run_build, and edit_file show the steepest drops in success rate in our traces, falling to roughly 73%' [§7.1, p.13]. 'a failed invocation takes 48x longer at P95 than a successful one' for run_cmd_in_terminal [§7.1, p.13]. Failed builds 'inject substantially more context, often 7-8x more at the median' vs a successful build's ~60 tokens [§7.1, p.13].",
+    "chat_comparison": "'The median prompt length is significantly higher than the 750 and 1,050 prompt tokens reported for text-only and multimodal LLM calls, respectively. Output lengths are also considerably larger, compared to median completions of only 105 tokens for text workloads and 80 tokens for multimodal workloads.' [§5.1, p.8, comparing against refs 31 and 34]. So coding-agent prompts are ~91x a text-chat prompt and ~2.4x its completion length.",
+    "predictor_training": "'150K sessions from a one-week window for training and 50K sessions from the following week for evaluation, so that the reported accuracy avoids overfitting.' [§9.2, p.17]",
+    "temporal_stability_claim": "'While our characterization results are observed to remain consistent from January to June 2026' [§11, p.19] — asserted, with no data shown for January-May."
+  },
+
+  "scale_ceiling": {
+    "population_scale": "3.2M users, 13.5M sessions, 95.1M turns, 760.5M LLM calls, 774.7M tool calls [Table 3, p.3]. This is the largest workload sample in the corpus by four to six orders of magnitude on every axis.",
+    "temporal_scale": "ONE WEEK, the first week of June 2026 [§3.1, p.3]. All diurnal, weekday/weekend, and idle structure rests on seven days.",
+    "geographic_scale": "'The sampled traces are taken from multiple regions, but all across the US. Therefore, they only represent three timezones at most.' [§3.1, p.3]",
+    "product_scale": "One vendor (GitHub Copilot), two IDE surfaces (Visual Studio and VS Code) [§3.1, p.3]. Not Claude Code, not Codex, despite those being named in the Abstract as the workload class.",
+    "model_scale": "27+ models, all anonymized as Model A-O plus 'Others'; no parameter counts, no families named, no context-window sizes [§5.1, p.7; Figure 9, p.7]. Top three = ~53% of invocations, Model A alone 23.7%.",
+    "observability_ceiling": "Client-side only, structural metadata only. No prompt text, no outputs, no source code, no tool arguments [§3.1, p.3]. No server-side metrics [§11, p.19]. Reasoning tokens are explicitly EXCLUDED from the token counts [§3.1, p.3] — so for reasoning models the completion-token figures understate actual generation.",
+    "what_it_therefore_cannot_establish": "[note-writer] It cannot establish anything about answer quality, about non-coding agent workloads, about non-US usage patterns, about longitudinal drift beyond one week, or about server-side memory pressure. It also cannot establish that a sleep round WOULD help — only that a window exists in which one could run."
+  },
+
+  "concept_ledger_delta": {
+    "new_concepts_this_paper_supplies_to_the_book": [
+      {"term": "turn boundary", "definition": "the point at which one user turn's autonomous chain ends and the next user prompt has not yet arrived; the only interval in an agentic session long enough to amortize reclamation or staging cost", "owner_chapter": "ch25 or ch29 — editor's decision", "source": "[§3.2, p.3; §9.1, p.17]", "note": "This gives the book a NAME for the place where sleep can run. The book has only ever had the vaguer 유휴 시간."},
+      {"term": "context compaction", "definition": "a wake-time LLM call that destructively rewrites the accumulated prompt to fit the context window", "owner_chapter": "ch14 (as the production twin of `rethink_memory`) or ch25", "source": "[§6, pp.10-11]", "note": "Structurally identical to the E-path write operator, executed at the wrong clock. This is the most valuable concept transfer in the note."},
+      {"term": "captured idle time", "definition": "the time-weighted fraction of total idle duration that a predictor correctly classifies as idle, as distinct from pointwise classification accuracy", "owner_chapter": "ch29", "source": "[§9.2, p.17]", "note": "A metric the book will need if it ever discusses scheduling sleep rounds. Also a metric that flatters — see U9."}
+    ],
+    "concepts_this_paper_does_NOT_supply": "No new mechanism, no new update rule, no new cost identity, no new capacity bound. The book's three-layer frame and four-cost table are untouched as a frame; only their EMPIRICAL CELLS move."
+  },
+
+  "cross_path_citations": {
+    "E_path": "NONE. Zero citations to Letta STC, MemGPT, Mem0, Zep, ReasoningBank, RAG, or any external-memory system. The word 'memory' in this paper always means KV cache, GPU memory, or DRAM.",
+    "W_path": "NONE. No test-time learning, no fast weights, no state compression.",
+    "Theta_path": "NONE. No fine-tuning, no LoRA, no model editing, no personalization by weights.",
+    "biology": "NONE. 'sleep', 'consolidation', 'dream', 'replay' do not appear in the technical sense anywhere; 'sleeping' appears only as container hibernation [§9, p.16].",
+    "sleep_time_compute_as_a_term": "The term does not appear in the paper.",
+    "what_it_DOES_cite_that_the_book_should_note": "The agent-serving systems line the book has not indexed: CacheTTL [19] (KV-cache retention across tool gaps), SAGA [12], Sutradhara [7], Parrot [20], Autellix [23], Pythia [41], Murakkab [8], Sherlock [32], JITServe [43], Compass [21], LMCache [22], Conveyor [37]. Plus two direct competitors in characterization: TraceLab [46] (arXiv:2606.30560, 4.3K Claude Code/Codex traces from 43 developers) and Yuan et al. [42] (arXiv:2605.26297, 'Agentic AI Workload Characteristics', benchmarked ReAct agents, 'decode-dominated execution under high context-cache reuse').",
+    "the_finding": "[note-writer] This is a fourteenth row for the book's silence map (→ ch11 §11.3.1, PRE-RESEARCH §3.1), and the cleanest one: an entire adjacent literature — production agent serving — exists, cites 46 works, and cites NOTHING from any of the book's three paths, in either direction. The silence is not chronological: Letta STC (2025-04) predates this paper by 15 months and shares its exact motivating scenario ('coding agents on a common repository', [Letta STC §1, p.1]). The E-path's founding paper and the production measurement of the E-path's own motivating workload do not know about each other."
+  },
+
+  "discriminant_verdict": {
+    "verdict": "FAILS. This is not sleep-time compute. It is adjacent literature and belongs in group B of the census (판별식 불충족).",
+    "condition_1_before_the_query_arrives": {
+      "result": "PASS (for the predictor); N/A (for the rest of the paper)",
+      "reasoning": "The idle-time predictor runs at each turn boundary — after the previous turn's chain completes and before the next user prompt arrives. That is exactly the interval the book's definition names. Nothing else in the paper computes anything before a query: context compaction, the only write operator present, fires DURING a turn, on the critical path, triggered by context-window pressure rather than by idleness [§6, p.10]."
+    },
+    "condition_2_budget_B_s_greater_than_zero": {
+      "result": "PASS, and unusually well documented",
+      "reasoning": "Under 3 ms per turn boundary for 12 LightGBM quantile regressors; ~2 MB ensemble; under one minute of offline training on 150K sessions with a single 16-vCPU AMD EPYC 7763 node [§9.2, p.17]. Small but strictly positive and — remarkably for this corpus — actually printed. It is the only paper here that prints a before-the-query compute budget in absolute units without being asked."
+    },
+    "condition_3_actually_changes_the_state_of_theta_W_or_E": {
+      "result": "FAIL — AND THIS IS THE CONDITION THAT DECIDES",
+      "reasoning": "The predictor changes no layer. Its output drives KV-cache offloading to DRAM/disk, container hibernation, and keep-alive requests [§9.3, p.18]. Every one of these changes the PLACEMENT of state, never its CONTENT. Offloading a KV cache and reloading it is semantically transparent: ŷ is identical whether the cache was retained, evicted and recomputed, or offloaded and restored. Θ is frozen vendor weights; W does not exist in these architectures; E does not exist in this system at all. No wr, no gradient, no delta.",
+      "why_this_is_worth_a_paragraph_in_ch11": "[note-writer] This paper is the MIRROR IMAGE of the corpus's existing boundary case. MemGPT satisfies (2), (3), (4) and fails only (1) — the write happens mid-conversation rather than before the query (→ PRE-RESEARCH §2.3, ch13 의무 caveat). This paper satisfies (1), (2), (4) and fails only (3). Together they make the discriminant legible in a way neither does alone: MemGPT shows what condition (1) filters out, and this paper shows what condition (3) filters out — namely SLEEP-TIME RESOURCE MANAGEMENT, which is idle-time work, performed before the query, whose product is consumed by the next query, and which changes nothing about what the model knows. Everything in §9.3 — proactive cache staging on the target model before a switch, keep-alive before the 300 s deadline, container hibernation — has the shape of sleep-time compute and none of the substance. Condition (3) is what separates '답이 더 싸게 온다' from '답이 달라진다'."
+    },
+    "condition_4_the_change_is_used_by_subsequent_queries": {
+      "result": "PASS",
+      "reasoning": "The predicted survival curve governs whether the next turn finds a warm cache or a cold one. The effect on the next query is real and quantified — the difference between a 55% and a near-0% hit rate on a 68K-token prompt."
+    },
+    "census_consequence": "PRE-RESEARCH §2.2 fixes the convention as '통과 9 + 경계 1 + 불충족 19 = 29' (OUTLOOK later moves the pass group to 10 by admitting Auto-Dreamer). If admitted, this paper lands in 불충족, moving that group to 20 and the total to 30 (or 31 on the OUTLOOK count). EDITOR'S DECISION REQUIRED: the alternative is to hold it outside the census as an evidence source, on the grounds that the census enumerates the sleep-time-compute literature and this is a serving-workload study. Precedent cuts both ways — the census already counts biology (3) and capacity/theory (4) papers that propose no mechanism, which argues for admitting it; but those were read as sources of CONSTRAINT on the three paths, which this paper also is. [note-writer] I recommend admitting it. Either way every chapter printing '29편' must be checked (ch11, ch24 §24.3.1, ch27, 부록 C)."
+  },
+
+  "unfavorable_facts": [
+    "U1 — THE HEADLINE TOKEN COUNT DOES NOT MATCH THE DATASET TABLE. The Abstract [p.1] and §1 [p.1] both state '95T tokens'. Table 3 [p.3] reports 44.9T prompt tokens and 39.3B completion tokens, summing to 44.94T — 2.1x smaller. Every other headline figure matches Table 3 to rounding: 13M vs 13.5M sessions, 761M vs 760.5M LLM calls, 775M vs 774.7M tool calls, 3.2M vs 3.2M users. The token figure is the sole outlier and the paper never reconciles it. Any chapter citing this dataset's scale must cite Table 3, not the abstract.",
+
+    "U2 — THE PROSE CONTRADICTS TABLE 4 ON THE MEDIAN TURN, the single most quotable statistic in the paper. §4.2 [p.5]: 'the median turn triggers 3 LLM calls and 3 tool invocations, consuming 160.2K prompt tokens and 265 completion tokens.' Table 4 [p.4] gives per-turn medians of 4.5 LLM calls, 4 tool invocations, 227.6K prompt tokens, 1.9K completion tokens. Table 4 is the internally coherent side: the same table's median session has 3 turns and 15 LLM calls (⇒ ~5 calls/turn), and the per-call median completion of 247 tokens [Figure 10, p.8] over 4.5 calls gives ~1.1K, not 265. Figure 4e's own annotations (228K / 217K / 2K) agree with Table 4 and not with the prose. The book must cite Table 4 and must not cite the §4.2 sentence.",
+
+    "U3 — TWO UNRECONCILED MEDIANS FOR THE TURN-BOUNDARY IDLE GAP, the number this book most needs. Table 8 [p.16] and Takeaway 15 [p.17] give cross-turn P50 = 243 s (container) and 172 s (KV cache). §9.1 [p.17] gives 'The median user idle time is 1,512 s (25.2 minutes)', and §9.3 [p.18] repeats '~25 minutes'. These differ by 6.2x and 8.8x for what the text describes as the same interval, and the paper never addresses the gap. The Abstract and Table 1 propagate only the smaller pair. Any book sentence of the form '턴 경계 유휴는 약 N분이다' inherits a 6-9x ambiguity and must print both.",
+
+    "U4 — THE CACHE-HIT HEADLINE IS STATED FOUR WAYS IN FOUR PLACES. Abstract [p.1]: 'averaging 90% within a turn'. §1 finding 2 [p.2]: 'an average of 90% of tokens within an agent session' (session, not turn). §5.2 [p.9]: 'roughly 98% at the median'. Takeaway 7 [p.9]: 'median 98%... plateauing at 92-94%'. Figure 13 caption [p.9]: 'to ~90% at plateau'. Mean and median, turn and session, plateau and overall are interchanged without flagging. The 90%, the 98% and the 92-94% are three different statistics.",
+
+    "U5 — THE ABSTRACT'S 90%→55% CONTRAST COMPARES TWO DIFFERENT STATISTICS. The 55% is the average hit rate of the FIRST LLM call after a same-model turn boundary; the paper's own like-for-like predecessor is 81% (last call before), giving the stated −26 point drop [Figure 14, p.10; §5.3, p.9]. The 90% is an average over all calls within a turn or session. Reading the abstract as '90 falls to 55' overstates the drop by 9 percentage points and silently changes the unit of analysis from a turn-average to a single call.",
+
+    "U6 — THE '4x COMPUTE AMPLIFICATION' FROM TOOL FAILURES DOES NOT RECONCILE WITH THE PAPER'S OWN MEDIAN. Table 1 [p.1] and Takeaway 4 [p.7] state failures amplify compute 'by up to 4x'. The source is §4.4 [p.6]: 'These turns result in 36 LLM calls (4 times the median)'. But Table 4's per-turn median is 4.5 LLM calls, against which 36 is 8x, not 4x. The value 4x is recovered only by treating the Deep-loop-read archetype's 9 calls [Table 5, p.6] as 'the median', which is not the median of anything the paper defines. Separately, this is a between-archetype ratio, not a measured before/after amplification: no turn is observed both with and without failure.",
+
+    "U7 — 'COMPACTION AFFECTS 44% OF TOTAL TOKENS' IS A SESSION-ATTRIBUTION, NOT A TOKEN-ATTRIBUTION. §1 finding 3 [p.2]: 'Context compaction is triggered in 7.8% of sessions yet affects 44% of total tokens'. Table 6's own caption [p.10] states what the number is: 'Share of total daily volume attributed to sessions that contain at least one compaction event.' Those tokens are consumed by heavy sessions, most of them before or independent of any compaction event; compaction itself occurs in 0.5% of calls [§6, p.10]. The word 'affects' does work the measurement does not support.",
+
+    "U8 — TAKEAWAY 6 CONTRADICTS FIGURE 12 AND THE PAPER'S OWN CENTRAL CLAIM. Takeaway 6 [p.8]: 'LLM execution takes 85.4% of wall-clock time yet contributes 48% of prompt tokens, whereas tool calls take only 4.7% of time yet contribute 28% of tokens.' Figure 12 [p.8] reports, for the 94% of sessions that are multi-turn, medians of 13.7% LLM, 2.0% tool, 80.1% user idle. The 85.4%/4.7% pair appears nowhere else, has no stated source, and is only approximately recoverable as a share of NON-IDLE time (13.7/(13.7+2.0) = 87.3%, still not 85.4%). Stated as 'wall-clock time' it directly contradicts the paper's own headline that user idle dominates multi-turn sessions — the very claim this book wants to cite.",
+
+    "U9 — THE HEADLINE PREDICTOR METRIC IS THE FLATTERING ONE. The Abstract and Conclusion lead with 'captures 86-90% of total idle time'. The pointwise numbers are weak and decay: ROC-AUC 0.73 for the binary 'gap > 60 s' task against 0.58 for a one-feature previous-gap heuristic; accuracy and F1 fall from ~80-88% at 30 s elapsed to 25-43% at 30 min [§9.2, p.17]. 'Captured idle time' is time-weighted, so it is dominated by the few very long gaps that are trivially easy to keep classifying as idle — precisely the regime where pointwise accuracy is worst. The paper acknowledges the decay but not that the two metrics are worst and best on the same intervals.",
+
+    "U10 — BOTH CLUSTERINGS ARE UNDESCRIBED. The six workflow archetypes [Table 5, p.6] and five user archetypes [Table 7, p.15] carry shares to one decimal (30.5%, 41.7%, 9.1%...) but the paper states only that it 'cluster[s] turns using their tool composition, LLM-call depth, token consumption, and execution characteristics' [§4.4, p.6] and 'groups users into five behavioral archetypes based on their per-turn tool/llm-call mix and token consumptions' [§8.1, p.15]. No algorithm, no feature scaling, no choice of k, no stability or validation. The 50x spread that Takeaway 14 and Table 1 headline is a ratio between two cluster medians produced by an unspecified procedure.",
+
+    "U11 — MODEL ANONYMIZATION MAKES THE MODEL-DEPENDENT RESULTS UNCHECKABLE. All 27+ models appear as Model A-O plus 'Others' [Figure 9, p.7], with no parameter counts, families, or context-window sizes. Yet several findings are explicitly model-conditional: the multi-modal compaction trigger distribution is attributed to 'heterogeneity in compaction policy across models and context limits' [§6, p.11], and the switch-direction analysis classifies moves as upgrade/downgrade/lateral 'based on model sizes and generations' [Figure 16 caption, p.10] — a classification that cannot be audited when the sizes and generations are withheld.",
+
+    "U12 — NO QUALITY SIGNAL AT ALL, and the paper says so: 'Without prompt/response content, we cannot correlate infrastructure efficiency with task completion quality' [§11, p.19]. Consequence: a 4x compute amplification ending in a fixed bug and one ending in an abandoned session are indistinguishable here. Every efficiency framing in the paper — retry loops as waste, compaction as hidden cost, deep-loop users as expensive — is a cost claim with no benefit term. This is the exact complement of the corpus's usual failure and equally disqualifying for any net judgement.",
+
+    "U13 — CLIENT-SIDE ONLY, AND THE CENTRAL MECHANISTIC CLAIM IS AN INFERENCE FROM IT. 'The traces we present are client-side' [§11, p.19]. The cache hit rate is therefore what the provider reported back, not an observed cache state, and the conclusion that the turn-boundary drop is 'the signature of a time-based KV cache eviction policy at the serving system' [§5.3, p.10] is inferred from the shape of a client-observed curve, not from any observation of an eviction policy.",
+
+    "U14 — REASONING TOKENS ARE EXCLUDED FROM ALL TOKEN COUNTS: 'input/output token counts (without including reasoning tokens)' [§3.1, p.3]. Since a substantial share of the 27+ models are reasoning models, every completion-token figure — the 247 median per call, the 1.9K median per turn, the 275:1 asymmetry, the 39.3B total — understates actual generation by an unreported, model-dependent amount. This weakens the input/output asymmetry argument the paper uses to motivate its KV-cache focus, and it is exactly the wake-side budget B_t that ch25's accounting needs.",
+
+    "U15 — 'TURNS PER SESSION' IS NOT N_q UNDER THIS BOOK'S DEFINITION, and the paper offers no way to make it one. The book's N_q is the number of queries sharing ONE FIXED context. Here the context is append-only, grows monotonically within a turn, is mutated between turns by the agent's own tool outputs (28% of prompt tokens are function-call messages [Figure 11, p.8]), and is periodically destroyed by compaction. A session's later turns do not share the same context as its earlier turns. Under 'context = session' the denominator is median 3; under 'context = the user's working set' it is turns per user, median 11 (P90 74); under 'context = the exact prompt prefix' it is closer to LLM calls within one turn, median 4.5. The paper licenses none of these three readings over the others, and the book must not present any single one as 'the measured N_q'.",
+
+    "U16 — ONE VENDOR, ONE WEEK, THREE TIMEZONES. GitHub Copilot only, Visual Studio and VS Code only, the first week of June 2026 only, and 'multiple regions, but all across the US. Therefore, they only represent three timezones at most' [§3.1, p.3]. The diurnal and weekday/weekend structure — which is what gives the idle-time distribution its shape — is US-working-hours specific. The Abstract names Claude Code and Codex as members of the workload class; neither is measured. The stability claim 'from January to June 2026' [§11, p.19] is asserted with no data shown.",
+
+    "U17 — THE PAPER DISCLAIMS ITS OWN NOVELTY IN ONE SENTENCE AND RELIES ON IT IN ANOTHER. §1 [p.2]: 'Even though some of these observations might not be surprising, our production-scale characterization quantifies their exact impact.' The value therefore rests entirely on the exactness of the quantities — the same property that U1-U8 show to be unreliable in at least eight places, including three of the seven rows of Table 1."
+  ],
+
+  "systems_implications": {
+    "for_the_E_path": [
+      "The production answer to context growth is DESTRUCTIVE WAKE-TIME SUMMARIZATION, not an external store. In a 3.2M-user deployment there is no vector index, no retrieval, no persistent memory: prompt tokens are 48% conversation history, 28% function-call messages, 14% system prompt, 10% repository instructions and other [§5.1, p.8]. When that overflows, an LLM call rewrites it in place [§6, p.10]. The E-path's entire proposition is that this operator should run at sleep time instead — and the measured cost of running it at wake time is a median 22% of turn execution time (P90 34%), a median 72.8% prompt-token drop, and a median 66.1% cache-hit-rate collapse [§6, p.11]. This is simultaneously the strongest practical motivation for the E-path anywhere in the corpus and the clearest evidence that nobody in production has taken it.",
+      "The amortisation denominator is small: median 3 turns per session, mean 6.1, P90 15 [Table 4, p.4]. Dividing a sleep cost by 3 is a different argument from dividing it by 100.",
+      "The prefix-cache defence and the sleep window compete for the same seconds. Under 2 minutes of idle, prefix-cache median hit rate is ≥95% and w_in≈0 holds; beyond 10 minutes the median is 0-5% and w_in→1 [§5.3, pp.9-10]. A 10-step sleep chain costs ~40-120 s at this paper's measured per-call durations.",
+      "There is a production mechanism that preserves the defence and is NOT sleep-time compute: 'the provider can issue a cheap keep-alive request just before the deadline, refreshing the cache entry and avoiding a full recompute' [§9.3, p.18], against a named 300 s Claude default. ch25 and ch29 should mention it — it is the cheapest competitor to an E-path sleep round and it changes no layer."
+    ],
+    "for_the_W_path": [
+      "ch29 §29.3.7 judges the W-path hardest to schedule because 'sleep이 요청 안에서 일어나므로 유휴 시간으로 밀 수 없고'. This paper does not contradict that but sharpens the intra-turn picture: KV-cache idle intervals within a turn have P50 1.2 s and P95 37 s [Table 8, p.16], and nearly a third of consecutive LLM calls have negligible gap [§9.1, p.17]. The within-request intervals the W-path would have to exploit are seconds — two orders of magnitude below the cross-turn windows.",
+      "The W-path's structural advantage that ch27 flags as never-measured — folding context into fast weights and DISCARDING the raw context, so the per-query prompt term goes negative — has a production target for the first time: a median 68K-token prompt per call of which 92.6% is re-read from cache, and 227.6K prompt tokens per turn [Figure 10, p.8; Table 4, p.4]."
+    ],
+    "for_the_Theta_path": [
+      "Nothing directly. No per-user weights, no deltas, no staging, no bytes. ch26 판정 2 and ch29 판정 1/6 are untouched.",
+      "One negative datum worth carrying: model switches occur in ~6.4% of sessions and are 'predominantly reactive, triggered by errors... or by rate limiting' [§5.4, p.10]. A production serving fabric reroutes sessions across 27+ models for capacity reasons. Any Θ-path personalization that pins a user's delta to one model's weights is incompatible with that rerouting — a concrete, measured obstacle to the per-user-delta deployment ch29 판정 1 sizes, and one the book has not considered."
+    ],
+    "for_the_books_serving_frame": [
+      "Input/output asymmetry at production scale: median 68K prompt vs 247 completion per call, a 275:1 ratio [Figure 10, p.8], against 750/105 for text chat and 1,050/80 for multimodal [§5.1, p.8]. The book's reader is told repeatedly that prefill is the term Letta's accounting omits; this measures how large that term is in the workload Letta named.",
+      "Tool time is not hidden: 97% of tool batches overlap an LLM window but only 7.7% of aggregate tool wall-clock time is hidden [§7.2, p.14]. Count-based and time-based overlap claims differ by more than an order of magnitude."
+    ]
+  },
+
+  "figures": [
+    {"id": "Table 4 (p.4)", "shows": "Per-session and per-turn median, P75, P90, mean, skew. THE most citable object in the paper for this book — it holds the N_q proxy (turns per session) and the context-size measurement (prompt tokens per turn) in one place.", "use": "ch25 §25.2.3 (replaces the assumed |c|), ch14 §14.5.2, ch27 (C2)"},
+    {"id": "Figure 4a (p.4)", "shows": "CDF of user turns per session, log x 1-1000, annotated 'Median: 3'", "use": "the distribution the book has said for ten chapters that nobody prints"},
+    {"id": "Figure 10 (p.8)", "shows": "CDFs of per-call prompt (median 68K), cached (63K), completion (247) tokens", "use": "ch25 — the size of the prefill term"},
+    {"id": "Figure 11 (p.8)", "shows": "Prompt token composition: history 48%, function calls 28%, system 14%, repo instructions + other 10%", "use": "the pre-existing vs within-turn split needed to map prompt size onto |c|"},
+    {"id": "Figure 12 (p.8)", "shows": "Session wall-clock split, single-turn (6%) vs multi-turn (94%); multi-turn medians LLM 13.7% / tool 2.0% / user idle 80.1%", "use": "the proportion of a session that is idle. Note U8."},
+    {"id": "Figure 14 (p.10)", "shows": "Cache hit rate before/after boundaries: intra-turn 87%→91%; same-model turn boundary 81%→55% (−26); model switch 75%→8% (−67)", "use": "the exact definition of the abstract's 55%"},
+    {"id": "Figure 15 (p.10)", "shows": "Cache hit rate by inter-turn idle bucket: ≥95% median under 2 min; ~70% at 2-10 min with a tail to 0%; 0-5% beyond 10 min", "use": "THE figure for ch25 — the empirical decay of the w_in=0 assumption as a function of idle length"},
+    {"id": "Figure 20 (p.11)", "shows": "Cache-hit-rate drop after compaction, median 66.1%; 34.3% of events ≥90%, 21% ≥99%", "use": "the cost of running the E-path write operator at wake time"},
+    {"id": "Table 8 + Figure 32 (p.16)", "shows": "Intra-turn vs cross-turn idle by resource, plus the user-idle CDF", "use": "the idle-window budget. Carry both medians (U3)."},
+    {"id": "Table 7 (p.15)", "shows": "Five user archetypes, per-user medians, 23K-1.1M tokens per turn", "use": "the honest answer to 'is there one N_q' — no; it varies 50x by archetype inside one workload"}
+  ],
+
+  "open_questions": {
+    "stated_by_the_paper": [
+      "Quality-aware scheduling: 'A joint analysis of resource consumption and task success rate would enable quality-aware scheduling.' [§11, p.19]",
+      "Server-side end-to-end optimization, blocked by confidentiality [§11, p.19]",
+      "Longitudinal drift: 'longitudinal tracking on GitHub Copilot Agent is needed to understand how the workload characteristics such as LLM call parallelism may drift in the future.' [§11, p.19]",
+      "Incremental, prefix-preserving compaction [Takeaway 10, p.12] and overlapping compaction strategies [§6, p.11]",
+      "Proactive cache staging on a target model before an unavoidable switch [§5.4, p.10]"
+    ],
+    "left_open_for_this_book": [
+      "Does an idle-time sleep round pay for itself when the same idle time is destroying the prefix cache? The paper supplies both halves and never joins them, because it has no notion of sleep-time compute.",
+      "What is N_q when the context mutates between queries? Identity (A) assumes a fixed context; this workload has none. Whether (A) applies to agentic coding at all is now a live question rather than a hypothetical one.",
+      "Would moving compaction from wake to sleep pay? Everything needed to frame the question is measured (frequency, token drop, cache cost, turn-time share, idle window) and the benefit term is exactly the one the dataset cannot see (U12).",
+      "What is the byte footprint? The paper had it and withheld it for confidentiality [§11, p.19] — the first observed instance of ch30's M5 mechanism, a value unprinted because it is a trade secret rather than because it is hard to measure."
+    ]
+  },
+
+  "book_impact": {
+    "summary": "Two verdicts must be dated and one must be sharpened. Nothing in this book is overturned. The largest single effect is that ch25's most realistic regime was computed with a context an order of magnitude smaller than production, in the direction that flattered the method — correcting it strengthens the book's own verdict rather than weakening it.",
+
+    "items": [
+      {
+        "rank": 1,
+        "chapters": "ch25 §25.3.3 (owner); also ch01 §01.5, ch12 §12.5, ch13, ch14 §14.5.2, ch24, ch27 (C2), ch28 (E10, R5), ch30 (표 30-2, M5), back/91-glossary",
+        "verdict_quoted": "ch25 §25.3.3: '$N_q^\\ast$를 실무에서 쓰려면 $N_q$의 분포를 알아야 하는데, **실서빙에서 한 문맥을 몇 개 질의가 공유하는지의 분포를 보고한 논문이 corpus에 없다.**' And PRE-RESEARCH §4: '상각식 (A)는 $N_q$를 안다고 가정한다. 실서빙 $N_q$ 분포를 보고한 논문이 corpus에 없다.'",
+        "effect": "THREATENS — must be dated, not deleted.",
+        "what_goes_wrong": "The sentence is a claim about the corpus, and admitting this paper changes the corpus. It prints, over 13.5M sessions and 95.1M turns, the distribution of user turns per session (median 3, P75 7, P90 15, mean 6.1, full CDF in Figure 4a) and turns per user (median 11, P90 74) [Table 4, p.4; §8.2, p.15]. That is the production distribution of the amortisation denominator under the natural reading 'one context = one session'.",
+        "what_survives": "The literal sentence survives ONLY under the book's strict definition of N_q as queries against a FIXED context — which this workload does not have (U15). The honest revision is not '이 caveat은 무효다' but: 실서빙 N_q 분포를 보고한 논문은 2026-08 현재 한 편이며, 그 한 편의 문맥은 고정 문맥이 아니다. 그리고 그 한 편이 주는 값은 한 자릿수다.",
+        "direction": "UNFAVOURABLE TO THE E-PATH. The book has treated the missing denominator as an epistemic gap. It is now a measured small number. ch27's condition C2 — '워크로드의 $N_q$ 중앙값이 손익분기 위쪽에 안정적으로 있고' — acquires a measured left-hand side for the first time, and it is 3.",
+        "action": "Date and value into the caveat row in PRE-RESEARCH §4 and the glossary N_q row. ch30 표 30-2's row '실서빙 로그의 $N_q$ 분포가 인쇄됨' and ch25 §25.5 item 5 ('이 관측은 corpus 전체에 대해 새롭다') are now PARTIALLY DISCHARGED and must say so."
+      },
+      {
+        "rank": 2,
+        "chapters": "ch25 §25.2.3-25.2.4 (표 25-4, 표 25-5), ch27 (D3), ch28",
+        "verdict_quoted": "ch25 §25.2.3: '문맥 길이 $|c|$는 논문에 없으므로 각 레짐의 성격에 맞춰 가정했다(GSM-Symbolic 400, AIME 300, SWE-Features 8000 토큰).' And 표 25-4's SWE-Features / FLOPs / κ∥=1 cell: L* = 33333.3 tokens, ratio 4.17x.",
+        "effect": "CONFIRMS AND SHARPENS — the book's own verdict was too generous to the method.",
+        "the_arithmetic": "L* does not depend on |c|; the ratio L*/|c| does. X1 assumed |c| = 8000 for the coding-agent regime. This paper measures the production value: 68K prompt tokens per LLM call (median), 227.6K per turn (median), P90 1.50M per turn [Figure 10, p.8; Table 4, p.4]. Substituting: 33333/68000 = 0.49 and 33333/227600 = 0.146, against the book's printed 4.17x. Restricting to the pre-existing share of the prompt (history 48% + system 14% + repo/other 10% = 72%, excluding the 28% of function-call tokens that accrue within the turn [Figure 11, p.8]) gives 0.72 × 68K ≈ 49K and 33333/49000 = 0.68. All three substitutions fall below 1. [본서 산술]",
+        "what_it_means": "At production context sizes the FLOPs-accounting critical length is SHORTER than the context itself. The learned context would have to be a fraction of the raw context to pay for itself on every query — while Letta's ĉ is longer than c and the raw c is retained (ch25 assumption A5, → ch14 §14.5.3). The inequality's sign flips, and it flips in the regime the book already ranked last.",
+        "direction": "UNFAVOURABLE TO THE E-PATH, and favourable to the book's judgement.",
+        "action": "ch25 §25.2.3 should replace the assumed 8000 with the measured value and re-print the SWE-Features row, or at minimum add a [본서 산술] paragraph giving the substitution. ch27's D3 ordering (GSM-Symbolic ≫ AIME > SWE-Features) is unchanged in ORDER and widened in MAGNITUDE. Honest limit: B_t in L* is still read from Letta's figure axes (caveat AXIS-READ), so only the |c| half of the calculation is now measured."
+      },
+      {
+        "rank": 3,
+        "chapters": "ch25 §25.3.1 [해설] (owner), ch29",
+        "verdict_quoted": "ch25 §25.3.1 [해설]: '$w_{\\text{in}}=0$은 \"prefill이 공짜\"라는 뜻이고, 그것이 참인 서빙 구성이 실제로 있다 — $\\hat c$가 프롬프트 접두사로 고정되어 접두사 캐시에 완전히 적중하면 매 질의의 추가 prefill이 0에 수렴한다.'",
+        "effect": "CONFIRMS the concession's existence and BOUNDS it empirically — a new argument the book does not have.",
+        "what_is_new": "The book concedes that a serving configuration exists in which w_in=0 holds, and leaves it there. This paper measures WHEN it holds: prefix-cache hit median ≥95% for inter-turn gaps under 2 minutes, ~70% at 2-10 minutes with a tail to 0%, and 0-5% beyond 10 minutes [§5.3, pp.9-10; Figure 15]. The vendor deadline is named: 300 s default for Claude models [§9.3, p.18]. So the concession holds only in short gaps — and short gaps are exactly the gaps too short to run a sleep round in. A 10-step `rethink_memory` chain costs ~40-120 s at this paper's measured per-call durations of 3.8-12.1 s [Figure 8, p.6], against a measured median turn-boundary window of 172-243 s [Table 8, p.16].",
+        "direction": "UNFAVOURABLE TO THE E-PATH, and a NEW argument rather than a restatement.",
+        "action": "Add to ch25 §25.3.1 as a [평가] block: 접두사 캐시가 $w_{\\text{in}}$을 0으로 만드는 구간과 sleep 라운드를 돌릴 수 있는 구간이 프로덕션에서 거의 배타적이다. Also record the competing production mechanism — a keep-alive request before the deadline [§9.3, p.18] — which preserves the cache without changing any layer."
+      },
+      {
+        "rank": 4,
+        "chapters": "ch11 §11.3-11.4, ch24 판정 2",
+        "verdict_quoted": "PRE-RESEARCH §2.3 on MemGPT: '판별식을 \"네 조건을 모두\" 요구하는 것으로 정의한 이상 셋만 만족하는 논문을 통과로 세면 판별식 자체가 무의미해진다. 대신 경계 사례를 별도 항목으로 드러내는 것이 정직한 처리다 — 조건 (1)이 무엇을 걸러내는지가 이 한 편에서 가장 잘 보이기 때문이다.'",
+        "effect": "CONFIRMS AND EXTENDS — supplies the missing mirror case.",
+        "what_is_new": "MemGPT fails only condition (1). This paper fails only condition (3): the predictor runs before the query (1 ✓), spends a printed budget (2 ✓), and its output is consumed by the next query (4 ✓), but it changes no layer's state — only where that state lives. Together the two make the discriminant legible: (1) filters out mid-conversation writes; (3) filters out SLEEP-TIME RESOURCE MANAGEMENT. Everything in §9.3 — proactive cache staging, keep-alive, container hibernation — has the shape of sleep-time compute and none of the substance.",
+        "direction": "Neutral to the paths; strengthens the book's own instrument.",
+        "action": "ch11 gains a short subsection or a second boundary row. ch24 판정 2 (이름이 기제보다 넓다) gains its cleanest external example: an entire production literature performs idle-time work before queries and never calls it sleep."
+      },
+      {
+        "rank": 5,
+        "chapters": "ch01 §01.4 (the operational definition), ch29 §29.3.7",
+        "verdict_quoted": "ch01 §01.4: 'sleep-time compute은 질의 $q$가 도착하기 전, **유휴 시간에** 예산 $B_s$만큼 소비하는 계산으로서…'. ch29 §29.3.7: '$E$-경로의 sleep은 서빙과 같은 커널을 쓰므로 **유휴 슬롯에 끼워 넣기 쉽고**, 그래서 이 경로가 오늘 당장 배포되는 이유의 절반이 된다.'",
+        "effect": "CONFIRMS — first production evidence for a premise the book has only assumed.",
+        "what_is_new": "The book's definition contains 유휴 시간 and the book has never evidenced that such time exists at usable scale. It does: in the 94% of sessions that are multi-turn, user idle is a median 80.1% of session wall-clock [Figure 12b, p.8]; turn-boundary gaps have a median of 172-243 s (Table 8) or 1,512 s (§9.1) depending on which of the paper's two numbers one takes; P95 is 75-90 minutes. But the shape matters more than the median: >90% of idle INTERVALS are intra-turn and only seconds long, so the entire usable budget sits in the 8-9% of intervals that cross a turn boundary [§9.1, p.17].",
+        "direction": "FAVOURABLE to the book's framing — the premise holds — and simultaneously a constraint: the window is minutes, not hours, at the conservative reading, and it is not continuously available.",
+        "action": "ch01 §01.4 can cite this for the 유휴 시간 clause. ch29 §29.3.7's claim that E-path sleep slots easily into idle capacity now has a source AND a bound. Both must carry the U3 two-medians ambiguity."
+      },
+      {
+        "rank": 6,
+        "chapters": "ch14 §14.7, ch25, ch27",
+        "verdict_quoted": "ch27's practical case for the E-path ('$E$-경로의 sleep은 … 오늘 당장 배포되는 이유의 절반', via ch29 §29.3.7) and ch14's framing of `rethink_memory` as destructive overwrite (→ ch14 L3).",
+        "effect": "CONFIRMS the mechanism's real-world existence; THREATENS the claim that it is deployed as sleep-time compute.",
+        "what_is_new": "Context compaction is the same write operator — an LLM call that destructively rewrites the context — running at production scale on 7.8% of sessions (22.6% of long-context sessions), a median of once per session with a tail to 40 [§6, pp.10-11]. It runs at WAKE, synchronously, and is accounted purely as cost: median 22% of turn execution time, median 72.8% of prompt tokens dropped, median 66.1% cache-hit-rate collapse. So the E-path's central operator is deployed at scale, in exactly the position the E-path argues against.",
+        "direction": "Cuts both ways, and the chapter must say so. It is the strongest practical motivation for the E-path in the corpus, and the clearest evidence that no production system has taken it.",
+        "action": "New paragraph in ch14 §14.7 or ch25. Flag that the benefit term is unmeasurable in this dataset (U12), so the book may state the motivation but must not state that moving compaction to sleep would pay."
+      },
+      {
+        "rank": 7,
+        "chapters": "ch26, ch29 판정 6, ch30 M5",
+        "verdict_quoted": "PRE-RESEARCH §4: 'corpus 전체에서 상태 용량을 바이트로 보고한 논문이 0편이다' (ch26). ch29 판정 6: '이 기회를 사기 전에 필요한 것은 소자가 아니라 인쇄값 셋이며, 셋 다 corpus에 0편이다.' ch30 M5: '$N_q$ 분포가 영업 비밀이거나 서빙 로그에 그 형태로 남지 않는다면, 이 책이 \"낮은 비용\"이라고 부른 것이 실제로는 낮지 않다.'",
+        "effect": "SURVIVES (ch26, ch29 판정 6) and CONFIRMS-BY-INSTANCE (ch30 M5).",
+        "what_survives": "This paper prints no bytes — every capacity quantity is in tokens or as a percentage of a context limit. A cloud-provider systems paper is precisely where bytes would be expected, and it has none. ch29 판정 6 concerns three Θ-path delta-staging methods and is untouched: nothing here is staged.",
+        "what_is_new": "ch30's M5 falsifier hypothesised that some values go unprinted because they are commercially protected rather than hard to measure. This paper supplies the first observed instance and states the reason: 'going into such details can easily erode model-level and serving-engine confidentiality' [§11, p.19]. M5's mechanism is now attested, which slightly weakens ch30 판정 5's direction ('병목은 아직 연구가 아니라 보고다') — for at least one class of value the bottleneck is neither research nor reporting habit but disclosure policy.",
+        "action": "ch30 records M5 as partially instantiated, with the quotation. ch26's byte caveat needs no change but gains a strong supporting example."
+      },
+      {
+        "rank": 8,
+        "chapters": "ch11 §11.3.1, ch24 §24.3.1, ch27, 부록 C",
+        "verdict_quoted": "PRE-RESEARCH §2.2: '본문·부록·표의 모든 집계는 \"통과 9 + 경계 1 + 불충족 19 = 29\"를 쓴다.'",
+        "effect": "MECHANICAL — arithmetic only.",
+        "what_changes": "If admitted, this paper joins 불충족, moving that group to 20 and the total to 30 (or 31 on the OUTLOOK count that admits Auto-Dreamer to the pass group). Every printed '29편' must be checked — ch24 §24.3.1 prints 'corpus 29편 중 1편' in a load-bearing sentence about MFU reporting.",
+        "action": "Editor's decision required (see discriminant_verdict.census_consequence), then one sweep of the printed totals."
+      },
+      {
+        "rank": 9,
+        "chapters": "ch11 §11.5, ch23 §23.8, ch27, PRE-RESEARCH §3.1 (침묵 지도)",
+        "verdict_quoted": "PRE-RESEARCH §3.1: '연대가 강제한 침묵과 선택된 침묵을 구분해 서술한다. 전자는 계보 사실이고 후자가 발견이다.'",
+        "effect": "CONFIRMS — adds a fourteenth row, and the most total one.",
+        "what_is_new": "46 references, zero to any of the three paths, zero to biology, and the term 'sleep-time compute' never appears. This is a SELECTED silence by the book's own test: Letta STC predates it by 15 months and shares its exact motivating scenario ('coding agents on a common repository', [Letta STC §1, p.1]). An adjacent production-serving literature has grown up (CacheTTL, SAGA, Sutradhara, Parrot, Autellix, Pythia, Murakkab, Sherlock) that is unknown to the sleep-time literature and to which the sleep-time literature is unknown.",
+        "direction": "Neutral, and strengthens spine thesis A1 (세 개의 서로 모르는 축) by adding a fourth party none of the three knows.",
+        "action": "One row in the silence map; one sentence in ch27 on the cost of the silence — the workload measurement that would settle the E-path's amortisation case was produced by people who had never heard of it."
+      }
+    ],
+
+    "what_is_NOT_affected": [
+      "ch26 판정 1-5 (state capacity, bytes, dtype, delta separability) — no byte figures here.",
+      "ch29 판정 1-6 (warm tier, HBM RMW separation, shared-weight batching, replay anchoring, K*, printed values) — nothing staged, nothing personalized, nothing trained.",
+      "ch22 and ch30's falsifier axis on Θ-path continual learning — untouched.",
+      "ch17, ch18, ch21 and the W/Θ-path chapters generally — untouched except for the intra-turn idle figures noted in systems_implications.",
+      "ch08, ch23 (biology) — untouched; the paper contains no biological metaphor at all.",
+      "Spine thesis A1 — unaffected in substance, mildly strengthened (item 9)."
+    ]
+  }
+}
