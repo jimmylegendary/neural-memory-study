@@ -28,8 +28,35 @@
         "reduction": 1.5,
         "gen_source": "[Letta STC Fig.11 p.12] 3000~10000",
         "reduction_source": "[Letta STC §6 p.12] 'roughly 1.5x'",
-        "context_character": "형제 PR 묶음 = 실제 코드베이스. 수천~수만 토큰",
-        "len_c_plausible": 8000.0
+        "context_character": "형제 PR 묶음 = 실제 코드베이스. 논문은 크기를 밝히지 않는다",
+        "len_c_plausible": 49000.0,
+        "len_c_status": "MEASURED-PROXY",
+        "len_c_source": "[2608.00101 Fig.10 p.8; Fig.11 p.8; Table 4 p.4] 공유 저장소 위 코딩 에이전트의 프로덕션 추적 13.5M 세션·95.1M 턴. 호출당 프롬프트 중앙값 68K에서 턴 안에서 새로 쌓이는 function-call 28%를 빼면 기존분 72% ≈ 49K",
+        "len_c_measured_variants": {
+          "per_call_preexisting_72pct": {
+            "tokens": 49000.0,
+            "source": "[2608.00101 Fig.10 p.8 × Fig.11 p.8] 0.72 × 68K. 본서 산술",
+            "reading": "질의 도착 전에 이미 존재하던 프롬프트만 센다 — 이 회계의 |c|에 가장 가깝다",
+            "direction": "셋 중 STC에 가장 유리"
+          },
+          "per_call_median_68k": {
+            "tokens": 68000.0,
+            "source": "[2608.00101 Fig.10, p.8] LLM 호출당 프롬프트 토큰 중앙값",
+            "reading": "한 호출이 실제로 읽는 전량",
+            "direction": "중간"
+          },
+          "per_turn_median_227_6k": {
+            "tokens": 227600.0,
+            "source": "[2608.00101 Table 4, p.4] 사용자 턴당 프롬프트 토큰 중앙값. P90 1.50M",
+            "reading": "한 사용자 턴이 소비하는 전량(턴당 중앙 4.5 호출)",
+            "direction": "셋 중 STC에 가장 불리"
+          }
+        },
+        "len_c_superseded": {
+          "value": 8000.0,
+          "why": "초판 가정. 실측의 6분의 1에서 28분의 1이었고 방향이 방법에게 유리한 쪽이었다. X3 Q5가 이미 '하한으로만 지지된다'고 판정했고, 2608.00101이 그 하한이 얼마나 낮았는지를 확정했다",
+          "printed_ratio_that_this_supersedes": "L*/|c| = 4.17 (FLOPs 회계, kappa_par=1)"
+        }
       }
     },
     "from_paper": {
@@ -54,7 +81,7 @@
       }
     },
     "absent_from_paper": {
-      "len_c": "원 문맥 길이 — 토큰/문자 수 미보고. len_c_plausible은 이 실험의 가정",
+      "len_c": "원 문맥 길이 — 토큰/문자 수 미보고. GSM-Symbolic·AIME의 len_c_plausible은 여전히 이 실험의 가정이다. SWE-Features만 2026-08-11에 프로덕션 실측 앵커로 교체했다(len_c_status=MEASURED-PROXY). 교체해도 논문이 자기 |c|를 인쇄한 것은 아니므로 이 칸은 absent로 남는다",
       "len_chat": "learned context 길이 — 미보고. 상태 용량 C가 absent인 이유",
       "B_s_gen": "sleep 생성 토큰 수 — 미보고. 상각 논증의 분자가 숫자로 없음",
       "N_q_distribution": "실서빙에서 한 문맥을 공유하는 질의 수의 분포 — 미보고. {1,2,5,10}으로 sweep만"
@@ -70,6 +97,7 @@
       "ACCOUNTING-NOT-MEASURED": "닫힌 형태 회계다. wall-clock도 청구액도 아니다",
       "PAPER-ABSENT-SWEPT": "len_c, len_chat, B_s_gen은 원 논문에 없어 가정/sweep한다",
       "AXIS-READ": "gen_base는 수치표가 없어 그림 축 범위에서 읽은 값",
+      "MEASURED-PROXY-LEN-C": "SWE-Features의 len_c는 Letta의 벤치마크에서 잰 값이 아니라 같은 종류의 워크로드(공유 저장소 위 코딩 에이전트)의 프로덕션 실측을 대입한 것이다. 자릿수 비교로만 읽는다",
       "SELF-BUILT-BENCH": "5x·1.5x 자체가 저자 제작 벤치의 값",
       "PRO-STC-ASSUMPTIONS": "가정 A1·A2는 STC에 유리한 쪽으로 잡혀 있다"
     }
@@ -81,6 +109,7 @@
         "gen_base": 600.0,
         "reduction": 5.0,
         "len_c_assumed": 400.0,
+        "len_c_status": "ASSUMED",
         "context_character": "GSM8K에 1~2절 추가한 문장 몇 개. 짧다",
         "critical_len_chat": {
           "paper_implicit(w_in=0),kappa_par=1": {
@@ -137,6 +166,7 @@
         "gen_base": 22500.0,
         "reduction": 5.0,
         "len_c_assumed": 300.0,
+        "len_c_status": "ASSUMED",
         "context_character": "AIME 문제의 진술문들. 짧다. 일부 인스턴스는 문맥이 비어 있음 [App. J]",
         "critical_len_chat": {
           "paper_implicit(w_in=0),kappa_par=1": {
@@ -192,8 +222,9 @@
       "swe_features": {
         "gen_base": 10000.0,
         "reduction": 1.5,
-        "len_c_assumed": 8000.0,
-        "context_character": "형제 PR 묶음 = 실제 코드베이스. 수천~수만 토큰",
+        "len_c_assumed": 49000.0,
+        "len_c_status": "MEASURED-PROXY",
+        "context_character": "형제 PR 묶음 = 실제 코드베이스. 논문은 크기를 밝히지 않는다",
         "critical_len_chat": {
           "paper_implicit(w_in=0),kappa_par=1": {
             "L_star_tokens": null,
@@ -213,36 +244,100 @@
           },
           "pricing(w_in=0.25),kappa_par=1": {
             "L_star_tokens": 133333.3,
-            "L_star_over_len_c": 16.67
+            "L_star_over_len_c": 2.72
           },
           "pricing(w_in=0.25),kappa_par=2": {
             "L_star_tokens": 66666.7,
-            "L_star_over_len_c": 8.33
+            "L_star_over_len_c": 1.36
           },
           "pricing(w_in=0.25),kappa_par=5": {
             "L_star_tokens": 26666.7,
-            "L_star_over_len_c": 3.33
+            "L_star_over_len_c": 0.54
           },
           "pricing(w_in=0.25),kappa_par=10": {
             "L_star_tokens": 13333.3,
-            "L_star_over_len_c": 1.67
+            "L_star_over_len_c": 0.27
           },
           "flops(w_in=1.0),kappa_par=1": {
             "L_star_tokens": 33333.3,
-            "L_star_over_len_c": 4.17
+            "L_star_over_len_c": 0.68
           },
           "flops(w_in=1.0),kappa_par=2": {
             "L_star_tokens": 16666.7,
-            "L_star_over_len_c": 2.08
+            "L_star_over_len_c": 0.34
           },
           "flops(w_in=1.0),kappa_par=5": {
             "L_star_tokens": 6666.7,
-            "L_star_over_len_c": 0.83
+            "L_star_over_len_c": 0.14
           },
           "flops(w_in=1.0),kappa_par=10": {
             "L_star_tokens": 3333.3,
-            "L_star_over_len_c": 0.42
+            "L_star_over_len_c": 0.07
           }
+        },
+        "L_star_over_len_c_by_measured_reading": {
+          "per_call_preexisting_72pct": {
+            "len_c_tokens": 49000.0,
+            "source": "[2608.00101 Fig.10 p.8 × Fig.11 p.8] 0.72 × 68K. 본서 산술",
+            "reading": "질의 도착 전에 이미 존재하던 프롬프트만 센다 — 이 회계의 |c|에 가장 가깝다",
+            "L_star_over_len_c": {
+              "paper_implicit(w_in=0),kappa_par=1": null,
+              "paper_implicit(w_in=0),kappa_par=2": null,
+              "paper_implicit(w_in=0),kappa_par=5": null,
+              "paper_implicit(w_in=0),kappa_par=10": null,
+              "pricing(w_in=0.25),kappa_par=1": 2.721,
+              "pricing(w_in=0.25),kappa_par=2": 1.361,
+              "pricing(w_in=0.25),kappa_par=5": 0.544,
+              "pricing(w_in=0.25),kappa_par=10": 0.272,
+              "flops(w_in=1.0),kappa_par=1": 0.68,
+              "flops(w_in=1.0),kappa_par=2": 0.34,
+              "flops(w_in=1.0),kappa_par=5": 0.136,
+              "flops(w_in=1.0),kappa_par=10": 0.068
+            }
+          },
+          "per_call_median_68k": {
+            "len_c_tokens": 68000.0,
+            "source": "[2608.00101 Fig.10, p.8] LLM 호출당 프롬프트 토큰 중앙값",
+            "reading": "한 호출이 실제로 읽는 전량",
+            "L_star_over_len_c": {
+              "paper_implicit(w_in=0),kappa_par=1": null,
+              "paper_implicit(w_in=0),kappa_par=2": null,
+              "paper_implicit(w_in=0),kappa_par=5": null,
+              "paper_implicit(w_in=0),kappa_par=10": null,
+              "pricing(w_in=0.25),kappa_par=1": 1.961,
+              "pricing(w_in=0.25),kappa_par=2": 0.98,
+              "pricing(w_in=0.25),kappa_par=5": 0.392,
+              "pricing(w_in=0.25),kappa_par=10": 0.196,
+              "flops(w_in=1.0),kappa_par=1": 0.49,
+              "flops(w_in=1.0),kappa_par=2": 0.245,
+              "flops(w_in=1.0),kappa_par=5": 0.098,
+              "flops(w_in=1.0),kappa_par=10": 0.049
+            }
+          },
+          "per_turn_median_227_6k": {
+            "len_c_tokens": 227600.0,
+            "source": "[2608.00101 Table 4, p.4] 사용자 턴당 프롬프트 토큰 중앙값. P90 1.50M",
+            "reading": "한 사용자 턴이 소비하는 전량(턴당 중앙 4.5 호출)",
+            "L_star_over_len_c": {
+              "paper_implicit(w_in=0),kappa_par=1": null,
+              "paper_implicit(w_in=0),kappa_par=2": null,
+              "paper_implicit(w_in=0),kappa_par=5": null,
+              "paper_implicit(w_in=0),kappa_par=10": null,
+              "pricing(w_in=0.25),kappa_par=1": 0.586,
+              "pricing(w_in=0.25),kappa_par=2": 0.293,
+              "pricing(w_in=0.25),kappa_par=5": 0.117,
+              "pricing(w_in=0.25),kappa_par=10": 0.059,
+              "flops(w_in=1.0),kappa_par=1": 0.146,
+              "flops(w_in=1.0),kappa_par=2": 0.073,
+              "flops(w_in=1.0),kappa_par=5": 0.029,
+              "flops(w_in=1.0),kappa_par=10": 0.015
+            }
+          }
+        },
+        "superseded": {
+          "value": 8000.0,
+          "why": "초판 가정. 실측의 6분의 1에서 28분의 1이었고 방향이 방법에게 유리한 쪽이었다. X3 Q5가 이미 '하한으로만 지지된다'고 판정했고, 2608.00101이 그 하한이 얼마나 낮았는지를 확정했다",
+          "printed_ratio_that_this_supersedes": "L*/|c| = 4.17 (FLOPs 회계, kappa_par=1)"
         }
       }
     }
@@ -290,12 +385,12 @@
           "paper_implicit(w_in=0),|c_hat|/|c|=0.25": 0.75,
           "paper_implicit(w_in=0),|c_hat|/|c|=1.0": 0.75,
           "paper_implicit(w_in=0),|c_hat|/|c|=4.0": 0.75,
-          "pricing(w_in=0.25),|c_hat|/|c|=0.25": 0.94,
-          "pricing(w_in=0.25),|c_hat|/|c|=1.0": 0.99,
-          "pricing(w_in=0.25),|c_hat|/|c|=4.0": 1.22,
-          "flops(w_in=1.0),|c_hat|/|c|=0.25": 1.56,
-          "flops(w_in=1.0),|c_hat|/|c|=1.0": 1.93,
-          "flops(w_in=1.0),|c_hat|/|c|=4.0": 36.75
+          "pricing(w_in=0.25),|c_hat|/|c|=0.25": 2.04,
+          "pricing(w_in=0.25),|c_hat|/|c|=1.0": 2.93,
+          "pricing(w_in=0.25),|c_hat|/|c|=4.0": null,
+          "flops(w_in=1.0),|c_hat|/|c|=0.25": 8.16,
+          "flops(w_in=1.0),|c_hat|/|c|=1.0": null,
+          "flops(w_in=1.0),|c_hat|/|c|=4.0": null
         }
       }
     }
@@ -305,50 +400,51 @@
     "values": {
       "kappa_cost=1.0,kappa_par=1": {
         "L_star_tokens": 3333.3,
-        "L_star_over_len_c": 0.42
+        "L_star_over_len_c": 0.07
       },
       "kappa_cost=1.0,kappa_par=10": {
         "L_star_tokens": 333.3,
-        "L_star_over_len_c": 0.04
+        "L_star_over_len_c": 0.01
       },
       "kappa_cost=2.0,kappa_par=1": {
         "L_star_tokens": 6666.7,
-        "L_star_over_len_c": 0.83
+        "L_star_over_len_c": 0.14
       },
       "kappa_cost=2.0,kappa_par=10": {
         "L_star_tokens": 666.7,
-        "L_star_over_len_c": 0.08
+        "L_star_over_len_c": 0.01
       },
       "kappa_cost=5.0,kappa_par=1": {
         "L_star_tokens": 16666.7,
-        "L_star_over_len_c": 2.08
+        "L_star_over_len_c": 0.34
       },
       "kappa_cost=5.0,kappa_par=10": {
         "L_star_tokens": 1666.7,
-        "L_star_over_len_c": 0.21
+        "L_star_over_len_c": 0.03
       },
       "kappa_cost=10.0,kappa_par=1": {
         "L_star_tokens": 33333.3,
-        "L_star_over_len_c": 4.17
+        "L_star_over_len_c": 0.68
       },
       "kappa_cost=10.0,kappa_par=10": {
         "L_star_tokens": 3333.3,
-        "L_star_over_len_c": 0.42
+        "L_star_over_len_c": 0.07
       },
       "kappa_cost=20.0,kappa_par=1": {
         "L_star_tokens": 66666.7,
-        "L_star_over_len_c": 8.33
+        "L_star_over_len_c": 1.36
       },
       "kappa_cost=20.0,kappa_par=10": {
         "L_star_tokens": 6666.7,
-        "L_star_over_len_c": 0.83
+        "L_star_over_len_c": 0.14
       }
     }
   },
   "findings": {
     "F1_the_missing_term_is_structural": "논문의 식은 한 번 내는 비용(B_s)만 N_q로 나눈다. learned context의 prefill은 매 질의마다 내는 비용이므로 상각되지 않는다. 이 항이 0이 아니면 'N_q를 키우면 언제나 이긴다'가 성립하지 않는 영역이 원리적으로 존재한다. 논문의 회계(w_in=0)는 그 영역의 경계를 무한대로 보내 표현 자체를 못 한다.",
     "F2_gsm_regime_is_safe": "Stateful GSM-Symbolic 레짐에서는 여유가 크다. FLOPs 회계·kappa_par=1에서 L* = 4800.0 토큰 (문맥의 12.0배), kappa_par=10에서도 480.0 토큰 (1.2배). 즉 짧은 문맥·큰 절감률 영역에서 논문의 5x는 prefill 항을 넣어도 뒤집히지 않는다. 이 실험은 그것을 반박하지 않는다.",
-    "F3_swe_regime_is_where_it_bites": "SWE-Features 레짐에서는 여유가 급감한다. 절감률이 1.5x로 작고 문맥이 코드베이스라 L* = 33333.3 토큰 (문맥의 4.17배), kappa_par=10이면 3333.3 토큰 (0.42배)까지 좁아진다. 형제 PR 묶음을 요약한 learned context가 이 길이를 넘는 것은 드문 일이 아니다. 논문이 SWE-Features에서 '이득이 작다'고만 보고한 자리에, 회계는 '이득이 사라지는 경계가 가깝다'는 더 강한 진술을 허용한다.",
+    "F3_swe_regime_is_where_it_bites": "SWE-Features 레짐에서는 여유가 사라진다. 절감률이 1.5x로 작고 문맥이 프로덕션 코드베이스라 L* = 33333.3 토큰이고 이것은 문맥의 0.68배 — 즉 **원 문맥보다 짧다.** kappa_par=10이면 3333.3 토큰 (0.07배)까지 좁아진다. learned context가 원 문맥의 일부여야만 매 질의에서 값을 치를 수 있다는 뜻인데, Letta의 c-hat은 c보다 길고 원 c도 유지된다(가정 A5). 논문이 SWE-Features에서 '이득이 작다'고만 보고한 자리에, 회계는 '이득이 사라지는 경계를 이미 넘었다'는 더 강한 진술을 허용한다.",
+    "F6_the_len_c_assumption_was_wrong_in_the_methods_favour": "2026-08-11 정정. 초판은 SWE-Features의 |c|를 8,000 토큰으로 가정하고 L*/|c| = 4.17배를 인쇄했다. 같은 종류의 워크로드에 대한 프로덕션 실측은 호출당 프롬프트 중앙값 68K, 턴당 중앙값 227.6K, 턴당 P90 1.50M이다 [2608.00101 Fig.10 p.8; Table 4 p.4]. 세 읽기를 대입하면 FLOPs 회계·kappa_par=1에서 L*/|c| 가 각각 0.68 / 0.49 / 0.15로, **셋 다 1보다 작다.** 인쇄된 4.17배와 부등호의 방향이 반대다. 초판의 가정은 실측의 6분의 1에서 28분의 1이었고, 그 방향이 방법에게 유리한 쪽이었다. 정정하면 레짐 순서(SWE-Features 최하위)는 그대로이고 간격은 벌어진다. 정직성 한계 둘: (i) L* 안의 B_t는 여전히 그림 축에서 읽은 값(AXIS-READ)이므로 이번에 측정된 것은 계산의 |c| 절반뿐이다. (ii) 실측은 Letta의 벤치마크가 아니라 다른 프로덕션 배포에서 나왔다(MEASURED-PROXY-LEN-C) — 자릿수 비교로만 읽는다.",
     "F4_ordering_is_the_load_bearing_result": "레짐 간 여유의 순서 — GSM-Symbolic >> AIME > SWE-Features — 는 세 파라미터(절감률, 문맥 길이, 병렬 벌수)의 방향만으로 결정되며, 미보고 값의 선택에 둔감하다. 본문 단정문으로 쓸 수 있는 것은 이 순서다. L*의 절대치는 아니다.",
     "F5_kappa_cost_is_load_bearing_and_unmeasured": "kappa_cost는 임계에 선형으로 들어가는데, 논문은 이 값을 측정하지 않고 벤더 문서 한 줄에서 인용했으며 민감도 분석을 하지 않았다. kappa_cost가 1에 가까우면(배치 처리로 wake도 throughput-optimized로 돌리는 경우) 임계는 10분의 1로 줄어든다.",
     "honest_limit": "이 실험은 Letta의 5x를 반박하지 않는다. 5x는 생성 토큰 축에서 관측된 사실이다. 이 실험이 반박하는 것은 '생성 토큰 축이 비용 축과 같다'는 암묵 등식이며, 그 등식이 깨지는 지점이 논문이 이미 약하다고 보고한 레짐과 일치한다는 것이다."

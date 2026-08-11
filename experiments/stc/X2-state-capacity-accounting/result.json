@@ -40,6 +40,32 @@
         ],
         "source": "[mem0 §4] LOCOMO 대화당 저장 토큰 (바이트 미보고)"
       },
+      "E_path_measured_bytes_per_token": {
+        "values": {
+          "embedRAG": 7.0,
+          "Mem0": 12.0,
+          "HippoRAG_v2": 62.0
+        },
+        "spread": "약 9배 (62/7 = 8.9)",
+        "measured_at": "단일 사용자 이력 약 64K → 약 1M 토큰 스윕, 1M 토큰 지점",
+        "source": "[agent-memory-syscharacterization 2606.06448 §4.7, p.10; Fig. 9c] 'On-disk footprint grows roughly proportionally to content volume for most systems, with a ~9x spread at 1M tokens. Multi-view designs inflate the proportionality constant (HippoRAG v2 reaches ~62 MB at 1M tokens) ... (Mem0 at ~12 MB)'",
+        "fleet_projection_printed_by_the_paper": "1M 토큰 발자국을 100K 사용자로 투영하면 약 0.7 TB(embedRAG) ~ 약 6.2 TB(HippoRAG v2)",
+        "caveat": "이질적 store(역색인·밀집 벡터·그래프 엣지·다중 뷰·메타데이터)의 on-disk 발자국이다. dtype 표기 없음, 내용/인덱스 미분리. 따라서 dtype이 정확히 정하는 Θ-delta 바이트와 **같은 열에 놓지 않는다**. 쓸 수 있는 것은 자릿수와 성장 모양뿐."
+      },
+      "E_path_bounded_store_saturated_chars": {
+        "value": 48506,
+        "detail": "ALFWorld 통합 단계 168에서 '50 items totalling 48,506 characters (i.e., the cap is saturated, average ~970 characters per item)'",
+        "source": "[faulty-memories-update 2605.12978 App. G.2, p.53]",
+        "reading": "상한을 건 store는 포화하면 이력 길이와 무관한 상수가 된다. 상한 있음/없음이 E-경로 성장 모양을 가르는 1차 변수다."
+      },
+      "E_path_no_default_forgetting": {
+        "source": "[2606.06448 §4.7, p.10] 'None of the evaluated systems prune or forget by default, so footprint grows monotonically under default behavior; bounding fleet storage requires an independent forgetting policy'",
+        "reading": "상한 없는 store의 단조 성장은 설계 실패가 아니라 정책 부재다."
+      },
+      "E_path_retrieval_latency_flat": {
+        "source": "[2606.06448 Fig. 9d, p.10] store가 커져도 검색 지연이 거의 평평하다",
+        "reading": "E의 콜드 계층 배정은 크기가 아니라 접근 패턴이 정한다. 크기 진술이 무너져도 배정은 선다."
+      },
       "memory_layers_flops_invariance": {
         "source": "[memory-layers §5.1] 'Models with the same base model configuration have negligible differences in FLOPs' — memory 파라미터를 10^2배 늘려도 FLOPs 사실상 불변"
       }
@@ -67,7 +93,9 @@
       "ACCOUNTING-NOT-MEASURED": "구성 파라미터에서 복원한 바이트다. 실측 아님",
       "BPP-IS-A-LOWER-BOUND": "3.64 bits/param은 원 논문이 하한이라고 밝힌 값이다. 상한으로 쓰면 용량을 과소평가한다. LoRA delta 적용은 별개로 외삽",
       "CORPUS-SILENT-ON-BYTES": "상태 용량을 바이트로 보고한 논문이 corpus에 없음",
-      "E-PATH-TOKENS-ONLY": "E-경로 용량은 토큰 수만 보고됨. 바이트 환산은 이 실험의 가정"
+      "E-PATH-TOKENS-ONLY": "E-경로 용량은 토큰 수만 보고됨. 바이트 환산은 이 실험의 가정",
+      "E-PATH-IS-A-RATE-NOT-A-CONSTANT": "E-경로 사용자당 바이트는 상수가 아니라 rate × 이력 길이다. 고정 바이트로 인용하면 이력 앵커가 숨는다. 이 실험의 초판이 그 오류를 냈고 R-1이 발화했다",
+      "E-BYTES-NOT-DTYPE-ANNOTATED": "실측된 E 바이트는 이질적 store의 on-disk 발자국이며 dtype 표기도 내용/인덱스 분리도 없다. Θ의 dtype 회계와 같은 열에 놓지 않는다"
     }
   },
   "Q1_state_bytes_by_path": {
@@ -164,9 +192,64 @@
             "as_embeddings_d1536_fp32_bytes_512tok_chunks": 168000
           }
         },
+        "rates_bytes_per_token": {
+          "text_assumed": 4.0,
+          "embed_fp32_assumed": 12.0,
+          "measured_embedRAG": 7.0,
+          "measured_Mem0": 12.0,
+          "measured_HippoRAG_v2": 62.0
+        },
+        "by_history_anchor": {
+          "session_14k_tokens": {
+            "history_tokens": 14000,
+            "bytes_by_rate": {
+              "text_assumed": 56000,
+              "embed_fp32_assumed": 168000,
+              "measured_embedRAG": 98000,
+              "measured_Mem0": 168000,
+              "measured_HippoRAG_v2": 868000
+            },
+            "MB_by_rate": {
+              "text_assumed": 0.056,
+              "embed_fp32_assumed": 0.168,
+              "measured_embedRAG": 0.098,
+              "measured_Mem0": 0.168,
+              "measured_HippoRAG_v2": 0.868
+            }
+          },
+          "long_horizon_1M_tokens": {
+            "history_tokens": 1000000,
+            "bytes_by_rate": {
+              "text_assumed": 4000000,
+              "embed_fp32_assumed": 12000000,
+              "measured_embedRAG": 7000000,
+              "measured_Mem0": 12000000,
+              "measured_HippoRAG_v2": 62000000
+            },
+            "MB_by_rate": {
+              "text_assumed": 4.0,
+              "embed_fp32_assumed": 12.0,
+              "measured_embedRAG": 7.0,
+              "measured_Mem0": 12.0,
+              "measured_HippoRAG_v2": 62.0
+            }
+          }
+        },
+        "bounded_store_saturated_bytes": 48506,
         "residence": "콜드/벡터 스토어 → 질의마다 ret() + prefill",
         "lifetime": "세션~사용자",
-        "note": "논문이 바이트를 보고하지 않아 토큰→바이트 환산은 가정"
+        "note": "E는 고정 바이트가 아니라 rate다. 사용자당 바이트 = rate × 이력 길이. 토큰→바이트 환산율은 이 실험의 가정이었고 실측과 자릿수까지 맞았다(가정 embed 12 B/tok = 실측 Mem0 12 B/tok). 틀린 것은 이력 길이 앵커다.",
+        "crossover_with_theta_delta": {
+          "theta_delta_bytes_dense8B_r16_qv_bf16": 16777216,
+          "E_exceeds_theta_at_1M_tokens": {
+            "text_assumed": false,
+            "embed_fp32_assumed": false,
+            "measured_embedRAG": false,
+            "measured_Mem0": false,
+            "measured_HippoRAG_v2": true
+          },
+          "reading": "이력을 1M 토큰으로 놓으면 상한 없는 다중 뷰 store(62 B/tok)의 사용자당 바이트가 dense-8B Θ delta를 넘는다. 두 양이 교차하므로 경로 간 크기 순위는 존재하지 않는다 — 존재하는 것은 교차점이다."
+        }
       }
     },
     "dense-8B (d=4096, L=32)": {
@@ -262,9 +345,64 @@
             "as_embeddings_d1536_fp32_bytes_512tok_chunks": 168000
           }
         },
+        "rates_bytes_per_token": {
+          "text_assumed": 4.0,
+          "embed_fp32_assumed": 12.0,
+          "measured_embedRAG": 7.0,
+          "measured_Mem0": 12.0,
+          "measured_HippoRAG_v2": 62.0
+        },
+        "by_history_anchor": {
+          "session_14k_tokens": {
+            "history_tokens": 14000,
+            "bytes_by_rate": {
+              "text_assumed": 56000,
+              "embed_fp32_assumed": 168000,
+              "measured_embedRAG": 98000,
+              "measured_Mem0": 168000,
+              "measured_HippoRAG_v2": 868000
+            },
+            "MB_by_rate": {
+              "text_assumed": 0.056,
+              "embed_fp32_assumed": 0.168,
+              "measured_embedRAG": 0.098,
+              "measured_Mem0": 0.168,
+              "measured_HippoRAG_v2": 0.868
+            }
+          },
+          "long_horizon_1M_tokens": {
+            "history_tokens": 1000000,
+            "bytes_by_rate": {
+              "text_assumed": 4000000,
+              "embed_fp32_assumed": 12000000,
+              "measured_embedRAG": 7000000,
+              "measured_Mem0": 12000000,
+              "measured_HippoRAG_v2": 62000000
+            },
+            "MB_by_rate": {
+              "text_assumed": 4.0,
+              "embed_fp32_assumed": 12.0,
+              "measured_embedRAG": 7.0,
+              "measured_Mem0": 12.0,
+              "measured_HippoRAG_v2": 62.0
+            }
+          }
+        },
+        "bounded_store_saturated_bytes": 48506,
         "residence": "콜드/벡터 스토어 → 질의마다 ret() + prefill",
         "lifetime": "세션~사용자",
-        "note": "논문이 바이트를 보고하지 않아 토큰→바이트 환산은 가정"
+        "note": "E는 고정 바이트가 아니라 rate다. 사용자당 바이트 = rate × 이력 길이. 토큰→바이트 환산율은 이 실험의 가정이었고 실측과 자릿수까지 맞았다(가정 embed 12 B/tok = 실측 Mem0 12 B/tok). 틀린 것은 이력 길이 앵커다.",
+        "crossover_with_theta_delta": {
+          "theta_delta_bytes_dense8B_r16_qv_bf16": 16777216,
+          "E_exceeds_theta_at_1M_tokens": {
+            "text_assumed": false,
+            "embed_fp32_assumed": false,
+            "measured_embedRAG": false,
+            "measured_Mem0": false,
+            "measured_HippoRAG_v2": true
+          },
+          "reading": "이력을 1M 토큰으로 놓으면 상한 없는 다중 뷰 store(62 B/tok)의 사용자당 바이트가 dense-8B Θ delta를 넘는다. 두 양이 교차하므로 경로 간 크기 순위는 존재하지 않는다 — 존재하는 것은 교차점이다."
+        }
       }
     }
   },
@@ -334,6 +472,14 @@
         },
         "E_path_14k_tokens_text": {
           "TB": 5.6e-05
+        },
+        "E_path_1M_tokens_multiview_measured": {
+          "TB": 0.062,
+          "source": "[2606.06448 §4.7, p.10] 62 B/tok"
+        },
+        "E_path_1M_tokens_single_index_measured": {
+          "TB": 0.007,
+          "source": "[2606.06448 §4.7, p.10] 7 B/tok"
         }
       },
       "1e+05_users": {
@@ -360,6 +506,14 @@
         },
         "E_path_14k_tokens_text": {
           "TB": 0.0056
+        },
+        "E_path_1M_tokens_multiview_measured": {
+          "TB": 6.2,
+          "source": "[2606.06448 §4.7, p.10] 62 B/tok"
+        },
+        "E_path_1M_tokens_single_index_measured": {
+          "TB": 0.7,
+          "source": "[2606.06448 §4.7, p.10] 7 B/tok"
         }
       },
       "1e+06_users": {
@@ -386,6 +540,14 @@
         },
         "E_path_14k_tokens_text": {
           "TB": 0.056
+        },
+        "E_path_1M_tokens_multiview_measured": {
+          "TB": 62.0,
+          "source": "[2606.06448 §4.7, p.10] 62 B/tok"
+        },
+        "E_path_1M_tokens_single_index_measured": {
+          "TB": 7.0,
+          "source": "[2606.06448 §4.7, p.10] 7 B/tok"
         }
       },
       "1e+08_users": {
@@ -412,6 +574,14 @@
         },
         "E_path_14k_tokens_text": {
           "TB": 5.6
+        },
+        "E_path_1M_tokens_multiview_measured": {
+          "TB": 6200.0,
+          "source": "[2606.06448 §4.7, p.10] 62 B/tok"
+        },
+        "E_path_1M_tokens_single_index_measured": {
+          "TB": 700.0,
+          "source": "[2606.06448 §4.7, p.10] 7 B/tok"
         }
       }
     }
@@ -441,11 +611,12 @@
   },
   "findings": {
     "F1_corpus_reports_no_bytes": "corpus 전체에서 상태 용량을 바이트로 보고한 논문이 0편이다. 세 경로를 같은 자로 재려면 구성 파라미터에서 복원하는 수밖에 없고, 그 사실 자체가 이 분야의 비교 불가능성을 보여준다.",
-    "F2_three_paths_differ_by_orders_of_magnitude": "8B 앵커에서 사용자당 Θ delta(LoRA r=16, q·v, bf16)는 16.78 MB, E-경로 저장은 56.0 KB, 같은 폭의 TTT류 모델이라면 W-경로 상태는 활성 세션당 17177.6 MB다(반사실 수치 — dense 8B에는 W층이 없다). 수명과 상주 위치가 전부 다르므로 '용량'을 한 숫자로 말할 수 없다.",
+    "F2_three_paths_differ_by_orders_of_magnitude": "8B 앵커에서 사용자당 Θ delta(LoRA r=16, q·v, bf16)는 16.78 MB, 같은 폭의 TTT류 모델이라면 W-경로 상태는 활성 세션당 17177.6 MB다(반사실 수치 — dense 8B에는 W층이 없다). E-경로는 **이력 앵커와 함께만** 적을 수 있다 — 14K 토큰 세션에서 텍스트 56.0 KB이고, 1M 토큰 이력에서는 실측 rate로 7.0–62.0 MB다. 후자의 위쪽 끝은 Θ delta를 넘는다. 수명과 상주 위치가 전부 다르고 크기 순위조차 이력 길이에 달렸으므로 '용량'을 한 숫자로 말할 수 없다.",
     "F3_quantisation_is_a_precondition_not_an_optimisation": "저장 바이트당 정보량의 **하한**은 Θ가 bf16에서 1.82 bits/byte, int8에서 3.64, int4에서 7.28다. 파라미터 하나에 **최소** 3.64 bits가 담기는데 bf16은 16 bits를 쓴다 — 표현 자체에서 최소 4.4배의 저장 여유가 나온다. 이 여유는 알고리즘 한계가 아니라 dtype 선택이므로, **delta 양자화는 Θ-경로 배포의 최적화가 아니라 전제다.** 그리고 corpus의 어느 논문도 delta 양자화를 논의하지 않는다. 이 결론은 3.64가 하한이든 상한이든 성립한다 — 분모만으로 정해지기 때문이다.",
     "F3_withdrawn_cross_path_density_claim": "**철회.** 이 실험의 초판은 3.64 bits/param을 상한으로 놓고 'E가 Θ보다 바이트 효율이 높다'고 비교했다. 원 논문은 이 값을 명시적으로 **하한**이라고 밝힌다([lm-memorization-capacity §3.2, txt L664] 'we are only ever measuring a lower bound on model capacity'). 하한을 상한으로 쓰면 Θ층 용량을 과소평가하므로 그 비교는 방향이 보장되지 않는다. 경로 간 밀도 비교는 이 회계로 판정 불가로 남긴다 — 판정하려면 delta에 직접 정보를 주입해 회수율을 재는 실험이 필요하다.",
     "F4_memory_device_opportunity_is_warm_not_hot": "Θ-경로가 주류가 되면 사용자 10^6명 기준 웜 스토리지가 LoRA r=16 bf16에서 16.777 TB, int4로 내리면 4.194 TB, r=64 bf16이면 67.109 TB다. 직접 편집 방식으로 개인화하면 16000.0 TB로 세 자릿수가 뛴다. 기회의 성격은 HBM 대역폭이 아니라 **요청 지연 안에 delta를 끌어올 수 있는 웜 계층과 그 계층의 쓰기 내구성**이다. 이는 NM이 W-경로에서 짚은 HBM RMW 기회와 다른 자리다.",
     "F5_edit_vs_delta_is_a_serving_fork": "MEMIT/ROME류 직접 편집은 delta 아티팩트를 만들지 않는다. 공유 가중치를 고치므로 사용자별 개인화가 구조적으로 불가능하고, 하려면 모델 전체 사본이 필요하다. Θ-경로가 서빙에 도달하려면 delta 형태(LoRA류)여야 한다는 제약이 여기서 나온다. 논문들은 이 갈림길을 논의하지 않는다.",
-    "honest_limits": "3.64 bits/param은 무작위 문자열 암기 실험에서 나온 값이고 LoRA delta 적용은 외삽이다. E-경로 바이트는 토큰 수에서 환산한 가정치다. 본문 단정문으로 쓸 것은 자릿수 차이와 밀도의 순서이며, 절대 바이트가 아니다."
+    "F6_R1_falsifier_fired_E_is_a_rate": "**이 실험이 사전등록한 반증 R-1이 발화했다(2026-08-11).** ch26 §26.5 R-1은 'E-경로가 임베딩·그래프·다중 인덱스를 누적해 사용자당 저장이 수십 MB를 넘어 Θ delta 자릿수에 들어오면 표 26-2의 E 행이 무너진다. 필요한 관측은 실험이 아니라 인쇄 한 줄이다'라고 적었다. 그 인쇄는 2026-06-04에 이미 나와 있었다 — 1M 토큰 단일 사용자 이력에서 HippoRAG v2 약 62 MB, Mem0 약 12 MB, embedRAG 약 7 MB, 시스템 간 산포 약 9배[2606.06448 §4.7, p.10; Fig. 9c]. 62 MB는 이 실험의 dense-8B Θ-delta 앵커 16.78 MB를 넘는다. 죽은 것: E 행의 **형태**(고정 바이트). 이제 rate × 이력 길이로 적는다. 살아남은 것 셋: (i) F1/판정 1의 범주 오류 논증은 오히려 증명되었다 — 두 양이 교차하므로 순위가 없다. (ii) 콜드 계층 배정은 유지된다 — store가 커져도 검색 지연이 거의 평평하다[Fig. 9d]. (iii) **이 실험의 바이트/토큰 비율이 자릿수까지 맞는다** — 가정한 fp32 임베딩 12 B/tok과 실측 Mem0 12 B/tok이 일치하고, 상한 건 store의 포화 크기 48,506자 ≈ 48.5 KB[2605.12978 App. G.2, p.53]가 이 실험의 텍스트 행 56.0 KB와 13.4% 안에서 만난다. **틀린 것은 회계가 아니라 앵커다** — 14,000 토큰 대화 하나는 실측 레짐보다 약 70배 작다.",
+    "honest_limits": "3.64 bits/param은 원 논문이 밝힌 하한이고, 무작위 문자열 암기 실험에서 나온 값이므로 LoRA delta 적용은 별도의 외삽이다. E-경로 바이트 환산율은 이 실험의 가정이고(실측과 자릿수까지 맞았으나 여전히 가정이다), 실측된 E 바이트는 dtype 표기가 없는 이질적 store의 on-disk 발자국이므로 Θ의 dtype 회계와 같은 열에 놓을 수 없다 — 62 MB 대 16.78 MB는 **자릿수 비교**이지 같은 자로 잰 두 값의 대응이 아니다. 본문 단정문으로 쓸 것은 경로 간 자릿수 차이, dtype 축의 기울기, 사용자 수 스케일링의 기울기, 그리고 E의 rate와 그 산포이며, 절대 바이트도 경로 간 밀도 비교도 아니다."
   }
 }

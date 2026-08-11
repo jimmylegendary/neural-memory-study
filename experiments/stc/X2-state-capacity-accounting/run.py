@@ -79,6 +79,44 @@ SOURCED = {
         "value_range": [7000, 14000],
         "source": "[mem0 §4] LOCOMO 대화당 저장 토큰 (바이트 미보고)",
     },
+    # --- 2026-08 추가: E-경로 rate 앵커 (R-1 발화의 근거) --------------------
+    # 이 실험의 초판은 E-경로를 14,000 토큰 대화 하나에 앵커한 **고정 바이트**로 적었다.
+    # 제3자 계측이 사용자당 발자국을 이력 길이의 함수로 인쇄하면서 그 형태가 깨졌다.
+    # 회계(= bytes/token)는 맞았고 앵커(= 곱하는 이력 길이)가 약 70배 작았다.
+    "E_path_measured_bytes_per_token": {
+        "values": {"embedRAG": 7.0, "Mem0": 12.0, "HippoRAG_v2": 62.0},
+        "spread": "약 9배 (62/7 = 8.9)",
+        "measured_at": "단일 사용자 이력 약 64K → 약 1M 토큰 스윕, 1M 토큰 지점",
+        "source": "[agent-memory-syscharacterization 2606.06448 §4.7, p.10; Fig. 9c] "
+                  "'On-disk footprint grows roughly proportionally to content volume for most "
+                  "systems, with a ~9x spread at 1M tokens. Multi-view designs inflate the "
+                  "proportionality constant (HippoRAG v2 reaches ~62 MB at 1M tokens) ... "
+                  "(Mem0 at ~12 MB)'",
+        "fleet_projection_printed_by_the_paper": "1M 토큰 발자국을 100K 사용자로 투영하면 "
+                                                 "약 0.7 TB(embedRAG) ~ 약 6.2 TB(HippoRAG v2)",
+        "caveat": "이질적 store(역색인·밀집 벡터·그래프 엣지·다중 뷰·메타데이터)의 on-disk "
+                  "발자국이다. dtype 표기 없음, 내용/인덱스 미분리. 따라서 dtype이 정확히 정하는 "
+                  "Θ-delta 바이트와 **같은 열에 놓지 않는다**. 쓸 수 있는 것은 자릿수와 성장 모양뿐.",
+    },
+    "E_path_bounded_store_saturated_chars": {
+        "value": 48506,
+        "detail": "ALFWorld 통합 단계 168에서 '50 items totalling 48,506 characters "
+                  "(i.e., the cap is saturated, average ~970 characters per item)'",
+        "source": "[faulty-memories-update 2605.12978 App. G.2, p.53]",
+        "reading": "상한을 건 store는 포화하면 이력 길이와 무관한 상수가 된다. "
+                   "상한 있음/없음이 E-경로 성장 모양을 가르는 1차 변수다.",
+    },
+    "E_path_no_default_forgetting": {
+        "source": "[2606.06448 §4.7, p.10] 'None of the evaluated systems prune or forget by "
+                  "default, so footprint grows monotonically under default behavior; bounding "
+                  "fleet storage requires an independent forgetting policy'",
+        "reading": "상한 없는 store의 단조 성장은 설계 실패가 아니라 정책 부재다.",
+    },
+    "E_path_retrieval_latency_flat": {
+        "source": "[2606.06448 Fig. 9d, p.10] store가 커져도 검색 지연이 거의 평평하다",
+        "reading": "E의 콜드 계층 배정은 크기가 아니라 접근 패턴이 정한다. "
+                   "크기 진술이 무너져도 배정은 선다.",
+    },
     "memory_layers_flops_invariance": {
         "source": "[memory-layers §5.1] 'Models with the same base model configuration have "
                   "negligible differences in FLOPs' — memory 파라미터를 10^2배 늘려도 FLOPs 사실상 불변",
@@ -108,6 +146,23 @@ ANCHORS = {
 # Θ delta의 저장 dtype. 정보 밀도는 dtype에 직접 나뉘므로 이 축이 결과를 지배한다.
 DTYPES = {"bf16": 2.0, "int8": 1.0, "int4": 0.5}
 
+# E-경로는 **고정 바이트가 아니라 rate**다. 사용자당 바이트 = rate × 이력 길이.
+# 초판은 이 곱의 오른쪽 인자를 14,000 토큰(대화 하나)으로 고정했고, 그것이 이 실험의
+# 유일한 앵커였다. 실측 레짐은 사용자당 수십만~수백만 토큰이므로 약 70배 차이가 난다.
+E_RATES_BYTES_PER_TOKEN = {
+    "text_assumed": 4.0,            # 이 실험의 가정: 토큰당 4바이트 UTF-8
+    "embed_fp32_assumed": 12.0,     # 이 실험의 가정: 512-토큰 청크당 1536-d fp32 = 12 B/tok
+    "measured_embedRAG": 7.0,       # [2606.06448 §4.7, p.10]
+    "measured_Mem0": 12.0,          # [2606.06448 §4.7, p.10] — 가정 embed 행과 자릿수까지 일치
+    "measured_HippoRAG_v2": 62.0,   # [2606.06448 §4.7, p.10] — 다중 뷰 + 뷰별 임베딩 + 다중 인덱스
+}
+
+# 두 이력 앵커를 함께 인쇄한다. 하나만 인쇄하면 R-1이 잡아낸 오류가 되살아난다.
+HISTORY_ANCHORS = {
+    "session_14k_tokens": 14_000,       # 대화 하나 (초판의 유일한 앵커)
+    "long_horizon_1M_tokens": 1_000_000,  # 장기 에이전트 사용자 하나 (실측 스윕의 끝점)
+}
+
 
 def lora_delta_params(d: int, L: int, r: int, matrices_per_layer: int = 2) -> int:
     """LoRA delta 파라미터 수.
@@ -135,6 +190,12 @@ def main() -> None:
                 "BPP-IS-A-LOWER-BOUND": "3.64 bits/param은 원 논문이 하한이라고 밝힌 값이다. 상한으로 쓰면 용량을 과소평가한다. LoRA delta 적용은 별개로 외삽",
                 "CORPUS-SILENT-ON-BYTES": "상태 용량을 바이트로 보고한 논문이 corpus에 없음",
                 "E-PATH-TOKENS-ONLY": "E-경로 용량은 토큰 수만 보고됨. 바이트 환산은 이 실험의 가정",
+                "E-PATH-IS-A-RATE-NOT-A-CONSTANT": (
+                    "E-경로 사용자당 바이트는 상수가 아니라 rate × 이력 길이다. 고정 바이트로 "
+                    "인용하면 이력 앵커가 숨는다. 이 실험의 초판이 그 오류를 냈고 R-1이 발화했다"),
+                "E-BYTES-NOT-DTYPE-ANNOTATED": (
+                    "실측된 E 바이트는 이질적 store의 on-disk 발자국이며 dtype 표기도 "
+                    "내용/인덱스 분리도 없다. Θ의 dtype 회계와 같은 열에 놓지 않는다"),
             },
         }
     }
@@ -209,11 +270,36 @@ def main() -> None:
                 "as_embeddings_d1536_fp32_bytes_512tok_chunks":
                     round(max(1, tok / 512) * 1536 * 4),
             }
+        # E-경로를 rate × 이력 길이로 다시 적는다. 표에 인쇄되는 것은 곱이 아니라
+        # **두 인자**여야 한다 — 그래야 독자가 자기 레짐의 이력 길이로 재계산할 수 있다.
+        by_hist = {}
+        for hname, htok in HISTORY_ANCHORS.items():
+            by_hist[hname] = {
+                "history_tokens": htok,
+                "bytes_by_rate": {rk: round(rv * htok) for rk, rv in E_RATES_BYTES_PER_TOKEN.items()},
+                "MB_by_rate": {rk: round(rv * htok / 1e6, 3) for rk, rv in E_RATES_BYTES_PER_TOKEN.items()},
+            }
+        theta_ref = lora_delta_params(4096, 32, 16, 2) * BYTES_BF16  # dense-8B, r=16, {q,v}, bf16
         row["E_path"] = {
             "variants": e,
+            "rates_bytes_per_token": E_RATES_BYTES_PER_TOKEN,
+            "by_history_anchor": by_hist,
+            "bounded_store_saturated_bytes": SOURCED["E_path_bounded_store_saturated_chars"]["value"],
             "residence": "콜드/벡터 스토어 → 질의마다 ret() + prefill",
             "lifetime": "세션~사용자",
-            "note": "논문이 바이트를 보고하지 않아 토큰→바이트 환산은 가정",
+            "note": ("E는 고정 바이트가 아니라 rate다. 사용자당 바이트 = rate × 이력 길이. "
+                     "토큰→바이트 환산율은 이 실험의 가정이었고 실측과 자릿수까지 맞았다"
+                     "(가정 embed 12 B/tok = 실측 Mem0 12 B/tok). 틀린 것은 이력 길이 앵커다."),
+            "crossover_with_theta_delta": {
+                "theta_delta_bytes_dense8B_r16_qv_bf16": round(theta_ref),
+                "E_exceeds_theta_at_1M_tokens": {
+                    rk: bool(rv * HISTORY_ANCHORS["long_horizon_1M_tokens"] > theta_ref)
+                    for rk, rv in E_RATES_BYTES_PER_TOKEN.items()
+                },
+                "reading": ("이력을 1M 토큰으로 놓으면 상한 없는 다중 뷰 store(62 B/tok)의 "
+                            "사용자당 바이트가 dense-8B Θ delta를 넘는다. 두 양이 교차하므로 "
+                            "경로 간 크기 순위는 존재하지 않는다 — 존재하는 것은 교차점이다."),
+            },
         }
         q1[name] = row
     R["Q1_state_bytes_by_path"] = q1
@@ -284,6 +370,17 @@ def main() -> None:
         row["direct_edit_full_copy_bf16"] = {
             "TB": round(A8["params_B"] * 1e9 * BYTES_BF16 * users / 1e12, 1)}
         row["E_path_14k_tokens_text"] = {"TB": round(14000 * 4 * users / 1e12, 6)}
+        # E-경로는 이력 앵커 없이 한 열로 인쇄하면 안 된다. 두 끝을 함께 적는다.
+        row["E_path_1M_tokens_multiview_measured"] = {
+            "TB": round(E_RATES_BYTES_PER_TOKEN["measured_HippoRAG_v2"]
+                        * HISTORY_ANCHORS["long_horizon_1M_tokens"] * users / 1e12, 3),
+            "source": "[2606.06448 §4.7, p.10] 62 B/tok",
+        }
+        row["E_path_1M_tokens_single_index_measured"] = {
+            "TB": round(E_RATES_BYTES_PER_TOKEN["measured_embedRAG"]
+                        * HISTORY_ANCHORS["long_horizon_1M_tokens"] * users / 1e12, 3),
+            "source": "[2606.06448 §4.7, p.10] 7 B/tok",
+        }
         q3[f"{users:.0e}_users"] = row
     R["Q3_scaling_with_users"] = {
         "description": "Θ-경로가 주류가 되면 웜 스토리지가 사용자 수에 선형으로 늘어난다",
@@ -321,10 +418,17 @@ def main() -> None:
         "F2_three_paths_differ_by_orders_of_magnitude": (
             f"8B 앵커에서 사용자당 Θ delta(LoRA r=16, q·v, bf16)는 "
             f"{R['Q2_information_density']['Theta_lora_r16_qv_8B']['by_dtype']['bf16']['store_MB']} MB, "
-            f"E-경로 저장은 {R['Q2_information_density']['E_text_14k_tokens']['store_KB']} KB, "
             f"같은 폭의 TTT류 모델이라면 W-경로 상태는 활성 세션당 "
             f"{q1['dense-8B (d=4096, L=32)']['W_path']['MB']} MB다(반사실 수치 — dense 8B에는 W층이 없다). "
-            "수명과 상주 위치가 전부 다르므로 '용량'을 한 숫자로 말할 수 없다."),
+            f"E-경로는 **이력 앵커와 함께만** 적을 수 있다 — 14K 토큰 세션에서 텍스트 "
+            f"{R['Q2_information_density']['E_text_14k_tokens']['store_KB']} KB이고, "
+            f"1M 토큰 이력에서는 실측 rate로 "
+            f"{q1['dense-8B (d=4096, L=32)']['E_path']['by_history_anchor']['long_horizon_1M_tokens']['MB_by_rate']['measured_embedRAG']}"
+            f"–"
+            f"{q1['dense-8B (d=4096, L=32)']['E_path']['by_history_anchor']['long_horizon_1M_tokens']['MB_by_rate']['measured_HippoRAG_v2']}"
+            " MB다. 후자의 위쪽 끝은 Θ delta를 넘는다. "
+            "수명과 상주 위치가 전부 다르고 크기 순위조차 이력 길이에 달렸으므로 "
+            "'용량'을 한 숫자로 말할 수 없다."),
         "F3_quantisation_is_a_precondition_not_an_optimisation": (
             f"저장 바이트당 정보량의 **하한**은 Θ가 bf16에서 "
             f"{R['Q2_information_density']['Theta_lora_r16_qv_8B']['by_dtype']['bf16']['bits_per_stored_byte']} "
@@ -357,11 +461,30 @@ def main() -> None:
             "사용자별 개인화가 구조적으로 불가능하고, 하려면 모델 전체 사본이 필요하다. "
             "Θ-경로가 서빙에 도달하려면 delta 형태(LoRA류)여야 한다는 제약이 여기서 나온다. "
             "논문들은 이 갈림길을 논의하지 않는다."),
+        "F6_R1_falsifier_fired_E_is_a_rate": (
+            "**이 실험이 사전등록한 반증 R-1이 발화했다(2026-08-11).** ch26 §26.5 R-1은 "
+            "'E-경로가 임베딩·그래프·다중 인덱스를 누적해 사용자당 저장이 수십 MB를 넘어 "
+            "Θ delta 자릿수에 들어오면 표 26-2의 E 행이 무너진다. 필요한 관측은 실험이 아니라 "
+            "인쇄 한 줄이다'라고 적었다. 그 인쇄는 2026-06-04에 이미 나와 있었다 — 1M 토큰 "
+            "단일 사용자 이력에서 HippoRAG v2 약 62 MB, Mem0 약 12 MB, embedRAG 약 7 MB, "
+            "시스템 간 산포 약 9배[2606.06448 §4.7, p.10; Fig. 9c]. 62 MB는 이 실험의 dense-8B "
+            "Θ-delta 앵커 16.78 MB를 넘는다. "
+            "죽은 것: E 행의 **형태**(고정 바이트). 이제 rate × 이력 길이로 적는다. "
+            "살아남은 것 셋: (i) F1/판정 1의 범주 오류 논증은 오히려 증명되었다 — 두 양이 "
+            "교차하므로 순위가 없다. (ii) 콜드 계층 배정은 유지된다 — store가 커져도 검색 "
+            "지연이 거의 평평하다[Fig. 9d]. (iii) **이 실험의 바이트/토큰 비율이 자릿수까지 "
+            "맞는다** — 가정한 fp32 임베딩 12 B/tok과 실측 Mem0 12 B/tok이 일치하고, "
+            "상한 건 store의 포화 크기 48,506자 ≈ 48.5 KB[2605.12978 App. G.2, p.53]가 "
+            "이 실험의 텍스트 행 56.0 KB와 13.4% 안에서 만난다. "
+            "**틀린 것은 회계가 아니라 앵커다** — 14,000 토큰 대화 하나는 실측 레짐보다 약 70배 작다."),
         "honest_limits": (
             "3.64 bits/param은 원 논문이 밝힌 하한이고, 무작위 문자열 암기 실험에서 나온 값이므로 "
-            "LoRA delta 적용은 별도의 외삽이다. E-경로 바이트는 토큰 수에서 환산한 가정치다. "
+            "LoRA delta 적용은 별도의 외삽이다. E-경로 바이트 환산율은 이 실험의 가정이고(실측과 "
+            "자릿수까지 맞았으나 여전히 가정이다), 실측된 E 바이트는 dtype 표기가 없는 이질적 "
+            "store의 on-disk 발자국이므로 Θ의 dtype 회계와 같은 열에 놓을 수 없다 — 62 MB 대 "
+            "16.78 MB는 **자릿수 비교**이지 같은 자로 잰 두 값의 대응이 아니다. "
             "본문 단정문으로 쓸 것은 경로 간 자릿수 차이, dtype 축의 기울기, 사용자 수 스케일링의 "
-            "기울기이며, 절대 바이트도 경로 간 밀도 비교도 아니다."),
+            "기울기, 그리고 E의 rate와 그 산포이며, 절대 바이트도 경로 간 밀도 비교도 아니다."),
     }
 
     out = HERE / "result.json"

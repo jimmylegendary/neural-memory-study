@@ -135,8 +135,43 @@ REGIMES = {
         "reduction": 1.5,
         "gen_source": "[Letta STC Fig.11 p.12] 3000~10000",
         "reduction_source": "[Letta STC §6 p.12] 'roughly 1.5x'",
-        "context_character": "형제 PR 묶음 = 실제 코드베이스. 수천~수만 토큰",
-        "len_c_plausible": 8000.0,
+        "context_character": "형제 PR 묶음 = 실제 코드베이스. 논문은 크기를 밝히지 않는다",
+        # 2026-08-11 정정. 초판은 8000 토큰을 가정했다. 그 가정이 방법에게 유리한
+        # 쪽으로 틀려 있었다 — 프로덕션 실측이 한 자릿수 이상 크다. 아래 값은
+        # 세 읽기 중 STC에 가장 유리한 것(호출당 프롬프트의 기존분)을 앵커로 쓴다.
+        "len_c_plausible": 49000.0,
+        "len_c_status": "MEASURED-PROXY",
+        "len_c_source": (
+            "[2608.00101 Fig.10 p.8; Fig.11 p.8; Table 4 p.4] 공유 저장소 위 코딩 "
+            "에이전트의 프로덕션 추적 13.5M 세션·95.1M 턴. 호출당 프롬프트 중앙값 "
+            "68K에서 턴 안에서 새로 쌓이는 function-call 28%를 빼면 기존분 72% ≈ 49K"),
+        "len_c_measured_variants": {
+            "per_call_preexisting_72pct": {
+                "tokens": 49000.0,
+                "source": "[2608.00101 Fig.10 p.8 × Fig.11 p.8] 0.72 × 68K. 본서 산술",
+                "reading": "질의 도착 전에 이미 존재하던 프롬프트만 센다 — 이 회계의 |c|에 가장 가깝다",
+                "direction": "셋 중 STC에 가장 유리",
+            },
+            "per_call_median_68k": {
+                "tokens": 68000.0,
+                "source": "[2608.00101 Fig.10, p.8] LLM 호출당 프롬프트 토큰 중앙값",
+                "reading": "한 호출이 실제로 읽는 전량",
+                "direction": "중간",
+            },
+            "per_turn_median_227_6k": {
+                "tokens": 227600.0,
+                "source": "[2608.00101 Table 4, p.4] 사용자 턴당 프롬프트 토큰 중앙값. P90 1.50M",
+                "reading": "한 사용자 턴이 소비하는 전량(턴당 중앙 4.5 호출)",
+                "direction": "셋 중 STC에 가장 불리",
+            },
+        },
+        "len_c_superseded": {
+            "value": 8000.0,
+            "why": ("초판 가정. 실측의 6분의 1에서 28분의 1이었고 방향이 방법에게 "
+                    "유리한 쪽이었다. X3 Q5가 이미 '하한으로만 지지된다'고 판정했고, "
+                    "2608.00101이 그 하한이 얼마나 낮았는지를 확정했다"),
+            "printed_ratio_that_this_supersedes": "L*/|c| = 4.17 (FLOPs 회계, kappa_par=1)",
+        },
     },
 }
 
@@ -151,7 +186,10 @@ FROM_PAPER = {
 }
 
 ABSENT_FROM_PAPER = {
-    "len_c": "원 문맥 길이 — 토큰/문자 수 미보고. len_c_plausible은 이 실험의 가정",
+    "len_c": ("원 문맥 길이 — 토큰/문자 수 미보고. GSM-Symbolic·AIME의 len_c_plausible은 "
+              "여전히 이 실험의 가정이다. SWE-Features만 2026-08-11에 프로덕션 실측 앵커로 "
+              "교체했다(len_c_status=MEASURED-PROXY). 교체해도 논문이 자기 |c|를 인쇄한 "
+              "것은 아니므로 이 칸은 absent로 남는다"),
     "len_chat": "learned context 길이 — 미보고. 상태 용량 C가 absent인 이유",
     "B_s_gen": "sleep 생성 토큰 수 — 미보고. 상각 논증의 분자가 숫자로 없음",
     "N_q_distribution": "실서빙에서 한 문맥을 공유하는 질의 수의 분포 — 미보고. {1,2,5,10}으로 sweep만",
@@ -189,6 +227,10 @@ def main() -> None:
                 "ACCOUNTING-NOT-MEASURED": "닫힌 형태 회계다. wall-clock도 청구액도 아니다",
                 "PAPER-ABSENT-SWEPT": "len_c, len_chat, B_s_gen은 원 논문에 없어 가정/sweep한다",
                 "AXIS-READ": "gen_base는 수치표가 없어 그림 축 범위에서 읽은 값",
+                "MEASURED-PROXY-LEN-C": (
+                    "SWE-Features의 len_c는 Letta의 벤치마크에서 잰 값이 아니라 같은 종류의 "
+                    "워크로드(공유 저장소 위 코딩 에이전트)의 프로덕션 실측을 대입한 것이다. "
+                    "자릿수 비교로만 읽는다"),
                 "SELF-BUILT-BENCH": "5x·1.5x 자체가 저자 제작 벤치의 값",
                 "PRO-STC-ASSUMPTIONS": "가정 A1·A2는 STC에 유리한 쪽으로 잡혀 있다",
             },
@@ -211,9 +253,30 @@ def main() -> None:
                 }
         q12[rname] = {
             "gen_base": gen_base, "reduction": R["reduction"], "len_c_assumed": len_c,
+            "len_c_status": R.get("len_c_status", "ASSUMED"),
             "context_character": R["context_character"],
             "critical_len_chat": rows,
         }
+        # L*는 |c|에 의존하지 않는다. 비 L*/|c| 만 의존한다.
+        # 실측이 여러 읽기를 주면 그 전부에 대해 비를 인쇄한다 — 하나만 고르면
+        # 고른 사람이 판정하는 것이 된다.
+        variants = R.get("len_c_measured_variants")
+        if variants:
+            vrows = {}
+            for vname, V in variants.items():
+                lc = V["tokens"]
+                per_v = {}
+                for acc in accs:
+                    for kp in FROM_PAPER["kappa_par_grid"]["value"]:
+                        L = critical_len_chat(acc, lc, 30.0, gen_base, gen_stc, float(kp))
+                        per_v[f"{acc.label},kappa_par={kp}"] = (
+                            None if L == float("inf") else round(L / lc, 3))
+                vrows[vname] = {
+                    "len_c_tokens": lc, "source": V["source"], "reading": V["reading"],
+                    "L_star_over_len_c": per_v,
+                }
+            q12[rname]["L_star_over_len_c_by_measured_reading"] = vrows
+            q12[rname]["superseded"] = R.get("len_c_superseded")
     results["Q1_Q2_critical_length_by_regime"] = {
         "description": ("c-hat이 L*를 넘으면 N_q를 아무리 키워도 baseline을 이길 수 없다. "
                         "L*/|c| 가 1보다 훨씬 크면 여유가 크고, 1 근처면 실제로 물린다"),
@@ -276,12 +339,25 @@ def main() -> None:
             "즉 짧은 문맥·큰 절감률 영역에서 논문의 5x는 prefill 항을 넣어도 뒤집히지 않는다. "
             "이 실험은 그것을 반박하지 않는다."),
         "F3_swe_regime_is_where_it_bites": (
-            f"SWE-Features 레짐에서는 여유가 급감한다. 절감률이 1.5x로 작고 문맥이 코드베이스라 "
-            f"L* = {swe['L_star_tokens']} 토큰 (문맥의 {swe['L_star_over_len_c']}배), "
-            f"kappa_par=10이면 {swe10['L_star_tokens']} 토큰 ({swe10['L_star_over_len_c']}배)까지 좁아진다. "
-            "형제 PR 묶음을 요약한 learned context가 이 길이를 넘는 것은 드문 일이 아니다. "
-            "논문이 SWE-Features에서 '이득이 작다'고만 보고한 자리에, 회계는 '이득이 사라지는 "
-            "경계가 가깝다'는 더 강한 진술을 허용한다."),
+            f"SWE-Features 레짐에서는 여유가 사라진다. 절감률이 1.5x로 작고 문맥이 프로덕션 "
+            f"코드베이스라 L* = {swe['L_star_tokens']} 토큰이고 이것은 문맥의 "
+            f"{swe['L_star_over_len_c']}배 — 즉 **원 문맥보다 짧다.** kappa_par=10이면 "
+            f"{swe10['L_star_tokens']} 토큰 ({swe10['L_star_over_len_c']}배)까지 좁아진다. "
+            "learned context가 원 문맥의 일부여야만 매 질의에서 값을 치를 수 있다는 뜻인데, "
+            "Letta의 c-hat은 c보다 길고 원 c도 유지된다(가정 A5). 논문이 SWE-Features에서 "
+            "'이득이 작다'고만 보고한 자리에, 회계는 '이득이 사라지는 경계를 이미 넘었다'는 "
+            "더 강한 진술을 허용한다."),
+        "F6_the_len_c_assumption_was_wrong_in_the_methods_favour": (
+            "2026-08-11 정정. 초판은 SWE-Features의 |c|를 8,000 토큰으로 가정하고 "
+            "L*/|c| = 4.17배를 인쇄했다. 같은 종류의 워크로드에 대한 프로덕션 실측은 "
+            "호출당 프롬프트 중앙값 68K, 턴당 중앙값 227.6K, 턴당 P90 1.50M이다 "
+            "[2608.00101 Fig.10 p.8; Table 4 p.4]. 세 읽기를 대입하면 FLOPs 회계·kappa_par=1에서 "
+            "L*/|c| 가 각각 0.68 / 0.49 / 0.15로, **셋 다 1보다 작다.** 인쇄된 4.17배와 부등호의 "
+            "방향이 반대다. 초판의 가정은 실측의 6분의 1에서 28분의 1이었고, 그 방향이 방법에게 "
+            "유리한 쪽이었다. 정정하면 레짐 순서(SWE-Features 최하위)는 그대로이고 간격은 벌어진다. "
+            "정직성 한계 둘: (i) L* 안의 B_t는 여전히 그림 축에서 읽은 값(AXIS-READ)이므로 이번에 "
+            "측정된 것은 계산의 |c| 절반뿐이다. (ii) 실측은 Letta의 벤치마크가 아니라 다른 "
+            "프로덕션 배포에서 나왔다(MEASURED-PROXY-LEN-C) — 자릿수 비교로만 읽는다."),
         "F4_ordering_is_the_load_bearing_result": (
             "레짐 간 여유의 순서 — GSM-Symbolic >> AIME > SWE-Features — 는 세 파라미터"
             "(절감률, 문맥 길이, 병렬 벌수)의 방향만으로 결정되며, 미보고 값의 선택에 둔감하다. "

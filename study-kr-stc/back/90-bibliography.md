@@ -2,7 +2,7 @@
 
 ## 수록 원칙
 
-이 목록에 실리는 문헌은 두 종류이고, 두 종류를 구획으로 나눈다. **§90.1–§90.3은 corpus 29편**이다.
+이 목록에 실리는 문헌은 두 종류이고, 두 종류를 구획으로 나눈다. **§90.1–§90.3은 논문 대장**이다. 대장의 크기는 개정되므로 여기 상수로 인쇄하지 않는다 — 현재 셈과 개정 이력은 ch11 §11.3의 표 11-0b가 정본이다(2026-08-11 기준 41편).
 원문을 확보해 전문을 대조한 문헌이며, 본문의 사실 서술과 수치 인용은 전부 여기서만 나온다.
 **§90.5는 본문이 이름으로만 지목하는 문헌**이다. 계보를 설명하거나 어떤 논문이 무엇을 인용하지
 않았는지를 지적할 때 이름이 필요해 등장할 뿐, 이 책은 이들을 근거로 쓰지 않는다. 두 구획을 섞지
@@ -305,7 +305,7 @@ ch08이 CLS를 도입할 때, 그리고 ch11 §11.6이 "이름은 생물에서 �
 | ch08 | **PLOS Sleep**, **PAD**, EWC |
 | ch09 | **How much do LMs memorize**, **Memory Layers**, **LoRA as Knowledge Memory** |
 | ch10 | **RAG** |
-| ch11 | corpus 29편 전부 |
+| ch11 | 논문 대장 전부 |
 | ch12 | **Memorizing Transformers** |
 | ch13 | **MemGPT**, RAG |
 | ch14 | **Letta STC** |
@@ -318,10 +318,10 @@ ch08이 CLS를 도입할 때, 그리고 ch11 §11.6이 "이름은 생물에서 �
 | ch21 | **`LM Need Sleep`**, Nested Learning |
 | ch22 | **Can a LM Learn Facts Continually**, **Rate–Distortion**, EWC, DGR, GEM, How much do LMs memorize, ROME, MEMIT |
 | ch23 | **PLOS Sleep**, **PAD** |
-| ch24 | ch11의 분류 결과 — 통과 9편 + 경계 사례 1편 |
+| ch24 | ch11의 분류 결과 — 통과군 · 조건부 통과 · 경계 사례 |
 | ch25 | Letta STC, GEM, RAG + 이 책의 통일 비용 회계 |
 | ch26 | Memory Layers, LoRA, How much do LMs memorize, Rate–Distortion + 이 책의 상태 용량 회계 |
-| ch27 | 통과 9편 전부 + Can a LM Learn Facts Continually |
+| ch27 | 통과군 전부 + Can a LM Learn Facts Continually |
 | ch28 | Letta STC, Nested Learning, model collapse |
 | ch29 | `Do LMs Need Sleep?`, Memory Caching, Memory Layers |
 | ch30 | model collapse, GEM, Can a LM Learn Facts Continually |
