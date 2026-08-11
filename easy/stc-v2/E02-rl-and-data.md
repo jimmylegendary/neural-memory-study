@@ -114,7 +114,7 @@ $$
 |---|---|---|
 | SFT | $\Theta$ | 사람이 쓴 (prompt, 응답) |
 | reward model 학습 | 별도 모델의 파라미터 | 사람의 쌍 비교 |
-| RL | $\Theta$ | policy가 스스로 뽑은 rollout, reward model이 채점 |
+| RL | $\Theta$ | policy가 뽑은 rollout, 채점은 reward model |
 
 1단계가 먼저인 이유는 실용적이다 — rollout이 최소한의 형식을 갖추어야 reward model이 의미 있는 점수를 준다. 3단계가 RL이어야 하는 이유는 reward model을 미분할 수 없어서가 **아니다**. reward model은 미분 가능하다. rollout을 뽑는 **sampling이 미분 불가능**하기 때문이다.
 

@@ -61,7 +61,7 @@ $$
 
 낯선 칸은 **backward pass**와 **optimizer 상태** 둘뿐이다. backward는 4단계 중 3번이고, optimizer 상태는 4번이 손잡이를 돌릴 때 참고하는 내부 메모리다. 실무의 기본값인 AdamW는 손잡이 하나당 두 개의 숫자를 들고 있는다 — gradient의 평균과 gradient 제곱의 평균이다. 이 둘이 있어야 손잡이마다 보폭을 다르게 줄 수 있다.
 
-> **⚙️ 시스템 모델링.** training step은 우리가 아는 두 커널의 조합으로 완전히 분해된다. forward/backward는 **prefill을 닮았고**(두꺼운 GEMM, compute-bound), optimizer step은 **decode를 닮았다**(거대한 상태를 한 번 훑는 elementwise pass, bandwidth-bound). 그리고 training이 serving보다 HBM을 몇 배 먹는 이유의 절반이 optimizer 상태다. 7B 모델을 bf16 가중치 + fp32 master + Adam 메모리 두 벌로 두면 손잡이당 14 byte, gradient와 activation을 세기도 전에 약 98 GB가 상주한다. **"학습은 계산이 비싸다"는 인상은 절반만 맞다. 비싼 쪽은 자주 메모리다.**
+> **시스템 모델링 관점.** training step은 우리가 아는 두 커널의 조합으로 완전히 분해된다. forward/backward는 **prefill을 닮았고**(두꺼운 GEMM, compute-bound), optimizer step은 **decode를 닮았다**(거대한 상태를 한 번 훑는 elementwise pass, bandwidth-bound). 그리고 training이 serving보다 HBM을 몇 배 먹는 이유의 절반이 optimizer 상태다. 7B 모델을 bf16 가중치 + fp32 master + Adam 메모리 두 벌로 두면 손잡이당 14 byte, gradient와 activation을 세기도 전에 약 98 GB가 상주한다. **"학습은 계산이 비싸다"는 인상은 절반만 맞다. 비싼 쪽은 자주 메모리다.**
 
 *자세한 것은 ch02 §02.2.*
 
@@ -164,7 +164,7 @@ systems 접점은 크기다. SFT run 하나의 $D$는 서빙 노드 몇 대의 �
 
 "얼마나 드나"의 답이 여기서 뒤집힌다. 진짜 비용은 step 수가 아니라 **step당 생성량**이다. 생성이 붙은 레짐은 step 하나의 값이 다르며, corpus의 한 논문은 자기 sleep step 하나가 SFT step 하나의 4배라고 보고한다 [LM Need Sleep App. B.5]. 그 초과분이 들어갈 회계 칸이 §3의 $2ND$ 항이다.
 
-> **⚙️ 시스템 모델링.** 이것이 이 권에서 가장 강한 systems 접점이다. **RL run은 한 job 안에서 두 roofline 레짐을 교대시킨다.** rollout을 만드는 구간은 batch가 얇고 KV cache를 순회하는 bandwidth-bound decode이고, gradient를 계산하는 구간은 두꺼운 GEMM의 compute-bound prefill이다. 지도학습 run에는 후자만 있었다. 우리가 서빙에서 익힌 "prefill과 decode를 섞어 스케줄링하는 문제"가 training 클러스터 안으로 그대로 들어온 것이다. 그리고 유휴 시간 갱신이 이 형태를 물려받는 순간 결론이 하나 따라 나온다 — **sleep job은 training 하드웨어가 아니라 wake 트래픽과 같은 하드웨어, 같은 병목을 놓고 경쟁한다.**
+> **시스템 모델링 관점.** 이것이 이 권에서 가장 강한 systems 접점이다. **RL run은 한 job 안에서 두 roofline 레짐을 교대시킨다.** rollout을 만드는 구간은 batch가 얇고 KV cache를 순회하는 bandwidth-bound decode이고, gradient를 계산하는 구간은 두꺼운 GEMM의 compute-bound prefill이다. 지도학습 run에는 후자만 있었다. 우리가 서빙에서 익힌 "prefill과 decode를 섞어 스케줄링하는 문제"가 training 클러스터 안으로 그대로 들어온 것이다. 그리고 유휴 시간 갱신이 이 형태를 물려받는 순간 결론이 하나 따라 나온다 — **sleep job은 training 하드웨어가 아니라 wake 트래픽과 같은 하드웨어, 같은 병목을 놓고 경쟁한다.**
 
 > **비유.** wake와 sleep의 관계는 낮에 매장을 열고 밤에 재고를 정리하는 것과 같다. 손님이 없는 시간을 써서 다음 날의 응답을 빠르고 정확하게 만든다. **이 비유가 깨지는 곳** — 재고 정리는 창고에서 하지만 sleep 라운드는 **매장 바닥에서** 한다. 위 박스가 말하는 그대로, 생성 구간이 wake와 똑같은 자원을 먹기 때문이다. 유휴 시간이 정말로 공짜인 클러스터에서만 이 비유가 성립한다.
 
@@ -234,7 +234,7 @@ $$
 
 **사용자 규모로 옮기면.** 16.78 MB를 사용자 $10^6$명에 곱하면 웜 스토리지 16.78 TB이고, int4로 내리면 4.19 TB다. **dtype 하나가 스토리지 계층 규모를 4배 움직인다.**
 
-> **⚙️ 시스템 모델링.** merge하면 GEMM 모양이 원래 모델과 글자 그대로 같아진다. 층이 늘지도, 문맥이 줄지도 않으므로 이 절차가 wake에 더하는 지연 — 이 책은 그 값을 $L_w$로 쓴다 — 이 정확히 **0**이다. 그런데 merge된 가중치 한 벌은 정확히 한 사용자에게만 유효하다. 즉 merge는 $L_w = 0$을 **shared-weight batching과 맞바꾼 것**이다. 반대로 delta를 합치지 않고 따로 태우면 배칭은 지킬 수 있다 — 이때 추가되는 토큰당 연산은 base 대비 $2r/d = 32/4096 \approx 0.78\%$로 무시할 수준이다. 대신 요청마다 수 MB의 delta를 로드해야 하고, 그 지연을 측정한 논문은 이 corpus에 없다. **경로 사이의 가장 큰 비용 차이는 정확도가 아니라 이 배치 가능성에서 나온다.**
+> **시스템 모델링 관점.** merge하면 GEMM 모양이 원래 모델과 글자 그대로 같아진다. 층이 늘지도, 문맥이 줄지도 않으므로 이 절차가 wake에 더하는 지연 — 이 책은 그 값을 $L_w$로 쓴다 — 이 정확히 **0**이다. 그런데 merge된 가중치 한 벌은 정확히 한 사용자에게만 유효하다. 즉 merge는 $L_w = 0$을 **shared-weight batching과 맞바꾼 것**이다. 반대로 delta를 합치지 않고 따로 태우면 배칭은 지킬 수 있다 — 이때 추가되는 토큰당 연산은 base 대비 $2r/d = 32/4096 \approx 0.78\%$로 무시할 수준이다. 대신 요청마다 수 MB의 delta를 로드해야 하고, 그 지연을 측정한 논문은 이 corpus에 없다. **경로 사이의 가장 큰 비용 차이는 정확도가 아니라 이 배치 가능성에서 나온다.**
 
 > **주의.** 자주 혼동되는 두 축을 갈라 둔다. **QLoRA**는 얼려 둔 $\Theta_0$를 4-bit로 양자화하는 것이며 줄이는 대상은 **학습 시점의 GPU 메모리**다. **양자화된 delta**는 $\Delta\Theta$ 자체를 낮은 dtype으로 저장하는 것이며 줄이는 대상은 **보관·전송 바이트**다. 위 4단계의 int4가 후자다. 두 절차는 이름이 닮았을 뿐 바꾸는 칸이 다르다.
 
@@ -254,7 +254,7 @@ $$
 
 **temperature.** dark knowledge를 얼마나 크게 들려줄지를 정하는 다이얼이 하나 있다. **temperature $T$**는 softmax에 넣기 전 logit을 나누는 양수 스칼라다(이 권에서 $T$는 오직 이 뜻이며, 시퀀스 길이는 §3에서 정한 대로 $L$이다). $T$를 키우면 분포가 평평해져 낮은 확률의 좌표들이 상대적으로 커지고, $T \to 0$이면 argmax 하나만 남는다. 즉 $T$는 **teacher의 어느 부분을 학습 신호로 삼을지 고르는 손잡이**다. 크기를 감각하려면 숫자 하나면 된다 — teacher logit이 $(4, 2, 0)$일 때 세 번째 좌표의 확률은 $T=1$에서 0.0159이고 $T=4$에서 0.1863이다. **11.7배**다. 다만 $T$를 바꾸면 loss의 눈금 자체가 바뀌므로 hard label과 soft target을 섞는 비율도 함께 움직인다. 그래서 표준형에는 $T^2$ 보정 상수가 붙는다.
 
-> **⚙️ 시스템 모델링.** distillation은 새로운 커널을 하나도 도입하지 않는다. teacher 쪽은 순수 forward — 우리가 매일 돌리는 batch prefill과 완전히 같은 연산이고 가중치는 read-only다. student 쪽만 backward가 붙는다. 새로 생기는 것은 연산이 아니라 **두 모델이 동시에 HBM에 상주한다**는 배치 제약, 그리고 teacher 출력을 student backward가 끝날 때까지 살려 두어야 한다는 텐서 수명이다. 크기를 세어 보면 이것이 왜 제약인지 보인다: 어휘 128,000, 시퀀스 길이 2,048, bf16이면 teacher logit 텐서 하나가 $2{,}048 \times 128{,}000 \times 2\,\mathrm{B} = 500$ MiB다. **시퀀스 한 개당** 그렇다. 8B 모델의 bf16 가중치가 16 GB이므로 시퀀스 하나의 logit이 이미 가중치의 약 3%다. 상위 64개 좌표만 남기면 768 KiB로 **666.7배** 작아지지만, 잘려 나간 것이 정확히 방금 $T$로 키운 그 꼬리다. **temperature로 꼬리를 키우는 일과 top-$k$로 꼬리를 버리는 일은 같은 파이프라인 안에서 서로를 상쇄한다.** 두 값을 따로 정하면 안 된다.
+> **시스템 모델링 관점.** distillation은 새로운 커널을 하나도 도입하지 않는다. teacher 쪽은 순수 forward — 우리가 매일 돌리는 batch prefill과 완전히 같은 연산이고 가중치는 read-only다. student 쪽만 backward가 붙는다. 새로 생기는 것은 연산이 아니라 **두 모델이 동시에 HBM에 상주한다**는 배치 제약, 그리고 teacher 출력을 student backward가 끝날 때까지 살려 두어야 한다는 텐서 수명이다. 크기를 세어 보면 이것이 왜 제약인지 보인다: 어휘 128,000, 시퀀스 길이 2,048, bf16이면 teacher logit 텐서 하나가 $2{,}048 \times 128{,}000 \times 2\,\mathrm{B} = 500$ MiB다. **시퀀스 한 개당** 그렇다. 8B 모델의 bf16 가중치가 16 GB이므로 시퀀스 하나의 logit이 이미 가중치의 약 3%다. 상위 64개 좌표만 남기면 768 KiB로 **666.7배** 작아지지만, 잘려 나간 것이 정확히 방금 $T$로 키운 그 꼬리다. **temperature로 꼬리를 키우는 일과 top-$k$로 꼬리를 버리는 일은 같은 파이프라인 안에서 서로를 상쇄한다.** 두 값을 따로 정하면 안 된다.
 
 **self-distillation.** teacher와 student가 같은 모델일 때다. 여기서 즉시 나오는 질문이 이 절의 핵심이다 — teacher가 student보다 아는 것이 없는데 어떻게 이득이 나는가. 답은 셋이고 셋 다 "지식이 이동해서"가 아니다.
 

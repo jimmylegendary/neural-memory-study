@@ -21,4 +21,16 @@
 | G10 | Memory Caching | 고정 메모리 벽을 체크포인트로 — 4 variants(Residual/GRM/Soup/SSC)·O(NL) 보간 |
 | G11 | NSTM | 읽기/쓰기 빈도 분리·memory caching 실전 성패·NL/Sleep에 주는 힌트 |
 
-빌드: `pandoc booklets/<id>.md --template=build/template-easy.tex --lua-filter=build/callouts.lua --lua-filter=build/mathfit.lua --pdf-engine=lualatex`. 검증: `build`의 overflow gate + missing-char 0.
+빌드: `pandoc booklets/<id>.md --template=build/template-easy.tex --lua-filter=../build/breakable.lua --lua-filter=build/callouts.lua --lua-filter=build/mathfit.lua --pdf-engine=lualatex`.
+검증: `../build/overflow_gate.py <pdf>` PASS + missing-char 0.
+
+> **`breakable.lua`를 빼지 마라.** 이 줄은 원래 그 필터 없이 적혀 있었고, Sleep-Time Compute v2
+> 판을 빌드할 때 `LoRA(arXiv:2106.09685)·ROME(arXiv:2202.05262)·MEMIT(...)`처럼 중점으로 이어진
+> arXiv ID 런이 줄바꿈 지점을 못 찾아 오른쪽 여백을 넘었다. Neural Memory 판이 통과한 것은
+> 본문에 그런 나열이 없었기 때문이지 안전해서가 아니다. 상세는 `../build/METHOD.md` §1.
+>
+> 이모지도 쓰지 마라 — 이 템플릿의 CJK 폰트에 없어 `Missing character`로 조용히 사라진다.
+> 콜아웃은 `> **시스템 모델링 관점.**`처럼 **텍스트 라벨**로 연다.
+
+Sleep-Time Compute v2 판은 `stc-v2/` (원고) → `pdf-stc-v2/` (PDF)이며,
+`stc-v2/build-easy-v2.sh` 가 위 두 게이트를 전권에 걸어 한 번에 돌린다.
