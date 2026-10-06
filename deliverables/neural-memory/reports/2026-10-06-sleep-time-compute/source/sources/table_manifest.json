@@ -1,0 +1,107 @@
+[
+  {
+    "number": 1,
+    "title": "목적에 따른 읽기 경로",
+    "page": 3
+  },
+  {
+    "number": 2,
+    "title": "근거 유형과 사용 범위",
+    "page": 4
+  },
+  {
+    "number": 3,
+    "title": "지속 상태를 구현하는 세 경로",
+    "page": 10
+  },
+  {
+    "number": 4,
+    "title": "압축 평가에 추가할 시험",
+    "page": 13
+  },
+  {
+    "number": 5,
+    "title": "메모리 상태의 네 가지 질문",
+    "page": 15
+  },
+  {
+    "number": 6,
+    "title": "Replay world에 필요한 메타데이터",
+    "page": 17
+  },
+  {
+    "number": 7,
+    "title": "Self-improvement 연구의 서로 다른 제어점",
+    "page": 19
+  },
+  {
+    "number": 8,
+    "title": "재사용 가능한 state의 세 설계",
+    "page": 25
+  },
+  {
+    "number": 9,
+    "title": "HBF를 평가할 때 구분할 항목",
+    "page": 26
+  },
+  {
+    "number": 10,
+    "title": "논문 결과를 읽는 비교 틀",
+    "page": 27
+  },
+  {
+    "number": 11,
+    "title": "Lifetime 비용표에 반드시 들어갈 항목",
+    "page": 30
+  },
+  {
+    "number": 12,
+    "title": "HAT / runtime event 계약 제안",
+    "page": 32
+  },
+  {
+    "number": 13,
+    "title": "동일 조건 비교를 위한 benchmark scorecard",
+    "page": 33
+  },
+  {
+    "number": 14,
+    "title": "우선순위 실험과 중단 조건",
+    "page": 34
+  },
+  {
+    "number": 15,
+    "title": "DSE parameter와 response 변수",
+    "page": 35
+  },
+  {
+    "number": 16,
+    "title": "확인한 제품 신호",
+    "page": 36
+  },
+  {
+    "number": 17,
+    "title": "이번 판에서 바로잡은 식별자",
+    "page": 37
+  },
+  {
+    "number": 18,
+    "title": "이전 조사 보존 목록 A",
+    "page": 38
+  },
+  {
+    "number": 19,
+    "title": "이전 조사 보존 목록 B",
+    "page": 39
+  },
+  {
+    "number": 20,
+    "title": "이 보고서의 용어 계약",
+    "page": 40
+  },
+  {
+    "number": 21,
+    "title": "미디어 제작·해석 계약",
+    "page": 49
+  }
+]
