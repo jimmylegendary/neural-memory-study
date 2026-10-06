@@ -1,0 +1,290 @@
+[
+  {
+    "page": 2,
+    "id": "executive",
+    "title": "핵심 판단",
+    "section": "EXECUTIVE BRIEF"
+  },
+  {
+    "page": 3,
+    "id": "guide",
+    "title": "보고서 안내",
+    "section": "READER’S GUIDE"
+  },
+  {
+    "page": 4,
+    "id": "methods",
+    "title": "근거를 읽는 법",
+    "section": "01 / SCOPE & EVIDENCE"
+  },
+  {
+    "page": 5,
+    "id": "taxonomy",
+    "title": "Memory를 네 축으로 분해하기",
+    "section": "01 / CONCEPT MAP"
+  },
+  {
+    "page": 6,
+    "id": "timeline",
+    "title": "기술 계보: 적응에서 상태 관리로",
+    "section": "01 / RESEARCH LANDSCAPE"
+  },
+  {
+    "page": 7,
+    "id": "sleep-economics",
+    "title": "Sleep-time compute의 경제학",
+    "section": "02 / SLEEP COMPUTE"
+  },
+  {
+    "page": 8,
+    "id": "hope",
+    "title": "HOPE / Nested Learning을 정확히 읽기",
+    "section": "02 / FOUNDATIONAL MECHANISM"
+  },
+  {
+    "page": 9,
+    "id": "mapping",
+    "title": "CMS → HW 매핑의 함정",
+    "section": "02 / CO-DESIGN PRINCIPLE"
+  },
+  {
+    "page": 10,
+    "id": "recurrent",
+    "title": "Persistent state의 재등장",
+    "section": "03 / RECURRENT MEMORY"
+  },
+  {
+    "page": 11,
+    "id": "parametric",
+    "title": "Parametric memory는 “저장된 weight” 이상이다",
+    "section": "03 / CANONICAL STATE & COMPILATION"
+  },
+  {
+    "page": 12,
+    "id": "jit",
+    "title": "미래 질문을 모를 때는 늦게 결정한다",
+    "section": "04 / WRITE-TIME VS READ-TIME"
+  },
+  {
+    "page": 13,
+    "id": "consolidation",
+    "title": "Consolidation의 품질은 미래에 드러난다",
+    "section": "04 / INFORMATION FIDELITY"
+  },
+  {
+    "page": 14,
+    "id": "credit",
+    "title": "Credit assignment가 장기 학습의 병목이다",
+    "section": "04 / CAUSAL UTILITY"
+  },
+  {
+    "page": 15,
+    "id": "influence",
+    "title": "기억은 존재해도 사용하지 않을 수 있다",
+    "section": "04 / ROUTING & INFLUENCE"
+  },
+  {
+    "page": 16,
+    "id": "dreaming",
+    "title": "Dreaming: 무엇을 재생하고 무엇을 상상하는가",
+    "section": "05 / OFFLINE LEARNING"
+  },
+  {
+    "page": 17,
+    "id": "dreamrsi",
+    "title": "Dream-RSI: 경험을 평가 가능한 세계로",
+    "section": "05 / REPLAY WORLD"
+  },
+  {
+    "page": 18,
+    "id": "programs",
+    "title": "기억의 끝은 요약이 아니라 실행일 수 있다",
+    "section": "05 / EPISODIC → PROCEDURAL"
+  },
+  {
+    "page": 19,
+    "id": "selfimprove",
+    "title": "Self-improvement에도 control plane이 필요하다",
+    "section": "05 / HARNESS EVOLUTION"
+  },
+  {
+    "page": 20,
+    "id": "control",
+    "title": "Memory program과 active belief state",
+    "section": "05 / ADAPTIVE CONTROL"
+  },
+  {
+    "page": 21,
+    "id": "validity",
+    "title": "Fresh memory, stale artifact",
+    "section": "06 / VALIDITY & DEPENDENCIES"
+  },
+  {
+    "page": 22,
+    "id": "transaction",
+    "title": "Commit은 모델의 확신이 아니라 프로토콜이다",
+    "section": "06 / TRANSACTION & ROLLBACK"
+  },
+  {
+    "page": 23,
+    "id": "security",
+    "title": "메모리 보안은 학습 경계의 보안이다",
+    "section": "06 / TRUST & GOVERNANCE"
+  },
+  {
+    "page": 24,
+    "id": "workload",
+    "title": "Agent workload는 토큰 흐름만이 아니다",
+    "section": "07 / SYSTEMS CHARACTERIZATION"
+  },
+  {
+    "page": 25,
+    "id": "kv-artifacts",
+    "title": "KV는 cache를 넘어 compiled artifact가 된다",
+    "section": "07 / REUSABLE EXECUTION STATE"
+  },
+  {
+    "page": 26,
+    "id": "hbf",
+    "title": "HBF: capacity tier의 기회와 조건",
+    "section": "07 / MEMORY HIERARCHY"
+  },
+  {
+    "page": 27,
+    "id": "hbf-branches",
+    "title": "HBF 연구는 하나의 결론으로 수렴하지 않는다",
+    "section": "07 / COMPETING DESIGN POINTS"
+  },
+  {
+    "page": 28,
+    "id": "hbfsim",
+    "title": "HBFSim: 열화까지 포함한 실행 모델",
+    "section": "07 / SIMULATION & RELIABILITY"
+  },
+  {
+    "page": 29,
+    "id": "placement",
+    "title": "물리 배치는 representation의 함수가 아니다",
+    "section": "07 / PLACEMENT POLICY"
+  },
+  {
+    "page": 30,
+    "id": "economics",
+    "title": "Lifetime ROI: sleep와 wake의 비용을 합친다",
+    "section": "08 / COST MODEL"
+  },
+  {
+    "page": 31,
+    "id": "architecture",
+    "title": "통합 reference architecture",
+    "section": "08 / SYSTEM DESIGN PROPOSAL"
+  },
+  {
+    "page": 32,
+    "id": "events",
+    "title": "Learning trace를 resource trace로 연결하기",
+    "section": "08 / EVENT MODEL"
+  },
+  {
+    "page": 33,
+    "id": "evaluation",
+    "title": "Recall을 넘어 lifetime utility를 평가한다",
+    "section": "08 / BENCHMARKING"
+  },
+  {
+    "page": 34,
+    "id": "roadmap",
+    "title": "연구 로드맵: 바꾸기 전에 반증 조건을 정한다",
+    "section": "08 / RESEARCH AGENDA"
+  },
+  {
+    "page": 35,
+    "id": "measurement",
+    "title": "DSE를 위한 계측 명세",
+    "section": "08 / MEASUREMENT BLUEPRINT"
+  },
+  {
+    "page": 36,
+    "id": "industry",
+    "title": "논문 밖에서도 control plane이 구체화된다",
+    "section": "09 / INDUSTRY & COMMUNITY"
+  },
+  {
+    "page": 37,
+    "id": "errata",
+    "title": "출처 감사와 정정 기록",
+    "section": "09 / SOURCE AUDIT"
+  },
+  {
+    "page": 38,
+    "id": "tracking-a",
+    "title": "보존하되 근거로 승격하지 않은 자료",
+    "section": "09 / EXTENDED TRACKING REGISTER A"
+  },
+  {
+    "page": 39,
+    "id": "tracking-b",
+    "title": "후속 검증이 필요한 연결 연구",
+    "section": "09 / EXTENDED TRACKING REGISTER B"
+  },
+  {
+    "page": 40,
+    "id": "glossary",
+    "title": "용어와 최종 명제",
+    "section": "10 / GLOSSARY & CONCLUSION"
+  },
+  {
+    "page": 41,
+    "id": "references",
+    "title": "주석형 참고문헌 01",
+    "section": "REFERENCES / SOURCE REGISTER"
+  },
+  {
+    "page": 42,
+    "id": "references-2",
+    "title": "주석형 참고문헌 02",
+    "section": "REFERENCES / SOURCE REGISTER"
+  },
+  {
+    "page": 43,
+    "id": "references-3",
+    "title": "주석형 참고문헌 03",
+    "section": "REFERENCES / SOURCE REGISTER"
+  },
+  {
+    "page": 44,
+    "id": "references-4",
+    "title": "주석형 참고문헌 04",
+    "section": "REFERENCES / SOURCE REGISTER"
+  },
+  {
+    "page": 45,
+    "id": "references-5",
+    "title": "주석형 참고문헌 05",
+    "section": "REFERENCES / SOURCE REGISTER"
+  },
+  {
+    "page": 46,
+    "id": "references-6",
+    "title": "주석형 참고문헌 06",
+    "section": "REFERENCES / SOURCE REGISTER"
+  },
+  {
+    "page": 47,
+    "id": "references-7",
+    "title": "주석형 참고문헌 07",
+    "section": "REFERENCES / SOURCE REGISTER"
+  },
+  {
+    "page": 48,
+    "id": "references-8",
+    "title": "주석형 참고문헌 08",
+    "section": "REFERENCES / SOURCE REGISTER"
+  },
+  {
+    "page": 49,
+    "id": "production",
+    "title": "매체 출처와 발행 정보",
+    "section": "PRODUCTION NOTES"
+  }
+]

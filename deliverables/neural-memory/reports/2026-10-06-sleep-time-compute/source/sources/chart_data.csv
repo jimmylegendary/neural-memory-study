@@ -1,0 +1,7 @@
+﻿figure,source_id,series,category,value,unit,interpretation
+JitMem gains,14,gain over strongest reported baseline,ALFWorld,16.2,percentage_points,Author reported; not independent reproduction; different benchmarks
+JitMem gains,14,gain over strongest reported baseline,WebShop,16.3,percentage_points,Author reported; not independent reproduction; different benchmarks
+JitMem gains,14,gain over strongest reported baseline,tau2-bench,3.9,percentage_points,Author reported; not independent reproduction; different benchmarks
+LIMBO duplicate writes,26,frontier-model duplicate write rate,Lost ACK,0.5,percent,Author reported; three fault conditions; not inference latency
+LIMBO duplicate writes,26,frontier-model duplicate write rate,Still in-flight,56,percent,Author reported; three fault conditions; not inference latency
+LIMBO duplicate writes,26,frontier-model duplicate write rate,Redelivery,74,percent,Author reported; three fault conditions; not inference latency

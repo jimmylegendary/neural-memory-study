@@ -50,3 +50,10 @@ manifest)은 **2026-08-06에 전량 폐기**했다. 폐기 사유는 분량이 �
 python3 scripts/package_deliverables.py --root . --output deliverables          # 재생성
 python3 scripts/package_deliverables.py --root . --output deliverables --check  # 검증
 ```
+
+
+## 2026-10-06 동향 통합 리포트
+
+[Sleep-time Compute & Neural Memory — 49쪽 한국어 PDF 및 편집 원본](deliverables/neural-memory/reports/2026-10-06-sleep-time-compute/README.md)
+
+기존 학습서·Sleep-Time Compute v2와 구분되는 별도 동향/설계 분석 보고서다. PDF·도식·출처·재현 소스를 함께 보존한다.

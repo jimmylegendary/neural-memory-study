@@ -1,0 +1,286 @@
+{
+  "report_date": "2026-10-06",
+  "pdf_byte_identical": true,
+  "files": [
+    {
+      "path": "FIGURE_TABLE_INDEX.md",
+      "bytes": 8353,
+      "sha256": "6f0bde50821d6061c3bdbaadb8a2133ea26debf330131574ef9ced8196ee4b8a"
+    },
+    {
+      "path": "Neural_Memory_Report_2026-10-06_KO.pdf",
+      "bytes": 485791,
+      "sha256": "249d1748b51d8d795de1e395f60b7d0ca6cf9a20e436c2b8207c1015a656b27f"
+    },
+    {
+      "path": "Neural_Memory_Report_Preview.jpg",
+      "bytes": 471594,
+      "sha256": "1374989462fe5a1ac289e8a1dc09256ae51e919470ddbc0a86bdd0d31fec88b1"
+    },
+    {
+      "path": "Neural_Memory_Report_Source_Package.zip",
+      "bytes": 928312,
+      "sha256": "5993b65e5bcf5d901d0fbe26230c342f2876cacf66ce24a39d08d914cf100502"
+    },
+    {
+      "path": "PUBLICATION.json",
+      "bytes": 1471,
+      "sha256": "9151a4c6de0b93424a6b74468c50874f37fa8e193390d3301c7cb78c13fe327a"
+    },
+    {
+      "path": "README.md",
+      "bytes": 1871,
+      "sha256": "edee476058ffb2d3901382c6db77418605a820dc9c862d2911ea6e20fa61c8cb"
+    },
+    {
+      "path": "SOURCE_AUDIT.md",
+      "bytes": 2866,
+      "sha256": "7c81029e62e0fa3f65b194e278e42bcfb297b28b3dd0ac5ad38219aec7fa4816"
+    },
+    {
+      "path": "source/FIGURE_TABLE_INDEX.md",
+      "bytes": 8136,
+      "sha256": "9c0c1db33799b08b772f9d60b2c124c7a0f605e1474a2bae8266714420a22764"
+    },
+    {
+      "path": "source/README.md",
+      "bytes": 2560,
+      "sha256": "c227d236030058cc3a0d01bb25daff132820b2359aac25edcefd6a8d93347d8d"
+    },
+    {
+      "path": "source/SOURCE_AUDIT.md",
+      "bytes": 2866,
+      "sha256": "7c81029e62e0fa3f65b194e278e42bcfb297b28b3dd0ac5ad38219aec7fa4816"
+    },
+    {
+      "path": "source/assets/cover.svg",
+      "bytes": 9488,
+      "sha256": "9cdc07bf2e25b971b0909ac6da2b7ca6e0f28d194c219377a8b2b81f4f4e0e59"
+    },
+    {
+      "path": "source/assets/fig-01-taxonomy.svg",
+      "bytes": 3522,
+      "sha256": "0a549baaf69b178870b4da79630a45be5b0f791ccc7d488c6d351f6ad0c05f42"
+    },
+    {
+      "path": "source/assets/fig-02-timeline.svg",
+      "bytes": 3634,
+      "sha256": "f9cea5ac4164e09662117abd947aa61637854bdae80d64f71032c657ee6c7aaa"
+    },
+    {
+      "path": "source/assets/fig-03-sleep-amortization.svg",
+      "bytes": 3363,
+      "sha256": "0224d1e1eace6079e47733ada97693fb109841e561680b4759e6d96a9b89190e"
+    },
+    {
+      "path": "source/assets/fig-04-cms-forward-update.svg",
+      "bytes": 8305,
+      "sha256": "ad6642b748b4243fe06e02d6df9ed4cd076e06df7287ee176ff6004c49e7efc3"
+    },
+    {
+      "path": "source/assets/fig-05-read-write-space.svg",
+      "bytes": 3829,
+      "sha256": "6222dd33976f452cf4a66a8114d2c80a277fe34d02b1bcc4e39282c91c3a4cd2"
+    },
+    {
+      "path": "source/assets/fig-06-recurrent-checkpoints.svg",
+      "bytes": 3785,
+      "sha256": "f122db049edf883a5e1f31ca432365e375eaa298d52d5de6b66d41b36e3d34ee"
+    },
+    {
+      "path": "source/assets/fig-07-parametric-compiler.svg",
+      "bytes": 4940,
+      "sha256": "04e73978793440187084dc0cb607e23746751ee3174610d46b09abf8de3ecd6e"
+    },
+    {
+      "path": "source/assets/fig-08-jit-branch.svg",
+      "bytes": 2625,
+      "sha256": "143add248f94cd57f4f87173691863402a9ade32110776188374d88064453497"
+    },
+    {
+      "path": "source/assets/fig-09-jit-gains.svg",
+      "bytes": 3191,
+      "sha256": "635f8e2ed874543e6034e235e175c4faea1f943a4dbc0e839d9d8a34050a6ca4"
+    },
+    {
+      "path": "source/assets/fig-10-update-sufficiency.svg",
+      "bytes": 3386,
+      "sha256": "ba7366cbcaf43666c01a442f9040f0c81553ef07b699aaf729c24c503c5e0b92"
+    },
+    {
+      "path": "source/assets/fig-11-credit-ladder.svg",
+      "bytes": 3259,
+      "sha256": "c30f49a3896887b2c44a5e35c42de69df1a1f8b167c3325331af13639947758e"
+    },
+    {
+      "path": "source/assets/fig-12-routing-influence.svg",
+      "bytes": 3864,
+      "sha256": "cc412d2e138ace024cb4cc4ee048ef84ffc2e9f2026c44c13f3f960cb754be4f"
+    },
+    {
+      "path": "source/assets/fig-13-dream-types.svg",
+      "bytes": 3384,
+      "sha256": "dc6b598807933b869c9b116f84b4aea325a62ebb87a63aeaa8074a32ed0d411b"
+    },
+    {
+      "path": "source/assets/fig-14-dream-rsi-loop.svg",
+      "bytes": 3448,
+      "sha256": "af7ee7f2c443a9e1dc71038961d4ad53b654254d5faa5b2556516cc4dbe9c20d"
+    },
+    {
+      "path": "source/assets/fig-15-knowledge-program.svg",
+      "bytes": 2645,
+      "sha256": "de1ff200786f734ca2a55c2d052834cafedcb6b93c381a29b445a4b47c532988"
+    },
+    {
+      "path": "source/assets/fig-16-self-improvement.svg",
+      "bytes": 2994,
+      "sha256": "9bbc7eea7ca6a5e39867a4f011f996335382c0365aeab96cdaa58e53d99a8bc5"
+    },
+    {
+      "path": "source/assets/fig-17-program-state.svg",
+      "bytes": 2910,
+      "sha256": "76bf2aee407d6880c0d860416f663dbf3104bc5df1ce9edfbffcb860951d997e"
+    },
+    {
+      "path": "source/assets/fig-18-planfence.svg",
+      "bytes": 4055,
+      "sha256": "45b959890164943c27d44506f84dd28bb41ba9c87fdaf9ef64b8b4262ac5a43d"
+    },
+    {
+      "path": "source/assets/fig-19-transaction.svg",
+      "bytes": 3603,
+      "sha256": "c06d981036e17a52d782d86be4328916822696382bff2123e53bb1e0c68c80d5"
+    },
+    {
+      "path": "source/assets/fig-20-limbo-duplicates.svg",
+      "bytes": 3197,
+      "sha256": "da667b3845b18e8e9aa2baaa4f17f0ec6467f5244397eeba08ab40b2c6fd83e4"
+    },
+    {
+      "path": "source/assets/fig-21-trust-boundary.svg",
+      "bytes": 3980,
+      "sha256": "1a1ad6ee0b576c5aaa2d4a1eaad2b79466630019a3a22012b5cd8162e0c183ca"
+    },
+    {
+      "path": "source/assets/fig-22-phase-schedule.svg",
+      "bytes": 4446,
+      "sha256": "388bc0147512c2c50a74a07e5f6f5aae9ad6fbcbbcc540afd6ac23faaf184ab5"
+    },
+    {
+      "path": "source/assets/fig-23-compiled-kv.svg",
+      "bytes": 2771,
+      "sha256": "34792e92e1242ea6d9359ebbf856ee418fa85876c1d4ec0fb67b18b17561e5ae"
+    },
+    {
+      "path": "source/assets/fig-24-memory-hierarchy.svg",
+      "bytes": 2635,
+      "sha256": "56cf1620cf34f0e77fbaad003b9478618eeaa493d2a809ffa9b67e7a34c31092"
+    },
+    {
+      "path": "source/assets/fig-25-hbf-branches.svg",
+      "bytes": 3035,
+      "sha256": "c6211c462eaf6acc2ce2c6404c5500bd7f75a152fd97d9dc0181948844408788"
+    },
+    {
+      "path": "source/assets/fig-26-hbfsim.svg",
+      "bytes": 4162,
+      "sha256": "78e740ed7e4b3003314874a9aa8a668f6a3570f1a48d65a56da44b0ef4f737dc"
+    },
+    {
+      "path": "source/assets/fig-27-logical-physical.svg",
+      "bytes": 5008,
+      "sha256": "8523d8ecc8c4b3b4ee07daa2e9c284217b8ece9b7440734ac788c48b3b560e50"
+    },
+    {
+      "path": "source/assets/fig-28-break-even.svg",
+      "bytes": 3733,
+      "sha256": "7dabd298cd00f364a30c73b589a5102d9001a8491850560e5984b68c03f6df6a"
+    },
+    {
+      "path": "source/assets/fig-29-reference-architecture.svg",
+      "bytes": 4154,
+      "sha256": "cbeb5e6cd52f94a50b6a0da8fcfd1ff65c1002b55be48e130ec192bc1004c3fc"
+    },
+    {
+      "path": "source/assets/fig-30-event-contract.svg",
+      "bytes": 2356,
+      "sha256": "75bf7bc32ffd19d7060c5cb0c07d88d5d6fcf83080731516078353f536f28e9d"
+    },
+    {
+      "path": "source/assets/fig-31-roadmap.svg",
+      "bytes": 2778,
+      "sha256": "947607f18d69ea7e280e41f47a0f46988b7384f84badd1c0e01d6d35747c99d9"
+    },
+    {
+      "path": "source/build/build_report.py",
+      "bytes": 94981,
+      "sha256": "67f951a179886f140f8b113ee9a3f5364a76904fb7ac72465fc43a40506d62bb"
+    },
+    {
+      "path": "source/build/report.html",
+      "bytes": 251496,
+      "sha256": "c8d1ac9968d37dcc082afd024cc99b8d62bd1023196ccd365740e5734cf9b5e7"
+    },
+    {
+      "path": "source/build/report_engine.py",
+      "bytes": 5487,
+      "sha256": "98c2523933605036cd719e62688c019fd6afe3698610156295aeb1edff46c955"
+    },
+    {
+      "path": "source/build/report_style.css",
+      "bytes": 6179,
+      "sha256": "e02d1c6527d5063c6e80e51044646194554624d99e8e6af057cbf75437328b43"
+    },
+    {
+      "path": "source/deliverables/Neural_Memory_Report_2026-10-06_KO.pdf",
+      "bytes": 485791,
+      "sha256": "249d1748b51d8d795de1e395f60b7d0ca6cf9a20e436c2b8207c1015a656b27f"
+    },
+    {
+      "path": "source/deliverables/Neural_Memory_Report_Preview.jpg",
+      "bytes": 471594,
+      "sha256": "1374989462fe5a1ac289e8a1dc09256ae51e919470ddbc0a86bdd0d31fec88b1"
+    },
+    {
+      "path": "source/requirements.txt",
+      "bytes": 48,
+      "sha256": "843227c4d0cdda6bfdd86476f5d64c0105fc836fda303df0fb9747c35d9d9690"
+    },
+    {
+      "path": "source/sources/chart_data.csv",
+      "bytes": 976,
+      "sha256": "7a114f602ab5d8e50d9b1b39ad8b91194300056c1ad7da02bddbd8716a23b31a"
+    },
+    {
+      "path": "source/sources/contents.json",
+      "bytes": 7010,
+      "sha256": "19990a689a660965c328b55b1b14601e7a9e744247412bb45dc8627aed6752ce"
+    },
+    {
+      "path": "source/sources/illustrative_cost_data.csv",
+      "bytes": 631,
+      "sha256": "769a369ef64f7e0d7b29cfe97a46865927561b9e65fc9f7aaf4e74649bde0639"
+    },
+    {
+      "path": "source/sources/media_manifest.json",
+      "bytes": 10507,
+      "sha256": "f8a73dce0a355c90b1be1f03fbd74df6c0c6f41a305b7fef0c0d0340a343a790"
+    },
+    {
+      "path": "source/sources/references.csv",
+      "bytes": 16955,
+      "sha256": "ccfc2bbc773f4565991066e569c08adc588d9b1c282e36c1853ba20a369c763e"
+    },
+    {
+      "path": "source/sources/references.json",
+      "bytes": 27902,
+      "sha256": "ab1cc10afb96f35c7b76898c9da7c2e60382da2c18f34e41de976aabd76a8403"
+    },
+    {
+      "path": "source/sources/table_manifest.json",
+      "bytes": 1981,
+      "sha256": "c4e715b6944b83302d4f31598bdcc4627bef2c80a4496771bf47ba0abb071490"
+    }
+  ]
+}
