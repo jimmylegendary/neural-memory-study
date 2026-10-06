@@ -1,0 +1,86 @@
+body=p('어떤 기억이 검색됐다는 사실은 그 기억이 결과를 개선했다는 뜻이 아니다. citation도 결과에 맞춰 생성될 수 있다. 장기 self-improvement가 유효하려면 <strong>내용의 correctness, 현재 action의 contribution, 미래 reuse utility</strong>를 따로 측정해야 한다.'+C('credit','hprm'))
+D=SVG(h=260)
+for i,(t,s) in enumerate([('Observed use','retrieved / cited'),('Local intervention','remove → re-answer'),('Executed replay','change action → rollout'),('Held-out transfer','future task performance')]):
+ x=15+i*249;D.box(x,40,234,111,t,s,fill=[PALE,PALE,'#e5edf6','#d4eae7'][i]);D.text(x+117,184,['association','answer sensitivity','policy-conditional effect','generalization'][i],15,MUTED,anchor='middle')
+D.text(22,239,'More expensive evidence is not always available; record the proxy being used.',19,TEAL,True)
+body+=fig('credit-ladder',D.out(),'효용 근거의 층위. 오른쪽이 단순히 “진짜 인과”라는 순위가 아니라, 서로 다른 질문을 측정하는 개입 범위다.',('credit','hprm','drsr'),kind='본 보고서 분석 도식')
+body+=col(h('가능해진 것')+p('Hindsight Memory-PRM은 retrieval/citation audit와 한 번의 deletion-and-reanswer probe로 entry presence credit을 보정한다. DRSR은 항목이 아닌 삭제 집합의 next-output likelihood 변화를 supervision으로 사용한다. 둘 다 단순 사용 횟수보다 구체적인 학습 신호를 만든다.'+C('hprm','drsr')),
+h('아직 해결되지 않은 것')+p('Credit Without Ground Truth는 ALFWorld replay에서 judge·logprob·confidence의 contribution fidelity가 제한적이라고 보고한다. 결과는 policy의 대안 행동 지원과 replay target 신뢰도에 조건부다. “LLM judge는 항상 무용하다”는 결론으로 넓히면 안 된다.'+C('credit')))
+body+=formula('ΔU(M; task) = U(task with M) − U(task without M)','같은 task·seed·budget·tool version을 맞춘 개입 대비. 관측된 retrieval hit rate와 다른 지표다.')
+body+=panel('Promotion gate에 넣을 최소 조건','효용 측정 방식, 불확실성, counterfactual support, 보호할 과거 과제의 regression 결과를 함께 기록한다. 수치 하나의 reward로 authority나 privacy 정책을 대체하지 않는다.')
+page('Credit assignment가 장기 학습의 병목이다','04 / CAUSAL UTILITY',body,'좋은 기억인지 판단하려면 “썼는가”가 아니라 “없었으면 무엇이 달라졌는가”를 물어야 한다.','credit')
+
+#15
+D=SVG(h=310)
+D.box(15,105,198,98,'Query / state','current task')
+for y,t,s in [(10,'E','direct retrieval'),(113,'GE','generate from memory'),(216,'GH','generate from hidden')]:
+ D.box(285,y,264,84,t,s,fill=PALE if y==10 else '#e8eef6');D.path(f'M219 153 H250 V{y+42} H277',arrow=True);D.path(f'M557 {y+42} H604 V153 H638',arrow=True)
+D.box(647,105,168,98,'Router','select pathway')
+D.box(850,105,136,98,'Influence','bounded use',fill='#d6ece8');D.line(822,154,842,154,arrow=True)
+body=fig('routing-influence',D.out(),'MemoryAthena의 path 선택과 MemCalib의 influence 관점을 나란히 놓은 합성 설계. 하나의 실험으로 결합 검증된 구조는 아니다.',('athena','calib'),kind='독립 메커니즘의 종합 도식')
+body+=table('메모리 상태의 네 가지 질문',['상태','질문','실패 예'],[['Retention','객체가 보존돼 있는가?','eviction과 deletion을 혼동해 원본 증거를 잃는다.'],['Validity','지금도 해당 조건에서 맞는가?','예전 권한·설정을 현재 사실로 사용한다.'],['Activation','이번 과제에 노출할 것인가?','맞는 기억이지만 불필요한 과거 전략으로 탐색을 고정한다.'],['Influence','얼마나 강하게 판단을 바꿀 것인가?','단순 선호를 하드 제약처럼 취급한다.']], [20,36,44])
+body+=col(h('MemoryAthena의 포인트')+p('직접 memory 경로 E를 기준으로, retrieval을 cue로 생성한 GE와 hidden state에서 생성한 GH를 개입시킨다. 모든 경로를 항상 합치는 대신 freeze된 모듈 위의 lightweight router를 학습한다. generated state가 자동으로 증거가 되지는 않는다.'+C('athena')),
+h('MemCalib가 추가하는 축')+p('memory proposition을 무시할지, 제한된 영향만 줄지, 판단을 제어하게 할지를 평가한다. retrieval 품질이 좋아진 뒤에도 over-use와 under-use는 남는다. 이는 recall과 reasoning 사이의 별도 control problem이다.'+C('calib')))
+page('기억은 존재해도 사용하지 않을 수 있다','04 / ROUTING & INFLUENCE',body,'보존·유효성·활성화·영향력을 하나의 “confidence score”에 넣지 않는다.','influence')
+
+#16
+D=SVG(h=340)
+for i,(title,sub,detail) in enumerate([('Replay','재방문','recorded experience → replay'),('Recombination','가설 생성','evidence pieces → candidate'),('Policy dreaming','대안 정책 평가','replay world → policy search')]):
+ x=15+i*332;D.rect(x,30,311,260,[PALE,'#e8eef6','#fff3e0'][i]);D.text(x+22,72,title,26,INK,True);D.text(x+22,109,sub,20,TEAL,True)
+ for j in range(4):D.circle(x+40+j*64,154,8,TEAL if i!=1 else BLUE)
+ D.line(x+38,190,x+273,190,TEAL,2,arrow=True);D.text(x+22,237,detail,14,MUTED)
+D.text(16,327,'GENERATED CONTENT REMAINS A CANDIDATE UNTIL VERIFIED',19,TEAL,True)
+body=fig('dream-types',D.out(),'Dreaming을 세 가지 계산 작업으로 나누는 보고서 분류. 제품의 /dream 명칭과 neural policy optimization은 같지 않다.',('dream','wiki','grok'),kind='본 보고서 분류')
+body+=col(h('Replay는 보존을 돕는다')+p('이미 관측한 자료를 재사용해 forgetting을 줄이거나 정책 평가 비용을 낮춘다. 원본이 잘못됐으면 오류도 다시 강화될 수 있으므로 source scope와 validity를 유지해야 한다. replay 데이터가 안전하고 정확하다는 가정은 자동으로 성립하지 않는다.'),
+h('Recombination은 탐색을 넓힌다')+p('기억을 재조합한 설명·skill·프로그램은 새로운 후보를 만든다. 그러나 synthetic sample 수가 늘었다고 독립적인 증거가 늘어난 것은 아니다. 후보 수와 검증된 사실 수를 같은 카운터로 세지 않는다.'))
+body+=h('Counterfactual policy dreaming')+p('Dream-RSI는 실제 discovery history를 재생 가능한 세계로 사용해 exploration policy를 offline에서 시험한다. 비용 절감은 비싼 실제 탐색을 반복하지 않는 데서 나온다. 그 replay world가 포함하지 않는 경로까지 신뢰할 수 있다는 의미는 아니다.'+C('dream'))
+body+=panel('Sleep 학습의 안전한 출력','새 기억·skill·policy를 곧바로 활성 버전으로 쓰지 않는다. candidate → held-out replay → 외부 검증 → generation commit을 거친다. 승인 전 산출물은 관측 사실이 아니라 가설이다.','warn')
+page('Dreaming: 무엇을 재생하고 무엇을 상상하는가','05 / OFFLINE LEARNING',body,'dream이라는 같은 이름 아래 서로 다른 학습·생성·정리 작업이 존재한다.','dreaming')
+
+#17
+D=SVG(h=365)
+D.box(20,120,190,96,'Online search','expensive execution')
+D.box(282,120,205,96,'Discovery tree','observed search history')
+D.box(558,40,203,96,'Replay world','known support')
+D.box(558,222,203,96,'Policy candidates','offline evaluation')
+D.box(818,120,165,96,'Selected policy','redeploy')
+D.line(216,168,274,168,arrow=True);D.path('M494 167 H522 V88 H550',arrow=True);D.path('M660 143 V214',arrow=True);D.path('M768 272 H795 V170 H810',arrow=True);D.path('M898 113 V14 H115 V112',arrow=True)
+D.text(262,347,'Unknown branch → real execution required, not replay evidence',18,AMBER,True)
+body=fig('dream-rsi-loop',D.out(),'Dream-RSI의 핵심 아이디어를 재구성한 offline/online loop. replay support 밖의 정책 효과는 추가 환경 실행으로 확인해야 한다.',('dream'))
+body+=col(h('왜 자연어 요약만으로는 부족할까?')+p('경험을 prose insight로 줄이면 최종 결론은 남아도 탐색 분기, 실패 조건, alternative policy의 평가 정보가 사라질 수 있다. 실행 trace와 전이 구조를 남기면 다른 탐색 전략을 비교할 재료가 된다. 어떤 표현이 더 좋은지는 미래 평가 질문에 달려 있다.'),
+h('Dreaming compute의 예산 단위')+p('FLOPs만 동일하게 맞추지 말고 simulator 구축 비용, 실제 environment call 수, 실패한 후보 평가, 최종 검증 비용까지 포함한다. old replay set에 맞춘 정책이 unseen world에서 악화되면 lifetime improvement라 부를 수 없다.'))
+body+=table('Replay world에 필요한 메타데이터',['필드','역할'],[['Environment / tool version','과거 transition이 지금도 재현 가능한지 확인한다.'],['Behavior policy / support','어떤 대안이 실제로 관측·재생 가능한지 구별한다.'],['Outcome / costs','성공률뿐 아니라 실행·검증·latency 비용을 저장한다.'],['Source lineage / validity','기초 관측의 정정이 downstream policy 평가를 무효화할 수 있다.']], [36,64])
+page('Dream-RSI: 경험을 평가 가능한 세계로','05 / REPLAY WORLD',body,'효율적인 dreaming은 상상량보다, 검증 가능한 대안을 얼마나 싸게 비교하는지에 달려 있다.','dreamrsi')
+
+#18
+D=SVG(h=290)
+D.box(18,89,210,102,'Experience','raw observations')
+D.box(299,20,250,96,'Knowledge / Wiki','claims + constraints')
+D.box(299,171,250,96,'Executable model','predict state transitions',fill='#e4eef7')
+D.box(678,89,300,102,'Skill / plan / action','invoke and verify',fill='#d6ece8')
+D.path('M235 125 H262 V68 H290',arrow=True);D.path('M235 157 H262 V218 H290',arrow=True);D.path('M558 68 H605 V126 H670',arrow=True);D.path('M558 218 H605 V160 H670',arrow=True)
+body=fig('knowledge-program',D.out(),'WikiSkill의 semantic/procedural 분리와 Schema의 executable world model을 연결한 표현 선택 지도.',('wiki','schema'),kind='본 보고서 종합 도식')
+body+=col(h('WikiSkill')+p('raw experience와 누적 wiki, executable skill을 분리한다. 지식층을 통해 다음 skill evolution이 이전 최적화에서 배운 조건을 재사용한다. skill을 바로 뽑는 방식과 달리 semantic consolidation과 procedural compilation의 역할이 드러난다.'+C('wiki')),
+h('Schema')+p('관측된 환경을 설명하는 실행 가능한 predictive program을 만들고 history에 맞춰 검토한다. 문장 규칙보다 정밀한 검증·시뮬레이션이 가능하지만, 환경의 형식화 가능성과 관측 coverage가 성능을 좌우한다.'+C('schema')))
+body+=h('Episodic → parametric promotion을 서두르지 말아야 하는 이유')+p('같은 경험이라도 우선 text rule이나 program으로 배포하면 출처·예외·변경 diff를 검사하기 쉽다. latency가 반복적으로 병목이고 안정된 task distribution이 확인될 때 LoRA/latent compile을 추가하는 접근이 보수적이다. 이는 parametric memory의 우열 주장이 아니라 <strong>검증 가능한 중간표현을 먼저 두자는 시스템 제안</strong>이다.')
+body+=panel('좋은 승격 대상','반복 사용되고, 적용 조건이 안정적이며, 다른 과제에서도 효용이 있고, 잘못되었을 때 되돌릴 수 있는 artifact. 반대로 개인 권한·가격·일시적 상태처럼 자주 변하는 사실은 외부 versioned evidence에 남기는 것이 자연스럽다.')
+page('기억의 끝은 요약이 아니라 실행일 수 있다','05 / EPISODIC → PROCEDURAL',body,'experience → knowledge → skill과 experience → executable theory는 서로 다른 compilation 경로다.','programs')
+
+#19
+D=SVG(h=340)
+for x,t,s in [(15,'Current harness','frozen evaluation target'),(340,'Candidate edit','prompt / code / memory'),(665,'Selection gate','held-out + budget')]:D.box(x,49,315,105,t,s)
+D.line(333,100,335,100,arrow=True);D.line(658,100,660,100,arrow=True)
+D.box(230,214,530,89,'Curriculum controller','which failure pattern should be optimized next?',fill='#d4eae7')
+D.path('M829 162 V186 H760 V213',arrow=True);D.path('M230 257 H164 V163',arrow=True);D.path('M172 44 V14 H824 V44',dash='6 4',arrow=True)
+D.text(380,186,'evaluate, reject or promote',16,MUTED)
+body=fig('self-improvement',D.out(),'harness 자체의 수정과 개선 과제 선택을 분리한 loop. 고정 평가 경계를 agent의 수정 권한 밖에 둔다.',('aide','rrsi','active'),kind='본 보고서 종합 도식')
+body+=table('Self-improvement 연구의 서로 다른 제어점',['연구','바꾸는 대상','남는 문제'],[['Recuris'+C('recuris'),'working state에 맞춘 skill 사용과 국소 memory evolution','실패 원인의 component attribution이 맞는가?'],['AIDE²'+C('aide'),'자기 research-agent code의 successive rewrite','8일 run의 성과가 더 긴 horizon에도 유지되는가?'],['RRSI'+C('rrsi'),'edit budget·critic·pruner로 과적합 억제','새로운 domain으로 전이되는 효과가 충분한가?'],['ActiveSaddler'+C('active'),'다음에 학습할 failure-pattern curriculum','learning-progress 추정 비용·불확실성을 어떻게 계상하는가?']], [24,40,36])
+body+=p('AIDE²는 8일 동안 7개의 successive improvement를 발견하고 held-out 영역의 전이를 보고했다. RRSI는 unregularized evolution의 과적합을 줄이려 한다. 이 결과는 자동 개선 loop가 가능하다는 근거이지, 자율적으로 무한히 개선된다는 증거는 아니다.'+C('aide','rrsi'))
+page('Self-improvement에도 control plane이 필요하다','05 / HARNESS EVOLUTION',body,'좋은 변경을 만드는 문제와 좋은 변경만 남기는 문제는 다르다.','selfimprove')
+
+#20
+body=p('메모리 구조가 고정되어 있고 router만 학습되는 경우와, 구조를 만드는 프로그램 자체를 바꾸는 경우를 구별해야 한다. MemCodex는 construction·indexing·retrieval·routing을 executable memory program의 일부로 보고 진화시킨다. 반면 PoS는 현재 세계 추정과 미해결 목표를 명시적인 belief state로 유지한다.'+C('memcodex','pos'))
+D=SVG(h=310)
+D.rect(20,28,620,248,NAVY);D.text(45,65,'MEMORY PROGRAM',24,'#fff',True)
+for i,t in enumerate(['Construct','Index','Retrieve','Route']):D.box(42+i*145,103,130,85,t,'',fill='#234c61',color='#deeeee')
+D.text(44,235,'Program revision ≠ state update ≠ physical placement',17,'#a1ced4')

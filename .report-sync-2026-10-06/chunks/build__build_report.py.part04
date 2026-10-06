@@ -1,0 +1,93 @@
+body+=panel('핵심 조건','<strong>HBM execution path를 유지하면서 capacity를 확장하는가?</strong> 이 질문에 답하지 못하면 HBF capacity 증가는 매력적이지만 시스템 이득은 불분명하다.'+C('potential','exploring'))
+page('HBF: capacity tier의 기회와 조건','07 / MEMORY HIERARCHY',body,'읽기·쓰기·배치·열화까지 포함해야 의미 있는 co-design이 된다.','hbf')
+
+#27
+D=SVG(h=355)
+D.rect(20,20,455,309,PALE);D.text(45,58,'A  /  DECOUPLED TIERS',22,TEAL,True)
+D.box(47,91,398,76,'HBM / DRAM','active KV + mutable runtime state',fill='#d8e9ee')
+D.box(47,213,398,80,'HBF','weights / stable experts',fill='#e5edf6');D.line(246,207,246,175,arrow=True)
+D.rect(523,20,457,309,'#fff5e8');D.text(548,58,'B  /  FULL-HBF + BUFFERING',22,'#9c6d2c',True)
+D.box(550,91,402,76,'Fast write / staging buffer','coalesce fine-grained updates',fill='#fffdf6')
+D.box(550,213,402,80,'HBF','weights + dynamic KV',fill='#f5e2bd');D.line(750,174,750,206,arrow=True)
+body=fig('hbf-branches',D.out(),'HBF architecture의 두 설계점. 어느 쪽이 우월한지는 workload, memory budget, controller 가정에 따라 바뀐다.',('moe','hbflex'))
+body+=table('논문 결과를 읽는 비교 틀',['연구 / 조건','결과 또는 주장','증거 유형 / 주의'],[['Full-stack HBF'+C('hbfsucks'),'naive transient-KV offload의 평균 e2e latency가 2–5.5× 악화','TokenSim 기반. “HBF는 항상 나쁘다”가 아니라 부적합한 배치의 경고.'],['Trillion MoE'+C('moe'),'weight/state provisioning 분리; state BW/capacity 1.4–4.0 s⁻¹ 조건','두 trillion-MoE와 trace 분석. ≤1.10 completion-time 조건·low concurrency 범위.'],['HBFlex'+C('hbflex'),'FlashAccel 대비 최대1.58×, H3 대비3.30× throughput','trace-driven simulation. plane-aware 배치·write aggregation·lifetime packing의 결합.'],['FLINT'+C('flint'),'read-specialized FTL·burst buffering·refresh 분리','read-only FTL 경로에 임의 write나 범용 transaction 지원을 가정하면 안 된다.']], [28,37,35])
+body+=p('서로 다른 baseline의 배수를 한 그래프에 놓아 논문 순위를 만들지 않는다. 재현 비교에서는 동일 trace, capacity, thermal budget, HBM 감소량, endurance 조건을 맞춘다.')
+page('HBF 연구는 하나의 결론으로 수렴하지 않는다','07 / COMPETING DESIGN POINTS',body,'stable weight와 dynamic state를 분리할 수도, controller를 바꾸어 함께 수용할 수도 있다.','hbf-branches')
+
+#28 HBFSim
+D=SVG(h=360)
+cols=[(20,'GPU EXECUTION',['Real kernels','PTX instrumentation','Fast timing path'],PALE),(353,'SHARED INTERFACE',['Generation / address map','Request + byte counters','Thermal snapshot'],'#e6eff6'),(686,'HOST MODEL',['Thermal + retention','Refresh scheduler','Detailed reference path'],'#fff1dd')]
+for x,t,ls,c in cols:
+ D.rect(x,20,294,320,c);D.text(x+15,58,t,21,INK,True)
+ for i,l in enumerate(ls):D.rect(x+17,86+i*78,260,58,'#ffffff',r=5);D.text(x+147,120+i*78,l,17,INK,anchor='middle')
+D.line(319,124,345,124,arrow=True);D.line(652,124,678,124,arrow=True);D.line(678,273,652,273,arrow=True);D.line(345,273,319,273,arrow=True)
+body=fig('hbfsim',D.out(),'HBFSim의 GPU execution·shared ABI·host model 분리를 독립 도식으로 재구성. 원문 Figure 1의 메시지만 요약했다.',('hbfsim'),kind='원문 Figure 1 / §4 기반 재구성')
+body+=col(h('Real GPU ≠ real HBF silicon')+p('HBFSim은 실제 GPU kernel 실행에 HBF timing·capacity·thermal 모델을 결합한다. compute와 memory overlap을 실제 실행 흐름에서 조사하는 도구이지만, HBF 칩을 실측한 결과로 부를 수는 없다.'+C('hbfsim')),
+h('20.8×의 정확한 의미')+p('빠른 경로와 detailed reference의 실행 시간 비교에서 보고한 20.8×는 <strong>시뮬레이션 속도</strong>다. LLM serving 자체가 20.8배 빨라졌다는 뜻이 아니다. report나 발표에서 숫자만 분리하면 의미가 완전히 달라진다.'+C('hbfsim')))
+body+=formula('Physical program bytes = W<sub>logical</sub> · A<sub>mapping / GC</sub> + W<sub>refresh</sub>','정성적 회계식. controller/FTL 정의에 따라 항을 분리하고 중복 계상을 피한다.')
+body+=panel('HAT와 연결할 검증 축','HAT는 logical state transition과 workload intent를 생성하고, physical backend는 bytes·stall·thermal·refresh를 계산하도록 분리한다. 동일 trace의 analytical model, trace simulator, real-GPU emulation 결과를 교차 검증해야 한다.')
+page('HBFSim: 열화까지 포함한 실행 모델','07 / SIMULATION & RELIABILITY',body,'모든 쓰기가 사용자 update에서 나오지는 않는다. 온도와 refresh가 내구성 비용을 바꾼다.','hbfsim')
+
+#29 physical mapping
+D=SVG(h=450)
+D.text(20,30,'LOGICAL OBJECT',19,INK,True);D.text(548,30,'PLACEMENT DECISION',19,INK,True)
+objs=['Dense slow-CMS weights','Sparse stable expert / adapter','Active KV / recurrent state','Version / dependency index','Immutable episodes / replay']
+for i,t in enumerate(objs):D.box(15,53+i*74,450,59,t,'',fill=PALE)
+locations=[('HBM / SRAM','read-hot + latency-sensitive'),('DRAM / CXL','mutable metadata + staging'),('HBF','read-mostly; batchable; reusable'),('SSD / object','cold; large; recoverable')]
+for i,(t,s) in enumerate(locations):D.box(581,64+i*91,400,72,t,s,fill=['#d1e8e6','#dce9f1','#e6eef5','#f0f3f4'][i])
+for si,di in [(0,0),(1,0),(1,2),(2,0),(2,1),(3,1),(4,3)]:
+ y1=83+si*74;y2=100+di*91;D.path(f'M473 {y1} C525 {y1} 524 {y2} 573 {y2}',sw=1.7,dash='5 5' if (si,di) in [(1,2),(2,1)] else None,arrow=True)
+body=fig('logical-physical',D.out(),'객체별 후보 placement. 점선은 특히 workload 조건에 민감한 경로다. slow-CMS도 read-hot이면 HBM에 남을 수 있다.',('nl','potential','efficient','hbflex'),kind='본 보고서 설계 가설')
+body+=col(h('Content hotness와 update hotness')+p('cold canonical state를 query 시점에 hot artifact로 만들 수 있지만, 모든 canonical state가 cold인 것은 아니다. dense base weight처럼 사실상 모든 토큰에 읽히는 객체는 갱신이 드물어도 실행 경로에서 뜨겁다.'),
+h('Dematerialize는 delete가 아니다')+p('HBM에서 artifact를 내리는 것은 근거를 지우는 행위와 다르다. 재구성 비용이 낮고 재사용까지 멀다면 버릴 수 있지만, 다시 생성할 수 없는 recurrent state는 checkpoint를 먼저 남겨야 할 수 있다.'))
+body+=panel('Design rule','Representation × Update rate × Read traffic × Reuse distance를 함께 측정한다. “semantic은 HBF, episodic은 SSD”처럼 이름만으로 정한 placement는 baseline일 뿐 최적 해가 아니다.','dark')
+page('물리 배치는 representation의 함수가 아니다','07 / PLACEMENT POLICY',body,'logical CMS를 storage tier에 일대일 대응시키는 그림 대신, 객체별 조건부 배치를 설계한다.','placement')
+
+#30 economics
+D=SVG(h=340)
+D.text(25,30,'ILLUSTRATIVE COST MODEL — NOT BENCHMARK DATA',18,AMBER,True)
+left=90;top=65;right=910;bottom=275
+for v in [0,50,100,150,200]:
+ y=bottom-v/200*210;D.line(left,y,right,y,'#dfe7e9',1);D.text(70,y+5,str(v),15,MUTED,anchor='end')
+for n in [0,25,50,75,100]:D.text(left+n/100*820,bottom+27,str(n),15,MUTED,anchor='middle')
+D.line(left,bottom,right,top,TEAL,3);D.line(left,bottom-105,right,bottom-105,AMBER,3)
+D.circle(500,170,7,NAVY);D.path('M500 170 V278',c=NAVY,dash='5 5');D.text(527,156,'break-even: 50 reuses',18,INK,True)
+D.text(670,82,'saved query cost = 2N',16,TEAL,True);D.text(600,202,'build + refresh cost = 100',16,'#946d2b',True);D.text(849,328,'Number of reuses N',16,MUTED,anchor='end')
+body=fig('break-even',D.out(),'가상의 비용 단위로 설명한 손익 분기점. query당 2를 절감하고 build/refresh에 100을 쓴다면 50회에서 비용이 같다. 실험값이 아니다.',(),kind='분석식 기반 예시')
+body+=col(h('LoRA는 싸지만 공짜는 아니다')+p('rank r, input n, output m인 저랭크 adapter의 parameter 수는 대략 r(m+n)이다. 학습 시에는 weights 외에도 gradient, optimizer state, activation, checkpoint 및 버전 복제 공간이 필요하다. inference footprint만 비교하면 승격 비용을 과소평가한다.'),
+h('Batch commit의 올바른 회계')+p('많은 update를 하나의 commit으로 묶으면 metadata overhead는 줄 수 있다. 그러나 HBF endurance는 commit 개수가 아니라 실제 program bytes와 분포에 좌우된다. 동일 큰 artifact를 자주 재작성하면 commit 수가 적어도 더 빨리 닳을 수 있다.'))
+body+=table('Lifetime 비용표에 반드시 들어갈 항목',['단계','계상할 비용'],[['Build / learn','episode selection, replay, gradient 또는 decoder compute, 검증 실패 후보'],['Serve / reuse','retrieval, JIT curation, adapter materialization, DMA, attention stall'],['Maintain / revise','invalidation fan-out, source revalidation, refresh, GC, 재학습'],['Recover / govern','checkpoint, rollback, audit storage, 삭제 처리와 재검증']], [26,74])
+page('Lifetime ROI: sleep와 wake의 비용을 합친다','08 / COST MODEL',body,'성공한 승격만 세거나, foreground latency만 줄이면 전체 계산 경제성을 놓친다.','economics')
+
+#31 integrated architecture
+D=SVG(h=485)
+D.rect(17,15,966,133,'#e7f2f0');D.text(37,47,'WAKE / LOW-LATENCY PATH',22,TEAL,True)
+for x,t in [(38,'Task + query'),(276,'Working state'),(514,'Reader / adapter'),(752,'Action gate')]:D.box(x,65,211,62,t,'',fill='#ffffff')
+for x in [255,493,731]:D.line(x,96,x+13,96,arrow=True)
+D.rect(17,184,966,144,NAVY);D.text(37,219,'SHARED STATE CONTRACT',22,'#ffffff',True)
+D.text(38,255,'object-id · source-version · scope · dependencies · authority · artifact-format',20,'#bbdadd')
+D.text(38,294,'Canonical evidence / latent state      +      Versioned artifact registry',21,'#82cdca')
+D.rect(17,363,966,110,'#fff2df');D.text(37,398,'SLEEP / BUDGETED BACKGROUND PATH',21,'#9c722d',True)
+D.text(37,436,'select → ground → replay / learn → verify → publish → place',23,INK,True)
+for x in [150,395,635,860]:D.line(x,154,x,176,arrow=True);D.line(x,334,x,355,arrow=True)
+body=fig('reference-architecture',D.out(),'통합 reference architecture 제안. 모든 경로에 공통 state contract를 두되 foreground와 background의 자원·권한을 분리한다.',('rpmem','jit','planfence','limbo','attuner'),kind='본 보고서 설계 가설')
+body+=col(h('Canonical state와 artifact registry')+p('원본 evidence, latent state, decoder version, 파생 artifact의 관계를 registry가 연결한다. 조회할 때는 현재 query와 유효한 source generation에 맞는 artifact만 materialize한다. 어느 저장소에 둘지는 placement policy가 정한다.'),
+h('Melete / HAT에 내리는 의미')+p('Melete는 source·version·WorkingFrame·local policy 실험의 출발점으로 두고, HAT는 logical event를 bytes/FLOPs/stall로 변환하는 계측 계층으로 둔다. 이 다이어그램은 통합 구현 완료를 의미하지 않으며, 외부 LLM·GPU·HBF 연결은 별도 검증이다.'))
+body+=panel('교체 가능한 경계','새로운 memory algorithm은 전체 시스템을 다시 만들지 않고 StateUpdate 또는 Compiler 구현으로 교체할 수 있어야 한다. 메타데이터·권한·평가 계약은 유지하여 변경의 효과만 비교한다.','dark')
+page('통합 reference architecture','08 / SYSTEM DESIGN PROPOSAL',body,'공통 state contract 위에서 storage, learning, compilation, execution을 교체 가능한 계층으로 만든다.','architecture')
+
+#32 events
+body=p('기존 alloc/free trace에 logical learning event를 붙이면 “왜 이 바이트가 이동했고 왜 이 update가 필요했는가”를 분석할 수 있다. 단, semantic event는 비용을 설명하는 신호이며 그 자체가 하드웨어 명령은 아니다. 실제 kernel·DMA·storage operation과 인과 ID로 연결한다.')
+body+=table('HAT / runtime event 계약 제안',['Event group','예시','필수 기록'],[['Ingest / normalize','ADMIT, GROUND, SOURCE_REVISE','source hash, scope, authority, valid time, observed time'],['Transform / learn','CURATE, CONSOLIDATE, DREAM, TRAIN','input generation, method revision, tokens/FLOPs, candidate ID'],['Evaluate / commit','VERIFY, PUBLISH, REJECT, ROLLBACK','eval set revision, budget, outcome, idempotency key'],['Execute / move','MATERIALIZE, READ, MIGRATE, EVICT','artifact format, tiers, bytes, queue wait, stall'],['Maintenance','INVALIDATE, REBUILD, REFRESH, DELETE','cause ID, affected descendants, physical writes, completion']], [27,32,41])
+D=SVG(h=252)
+D.box(18,53,284,115,'Logical event','PROMOTE candidate A\nsource generation 17')
+D.box(359,53,284,115,'Physical operations','read → DMA → kernels\nwrite → metadata commit',fill='#d7eae7')
+D.box(700,53,284,115,'Outcome record','quality / latency / bytes\nrollback / regression',fill='#e3edf5')
+D.line(309,112,350,112,arrow=True);D.line(650,112,691,112,arrow=True)
+D.text(27,220,'Join key: run-id / task-id / object-id / generation / causal-parent-id',19,TEAL,True)
+body+=fig('event-contract',D.out(),'semantic event와 실제 resource operation을 연결하는 trace contract. 로그만 추가했다고 학습 효용이 증명되는 것은 아니다.',(),kind='본 보고서 계측 설계')
+body+=col(h('부분 실패를 명시한다')+p('COMPILED, VERIFIED, PUBLISHED, RESIDENT는 다른 상태다. 검증은 끝났지만 HBF write가 실패하거나, write는 끝났지만 active pointer가 교체되지 않을 수 있다. 각각 retry·recovery 절차를 정의해야 한다.'),
+h('시간도 두 종류다')+p('사실이 세계에서 유효했던 시간(valid time)과 시스템이 관측·기록한 시간(transaction/observed time)을 구분한다. delayed evidence를 현재 시점의 새 사실로 덮어쓰지 않도록 한다.'))
+page('Learning trace를 resource trace로 연결하기','08 / EVENT MODEL',body,'state lifecycle을 비용과 검증 결과까지 추적할 수 있을 때 co-design이 실험 가능한 문제가 된다.','events')
+
+#33 evaluation

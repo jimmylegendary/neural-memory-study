@@ -1,0 +1,95 @@
+body+=formula('N · ΔC<sub>query</sub> &gt; C<sub>sleep</sub> + C<sub>refresh</sub> + C<sub>storage / transfer</sub>','비용 단위를 통일한 단순 손익 조건. 본 보고서의 분석식이며 경험 법칙이 아니다.')
+body+=panel('Background maintenance ≠ learning','DMA, compaction, GC는 자원 효율을 높일 수 있지만 그것만으로 agent가 학습했다고 볼 수 없다. <strong>현재 요청 비용 절감</strong>과 <strong>미래 과제 능력 변화</strong>를 분리해서 측정한다.')
+page('Sleep-time compute의 경제학','02 / SLEEP COMPUTE',body,'추론을 밖으로 옮기는 것과 지식을 학습하는 것은 다르다. 둘 다 비용표에 올려야 한다.','sleep-economics')
+
+#08
+D=SVG(h=395)
+D.text(18,27,'FORWARD: EVERY TOKEN MAY READ THE ENTIRE CHAIN',19,INK,True)
+for i,(t,s) in enumerate([('Fast MLP','update every 1 chunk'),('Medium MLP','update every 4 chunks'),('Slow MLP','update every 16 chunks')]):
+ x=135+i*285;D.box(x,56,235,86,t,s,fill=[PALE,'#e5f0f2','#e7edf5'][i]);
+ if i<2:D.line(x+242,97,x+277,97,arrow=True)
+D.text(20,103,'x',24,TEAL,True);D.line(53,96,124,96,arrow=True);D.text(956,103,'y',24,TEAL,True)
+D.text(18,192,'UPDATE: DIFFERENT SCHEDULES',19,INK,True)
+for row,(l,cnt) in enumerate([('Fast',1),('Medium',4),('Slow',16)]):
+ y=226+row*47;D.text(24,y+21,l,18,INK,True)
+ for t in range(16):D.rect(150+t*48,y,37,27,TEAL if (t+1)%cnt==0 else '#e8eef0',r=3)
+D.text(160,385,'Illustrative chunk schedule; not the paper’s measured timing',15,MUTED)
+body=fig('cms-forward-update',D.out(),'CMS의 read/forward와 update schedule은 다르다. 아래 1/4/16 주기는 설명용이며 원문 실험 설정을 재현한 값이 아니다.',('nl'),kind='원문 Eq.70–71 기반 독립 재구성')
+body+=col(h('원문의 CMS')+p('Nested Learning은 서로 다른 빈도로 적응하는 연결된 optimization problem을 강조한다. CMS는 서로 다른 update frequency를 갖는 MLP 블록의 연쇄로 정의된다. HOPE는 self-modifying Titans의 적응성과 CMS의 지속적 저장을 결합한다.'+C('nl','google')),
+h('Agent 시스템으로 확장할 때')+p('episodic store→skill→LoRA라는 데이터 변환 계층은 유용하지만, 그것이 곧 원문의 CMS는 아니다. 외부 state의 lifecycle을 여러 timescale로 관리하는 설계는 <strong>CMS에서 영감을 얻은 시스템 가설</strong>로 불러야 한다.'))
+body+=panel('가장 중요한 정정','<strong>느리게 갱신된다고 드물게 읽히는 것은 아니다.</strong> Eq.70의 forward chain에 참여하는 느린 블록도 매 토큰 사용될 수 있다. 따라서 slow CMS → HBF라는 직접 매핑은 read traffic 검증 없이 성립하지 않는다.','warn')
+page('HOPE / Nested Learning을 정확히 읽기','02 / FOUNDATIONAL MECHANISM',body,'학습 주기의 계층은 저장 장치의 계층과 닮았지만, 동일하지 않다.','hope')
+
+#09
+D=SVG(h=440)
+D.rect(105,50,815,325,'#f3f7f8',r=0)
+D.line(105,215,920,215,'#c2d5dc',1.5);D.line(514,50,514,375,'#c2d5dc',1.5)
+D.text(309,100,'LOW WRITE / HIGH READ',18,TEAL,True,'middle');D.text(309,140,'dense slow-CMS block',22,INK,True,'middle');D.text(309,172,'HBM residency may still dominate',17,MUTED,anchor='middle')
+D.text(718,100,'HIGH WRITE / HIGH READ',18,TEAL,True,'middle');D.text(718,140,'active state / fast weights',22,INK,True,'middle');D.text(718,172,'HBM / SRAM working set',17,MUTED,anchor='middle')
+D.text(309,267,'LOW WRITE / LOW READ',18,TEAL,True,'middle');D.text(309,307,'cold committed artifact',22,INK,True,'middle');D.text(309,342,'HBF or SSD candidate',17,MUTED,anchor='middle')
+D.text(718,267,'HIGH WRITE / LOW READ',18,TEAL,True,'middle');D.text(718,307,'rarely reused write stream',22,INK,True,'middle');D.text(718,342,'buffer / defer / avoid promotion',17,MUTED,anchor='middle')
+D.text(105,410,'Less frequent update',16,MUTED);D.text(920,410,'More frequent update',16,MUTED,anchor='end');D.text(12,48,'HIGH',15,MUTED);D.text(15,382,'LOW',15,MUTED);D.text(8,223,'READ',15,TEAL,True)
+body=fig('read-write-space',D.out(),'물리 배치의 최소 두 축: read demand와 write rate. 객체의 의미 범주만으로 placement를 정하지 않는다.',('nl','spacetime','potential'),kind='본 보고서 설계 공간')
+body+=col(h('추가로 필요한 네 변수')+p('read/write 외에 객체 크기, access granularity, reuse distance, 허용 지연을 함께 봐야 한다. read-mostly라도 작은 random read가 많고 prefetch window가 짧으면 HBF의 큰 용량을 충분히 쓰지 못할 수 있다.'+C('flint','efficient')),
+h('하드웨어와 연결되는 실험')+p('같은 CMS update schedule을 유지한 채 read sparsity와 active working set을 독립적으로 sweep한다. HBF hit rate가 높아도 p99 stall이나 HBM staging capacity가 나빠지면 승리한 설계가 아니다.'))
+body+=formula('placement = f(read traffic, write bytes, reuse distance, granularity, stall budget)','semantic timescale은 하나의 feature다. 물리 계층을 지정하는 단일 정답이 아니다.')
+page('CMS → HW 매핑의 함정','02 / CO-DESIGN PRINCIPLE',body,'update frequency만 보고 flash로 내리면, 학습 비용은 줄이고 매 토큰의 실행 비용을 늘릴 수 있다.','mapping')
+
+#10 recurrent
+body=table('지속 상태를 구현하는 세 경로',['경로','무엇이 남는가','갱신 / 한계'],[['TTT / Titans'+C('ttt','titans'),'small model 또는 neural memory의 상태','test stream으로 update. 안정성·I/O·reset 경계를 함께 관리해야 한다.'],['Memory Caching'+C('cache_rnn'),'선택한 recurrent memory checkpoint','과거 상태에 접근 가능해지지만 checkpoint 수에 따라 저장·검색 비용 증가.'],['KV-streams'+C('kvstreams'),'compaction 뒤 남긴 KV state','텍스트 재-prefill을 피한다. 이전 context에 의존한 latent state를 버전·reset 계약 없이 재사용할 수는 없다.']], [24,31,45])
+D=SVG(h=260)
+for i in range(6):
+ x=40+i*155;D.box(x,36,130,68,'h'+str(i),'',fill=PALE)
+ if i<5:D.line(x+134,70,x+151,70,arrow=True)
+for i in [0,2,5]:
+ x=40+i*155;D.line(x+65,108,x+65,163,arrow=True);D.rect(x,173,130,53,'#dce8f4');D.text(x+65,207,'checkpoint',17,INK,anchor='middle')
+D.text(490,205,'select / route / reuse',19,TEAL,True,'middle')
+body+=fig('recurrent-checkpoints',D.out(),'고정된 recurrent state만 유지하는 방식과 checkpoint를 선택적으로 보존하는 방식을 구별한다.',('cache_rnn'),kind='개념 재구성')
+body+=col(h('유한 상태의 정보 병목')+p('상태 크기와 정밀도가 고정돼 있으면 모든 과거 사실을 무한히 구별해 보존할 수 없다. latent memory가 일정한 footprint로 작동한다는 것은 압축·망각·간섭의 trade-off를 관리한다는 뜻이지 용량 제한이 사라졌다는 뜻이 아니다.'),
+h('실무적인 수명 계약')+p('모델 revision, tokenizer, RoPE/position 처리, attention mask, adapter 조합은 cache의 의미를 바꾼다. 동일 shape의 tensor라도 호환성을 보장하지 않는다. neural memory를 저장할 때는 canonical source와 artifact version을 함께 남기는 것이 안전하다.'))
+page('Persistent state의 재등장','03 / RECURRENT MEMORY',body,'텍스트를 다시 읽지 않고도 상태를 이어갈 수 있다. 대신 그 상태를 어떻게 해석하고 폐기할지 명시해야 한다.','recurrent')
+
+# 11 Parametric
+D=SVG(h=405)
+D.text(18,27,'A / RECURRENT LATENT → BACKBONE-SPECIFIC ADAPTER',18,TEAL,True)
+for x,t,s in [(20,'Session','evidence'),(264,'Latent state','recurrent consolidation'),(508,'Decoder','backbone-specific'),(752,'LoRA','runtime artifact')]:D.box(x,50,224,92,t,s)
+for x in [248,492,736]:D.line(x,95,x+9,95,arrow=True)
+D.path('M350 148 V187 H295 V150',c=TEAL,arrow=True);D.text(385,181,'state persists; decoder compatibility is learned',16,MUTED)
+D.text(18,240,'B / EVIDENCE → BELIEF OVER CODES → GENERATED WEIGHTS',18,TEAL,True)
+for x,t,s in [(20,'Live data','context evidence'),(345,'Belief p(z)','latent-code distribution'),(670,'Weight generator','low-rank modulation')]:D.box(x,265,305,101,t,s,fill='#e5edf6')
+D.line(330,316,337,316,arrow=True);D.line(655,316,664,316,arrow=True)
+body=fig('parametric-compiler',D.out(),'두 parametric-memory 경로. canonical latent/belief와 실행용 weight는 구별되며, 서로 다른 논문의 구성요소를 한 구현으로 합친 것이 아니다.',('rpmem','infinite'))
+body+=col(h('RPMem: 상태와 decoder의 분리')+p('session을 latent memory로 변환하고 recurrent gate로 합친 뒤 backbone별 decoder가 LoRA를 만든다. 모듈 훈련이 끝난 inference에서는 encoder·gate·decoder의 weights가 고정된 채 memory state가 forward computation으로 바뀐다. 따라서 매 세션 gradient를 수행하는 TTT와 같은 동작은 아니다.'+C('rpmem'))+p('backbone을 바꿀 때는 새 decoder의 적응이 필요하다. 모델 독립적인 상태를 목표로 한다는 것과 어느 모델에서나 즉시 읽을 수 있다는 것은 다르다.'),
+h('Generated weights: 무엇을 저장할까?')+p('Infinite-Parameter LLMs는 live evidence로 latent code에 대한 belief를 갱신하고 low-rank weight를 생성한다. weight 자체보다 생성의 근거 상태를 저장하는 선택이 가능해진다.'+C('infinite'))+p('설계상 이득은 adapter 수명과 canonical state 수명을 따로 관리할 수 있다는 점이다. 그러나 latent bottleneck, decoder 비용, 모델 교체 시 호환성, 삭제 가능성을 함께 평가해야 한다.'))
+body+=panel('승격은 되돌릴 수 있어야 한다','초기에는 base model을 직접 덮어쓰기보다 versioned adapter를 별도 배포한다. 잘못된 promotion은 adapter generation을 교체해 복구하되, 그 안의 특정 사실 하나만 제거됐다고 주장하지 않는다.','warn')
+page('Parametric memory는 “저장된 weight” 이상이다','03 / CANONICAL STATE & COMPILATION',body,'latent state → decoder → adapter라는 분리는 lifelong memory의 업데이트·호환성·배치를 다시 설계하게 한다.','parametric')
+
+#12
+body=p('과거 정보를 곧바로 summary로 바꾸면 아직 모르는 미래 질문에 필요한 증거를 버릴 수 있다. JitMem은 raw trajectory를 보존하고 질문 시점의 curator가 필요한 compact payload를 만든다. Mem++는 조직 문서 전체와 버전을 유지하고, 질문이 묻는 시점까지의 자료를 read time에 고른다.'+C('jit','memplus'))
+D=SVG(h=245)
+D.box(20,64,235,97,'Raw evidence','versioned / recoverable')
+D.box(373,15,260,83,'Sleep path','index / common views',fill='#d7eeeb');D.box(373,139,260,83,'Wake path','query-specific curation',fill='#e6edf6')
+D.box(755,64,224,97,'Active context','bounded payload')
+D.path('M261 99 H310 V57 H365',arrow=True);D.path('M261 116 H310 V180 H365',arrow=True);D.path('M640 56 H698 V100 H748',arrow=True);D.path('M640 180 H698 V124 H748',arrow=True)
+body+=fig('jit-branch',D.out(),'write-time preprocessing과 read-time curation의 hybrid. 원본을 폐기하지 않는 한 서로 대체 관계일 필요가 없다.',('jit','memplus'),kind='본 보고서 종합 도식')
+body+=fig('jit-gains',bars(['ALFWorld','WebShop','τ²-bench'],[16.2,16.3,3.9],xmax=20,unit=' pp',title='JitMem: success gain over strongest reported baseline'),'동일 논문 안에서 보고된 과제별 success improvement. 세 과제의 난이도·분모가 같다는 뜻은 아니다.',('jit'),kind='저자 보고값 재시각화')
+body+=panel('Sleep에 남길 일','원본의 무조건적 압축 대신 indexing·deduplication·version reconciliation·자주 쓰는 materialized view 준비를 수행한다. 최종 task-specific 표현은 필요할 때 만들 수 있다. 단, JIT의 추가 latency와 LLM 호출 비용도 전액 계상한다.')
+page('미래 질문을 모를 때는 늦게 결정한다','04 / WRITE-TIME VS READ-TIME',body,'최적 consolidation 시점은 session 종료가 아니라 정보의 사용 조건에 따라 달라진다.','jit')
+
+#13
+D=SVG(h=360)
+D.box(15,31,257,85,'History A','earlier item was revoked')
+D.box(15,187,257,85,'History B','earlier item was never present')
+D.box(395,105,225,99,'Same summary','current answer identical',fill='#fff0d9')
+D.path('M280 72 H325 V147 H385',arrow=True);D.path('M280 230 H325 V165 H385',arrow=True)
+D.box(739,32,245,82,'Same new event U','different transition needed')
+D.box(739,196,245,99,'Ambiguous update','lost tombstone / history',fill='#fff0d9')
+D.path('M628 147 H686 V76 H731',arrow=True);D.path('M859 121 V187',arrow=True)
+D.text(17,332,'Compression must preserve the distinctions needed by future updates.',21,TEAL,True)
+body=fig('update-sufficiency',D.out(),'현재 답이 같아도 미래 update에 필요한 구별은 다를 수 있다. 설명을 위한 재구성 예시이며 논문의 자연어 사례를 복제한 것이 아니다.',('sufficient'))
+body+=col(h('정확도만으로는 압축 품질을 알 수 없다')+p('Correct Now, Insufficient Later는 current-answer sufficiency와 update sufficiency를 분리한다. 24개 paired-history, 6개 synthetic mechanism pilot에서 tombstone을 없애는 압축이 타깃 조건에서 16/16 replay failure를 만들었다. 자연 과제에 대한 held-out 결과는 제시되지 않았다.'+C('sufficient')),
+h('신경망 승격에서도 같은 질문이 남는다')+p('episode를 LoRA로 승격하면 source provenance와 temporal exception이 암묵적으로 섞일 수 있다. 오늘 recall이 좋아도 내일 정정·삭제를 처리할 정보가 남았는지는 별도다. 그래서 원문 근거, tombstone, dependency는 free-form summary 바깥에서 보존하는 것이 설계상 유리하다.'))
+body+=table('압축 평가에 추가할 시험',['현재 평가','추가해야 할 평가'],[['현재 query 정확도','동일 현재 답을 갖는 서로 다른 history가 후속 update에서 구별되는가?'],['embedding 유사도','action에 필요한 증거·범위·예외가 보존됐는가?'],['메모리 절감량','재검색·재도구호출·재학습 비용을 포함해도 절감인가?'],['개별 항목 importance','여러 항목을 함께 지웠을 때 대체 근거까지 사라지는가?']], [31,69])
+page('Consolidation의 품질은 미래에 드러난다','04 / INFORMATION FIDELITY',body,'현재 정답을 보존하는 압축과 미래 수정 가능성을 보존하는 압축은 같지 않다.','consolidation')
+
+#14

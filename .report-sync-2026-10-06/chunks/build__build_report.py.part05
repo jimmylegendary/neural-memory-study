@@ -1,0 +1,52 @@
+body=p('강한 memory system이라는 주장은 retrieval score 하나로 성립하지 않는다. DolphinBench는 과거 정보가 실제 tool action에 필요한 task를 구성하고 accuracy와 비용·latency를 함께 요구한다. StateMemBench는 current-state tracking을 분리하며, update-sufficiency pilot은 후속 정정의 복구 가능성을 묻는다.'+C('dolphin','statemem','sufficient'))
+body+=table('동일 조건 비교를 위한 benchmark scorecard',['축','측정','통제해야 할 조건'],[['기본 효용','task success, action correctness','동일 base model·harness·tool snapshot'],['현재 상태','stale-state / superseded answer rate','질의 시점·자료 시점·정정 순서'],['Causal reuse','with-memory / without-memory paired delta','동일 seed·token budget·대안 지원'],['전이 / 간섭','held-out gain, protected-task regression','task-order shuffle·user holdout·OOD split'],['학습 경제성','lifetime tokens/FLOPs/원가·회수 시간','후보 생성·실패 평가·재학습 포함'],['Serving','p50/p95/p99, throughput, SLO goodput','concurrency·query mix·warm/cold 정의'],['물리 비용','peak residency, bytes, refresh/GC writes','동일 HBM/HBF package·전력 budget'],['복구 / 권한','duplicate/stale commit, rollback, policy violation','fault injection·권한 변경·감사 경계']], [20,39,41])
+body+=col(h('Baseline은 의도적으로 강하게')+p('같은 데이터와 budget으로 full context, hybrid retrieval+reranker, write-time summary, JIT curation, latent/LoRA, skill/program을 비교한다. 새로운 시스템에 더 많은 토큰·훈련·검증을 몰아주고 우수하다고 결론내리지 않는다.'),
+h('평균과 신뢰 구간을 함께')+p('task와 user 단위 paired evaluation 및 여러 실행을 수행한다. 성공 사례를 모은 pass@k와, 모든 반복에서 성공해야 하는 운영 신뢰도는 다르다. 백그라운드 update 후 평균 향상뿐 아니라 tail failure와 regression도 본다.'))
+body+=panel('금지할 비교','논문 A의 LoCoMo 점수, 논문 B의 다른 model/reader 점수, 논문 C의 tool success를 한 종합 leaderboard로 묶지 않는다. 본 보고서의 숫자는 의도적으로 <strong>같은 연구 내부의 비교</strong>로 제한했다.','warn')
+page('Recall을 넘어 lifetime utility를 평가한다','08 / BENCHMARKING',body,'좋은 memory는 많이 기억하는 시스템이 아니라, 다음 행동을 더 정확하고 경제적으로 만드는 시스템이다.','evaluation')
+
+#34 plan
+D=SVG(h=267)
+for i,(t,s) in enumerate([('A / Evidence','source + version + audit'),('B / Baselines','retrieval + JIT + replay'),('C / Promotion','skill / latent / adapter'),('D / Co-design','residency + HBF model')]):
+ x=15+i*249;D.box(x,50,231,115,t,s,fill=PALE if i<2 else '#e6edf5');
+ if i<3:D.line(x+235,105,x+245,105,arrow=True)
+D.text(25,215,'Advance only after the previous contract passes its falsification test.',19,TEAL,True)
+body=fig('roadmap',D.out(),'구현 순서 제안. 날짜 약속이 아닌 검증 gate 중심의 실행 로드맵이다.',(),kind='본 보고서 실행 계획')
+body+=table('우선순위 실험과 중단 조건',['실험','동일 예산에서 비교','반증 / 중단 조건'],[['E1  Consolidation timing','write summary vs raw+index vs JIT vs hybrid','JIT overhead를 포함하면 utility/cost 이득이 사라짐.'],['E2  Parametric promotion','retrieval vs skill vs latent vs LoRA','추가 훈련·검증·갱신 비용이 미래 reuse saving보다 큼.'],['E3  Dreaming curriculum','uniform replay vs failure-targeted vs policy search','OOD 전이 없이 selection task만 향상.'],['E4  Validity / rollback','TTL-only vs version+dependency+publish gate','신규 사실 반영 지연·false block이 안전 이득을 상쇄.'],['E5  HBF placement','stable-only vs compiled KV vs dynamic full-HBF','같은 package/thermal budget에서 p99/SLO가 baseline보다 악화.'],['E6  Influence policy','retrieval 고정, activation/influence만 변경','calibration 효과가 reader prompt 변경으로 동일하게 재현됨.']], [26,37,37])
+body+=h('가장 먼저 얻어야 할 결과')+p('E1과 E4를 CPU/기존 GPU 환경에서 끝내고, 신뢰 가능한 source-to-artifact trace를 확보한다. 그 다음 E2/E3의 학습 효용과 비용을 재현한 뒤, E5에서 physical placement를 바꾼다. 아직 유용성이 입증되지 않은 artifact를 빠르게 옮기는 하드웨어 최적화부터 시작하지 않는다.')
+page('연구 로드맵: 바꾸기 전에 반증 조건을 정한다','08 / RESEARCH AGENDA',body,'데이터 계약 → 강한 baseline → 승격 효용 → 물리 배치 순서로 위험을 줄인다.','roadmap')
+
+#35 metrics
+body=table('DSE parameter와 response 변수',['독립 변수','권장 sweep 축','기대 관측'],[['Read behavior','sparsity, burst size, hot set, reuse distance','effective BW, read amplification, prefetch hit, stall'],['Update behavior','interval, bytes/update, delta/full rewrite','write coalescing, GC/refresh 포함 physical bytes'],['Agent mix','concurrency, tool-gap 분포, returning sessions','residency survival, TTFT/ITL, SLO goodput'],['Learning mix','replay budget, LoRA rank, candidate count','validation yield, transfer gain, amortization horizon'],['Device budget','HBM 용량/BW, HBF BW/latency, temperature','Pareto frontier: quality·latency·cost·endurance'],['Control policy','promotion threshold, abstain, invalidate fan-out','unsafe reuse, rebuild cost, rejected beneficial updates']], [24,39,37])
+body+=h('실험 trace의 최소 레코드')
+body+=formula('⟨task, object, source-version, artifact-version, phase, tier, bytes, time, outcome⟩','여기에 model/tokenizer/decoder revision, tool snapshot, eval dataset revision을 manifest로 연결한다.')
+body+=col(h('같은 useful work를 비교한다')+p('한 설계가 낮은 품질의 답을 더 빨리 내는 경우 throughput만 비교하면 잘못된 결론에 이른다. acceptance threshold를 통과한 task의 goodput을 우선 측정한다. 평균 latency뿐 아니라 synchronous revalidation이 일으키는 tail도 기록한다.'),
+h('한 가지 “효율 점수”로 뭉개지 않는다')+p('정확도와 비용의 단위가 다르므로 임의 가중치를 붙인 단일 점수만 발표하지 않는다. 먼저 Pareto frontier를 공개하고, 그 위에서 workload별 SLO·전력·endurance 조건에 맞는 점을 선택한다.'))
+body+=panel('수명 비용의 추가 경계','HBF endurance 분석에서는 host write와 NAND program bytes를 분리한다. refresh가 버전 교체·GC와 겹칠 때 두 번 세지 않도록 simulator accounting을 점검한다. logical commit count만으로 device lifetime을 추정하지 않는다.'+C('hbfsim','hbflex'))
+page('DSE를 위한 계측 명세','08 / MEASUREMENT BLUEPRINT',body,'Logical intelligence metric과 physical system metric을 join할 수 있어야 한다.','measurement')
+
+#36 industry
+body=p('제품에서는 memory가 독립 기능을 넘어 background worker와 framework primitive로 내려오고 있다. 이는 연구 메커니즘의 실증과는 다른 종류의 근거다. 제품 문서는 제공되는 API와 수명 관리 경계를 보여주지만, 특정 memory algorithm의 일반적 우월성을 입증하지는 않는다.')
+body+=table('확인한 제품 신호',['자료 / 시점','공식적으로 설명된 동작','보고서 해석'],[['Vercel eve<br>2026-09-09'+C('eve'),'named slot에 provider와 scope를 지정. turn 전 관련 memory를 context에 추가. private Blob 기반 지속 저장.','memory isolation과 backend 교체가 framework contract가 된다.'],['Grok Build<br>2026-09-16'+C('grok'),'완료 turn에서 durable note를 capture. /dream으로 topic Markdown에 병합; 현재 대화 지시 우선.','background semantic organization. 정책 탐색형 dreaming과 구별.'],['Hindsight Mental Models<br>2026-10-06 확인'+C('hindsight'),'standing answer를 background 또는 schedule로 갱신. freshness·source scope·version history 제공.','read-time 합성 비용을 사전 계산된 view로 옮기는 제품 패턴.'],['Sandisk / SK hynix<br>2026-08-03'+C('sandisk'),'OCP HBF specification 공개와 ecosystem 협력 발표.','capacity tier가 표준화 대상으로 구체화. 실측 양산 성능은 별도.']], [25,44,31])
+body+=h('Community는 문제를 찾는 데 사용한다')+p('직접 확인한 r/LLMDevs 게시글은 chat log와 embedding만으로는 “flat recall”에 머문다는 문제를 제기하며 cross-session state를 어떻게 다루는지 묻는다. 이는 설계 질문의 현장성을 보여주는 사례일 뿐, 대표 표본이나 비교 실험은 아니다.'+C('community'))
+body+=panel('산업 전망의 중심','가장 성숙한 단기 기회는 source/version/scope를 가진 durable store와 background materialized view다. 장기적 차별화는 그 위에서 어떤 상태를 학습하고 어떤 artifact로 compile할지 결정하는 정책에 있다. 단기 persistence와 장기 self-improvement를 같은 maturity로 평가하지 않는다.')
+page('논문 밖에서도 control plane이 구체화된다','09 / INDUSTRY & COMMUNITY',body,'API·운영 기능의 성숙과 신경망 학습 메커니즘의 성숙을 분리해 읽는다.','industry')
+
+#37 errata
+body=p('이전 GitHub 인덱스에는 일부 논문의 arXiv 주소가 제목과 일치하지 않거나 이번 대조에서 확인되지 않는 문제가 있었다. 아래는 PDF에서 바로잡은 항목이다. 링크 실패만으로 논문이 존재하지 않는다고 단정하지 않았고, 원문 제목 검색과 올바른 페이지 대조가 된 경우에만 정정했다.')
+body+=table('이번 판에서 바로잡은 식별자',['연구','이전 인덱스 ID','이 PDF의 확인된 ID'],[['Hindsight Memory-PRM','2608.31254','2608.29605'+C('hprm')],['KV-streams','2609.35893','2609.35750'+C('kvstreams')],['HBFSim','2609.09902','2609.09800'+C('hbfsim')],['Mem++','2609.39246','2610.02002'+C('memplus')],['Schema','2609.39943','2609.39140'+C('schema')],['Beyond Memory / PoS','2609.40334','2610.01415'+C('pos')],['ActiveSaddler','2609.40515','2610.00906'+C('active')],['EfficientAgent','2609.34901','2609.33762'+C('efficient')]], [36,31,33])
+body+=col(h('주장의 강도도 정정했다')+p('slow CMS = HBF라는 표현은 조건부 placement 가설로 바꿨다. HBF write endurance를 commit 횟수로 근사한 서술도 physical bytes·refresh·GC를 포함하도록 수정했다. 두 변경은 문헌의 실제 결과와 우리의 추론을 분리하기 위한 것이다.'),
+h('숫자와 버전의 해석')+p('MemCodex의 10.1% 상대 향상은 10.1%p와 다르다. Mem++의 strongest memory baseline 대비 향상과 RAG 대비 향상도 구별했다. HBFSim 20.8×는 simulator 실행 속도이며 inference speedup으로 표기하지 않았다.'+C('memcodex','memplus','hbfsim')))
+body+=panel('발행 범위','정정은 이 PDF와 동봉한 reference/source package에 반영했다. 이전 Markdown 파일이 자동으로 교체되었다고 가정하지 않는다. 서지 검토 범위와 pinned version은 참고문헌 대장에 남겼다.','warn')
+page('출처 감사와 정정 기록','09 / SOURCE AUDIT',body,'잘못된 링크에 더 좋은 디자인을 입히지 않는다. publication-quality의 출발점은 출처 계약이다.','errata')
+
+#38 supplemental1
+body=p('아래 항목은 이전 주간 조사에서 언급한 추가 자료다. <strong>이번 판에서는 원문 방법·수치·버전을 충분히 재검증하지 않아 정량 결론의 근거에서 제외</strong>했다. 누락을 숨기지 않고 후속 조사 queue로 보존한다. 제목은 이전 기록의 표기를 사용하며 별도 검증 없이 링크나 성과 수치를 새로 부여하지 않는다.')
+extra=[('Episodic / structure','PolyMemDB; MemForest; Activity Frames; Jev-Mem; Persistent Discovery Context; Selective Forgetting'),('Compression / transfer','Agent Memory Distillation; Explicit, Not Longer; Break It Down, Pass It On; StateComp; GEM'),('Credit / influence','RoMeRL; MemTrapBench; Controlled Memory Interference; MeClear; TRACER; Representational Empowerment'),('Validity / admission','AuthMem-Bench; Endogenous Authorization Laundering; Memory Trust Gap; Grounding Agent Memory; Typed Intention Store'),('Lifecycle / transaction','CommitKV; SuperLocalMemory 4.0; MemoryCPT; MemTX / MemTxn; TransMem'),('Routing / multi-agent','Gated-Memory Routing; HiPS; Chain-of-Experience; Working Set of a Coding Agent')]
+body+=table('이전 조사 보존 목록 A',['주제','기록된 자료명'],extra,[29,71])
+body+=h('재검증 체크리스트')+p('① 제목과 arXiv ID가 일치하는지 ② v1과 최신판의 날짜·주장이 같은지 ③ 수치가 absolute/relative/%p 중 무엇인지 ④ model·reader·harness가 통제됐는지 ⑤ validation budget까지 비용에 들어갔는지 ⑥ 실제 구현, simulator, position paper 중 무엇인지 확인한다.')
+body+=panel('왜 모두 같은 신뢰도로 인용하지 않는가?','총망라된 자료집은 모든 항목을 사실로 승격하는 문서가 아니다. <strong>검증된 근거와 아직 검증되지 않은 기록을 함께 보존하되, 서로 다른 지위를 부여하는 것</strong>이 장기적으로 재사용 가능한 리서치 메모리다.')
+page('보존하되 근거로 승격하지 않은 자료','09 / EXTENDED TRACKING REGISTER A',body,'핵심 보고서의 55개 출처와, 이전 주간 기록의 추가 후보를 분리한다.','tracking-a')
+
+#39 supplemental2
+body=table('이전 조사 보존 목록 B',['주제','기록된 자료명'],[('Neural / parametric','TMEM; PEAM; COVE; UniMem; SelfMem; LiveMem; Language Models Need Sleep'),('Dream / self-improvement','Discovery by Dreaming; PILOT in the Loop; RSIAgent; Metaⁿ; AREX-2; On the Fragility of Self-Improving Agents'),('Runtime / agents','FMOS position paper; Cognitive Extensions for Dual-Process Language Agents; Auditing Harness Tampering'),('KV / serving','AgentKV; PReCache; HeadWiseKV; SGD-KV; MILO; AgentZip'),('HW / evaluation','Hardware-Managed Heterogeneous HBM and Flash / HMA; Thinkingbox; Agent Memory Challenge Cycle 2'),('Industry / practitioner','MongoDB Agent Memory Inside the Harness; PolarDB-X Agentic Memory; Heavybit LMCache interview; PLUR restore/rollback runbooks; 개별 weekly Reddit threads')],[29,71])
