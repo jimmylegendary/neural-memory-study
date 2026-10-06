@@ -1,0 +1,24 @@
+name: Neural memory report publication
+on:
+  push:
+    branches:
+      - sync/neural-memory-report-2026-10-06
+    paths:
+      - .github/workflows/neural-memory-report-sync.yml
+      - .report-sync-2026-10-06/**
+permissions:
+  contents: read
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    container: python:3.13-trixie
+    timeout-minutes: 15
+    steps:
+      - name: Verify reproducible rendering environment
+        run: |
+          apt-get update -qq
+          apt-get install -y --no-install-recommends fonts-nanum libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libfontconfig1
+          python -m pip install --no-cache-dir weasyprint==68.0 pydyf==0.12.1 cffi==2.0.0 pycparser==3.0 tinyhtml5==2.1.0 tinycss2==1.5.1 cssselect2==0.9.0 Pyphen==0.17.2 Pillow==12.3.0 fonttools==4.63.0 Brotli==1.2.0 zopfli==0.4.2 webencodings==0.5.1 PyMuPDF==1.26.7
+          python --version
+          dpkg-query -W libpango-1.0-0 libharfbuzz0b libfontconfig1
+          sha256sum /usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf /usr/share/fonts/truetype/nanum/NanumBarunGothicBold.ttf /usr/share/fonts/truetype/nanum/NanumMyeongjo.ttf
