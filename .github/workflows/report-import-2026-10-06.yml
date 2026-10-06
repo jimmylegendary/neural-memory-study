@@ -1,0 +1,49 @@
+name: Publish Korean neural-memory report snapshot
+
+on:
+  push:
+    branches:
+      - publish/neural-memory-report-2026-10-06
+    paths:
+      - .report-import/READY
+
+permissions:
+  contents: write
+
+concurrency:
+  group: neural-memory-report-import-2026-10-06
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: publish/neural-memory-report-2026-10-06
+          fetch-depth: 1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /README.md
+            /deliverables/README.md
+            /.report-import/
+            /.github/workflows/report-import-2026-10-06.yml
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install document-rendering dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y fonts-nanum fonts-nanum-extra libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0
+          python -m pip install --disable-pip-version-check weasyprint==68.0 PyMuPDF==1.26.7 Pillow==12.3.0
+      - name: Verify source archive, build and publish report
+        run: python .report-import/publish.py
+      - name: Commit only the report and navigation changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --sparse -- deliverables/reports/2026-10-06-neural-memory-sleep-time README.md deliverables/README.md .report-import .github/workflows/report-import-2026-10-06.yml
+          git diff --cached --stat
+          git commit -m 'docs: publish Korean neural memory and sleep-time compute report'
+          git push origin HEAD:publish/neural-memory-report-2026-10-06
