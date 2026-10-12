@@ -1,0 +1,114 @@
+[
+  {
+    "basis": "arxiv_v1",
+    "field": "publication_date",
+    "note": "May reflect an earlier venue release, a version date, or a historical error; not automatically overwritten in the observation.",
+    "observation_id": "obs-0107",
+    "primary": "2026-08-08",
+    "reported": "2026-08-07"
+  },
+  {
+    "basis": "arxiv_v1",
+    "field": "publication_date",
+    "note": "May reflect an earlier venue release, a version date, or a historical error; not automatically overwritten in the observation.",
+    "observation_id": "repository-ttt-corpus:30",
+    "primary": "2024-12-31",
+    "reported": "2025.01"
+  },
+  {
+    "basis": "arxiv_v1",
+    "field": "publication_date",
+    "note": "May reflect an earlier venue release, a version date, or a historical error; not automatically overwritten in the observation.",
+    "observation_id": "repository-ttt-corpus:89",
+    "primary": "2026-04-17",
+    "reported": "2026-05-08"
+  },
+  {
+    "basis": "arxiv_v1",
+    "field": "publication_date",
+    "note": "May reflect an earlier venue release, a version date, or a historical error; not automatically overwritten in the observation.",
+    "observation_id": "bibliography:study-kr/back/90-bibliography.md:57",
+    "primary": "2016-12-02",
+    "reported": "2026-03-25"
+  },
+  {
+    "basis": "arxiv_v1",
+    "field": "publication_date",
+    "note": "May reflect an earlier venue release, a version date, or a historical error; not automatically overwritten in the observation.",
+    "observation_id": "bibliography:study-kr/back/90-bibliography.md:64",
+    "primary": "2025-06-12",
+    "reported": "2026-03-25"
+  },
+  {
+    "basis": "arxiv_v1",
+    "field": "publication_date",
+    "note": "May reflect an earlier venue release, a version date, or a historical error; not automatically overwritten in the observation.",
+    "observation_id": "bibliography:study-kr/back/90-bibliography.md:65",
+    "primary": "2021-06-17",
+    "reported": "2026-03-25"
+  },
+  {
+    "basis": "arxiv_v1",
+    "field": "publication_date",
+    "note": "May reflect an earlier venue release, a version date, or a historical error; not automatically overwritten in the observation.",
+    "observation_id": "bibliography:study-kr/back/90-bibliography.md:66",
+    "primary": "2025-04-17",
+    "reported": "2026-03-25"
+  },
+  {
+    "basis": "arxiv_v1",
+    "field": "publication_date",
+    "note": "May reflect an earlier venue release, a version date, or a historical error; not automatically overwritten in the observation.",
+    "observation_id": "bibliography:study-kr/back/90-bibliography.md:75",
+    "primary": "2024-12-09",
+    "reported": "2026-03-25"
+  },
+  {
+    "basis": "arxiv_v1",
+    "field": "publication_date",
+    "note": "May reflect an earlier venue release, a version date, or a historical error; not automatically overwritten in the observation.",
+    "observation_id": "bibliography:study-kr-stc/back/90-bibliography.md:13",
+    "primary": "2024-12-12",
+    "reported": "2024-12-20"
+  },
+  {
+    "basis": "arxiv_v1",
+    "field": "publication_date",
+    "note": "May reflect an earlier venue release, a version date, or a historical error; not automatically overwritten in the observation.",
+    "observation_id": "bibliography:study-kr-stc/back/90-bibliography.md:15",
+    "primary": "2021-06-17",
+    "reported": "2021-10-16"
+  },
+  {
+    "basis": "arxiv_v1",
+    "field": "publication_date",
+    "note": "May reflect an earlier venue release, a version date, or a historical error; not automatically overwritten in the observation.",
+    "observation_id": "bibliography:study-kr-stc/back/90-bibliography.md:17",
+    "primary": "2022-10-13",
+    "reported": "2023-08-01"
+  },
+  {
+    "basis": "arxiv_v1",
+    "field": "publication_date",
+    "note": "May reflect an earlier venue release, a version date, or a historical error; not automatically overwritten in the observation.",
+    "observation_id": "bibliography:study-kr-stc/back/90-bibliography.md:23",
+    "primary": "2024-04-01",
+    "reported": "2024-04-29"
+  },
+  {
+    "basis": "arxiv_v1",
+    "field": "publication_date",
+    "note": "May reflect an earlier venue release, a version date, or a historical error; not automatically overwritten in the observation.",
+    "observation_id": "bibliography:study-kr-stc/back/90-bibliography.md:25",
+    "primary": "2026-03-01",
+    "reported": "2026-07-29"
+  },
+  {
+    "basis": "arxiv_v1",
+    "field": "publication_date",
+    "note": "May reflect an earlier venue release, a version date, or a historical error; not automatically overwritten in the observation.",
+    "observation_id": "bibliography:study-kr-stc/back/90-bibliography.md:27",
+    "primary": "2026-07-13",
+    "reported": "2026-07-14"
+  }
+]

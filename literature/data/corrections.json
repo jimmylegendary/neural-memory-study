@@ -1,0 +1,130 @@
+[
+  {
+    "basis": "explicit_title_or_alias_resolution",
+    "checked_at": "2026-10-12",
+    "observation_id": "obs-0182",
+    "reported_arxiv": "2609.35893",
+    "resolved_arxiv": "2609.35750",
+    "title": "KV-streams for Efficient Compaction in Agentic RL"
+  },
+  {
+    "basis": "explicit_title_or_alias_resolution",
+    "checked_at": "2026-10-12",
+    "observation_id": "obs-0187",
+    "reported_arxiv": "2609.39943",
+    "resolved_arxiv": "2609.39140",
+    "title": "Schema: Discovering Unknown Environments via Agentic Program Induction"
+  },
+  {
+    "basis": "explicit_title_or_alias_resolution",
+    "checked_at": "2026-10-12",
+    "observation_id": "obs-0188",
+    "reported_arxiv": "2609.40334",
+    "resolved_arxiv": "2610.01415",
+    "title": "Beyond Memory: Harnessing Long-Horizon Agents with Explicit Belief States"
+  },
+  {
+    "basis": "explicit_title_or_alias_resolution",
+    "checked_at": "2026-10-12",
+    "observation_id": "obs-0189",
+    "reported_arxiv": "2609.39246",
+    "resolved_arxiv": "2610.02002",
+    "title": "Mem++"
+  },
+  {
+    "basis": "explicit_title_or_alias_resolution",
+    "checked_at": "2026-10-12",
+    "observation_id": "obs-0190",
+    "reported_arxiv": "2609.40515",
+    "resolved_arxiv": "2610.00906",
+    "title": "ActiveSaddler"
+  },
+  {
+    "basis": "explicit_title_or_alias_resolution",
+    "checked_at": "2026-10-12",
+    "observation_id": "obs-0192",
+    "reported_arxiv": "2609.34901",
+    "resolved_arxiv": "2609.33762",
+    "title": "EfficientAgent"
+  },
+  {
+    "basis": "explicit_title_or_alias_resolution",
+    "checked_at": "2026-10-12",
+    "observation_id": "obs-0211",
+    "reported_arxiv": "2608.31254",
+    "resolved_arxiv": "2608.29605",
+    "title": "Hindsight Memory-PRM: Supervising Memory Management with Auditable Hindsight Credit"
+  },
+  {
+    "basis": "explicit_title_or_alias_resolution",
+    "checked_at": "2026-10-12",
+    "observation_id": "obs-0214",
+    "reported_arxiv": "2609.07997",
+    "resolved_arxiv": "2609.08273",
+    "title": "MemForest: Efficient Agent Memory Management via EventTree Partitioning and Progressive Merging"
+  },
+  {
+    "basis": "explicit_title_or_alias_resolution",
+    "checked_at": "2026-10-12",
+    "observation_id": "obs-0215",
+    "reported_arxiv": "2609.07964",
+    "resolved_arxiv": "2609.09115",
+    "title": "MeClear: Cooperative Game-Theoretic Attribution and Risk-Aware Memory Clearance for Long-Horizon LLM Agents"
+  },
+  {
+    "basis": "explicit_title_or_alias_resolution",
+    "checked_at": "2026-10-12",
+    "observation_id": "obs-0216",
+    "reported_arxiv": "2609.09902",
+    "resolved_arxiv": "2609.09800",
+    "title": "HBFSim: Fast and Faithful Simulation of High-Bandwidth Flash Under Real GPU Execution"
+  },
+  {
+    "basis": "explicit_title_or_alias_resolution",
+    "checked_at": "2026-10-12",
+    "observation_id": "bibliography:study-kr/back/90-bibliography.md:2",
+    "reported_arxiv": "2504.13173",
+    "resolved_arxiv": "2501.00663",
+    "title": "Titans: Learning to Memorize at Test Time"
+  },
+  {
+    "basis": "explicit_title_or_alias_resolution",
+    "checked_at": "2026-10-12",
+    "observation_id": "bibliography:study-kr/back/90-bibliography.md:3",
+    "reported_arxiv": "2505.23735",
+    "resolved_arxiv": "2501.00663",
+    "title": "Titans: Learning to Memorize at Test Time"
+  },
+  {
+    "basis": "explicit_title_or_alias_resolution",
+    "checked_at": "2026-10-12",
+    "observation_id": "bibliography:study-kr/back/90-bibliography.md:4",
+    "reported_arxiv": "2511.07343",
+    "resolved_arxiv": "2501.00663",
+    "title": "Titans: Learning to Memorize at Test Time"
+  },
+  {
+    "basis": "explicit_title_or_alias_resolution",
+    "checked_at": "2026-10-12",
+    "observation_id": "bibliography:study-kr/back/90-bibliography.md:5",
+    "reported_arxiv": "2512.24695",
+    "resolved_arxiv": "2501.00663",
+    "title": "Titans: Learning to Memorize at Test Time"
+  },
+  {
+    "basis": "explicit_title_or_alias_resolution",
+    "checked_at": "2026-10-12",
+    "observation_id": "bibliography:study-kr/back/90-bibliography.md:6",
+    "reported_arxiv": "2606.03979",
+    "resolved_arxiv": "2501.00663",
+    "title": "Titans: Learning to Memorize at Test Time"
+  },
+  {
+    "basis": "explicit_title_or_alias_resolution",
+    "checked_at": "2026-10-12",
+    "observation_id": "bibliography:study-kr/back/90-bibliography.md:7",
+    "reported_arxiv": "2605.26099",
+    "resolved_arxiv": "2501.00663",
+    "title": "Titans: Learning to Memorize at Test Time"
+  }
+]

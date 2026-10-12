@@ -1,0 +1,436 @@
+{
+  "2504.13171": {
+    "arxiv_id": "2504.13171",
+    "title": "Sleep-time Compute: Beyond Inference Scaling at Test-time",
+    "published": "2025-04-17",
+    "updated": "2025-04-17",
+    "latest_version": 1,
+    "authors": [
+      "Kevin Lin",
+      "Charlie Snell",
+      "Yu Wang",
+      "Charles Packer",
+      "Sarah Wooders",
+      "Ion Stoica",
+      "Joseph E. Gonzalez"
+    ],
+    "url": "https://arxiv.org/abs/2504.13171",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_abstract_metadata",
+    "status": "ok",
+    "notes": ""
+  },
+  "2605.26099": {
+    "arxiv_id": "2605.26099",
+    "title": "Do Language Models Need Sleep? Offline Recurrence for Improved Online Inference",
+    "published": "2026-05-25",
+    "updated": "2026-06-05",
+    "latest_version": 3,
+    "authors": [
+      "Sangyun Lee",
+      "Sean McLeish",
+      "Tom Goldstein",
+      "Giulia Fanti"
+    ],
+    "url": "https://arxiv.org/abs/2605.26099",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_abstract_metadata",
+    "status": "ok",
+    "notes": ""
+  },
+  "2606.03979": {
+    "arxiv_id": "2606.03979",
+    "title": "Language Models Need Sleep: Learning to Self-Modify and Consolidate Memories",
+    "published": "2026-06-02",
+    "updated": "2026-07-10",
+    "latest_version": 2,
+    "authors": [
+      "Ali Behrouz",
+      "Farnoosh Hashemi",
+      "Adel Javanmard",
+      "Vahab Mirrokni"
+    ],
+    "url": "https://arxiv.org/abs/2606.03979",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_abstract_metadata",
+    "status": "ok",
+    "notes": "arXiv comments state that a version was available on OpenReview in September 2025. Exact earlier release day was not verified; arXiv-v1 ordering is explicitly labelled."
+  },
+  "2605.20616": {
+    "arxiv_id": "2605.20616",
+    "title": "Auto-Dreamer: Learning Offline Memory Consolidation for Language Agents",
+    "published": "2026-05-20",
+    "updated": "2026-05-20",
+    "latest_version": 1,
+    "authors": [
+      "Chongrui Ye",
+      "Yuxiang Liu",
+      "Yu Wang",
+      "Haofei Yu",
+      "Yining Zhao",
+      "Ge Liu",
+      "Julian McAuley",
+      "Jiaxuan You"
+    ],
+    "url": "https://arxiv.org/abs/2605.20616",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_abstract_metadata",
+    "status": "ok",
+    "notes": ""
+  },
+  "2603.14517": {
+    "arxiv_id": "2603.14517",
+    "title": "Learning to Forget: Sleep-Inspired Memory Consolidation for Resolving Proactive Interference in Large Language Models",
+    "published": "2026-03-15",
+    "updated": "2026-03-15",
+    "latest_version": 1,
+    "authors": [
+      "Ying Xie"
+    ],
+    "url": "https://arxiv.org/abs/2603.14517",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_abstract_metadata",
+    "status": "ok",
+    "notes": ""
+  },
+  "2609.39765": {
+    "arxiv_id": "2609.39765",
+    "title": "MemCodex: Self-Programming Hierarchical Memory for Language Agents",
+    "published": "2026-09-30",
+    "updated": "2026-09-30",
+    "latest_version": 1,
+    "authors": [
+      "Xiaoqiang Wang",
+      "Bang Liu"
+    ],
+    "url": "https://arxiv.org/abs/2609.39765",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_abstract_metadata",
+    "status": "ok",
+    "notes": "Work in progress."
+  },
+  "2610.10533": {
+    "arxiv_id": "2610.10533",
+    "title": "EngramEdit: Decoupled Knowledge Updates in LLMs through Conditional Memory",
+    "published": "2026-10-07",
+    "updated": "2026-10-07",
+    "latest_version": 1,
+    "authors": [
+      "Hongru Cai",
+      "Ran Wei",
+      "Wenjie Wang",
+      "Chengfa Wu",
+      "Ning Song",
+      "Yongqi Li",
+      "Wenjie Li"
+    ],
+    "url": "https://arxiv.org/abs/2610.10533",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_abstract_metadata",
+    "status": "ok",
+    "notes": ""
+  },
+  "2610.08378": {
+    "arxiv_id": "2610.08378",
+    "title": "Lachesis: Lifetime-Aware KV Cache Placement for Agent Serving across HBM and High-Bandwidth Flash",
+    "published": "2026-10-06",
+    "updated": "",
+    "latest_version": null,
+    "authors": [
+      "Jaehoon Yang",
+      "Jeongmin Lee",
+      "Haneul Park",
+      "Seung Yul Lee",
+      "Nam Sung Kim",
+      "Jae W. Lee"
+    ],
+    "url": "https://arxiv.org/abs/2610.08378",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_search_metadata",
+    "status": "ok",
+    "notes": ""
+  },
+  "2609.01836": {
+    "arxiv_id": "2609.01836",
+    "title": "Agent Memory Is a Surface for Endogenous Authorization Laundering",
+    "published": "2026-09-01",
+    "updated": "",
+    "latest_version": null,
+    "authors": [
+      "Tommaso Cerruti",
+      "Mika Okamoto",
+      "Ansel Kaplan Erol"
+    ],
+    "url": "https://arxiv.org/abs/2609.01836",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_search_metadata",
+    "status": "ok",
+    "notes": ""
+  },
+  "2609.01852": {
+    "arxiv_id": "2609.01852",
+    "title": "The Memory Trust Gap: Capability-Dependent Failures in Persistent-Memory Agents",
+    "published": "2026-09-01",
+    "updated": "",
+    "latest_version": null,
+    "authors": [
+      "Jundong Hu",
+      "Shekar Ramachandran"
+    ],
+    "url": "https://arxiv.org/abs/2609.01852",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_search_metadata",
+    "status": "ok",
+    "notes": ""
+  },
+  "2609.02322": {
+    "arxiv_id": "2609.02322",
+    "title": "What Is Worth Representing? Representational Empowerment for Continual Model Construction",
+    "published": "2026-09-02",
+    "updated": "",
+    "latest_version": null,
+    "authors": [
+      "Fei Dai",
+      "Hanqi Zhou",
+      "Alison Gopnik",
+      "Charley Wu"
+    ],
+    "url": "https://arxiv.org/abs/2609.02322",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_search_metadata",
+    "status": "ok",
+    "notes": ""
+  },
+  "2609.00237": {
+    "arxiv_id": "2609.00237",
+    "title": "Learning What to Retain: Gated-Memory Routing for Efficient Collaboration in Multi-Agent LLM Systems",
+    "published": "2026-08-31",
+    "updated": "2026-09-09",
+    "latest_version": 2,
+    "authors": [
+      "Rakibul Hasan Rajib",
+      "Mengxin Zheng",
+      "Qian Lou"
+    ],
+    "url": "https://arxiv.org/abs/2609.00237",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_abstract_metadata",
+    "status": "ok",
+    "notes": "Author spelling follows current arXiv abstract page; older search metadata used Mengxing."
+  },
+  "2609.01272": {
+    "arxiv_id": "2609.01272",
+    "title": "Making Prospective Memory SLM-Shaped: Typed Intention Stores for Small-Model Agents",
+    "published": "2026-09-01",
+    "updated": "",
+    "latest_version": null,
+    "authors": [
+      "Jinqing Zhao",
+      "Chengcan Wu"
+    ],
+    "url": "https://arxiv.org/abs/2609.01272",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_search_metadata",
+    "status": "ok",
+    "notes": ""
+  },
+  "2609.02129": {
+    "arxiv_id": "2609.02129",
+    "title": "Beyond Context Windows: Persistent Discovery Context for Data-Centric Agents",
+    "published": "2026-09-02",
+    "updated": "",
+    "latest_version": null,
+    "authors": [
+      "Jalal Mahmud"
+    ],
+    "url": "https://arxiv.org/abs/2609.02129",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_search_metadata",
+    "status": "ok",
+    "notes": ""
+  },
+  "2609.00069": {
+    "arxiv_id": "2609.00069",
+    "title": "Auditing Harness Tampering in Self-Improving Agents",
+    "published": "2026-08-30",
+    "updated": "",
+    "latest_version": null,
+    "authors": [
+      "Xing Wang",
+      "Xiaoyi Zhang",
+      "Jie Shao"
+    ],
+    "url": "https://arxiv.org/abs/2609.00069",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_search_metadata",
+    "status": "ok",
+    "notes": ""
+  },
+  "2609.02029": {
+    "arxiv_id": "2609.02029",
+    "title": "HeadWiseKV: Budgeted Per-Head Cache Residency for Hybrid Long-Context Language Models",
+    "published": "2026-09-02",
+    "updated": "",
+    "latest_version": null,
+    "authors": [
+      "Renjie Xie",
+      "Juncheng Yang",
+      "Aoting Hu",
+      "Mingxi Zhang",
+      "Liyao Wu",
+      "Zheheng Hong",
+      "Wei Xu"
+    ],
+    "url": "https://arxiv.org/abs/2609.02029",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_search_metadata",
+    "status": "ok",
+    "notes": ""
+  },
+  "2609.03235": {
+    "arxiv_id": "2609.03235",
+    "title": "SGD-KV: Summarization Guided KV Cache Compression",
+    "published": "2026-09-03",
+    "updated": "",
+    "latest_version": null,
+    "authors": [
+      "Zeyu Liu",
+      "Woomin Song",
+      "Xuandi Fu",
+      "Sai Muralidhar Jayanthi",
+      "Vivek Govindan",
+      "Aram Galstyan",
+      "Sravan Babu Bodapati",
+      "Srikanth Ronanki"
+    ],
+    "url": "https://arxiv.org/abs/2609.03235",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_search_metadata",
+    "status": "ok",
+    "notes": "USC ISI page lists a 2025 workshop year; stored arXiv-v1 date is 2026-09-03. Venue/year conflict requires review; no silent normalization."
+  },
+  "2609.11294": {
+    "arxiv_id": "2609.11294",
+    "title": "Memory Compression for High-Fanout Agent Sandboxes",
+    "published": "2026-09-10",
+    "updated": "",
+    "latest_version": null,
+    "authors": [
+      "Mengming Li",
+      "Ceyu Xu",
+      "Qijun Zhang",
+      "Jiangnan Yu",
+      "Xiangfeng Sun",
+      "Haohui Mai",
+      "Zhiyao Xie"
+    ],
+    "url": "https://arxiv.org/abs/2609.11294",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_search_metadata",
+    "status": "ok",
+    "notes": ""
+  },
+  "2609.08273": {
+    "arxiv_id": "2609.08273",
+    "title": "MemForest: Efficient Agent Memory Management via EventTree Partitioning and Progressive Merging",
+    "published": "2026-09-08",
+    "updated": "",
+    "latest_version": null,
+    "authors": [
+      "Junxi Wang",
+      "Te Sun",
+      "Jiayi Zhu",
+      "Chen Zhang",
+      "Siyuan Li",
+      "Xuyang Liu",
+      "Zichen Wen",
+      "Xiaobing Tu",
+      "Jinkui Ren",
+      "Xiantao Zhang",
+      "Ziqi Yuan",
+      "Linfeng Zhang"
+    ],
+    "url": "https://arxiv.org/abs/2609.08273",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_search_metadata",
+    "status": "ok",
+    "notes": "Not the different MemForest paper arXiv:2605.23986."
+  },
+  "2609.29913": {
+    "arxiv_id": "2609.29913",
+    "title": "MILO: Efficient Many-shot In-Context Learning with Block-wise Low-rank Compression",
+    "published": "2026-09-24",
+    "updated": "",
+    "latest_version": null,
+    "authors": [
+      "Youpeng Zhao",
+      "Tian Tan",
+      "Liqian Peng",
+      "Jun Wang",
+      "Alec Go"
+    ],
+    "url": "https://arxiv.org/abs/2609.29913",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_search_metadata",
+    "status": "ok",
+    "notes": ""
+  },
+  "2610.08586": {
+    "arxiv_id": "2610.08586",
+    "title": "MINDSET: Energy-based Schema Evolution for Long Conversational Agent Memory",
+    "published": "2026-10-06",
+    "updated": "",
+    "latest_version": null,
+    "authors": [
+      "Sujato Dutta",
+      "Sreekruthy Tummala",
+      "Shashank Vanga",
+      "Ayushmi Pavani"
+    ],
+    "url": "https://arxiv.org/abs/2610.08586",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_search_metadata",
+    "status": "ok",
+    "notes": ""
+  },
+  "2610.08101": {
+    "arxiv_id": "2610.08101",
+    "title": "Beyond Corrected Memory: Execution Consistency in Multi-Agent Systems",
+    "published": "2026-10-06",
+    "updated": "",
+    "latest_version": null,
+    "authors": [
+      "Zhe Yu",
+      "Zixuan Wang",
+      "Peidong Wang",
+      "Hehai Lin",
+      "Ruochen Zhao",
+      "Chengwei Qin"
+    ],
+    "url": "https://arxiv.org/abs/2610.08101",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_search_metadata",
+    "status": "ok",
+    "notes": ""
+  },
+  "2610.07782": {
+    "arxiv_id": "2610.07782",
+    "title": "Persistent Memory in Multi-Agent LLM Inference: What It Costs, What It Buys, and When You Can Tell",
+    "published": "2026-10-06",
+    "updated": "",
+    "latest_version": null,
+    "authors": [
+      "Hochan Son",
+      "Kyungdoe Han",
+      "Jaehan Koh",
+      "Xiaowu Dai",
+      "Wenlu Xu",
+      "Guang Cheng"
+    ],
+    "url": "https://arxiv.org/abs/2610.07782",
+    "checked_at": "2026-10-12",
+    "method": "arxiv_search_metadata",
+    "status": "ok",
+    "notes": ""
+  }
+}

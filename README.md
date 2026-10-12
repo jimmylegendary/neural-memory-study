@@ -57,3 +57,10 @@ python3 scripts/package_deliverables.py --root . --output deliverables --check  
 [Sleep-time Compute & Neural Memory — 49쪽 한국어 PDF 및 편집 원본](deliverables/neural-memory/reports/2026-10-06-sleep-time-compute/README.md)
 
 기존 학습서·Sleep-Time Compute v2와 구분되는 별도 동향/설계 분석 보고서다. PDF·도식·출처·재현 소스를 함께 보존한다.
+
+
+## 전체 논문 DB · 발행일순 대장
+
+[발행일순 목록](literature/CHRONOLOGICAL.md) · [DB 안내](literature/README.md) · [SQLite](literature/data/papers.sqlite) · [전수 대조](literature/coverage.json)
+
+초기 조사·주간 브리핑·통합 보고서와 선행 저장소 문헌을 합친 대장이다. 미검증 자료는 제거하지 않고 상태를 구분한다. 기존 모노그래프와 PDF를 대체하지 않는다.

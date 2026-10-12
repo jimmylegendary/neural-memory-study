@@ -1,0 +1,12 @@
+[
+  {
+    "method": "primary_title_lookup",
+    "status": "ambiguous_or_not_found",
+    "title": "Hardware-Managed Heterogeneous High-Bandwidth Memory and Flash in LLM Inference Systems"
+  },
+  {
+    "arxiv_id": "2608.29363",
+    "method": "unique_primary_title_match",
+    "title": "TRACER: Per-Tool Context Retention for LLM Agents via Consequence-Attributed Reinforcement Learning"
+  }
+]

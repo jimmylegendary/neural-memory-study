@@ -1,0 +1,16 @@
+PRAGMA foreign_keys=ON;
+CREATE TABLE publications(id TEXT PRIMARY KEY,title TEXT NOT NULL,kind TEXT NOT NULL,arxiv_id TEXT UNIQUE,doi TEXT,publication_date TEXT,date_precision TEXT,date_basis TEXT,updated_at TEXT,latest_version INTEGER,verification_status TEXT,review_status TEXT,checked_at TEXT,url TEXT,first_seen_in_recovered_task TEXT,authors_json TEXT,aliases_json TEXT,scopes_json TEXT,metadata_candidate_json TEXT);
+CREATE TABLE sources(id TEXT PRIMARY KEY,path TEXT,kind TEXT,source_date TEXT,input_count INTEGER,sha256 TEXT);
+CREATE TABLE observations(id TEXT PRIMARY KEY,publication_id TEXT NOT NULL REFERENCES publications(id),source_id TEXT NOT NULL REFERENCES sources(id),source_locator TEXT,source_date TEXT,reported_title TEXT,reported_alias TEXT,reported_published TEXT,reported_updated TEXT,reported_arxiv TEXT,reported_url TEXT,note TEXT,scope TEXT);
+CREATE TABLE topics(publication_id TEXT REFERENCES publications(id),topic TEXT,PRIMARY KEY(publication_id,topic));
+CREATE TABLE corrections(observation_id TEXT REFERENCES observations(id),reported_arxiv TEXT,resolved_arxiv TEXT,basis TEXT,checked_at TEXT);
+CREATE TABLE assets(path TEXT PRIMARY KEY,publication_id TEXT REFERENCES publications(id),type TEXT,size_bytes INTEGER,sha256 TEXT,rights TEXT);
+CREATE TABLE metadata_snapshots(arxiv_id TEXT PRIMARY KEY,payload_json TEXT NOT NULL);
+CREATE TABLE versions(publication_id TEXT REFERENCES publications(id),version INTEGER,date TEXT,source_url TEXT,PRIMARY KEY(publication_id,version));
+CREATE TABLE build_info(key TEXT PRIMARY KEY,value TEXT);
+CREATE INDEX by_publication_date ON publications(publication_date,title);
+CREATE INDEX by_source ON observations(source_id);
+CREATE INDEX by_status ON publications(verification_status);
+CREATE VIEW chronological AS SELECT * FROM publications WHERE kind='paper' ORDER BY publication_date IS NULL,publication_date,title;
+CREATE VIEW task_papers AS SELECT DISTINCT p.* FROM publications p JOIN observations o ON o.publication_id=p.id WHERE p.kind='paper' AND o.scope='task' ORDER BY p.publication_date IS NULL,p.publication_date,p.title;
+CREATE VIEW unresolved AS SELECT * FROM publications WHERE verification_status IN ('identity_conflict','metadata_pending','identifier_pending');

@@ -1,0 +1,105 @@
+{
+  "snapshot_date": "2026-10-12",
+  "earliest_recovered_task_document": "2026-08-11",
+  "precursor_reference": "2026-08-07",
+  "sources": [
+    {
+      "source_id": "initial-report-2026-08-16",
+      "source_date": "2026-08-16",
+      "kind": "bibliography",
+      "extracted_records": 43,
+      "extraction": "Bibliographic entries only; no private project body republished."
+    },
+    {
+      "source_id": "initial-outlook-2026-08-11",
+      "source_date": "2026-08-11",
+      "kind": "bibliography",
+      "extracted_records": 6,
+      "extraction": "Bibliographic entries only; no private project body republished."
+    },
+    {
+      "source_id": "report-2026-10-06",
+      "source_date": "2026-10-06",
+      "kind": "bibliography",
+      "extracted_records": 55,
+      "extraction": "Bibliographic entries only; no private project body republished."
+    },
+    {
+      "source_id": "weekly-2026-08-17",
+      "source_date": "2026-08-17",
+      "kind": "task_history",
+      "extracted_records": 10,
+      "extraction": "Bibliographic entries only; no private project body republished."
+    },
+    {
+      "source_id": "weekly-2026-08-24",
+      "source_date": "2026-08-24",
+      "kind": "task_history",
+      "extracted_records": 14,
+      "extraction": "Bibliographic entries only; no private project body republished."
+    },
+    {
+      "source_id": "weekly-2026-08-31",
+      "source_date": "2026-08-31",
+      "kind": "task_history",
+      "extracted_records": 8,
+      "extraction": "Bibliographic entries only; no private project body republished."
+    },
+    {
+      "source_id": "weekly-2026-09-07",
+      "source_date": "2026-09-07",
+      "kind": "task_history",
+      "extracted_records": 14,
+      "extraction": "Bibliographic entries only; no private project body republished."
+    },
+    {
+      "source_id": "weekly-2026-09-14",
+      "source_date": "2026-09-14",
+      "kind": "task_history",
+      "extracted_records": 6,
+      "extraction": "Bibliographic entries only; no private project body republished."
+    },
+    {
+      "source_id": "weekly-2026-09-21",
+      "source_date": "2026-09-21",
+      "kind": "task_history",
+      "extracted_records": 10,
+      "extraction": "Bibliographic entries only; no private project body republished."
+    },
+    {
+      "source_id": "weekly-2026-09-28",
+      "source_date": "2026-09-28",
+      "kind": "task_history",
+      "extracted_records": 15,
+      "extraction": "Bibliographic entries only; no private project body republished."
+    },
+    {
+      "source_id": "weekly-2026-10-05",
+      "source_date": "2026-10-05",
+      "kind": "task_history",
+      "extracted_records": 11,
+      "extraction": "Bibliographic entries only; no private project body republished."
+    },
+    {
+      "source_id": "weekly-2026-10-12",
+      "source_date": "2026-10-12",
+      "kind": "task_history",
+      "extracted_records": 17,
+      "extraction": "Bibliographic entries only; no private project body republished."
+    },
+    {
+      "source_id": "precursor-2026-08-07",
+      "source_date": "2026-08-07",
+      "kind": "task_history",
+      "extracted_records": 1,
+      "extraction": "Bibliographic entries only; no private project body republished."
+    },
+    {
+      "source_id": "legacy-index-2026-10-06",
+      "source_date": "2026-10-06",
+      "kind": "bibliography",
+      "extracted_records": 7,
+      "extraction": "Bibliographic entries only; no private project body republished."
+    }
+  ]
+}

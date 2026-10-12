@@ -1,0 +1,740 @@
+[
+  {
+    "expected_count": null,
+    "id": "initial-report-2026-08-16",
+    "input_count": 43,
+    "kind": "recovered-task",
+    "path": "",
+    "sha256": null,
+    "source_date": "2026-08-16"
+  },
+  {
+    "expected_count": null,
+    "id": "initial-outlook-2026-08-11",
+    "input_count": 6,
+    "kind": "recovered-task",
+    "path": "",
+    "sha256": null,
+    "source_date": "2026-08-11"
+  },
+  {
+    "expected_count": null,
+    "id": "report-2026-10-06",
+    "input_count": 55,
+    "kind": "recovered-task",
+    "path": "",
+    "sha256": null,
+    "source_date": "2026-10-06"
+  },
+  {
+    "expected_count": null,
+    "id": "weekly-2026-08-17",
+    "input_count": 10,
+    "kind": "recovered-task",
+    "path": "",
+    "sha256": null,
+    "source_date": "2026-08-17"
+  },
+  {
+    "expected_count": null,
+    "id": "weekly-2026-08-24",
+    "input_count": 14,
+    "kind": "recovered-task",
+    "path": "",
+    "sha256": null,
+    "source_date": "2026-08-24"
+  },
+  {
+    "expected_count": null,
+    "id": "weekly-2026-08-31",
+    "input_count": 8,
+    "kind": "recovered-task",
+    "path": "",
+    "sha256": null,
+    "source_date": "2026-08-31"
+  },
+  {
+    "expected_count": null,
+    "id": "weekly-2026-09-07",
+    "input_count": 14,
+    "kind": "recovered-task",
+    "path": "",
+    "sha256": null,
+    "source_date": "2026-09-07"
+  },
+  {
+    "expected_count": null,
+    "id": "weekly-2026-09-14",
+    "input_count": 6,
+    "kind": "recovered-task",
+    "path": "",
+    "sha256": null,
+    "source_date": "2026-09-14"
+  },
+  {
+    "expected_count": null,
+    "id": "weekly-2026-09-21",
+    "input_count": 10,
+    "kind": "recovered-task",
+    "path": "",
+    "sha256": null,
+    "source_date": "2026-09-21"
+  },
+  {
+    "expected_count": null,
+    "id": "weekly-2026-09-28",
+    "input_count": 15,
+    "kind": "recovered-task",
+    "path": "",
+    "sha256": null,
+    "source_date": "2026-09-28"
+  },
+  {
+    "expected_count": null,
+    "id": "weekly-2026-10-05",
+    "input_count": 11,
+    "kind": "recovered-task",
+    "path": "",
+    "sha256": null,
+    "source_date": "2026-10-05"
+  },
+  {
+    "expected_count": null,
+    "id": "weekly-2026-10-12",
+    "input_count": 17,
+    "kind": "recovered-task",
+    "path": "",
+    "sha256": null,
+    "source_date": "2026-10-12"
+  },
+  {
+    "expected_count": null,
+    "id": "precursor-2026-08-07",
+    "input_count": 1,
+    "kind": "recovered-task",
+    "path": "",
+    "sha256": null,
+    "source_date": "2026-08-07"
+  },
+  {
+    "expected_count": null,
+    "id": "legacy-index-2026-10-06",
+    "input_count": 7,
+    "kind": "recovered-task",
+    "path": "",
+    "sha256": null,
+    "source_date": "2026-10-06"
+  },
+  {
+    "expected_count": 217,
+    "id": "task-input-file",
+    "input_count": 0,
+    "kind": "input-container",
+    "path": "literature/inputs/task_bibliography.tsv",
+    "sha256": "0bc82ee0b633306b3fd3c973f59005cbd44d31e56d4f01e755591d51b0edf05b",
+    "source_date": ""
+  },
+  {
+    "expected_count": 93,
+    "id": "repository-ttt-corpus",
+    "input_count": 93,
+    "kind": "curated-corpus",
+    "path": "research/ttt-efficient-corpus.json",
+    "sha256": "4a5fcbe2429c47ed2d4d4ef285c38292626e701ffa48bfd7797a07dafc38834f",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "bibliography:study-kr/back/90-bibliography.md",
+    "input_count": 75,
+    "kind": "authored-bibliography",
+    "path": "study-kr/back/90-bibliography.md",
+    "sha256": "236ea2ea931bf9312b2eccaff2d2c0c643d9eafa3f7e827147966dc11f6dac24",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "bibliography:study-kr-stc/back/90-bibliography.md",
+    "input_count": 33,
+    "kind": "authored-bibliography",
+    "path": "study-kr-stc/back/90-bibliography.md",
+    "sha256": "1308343ba557cf6f9cf38ab7ecdf0f00d056a9f9385f0c018d57e9a5859222f3",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:research/google-meeting/01-SIX-AXIS-PROBLEM-MAP.md",
+    "input_count": 5,
+    "kind": "authored-citation-discovery",
+    "path": "research/google-meeting/01-SIX-AXIS-PROBLEM-MAP.md",
+    "sha256": "1e8c71387c512a166c9e8f5364eb55fdf04323dbb48444b4db2d9914f508a36f",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:research/google-meeting/02-GOOGLE-KICK-QUESTION-PLAYBOOK.md",
+    "input_count": 4,
+    "kind": "authored-citation-discovery",
+    "path": "research/google-meeting/02-GOOGLE-KICK-QUESTION-PLAYBOOK.md",
+    "sha256": "456fbc62ba45ec049ab4dacad786db94f5d4e0a3fd62b985653ca82900d87bdc",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:research/google-meeting/03-DEVICE-SOLUTION-BRIDGE.md",
+    "input_count": 8,
+    "kind": "authored-citation-discovery",
+    "path": "research/google-meeting/03-DEVICE-SOLUTION-BRIDGE.md",
+    "sha256": "0afc6a33c20dde22570cb583086e0e829df7fef5f56a376b45915c239333a462",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:research/google-meeting/06-PAPER-EVIDENCE-AND-KICK-QUESTIONS-EN.md",
+    "input_count": 5,
+    "kind": "authored-citation-discovery",
+    "path": "research/google-meeting/06-PAPER-EVIDENCE-AND-KICK-QUESTIONS-EN.md",
+    "sha256": "eb35844587ad5b3ba2b72cf8d8aa44b26f167c7331574787bebdf6af50702e6a",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:research/ttt-titans-efficiency-study.md",
+    "input_count": 53,
+    "kind": "authored-citation-discovery",
+    "path": "research/ttt-titans-efficiency-study.md",
+    "sha256": "c507815afdaaae4402b77a63d5de415ab10b059e9d9d7bf443c5e86a231a5ef4",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr/back/91-glossary.md",
+    "input_count": 3,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr/back/91-glossary.md",
+    "sha256": "6e44d0d66aa2b6dd25a01c1d169403e63fdcd0e278b5e8c39173c4b38ecc0540",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr/part1/ch01-orientation-rosetta.md",
+    "input_count": 7,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr/part1/ch01-orientation-rosetta.md",
+    "sha256": "b40a888bb569d4d4bc41643268c3ca2c3c7c6a25e4b53db4fa4b5f7bce1dfe3a",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr/part1/ch02-training-as-a-system.md",
+    "input_count": 11,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr/part1/ch02-training-as-a-system.md",
+    "sha256": "08e1c4d540014e7d2baa6b292af033048df7c692e37f5af602f1b491398bf71b",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr/part1/ch03-online-learning-regret.md",
+    "input_count": 7,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr/part1/ch03-online-learning-regret.md",
+    "sha256": "e4995e1a3783d0ea27d4d4310cd94516d4894c0dff2d757ddf09e2f01231596c",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr/part1/ch04-meta-learning-bilevel.md",
+    "input_count": 13,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr/part1/ch04-meta-learning-bilevel.md",
+    "sha256": "c1b8a09364851303cbb39ed5a8483d811d4d672df72ade91b60f88a83c931041",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr/part1/ch05-associative-memory.md",
+    "input_count": 8,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr/part1/ch05-associative-memory.md",
+    "sha256": "3e1abe9d8ebbe3a3c89346b54efeb0b63511bd454be7ec3f01ce02e8f6cfc6d9",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr/part1/ch06-linear-attention-fwp.md",
+    "input_count": 18,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr/part1/ch06-linear-attention-fwp.md",
+    "sha256": "e0f30c35419c377df6a62cee7600a076d041bf95d8268f1b6cd7000a40828227",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr/part1/ch07-ssm-lineage.md",
+    "input_count": 11,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr/part1/ch07-ssm-lineage.md",
+    "sha256": "bb037ab58d9869958b2c6e5c51f3adf067ca944f35f803189e02c03864277e5c",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr/part1/ch08-ttt-lineage.md",
+    "input_count": 10,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr/part1/ch08-ttt-lineage.md",
+    "sha256": "c348ef764b944f83bf1a025e0041696d3ca743ac59ae0aaa09848d468664fb60",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr/part1/ch09-chunkwise-parallel-training.md",
+    "input_count": 12,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr/part1/ch09-chunkwise-parallel-training.md",
+    "sha256": "c5f566a578b90d0538ecd4386c695a747cef29fb1c2fda4279db8f0d3e3ffa36",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr/part1/ch10-systems-bridge.md",
+    "input_count": 8,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr/part1/ch10-systems-bridge.md",
+    "sha256": "da343917dc9d0f31366af79dce559e3fda24269cab91e747473be3b18f160f97",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr/part1/ch11-continual-learning.md",
+    "input_count": 10,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr/part1/ch11-continual-learning.md",
+    "sha256": "e6c1578b530ff2f9cc7a8f80d182e5b708bd56f795778748a1ed8df7dc8c4e21",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr/part2/ch12-titans.md",
+    "input_count": 3,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr/part2/ch12-titans.md",
+    "sha256": "6c8037cc4bc42396a3a4178a005f058a1d4e65fe19841c0a37f660bfdb25ff90",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr/part2/ch13-miras.md",
+    "input_count": 3,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr/part2/ch13-miras.md",
+    "sha256": "35d4f254d091369052c2245847659adffded64ac4ea60d28bdc41733a62b7c92",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr/part2/ch14-atlas.md",
+    "input_count": 6,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr/part2/ch14-atlas.md",
+    "sha256": "f2a1a881339cfff54cb10db350431ea9945da7e43d27ede7d4ff0fa4980e0fc9",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr/part2/ch15-tnt.md",
+    "input_count": 7,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr/part2/ch15-tnt.md",
+    "sha256": "3975fefe475fa812de9a1d28ed011859284a99e21c34bf7493a8f825e12af01c",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr/part2/ch16-nested-learning.md",
+    "input_count": 6,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr/part2/ch16-nested-learning.md",
+    "sha256": "f0c208a21df1cb9b43b8d2964c4ac4b6f3acf6c341baf2ba251c7ca8f86e7f58",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr/part2/ch17-sleep.md",
+    "input_count": 7,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr/part2/ch17-sleep.md",
+    "sha256": "dc6392be623c21f2b304ae0040b8603c13bab2241a776526924843c1571fdfce",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr/part3/ch19-scaling-laws.md",
+    "input_count": 1,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr/part3/ch19-scaling-laws.md",
+    "sha256": "84cbd1cdfbe69511f571cd47b358568e4df1d4248021330a3e7ac1f1b32bc841",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr/part3/ch21-hardware-lottery.md",
+    "input_count": 3,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr/part3/ch21-hardware-lottery.md",
+    "sha256": "ac421f1693a2645d7fc3c5eee1b526439b5a189860a331d54cecd2df5723a39c",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part1/ch01-orientation-three-layers.md",
+    "input_count": 3,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part1/ch01-orientation-three-layers.md",
+    "sha256": "78f0650de30737228d016c5e230fee68ea2c46c4d9e0f8bdf23ebc06510313c9",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part1/ch02-training-regimes.md",
+    "input_count": 3,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part1/ch02-training-regimes.md",
+    "sha256": "701e71aac913becb284df24c9d215f496303efdc10f05cd9e45b645475d65c94",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part1/ch03-finetuning-and-peft.md",
+    "input_count": 4,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part1/ch03-finetuning-and-peft.md",
+    "sha256": "1a879b90121df7be196fa99faa6cb52c6d7033052958fb21ececba898d07cb0f",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part1/ch04-distillation.md",
+    "input_count": 3,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part1/ch04-distillation.md",
+    "sha256": "4bb1401261a7cec752dd8c1905e4c2be185b3781c564d19d53bf66c9843ca425",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part1/ch05-rl-for-llm.md",
+    "input_count": 15,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part1/ch05-rl-for-llm.md",
+    "sha256": "cc1de9641861b0120d9edf90ba69665ccdaca015fbd4c661d32ea944e62bf433",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part1/ch06-making-data.md",
+    "input_count": 1,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part1/ch06-making-data.md",
+    "sha256": "2b6076514b41dc405a06ec2f99a82cdb03e7e79085e97e2e6eef36e1763dedc8",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part1/ch07-forgetting-and-replay.md",
+    "input_count": 3,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part1/ch07-forgetting-and-replay.md",
+    "sha256": "2e988f2a260b072363ff2b9d9e5a7171397f46c568288bf29c7550d4fd7ebf1b",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part1/ch10-external-memory.md",
+    "input_count": 1,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part1/ch10-external-memory.md",
+    "sha256": "99987efaaf8462d1c972fd8482f4009023140d3e21d25364dbb5ba1205ca45d4",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part2/ch11-discriminant-and-census.md",
+    "input_count": 11,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part2/ch11-discriminant-and-census.md",
+    "sha256": "e3f09f001f2f1b06c547477b5199b69a872c79cd815470c95b417e45440dfa6e",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part2/ch12-memorizing-transformers.md",
+    "input_count": 2,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part2/ch12-memorizing-transformers.md",
+    "sha256": "e335254119535bf92178b2649d8e519d50092dcb4a32311913ae2ac3bdff1906",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part2/ch13-rag-to-memgpt.md",
+    "input_count": 1,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part2/ch13-rag-to-memgpt.md",
+    "sha256": "9228633dac335dd02c20b39cf185c824687b09ad901086d53101fcc3d9e7377b",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part2/ch17-do-lms-need-sleep.md",
+    "input_count": 1,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part2/ch17-do-lms-need-sleep.md",
+    "sha256": "4cd95640e64b71186f83bec857b9ac65ac243a93ca407af6ab27f86b495d485c",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part2/ch18-nested-learning-memory-caching.md",
+    "input_count": 3,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part2/ch18-nested-learning-memory-caching.md",
+    "sha256": "8bbac47d790fd53089d0e674a7340ba712c2da9f68b1b9ccb13fff2f60864e55",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part2/ch19-lora-and-model-editing.md",
+    "input_count": 5,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part2/ch19-lora-and-model-editing.md",
+    "sha256": "1e6a19f4c4a5298dcea77f4f32a03d0b023ebdd2a57d13e99cf3d7c9fa41a919",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part2/ch20-seal.md",
+    "input_count": 1,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part2/ch20-seal.md",
+    "sha256": "5312b4881de07c3992691511c0be57738a93bad4c83b9ba1148cd45c76cec3ba",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part2/ch21-lm-need-sleep.md",
+    "input_count": 4,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part2/ch21-lm-need-sleep.md",
+    "sha256": "b7d0a9ee6b0b23d376868d03ee170bd4708de8919821b7e420d045a5682c145a",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part2/ch22-falsifier-axis.md",
+    "input_count": 4,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part2/ch22-falsifier-axis.md",
+    "sha256": "2e472993a82b06591f0decd0ad1573cb6ea04a1b0336fdfeb81a5317973fbf1c",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part3/ch25-unified-cost-accounting.md",
+    "input_count": 2,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part3/ch25-unified-cost-accounting.md",
+    "sha256": "817d2ac8d865129e575ffb13f522bcd60b3d6c9d63cecb5b7053e11990442f16",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part3/ch27-is-it-promising.md",
+    "input_count": 5,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part3/ch27-is-it-promising.md",
+    "sha256": "5accd5132b2b07853c30e0c1f2a1ea47b6e8b7e90f2246f07c942cbd150b4997",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part3/ch28-scaling-law.md",
+    "input_count": 7,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part3/ch28-scaling-law.md",
+    "sha256": "d911a5f80ca8438f687fa37461b2b4a5ce25609ee1d3ebe3ec71d398b88d2c50",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:study-kr-stc/part3/ch30-limits-and-falsifiers.md",
+    "input_count": 3,
+    "kind": "authored-citation-discovery",
+    "path": "study-kr-stc/part3/ch30-limits-and-falsifiers.md",
+    "sha256": "286f737205c73ff2331b8b8b1231a323c993adad218f723ea2cc17a375cd8de8",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:notes/impl-availability.md",
+    "input_count": 8,
+    "kind": "authored-citation-discovery",
+    "path": "notes/impl-availability.md",
+    "sha256": "c792f4fa546a1ef18c3b2f9f8d3ca99ca551959672892a83069efcd4531d5d0d",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:notes/prereq-curriculum.md",
+    "input_count": 48,
+    "kind": "authored-citation-discovery",
+    "path": "notes/prereq-curriculum.md",
+    "sha256": "20118c8e8a6329bad8cd3dd6f878c96280eb3960734790fc792657223edd042c",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:dossier/stc-v2/OUTLOOK-REVIEW-2026-08-11.md",
+    "input_count": 1,
+    "kind": "authored-citation-discovery",
+    "path": "dossier/stc-v2/OUTLOOK-REVIEW-2026-08-11.md",
+    "sha256": "98971282a84d58305bae6ac26738646abbb9b70a8c226aa225c5b1589ce6e06c",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:audit/crossmodel/ch02-training-as-a-system.raw.md",
+    "input_count": 1,
+    "kind": "authored-citation-discovery",
+    "path": "audit/crossmodel/ch02-training-as-a-system.raw.md",
+    "sha256": "17ce119469b41ba5093a0baa90576feecc515a80423a7f8742a0714e6430c4d5",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:audit/crossmodel/ch03-online-learning-regret.raw.md",
+    "input_count": 1,
+    "kind": "authored-citation-discovery",
+    "path": "audit/crossmodel/ch03-online-learning-regret.raw.md",
+    "sha256": "5fa775f4955cef8ff2ca64ad228edf02fd9f7870b24cf1f479e451b5abd79af4",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:audit/crossmodel/ch11-continual-learning.raw.md",
+    "input_count": 2,
+    "kind": "authored-citation-discovery",
+    "path": "audit/crossmodel/ch11-continual-learning.raw.md",
+    "sha256": "de37f712ccec7455b8ba6010a0bd9c9d80bbc8679d33bebd3872ab2aa8801e89",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:audit/p2-residual-verify.md",
+    "input_count": 1,
+    "kind": "authored-citation-discovery",
+    "path": "audit/p2-residual-verify.md",
+    "sha256": "587fed7cc27fe8e49bf5125ac1cfee34d880738ab4871274b1464ef263c8a613",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:audit/p3b-continuity-report.md",
+    "input_count": 3,
+    "kind": "authored-citation-discovery",
+    "path": "audit/p3b-continuity-report.md",
+    "sha256": "0115b2e1616eea390aebd462f35281e2d6d0259198ab0b85193dde284a542f6b",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:audit/verify-batching-codex.raw.md",
+    "input_count": 2,
+    "kind": "authored-citation-discovery",
+    "path": "audit/verify-batching-codex.raw.md",
+    "sha256": "b1676c4af175b6571871d0a4ea9d78bf4f4376503d21fd08aec88bd8bc9c1920",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:audit/verify-batching-nl.md",
+    "input_count": 1,
+    "kind": "authored-citation-discovery",
+    "path": "audit/verify-batching-nl.md",
+    "sha256": "2e3df73609615a141fbcd192b1dcdafe61127fa3cad56e97f7bf1bcb4668b766",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:audit/verify-batching-titans.md",
+    "input_count": 1,
+    "kind": "authored-citation-discovery",
+    "path": "audit/verify-batching-titans.md",
+    "sha256": "3b821e77894d778fffb35e020a81bed728763b87172c568369dd4a7dc6f847f9",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:audit/w1-coverage-report.md",
+    "input_count": 2,
+    "kind": "authored-citation-discovery",
+    "path": "audit/w1-coverage-report.md",
+    "sha256": "ff6753f4680e89bbd94d00b6b1cbe166b2a5499f67f0fddadbd2bf1519e23f27",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:audit/w1-fixplan.md",
+    "input_count": 1,
+    "kind": "authored-citation-discovery",
+    "path": "audit/w1-fixplan.md",
+    "sha256": "244c7e50d62ecf2693af4923042eebb7224360cf177a7325dfd5810538777e33",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:audit/w1-notation-report.md",
+    "input_count": 1,
+    "kind": "authored-citation-discovery",
+    "path": "audit/w1-notation-report.md",
+    "sha256": "268c6a5c534e3f451f5f7af11143c4a63810e7e458a6513c0d129b66d682475a",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:audit/w1-reaudit-notation.md",
+    "input_count": 1,
+    "kind": "authored-citation-discovery",
+    "path": "audit/w1-reaudit-notation.md",
+    "sha256": "fe9277d20d3fdbba6ee4e8d063d254154f7ecfb07449e3d66f2479dbad3050f3",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:audit/w1-todo-resolutions.md",
+    "input_count": 4,
+    "kind": "authored-citation-discovery",
+    "path": "audit/w1-todo-resolutions.md",
+    "sha256": "51f01657d396f8bfc3807b35cb309f9ab1bf493d0121c46a29418d543b504cae",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "authored-citations:audit/w1-verify-answers.md",
+    "input_count": 3,
+    "kind": "authored-citation-discovery",
+    "path": "audit/w1-verify-answers.md",
+    "sha256": "efbdb067078ab7a9151330317dbc92cc503685fd4a6256ce93640a78491cd34c",
+    "source_date": ""
+  },
+  {
+    "expected_count": null,
+    "id": "repository-pdf-assets",
+    "input_count": 78,
+    "kind": "repository",
+    "path": "",
+    "sha256": null,
+    "source_date": ""
+  }
+]
