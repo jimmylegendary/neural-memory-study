@@ -45,6 +45,7 @@ jobs:
           fi
           python3 literature/tools/seed_metadata.py
           python3 literature/tools/migrate_catalog_v1_1.py
+          python3 literature/tools/migrate_catalog_v1_2.py
       - name: Build and check catalogue
         shell: bash
         run: |
