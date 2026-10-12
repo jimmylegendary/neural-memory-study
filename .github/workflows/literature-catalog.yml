@@ -23,29 +23,27 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 1
-      - name: Expand initial source bundle if present
+      - name: Assemble readable source files on initial publication
         shell: bash
         run: |
           python3 - <<'PY'
-          import base64, gzip, hashlib, json
           from pathlib import Path
-          root = Path.cwd().resolve()
-          payload = root / 'literature/bootstrap.json.gz.b64'
-          if payload.exists():
-              compressed = base64.b64decode(payload.read_text(), validate=False)
-              expected = (root / 'literature/bootstrap.sha256').read_text().strip()
-              if hashlib.sha256(compressed).hexdigest() != expected:
-                  raise SystemExit('Bootstrap checksum mismatch')
-              files = json.loads(gzip.decompress(compressed))
-              for name, text in files.items():
-                  path = (root / name).resolve()
-                  if not path.is_relative_to(root / 'literature'):
-                      raise SystemExit('Unsafe bootstrap path: ' + name)
-                  path.parent.mkdir(parents=True, exist_ok=True)
-                  path.write_text(text, encoding='utf-8')
-              payload.unlink()
-              (root / 'literature/bootstrap.sha256').unlink()
+          parts = Path('literature/tools/build_parts')
+          if parts.exists():
+              files = sorted(parts.glob('*.pyfrag'))
+              if [x.name for x in files] != ['01.pyfrag','02.pyfrag','03.pyfrag','04.pyfrag']:
+                  raise SystemExit('Incomplete source assembly')
+              source = ''.join(p.read_text(encoding='utf-8') for p in files)
+              compile(source, 'build_catalog.py', 'exec')
+              Path('literature/tools/build_catalog.py').write_text(source, encoding='utf-8')
+              for p in files:
+                  p.unlink()
+              parts.rmdir()
           PY
+          if [ ! -f literature/inputs/task_bibliography.tsv ]; then
+            python3 literature/tools/seed_task.py
+          fi
+          python3 literature/tools/seed_metadata.py
       - name: Build and check catalogue
         shell: bash
         run: |
