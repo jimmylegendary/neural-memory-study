@@ -1,0 +1,214 @@
+#!/usr/bin/env python3
+"""Rebuild the literature catalogue; stdlib only. Never discard unresolved observations.
+
+The canonical source is the union of input observations and explicitly enumerated
+repository bibliographies/assets. An arXiv lookup verifies metadata, NOT scientific
+results. Existing paper PDFs are indexed in place and never copied or relicensed.
+"""
+from __future__ import annotations
+import argparse, collections, csv, datetime as dt, difflib, hashlib, html, io, json
+import os, re, sqlite3, subprocess, sys, time, unicodedata
+from pathlib import Path
+from urllib.request import Request, urlopen
+from urllib.parse import urlencode, quote
+import xml.etree.ElementTree as ET
+
+VERSION = '1.0.0'
+ARXIV = re.compile(r'(?<![\d.])((?:\d{4}\.\d{4,5}|[a-z][a-z.-]+/\d{7})(?:v\d+)?)(?!\d)', re.I)
+NEWID = re.compile(r'^\d{4}\.\d{4,5}$')
+PAPER_KINDS = {'paper','preprint','article','inproceedings','conference','book','thesis','misc','repository-paper','unresolved-paper'}
+REPORT = Path('deliverables/neural-memory/reports/2026-10-06-sleep-time-compute/source/sources/references.json')
+
+def norm(s: str) -> str:
+    return re.sub(r'[^a-z0-9가-힣]+','',unicodedata.normalize('NFKC',s).casefold())
+
+def aid(s: str) -> str:
+    m=ARXIV.search(str(s or ''))
+    return re.sub(r'v\d+$','',m.group(1)) if m else ''
+
+def sha(data: bytes) -> str: return hashlib.sha256(data).hexdigest()
+def dump(path: Path, obj) -> None:
+    path.parent.mkdir(parents=True,exist_ok=True)
+    path.write_text(json.dumps(obj,ensure_ascii=False,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+def read_json(path: Path, default):
+    return json.loads(path.read_text(encoding='utf-8')) if path.is_file() else default
+
+def date_value(value: str) -> tuple[str,str]:
+    """Partial dates remain partial. Never infer a date from an arXiv number."""
+    s=str(value or '').strip()
+    m=re.search(r'(?<!\d)((?:19|20)\d{2})(?:[-./](\d{2})(?:[-./](\d{2}))?)?(?!\d)',s)
+    if not m: return '', 'unknown'
+    y,mo,day=m.groups()
+    try:
+        if day: dt.date(int(y),int(mo),int(day)); return f'{y}-{mo}-{day}','day'
+        if mo and 1<=int(mo)<=12: return f'{y}-{mo}','month'
+        if not mo: return y,'year'
+    except ValueError: pass
+    return '', 'unknown'
+
+def sort_key(p):
+    d=p['publication_date'] or ''
+    return (not bool(d),d+'-01'*(2-d.count('-')) if d else '9999-12-31',p['title'].casefold(),p['id'])
+
+def same_title(expected: str, actual: str) -> bool:
+    x,y=norm(expected),norm(actual)
+    if not x or not y: return False
+    if x==y: return True
+    if len(x)>=7 and (x in y or y in x): return True
+    ex=norm(expected.split(':')[0]); ac=norm(actual.split(':')[0])
+    if len(ex)>=3 and ex==ac: return True
+    return difflib.SequenceMatcher(None,x,y).ratio()>=0.83
+
+class Importer:
+    def __init__(self,root:Path,lit:Path):
+        self.root,self.lit=root,lit
+        self.rows=[]; self.sources={}; self.assets=[]; self.warnings=[]; self.manifest=read_json(lit/'inputs/source_manifest.json',{})
+    def source(self,key,path='',kind='repository',date='',expected=None):
+        if key not in self.sources:
+            p=self.root/path if path else None
+            self.sources[key]={'id':key,'path':path,'kind':kind,'source_date':date,'input_count':0,
+                               'sha256':sha(p.read_bytes()) if p and p.is_file() else None,
+                               'expected_count':expected}
+        return key
+    def add(self,source,**kw):
+        self.source(source)
+        row={k:'' for k in ['title','alias','reported_published','reported_updated','reported_arxiv','reported_url','topics','note','canonical_arxiv','source_date']}
+        row.update(kw); row['source_id']=source; row.setdefault('kind','paper')
+        self.sources[source]['input_count']+=1
+        row.setdefault('observation_id',source+':'+str(self.sources[source]['input_count']))
+        row['kind']=row.get('kind') or 'paper'; row['scope']=row.get('scope') or ('task' if source.startswith(('weekly-','initial-','report-','legacy-','precursor-')) else 'repository_foundation')
+        self.rows.append(row)
+    def load_task(self):
+        path=self.lit/'inputs/task_bibliography.tsv'
+        with path.open(encoding='utf-8') as f:
+            rows=list(csv.DictReader(f,delimiter='\t'))
+        for row in rows:
+            source=row.pop('source_id'); self.source(source,kind='recovered-task',date=row.get('source_date',''))
+            self.add(source,**row)
+        self.sources['task-input-file']={'id':'task-input-file','path':str(path.relative_to(self.root)),'kind':'input-container','source_date':'','input_count':0,'sha256':sha(path.read_bytes()),'expected_count':len(rows)}
+        snapshot=read_json(self.lit/'inputs/prior_report_references.json',[])
+        repo_ref=read_json(self.root/REPORT,[])
+        if repo_ref and snapshot != repo_ref:
+            self.warnings.append('The preserved report reference snapshot differs from the current repository copy; both are imported.')
+            for r in repo_ref: self.add('repository-report-current',title=r.get('title',''),alias=r.get('key',''),reported_arxiv=r.get('arxiv','') or '',reported_published=r.get('date',''),reported_updated=r.get('updated',''),reported_url=r.get('url',''),kind=r.get('type','paper'),note=r.get('note',''))
+        elif snapshot and not repo_ref:
+            self.warnings.append('The original report reference path is unavailable in this checkout; preserved reference snapshot was used.')
+    def load_corpus(self):
+        path=Path('research/ttt-efficient-corpus.json')
+        corpus=read_json(self.root/path,[])
+        if not corpus: self.warnings.append('TTT corpus unavailable in this checkout.')
+        self.source('repository-ttt-corpus',str(path),'curated-corpus',expected=len(corpus))
+        for r in corpus:
+            self.add('repository-ttt-corpus',title=r.get('name',''),alias=r.get('id',''),reported_arxiv=r.get('arxiv',''),reported_published=r.get('date',''),topics=','.join(filter(None,[r.get('axis',''),r.get('family','')])),note=r.get('claim',''),scope='repository_foundation')
+    def load_bibliographies(self):
+        paths=sorted(set(list(self.root.glob('**/*bibliography*.md'))+list(self.root.glob('**/*references*.bib'))+list(self.root.glob('**/*.bib'))))
+        for path in paths:
+            rel=path.relative_to(self.root)
+            if any(x in rel.parts for x in ('.git','literature','node_modules','.venv')): continue
+            text=path.read_text(encoding='utf-8',errors='replace')
+            source='bibliography:'+str(rel); self.source(source,str(rel),'authored-bibliography')
+            if path.suffix=='.bib':
+                for key,block in bib_entries(text):
+                    field=lambda name: bib_field(block,name)
+                    title=field('title') or key
+                    arxiv=aid(field('eprint') or field('url'))
+                    url=field('url') or ('https://doi.org/'+field('doi') if field('doi') else '')
+                    self.add(source,title=title,alias=key,reported_arxiv=arxiv,reported_url=url,reported_published=field('date') or field('year'),authors=field('author'),note='Imported BibTeX entry; original review claims were not independently reproduced.',doi=field('doi'))
+                continue
+            blocks=re.split(r'\n\s*\n',text)
+            seen=set()
+            for i,block in enumerate(blocks):
+                ids=list(dict.fromkeys(aid(m) for m in ARXIV.findall(block)))
+                if len(ids)>1 and '|' in block and len(block.splitlines())>1:
+                    blocks.extend([x for x in block.splitlines() if ARXIV.search(x)])
+                    continue
+                titled=re.findall(r'(?<!\*)\*([^*\n]{8,})\*(?!\*)',block)
+                for arxiv in ids:
+                    if (arxiv,block) in seen: continue
+                    seen.add((arxiv,block))
+                    title=titled[0].rstrip('.') if titled else ''
+                    if not title: title='arXiv:'+arxiv
+                    dates=re.findall(r'(?<!\d)(?:19|20)\d{2}-\d{2}(?:-\d{2})?',block)
+                    pub=dates[0] if dates and not re.search(r'\bv[2-9]\b',block[:block.find(dates[0])]) else ''
+                    self.add(source,title=title,reported_arxiv=arxiv,reported_published=pub,reported_url='https://arxiv.org/abs/'+arxiv,note=block.strip(),source_locator=f'paragraph:{i+1}')
+                if not ids and titled:
+                    title=titled[0].rstrip('.')
+                    doi_m=re.search(r'(?:doi\.org/|doi:\s*)(10\.\d{4,9}/[^\s<>]+)',block,re.I)
+                    url_m=re.search(r'https?://[^\s<>]+',block)
+                    if not (doi_m or re.search(r'\b(?:19|20)\d{2}\b',block)): continue
+                    self.add(source,title=title,doi=doi_m.group(1).rstrip('.,)*') if doi_m else '',reported_url=url_m.group(0).rstrip('.,)*') if url_m else '',reported_published=date_value(block)[0],note=block.strip())
+    def load_authored_mentions(self):
+        # Authored citations only, not references inside downloaded papers or translations.
+        pattern=re.compile(r'(?:arxiv\.org/(?:abs|pdf|html)/|arxiv\s*:\s*)(\d{4}\.\d{4,5}(?:v\d+)?)',re.I)
+        for folder in ['research','study-kr','study-kr-stc','notes','docs','dossier','claims','audit','asi-blueprint','multiarch']:
+            base=self.root/folder
+            if not base.is_dir(): continue
+            for path in sorted(base.rglob('*.md')):
+                if 'bibliography' in path.name.lower() or path.name=='ttt-efficient-corpus.md': continue
+                rel=str(path.relative_to(self.root))
+                text=path.read_text(encoding='utf-8',errors='replace')
+                matches={aid(m.group(1)):text.count('\n',0,m.start())+1 for m in pattern.finditer(text)}
+                if not matches: continue
+                source='authored-citations:'+rel;self.source(source,rel,'authored-citation-discovery')
+                for a,line in sorted(matches.items()):
+                    self.add(source,title='arXiv:'+a,reported_arxiv=a,reported_url='https://arxiv.org/abs/'+a,source_locator=f'line:{line}',note='Identifier explicitly cited in an authored repository document. This occurrence is not a full-text-review assertion.',scope='repository_mention')
+    def load_assets(self):
+        base=self.root/'papers'
+        if not base.is_dir():
+            self.warnings.append('papers/ unavailable; original-PDF inventory not checked in this checkout.'); return
+        for p in sorted(base.rglob('*')):
+            if not p.is_file() or p.suffix.lower() not in ('.pdf','.txt'): continue
+            rel=str(p.relative_to(self.root)); a=aid(p.name)
+            asset={'path':rel,'arxiv_id':a,'type':p.suffix[1:],'size_bytes':p.stat().st_size,'sha256':None,'rights':'existing_repository_asset_not_relicensed','identifier_basis':'filename_arxiv_id' if a else 'filename_only','content_identity_verified':False}
+            h=hashlib.sha256()
+            with p.open('rb') as f:
+                for chunk in iter(lambda:f.read(1024*1024),b''): h.update(chunk)
+            asset['sha256']=h.hexdigest(); self.assets.append(asset)
+            if p.suffix.lower()!='.pdf': continue
+            title='arXiv:'+a if a else p.stem.replace('_',' ')
+            txt=p.with_suffix('.txt')
+            if txt.exists():
+                head=txt.read_text(encoding='utf-8',errors='replace')[:1600]
+                lines=[l.strip() for l in head.splitlines() if l.strip()]
+                usable=[l for l in lines[:18] if len(l)>12 and not re.search(r'arxiv:|https?://|@|^\d|^abstract|^published|^under review',l,re.I)]
+                if usable: title=usable[0]
+            self.add('repository-pdf-assets',title=title,reported_arxiv=a,reported_url='https://arxiv.org/abs/'+a if a else '',note='An original PDF already exists in papers/. Header text is only a fallback label, not identity verification.',source_locator=rel,scope='repository_asset')
+    def load(self):
+        self.load_task(); self.load_corpus(); self.load_bibliographies(); self.load_authored_mentions(); self.load_assets()
+        ids=[r['observation_id'] for r in self.rows]
+        if len(set(ids))!=len(ids): raise ValueError('Duplicate observation IDs')
+        return self
+
+def bib_entries(text):
+    pos=0
+    while True:
+        m=re.search(r'@([A-Za-z]+)\s*\{\s*([^,]+),',text[pos:])
+        if not m: return
+        start=pos+m.end(); level=1; end=start
+        while end<len(text) and level:
+            if text[end]=='{' and (end==0 or text[end-1]!='\\'): level+=1
+            elif text[end]=='}' and (end==0 or text[end-1]!='\\'): level-=1
+            end+=1
+        if level: return
+        yield m.group(2).strip(),text[start:end-1]
+        pos=end
+
+def bib_field(block,name):
+    m=re.search(r'\b'+name+r'\s*=\s*',block,re.I)
+    if not m: return ''
+    i=m.end()
+    if i>=len(block): return ''
+    c=block[i]
+    if c=='{':
+        level=1;j=i+1
+        while j<len(block) and level:
+            if block[j]=='{' and block[j-1]!='\\': level+=1
+            if block[j]=='}' and block[j-1]!='\\': level-=1
+            j+=1
+        return block[i+1:j-1].replace('{','').replace('}','').strip()
+    if c=='"':
+        j=i+1
+        while j<len(block) and not (block[j]=='"' and block[j-1]!='\\'): j+=1
+        return block[i+1:j].strip()
+    return block[i:].split(',')[0].strip()
+
