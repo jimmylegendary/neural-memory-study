@@ -1,0 +1,105 @@
+2026-08-17|2026-08-10|MESA: Task-Adaptive Multi-Structure Evidence Selection for Long-Horizon Agent Memory|MESA|2608.10108|episodic,routing
+2026-08-17|2026-08-03|RoMeRL: Balancing Feedback Coverage and the Memory-Reward Trap in Self-Evolving Agent Memory via Reduced-Order Utility States|RoMeRL|2608.02508|credit,self-improvement
+2026-08-17|2026-08-07|CommitKV: Lifecycle-Aware KV Cache Compression via Commit Transitions for Multi-Turn Agents|CommitKV|2608.07855|kv,lifecycle
+2026-08-17|2026-08-07|Controlled Memory Interference|Controlled Memory Interference|2608.07622|interference,continual
+2026-08-17|2026-08-07|Agent Memory Distillation|Agent Memory Distillation|2608.07169|distillation,skills
+2026-08-17|2026-08-07|Explicit, Not Longer: What Makes Epistemic Stance Survive Memory Compression|Explicit, Not Longer|2608.06953|compression,provenance
+2026-08-17|2026-08-03|When Memory Becomes Authority|AuthMem-Bench|2608.01679|authority,verification
+2026-08-17|2026-08-08|SuperLocalMemory 4.0|SuperLocalMemory|2608.08253|transaction,verification
+2026-08-17|2026-08-05|MemoryCPT|MemoryCPT|2608.04843|consolidation,lora,cost
+2026-08-17|2026-08-06|Activity Frames|Activity Frames|2608.05784|episodic,systems
+2026-08-24|2026-08-18|Chain-of-Experience for Continual LLM Improvement|Chain-of-Experience|2608.18027|continual,self-improvement
+2026-08-24|2026-08-18|On the Fragility of Self-Improving Agents|Fragility|2608.18066|evaluation,self-improvement
+2026-08-24|2026-08-20|Can Agent Memory Systems Track Evolving State?|StateMem|2608.19652|state,validity
+2026-08-24|2026-08-20|Remember, Verify, or Ask? Memory Commitment Boundary|MCB|2608.19564|admission,verification
+2026-08-24|2026-08-20|MemTrapBench|MemTrapBench|2608.20202|interference,evaluation
+2026-08-24|2026-08-20|Credit Without Ground Truth|Credit Without Ground Truth|2608.19760|credit,replay
+2026-08-24|2026-08-20|Break It Down, Pass It On|Break It Down|2608.20274|skills,transfer
+2026-08-24|2026-08-20|ReCache|ReCache|2608.19662|kv,serving
+2026-08-24|2026-08-17|The Working Set of a Coding Agent|Working Set|2608.16630|parametric,working-set
+2026-08-24|2026-08-20|Thinkingbox|Thinkingbox|2608.19741|evaluation,repeatability
+2026-08-24|2026-08-15|From LLM Inference to Agentic Workloads: A Systems Characterization|AgentSysBench|2608.15127|systems,background
+2026-08-24|2026-08-12|A Full-Stack Characterization of HBF for KV-Centric LLM Serving|HBF Sucks?|2608.11668|hbf,kv
+2026-08-24|2026-08-13|Potential Applications of HBF in LLM Serving|Potential Applications of HBF|2608.13127|hbf,weights
+2026-08-24|2026-08-14|Exploring HBF for Modern LLM Inference|Exploring HBF|2608.13868|hbf,systems
+2026-08-31|2026-08-25|Recursive Experiential-Working Memory Evolution for Long-Horizon Agent Harnesses|Recuris|2608.24876|self-improvement,verification
+2026-08-31|2026-08-27|WikiSkill: Compiling Agent Experience into Persistent Knowledge for Skill Evolution|WikiSkill|2608.27454|skills,consolidation
+2026-08-31|2026-08-27|PILOT in the Loop: Live Self-Improvement for Long-Horizon Agents|PILOT|2608.26530|self-improvement,online
+2026-08-31|2026-08-26|Learning What to Share and What to Personalize: Hierarchical Strategy Co-Evolution for Agent Memory|HiPS|2608.25329|personalization,scope
+2026-08-31|2026-08-26|PolyMemDB: A Polyglot Database System for AI Memory Management|PolyMemDB|2608.25577|database,provenance
+2026-08-31|2026-08-25|Metaⁿ: Recursive Self-Improvement through Emergent Depth|Meta-n|2608.24735|self-improvement,meta-learning
+2026-08-31|2026-08-25|FLINT: Efficiently Leveraging High Bandwidth Flash for Capacity-Scalable LLM Inference Acceleration|FLINT|2608.25062|hbf,background
+2026-08-31|2026-08-12|Hardware-Managed Heterogeneous High-Bandwidth Memory and Flash in LLM Inference Systems|HMA||hbf,hbm
+2026-09-07|2026-08-30|Hindsight Memory-PRM: Supervising Memory Management with Auditable Hindsight Credit|Hindsight Memory-PRM||credit,verification
+2026-09-07|2026-08-31|Invalidation Contracts for Cross-Episode Agent Memory|Invalidation Contracts||validity,invalidation
+2026-09-07|2026-09-01|Agent Memory Is a Surface for Endogenous Authorization Laundering|Endogenous Authorization Laundering||authority,security
+2026-09-07|2026-09-01|The Memory Trust Gap: Capability-Dependent Failures in Persistent-Memory Agents|Memory Trust Gap||validity,security
+2026-09-07|2026-09-03|Fresh Memory, Stale Plans: Dependency-Scoped Validation for Distributed LLM-Agent Memory|PlanFence||invalidation,dependency
+2026-09-07|2026-09-02|What Is Worth Representing? Representational Empowerment for Continual Model Construction|Representational Empowerment||continual,selection
+2026-09-07|2026-08-29|TRACER: Per-Tool Context Retention for LLM Agents via Consequence-Attributed Reinforcement Learning|TRACER||compression,credit
+2026-09-07|2026-08-31|Learning What to Retain: Gated-Memory Routing for Efficient Collaboration in Multi-Agent LLM Systems|Gated-Memory Routing||routing,multi-agent
+2026-09-07|2026-09-01|Making Prospective Memory SLM-Shaped: Typed Intention Stores for Small-Model Agents|Typed Intention Store||prospective,state
+2026-09-07|2026-09-02|Beyond Context Windows: Persistent Discovery Context for Data-Centric Agents|Persistent Discovery Context||episodic,discovery
+2026-09-07|2026-08-29|Selective Forgetting: A Graph-Based Memory Framework for Long-Term LLM Agents|Selective Forgetting||forgetting,graph
+2026-09-07|2026-08-30|Auditing Harness Tampering in Self-Improving Agents|Harness Tampering||security,self-improvement
+2026-09-07|2026-09-02|HeadWiseKV|HeadWiseKV||kv,compression
+2026-09-07|2026-09-03|SGD-KV|SGD-KV||kv,compression
+2026-09-14|2026-09-10|Grounding Agent Memory: Environment-Probing Curation for Enterprise Agents|Grounding Agent Memory||grounding,verification
+2026-09-14|2026-09-08|MeClear: Cooperative Game-Theoretic Attribution and Risk-Aware Memory Clearance for Long-Horizon LLM Agents|MeClear||credit,activation
+2026-09-14|2026-09-08|MemForest: Efficient Agent Memory Management via EventTree Partitioning and Progressive Merging|MemForest||consolidation,compression
+2026-09-14|2026-09-09|UNISON: A Co-Designed Near-Memory Scheduler of Session KV Residency for LLM Agents|UNISON||kv,scheduling
+2026-09-14|2026-09-09|HBFSim: Fast and Faithful Simulation of High-Bandwidth Flash Under Real GPU Execution|HBFSim||hbf,simulation
+2026-09-14|2026-09-10|Memory Compression for High-Fanout Agent Sandboxes|AgentZip||systems,background
+2026-09-21|2026-09-16|Infinite-Parameter LLMs: Generating and Adapting Weights from Live Data|Infinite-Parameter LLMs|2609.18842|parametric,lora
+2026-09-21|2026-09-14|Dream-RSI: Recursive Self-Improvement through Evolving Worlds|Dream-RSI|2609.14858|dreaming,replay
+2026-09-21|2026-09-14|RSIAgent: Autonomous Exploration for Recursive Self-improvement in New Environments|RSIAgent|2609.15364|self-improvement,causal
+2026-09-21|2026-09-17|Correct Now, Insufficient Later: Auditing Update Sufficiency in Context Compression|Correct Now, Insufficient Later|2609.20045|compression,update-sufficiency
+2026-09-21|2026-09-14|AgentKV: Phase-Aware KV Eviction for Agentic LLMs|AgentKV|2609.14872|kv,lifecycle
+2026-09-21|2026-09-16|HBFlex: A Flexible Memory System for Bridging Fine-Grained LLM States and Coarse-Grained HBF Parallel Execution|HBFlex|2609.18675|hbf,kv
+2026-09-21|2026-09-14|Trillion-Parameter MoE in a Box: Decoupling Memory Provisioning with High-Bandwidth Flash|Trillion-Parameter MoE in a Box|2609.15636|hbf,moe
+2026-09-21|2026-09-12|When Malicious Instructions Persist: Persistent Memory Poisoning Attack on Harness-Based Agents|PMPA|2609.13889|security,poisoning
+2026-09-21|2026-09-16|Position: It is Time to Virtualize Foundation Models with a Self-evolving Operating System Layer|FMOS|2609.19203|systems,position
+2026-09-21|2026-09-16|Cognitive Extensions for Dual-Process Language Agents|Cognitive Extensions|2609.19128|control,evaluation
+2026-09-28|2026-09-20|RPMem: Learning Long-Term Recurrent Parametric Memory Across Sessions for LLM Agents|RPMem|2609.23466|parametric,recurrent,lora
+2026-09-28|2026-09-22|MemoryAthena: Adaptive Routing over Latent and Generated Memories|MemoryAthena|2609.25853|latent,routing
+2026-09-28|2026-09-23|Just-in-Time Memory: Learning to Curate Task-Adaptive Memory for LLM Agents|JitMem|2609.27334|consolidation,jit
+2026-09-28|2026-09-23|StateComp: Learning When to Compress History in Long Horizon Agents|StateComp|2609.27298|compression,scheduling
+2026-09-28|2026-09-23|DRSR: Learning Set-Level Deletion Risk for Efficient Long-Horizon Agents|DRSR|2609.27276|forgetting,credit
+2026-09-28|2026-09-23|Stable Geometry with Divergent Task Evidence for Efficient Long-Horizon Agent Compression|GEM|2609.27332|compression,evidence
+2026-09-28|2026-09-21|MemCalib: Benchmarking and Optimizing Memory Use in LLM Agents|MemCalib|2609.24259|influence,calibration
+2026-09-28|2026-09-21|Jev-Mem: System-One-Controlled Agentic Memory for Efficient AI Agents|Jev-Mem|2609.23986|routing,systems
+2026-09-28|2026-09-22|Recursive self-improvement of AI research agents|AIDE2|2609.26457|self-improvement
+2026-09-28|2026-09-21|RRSI: Regularized Recursive Self-Improvement|RRSI|2609.24972|self-improvement,regularization
+2026-09-28|2026-09-23|Memory Attention|Memory Attention|2609.28399|memory-table,offload
+2026-09-28|2026-09-24|MILO|MILO||kv,low-rank
+2026-09-28|2026-09-24|Where Does Exactly-Once Live?|LIMBO|2609.29095|transaction,idempotency
+2026-09-28|2026-09-24|LLM Agents Can Easily Tamper With Their Own Traces|Trace Tampering|2609.30266|security,audit
+2026-09-28|2026-09-21|DolphinBench: Mapping the Pareto Frontier of Agent Memory|DolphinBench|2609.24971|evaluation,cost
+2026-10-05|2026-09-28|KV-streams for Efficient Compaction in Agentic RL|KV-streams|2609.35893|kv,recurrent
+2026-10-05|2026-09-28|PReCache|PReCache|2609.35680|kv,lora
+2026-10-05|2026-09-29|ATTUNER: Recomputation-Free KV Cache Reuse via Query-Side Adaptation|ATTUNER|2609.36722|kv,lora
+2026-10-05|2026-09-29|AREX-2|AREX-2|2609.36887|self-improvement,reflection
+2026-10-05|2026-09-30|MemCodex: Self-Programming Hierarchical Memory for Language Agents|MemCodex|2609.39765|memory-program,self-improvement
+2026-10-05|2026-09-30|Schema: Discovering Unknown Environments via Agentic Program Induction|Schema|2609.39943|world-model,program
+2026-10-05|2026-10-01|Beyond Memory: Harnessing Long-Horizon Agents with Explicit Belief States|PoS|2609.40334|belief,state
+2026-10-05|2026-10-01|Mem++|Mem++|2609.39246|non-destructive,jit
+2026-10-05|2026-10-01|ActiveSaddler|ActiveSaddler|2609.40515|curriculum,scheduling
+2026-10-05|2026-10-01|PACE|PACE|2609.39185|security,authority
+2026-10-05|2026-09-27|EfficientAgent|EfficientAgent|2609.34901|kv,working-set
+2026-10-12|2026-10-06|Lachesis: Lifetime-Aware KV Cache Placement for Agent Serving across HBM and High-Bandwidth Flash|Lachesis||hbf,lifetime
+2026-10-12|2026-10-08|DPPM: Dual-Path Parametric Memory for Personalized Language Models|DPPM||parametric,recurrent
+2026-10-12|2026-10-08|Which Skill to Distill? SGUID: Selecting a Compact Skill Bank for Model-Skill Co-Evolution|SGUID||distillation,promotion
+2026-10-12|2026-10-08|REMORY: Learning Residual Memory for Context Compaction|REMORY||latent,compression
+2026-10-12|2026-10-08|Rehearse Everything, Remember Nothing: Attic-KV Rehearses What Will Be Read|Attic-KV||rehearsal,kv
+2026-10-12|2026-10-07|EngramEdit: Decoupled Knowledge Updates in LLMs through Conditional Memory|EngramEdit|2610.10533|parametric,editing
+2026-10-12|2026-10-08|LadderEdit|LadderEdit|2610.11160|lora,compression
+2026-10-12|2026-10-08|CogMem|CogMem|2610.11314|graph,provenance
+2026-10-12|2026-10-08|QGMem|QGMem|2610.11920|graph,jit
+2026-10-12|2026-10-08|Gated Memory|Gated Memory|2610.11270|admission,verification
+2026-10-12|2026-10-08|AdaptEvo|AdaptEvo|2610.11354|self-improvement,verifier
+2026-10-12|2026-10-08|VFold|VFold|2610.12338|kv,compression
+2026-10-12|2026-10-08|LLM Agents as Resilience Engineers|LLM Agents as Resilience Engineers|2610.11260|checkpoint,systems
+2026-10-12|2026-10-06|MINDSET: Energy-based Schema Evolution for Long Conversational Agent Memory|MINDSET||state,lifecycle
+2026-10-12|2026-10-06|Beyond Corrected Memory: Execution Consistency in Multi-Agent Systems|Beyond Corrected Memory||verification,multi-agent
+2026-10-12|2026-10-06|RippleCP: Measuring Counterfactual Checkpoint Advantage in Coding Agents|RippleCP|2610.09088|checkpoint,credit
+2026-10-12|2026-10-06|Persistent Memory in Multi-Agent LLM Inference|Persistent Memory in Multi-Agent LLM Inference||persistent,evaluation
