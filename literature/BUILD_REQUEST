@@ -1,4 +1,6 @@
-2026-10-12 initial complete source import
-Scope: recovered early task bibliographies, 9 weekly digests, 55 report references,
-legacy corrections, existing TTT corpus, explicit repository bibliographies and PDF inventory.
-Build only this catalogue; preserve all original study/report artifacts.
+2026-10-12 catalogue v1.1 audit build
+Preserve all 217 original task observations and existing repository sources.
+Split consecutive bibliography bullets; preserve multiline classical-paper titles.
+Correct PReCache, AREX-2 and PACE by primary arXiv identity.
+Verify short CogMem/QGMem method aliases against primary abstracts.
+Export a single global chronological catalogue plus a task-only chronological view.
