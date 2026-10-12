@@ -13,7 +13,7 @@ from urllib.request import Request, urlopen
 from urllib.parse import urlencode, quote
 import xml.etree.ElementTree as ET
 
-VERSION = '1.0.0'
+VERSION = '1.1.0'
 ARXIV = re.compile(r'(?<![\d.])((?:\d{4}\.\d{4,5}|[a-z][a-z.-]+/\d{7})(?:v\d+)?)(?!\d)', re.I)
 NEWID = re.compile(r'^\d{4}\.\d{4,5}$')
 PAPER_KINDS = {'paper','preprint','article','inproceedings','conference','book','thesis','misc','repository-paper','unresolved-paper'}
@@ -115,14 +115,14 @@ class Importer:
                     url=field('url') or ('https://doi.org/'+field('doi') if field('doi') else '')
                     self.add(source,title=title,alias=key,reported_arxiv=arxiv,reported_url=url,reported_published=field('date') or field('year'),authors=field('author'),note='Imported BibTeX entry; original review claims were not independently reproduced.',doi=field('doi'))
                 continue
-            blocks=re.split(r'\n\s*\n',text)
+            blocks=re.split(r'\n\s*\n|\n(?=\s*[-+]\s+)',text)
             seen=set()
             for i,block in enumerate(blocks):
                 ids=list(dict.fromkeys(aid(m) for m in ARXIV.findall(block)))
                 if len(ids)>1 and '|' in block and len(block.splitlines())>1:
                     blocks.extend([x for x in block.splitlines() if ARXIV.search(x)])
                     continue
-                titled=re.findall(r'(?<!\*)\*([^*\n]{8,})\*(?!\*)',block)
+                titled=[' '.join(t.split()) for t in re.findall(r'(?<!\*)\*([^*]{8,})\*(?!\*)',block)]
                 for arxiv in ids:
                     if (arxiv,block) in seen: continue
                     seen.add((arxiv,block))
@@ -226,7 +226,7 @@ def parse_atom(data,checked):
         rawid=text('a:id'); a=aid(rawid)
         if not a: continue
         ver=re.search(r'v(\d+)$',rawid)
-        out[a]={'arxiv_id':a,'title':text('a:title'),'authors':[x.findtext('a:name',default='',namespaces=NS) for x in entry.findall('a:author',NS)],'published':text('a:published'),'updated':text('a:updated'),'latest_version':int(ver.group(1)) if ver else None,'doi':text('x:doi'),'journal_ref':text('x:journal_ref'),'comment':text('x:comment'),'categories':[x.attrib.get('term','') for x in entry.findall('a:category',NS)],'url':'https://arxiv.org/abs/'+a,'checked_at':checked,'method':'arxiv_atom_metadata','status':'ok'}
+        out[a]={'arxiv_id':a,'title':text('a:title'),'summary':text('a:summary'),'authors':[x.findtext('a:name',default='',namespaces=NS) for x in entry.findall('a:author',NS)],'published':text('a:published'),'updated':text('a:updated'),'latest_version':int(ver.group(1)) if ver else None,'doi':text('x:doi'),'journal_ref':text('x:journal_ref'),'comment':text('x:comment'),'categories':[x.attrib.get('term','') for x in entry.findall('a:category',NS)],'url':'https://arxiv.org/abs/'+a,'checked_at':checked,'method':'arxiv_atom_metadata','status':'ok'}
     return out
 
 def parse_abs(data,a,checked):
@@ -249,7 +249,7 @@ def parse_abs(data,a,checked):
     return {'arxiv_id':a,'title':title,'authors':metas.get('citation_author',[]),'published':published,'updated':versions[-1]['date'] if versions else '', 'latest_version':versions[-1]['version'] if versions else None,'versions':versions,'doi':metas.get('citation_doi',[''])[0],'url':'https://arxiv.org/abs/'+a,'checked_at':checked,'method':'arxiv_abstract_metadata','status':'ok'}
 
 def enrich(ids,cache,checked,deadline_seconds=420):
-    errors=[]; start=time.monotonic(); todo=[a for a in sorted(ids) if cache.get(a,{}).get('checked_at')!=checked or cache.get(a,{}).get('status')!='ok' or cache.get(a,{}).get('method')=='arxiv_search_metadata']
+    errors=[]; start=time.monotonic(); todo=[a for a in sorted(ids) if cache.get(a,{}).get('checked_at')!=checked or cache.get(a,{}).get('status')!='ok' or cache.get(a,{}).get('method')=='arxiv_search_metadata' or 'summary' not in cache.get(a,{})]
     for i in range(0,len(todo),20):
         if time.monotonic()-start>deadline_seconds: break
         batch=todo[i:i+20]; url='https://export.arxiv.org/api/query?'+urlencode({'id_list':','.join(batch),'max_results':len(batch)})
@@ -330,7 +330,8 @@ def build_publications(rows,cache,assets,resolutions):
         informative=sorted(set(r['title'] for r in obs if r.get('title') and not r['title'].lower().startswith('arxiv:') and r.get('scope')!='repository_asset'))
         title=max(informative or titles,key=len) if titles else pid
         title_inputs=informative+aliases
-        is_match=m.get('status')=='ok' and (not informative or any(same_title(t,m.get('title','')) for t in title_inputs))
+        alias_in_abstract=any(len(alias)>=4 and len(alias)<=24 and re.search(r'(?<![\w-])'+re.escape(alias)+r'(?![\w-])',m.get('summary',''),re.I) for alias in aliases if alias not in ('Memory','Agent','Sleep','Graph'))
+        is_match=m.get('status')=='ok' and (not informative or any(same_title(t,m.get('title','')) for t in title_inputs) or alias_in_abstract)
         if is_match: title=m['title']; status='primary_metadata_verified'
         elif m.get('status')=='ok': status='identity_conflict'
         elif a: status='metadata_pending'
@@ -429,7 +430,8 @@ def write_outputs(lit,pubs,imp,corrections,cache,network_errors,checked,commit):
             lines.append(f"| {d} | {title} | {p['arxiv_id'] or p['doi'] or '미확정'} | {p['updated_at'] or '미확인'} | {p['verification_status']} |")
         return '\n'.join(lines)
     header=f'# 논문 발행일순 대장\n\n기준일 {checked} · 논문 {len(paper)}건 · task 고유 논문 후보 {len(task)}건 · 비논문 자료 {len(others)}건 별도.\n\n정렬은 확인된 arXiv v1/발행처 최초 공개일을 우선 사용한다. **(기록값)**은 과거 요약에 적힌 미검증 날짜이며, 월/연도만 아는 날짜에 일을 만들어 넣지 않는다. 수정일은 별도 열이다. 메타데이터 확인은 본문·성과 재현을 뜻하지 않는다.\n\n[검색 화면](index.html) · [SQLite](data/papers.sqlite) · [CSV](data/papers.csv) · [누락 대조](coverage.json) · [미검증 대장](UNRESOLVED.md)\n\n'
-    (lit/'CHRONOLOGICAL.md').write_text(header+'## 이 task에서 회수한 논문\n\n'+table(task)+'\n\n## 선행 저장소 문헌 (위 task 목록과 중복 제거)\n\n'+table([p for p in paper if 'task' not in p['scopes']])+'\n',encoding='utf-8')
+    (lit/'CHRONOLOGICAL.md').write_text(header+'## 전체 논문 — 발행일순\n\n'+table(paper)+'\n',encoding='utf-8')
+    (lit/'TASK_CHRONOLOGICAL.md').write_text(header+'## 이 task의 회수 문헌만 — 발행일순\n\n'+table(task)+'\n',encoding='utf-8')
     pending=[p for p in paper if p['verification_status'] not in ('primary_metadata_verified','publisher_metadata_verified')]
     (lit/'UNRESOLVED.md').write_text('# 미검증·식별자 충돌 대장\n\n검색 실패는 논문 부재의 증명이 아니다. 항목은 삭제하지 않는다. 과거 제목/ID는 observations에, 조회된 다른 제목은 metadata_candidate에 보존한다.\n\n'+table(pending)+'\n',encoding='utf-8')
     (out/'schema.sql').write_text(SCHEMA,encoding='utf-8')

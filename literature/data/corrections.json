@@ -10,6 +10,22 @@
   {
     "basis": "explicit_title_or_alias_resolution",
     "checked_at": "2026-10-12",
+    "observation_id": "obs-0183",
+    "reported_arxiv": "2609.35680",
+    "resolved_arxiv": "2609.34054",
+    "title": "PReCache"
+  },
+  {
+    "basis": "explicit_title_or_alias_resolution",
+    "checked_at": "2026-10-12",
+    "observation_id": "obs-0185",
+    "reported_arxiv": "2609.36887",
+    "resolved_arxiv": "2609.38288",
+    "title": "AREX-2"
+  },
+  {
+    "basis": "explicit_title_or_alias_resolution",
+    "checked_at": "2026-10-12",
     "observation_id": "obs-0187",
     "reported_arxiv": "2609.39943",
     "resolved_arxiv": "2609.39140",
@@ -38,6 +54,14 @@
     "reported_arxiv": "2609.40515",
     "resolved_arxiv": "2610.00906",
     "title": "ActiveSaddler"
+  },
+  {
+    "basis": "explicit_title_or_alias_resolution",
+    "checked_at": "2026-10-12",
+    "observation_id": "obs-0191",
+    "reported_arxiv": "2609.39185",
+    "resolved_arxiv": "2610.01349",
+    "title": "PACE"
   },
   {
     "basis": "explicit_title_or_alias_resolution",
@@ -78,53 +102,5 @@
     "reported_arxiv": "2609.09902",
     "resolved_arxiv": "2609.09800",
     "title": "HBFSim: Fast and Faithful Simulation of High-Bandwidth Flash Under Real GPU Execution"
-  },
-  {
-    "basis": "explicit_title_or_alias_resolution",
-    "checked_at": "2026-10-12",
-    "observation_id": "bibliography:study-kr/back/90-bibliography.md:2",
-    "reported_arxiv": "2504.13173",
-    "resolved_arxiv": "2501.00663",
-    "title": "Titans: Learning to Memorize at Test Time"
-  },
-  {
-    "basis": "explicit_title_or_alias_resolution",
-    "checked_at": "2026-10-12",
-    "observation_id": "bibliography:study-kr/back/90-bibliography.md:3",
-    "reported_arxiv": "2505.23735",
-    "resolved_arxiv": "2501.00663",
-    "title": "Titans: Learning to Memorize at Test Time"
-  },
-  {
-    "basis": "explicit_title_or_alias_resolution",
-    "checked_at": "2026-10-12",
-    "observation_id": "bibliography:study-kr/back/90-bibliography.md:4",
-    "reported_arxiv": "2511.07343",
-    "resolved_arxiv": "2501.00663",
-    "title": "Titans: Learning to Memorize at Test Time"
-  },
-  {
-    "basis": "explicit_title_or_alias_resolution",
-    "checked_at": "2026-10-12",
-    "observation_id": "bibliography:study-kr/back/90-bibliography.md:5",
-    "reported_arxiv": "2512.24695",
-    "resolved_arxiv": "2501.00663",
-    "title": "Titans: Learning to Memorize at Test Time"
-  },
-  {
-    "basis": "explicit_title_or_alias_resolution",
-    "checked_at": "2026-10-12",
-    "observation_id": "bibliography:study-kr/back/90-bibliography.md:6",
-    "reported_arxiv": "2606.03979",
-    "resolved_arxiv": "2501.00663",
-    "title": "Titans: Learning to Memorize at Test Time"
-  },
-  {
-    "basis": "explicit_title_or_alias_resolution",
-    "checked_at": "2026-10-12",
-    "observation_id": "bibliography:study-kr/back/90-bibliography.md:7",
-    "reported_arxiv": "2605.26099",
-    "resolved_arxiv": "2501.00663",
-    "title": "Titans: Learning to Memorize at Test Time"
   }
 ]

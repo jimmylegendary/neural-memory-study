@@ -35,11 +35,31 @@
     "Attic-KV": "2610.12133",
     "MINDSET": "2610.08586",
     "Beyond Corrected Memory": "2610.08101",
-    "Persistent Memory in Multi-Agent LLM Inference": "2610.07782"
+    "Persistent Memory in Multi-Agent LLM Inference": "2610.07782",
+    "PReCache": "2609.34054",
+    "AREX-2": "2609.38288",
+    "PACE": "2610.01349"
   },
   "dois": {},
   "urls": {
     "HMA": "https://ora.ox.ac.uk/objects/uuid%3Aa9f80041-ff2e-4714-9bc4-51c513604d36"
   },
-  "publisher_metadata": {}
+  "publisher_metadata": {},
+  "resolution_evidence": {
+    "PReCache": {
+      "url": "https://arxiv.org/abs/2609.34054",
+      "checked_at": "2026-10-12",
+      "basis": "primary arXiv title/abstract; old 2609.35680 resolves to a different field"
+    },
+    "AREX-2": {
+      "url": "https://arxiv.org/abs/2609.38288",
+      "checked_at": "2026-10-12",
+      "basis": "primary arXiv title/abstract; old 2609.36887 is WEFT, a different work"
+    },
+    "PACE": {
+      "url": "https://arxiv.org/abs/2610.01349",
+      "checked_at": "2026-10-12",
+      "basis": "primary arXiv title/abstract; old 2609.39185 is a different work"
+    }
+  }
 }

@@ -146,7 +146,7 @@
   {
     "expected_count": null,
     "id": "bibliography:study-kr/back/90-bibliography.md",
-    "input_count": 75,
+    "input_count": 100,
     "kind": "authored-bibliography",
     "path": "study-kr/back/90-bibliography.md",
     "sha256": "236ea2ea931bf9312b2eccaff2d2c0c643d9eafa3f7e827147966dc11f6dac24",
@@ -155,7 +155,7 @@
   {
     "expected_count": null,
     "id": "bibliography:study-kr-stc/back/90-bibliography.md",
-    "input_count": 33,
+    "input_count": 35,
     "kind": "authored-bibliography",
     "path": "study-kr-stc/back/90-bibliography.md",
     "sha256": "1308343ba557cf6f9cf38ab7ecdf0f00d056a9f9385f0c018d57e9a5859222f3",
