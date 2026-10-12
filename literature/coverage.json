@@ -4,19 +4,19 @@
   "date_disagreement_count": 10,
   "fts5": true,
   "fulltext_or_result_reproduction_performed": false,
-  "historical_date_count": 29,
-  "input_commit": "2be9eea8a2c2966ec8c48d4816ee028ef4ac7b83",
+  "historical_date_count": 26,
+  "input_commit": "48670d4c56fe9cea9719c2dc2cf0c7ac7227f16d",
   "latest_week_mapped_count": 17,
   "latest_week_observation_count": 17,
   "mapped_observation_count": 915,
   "network_error_count": 0,
   "network_errors": [],
   "observation_count": 915,
-  "other_material_count": 15,
-  "paper_count": 359,
+  "other_material_count": 17,
+  "paper_count": 357,
   "pdf_asset_count": 78,
   "publication_count": 374,
-  "schema_version": "1.1.0",
+  "schema_version": "1.2.0",
   "scope_statement": "All recovered input observations, existing explicit repository bibliographies, curated TTT corpus and original PDF assets. Not a claim of access to every historical chat or every cited reference inside original papers.",
   "source_count": 81,
   "source_counts": {
@@ -103,12 +103,12 @@
     "weekly-2026-10-12": 17
   },
   "status_counts": {
-    "identifier_pending": 29,
-    "identity_conflict": 1,
-    "primary_metadata_verified": 329
+    "identifier_pending": 26,
+    "primary_metadata_verified": 330,
+    "publisher_metadata_verified": 1
   },
   "task_paper_count": 146,
-  "unknown_date_count": 1,
+  "unknown_date_count": 0,
   "unmapped_observations": [],
   "warnings": []
 }

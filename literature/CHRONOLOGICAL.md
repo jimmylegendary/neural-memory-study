@@ -1,6 +1,6 @@
 # 논문 발행일순 대장
 
-기준일 2026-10-12 · 논문 359건 · task 고유 논문 후보 146건 · 비논문 자료 15건 별도.
+기준일 2026-10-12 · 논문 357건 · task 고유 논문 후보 146건 · 비논문 자료 17건 별도.
 
 정렬은 확인된 arXiv v1/발행처 최초 공개일을 우선 사용한다. **(기록값)**은 과거 요약에 적힌 미검증 날짜이며, 월/연도만 아는 날짜에 일을 만들어 넣지 않는다. 수정일은 별도 열이다. 메타데이터 확인은 본문·성과 재현을 뜻하지 않는다.
 
@@ -58,6 +58,7 @@
 | 2019-07-02 | [Augmenting Self-attention with Persistent Memory](https://arxiv.org/abs/1907.01470) | 1907.01470 | 2019-07-02T15:56:20Z | primary_metadata_verified |
 | 2019-09-07 | [Introduction to Online Convex Optimization](https://arxiv.org/abs/1909.05207) | 1909.05207 | 2023-08-06T14:24:26Z | primary_metadata_verified |
 | 2019-09-29 | [Test-Time Training with Self-Supervision for Generalization under Distribution Shifts](https://arxiv.org/abs/1909.13231) | 1909.13231 | 2020-07-01T18:09:39Z | primary_metadata_verified |
+| 2019-12-31 | [Online Learning: A Modern Introduction Using Convex Optimization](https://arxiv.org/abs/1912.13213) | 1912.13213 | 2026-06-21T08:13:27Z | primary_metadata_verified |
 | 2020-04-11 | [Meta-Learning in Neural Networks: A Survey](https://arxiv.org/abs/2004.05439) | 2004.05439 | 2020-11-07T20:22:57Z | primary_metadata_verified |
 | 2020-05-22 | [Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks](https://arxiv.org/abs/2005.11401) | 2005.11401 | 2021-04-12T15:42:18Z | primary_metadata_verified |
 | 2020-06-18 | [Tent: Fully Test-time Adaptation by Entropy Minimization](https://arxiv.org/abs/2006.10726) | 2006.10726 | 2021-03-18T17:58:01Z | primary_metadata_verified |
@@ -87,7 +88,6 @@
 | 2022-11-18 (기록값) | Sleep prevents catastrophic forgetting in spiking neural networks by forming a joint synaptic weight representation | 미확정 | 미확인 | identifier_pending |
 | 2022-11-28 | [What learning algorithm is in-context learning? Investigations with linear models](https://arxiv.org/abs/2211.15661) | 2211.15661 | 2023-05-17T21:08:32Z | primary_metadata_verified |
 | 2022-12-15 | [Transformers learn in-context by gradient descent](https://arxiv.org/abs/2212.07677) | 2212.07677 | 2023-05-31T08:59:47Z | primary_metadata_verified |
-| 2023 (기록값) | Flash-Decoding for Long-Context Inference | 미확정 | 미확인 | identifier_pending |
 | 2023-05-23 | [QLoRA: Efficient Finetuning of Quantized LLMs](https://arxiv.org/abs/2305.14314) | 2305.14314 | 2023-05-23T17:50:33Z | primary_metadata_verified |
 | 2023-05-29 | [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290) | 2305.18290 | 2024-07-29T22:26:36Z | primary_metadata_verified |
 | 2023-06-01 | [Birth of a Transformer: A Memory Viewpoint](https://arxiv.org/abs/2306.00802) | 2306.00802 | 2023-11-06T22:51:51Z | primary_metadata_verified |
@@ -104,7 +104,6 @@
 | 2023-12-01 | [Mamba: Linear-Time Sequence Modeling with Selective State Spaces](https://arxiv.org/abs/2312.00752) | 2312.00752 | 2024-05-31T17:55:27Z | primary_metadata_verified |
 | 2023-12-11 | [Beyond Human Data: Scaling Self-Training for Problem-Solving with Language Models](https://arxiv.org/abs/2312.06585) | 2312.06585 | 2024-04-18T03:12:09Z | primary_metadata_verified |
 | 2023-12-11 | [Gated Linear Attention Transformers with Hardware-Efficient Training](https://arxiv.org/abs/2312.06635) | 2312.06635 | 2024-08-27T01:27:29Z | primary_metadata_verified |
-| 2024 (기록값) | Muon: An optimizer for the hidden layers of neural networks | 미확정 | 미확인 | identifier_pending |
 | 2024-01-09 | [Lightning Attention-2: A Free Lunch for Handling Unlimited Sequence Lengths in Large Language Models](https://arxiv.org/abs/2401.04658) | 2401.04658 | 2024-01-15T14:57:29Z | primary_metadata_verified |
 | 2024-01-18 | [DistServe: Disaggregating Prefill and Decoding for Goodput-optimized Large Language Model Serving](https://arxiv.org/abs/2401.09670) | 2401.09670 | 2024-06-06T15:50:51Z | primary_metadata_verified |
 | 2024-02-05 | [DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models](https://arxiv.org/abs/2402.03300) | 2402.03300 | 2024-04-27T15:25:53Z | primary_metadata_verified |
@@ -272,7 +271,7 @@
 | 2026-08-08 | [CommitKV: Lifecycle-Aware KV Cache Compression via Commit Transitions for Multi-Turn Agents](https://arxiv.org/abs/2608.07855) | 2608.07855 | 2026-08-08T01:50:55Z | primary_metadata_verified |
 | 2026-08-08 | [SuperLocalMemory 4.0: The Governed Memory Operating System for AI Agents](https://arxiv.org/abs/2608.08253) | 2608.08253 | 2026-08-25T05:47:19Z | primary_metadata_verified |
 | 2026-08-10 | [MESA:Task-Adaptive Multi-Structure Evidence Selection for Long-Horizon Agent Memory](https://arxiv.org/abs/2608.10108) | 2608.10108 | 2026-08-10T18:23:04Z | primary_metadata_verified |
-| 2026-08-12 (기록값) | [Hardware-Managed Heterogeneous High-Bandwidth Memory and Flash in LLM Inference Systems](https://ora.ox.ac.uk/objects/uuid%3Aa9f80041-ff2e-4714-9bc4-51c513604d36) | 미확정 | 미확인 | identifier_pending |
+| 2026-08-12 | [Hardware-Managed Heterogeneous High-Bandwidth Memory and Flash in LLM Inference Systems](https://ora.ox.ac.uk/objects/uuid%3Aa9f80041-ff2e-4714-9bc4-51c513604d36) | 10.1109/LCA.2026.3723326 | 미확인 | publisher_metadata_verified |
 | 2026-08-12 | [HBF Sucks? A Full-Stack Characterization of High-Bandwidth Flash for KV-Centric LLM Serving](https://arxiv.org/abs/2608.11668) | 2608.11668 | 2026-09-14T16:05:41Z | primary_metadata_verified |
 | 2026-08-12 | [Towards a Formal Definition of Agent Memory: Basis, Span, Optimality, and the Sequential Memory Problem](https://arxiv.org/abs/2608.11654) | 2608.11654 | 2026-08-12T04:54:26Z | primary_metadata_verified |
 | 2026-08-13 | [Potential Applications of HBF in LLM Serving Systems](https://arxiv.org/abs/2608.13127) | 2608.13127 | 2026-08-14T07:56:34Z | primary_metadata_verified |
@@ -368,4 +367,3 @@
 | 2026-10-08 | [REMORY: Learning Residual Memory for Context Compaction](https://arxiv.org/abs/2610.11287) | 2610.11287 | 2026-10-08T05:50:50Z | primary_metadata_verified |
 | 2026-10-08 | [VFold: Symmetry-Aware Cross-Layer Value Cache Compression](https://arxiv.org/abs/2610.12338) | 2610.12338 | 2026-10-08T17:14:28Z | primary_metadata_verified |
 | 2026-10-08 | [Which Skill to Distill? SGUID: Selecting a Compact Skill Bank for Model-Skill Co-Evolution](https://arxiv.org/abs/2610.12367) | 2610.12367 | 2026-10-08T17:27:53Z | primary_metadata_verified |
-| 미확인 | [A Modern Introduction to Online Learning](https://arxiv.org/abs/1912.13213) | 1912.13213 | 미확인 | identity_conflict |

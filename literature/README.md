@@ -6,7 +6,8 @@
 
 | 목적 | 파일 |
 |---|---|
-| 발행일순 목록 | [CHRONOLOGICAL.md](CHRONOLOGICAL.md) |
+| 전체 발행일순 목록 | [CHRONOLOGICAL.md](CHRONOLOGICAL.md) |
+| 이 task의 논문만 | [TASK_CHRONOLOGICAL.md](TASK_CHRONOLOGICAL.md) |
 | 검색·필터 화면 | [index.html](index.html) — 내려받아 브라우저에서 열기 |
 | 실제 관계형 DB | [data/papers.sqlite](data/papers.sqlite) |
 | 다른 도구로 가져오기 | [CSV](data/papers.csv) · [JSONL](data/papers.jsonl) |

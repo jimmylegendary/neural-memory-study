@@ -40,11 +40,38 @@
     "AREX-2": "2609.38288",
     "PACE": "2610.01349"
   },
-  "dois": {},
+  "dois": {
+    "Hardware-Managed Heterogeneous High-Bandwidth Memory and Flash in LLM Inference Systems": "10.1109/LCA.2026.3723326"
+  },
   "urls": {
     "HMA": "https://ora.ox.ac.uk/objects/uuid%3Aa9f80041-ff2e-4714-9bc4-51c513604d36"
   },
-  "publisher_metadata": {},
+  "publisher_metadata": {
+    "doi:10.1109/lca.2026.3723326": {
+      "title": "Hardware-Managed Heterogeneous High-Bandwidth Memory and Flash in LLM Inference Systems",
+      "doi": "10.1109/LCA.2026.3723326",
+      "authors": [
+        "H. Atassi",
+        "N. Zilberman",
+        "A. Awad"
+      ],
+      "publication_date": "2026-08-12",
+      "date_precision": "day",
+      "date_basis": "journal_publication",
+      "url": "https://ora.ox.ac.uk/objects/uuid%3Aa9f80041-ff2e-4714-9bc4-51c513604d36",
+      "checked_at": "2026-10-12",
+      "publisher_evidence": {
+        "source_url": "https://ora.ox.ac.uk/objects/uuid%3Aa9f80041-ff2e-4714-9bc4-51c513604d36",
+        "journal": "IEEE Computer Architecture Letters",
+        "publication_status": "Published",
+        "peer_review_status": "Peer reviewed",
+        "acceptance_date": "2026-08-04",
+        "repository_deposit_date": "2026-08-11",
+        "date_caveat": "Journal publication date is not substituted for the separate archive deposit date.",
+        "review_scope": "bibliographic metadata only; no reproduction of results"
+      }
+    }
+  },
   "resolution_evidence": {
     "PReCache": {
       "url": "https://arxiv.org/abs/2609.34054",
@@ -60,6 +87,22 @@
       "url": "https://arxiv.org/abs/2610.01349",
       "checked_at": "2026-10-12",
       "basis": "primary arXiv title/abstract; old 2609.39185 is a different work"
+    },
+    "1912.13213-title-history": {
+      "source_url": "https://arxiv.org/abs/1912.13213",
+      "checked_at": "2026-10-12",
+      "current_title": "Online Learning: A Modern Introduction Using Convex Optimization",
+      "old_title": "A Modern Introduction to Online Learning",
+      "evidence": "Same author and persistent arXiv identifier; v10 comment explicitly states Changed title. v1 submitted 2019-12-31; current v10 revised 2026-06-21. Historical observations retain the old title."
     }
+  },
+  "historical_title_aliases": {
+    "1912.13213": [
+      "A Modern Introduction to Online Learning"
+    ]
+  },
+  "type_overrides": {
+    "flashdecodingforlongcontextinference": "official",
+    "muonanoptimizerforthehiddenlayersofneuralnetworks": "official"
   }
 }

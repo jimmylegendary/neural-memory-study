@@ -13,7 +13,7 @@ from urllib.request import Request, urlopen
 from urllib.parse import urlencode, quote
 import xml.etree.ElementTree as ET
 
-VERSION = '1.1.0'
+VERSION = '1.2.0'
 ARXIV = re.compile(r'(?<![\d.])((?:\d{4}\.\d{4,5}|[a-z][a-z.-]+/\d{7})(?:v\d+)?)(?!\d)', re.I)
 NEWID = re.compile(r'^\d{4}\.\d{4,5}$')
 PAPER_KINDS = {'paper','preprint','article','inproceedings','conference','book','thesis','misc','repository-paper','unresolved-paper'}
@@ -331,7 +331,9 @@ def build_publications(rows,cache,assets,resolutions):
         title=max(informative or titles,key=len) if titles else pid
         title_inputs=informative+aliases
         alias_in_abstract=any(len(alias)>=4 and len(alias)<=24 and re.search(r'(?<![\w-])'+re.escape(alias)+r'(?![\w-])',m.get('summary',''),re.I) for alias in aliases if alias not in ('Memory','Agent','Sleep','Graph'))
-        is_match=m.get('status')=='ok' and (not informative or any(same_title(t,m.get('title','')) for t in title_inputs) or alias_in_abstract)
+        accepted_old_titles={norm(t) for t in resolutions.get('historical_title_aliases',{}).get(a,[])}
+        explicit_title_history=bool(accepted_old_titles.intersection(norm(t) for t in title_inputs))
+        is_match=m.get('status')=='ok' and (not informative or any(same_title(t,m.get('title','')) for t in title_inputs) or alias_in_abstract or explicit_title_history)
         if is_match: title=m['title']; status='primary_metadata_verified'
         elif m.get('status')=='ok': status='identity_conflict'
         elif a: status='metadata_pending'
@@ -494,6 +496,11 @@ def main():
     p=argparse.ArgumentParser();p.add_argument('--root',type=Path,default=Path(__file__).resolve().parents[2]);p.add_argument('--online',action='store_true');p.add_argument('--deadline',type=int,default=420);p.add_argument('--as-of',default='2026-10-12');args=p.parse_args()
     root=args.root.resolve();lit=root/'literature';imp=Importer(root,lit).load()
     resolutions=read_json(lit/'inputs/resolutions.json',{});refs=read_json(lit/'inputs/prior_report_references.json',[])
+    for row in imp.rows:
+        assigned=resolutions.get('type_overrides',{}).get(norm(row['title']))
+        if assigned:
+            row['original_kind']=row['kind']
+            row['kind']=assigned
     corrections=resolve_rows(imp.rows,resolutions,refs)
     cache=read_json(lit/'inputs/metadata_cache.json',{});cache.update(read_json(lit/'inputs/verified_metadata.json',{}))
     ids={r['canonical_arxiv'] for r in imp.rows if r['canonical_arxiv']};errors=[]

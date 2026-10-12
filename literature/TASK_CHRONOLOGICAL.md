@@ -1,6 +1,6 @@
 # 논문 발행일순 대장
 
-기준일 2026-10-12 · 논문 359건 · task 고유 논문 후보 146건 · 비논문 자료 15건 별도.
+기준일 2026-10-12 · 논문 357건 · task 고유 논문 후보 146건 · 비논문 자료 17건 별도.
 
 정렬은 확인된 arXiv v1/발행처 최초 공개일을 우선 사용한다. **(기록값)**은 과거 요약에 적힌 미검증 날짜이며, 월/연도만 아는 날짜에 일을 만들어 넣지 않는다. 수정일은 별도 열이다. 메타데이터 확인은 본문·성과 재현을 뜻하지 않는다.
 
@@ -60,7 +60,7 @@
 | 2026-08-08 | [CommitKV: Lifecycle-Aware KV Cache Compression via Commit Transitions for Multi-Turn Agents](https://arxiv.org/abs/2608.07855) | 2608.07855 | 2026-08-08T01:50:55Z | primary_metadata_verified |
 | 2026-08-08 | [SuperLocalMemory 4.0: The Governed Memory Operating System for AI Agents](https://arxiv.org/abs/2608.08253) | 2608.08253 | 2026-08-25T05:47:19Z | primary_metadata_verified |
 | 2026-08-10 | [MESA:Task-Adaptive Multi-Structure Evidence Selection for Long-Horizon Agent Memory](https://arxiv.org/abs/2608.10108) | 2608.10108 | 2026-08-10T18:23:04Z | primary_metadata_verified |
-| 2026-08-12 (기록값) | [Hardware-Managed Heterogeneous High-Bandwidth Memory and Flash in LLM Inference Systems](https://ora.ox.ac.uk/objects/uuid%3Aa9f80041-ff2e-4714-9bc4-51c513604d36) | 미확정 | 미확인 | identifier_pending |
+| 2026-08-12 | [Hardware-Managed Heterogeneous High-Bandwidth Memory and Flash in LLM Inference Systems](https://ora.ox.ac.uk/objects/uuid%3Aa9f80041-ff2e-4714-9bc4-51c513604d36) | 10.1109/LCA.2026.3723326 | 미확인 | publisher_metadata_verified |
 | 2026-08-12 | [HBF Sucks? A Full-Stack Characterization of High-Bandwidth Flash for KV-Centric LLM Serving](https://arxiv.org/abs/2608.11668) | 2608.11668 | 2026-09-14T16:05:41Z | primary_metadata_verified |
 | 2026-08-12 | [Towards a Formal Definition of Agent Memory: Basis, Span, Optimality, and the Sequential Memory Problem](https://arxiv.org/abs/2608.11654) | 2608.11654 | 2026-08-12T04:54:26Z | primary_metadata_verified |
 | 2026-08-13 | [Potential Applications of HBF in LLM Serving Systems](https://arxiv.org/abs/2608.13127) | 2608.13127 | 2026-08-14T07:56:34Z | primary_metadata_verified |

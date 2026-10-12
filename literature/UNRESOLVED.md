@@ -30,7 +30,3 @@
 | 2016 (기록값) | Deep Learning | 미확정 | 미확인 | identifier_pending |
 | 2022 (기록값) | Learning cortical representations through perturbed and adversarial dreaming | 미확정 | 미확인 | identifier_pending |
 | 2022-11-18 (기록값) | Sleep prevents catastrophic forgetting in spiking neural networks by forming a joint synaptic weight representation | 미확정 | 미확인 | identifier_pending |
-| 2023 (기록값) | Flash-Decoding for Long-Context Inference | 미확정 | 미확인 | identifier_pending |
-| 2024 (기록값) | Muon: An optimizer for the hidden layers of neural networks | 미확정 | 미확인 | identifier_pending |
-| 2026-08-12 (기록값) | [Hardware-Managed Heterogeneous High-Bandwidth Memory and Flash in LLM Inference Systems](https://ora.ox.ac.uk/objects/uuid%3Aa9f80041-ff2e-4714-9bc4-51c513604d36) | 미확정 | 미확인 | identifier_pending |
-| 미확인 | [A Modern Introduction to Online Learning](https://arxiv.org/abs/1912.13213) | 1912.13213 | 미확인 | identity_conflict |
