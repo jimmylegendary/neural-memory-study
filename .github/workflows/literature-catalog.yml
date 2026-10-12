@@ -1,0 +1,70 @@
+name: Literature catalogue
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, research/paper-db-2026-10-12]
+    paths: [literature/BUILD_REQUEST]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: literature-catalog-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  catalogue:
+    if: github.repository == 'jimmylegendary/neural-memory-study'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+      - name: Expand initial source bundle if present
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import base64, gzip, hashlib, json
+          from pathlib import Path
+          root = Path.cwd().resolve()
+          payload = root / 'literature/bootstrap.json.gz.b64'
+          if payload.exists():
+              compressed = base64.b64decode(payload.read_text(), validate=False)
+              expected = (root / 'literature/bootstrap.sha256').read_text().strip()
+              if hashlib.sha256(compressed).hexdigest() != expected:
+                  raise SystemExit('Bootstrap checksum mismatch')
+              files = json.loads(gzip.decompress(compressed))
+              for name, text in files.items():
+                  path = (root / name).resolve()
+                  if not path.is_relative_to(root / 'literature'):
+                      raise SystemExit('Unsafe bootstrap path: ' + name)
+                  path.parent.mkdir(parents=True, exist_ok=True)
+                  path.write_text(text, encoding='utf-8')
+              payload.unlink()
+              (root / 'literature/bootstrap.sha256').unlink()
+          PY
+      - name: Build and check catalogue
+        shell: bash
+        run: |
+          python3 -m unittest discover -s literature/tests -v
+          python3 literature/tools/build_catalog.py --online --deadline 780 --as-of 2026-10-12
+          python3 literature/tools/check_catalog.py
+      - name: Save validated catalogue
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- literature README.md
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: build chronological paper database and coverage audit'
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+      - name: Upload catalogue package
+        uses: actions/upload-artifact@v4
+        with:
+          name: neural-memory-paper-database
+          path: literature/
+          retention-days: 30
