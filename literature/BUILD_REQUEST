@@ -1,6 +1,7 @@
-2026-10-12 catalogue v1.1 audit build
-Preserve all 217 original task observations and existing repository sources.
-Split consecutive bibliography bullets; preserve multiline classical-paper titles.
-Correct PReCache, AREX-2 and PACE by primary arXiv identity.
-Verify short CogMem/QGMem method aliases against primary abstracts.
-Export a single global chronological catalogue plus a task-only chronological view.
+2026-10-12 catalogue v1.2 final publication build
+Include all recovered task observations and existing repository bibliography/assets.
+Retain source claims and corrections; build one globally chronological paper catalogue.
+Resolve HMA DOI using Oxford archive, preserve journal/deposit date distinction.
+Recognize Orabona's explicit arXiv title change without inventing an identity conflict.
+Classify two known technical blogs separately from scholarly papers.
+Validate SQLite, foreign keys, complete observation coverage, all latest 17 entries and checksums.
