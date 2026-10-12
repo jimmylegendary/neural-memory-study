@@ -1,0 +1,108 @@
+{
+  "checked_at": "2026-10-12",
+  "rule": "Aliases apply only to recovered task observations, never globally to a same-acronym paper in another corpus. A resolved candidate identifier is not metadata/result verification.",
+  "aliases": {
+    "KV-streams": "2609.35750",
+    "Mem++": "2610.02002",
+    "Hindsight Memory-PRM": "2608.29605",
+    "ActiveSaddler": "2610.00906",
+    "Schema": "2609.39140",
+    "PoS": "2610.01415",
+    "EfficientAgent": "2609.33762",
+    "HBFSim": "2609.09800",
+    "Invalidation Contracts": "2609.00243",
+    "PlanFence": "2609.03340",
+    "Endogenous Authorization Laundering": "2609.01836",
+    "Memory Trust Gap": "2609.01852",
+    "Representational Empowerment": "2609.02322",
+    "Gated-Memory Routing": "2609.00237",
+    "Typed Intention Store": "2609.01272",
+    "Persistent Discovery Context": "2609.02129",
+    "Selective Forgetting": "2608.28978",
+    "Harness Tampering": "2609.00069",
+    "HeadWiseKV": "2609.02029",
+    "SGD-KV": "2609.03235",
+    "Grounding Agent Memory": "2609.11060",
+    "MeClear": "2609.09115",
+    "MemForest": "2609.08273",
+    "UNISON": "2609.09643",
+    "AgentZip": "2609.11294",
+    "MILO": "2609.29913",
+    "Lachesis": "2610.08378",
+    "DPPM": "2610.11776",
+    "SGUID": "2610.12367",
+    "REMORY": "2610.11287",
+    "Attic-KV": "2610.12133",
+    "MINDSET": "2610.08586",
+    "Beyond Corrected Memory": "2610.08101",
+    "Persistent Memory in Multi-Agent LLM Inference": "2610.07782",
+    "PReCache": "2609.34054",
+    "AREX-2": "2609.38288",
+    "PACE": "2610.01349"
+  },
+  "dois": {
+    "Hardware-Managed Heterogeneous High-Bandwidth Memory and Flash in LLM Inference Systems": "10.1109/LCA.2026.3723326"
+  },
+  "urls": {
+    "HMA": "https://ora.ox.ac.uk/objects/uuid%3Aa9f80041-ff2e-4714-9bc4-51c513604d36"
+  },
+  "publisher_metadata": {
+    "doi:10.1109/lca.2026.3723326": {
+      "title": "Hardware-Managed Heterogeneous High-Bandwidth Memory and Flash in LLM Inference Systems",
+      "doi": "10.1109/LCA.2026.3723326",
+      "authors": [
+        "H. Atassi",
+        "N. Zilberman",
+        "A. Awad"
+      ],
+      "publication_date": "2026-08-12",
+      "date_precision": "day",
+      "date_basis": "journal_publication",
+      "url": "https://ora.ox.ac.uk/objects/uuid%3Aa9f80041-ff2e-4714-9bc4-51c513604d36",
+      "checked_at": "2026-10-12",
+      "publisher_evidence": {
+        "source_url": "https://ora.ox.ac.uk/objects/uuid%3Aa9f80041-ff2e-4714-9bc4-51c513604d36",
+        "journal": "IEEE Computer Architecture Letters",
+        "publication_status": "Published",
+        "peer_review_status": "Peer reviewed",
+        "acceptance_date": "2026-08-04",
+        "repository_deposit_date": "2026-08-11",
+        "date_caveat": "Journal publication date is not substituted for the separate archive deposit date.",
+        "review_scope": "bibliographic metadata only; no reproduction of results"
+      }
+    }
+  },
+  "resolution_evidence": {
+    "PReCache": {
+      "url": "https://arxiv.org/abs/2609.34054",
+      "checked_at": "2026-10-12",
+      "basis": "primary arXiv title/abstract; old 2609.35680 resolves to a different field"
+    },
+    "AREX-2": {
+      "url": "https://arxiv.org/abs/2609.38288",
+      "checked_at": "2026-10-12",
+      "basis": "primary arXiv title/abstract; old 2609.36887 is WEFT, a different work"
+    },
+    "PACE": {
+      "url": "https://arxiv.org/abs/2610.01349",
+      "checked_at": "2026-10-12",
+      "basis": "primary arXiv title/abstract; old 2609.39185 is a different work"
+    },
+    "1912.13213-title-history": {
+      "source_url": "https://arxiv.org/abs/1912.13213",
+      "checked_at": "2026-10-12",
+      "current_title": "Online Learning: A Modern Introduction Using Convex Optimization",
+      "old_title": "A Modern Introduction to Online Learning",
+      "evidence": "Same author and persistent arXiv identifier; v10 comment explicitly states Changed title. v1 submitted 2019-12-31; current v10 revised 2026-06-21. Historical observations retain the old title."
+    }
+  },
+  "historical_title_aliases": {
+    "1912.13213": [
+      "A Modern Introduction to Online Learning"
+    ]
+  },
+  "type_overrides": {
+    "flashdecodingforlongcontextinference": "official",
+    "muonanoptimizerforthehiddenlayersofneuralnetworks": "official"
+  }
+}

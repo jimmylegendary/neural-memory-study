@@ -1,0 +1,45 @@
+Appendix A. References / Research Sources
+링크 확인 기준일: 2026-08-16. 아래 제목·날짜·식별자는 당시 보고서의 기록이며 새 검증 결과와 구분한다. 개인 프로젝트 본문은 재배포하지 않는다.
+[1] Sleep-time Compute: Beyond Inference Scaling at Test-time. arXiv:2504.13171 (2025-04-17) https://arxiv.org/abs/2504.13171 — 원래 anticipatory sleep compute.
+[2] Do Language Models Need Sleep? Offline Recurrence for Improved Online Inference. arXiv:2605.26099 (2026-05-25) https://arxiv.org/abs/2605.26099 — context→persistent fast weights.
+[3] Language Models Need Sleep: Learning to Self-Modify and Consolidate Memories. arXiv:2606.03979 (2026-06-02) https://arxiv.org/abs/2606.03979 — Knowledge Seeding + RL dreaming.
+[4] Auto-Dreamer: Learning Offline Memory Consolidation for Language Agents. arXiv:2605.20616 (2026-05-20) https://arxiv.org/abs/2605.20616 — cross-session offline consolidation.
+[5] Learning to Forget: Sleep-Inspired Memory Consolidation for Resolving Proactive Interference in Large Language Models. arXiv:2603.14517 (2026-03-15) https://arxiv.org/abs/2603.14517 — SleepGate; KV micro-sleep.
+[6] Memory for Large Language Models. arXiv:2607.25380 (2026-07-28) https://arxiv.org/abs/2607.25380 — architecture-centric memory taxonomy.
+[7] Discovery by Dreaming: Cross-Domain Recombination in Artificial Memory. arXiv:2607.16256 (2026-06-28) https://arxiv.org/abs/2607.16256 — dreaming as cross-domain discovery.
+[8] UniMem: Complementary Episodic-to-Parametric Memory for Boundary-Agnostic Task Streams. arXiv:2607.26017 (2026-07-28) https://arxiv.org/abs/2607.26017 — episodic/parametric routing.
+[9] Learning What to Remember and What to Internalize in LLM Self-Evolution via Adaptive Memory-Parameter Coordination. arXiv:2608.01234 (2026-08-02) https://arxiv.org/abs/2608.01234 — COVE.
+[10] Scaling Self-Evolving Agents via Parametric Memory. arXiv:2606.04536 (2026-06-03) https://arxiv.org/abs/2606.04536 — TMEM; fast LoRA memory.
+[11] Parametric Embodied Agent Memory. arXiv:2605.27762 (2026-05-26) https://arxiv.org/abs/2605.27762 — PEAM; self-triggered internalization.
+[12] LiveMem: Maintaining Memory State Continuity in Long-Running LLM Inference. arXiv:2608.02515 (2026-08-03) https://arxiv.org/abs/2608.02515 — persistent recurrent state.
+[13] TransMem. arXiv:2607.29032 (2026-07-31) https://arxiv.org/abs/2607.29032 — historical hidden-state memory.
+[14] SelfMem: Self-Optimizing Memory for AI Agents. arXiv:2607.03726 (2026-07-04) https://arxiv.org/abs/2607.03726 — learned memory strategy.
+[15] CoEvo-Mem. arXiv:2608.01739 (2026-08-03) https://arxiv.org/abs/2608.01739 — retrieval policy and memory co-evolution.
+[16] Useful Memories Become Faulty When Continuously Updated by LLMs. arXiv:2605.12978 (2026-05-13) https://arxiv.org/abs/2605.12978 — destructive consolidation warning.
+[17] MemTX. arXiv:2607.23929 (2026-07-27) https://arxiv.org/abs/2607.23929 — transactional belief commit.
+[18] MemTxn. arXiv:2607.27834 (2026-07-30) https://arxiv.org/abs/2607.27834 — snapshot journal and recovery.
+[19] Verifiable Memory: Learning Unified Memory Management with Local and Global Verifiers for Large Language Model Agents. arXiv:2608.03137 (2026-08-04) https://arxiv.org/abs/2608.03137 — hierarchical verifier credit.
+[20] Experience Graphs: The Data Foundation for Self-Improving Agents. arXiv:2606.29823 (2026-06-29) https://arxiv.org/abs/2606.29823 — Trellis; durable experience database.
+[21] Zero-Mem. arXiv:2607.29377 (2026-07-31) https://arxiv.org/abs/2607.29377 — LLM-token-free maintenance.
+[22] Towards a Formal Definition of Agent Memory: Basis, Span, Optimality, and the Sequential Memory Problem. arXiv:2608.11654 (2026-08-12) https://arxiv.org/abs/2608.11654 — memory-write MDP.
+[23] From Test-Time Scaling to Reusable Memory: Measuring Crystallization in Text-to-SQL. arXiv:2608.07213 (2026-08-07) https://arxiv.org/abs/2608.07213 — future value of verified repairs.
+[24] Scaling Teams or Scaling Time?. arXiv:2604.03295 (2026) https://arxiv.org/abs/2604.03295 — time-axis memory scaling.
+[25] Agentic Test-Time Scaling for WebAgents. arXiv:2602.12276 (2026-02-12) https://arxiv.org/abs/2602.12276 — uniform scaling saturation.
+[26] Kinetics. arXiv:2506.05333 (2025-06-05) https://arxiv.org/abs/2506.05333 — hardware-aware TTS cost.
+[27] When Continual Learning Moves to Memory. arXiv:2604.27003 (2026-04-29) https://arxiv.org/abs/2604.27003 — negative transfer in memory systems.
+[28] Active Inference as the Test-Time Scaling Law for Physical AI Agents. arXiv:2606.22813 (2026-06-22) https://arxiv.org/abs/2606.22813 — continuous real-world experience.
+[29] Experience Scaling: Post-Deployment Evolution For Large Language Models. arXiv:2509.18771 (2025-09-23) https://arxiv.org/abs/2509.18771 — explicit prior use of Experience Scaling.
+[30] ReasoningBank: Scaling Agent Self-Evolving with Reasoning Memory. arXiv:2509.25140 (2025-09-29) https://arxiv.org/abs/2509.25140 — MaTTS and memory-driven experience scaling.
+[31] FLEX: Continuous Agent Evolution via Forward Learning from Experience. arXiv:2511.06449 (2025-11-09) https://arxiv.org/abs/2511.06449 — experiential growth scaling and inheritance.
+[32] Adaptive Memory Crystallization for Autonomous AI Agent Learning in Dynamic Environments. arXiv:2604.13085 (2026-04-02) https://arxiv.org/abs/2604.13085 — liquid-glass-crystal formalization.
+[33] MemOS: A Memory OS for AI System. arXiv:2507.03724 (2025-07-04) https://arxiv.org/abs/2507.03724 — plaintext/activation/parameter memory OS.
+[34] Memory-R1: Enhancing Large Language Model Agents to Manage and Utilize Memories via Reinforcement Learning. arXiv:2508.19828 (2025-08-27) https://arxiv.org/abs/2508.19828 — RL memory manager.
+[35] Broken Neural Scaling Laws. arXiv:2210.14891 (2022-10-26) https://arxiv.org/abs/2210.14891 — non-monotonic and phase-transition fits.
+[36] Dreaming: Better memory for a more helpful ChatGPT. OpenAI official (2026-06-04) https://openai.com/index/chatgpt-memory-dreaming/ — Official product blog.
+[37] Dreams. Anthropic Claude Platform docs https://platform.claude.com/docs/en/managed-agents/dreams — Official product documentation.
+[38] Dreaming. OpenClaw official docs https://docs.openclaw.ai/concepts/dreaming — Light/Deep/REM memory consolidation.
+[39] Introducing The Token-Efficient Memory Algorithm. Mem0 official blog (2026-07-10) https://mem0.ai/blog/mem0-the-token-efficient-memory-algorithm — Official engineering blog.
+[40] Introducing Memory Decay in Mem0. Mem0 official blog (2026-07-22) https://mem0.ai/blog/introducing-memory-decay-in-mem0 — Official freshness/decay feature.
+[41] AI Memory Security: Best Practices and Implementation. Mem0 official blog (2026-07-23) https://mem0.ai/blog/ai-memory-security-best-practices — Official security/governance discussion.
+[42] We build sleep for local LLMs. Reddit / LocalLLaMA community self-report https://www.reddit.com/r/LocalLLaMA/comments/1rewz9p/we_build_sleep_for_local_llms_model_learns_facts/ — Not peer reviewed; MEMIT/maintenance experiment.
+[43] Experiment: multi-agent LLM sleep cycle with nightly LoRA updates. Reddit / LocalLLaMA community self-report https://www.reddit.com/r/LocalLLaMA/comments/1p4bkl6/experiment_multiagent_llm_sleep_cycle_with/ — Not peer reviewed; trend signal only.
